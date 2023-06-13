@@ -72,7 +72,7 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
         GridClient cli,
         CacheListCommandArg arg,
         Consumer<String> printer
-    ) throws Exception {
+    ) throws GridClientException {
         VisorViewCacheCmd cmd = arg.groups()
             ? GROUPS
             : (arg.seq() ? SEQ : CACHES);

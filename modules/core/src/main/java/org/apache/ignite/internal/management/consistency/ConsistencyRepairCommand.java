@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
@@ -52,7 +52,7 @@ public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairC
         GridClient cli,
         ConsistencyRepairCommandArg arg,
         Consumer<String> printer
-    ) throws Exception {
+    ) throws GridClientException, IgniteException {
         StringBuilder sb = new StringBuilder();
         boolean failed = false;
 
@@ -74,7 +74,7 @@ public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairC
         String res = sb.toString();
 
         if (failed)
-            throw new IgniteCheckedException(res);
+            throw new IgniteException(res);
 
         printer.accept(res);
 

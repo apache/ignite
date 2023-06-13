@@ -23,9 +23,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientBeforeNodeStart;
 import org.apache.ignite.internal.client.GridClientCompute;
@@ -35,112 +35,40 @@ import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.AbstractCommandInvoker;
 import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
 import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.PreparableCommand;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
 
-import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 
 /**
  * Adapter of new management API command for legacy {@code control.sh} execution flow.
  */
-public class CommandInvoker<A extends IgniteDataTransferObject> {
-    /** Command to execute. */
-    private final Command<A, ?> cmd;
-
-    /** Parsed argument. */
-    private final A arg;
+public class CommandInvoker<A extends IgniteDataTransferObject> extends AbstractCommandInvoker<A> {
 
     /** Client configuration. */
     private GridClientConfiguration clientCfg;
 
+    /** Client. */
+    private GridClient client;
+
     /** @param cmd Command to execute. */
     public CommandInvoker(Command<A, ?> cmd, A arg, GridClientConfiguration clientCfg) {
-        this.cmd = cmd;
-        this.arg = arg;
+        super(cmd, arg);
         this.clientCfg = clientCfg;
     }
 
-    /**
-     * Actual command execution with verbose mode if needed.
-     * Implement it if your command supports verbose mode.
-     *
-     * @param log Logger to use.
-     * @param verbose Use verbose mode or not
-     * @return Result of operation (mostly usable for tests).
-     * @throws Exception If error occur.
-     */
-    public <R> R invoke(IgniteLogger log, boolean verbose) throws Exception {
-        try (GridClient client = startClient(clientCfg)) {
-            String deprecationMsg = cmd.deprecationMessage(arg);
-
-            if (deprecationMsg != null)
-                log.warning(deprecationMsg);
-
-            R res;
-
-            if (cmd instanceof LocalCommand)
-                res = ((LocalCommand<A, R>)cmd).execute(client, arg, log::info);
-            else if (cmd instanceof ComputeCommand) {
-                GridClientCompute compute = client.compute();
-
-                Map<UUID, GridClientNode> nodes = compute.nodes().stream()
-                    .collect(toMap(GridClientNode::nodeId, n -> n));
-
-                ComputeCommand<A, R> cmd = (ComputeCommand<A, R>)this.cmd;
-
-                Collection<UUID> cmdNodes = cmd.nodes(nodes, arg);
-
-                if (cmdNodes == null)
-                    cmdNodes = singleton(defaultNode(client, clientCfg).nodeId());
-
-                for (UUID id : cmdNodes) {
-                    if (!nodes.containsKey(id))
-                        throw new IllegalArgumentException("Node with id=" + id + " not found.");
-                }
-
-                Collection<GridClientNode> connectable = F.viewReadOnly(
-                    cmdNodes,
-                    nodes::get,
-                    id -> nodes.get(id).connectable()
-                );
-
-                if (!F.isEmpty(connectable))
-                    compute = compute.projection(connectable);
-
-                res = compute.execute(cmd.taskClass().getName(), new VisorTaskArgument<>(cmdNodes, arg, false));
-
-                cmd.printResult(arg, res, log::info);
-            }
-            else
-                throw new IllegalArgumentException("Unknown command type: " + cmd);
-
-            return res;
-        }
-        catch (Throwable e) {
-            log.error("Failed to perform operation.");
-            log.error(CommandLogger.errorMessage(e));
-
-            throw e;
-        }
-    }
-
     /** */
-    public boolean prepare(IgniteLogger log) throws Exception {
+    public boolean prepare(Consumer<String> printer) throws Exception {
         if (!(cmd instanceof PreparableCommand))
             return true;
 
-        try (GridClient client = startClient(clientCfg)) {
-            return ((PreparableCommand<A, ?>)cmd).prepare(client, arg, log::info);
-        }
+        return ((PreparableCommand<A, ?>)cmd).prepare(client(), arg, printer);
     }
 
     /**
@@ -151,24 +79,21 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
     }
 
     /** */
-    public <R> R invokeBeforeNodeStart(IgniteLogger log) throws Exception {
+    public <R> R invokeBeforeNodeStart(Consumer<String> printer) throws Exception {
         try (GridClientBeforeNodeStart client = startClientBeforeNodeStart(clientCfg)) {
-            return ((BeforeNodeStartCommand<A, R>)cmd).execute(client, arg, log::info);
+            return ((BeforeNodeStartCommand<A, R>)cmd).execute(client, arg, printer);
         }
         catch (GridClientDisconnectedException e) {
             throw new GridClientException(e.getCause());
         }
     }
 
-    /**
-     * Method to create thin client for communication with cluster.
-     *
-     * @param clientCfg Thin client configuration.
-     * @return Grid thin client instance which is already connected to cluster.
-     * @throws Exception If error occur.
-     */
-    private static GridClient startClient(GridClientConfiguration clientCfg) throws Exception {
-        GridClient client = GridClientFactory.start(clientCfg);
+    /** {@inheritDoc} */
+    @Override protected GridClient client() throws GridClientException {
+        if (client != null && client.connected())
+            return client;
+
+        client = GridClientFactory.start(clientCfg);
 
         // If connection is unsuccessful, fail before doing any operations:
         if (!client.connected()) {
@@ -185,6 +110,52 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
         }
 
         return client;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Map<UUID, GridClientNode> nodes() throws GridClientException {
+        return client().compute().nodes().stream()
+            .collect(toMap(GridClientNode::nodeId, n -> n));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridClientNode defaultNode() throws GridClientException {
+        GridClientNode node;
+
+        // Prefer node from connect string.
+        final String cfgAddr = clientCfg.getServers().iterator().next();
+
+        String[] parts = cfgAddr.split(":");
+
+        if (DFLT_HOST.equals(parts[0])) {
+            InetAddress addr;
+
+            try {
+                addr = IgniteUtils.getLocalHost();
+            }
+            catch (IOException e) {
+                throw new GridClientException("Can't get localhost name.", e);
+            }
+
+            if (addr.isLoopbackAddress())
+                throw new GridClientException("Can't find localhost name.");
+
+            String origAddr = addr.getHostName() + ":" + parts[1];
+
+            node = listHosts(client()).filter(tuple -> origAddr.equals(tuple.get2())).findFirst().map(IgniteBiTuple::get1).orElse(null);
+
+            if (node == null)
+                node = listHostsByClientNode(client()).filter(tuple -> tuple.get2().size() == 1 && cfgAddr.equals(tuple.get2().get(0))).
+                    findFirst().map(IgniteBiTuple::get1).orElse(null);
+        }
+        else
+            node = listHosts(client()).filter(tuple -> cfgAddr.equals(tuple.get2())).findFirst().map(IgniteBiTuple::get1).orElse(null);
+
+        // Otherwise choose random node.
+        if (node == null)
+            node = balancedNode(client().compute());
+
+        return node;
     }
 
     /**
@@ -215,46 +186,6 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
         }
 
         return client;
-    }
-
-    /** */
-    private static GridClientNode defaultNode(GridClient client, GridClientConfiguration clientCfg) throws GridClientException {
-        GridClientNode node;
-
-        // Prefer node from connect string.
-        final String cfgAddr = clientCfg.getServers().iterator().next();
-
-        String[] parts = cfgAddr.split(":");
-
-        if (DFLT_HOST.equals(parts[0])) {
-            InetAddress addr;
-
-            try {
-                addr = IgniteUtils.getLocalHost();
-            }
-            catch (IOException e) {
-                throw new GridClientException("Can't get localhost name.", e);
-            }
-
-            if (addr.isLoopbackAddress())
-                throw new GridClientException("Can't find localhost name.");
-
-            String origAddr = addr.getHostName() + ":" + parts[1];
-
-            node = listHosts(client).filter(tuple -> origAddr.equals(tuple.get2())).findFirst().map(IgniteBiTuple::get1).orElse(null);
-
-            if (node == null)
-                node = listHostsByClientNode(client).filter(tuple -> tuple.get2().size() == 1 && cfgAddr.equals(tuple.get2().get(0))).
-                    findFirst().map(IgniteBiTuple::get1).orElse(null);
-        }
-        else
-            node = listHosts(client).filter(tuple -> cfgAddr.equals(tuple.get2())).findFirst().map(IgniteBiTuple::get1).orElse(null);
-
-        // Otherwise choose random node.
-        if (node == null)
-            node = balancedNode(client.compute());
-
-        return node;
     }
 
     /**
@@ -312,5 +243,11 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
     /** */
     public GridClientConfiguration clientConfiguration() {
         return clientCfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        if (client != null)
+            client.close();
     }
 }

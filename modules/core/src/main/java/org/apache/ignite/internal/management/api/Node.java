@@ -17,21 +17,34 @@
 
 package org.apache.ignite.internal.management.api;
 
-import java.util.function.Consumer;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientException;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
- * Command that must be executed directly using {@link GridClient} instance.
+ * Cluster node representation required for management API.
+ *
+ * @see ComputeCommand#nodes(Map, IgniteDataTransferObject)
  */
-public interface LocalCommand<A extends IgniteDataTransferObject, R> extends Command<A, R> {
+public interface Node {
     /**
-     * @param cli Grid client instance.
-     * @param arg Command argument.
-     * @param printer Results printer.
-     * @return Command result.
-     * @throws GridClientException In case of error.
+     * @see ClusterNode#id()
      */
-    public R execute(GridClient cli, A arg, Consumer<String> printer) throws GridClientException;
+    public UUID id();
+
+    /**
+     * @see ClusterNode#consistentId()
+     */
+    public Object consistentId();
+
+    /**
+     * @see ClusterNode#order()
+     */
+    public long order();
+
+    /**
+     * @see ClusterNode#isClient()
+     */
+    public boolean isClient();
 }

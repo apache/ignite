@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
+import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.api.PreparableCommand;
@@ -45,7 +46,7 @@ public class DeactivateCommand implements LocalCommand<DeactivateCommandArg, NoA
     }
 
     /** {@inheritDoc} */
-    @Override public NoArg execute(GridClient cli, DeactivateCommandArg arg, Consumer<String> printer) throws Exception {
+    @Override public NoArg execute(GridClient cli, DeactivateCommandArg arg, Consumer<String> printer) throws GridClientException {
         GridClientClusterState state = cli.state();
 
         state.state(INACTIVE, arg.force());

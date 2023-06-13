@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management;
 import java.util.function.Consumer;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.management.api.LocalCommand;
 
 /** */
@@ -35,7 +36,7 @@ public class SetStateCommand implements LocalCommand<SetStateCommandArg, Boolean
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean execute(GridClient cli, SetStateCommandArg arg, Consumer<String> printer) throws Exception {
+    @Override public Boolean execute(GridClient cli, SetStateCommandArg arg, Consumer<String> printer) throws GridClientException {
         ClusterState clusterState = cli.state().state();
 
         if (clusterState == arg.state()) {

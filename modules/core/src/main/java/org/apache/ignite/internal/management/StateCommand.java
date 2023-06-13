@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
+import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.util.lang.GridTuple3;
@@ -41,7 +42,11 @@ public class StateCommand implements LocalCommand<NoArg, GridTuple3<UUID, String
     }
 
     /** {@inheritDoc} */
-    @Override public GridTuple3<UUID, String, ClusterState> execute(GridClient cli, NoArg arg, Consumer<String> printer) throws Exception {
+    @Override public GridTuple3<UUID, String, ClusterState> execute(
+        GridClient cli,
+        NoArg arg,
+        Consumer<String> printer
+    ) throws GridClientException {
         GridClientClusterState state = cli.state();
 
         printer.accept("Cluster  ID: " + state.id());
