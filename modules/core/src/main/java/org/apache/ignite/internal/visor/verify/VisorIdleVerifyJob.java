@@ -23,19 +23,19 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobContext;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommandArg;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
-
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  *
  */
-class VisorIdleVerifyJob<ResultT> extends VisorJob<VisorIdleVerifyTaskArg, ResultT> {
+class VisorIdleVerifyJob<ResultT> extends VisorJob<CacheIdleVerifyCommandArg, ResultT> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -51,7 +51,7 @@ class VisorIdleVerifyJob<ResultT> extends VisorJob<VisorIdleVerifyTaskArg, Resul
     private IgniteLogger log;
 
     /** Task class for execution */
-    private final Class<? extends ComputeTask<VisorIdleVerifyTaskArg, ResultT>> taskCls;
+    private final Class<? extends ComputeTask<CacheIdleVerifyCommandArg, ResultT>> taskCls;
 
     /**
      * @param arg Argument.
@@ -59,16 +59,16 @@ class VisorIdleVerifyJob<ResultT> extends VisorJob<VisorIdleVerifyTaskArg, Resul
      * @param taskCls Task class for execution.
      */
     VisorIdleVerifyJob(
-        VisorIdleVerifyTaskArg arg,
+        CacheIdleVerifyCommandArg arg,
         boolean debug,
-        Class<? extends ComputeTask<VisorIdleVerifyTaskArg, ResultT>> taskCls
+        Class<? extends ComputeTask<CacheIdleVerifyCommandArg, ResultT>> taskCls
     ) {
         super(arg, debug);
         this.taskCls = taskCls;
     }
 
     /** {@inheritDoc} */
-    @Override protected ResultT run(VisorIdleVerifyTaskArg arg) throws IgniteException {
+    @Override protected ResultT run(CacheIdleVerifyCommandArg arg) throws IgniteException {
         try {
             if (fut == null) {
                 fut = ignite.context().task().execute(taskCls, arg, options(ignite.cluster().forServers().nodes()));

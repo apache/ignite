@@ -26,6 +26,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.management.SystemViewCommandArg;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
@@ -47,13 +48,13 @@ import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.Si
 /** Reperesents visor task for obtaining system view content. */
 @GridInternal
 @GridVisorManagementTask
-public class VisorSystemViewTask extends VisorMultiNodeTask<VisorSystemViewTaskArg, VisorSystemViewTaskResult,
+public class VisorSystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg, VisorSystemViewTaskResult,
     VisorSystemViewTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorSystemViewTaskArg, VisorSystemViewTaskResult> job(VisorSystemViewTaskArg arg) {
+    @Override protected VisorJob<SystemViewCommandArg, VisorSystemViewTaskResult> job(SystemViewCommandArg arg) {
         return new VisorSystemViewJob(arg, false);
     }
 
@@ -80,7 +81,7 @@ public class VisorSystemViewTask extends VisorMultiNodeTask<VisorSystemViewTaskA
     }
 
     /** */
-    private static class VisorSystemViewJob extends VisorJob<VisorSystemViewTaskArg, VisorSystemViewTaskResult> {
+    private static class VisorSystemViewJob extends VisorJob<SystemViewCommandArg, VisorSystemViewTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -90,12 +91,15 @@ public class VisorSystemViewTask extends VisorMultiNodeTask<VisorSystemViewTaskA
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSystemViewJob(@Nullable VisorSystemViewTaskArg arg, boolean debug) {
+        protected VisorSystemViewJob(@Nullable SystemViewCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorSystemViewTaskResult run(@Nullable VisorSystemViewTaskArg arg) throws IgniteException {
+        @Override protected VisorSystemViewTaskResult run(@Nullable SystemViewCommandArg arg) throws IgniteException {
+            if (arg == null)
+                return null;
+
             SystemView<?> sysView = systemView(arg.systemViewName());
 
             if (sysView == null)

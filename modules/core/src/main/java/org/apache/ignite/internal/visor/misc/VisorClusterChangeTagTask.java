@@ -20,29 +20,29 @@ package org.apache.ignite.internal.visor.misc;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.management.ChangeTagCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorClusterChangeTagTask extends VisorOneNodeTask<VisorClusterChangeTagTaskArg, VisorClusterChangeTagTaskResult> {
+public class VisorClusterChangeTagTask extends VisorOneNodeTask<ChangeTagCommandArg, VisorClusterChangeTagTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorClusterChangeTagTaskArg, VisorClusterChangeTagTaskResult> job(
-        VisorClusterChangeTagTaskArg arg) {
+    @Override protected VisorJob<ChangeTagCommandArg, VisorClusterChangeTagTaskResult> job(
+        ChangeTagCommandArg arg) {
         return new VisorClusterChangeTagJob(arg, debug);
     }
 
     /** */
-    private static class VisorClusterChangeTagJob extends VisorJob<VisorClusterChangeTagTaskArg, VisorClusterChangeTagTaskResult> {
+    private static class VisorClusterChangeTagJob extends VisorJob<ChangeTagCommandArg, VisorClusterChangeTagTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -53,15 +53,15 @@ public class VisorClusterChangeTagTask extends VisorOneNodeTask<VisorClusterChan
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
         VisorClusterChangeTagJob(
-            @Nullable VisorClusterChangeTagTaskArg arg, boolean debug) {
+            ChangeTagCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
         @Override protected VisorClusterChangeTagTaskResult run(
-            @Nullable VisorClusterChangeTagTaskArg arg
+            ChangeTagCommandArg arg
         ) throws IgniteException {
-            return update(arg.newTag());
+            return update(arg.newTagValue());
         }
 
         /**

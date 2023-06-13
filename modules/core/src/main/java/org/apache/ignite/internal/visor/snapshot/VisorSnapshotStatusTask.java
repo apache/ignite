@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationRequest;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -48,17 +49,17 @@ import static org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask.
  * Task to get the status of the current snapshot operation in the cluster.
  */
 @GridInternal
-public class VisorSnapshotStatusTask extends VisorMultiNodeTask<Void, VisorSnapshotTaskResult, SnapshotStatus> {
+public class VisorSnapshotStatusTask extends VisorMultiNodeTask<NoArg, VisorSnapshotTaskResult, SnapshotStatus> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<Void, SnapshotStatus> job(Void arg) {
+    @Override protected VisorJob<NoArg, SnapshotStatus> job(NoArg arg) {
         return new VisorSnapshotStatusJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<Void> arg) {
+    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<NoArg> arg) {
         return F.nodeIds(ignite.cluster().forServers().nodes());
     }
 
@@ -93,7 +94,7 @@ public class VisorSnapshotStatusTask extends VisorMultiNodeTask<Void, VisorSnaps
     }
 
     /** */
-    private static class VisorSnapshotStatusJob extends VisorSnapshotJob<Void, SnapshotStatus> {
+    private static class VisorSnapshotStatusJob extends VisorSnapshotJob<NoArg, SnapshotStatus> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -101,12 +102,12 @@ public class VisorSnapshotStatusTask extends VisorMultiNodeTask<Void, VisorSnaps
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotStatusJob(@Nullable Void arg, boolean debug) {
+        protected VisorSnapshotStatusJob(@Nullable NoArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected SnapshotStatus run(@Nullable Void arg) throws IgniteException {
+        @Override protected SnapshotStatus run(@Nullable NoArg arg) throws IgniteException {
             if (!CU.isPersistenceEnabled(ignite.context().config()))
                 return null;
 

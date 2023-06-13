@@ -25,6 +25,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.management.cache.CacheScanCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -39,19 +40,19 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorCacheScanTask extends VisorOneNodeTask<VisorCacheScanTaskArg, VisorCacheScanTaskResult> {
+public class VisorCacheScanTask extends VisorOneNodeTask<CacheScanCommandArg, VisorCacheScanTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCacheScanJob job(VisorCacheScanTaskArg arg) {
+    @Override protected VisorCacheScanJob job(CacheScanCommandArg arg) {
         return new VisorCacheScanJob(arg, debug);
     }
 
     /**
      * Job that stop specified caches.
      */
-    private static class VisorCacheScanJob extends VisorJob<VisorCacheScanTaskArg, VisorCacheScanTaskResult> {
+    private static class VisorCacheScanJob extends VisorJob<CacheScanCommandArg, VisorCacheScanTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -61,16 +62,16 @@ public class VisorCacheScanTask extends VisorOneNodeTask<VisorCacheScanTaskArg, 
          * @param arg Task argument.
          * @param debug Debug flag.
          */
-        private VisorCacheScanJob(VisorCacheScanTaskArg arg, boolean debug) {
+        private VisorCacheScanJob(CacheScanCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorCacheScanTaskResult run(VisorCacheScanTaskArg arg) {
-            if (F.isEmpty(arg.getCacheName()))
+        @Override protected VisorCacheScanTaskResult run(CacheScanCommandArg arg) {
+            if (F.isEmpty(arg.cacheName()))
                 throw new IllegalStateException("Cache name was not specified.");
 
-            if (arg.getLimit() <= 0)
+            if (arg.limit() <= 0)
                 throw new IllegalStateException("Invalid limit value.");
 
             List<String> titles = Arrays.asList("Key Class", "Key", "Value Class", "Value");
@@ -78,12 +79,12 @@ public class VisorCacheScanTask extends VisorOneNodeTask<VisorCacheScanTaskArg, 
             int cnt = 0;
             List<List<?>> entries = new ArrayList<>();
 
-            for (Cache.Entry<?, ?> entry : ignite.cache(arg.getCacheName()).withKeepBinary()) {
+            for (Cache.Entry<?, ?> entry : ignite.cache(arg.cacheName()).withKeepBinary()) {
                 Object k = entry.getKey();
                 Object v = entry.getValue();
                 entries.add(Arrays.asList(typeOf(k), valueOf(k), typeOf(v), valueOf(v)));
 
-                if (++cnt >= arg.getLimit())
+                if (++cnt >= arg.limit())
                     break;
             }
 

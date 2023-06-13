@@ -19,30 +19,30 @@ package org.apache.ignite.internal.visor.query;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.QueryMXBeanImpl;
+import org.apache.ignite.internal.management.kill.KillScanCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Task to cancel scan queries.
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorScanQueryCancelTask extends VisorOneNodeTask<VisorScanQueryCancelTaskArg, Void> {
+public class VisorScanQueryCancelTask extends VisorOneNodeTask<KillScanCommandArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorScanQueryCancelJob job(VisorScanQueryCancelTaskArg arg) {
+    @Override protected VisorScanQueryCancelJob job(KillScanCommandArg arg) {
         return new VisorScanQueryCancelJob(arg, debug);
     }
 
     /**
      * Job to cancel scan queries on node.
      */
-    private static class VisorScanQueryCancelJob extends VisorJob<VisorScanQueryCancelTaskArg, Void> {
+    private static class VisorScanQueryCancelJob extends VisorJob<KillScanCommandArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -52,14 +52,14 @@ public class VisorScanQueryCancelTask extends VisorOneNodeTask<VisorScanQueryCan
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorScanQueryCancelJob(@Nullable VisorScanQueryCancelTaskArg arg, boolean debug) {
+        protected VisorScanQueryCancelJob(KillScanCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(@Nullable VisorScanQueryCancelTaskArg arg) throws IgniteException {
+        @Override protected Void run(KillScanCommandArg arg) throws IgniteException {
             new QueryMXBeanImpl(ignite.context())
-                .cancelScan(arg.getOriginNodeId(), arg.getCacheName(), arg.getQueryId());
+                .cancelScan(arg.originNodeId(), arg.cacheName(), arg.queryId());
 
             return null;
         }

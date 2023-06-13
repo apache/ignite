@@ -69,7 +69,7 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
     private IgniteLogger log;
 
     /** Cache group names. */
-    private Set<String> grpNames;
+    private String[] grpNames;
 
     /** Remove garbage. */
     private final boolean deleteGarbage;
@@ -90,7 +90,7 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
      * @param grpNames Cache group names.
      * @param deleteGarbage Clean up garbage from partitions.
      */
-    public VisorFindAndDeleteGarbageInPersistenceClosure(Set<String> grpNames, boolean deleteGarbage) {
+    public VisorFindAndDeleteGarbageInPersistenceClosure(String[] grpNames, boolean deleteGarbage) {
         this.grpNames = grpNames;
         this.deleteGarbage = deleteGarbage;
     }

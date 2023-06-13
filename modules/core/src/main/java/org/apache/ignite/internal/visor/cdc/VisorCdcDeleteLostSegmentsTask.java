@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.cdc.CdcFileLockHolder;
+import org.apache.ignite.internal.management.cdc.CdcDeleteLostSegmentLinksCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -39,7 +40,6 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.internal.cdc.CdcConsumerState.WAL_STATE_FILE_NAME;
 import static org.apache.ignite.internal.cdc.CdcMain.STATE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
@@ -48,12 +48,12 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
  * Task to delete lost segment CDC links.
  */
 @GridInternal
-public class VisorCdcDeleteLostSegmentsTask extends VisorMultiNodeTask<Void, Void, Void> {
+public class VisorCdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostSegmentLinksCommandArg, Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<Void, Void> job(Void arg) {
+    @Override protected VisorJob<CdcDeleteLostSegmentLinksCommandArg, Void> job(CdcDeleteLostSegmentLinksCommandArg arg) {
         return new VisorCdcDeleteLostSegmentsJob(arg, false);
     }
 
@@ -70,7 +70,7 @@ public class VisorCdcDeleteLostSegmentsTask extends VisorMultiNodeTask<Void, Voi
     }
 
     /** */
-    private static class VisorCdcDeleteLostSegmentsJob extends VisorJob<Void, Void> {
+    private static class VisorCdcDeleteLostSegmentsJob extends VisorJob<CdcDeleteLostSegmentLinksCommandArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -84,12 +84,12 @@ public class VisorCdcDeleteLostSegmentsTask extends VisorMultiNodeTask<Void, Voi
          * @param arg   Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorCdcDeleteLostSegmentsJob(Void arg, boolean debug) {
+        protected VisorCdcDeleteLostSegmentsJob(CdcDeleteLostSegmentLinksCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Void arg) throws IgniteException {
+        @Override protected Void run(CdcDeleteLostSegmentLinksCommandArg arg) throws IgniteException {
             FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ignite.context().cache().context().wal(true);
 
             File walCdcDir = wal.walCdcDirectory();

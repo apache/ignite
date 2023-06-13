@@ -24,7 +24,7 @@ import java.util.HashSet;
 import java.util.Map;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.commandline.TracingConfigurationCommand;
+import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand;
 import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTaskResult;
 import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;

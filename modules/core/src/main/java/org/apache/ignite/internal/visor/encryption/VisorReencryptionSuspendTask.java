@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.management.encryption.EncryptionCacheGroupArg;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -35,8 +36,8 @@ public class VisorReencryptionSuspendTask extends VisorCacheGroupEncryptionTask<
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorCacheGroupEncryptionTaskArg, VisorSingleFieldDto<Boolean>> job(
-        VisorCacheGroupEncryptionTaskArg arg) {
+    @Override protected VisorJob<EncryptionCacheGroupArg, VisorSingleFieldDto<Boolean>> job(
+        EncryptionCacheGroupArg arg) {
         return new VisorReencryptionSuspendJob(arg, debug);
     }
 
@@ -49,7 +50,7 @@ public class VisorReencryptionSuspendTask extends VisorCacheGroupEncryptionTask<
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorReencryptionSuspendJob(@Nullable VisorCacheGroupEncryptionTaskArg arg, boolean debug) {
+        protected VisorReencryptionSuspendJob(@Nullable EncryptionCacheGroupArg arg, boolean debug) {
             super(arg, debug);
         }
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.service;
 
 import org.apache.ignite.internal.ServiceMXBeanImpl;
+import org.apache.ignite.internal.management.kill.KillServiceCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -29,19 +30,19 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorCancelServiceTask extends VisorOneNodeTask<VisorCancelServiceTaskArg, Void> {
+public class VisorCancelServiceTask extends VisorOneNodeTask<KillServiceCommandArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCancelServiceJob job(VisorCancelServiceTaskArg arg) {
+    @Override protected VisorCancelServiceJob job(KillServiceCommandArg arg) {
         return new VisorCancelServiceJob(arg, debug);
     }
 
     /**
      * Job for cancel services with specified name.
      */
-    private static class VisorCancelServiceJob extends VisorJob<VisorCancelServiceTaskArg, Void> {
+    private static class VisorCancelServiceJob extends VisorJob<KillServiceCommandArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -51,13 +52,13 @@ public class VisorCancelServiceTask extends VisorOneNodeTask<VisorCancelServiceT
          * @param arg Job argument.
          * @param debug Debug flag.
          */
-        protected VisorCancelServiceJob(VisorCancelServiceTaskArg arg, boolean debug) {
+        protected VisorCancelServiceJob(KillServiceCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(final VisorCancelServiceTaskArg arg) {
-            new ServiceMXBeanImpl(ignite.context()).cancel(arg.getName());
+        @Override protected Void run(final KillServiceCommandArg arg) {
+            new ServiceMXBeanImpl(ignite.context()).cancel(arg.name());
 
             return null;
         }

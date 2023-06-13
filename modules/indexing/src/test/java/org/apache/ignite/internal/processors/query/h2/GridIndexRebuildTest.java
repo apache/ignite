@@ -44,11 +44,11 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.ComputeTaskInternalFuture;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandArg;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -216,10 +216,14 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         ImmutableSet<UUID> nodes = ImmutableSet.of(grid(2).localNode().id(), grid(3).localNode().id());
 
-        VisorValidateIndexesTaskArg arg = new VisorValidateIndexesTaskArg(null,
-            null, 10000, 1, true, true);
+        CacheValidateIndexesCommandArg arg = new CacheValidateIndexesCommandArg();
 
-        VisorTaskArgument<VisorValidateIndexesTaskArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
+        arg.checkFirst(10000);
+        arg.checkThrough(1);
+        arg.checkCrc(true);
+        arg.checkSizes(true);
+
+        VisorTaskArgument<CacheValidateIndexesCommandArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
 
         ComputeTaskInternalFuture<VisorValidateIndexesTaskResult> exec = grid1.context().task().
             execute(new VisorValidateIndexesTask(), visorTaskArg);
@@ -311,10 +315,14 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         ImmutableSet<UUID> nodes = ImmutableSet.of(grid(2).localNode().id(), grid(3).localNode().id());
 
-        VisorValidateIndexesTaskArg arg = new VisorValidateIndexesTaskArg(null,
-            null, 10000, 1, true, true);
+        CacheValidateIndexesCommandArg arg = new CacheValidateIndexesCommandArg();
 
-        VisorTaskArgument<VisorValidateIndexesTaskArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
+        arg.checkFirst(10000);
+        arg.checkThrough(1);
+        arg.checkCrc(true);
+        arg.checkSizes(true);
+
+        VisorTaskArgument<CacheValidateIndexesCommandArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
 
         ComputeTaskInternalFuture<VisorValidateIndexesTaskResult> execute = grid1.context().task().
             execute(new VisorValidateIndexesTask(), visorTaskArg);

@@ -17,11 +17,16 @@
 
 package org.apache.ignite.internal.commandline;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.util.GridCommandHandlerAbstractTest;
 import org.junit.Test;
-
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.commandline.CommandsProviderExtImpl.TEST_COMMAND;
+import static org.apache.ignite.internal.commandline.CommandsProviderExtImpl.TEST_COMMAND_ARG;
+import static org.apache.ignite.internal.commandline.CommandsProviderExtImpl.TEST_COMMAND_OUTPUT;
+import static org.apache.ignite.internal.commandline.CommandsProviderExtImpl.TEST_COMMAND_USAGE;
+import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /**
@@ -32,26 +37,23 @@ public class ExtendedControlUtilityTest extends GridCommandHandlerAbstractTest {
      * Tests additional command for control-utility works.
      */
     @Test
-    public void testAdditionalCommand() {
-        autoConfirmation = false;
+    public void testAdditionalCommand() throws Exception {
+        try (Ignite grid = startGrid(0)) {
+            autoConfirmation = false;
 
-        injectTestSystemOut();
+            injectTestSystemOut();
 
-        String testVal = "test value";
+            String testVal = "test value";
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(CommandsProviderExtImpl.TEST_COMMAND.name()));
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(cmdText(TEST_COMMAND)));
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(cmdText(TEST_COMMAND), TEST_COMMAND_ARG));
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(cmdText(TEST_COMMAND), "unknownSubcommand", testVal));
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(CommandsProviderExtImpl.TEST_COMMAND.name(),
-            CommandsProviderExtImpl.TEST_COMMAND_ARG));
+            assertEquals(EXIT_CODE_OK, execute(cmdText(TEST_COMMAND), TEST_COMMAND_ARG, testVal));
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(CommandsProviderExtImpl.TEST_COMMAND.name(),
-            "unknownSubcommand", testVal));
-
-        assertEquals(EXIT_CODE_OK, execute(CommandsProviderExtImpl.TEST_COMMAND.name(),
-            CommandsProviderExtImpl.TEST_COMMAND_ARG, testVal));
-
-        assertContains(log, testOut.toString(), CommandsProviderExtImpl.TEST_COMMAND_OUTPUT);
-        assertContains(log, testOut.toString(), testVal);
+            assertContains(log, testOut.toString(), TEST_COMMAND_OUTPUT);
+            assertContains(log, testOut.toString(), testVal);
+        }
     }
 
     /**
@@ -65,7 +67,7 @@ public class ExtendedControlUtilityTest extends GridCommandHandlerAbstractTest {
 
         String testOutStr = testOut.toString();
 
-        assertContains(log, testOutStr, CommandsProviderExtImpl.TEST_COMMAND_USAGE);
-        assertContains(log, testOutStr, CommandsProviderExtImpl.TEST_COMMAND_ARG);
+        assertContains(log, testOutStr, TEST_COMMAND_USAGE);
+        assertContains(log, testOutStr, TEST_COMMAND_ARG);
     }
 }
