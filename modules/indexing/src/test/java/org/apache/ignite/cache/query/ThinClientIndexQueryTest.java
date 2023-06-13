@@ -396,7 +396,7 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testIndexQueryLimitOnOlderProtocolVersion() throws Exception {
-        // Exclude INDEX_QUERY_LIMIT from protocol
+        // Exclude INDEX_QUERY_LIMIT from protocol.
         Class<?> clazz = Class.forName("org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature");
 
         Field field = clazz.getDeclaredField("ALL_FEATURES_AS_ENUM_SET");

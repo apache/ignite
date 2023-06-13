@@ -92,7 +92,7 @@ public class IndexQueryLimitTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testSetLimit() throws Exception {
+    public void testSetLimit() {
         GridTestUtils.assertThrows(log, () -> new IndexQuery<>(Person.class, IDX).setLimit(0),
             IllegalArgumentException.class, "Limit must be positive.");
 
@@ -110,21 +110,16 @@ public class IndexQueryLimitTest extends GridCommonAbstractTest {
 
     /** */
     private void checkRangeQueries(int duplicates) throws Exception {
-        IndexQuery<Long, Person> qry = new IndexQuery<>(Person.class, IDX);
-
         // Add data
         insertData(duplicates);
 
         // All
         checkLimit(null, 0, CNT, duplicates);
 
-        String fld = "id";
-
         int pivot = new Random().nextInt(CNT);
 
         // Lt.
-        checkLimit(lt(fld, pivot), 0, pivot, duplicates);
-
+        checkLimit(lt("id", pivot), 0, pivot, duplicates);
     }
 
     /** */
