@@ -1017,13 +1017,11 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
                 w.writeInt(qry.getPartition() == null ? -1 : qry.getPartition());
 
                 if (!payloadCh.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.INDEX_QUERY_LIMIT)) {
-                    if (qry.getLimit() > 0) {
+                    if (qry.getLimit() > 0)
                         throw new ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature.INDEX_QUERY_LIMIT);
-                    }
                 }
-                else {
+                else
                     w.writeInt(qry.getLimit());
-                }
 
                 w.writeString(qry.getValueType());
                 w.writeString(qry.getIndexName());
