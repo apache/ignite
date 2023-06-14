@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.systemview;
+package org.apache.ignite.internal.management;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -26,7 +26,6 @@ import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.management.SystemViewCommandArg;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
@@ -41,27 +40,27 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toSqlName;
-import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.DATE;
-import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.NUMBER;
-import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
+import static org.apache.ignite.internal.management.SystemViewCommandTask.SimpleType.DATE;
+import static org.apache.ignite.internal.management.SystemViewCommandTask.SimpleType.NUMBER;
+import static org.apache.ignite.internal.management.SystemViewCommandTask.SimpleType.STRING;
 
 /** Reperesents visor task for obtaining system view content. */
 @GridInternal
 @GridVisorManagementTask
-public class VisorSystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg, VisorSystemViewTaskResult,
-    VisorSystemViewTaskResult> {
+public class SystemViewCommandTask extends VisorMultiNodeTask<SystemViewCommandArg, SystemViewCommandTaskResult,
+        SystemViewCommandTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<SystemViewCommandArg, VisorSystemViewTaskResult> job(SystemViewCommandArg arg) {
+    @Override protected VisorJob<SystemViewCommandArg, SystemViewCommandTaskResult> job(SystemViewCommandArg arg) {
         return new VisorSystemViewJob(arg, false);
     }
 
     /** {@inheritDoc} */
-    @Override protected @Nullable VisorSystemViewTaskResult reduce0(List<ComputeJobResult> results)
+    @Override protected @Nullable SystemViewCommandTaskResult reduce0(List<ComputeJobResult> results)
         throws IgniteException {
-        VisorSystemViewTaskResult res = null;
+        SystemViewCommandTaskResult res = null;
 
         Map<UUID, List<List<?>>> merged = new TreeMap<>();
 
@@ -77,11 +76,11 @@ public class VisorSystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg
             merged.putAll(res.rows());
         }
 
-        return new VisorSystemViewTaskResult(res.attributes(), res.types(), merged);
+        return new SystemViewCommandTaskResult(res.attributes(), res.types(), merged);
     }
 
     /** */
-    private static class VisorSystemViewJob extends VisorJob<SystemViewCommandArg, VisorSystemViewTaskResult> {
+    private static class VisorSystemViewJob extends VisorJob<SystemViewCommandArg, SystemViewCommandTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -96,7 +95,7 @@ public class VisorSystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorSystemViewTaskResult run(@Nullable SystemViewCommandArg arg) throws IgniteException {
+        @Override protected SystemViewCommandTaskResult run(@Nullable SystemViewCommandArg arg) throws IgniteException {
             if (arg == null)
                 return null;
 
@@ -180,7 +179,7 @@ public class VisorSystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg
                 rows.add(attrVals);
             }
 
-            return new VisorSystemViewTaskResult(attrNames, attrTypes, singletonMap(ignite.localNode().id(), rows));
+            return new SystemViewCommandTaskResult(attrNames, attrTypes, singletonMap(ignite.localNode().id(), rows));
         }
 
         /**

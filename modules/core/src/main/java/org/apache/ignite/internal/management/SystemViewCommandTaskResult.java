@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.systemview;
+package org.apache.ignite.internal.management;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -25,10 +25,10 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType;
+import org.apache.ignite.internal.management.SystemViewCommandTask.SimpleType;
 
-/** Reperesents result of {@link VisorSystemViewTask}. */
-public class VisorSystemViewTaskResult extends IgniteDataTransferObject {
+/** Reperesents result of {@link SystemViewCommandTask}. */
+public class SystemViewCommandTaskResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,7 +42,7 @@ public class VisorSystemViewTaskResult extends IgniteDataTransferObject {
     List<SimpleType> types;
 
     /** Default constructor. */
-    public VisorSystemViewTaskResult() {
+    public SystemViewCommandTaskResult() {
         // No-op.
     }
 
@@ -51,7 +51,7 @@ public class VisorSystemViewTaskResult extends IgniteDataTransferObject {
      * @param types Types of the system view attributes.
      * @param rows Attribute values for each row of the system view per node ID.
      */
-    public VisorSystemViewTaskResult(List<String> attrs, List<SimpleType> types, Map<UUID, List<List<?>>> rows) {
+    public SystemViewCommandTaskResult(List<String> attrs, List<SimpleType> types, Map<UUID, List<List<?>>> rows) {
         this.attrs = attrs;
         this.types = types;
         this.rows = rows;

@@ -119,8 +119,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.util.GridUnsafe.allocateBuffer;
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 import static org.apache.ignite.internal.util.GridUnsafe.freeBuffer;
-import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.NUMBER;
-import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
+import static org.apache.ignite.internal.management.SystemViewCommandTask.SimpleType.NUMBER;
+import static org.apache.ignite.internal.management.SystemViewCommandTask.SimpleType.STRING;
 
 /**
  * Offline reader for index files.

@@ -74,7 +74,7 @@ import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
+import org.apache.ignite.internal.management.SystemViewCommandTask;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.AttributeVisitor;
@@ -306,7 +306,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             COMPUTE_JOB_BLOCK_LATCH.await();
 
             List<List<String>> tasksView = systemView(ignite0, TASKS_VIEW).stream()
-                .filter(row -> !VisorSystemViewTask.class.getName().equals(row.get(3)))
+                .filter(row -> !SystemViewCommandTask.class.getName().equals(row.get(3)))
                 .collect(Collectors.toList());
 
             assertEquals(tasksCnt, tasksView.size());

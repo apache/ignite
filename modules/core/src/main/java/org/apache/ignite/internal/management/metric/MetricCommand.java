@@ -33,7 +33,7 @@ import org.apache.ignite.internal.visor.metric.VisorMetricTask;
 import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.management.SystemViewCommand.printTable;
 import static org.apache.ignite.internal.management.api.CommandUtils.nodeOrNull;
-import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
+import static org.apache.ignite.internal.management.SystemViewCommandTask.SimpleType.STRING;
 
 /** Command for printing metric values. */
 @CliSubcommandsWithPrefix
