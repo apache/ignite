@@ -1127,7 +1127,6 @@ public class SnapshotRestoreProcess {
                             "[reqId=" + reqId +
                             ", snapshot=" + opCtx0.snpName +
                             ", nodeId=" + m.getKey() +
-                            ", consistentId=" + ctx.discovery().node(m.getKey()).consistentId() +
                             ", grpParts=" + partitionsMapToString(m.getValue(), cacheGrpNames) + "]");
                     }
 
@@ -1860,7 +1859,8 @@ public class SnapshotRestoreProcess {
     private String partitionsMapToString(Map<Integer, Set<Integer>> map, Map<Integer, String> cacheGrpNames) {
         return map.entrySet()
             .stream()
-            .collect(Collectors.toMap(e -> String.format("{grpId=%d, grpName=%s}", e.getKey(), cacheGrpNames.get(e.getKey())),
+            .collect(Collectors.toMap(
+                e -> String.format("{grpId=%d, grpName=%s}", e.getKey(), cacheGrpNames.get(e.getKey())),
                 e -> S.toStringSortedDistinct(e.getValue())))
             .toString();
     }
