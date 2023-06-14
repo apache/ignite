@@ -15,20 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.internal.processors.query.running;
 
-import java.util.UUID;
+import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Query, that can be tracked by {@link HeavyQueriesTracker}.
  */
-public interface RunningQuery {
-    /** */
-    UUID id();
+public interface TrackableQuery {
+    /** Query execution time. */
+    public long time();
 
-    /** */
-    QueryState state();
-
-    /** */
-    void cancel();
+    /** Query info to print to log. */
+    public String queryInfo(@Nullable String additinalInfo);
 }

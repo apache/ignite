@@ -41,6 +41,8 @@ import org.apache.ignite.internal.processors.cache.warmup.WarmUpMXBeanImpl;
 import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustMXBeanImpl;
 import org.apache.ignite.internal.processors.metric.MetricsMxBeanImpl;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsMBeanImpl;
+import org.apache.ignite.internal.processors.query.running.SqlQueryMXBean;
+import org.apache.ignite.internal.processors.query.running.SqlQueryMXBeanImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.FailureHandlingMxBeanImpl;
 import org.apache.ignite.internal.worker.WorkersControlMXBeanImpl;
@@ -165,8 +167,10 @@ public class IgniteMBeansManager {
         registerMBean("Kernal", blockOpCtrlMXBean.getClass().getSimpleName(), blockOpCtrlMXBean,
             FailureHandlingMxBean.class);
 
-        if (ctx.query().indexingEnabled())
-            ctx.query().getIndexing().registerMxBeans(this);
+        if (ctx.query().moduleEnabled()) {
+            SqlQueryMXBean sqlQryMXBean = new SqlQueryMXBeanImpl(ctx);
+            registerMBean("SQL Query", sqlQryMXBean.getClass().getSimpleName(), sqlQryMXBean, SqlQueryMXBean.class);
+        }
 
         PerformanceStatisticsMBeanImpl performanceStatMbean = new PerformanceStatisticsMBeanImpl(ctx);
         registerMBean("PerformanceStatistics", performanceStatMbean.getClass().getSimpleName(), performanceStatMbean,

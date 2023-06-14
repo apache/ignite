@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.Query;
 import org.apache.ignite.internal.processors.query.calcite.QueryRegistry;
@@ -128,7 +127,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         messageService().send(nodeId, new QueryBatchMessage(qryId, fragmentId, exchangeId, batchId, last, Commons.cast(rows)));
 
         if (batchId == 0) {
-            Query<?> qry = (Query<?>)qryRegistry.query(qryId);
+            Query<?> qry = qryRegistry.query(qryId);
 
             if (qry != null)
                 qry.onOutboundExchangeStarted(nodeId, exchangeId);
@@ -184,7 +183,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** {@inheritDoc} */
     @Override public void onOutboundExchangeFinished(UUID qryId, long exchangeId) {
-        Query<?> qry = (Query<?>)qryRegistry.query(qryId);
+        Query<?> qry = qryRegistry.query(qryId);
 
         if (qry != null)
             qry.onOutboundExchangeFinished(exchangeId);
@@ -192,10 +191,15 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** {@inheritDoc} */
     @Override public void onInboundExchangeFinished(UUID nodeId, UUID qryId, long exchangeId) {
-        Query<?> qry = (Query<?>)qryRegistry.query(qryId);
+        Query<?> qry = qryRegistry.query(qryId);
 
         if (qry != null)
             qry.onInboundExchangeFinished(nodeId, exchangeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID localNodeId() {
+        return locaNodeId;
     }
 
     /** */
@@ -217,7 +221,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** */
     protected void onMessage(UUID nodeId, QueryCloseMessage msg) {
-        RunningQuery qry = qryRegistry.query(msg.queryId());
+        Query<?> qry = qryRegistry.query(msg.queryId());
 
         if (qry != null)
             qry.cancel();
@@ -270,7 +274,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         if (inbox != null) {
             try {
                 if (msg.batchId() == 0) {
-                    Query<?> qry = (Query<?>)qryRegistry.query(msg.queryId());
+                    Query<?> qry = qryRegistry.query(msg.queryId());
 
                     if (qry != null)
                         qry.onInboundExchangeStarted(nodeId, msg.exchangeId());
