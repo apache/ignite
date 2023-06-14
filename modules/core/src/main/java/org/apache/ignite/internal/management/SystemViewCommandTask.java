@@ -39,10 +39,10 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.Attrib
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonMap;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toSqlName;
 import static org.apache.ignite.internal.management.SystemViewCommandTask.SimpleType.DATE;
 import static org.apache.ignite.internal.management.SystemViewCommandTask.SimpleType.NUMBER;
 import static org.apache.ignite.internal.management.SystemViewCommandTask.SimpleType.STRING;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toSqlName;
 
 /** Reperesents visor task for obtaining system view content. */
 @GridInternal
