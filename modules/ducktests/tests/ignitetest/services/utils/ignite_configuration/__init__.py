@@ -30,6 +30,7 @@ from ignitetest.services.utils.ignite_configuration.binary_configuration import 
 from ignitetest.services.utils.ignite_configuration.transaction import TransactionConfiguration
 from ignitetest.services.utils.ssl.ssl_params import SslParams, is_ssl_enabled, get_ssl_params, IGNITE_CLIENT_ALIAS, \
     IGNITE_SERVER_ALIAS
+from ignitetest.utils.bean import Bean
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
 
 
@@ -72,6 +73,7 @@ class IgniteConfiguration(NamedTuple):
     sql_schemas: list = []
     auto_activation_enabled: bool = None
     transaction_configuration: TransactionConfiguration = None
+    sql_configuration: Bean = None
 
     def prepare_ssl(self, test_globals, shared_root):
         """
