@@ -1127,7 +1127,6 @@ public class SnapshotRestoreProcess {
                             "[reqId=" + reqId +
                             ", snapshot=" + opCtx0.snpName +
                             ", nodeId=" + m.getKey() +
-                            ", consistentId=" + ctx.discovery().node(m.getKey()).consistentId() +
                             ", grpParts=" + partitionsMapToString(m.getValue(), cacheGrpNames) + "]");
                     }
 
