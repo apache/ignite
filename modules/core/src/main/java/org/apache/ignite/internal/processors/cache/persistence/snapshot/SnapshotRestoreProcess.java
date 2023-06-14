@@ -1021,11 +1021,15 @@ public class SnapshotRestoreProcess {
             Map<Integer, Set<PartitionRestoreFuture>> rmtLoadParts = new HashMap<>();
             ClusterNode locNode = ctx.cache().context().localNode();
             List<SnapshotMetadata> locMetas = opCtx0.metasPerNode.get(locNode.id());
+            Map<Integer, String> cacheGrpNames = new HashMap<>();
 
             // First preload everything from the local node.
             for (File dir : opCtx0.dirs) {
                 String cacheOrGrpName = cacheGroupName(dir);
                 int grpId = CU.cacheId(cacheOrGrpName);
+
+                if (log.isInfoEnabled())
+                    cacheGrpNames.put(grpId, cacheOrGrpName);
 
                 File tmpCacheDir = formatTmpDirName(dir);
                 tmpCacheDir.mkdir();
@@ -1117,15 +1121,16 @@ public class SnapshotRestoreProcess {
                     rmtLoadParts.get(grpId).remove(new PartitionRestoreFuture(partId, opCtx0.processedParts)));
 
             try {
-                if (log.isInfoEnabled() && !snpAff.isEmpty()) {
-                    log.info("Trying to request partitions from remote nodes " +
-                        "[reqId=" + reqId +
-                        ", snapshot=" + opCtx0.snpName +
-                        ", map=" + snpAff.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
-                            e -> partitionsMapToString(e.getValue()))) + ']');
-                }
-
                 for (Map.Entry<UUID, Map<Integer, Set<Integer>>> m : snpAff.entrySet()) {
+                    if (log.isInfoEnabled()) {
+                        log.info("Trying to request partitions from remote node " +
+                            "[reqId=" + reqId +
+                            ", snapshot=" + opCtx0.snpName +
+                            ", nodeId=" + m.getKey() +
+                            ", consistentId=" + ctx.discovery().node(m.getKey()).consistentId() +
+                            ", grpParts=" + partitionsMapToString(m.getValue(), cacheGrpNames) + "]");
+                    }
+
                     ctx.cache().context().snapshotMgr()
                         .requestRemoteSnapshotFiles(m.getKey(),
                             opCtx0.reqId,
@@ -1849,12 +1854,14 @@ public class SnapshotRestoreProcess {
 
     /**
      * @param map Map of partitions and cache groups.
+     * @param cacheGrpNames Map of cache group ids and names.
      * @return String representation.
      */
-    private static String partitionsMapToString(Map<Integer, Set<Integer>> map) {
+    private String partitionsMapToString(Map<Integer, Set<Integer>> map, Map<Integer, String> cacheGrpNames) {
         return map.entrySet()
             .stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> S.toStringSortedDistinct(e.getValue())))
+            .collect(Collectors.toMap(e -> String.format("{grpId=%d, grpName=%s}", e.getKey(), cacheGrpNames.get(e.getKey())),
+                e -> S.toStringSortedDistinct(e.getValue())))
             .toString();
     }
 
