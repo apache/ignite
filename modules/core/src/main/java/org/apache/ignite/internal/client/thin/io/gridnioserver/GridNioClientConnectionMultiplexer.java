@@ -64,6 +64,9 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
     /** */
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
+    /** */
+    private final int connTimeout;
+
     /**
      * Constructor.
      *
@@ -85,6 +88,8 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
         }
         else
             filters = new GridNioFilter[] {codecFilter};
+
+        connTimeout = cfg.getTimeout();
 
         try {
             srv = GridNioServer.<ByteBuffer>builder()
@@ -142,7 +147,7 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
 
         try {
             SocketChannel ch = SocketChannel.open();
-            ch.socket().connect(new InetSocketAddress(addr.getHostName(), addr.getPort()), Integer.MAX_VALUE);
+            ch.socket().connect(new InetSocketAddress(addr.getHostName(), addr.getPort()), connTimeout);
 
             Map<Integer, Object> meta = new HashMap<>();
             GridNioFuture<?> sslHandshakeFut = null;
