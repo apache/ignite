@@ -54,7 +54,7 @@ public class SystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg, Sys
 
     /** {@inheritDoc} */
     @Override protected VisorJob<SystemViewCommandArg, SystemViewTaskResult> job(SystemViewCommandArg arg) {
-        return new VisorSystemViewJob(arg, false);
+        return new SystemViewJob(arg, false);
     }
 
     /** {@inheritDoc} */
@@ -80,7 +80,7 @@ public class SystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg, Sys
     }
 
     /** */
-    private static class VisorSystemViewJob extends VisorJob<SystemViewCommandArg, SystemViewTaskResult> {
+    private static class SystemViewJob extends VisorJob<SystemViewCommandArg, SystemViewTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -90,7 +90,7 @@ public class SystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg, Sys
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSystemViewJob(@Nullable SystemViewCommandArg arg, boolean debug) {
+        protected SystemViewJob(@Nullable SystemViewCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
