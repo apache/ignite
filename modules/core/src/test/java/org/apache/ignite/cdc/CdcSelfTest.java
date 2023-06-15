@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -82,6 +83,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assume.assumeTrue;
@@ -828,7 +830,25 @@ public class CdcSelfTest extends AbstractCdcTest {
         addData(cache, 0, 1);
 
         assertTrue(waitForCondition(() -> 2 == walCdcDir.list().length, 2 * WAL_ARCHIVE_TIMEOUT));
-        assertEquals(persistenceEnabled ? 3 : 2, archiveDir.listFiles().length);
+        assertEquals(3, archiveDir.listFiles().length);
+
+        UserCdcConsumer cnsmr = new UserCdcConsumer();
+
+        IgniteInternalFuture<?> cdcFut = runAsync(createCdc(cnsmr, getConfiguration(ign.name())));
+
+        waitForSize(1, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
+
+        // Cdc application must fail due to skipped data.
+        assertThrowsAnyCause(log, cdcFut::get, IgniteException.class, "Found missed segments. Some events are missed.");
+
+        ign.compute().execute(VisorCdcDeleteLostSegmentsTask.class, new VisorTaskArgument<>(ign.localNode().id(), false));
+
+        cdcFut = runAsync(createCdc(cnsmr, getConfiguration(ign.name())));
+        cnsmr.data.clear();
+
+        waitForSize(1, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
+
+        cdcFut.cancel();
     }
 
     /** */

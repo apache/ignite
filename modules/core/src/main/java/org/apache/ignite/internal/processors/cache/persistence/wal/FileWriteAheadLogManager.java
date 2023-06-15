@@ -112,6 +112,7 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -421,6 +422,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** CDC disabled flag. */
     private final DistributedBooleanProperty cdcDisabled = detachedBooleanProperty(CDC_DISABLED);
 
+    /** Segment IDs to skip the CDC hard link creation. */
+    private final Set<Long> cdcForceSkipSgmnts = new GridConcurrentHashSet<>(1);
+
     /**
      * Constructor.
      *
@@ -518,6 +522,18 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                             if (newVal != null && newVal)
                                 log.warning("CDC was disabled.");
+
+                            if (oldVal != null && oldVal && !newVal) {
+                                if (log.isInfoEnabled())
+                                    log.info("CDC was enabled.");
+
+                                if (inMemoryCdc) {
+                                    FileWriteHandle handle = currentHandle();
+
+                                    if (handle != null)
+                                        closeBufAndRollover(handle);
+                                }
+                            }
                         });
 
                         dispatcher.registerProperty(cdcDisabled);
@@ -887,14 +903,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         final FileWriteHandle handle = currentHandle();
 
-        try {
-            closeBufAndRollover(handle, null, RolloverType.NONE);
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Unable to perform segment rollover: " + e.getMessage(), e);
-
-            cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
-        }
+        closeBufAndRollover(handle);
     }
 
     /** */
@@ -925,13 +934,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             !(rec instanceof PageDeltaRecord || rec instanceof PageSnapshot || rec instanceof MemoryRecoveryRecord))
             return null;
 
-        if (inMemoryCdc && cdcDisabled.getOrDefault(false)) {
-            LT.warn(log, "Logging CDC data records to WAL skipped. '" + CDC_DISABLED +
-                "' distributed property is 'true'.");
-
-            return null;
-        }
-
         FileWriteHandle currWrHandle = currentHandle();
 
         WALDisableContext isDisable = walDisableContext;
@@ -939,6 +941,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         // Logging was not resumed yet.
         if (currWrHandle == null || (isDisable != null && isDisable.check()))
             return null;
+
+        if (inMemoryCdc && cdcDisabled.getOrDefault(false)) {
+            LT.warn(log, "Logging CDC data records to WAL skipped. '" + CDC_DISABLED +
+                "' distributed property is 'true'.");
+
+            cdcForceSkipSgmnts.add(currWrHandle.getSegmentId());
+
+            return null;
+        }
 
         // Do page snapshots compression if configured.
         if (pageCompression != DiskPageCompression.DISABLED && rec instanceof PageSnapshot) {
@@ -1012,6 +1023,18 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (isStopping())
                 throw new IgniteCheckedException("Stopping.");
+        }
+    }
+
+    /** */
+    private void closeBufAndRollover(FileWriteHandle currWriteHandle) {
+        try {
+            closeBufAndRollover(currWriteHandle, null, RolloverType.NONE);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Unable to perform segment rollover: " + e.getMessage(), e);
+
+            cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
         }
     }
 
@@ -2157,20 +2180,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 
-                if (walCdcDir != null) {
-                    if (!cdcDisabled.getOrDefault(false)) {
-                        if (checkCdcWalDirectorySize(dstFile.length()))
-                            Files.createLink(walCdcDir.toPath().resolve(dstFile.getName()), dstFile.toPath());
-                        else {
-                            log.error("Creation of segment CDC link skipped. Configured CDC directory " +
-                                "maximum size exceeded.");
-                        }
-                    }
-                    else {
-                        log.warning("Creation of segment CDC link skipped. " +
-                            "'" + CDC_DISABLED + "' distributed property is 'true'.");
-                    }
-                }
+                if (walCdcDir != null)
+                    createCdcLink(dstFile, absIdx);
 
                 if (mode != WALMode.NONE) {
                     try (FileIO f0 = ioFactory.create(dstFile, CREATE, READ, WRITE)) {
@@ -2235,6 +2246,32 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             isCancelled.set(false);
 
             new IgniteThread(archiver).start();
+        }
+
+        /** Create CDC hard link to the archived WAL segment. */
+        private void createCdcLink(File dstFile, long absIdx) throws IOException {
+            if (cdcForceSkipSgmnts.remove(absIdx)) {
+                log.warning("Creation of segment CDC link skipped. The segment does not contain data records " +
+                    "that was skipped while the CDC was disabled.");
+
+                return;
+            }
+
+            if (cdcDisabled.getOrDefault(false)) {
+                log.warning("Creation of segment CDC link skipped. " +
+                    "'" + CDC_DISABLED + "' distributed property is 'true'.");
+
+                return;
+            }
+
+            if (!checkCdcWalDirectorySize(dstFile.length())) {
+                log.error("Creation of segment CDC link skipped. Configured CDC directory " +
+                    "maximum size exceeded.");
+
+                return;
+            }
+
+            Files.createLink(walCdcDir.toPath().resolve(dstFile.getName()), dstFile.toPath());
         }
 
         /**
