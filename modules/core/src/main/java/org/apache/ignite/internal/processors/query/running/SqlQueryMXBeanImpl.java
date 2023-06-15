@@ -15,62 +15,61 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.mxbean;
+package org.apache.ignite.internal.processors.query.running;
 
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 
 /**
  * QueryMXBean implementation.
  */
 public class SqlQueryMXBeanImpl implements SqlQueryMXBean {
     /** */
-    private final IgniteH2Indexing h2idx;
+    private final HeavyQueriesTracker heavyQrysTracker;
 
     /**
      * @param ctx Context.
      */
     public SqlQueryMXBeanImpl(GridKernalContext ctx) {
-        h2idx = (IgniteH2Indexing)ctx.query().getIndexing();
+        heavyQrysTracker = ctx.query().runningQueryManager().heavyQueriesTracker();
     }
 
     /** {@inheritDoc} */
     @Override public long getLongQueryWarningTimeout() {
-        return h2idx.longRunningQueries().getTimeout();
+        return heavyQrysTracker.getTimeout();
     }
 
     /** {@inheritDoc} */
     @Override public void setLongQueryWarningTimeout(long longQryWarningTimeout) {
-        h2idx.longRunningQueries().setTimeout(longQryWarningTimeout);
+        heavyQrysTracker.setTimeout(longQryWarningTimeout);
     }
 
     /** {@inheritDoc} */
     @Override public int getLongQueryTimeoutMultiplier() {
-        return h2idx.longRunningQueries().getTimeoutMultiplier();
+        return heavyQrysTracker.getTimeoutMultiplier();
     }
 
     /** {@inheritDoc} */
     @Override public void setLongQueryTimeoutMultiplier(int longQryTimeoutMultiplier) {
-        h2idx.longRunningQueries().setTimeoutMultiplier(longQryTimeoutMultiplier);
+        heavyQrysTracker.setTimeoutMultiplier(longQryTimeoutMultiplier);
     }
 
     /** {@inheritDoc} */
     @Override public long getResultSetSizeThreshold() {
-        return h2idx.longRunningQueries().getResultSetSizeThreshold();
+        return heavyQrysTracker.getResultSetSizeThreshold();
     }
 
     /** {@inheritDoc} */
     @Override public void setResultSetSizeThreshold(long rsSizeThreshold) {
-        h2idx.longRunningQueries().setResultSetSizeThreshold(rsSizeThreshold);
+        heavyQrysTracker.setResultSetSizeThreshold(rsSizeThreshold);
     }
 
     /** {@inheritDoc} */
     @Override public int getResultSetSizeThresholdMultiplier() {
-        return h2idx.longRunningQueries().getResultSetSizeThresholdMultiplier();
+        return heavyQrysTracker.getResultSetSizeThresholdMultiplier();
     }
 
     /** {@inheritDoc} */
     @Override public void setResultSetSizeThresholdMultiplier(int rsSizeThresholdMultiplier) {
-        h2idx.longRunningQueries().setResultSetSizeThresholdMultiplier(rsSizeThresholdMultiplier);
+        heavyQrysTracker.setResultSetSizeThresholdMultiplier(rsSizeThresholdMultiplier);
     }
 }

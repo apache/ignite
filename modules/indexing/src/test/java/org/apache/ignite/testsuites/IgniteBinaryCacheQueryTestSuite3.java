@@ -164,6 +164,7 @@ import org.apache.ignite.internal.processors.sql.IgniteSQLColumnConstraintsTest;
 import org.apache.ignite.internal.processors.sql.IgniteTransactionSQLColumnConstraintTest;
 import org.apache.ignite.internal.sql.SqlParserUserSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridOrderedMessageCancelSelfTest;
+import org.apache.ignite.spi.communication.tcp.H2CommunicationMessageSerializationTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.util.KillCommandsMXBeanTest;
 import org.apache.ignite.util.KillCommandsSQLTest;
@@ -265,6 +266,7 @@ import org.junit.runners.Suite;
     ScanQueryConcurrentUpdatesTest.class,
     ScanQueryConcurrentSqlUpdatesTest.class,
     ReservationsOnDoneAfterTopologyUnlockFailTest.class,
+    H2CommunicationMessageSerializationTest.class,
 
     GridIndexRebuildSelfTest.class,
     GridIndexRebuildTest.class,

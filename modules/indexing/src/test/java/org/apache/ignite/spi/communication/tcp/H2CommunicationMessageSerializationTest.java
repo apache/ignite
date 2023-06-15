@@ -15,20 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.spi.communication.tcp;
 
-import java.util.UUID;
+import org.apache.ignite.internal.managers.communication.AbstractCommunicationMessageSerializationTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
-/**
- *
- */
-public interface RunningQuery {
-    /** */
-    UUID id();
-
-    /** */
-    QueryState state();
-
-    /** */
-    void cancel();
+/** */
+public class H2CommunicationMessageSerializationTest extends AbstractCommunicationMessageSerializationTest {
+    /** {@inheritDoc} */
+    @Override protected MessageFactory messageFactory() {
+        return new GridH2ValueMessageFactory();
+    }
 }

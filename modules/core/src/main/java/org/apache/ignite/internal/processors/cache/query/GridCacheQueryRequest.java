@@ -805,7 +805,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 writer.incrementState();
 
-            case 27:
+            case 26:
                 if (!writer.writeByteArray("idxQryDescBytes", idxQryDescBytes))
                     return false;
 
@@ -1006,7 +1006,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 reader.incrementState();
 
-            case 27:
+            case 26:
                 idxQryDescBytes = reader.readByteArray("idxQryDescBytes");
 
                 if (!reader.isLastRead())
@@ -1025,7 +1025,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 26;
+        return 27;
     }
 
     /** {@inheritDoc} */

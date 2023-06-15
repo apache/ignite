@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.internal.processors.query.running;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -50,6 +50,11 @@ import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.GridQueryFinishedInfo;
+import org.apache.ignite.internal.processors.query.GridQueryStartedInfo;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillResponse;
 import org.apache.ignite.internal.processors.tracing.Span;
@@ -152,6 +157,9 @@ public class RunningQueryManager {
         }
     };
 
+    /** Heavy query tracker. */
+    private final HeavyQueriesTracker heavyQrysTracker;
+
     /** */
     private final List<Consumer<GridQueryStartedInfo>> qryStartedListeners = new CopyOnWriteArrayList<>();
 
@@ -174,6 +182,8 @@ public class RunningQueryManager {
         closure = ctx.closure();
 
         qryHistTracker = new QueryHistoryTracker(histSz);
+
+        heavyQrysTracker = ctx.query().moduleEnabled() ? new HeavyQueriesTracker(ctx) : null;
 
         ctx.systemView().registerView(SQL_QRY_VIEW, SQL_QRY_VIEW_DESC,
             new SqlQueryViewWalker(),
@@ -426,6 +436,11 @@ public class RunningQueryManager {
         return res;
     }
 
+    /** */
+    public HeavyQueriesTracker heavyQueriesTracker() {
+        return heavyQrysTracker;
+    }
+
     /**
      * @param lsnr Listener.
      */
@@ -475,18 +490,18 @@ public class RunningQueryManager {
     }
 
     /**
-     * Return long running user queries.
+     * Return running user queries.
      *
-     * @param duration Duration of long query.
+     * @param duration Duration of query.
      * @return Collection of queries which running longer than given duration.
      */
-    public Collection<GridRunningQueryInfo> longRunningQueries(long duration) {
+    public Collection<GridRunningQueryInfo> runningQueries(long duration) {
         Collection<GridRunningQueryInfo> res = new ArrayList<>();
 
         long curTime = System.currentTimeMillis();
 
         for (GridRunningQueryInfo runningQryInfo : runs.values()) {
-            if (runningQryInfo.longQuery(curTime, duration))
+            if (curTime - runningQryInfo.startTime() > duration)
                 res.add(runningQryInfo);
         }
 
@@ -527,6 +542,9 @@ public class RunningQueryManager {
                 // No-op.
             }
         }
+
+        if (heavyQrysTracker != null)
+            heavyQrysTracker.stop();
     }
 
     /**

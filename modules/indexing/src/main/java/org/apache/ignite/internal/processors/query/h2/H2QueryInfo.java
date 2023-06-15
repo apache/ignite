@@ -20,21 +20,21 @@ package org.apache.ignite.internal.processors.query.h2;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.UUID;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
-import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
+import org.apache.ignite.internal.processors.query.running.TrackableQuery;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.h2.engine.Session;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Base H2 query info with commons for MAP, LOCAL, REDUCE queries.
  */
-public class H2QueryInfo {
+public class H2QueryInfo implements TrackableQuery {
     /** Type. */
     private final QueryType type;
 
@@ -106,20 +106,16 @@ public class H2QueryInfo {
         // No-op.
     }
 
-    /**
-     * @return Query execution time.
-     */
-    public long time() {
+    /** {@inheritDoc} */
+    @Override public long time() {
         return U.currentTimeMillis() - beginTs;
     }
 
     /**
-     * @param log Logger.
-     * @param msg Log message
      * @param additionalInfo Additional query info.
      */
-    public void printLogMessage(IgniteLogger log, String msg, String additionalInfo) {
-        StringBuilder msgSb = new StringBuilder(msg);
+    @Override public String queryInfo(@Nullable String additionalInfo) {
+        StringBuilder msgSb = new StringBuilder();
 
         if (queryId == RunningQueryManager.UNDEFINED_QUERY_ID)
             msgSb.append(" [globalQueryId=(undefined), node=").append(nodeId);
@@ -142,7 +138,7 @@ public class H2QueryInfo {
 
         msgSb.append(']');
 
-        LT.warn(log, msgSb.toString());
+        return msgSb.toString();
     }
 
     /**
