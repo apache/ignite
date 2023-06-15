@@ -1299,8 +1299,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         int expSize = G.allGrids().size();
 
-        assertEquals(CommandHandler.EXIT_CODE_OK, execute("--cache", CREATE, SPRING_XML_CONFIG,
-            cfgPath + "/cache-create-with-spel.xml"));
+        assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR, "--cache", CREATE,
+                SPRING_XML_CONFIG, cfgPath + "/cache-create-with-spel.xml"),
+            "Spring expressions are prohibited.");
 
         assertEquals(expSize, G.allGrids().size());
     }

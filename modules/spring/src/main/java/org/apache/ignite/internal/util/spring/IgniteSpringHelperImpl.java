@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
@@ -53,6 +54,11 @@ import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.expression.Expression;
+import org.springframework.expression.common.LiteralExpression;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+
+import static org.springframework.expression.ParserContext.TEMPLATE_EXPRESSION;
 
 /**
  * Spring configuration helper.
@@ -450,8 +456,19 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
     private static GenericApplicationContext prepareSpringContext(boolean expEnabled, final String... excludedProps) {
         GenericApplicationContext springCtx = new GenericApplicationContext();
 
-        if (!expEnabled)
-            springCtx.addBeanFactoryPostProcessor(factory -> factory.setBeanExpressionResolver(null));
+        if (!expEnabled) {
+            springCtx.addBeanFactoryPostProcessor(factory -> factory.setBeanExpressionResolver((value, evalContext) -> {
+                if (F.isEmpty(value))
+                    return value;
+
+                Expression exp = new SpelExpressionParser().parseExpression(value, TEMPLATE_EXPRESSION);
+
+                if (!(exp instanceof LiteralExpression))
+                    throw new IgniteException("Spring expressions are prohibited.");
+
+                return value;
+            }));
+        }
 
         if (excludedProps.length > 0) {
             final List<String> excludedPropsList = Arrays.asList(excludedProps);
