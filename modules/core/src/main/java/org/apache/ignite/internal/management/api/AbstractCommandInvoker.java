@@ -31,7 +31,7 @@ import static java.util.Collections.singleton;
 /**
  *
  */
-public abstract class AbstractCommandInvoker<A extends IgniteDataTransferObject> implements AutoCloseable {
+public abstract class AbstractCommandInvoker<A extends IgniteDataTransferObject> {
     /** Command to execute. */
     protected final Command<A, ?> cmd;
 

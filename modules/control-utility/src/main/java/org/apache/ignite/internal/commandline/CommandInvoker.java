@@ -51,8 +51,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 /**
  * Adapter of new management API command for legacy {@code control.sh} execution flow.
  */
-public class CommandInvoker<A extends IgniteDataTransferObject> extends AbstractCommandInvoker<A> {
-
+public class CommandInvoker<A extends IgniteDataTransferObject> extends AbstractCommandInvoker<A> implements AutoCloseable {
     /** Client configuration. */
     private GridClientConfiguration clientCfg;
 
