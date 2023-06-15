@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.management.SystemViewCommand;
-import org.apache.ignite.internal.management.SystemViewCommandTask;
+import org.apache.ignite.internal.management.SystemViewTask;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.visor.cache.VisorCacheScanTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheScanTaskResult;
@@ -45,8 +45,8 @@ public class CacheScanCommand implements ComputeCommand<CacheScanCommandArg, Vis
 
     /** {@inheritDoc} */
     @Override public void printResult(CacheScanCommandArg arg, VisorCacheScanTaskResult res, Consumer<String> printer) {
-        List<SystemViewCommandTask.SimpleType> types = res.titles().stream()
-            .map(x -> SystemViewCommandTask.SimpleType.STRING).collect(Collectors.toList());
+        List<SystemViewTask.SimpleType> types = res.titles().stream()
+            .map(x -> SystemViewTask.SimpleType.STRING).collect(Collectors.toList());
 
         SystemViewCommand.printTable(res.titles(), types, res.entries(), printer);
 

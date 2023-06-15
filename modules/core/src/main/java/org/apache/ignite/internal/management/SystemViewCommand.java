@@ -33,12 +33,12 @@ import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.util.Collections.nCopies;
-import static org.apache.ignite.internal.management.SystemViewCommandTask.SimpleType.DATE;
-import static org.apache.ignite.internal.management.SystemViewCommandTask.SimpleType.NUMBER;
-import static org.apache.ignite.internal.management.SystemViewCommandTask.SimpleType.STRING;
+import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.DATE;
+import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.NUMBER;
+import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.STRING;
 
 /** Command for printing system view content. */
-public class SystemViewCommand implements ComputeCommand<SystemViewCommandArg, SystemViewCommandTaskResult> {
+public class SystemViewCommand implements ComputeCommand<SystemViewCommandArg, SystemViewTaskResult> {
     /** Column separator. */
     public static final String COLUMN_SEPARATOR = "    ";
 
@@ -53,8 +53,8 @@ public class SystemViewCommand implements ComputeCommand<SystemViewCommandArg, S
     }
 
     /** {@inheritDoc} */
-    @Override public Class<SystemViewCommandTask> taskClass() {
-        return SystemViewCommandTask.class;
+    @Override public Class<SystemViewTask> taskClass() {
+        return SystemViewTask.class;
     }
 
     /** {@inheritDoc} */
@@ -71,7 +71,7 @@ public class SystemViewCommand implements ComputeCommand<SystemViewCommandArg, S
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(SystemViewCommandArg arg, SystemViewCommandTaskResult res, Consumer<String> printer) {
+    @Override public void printResult(SystemViewCommandArg arg, SystemViewTaskResult res, Consumer<String> printer) {
         if (res != null) {
             res.rows().forEach((nodeId, rows) -> {
                 printer.accept("Results from node with ID: " + nodeId);
@@ -96,7 +96,7 @@ public class SystemViewCommand implements ComputeCommand<SystemViewCommandArg, S
      */
     public static void printTable(
         List<String> titles,
-        List<SystemViewCommandTask.SimpleType> types,
+        List<SystemViewTask.SimpleType> types,
         List<List<?>> data,
         Consumer<String> printer
     ) {
@@ -137,15 +137,15 @@ public class SystemViewCommand implements ComputeCommand<SystemViewCommandArg, S
      */
     private static void printRow(
         Collection<String> row,
-        Collection<SystemViewCommandTask.SimpleType> types,
+        Collection<SystemViewTask.SimpleType> types,
         Collection<Integer> colSzs,
         Consumer<String> printer
     ) {
-        Iterator<SystemViewCommandTask.SimpleType> typeIter = types.iterator();
+        Iterator<SystemViewTask.SimpleType> typeIter = types.iterator();
         Iterator<Integer> colSzsIter = colSzs.iterator();
 
         printer.accept(row.stream().map(colVal -> {
-            SystemViewCommandTask.SimpleType colType = typeIter.next();
+            SystemViewTask.SimpleType colType = typeIter.next();
 
             int colSz = colSzsIter.next();
 

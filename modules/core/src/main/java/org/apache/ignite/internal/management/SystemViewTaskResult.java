@@ -24,11 +24,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.SystemViewCommandTask.SimpleType;
+import org.apache.ignite.internal.management.SystemViewTask.SimpleType;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-/** Reperesents result of {@link SystemViewCommandTask}. */
-public class SystemViewCommandTaskResult extends IgniteDataTransferObject {
+/** Reperesents result of {@link SystemViewTask}. */
+public class SystemViewTaskResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,7 +42,7 @@ public class SystemViewCommandTaskResult extends IgniteDataTransferObject {
     List<SimpleType> types;
 
     /** Default constructor. */
-    public SystemViewCommandTaskResult() {
+    public SystemViewTaskResult() {
         // No-op.
     }
 
@@ -51,7 +51,7 @@ public class SystemViewCommandTaskResult extends IgniteDataTransferObject {
      * @param types Types of the system view attributes.
      * @param rows Attribute values for each row of the system view per node ID.
      */
-    public SystemViewCommandTaskResult(List<String> attrs, List<SimpleType> types, Map<UUID, List<List<?>>> rows) {
+    public SystemViewTaskResult(List<String> attrs, List<SimpleType> types, Map<UUID, List<List<?>>> rows) {
         this.attrs = attrs;
         this.types = types;
         this.rows = rows;

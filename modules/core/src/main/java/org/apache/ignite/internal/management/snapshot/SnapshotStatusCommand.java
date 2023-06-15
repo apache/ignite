@@ -28,7 +28,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.SystemViewCommand;
-import org.apache.ignite.internal.management.SystemViewCommandTask;
+import org.apache.ignite.internal.management.SystemViewTask;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
@@ -38,8 +38,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
 
-import static org.apache.ignite.internal.management.SystemViewCommandTask.SimpleType.NUMBER;
-import static org.apache.ignite.internal.management.SystemViewCommandTask.SimpleType.STRING;
+import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.NUMBER;
+import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.STRING;
 
 /** */
 public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg> {
@@ -137,8 +137,8 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg> {
         }
 
         /** @return Progress table columns types. */
-        List<SystemViewCommandTask.SimpleType> types() {
-            List<SystemViewCommandTask.SimpleType> types = new ArrayList<>();
+        List<SystemViewTask.SimpleType> types() {
+            List<SystemViewTask.SimpleType> types = new ArrayList<>();
 
             types.add(STRING);
 

@@ -60,7 +60,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectEnum;
 import org.apache.ignite.internal.management.SystemViewCommand;
-import org.apache.ignite.internal.management.SystemViewCommandTask;
+import org.apache.ignite.internal.management.SystemViewTask;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
@@ -307,7 +307,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             COMPUTE_JOB_BLOCK_LATCH.await();
 
             List<List<String>> tasksView = systemView(ignite0, TASKS_VIEW).stream()
-                .filter(row -> !SystemViewCommandTask.class.getName().equals(row.get(3)))
+                .filter(row -> !SystemViewTask.class.getName().equals(row.get(3)))
                 .collect(Collectors.toList());
 
             assertEquals(tasksCnt, tasksView.size());
