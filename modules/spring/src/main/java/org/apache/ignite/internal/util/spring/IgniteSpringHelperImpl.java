@@ -450,6 +450,7 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
     /**
      * Prepares Spring context.
      *
+     * @param expEnabled Whether Spring bean expressions enabled.
      * @param excludedProps Properties to be excluded.
      * @return application context.
      */
