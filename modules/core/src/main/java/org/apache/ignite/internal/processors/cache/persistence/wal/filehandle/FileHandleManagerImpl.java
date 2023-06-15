@@ -34,6 +34,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.cdc.CdcProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.Re
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Long.MAX_VALUE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SEGMENT_SYNC_TIMEOUT;
@@ -62,6 +64,9 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
     /** Wal segment sync worker. */
     private final WalSegmentSyncer walSegmentSyncWorker;
+
+    /** CDC processor, {@code null} if CDC is disabled. */
+    private final @Nullable CdcProcessor cdcProc;
 
     /** Context. */
     protected final GridCacheSharedContext cctx;
@@ -109,6 +114,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
         DataStorageMetricsImpl metrics,
         boolean mmap,
         RecordSerializer serializer,
+        @Nullable CdcProcessor cdcProc,
         Supplier<FileWriteHandle> currentHandleSupplier,
         WALMode mode,
         int walBufferSize,
@@ -126,6 +132,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
         this.maxWalSegmentSize = maxWalSegmentSize;
         this.fsyncDelay = fsyncDelay;
         walWriter = new WALWriter(log);
+        this.cdcProc = cdcProc;
 
         if (mode != WALMode.NONE && mode != WALMode.FSYNC) {
             walSegmentSyncWorker = new WalSegmentSyncer(
@@ -163,7 +170,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
         rbuf.init(position);
 
         return new FileWriteHandleImpl(
-            cctx, fileIO, rbuf, serializer, metrics, walWriter, position,
+            cctx, fileIO, rbuf, serializer, metrics, walWriter, cdcProc, position,
             mode, mmap, true, fsyncDelay, maxWalSegmentSize
         );
     }
@@ -181,7 +188,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
             rbuf = currentHandle().buf.reset();
 
         return new FileWriteHandleImpl(
-            cctx, fileIO, rbuf, serializer, metrics, walWriter, 0,
+            cctx, fileIO, rbuf, serializer, metrics, walWriter, cdcProc, 0,
             mode, mmap, false, fsyncDelay, maxWalSegmentSize
         );
     }
@@ -376,7 +383,12 @@ public class FileHandleManagerImpl implements FileHandleManager {
                         updateHeartbeat();
 
                         try {
+                            int bufPos = seg.buffer().position();
+
                             writeBuffer(seg.position(), seg.buffer());
+
+                            if (cdcProc != null)
+                                cdcProc.collect(seg.buffer(), bufPos, seg.buffer().limit() - bufPos);
                         }
                         catch (Throwable e) {
                             log.error("Exception in WAL writer thread:", e);

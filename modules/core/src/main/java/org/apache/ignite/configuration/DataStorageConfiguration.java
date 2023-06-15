@@ -20,6 +20,7 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import java.util.zip.Deflater;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.processors.cache.persistence.cdc.CdcBufferConsumer;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
@@ -251,6 +252,14 @@ public class DataStorageConfiguration implements Serializable {
     /** Change Data Capture directory size limit. */
     @IgniteExperimental
     private long cdcWalDirMaxSize = DFLT_CDC_WAL_DIRECTORY_MAX_SIZE;
+
+    /** Maximum size of CDC buffer. */
+    @IgniteExperimental
+    private long maxCdcBufSize = (long)DFLT_WAL_SEGMENTS * DFLT_WAL_SEGMENT_SIZE;
+
+    /** CDC buffer consumer. */
+    @IgniteExperimental
+    private transient CdcBufferConsumer cdcConsumer;
 
     /**
      * Metrics enabled flag.
@@ -1353,6 +1362,52 @@ public class DataStorageConfiguration implements Serializable {
      */
     public int getDefragmentationThreadPoolSize() {
         return defragmentationThreadPoolSize;
+    }
+
+    /**
+     * Gets a max size(in bytes) of CDC buffer.
+     *
+     * @return max size(in bytes) of CDC buffer.
+     */
+    public long getMaxCdcBufferSize() {
+        return maxCdcBufSize;
+    }
+
+    /**
+     * Sets a max allowed size(in bytes) of CDC buffer. Set to {@code 0} to disable realtime CDC mode.
+     *
+     * @param maxCdcBufSize max size(in bytes) of CDC buffer.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setMaxCdcBufferSize(long maxCdcBufSize) {
+        A.ensure(
+            maxCdcBufSize >= 0,
+            "maxCdcBufferSize must be greater than 0. To disable realtime mode of CDC set value to 0.");
+
+        this.maxCdcBufSize = maxCdcBufSize;
+
+        return this;
+    }
+
+    /**
+     * Gets CDC raw data consumer.
+     *
+     * @return CDC raw data consumer.
+     */
+    public CdcBufferConsumer getCdcConsumer() {
+        return cdcConsumer;
+    }
+
+    /**
+     * Sets CDC raw data consumer.
+     *
+     * @param cdcConsumer CDC raw data consumer.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setCdcConsumer(CdcBufferConsumer cdcConsumer) {
+        this.cdcConsumer = cdcConsumer;
+
+        return this;
     }
 
     /**

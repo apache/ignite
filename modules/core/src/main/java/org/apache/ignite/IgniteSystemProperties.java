@@ -93,6 +93,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager.DFLT_MVCC_TX_SIZE_CACHING_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.internal.processors.cache.persistence.cdc.CdcWorker.DFLT_POLL_CDC_BUF_THROTTLING_TIMEOUT;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory.DFLT_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage.DFLT_IGNITE_CHECKPOINT_MAP_SNAPSHOT_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointWorkflow.DFLT_CHECKPOINT_PARALLEL_SORT_THRESHOLD;
@@ -1530,6 +1531,13 @@ public final class IgniteSystemProperties {
         "unwind if there is nothing to clean yet",
         type = Long.class, defaults = "" + DFLT_UNWIND_THROTTLING_TIMEOUT)
     public static final String IGNITE_UNWIND_THROTTLING_TIMEOUT = "IGNITE_UNWIND_THROTTLING_TIMEOUT";
+
+    /**
+     * Throttling timeout in millis for polling CDC buffer in realtime mode. Default is 100 ms.
+     */
+    @SystemProperty(value = "Throttling timeout in millis for polling CDC buffer in realtime mode", type = Long.class,
+        defaults = "" + DFLT_POLL_CDC_BUF_THROTTLING_TIMEOUT)
+    public static final String IGNITE_THROTTLE_POLL_CDC_BUF = "IGNITE_THROTTLE_POLL_CDC_BUF";
 
     /**
      * Threshold for throttling operations logging.

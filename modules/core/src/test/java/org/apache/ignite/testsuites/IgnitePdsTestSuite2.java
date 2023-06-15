@@ -39,6 +39,10 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentS
 import org.apache.ignite.internal.processors.cache.persistence.IgniteRebalanceScheduleResendPartitionsTest;
 import org.apache.ignite.internal.processors.cache.persistence.WALPreloadingWithCompactionTest;
 import org.apache.ignite.internal.processors.cache.persistence.WalPreloadingConcurrentTest;
+import org.apache.ignite.internal.processors.cache.persistence.cdc.RealtimeCdcBufferDedicatedWorkerTest;
+import org.apache.ignite.internal.processors.cache.persistence.cdc.RealtimeCdcBufferSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.cdc.RealtimeCdcBufferTest;
+import org.apache.ignite.internal.processors.cache.persistence.cdc.RealtimeCdcBufferWalMmapDisabledTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.FullHistRebalanceOnClientStopTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsRebalancingOnNotStableTopologyTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsReserveWalSegmentsTest;
@@ -158,6 +162,12 @@ public class IgnitePdsTestSuite2 {
         GridTestUtils.addTestIfNeeded(suite, WalForCdcTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CdcCacheConfigOnRestartTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CdcNonDefaultWorkDirTest.class, ignoredTests);
+
+        // Realtime CDC tests.
+        GridTestUtils.addTestIfNeeded(suite, RealtimeCdcBufferSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, RealtimeCdcBufferTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, RealtimeCdcBufferDedicatedWorkerTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, RealtimeCdcBufferWalMmapDisabledTest.class, ignoredTests);
 
         // new style folders with generated consistent ID test
         GridTestUtils.addTestIfNeeded(suite, IgniteUidAsConsistentIdMigrationTest.class, ignoredTests);

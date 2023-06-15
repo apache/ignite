@@ -26,9 +26,11 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.cdc.CdcProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of {@link FileWriteHandle} for FSYNC mode.
@@ -48,6 +50,9 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
 
     /** */
     protected final RecordSerializer serializer;
+
+    /** */
+    private final @Nullable CdcProcessor cdcProc;
 
     /** Current handle supplier. */
     private final Supplier<FileWriteHandle> currentHandleSupplier;
@@ -75,6 +80,7 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
         GridCacheSharedContext cctx,
         DataStorageMetricsImpl metrics,
         RecordSerializer serializer,
+        @Nullable CdcProcessor cdcProc,
         Supplier<FileWriteHandle> handle,
         WALMode mode,
         long maxWalSegmentSize,
@@ -86,6 +92,7 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
         this.mode = mode;
         this.metrics = metrics;
         this.serializer = serializer;
+        this.cdcProc = cdcProc;
         currentHandleSupplier = handle;
         this.maxWalSegmentSize = maxWalSegmentSize;
         this.fsyncDelay = fsyncDelay;
@@ -96,7 +103,7 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
     @Override public FileWriteHandle initHandle(SegmentIO fileIO, long position,
         RecordSerializer serializer) throws IOException {
         return new FsyncFileWriteHandle(
-            cctx, fileIO, metrics, serializer, position,
+            cctx, fileIO, metrics, serializer, cdcProc, position,
             mode, maxWalSegmentSize, tlbSize, fsyncDelay
         );
     }
@@ -105,7 +112,7 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
     @Override public FileWriteHandle nextHandle(SegmentIO fileIO,
         RecordSerializer serializer) throws IOException {
         return new FsyncFileWriteHandle(
-            cctx, fileIO, metrics, serializer, 0,
+            cctx, fileIO, metrics, serializer, cdcProc, 0,
             mode, maxWalSegmentSize, tlbSize, fsyncDelay
         );
     }

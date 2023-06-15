@@ -87,6 +87,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.cdc.CdcProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
@@ -313,6 +314,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private static final AtomicReferenceFieldUpdater<FileWriteAheadLogManager, FileWriteHandle> CURR_HND_UPD =
         AtomicReferenceFieldUpdater.newUpdater(FileWriteAheadLogManager.class, FileWriteHandle.class, "currHnd");
 
+    /** CDC processor, {@code null} if CDC is disabled. */
+    @Nullable private CdcProcessor cdcProc;
+
     /**
      * File archiver moves segments from work directory to archive. Locked segments may be kept not moved until release.
      * For mode archive and work folders set to equal value, archiver is not created.
@@ -521,6 +525,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                         dispatcher.registerProperty(cdcDisabled);
                     });
+
+                if (dsCfg.getMaxCdcBufferSize() > 0)
+                    cdcProc = new CdcProcessor(cctx, log, dsCfg.getMaxCdcBufferSize(), dsCfg.getCdcConsumer());
             }
 
             serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVer);
@@ -581,7 +588,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             segmentRouter = new SegmentRouter(walWorkDir, walArchiveDir, segmentAware, dsCfg);
 
             fileHandleManager = fileHandleManagerFactory.build(
-                cctx, metrics, mmap, serializer, this::currentHandle
+                cctx, metrics, mmap, serializer, cdcProc, this::currentHandle
             );
 
             lockedSegmentFileInputFactory = new LockedSegmentFileInputFactory(
@@ -753,6 +760,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (cleaner != null)
                 cleaner.shutdown();
+
+            // TODO: stop cdcProcessor after checkpoint (reason=node stop) finished.
+            if (cdcProc != null)
+                cdcProc.shutdown();
         }
         catch (IgniteInterruptedCheckedException e) {
             U.error(log, "Failed to gracefully shutdown WAL components, thread was interrupted.", e);
@@ -764,7 +775,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (log.isDebugEnabled())
             log.debug("Activated file write ahead log manager [nodeId=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
-        //NOOP implementation, we need to override it.
+
+        // TODO: Invoke here to avoid double initialization. CdcConsumer must consume data only after full start.
+        //       Will fix in https://issues.apache.org/jira/browse/IGNITE-19637
+        if (cdcProc != null)
+            cdcProc.start();
     }
 
     /** {@inheritDoc} */
