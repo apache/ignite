@@ -40,7 +40,7 @@
         since for in the Ignite Extension projects they may be inlined the different values.
     -->
 
-    <groupId>com.sbt.ignite</groupId>
+    <groupId>org.apache.ignite</groupId>
     <artifactId>ignite-parent</artifactId>
     <version>${revision}</version>
     <packaging>pom</packaging>
@@ -261,7 +261,7 @@
                             <version>${checkstyle.puppycrawl.version}</version>
                         </dependency>
                         <dependency>
-                            <groupId>com.sbt.ignite</groupId>
+                            <groupId>org.apache.ignite</groupId>
                             <artifactId>ignite-checkstyle</artifactId>
                             <version>${ignite.version}</version>
                         </dependency>
@@ -314,7 +314,7 @@
                             <taglet>
                                 <tagletClass>org.apache.ignite.tools.javadoc.IgniteLinkTaglet</tagletClass>
                                 <tagletArtifact>
-                                    <groupId>com.sbt.ignite</groupId>
+                                    <groupId>org.apache.ignite</groupId>
                                     <artifactId>ignite-tools</artifactId>
                                     <version>${ignite.version}</version>
                                 </tagletArtifact>
@@ -442,7 +442,7 @@
                     <version>${surefire.version}</version>
                     <dependencies>
                         <dependency>
-                            <groupId>com.sbt.ignite</groupId>
+                            <groupId>org.apache.ignite</groupId>
                             <artifactId>ignite-tools</artifactId>
                             <version>${ignite.version}</version>
                         </dependency>
@@ -461,7 +461,7 @@
                     <version>1.3.2</version>
                     <dependencies>
                         <dependency>
-                            <groupId>com.sbt.ignite</groupId>
+                            <groupId>org.apache.ignite</groupId>
                             <artifactId>ignite-tools</artifactId>
                             <version>${ignite.version}</version>
                         </dependency>
