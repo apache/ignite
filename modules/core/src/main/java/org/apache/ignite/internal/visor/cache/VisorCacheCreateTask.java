@@ -82,7 +82,7 @@ public class VisorCacheCreateTask extends VisorOneNodeTask<CacheCreateCommandArg
 
             try {
                 ccfgs = spring.loadConfigurations(new ByteArrayInputStream(arg.fileContent().getBytes()),
-                    CacheConfiguration.class).get1();
+                    CacheConfiguration.class, false).get1();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to create caches. Make sure that Spring XML contains '" +

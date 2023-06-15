@@ -126,7 +126,16 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
     /** {@inheritDoc} */
     @Override public <T> IgniteBiTuple<Collection<T>, ? extends GridSpringResourceContext> loadConfigurations(
         InputStream cfgStream, Class<T> cls, String... excludedProps) throws IgniteCheckedException {
-        ApplicationContext springCtx = applicationContext(cfgStream, excludedProps);
+        return loadConfigurations(cfgStream, cls, true, excludedProps);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteBiTuple<Collection<T>, ? extends GridSpringResourceContext> loadConfigurations(
+        InputStream cfgStream, Class<T> cls,
+        boolean expEnabled,
+        String... excludedProps
+    ) throws IgniteCheckedException {
+        ApplicationContext springCtx = applicationContext(cfgStream, expEnabled, excludedProps);
         Map<String, T> cfgMap;
 
         try {
@@ -368,7 +377,7 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
     public static ApplicationContext applicationContext(URL cfgUrl, final String... excludedProps)
         throws IgniteCheckedException {
         try {
-            GenericApplicationContext springCtx = prepareSpringContext(excludedProps);
+            GenericApplicationContext springCtx = prepareSpringContext(true, excludedProps);
 
             new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(cfgUrl));
 
@@ -400,8 +409,17 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
      */
     public static ApplicationContext applicationContext(InputStream cfgStream, final String... excludedProps)
         throws IgniteCheckedException {
+        return applicationContext(cfgStream, true, excludedProps);
+    }
+
+    /** */
+    private static ApplicationContext applicationContext(
+        InputStream cfgStream,
+        boolean expEnabled,
+        final String... excludedProps
+    ) throws IgniteCheckedException {
         try {
-            GenericApplicationContext springCtx = prepareSpringContext(excludedProps);
+            GenericApplicationContext springCtx = prepareSpringContext(expEnabled, excludedProps);
 
             XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(springCtx);
 
@@ -429,8 +447,11 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
      * @param excludedProps Properties to be excluded.
      * @return application context.
      */
-    private static GenericApplicationContext prepareSpringContext(final String... excludedProps) {
+    private static GenericApplicationContext prepareSpringContext(boolean expEnabled, final String... excludedProps) {
         GenericApplicationContext springCtx = new GenericApplicationContext();
+
+        if (!expEnabled)
+            springCtx.addBeanFactoryPostProcessor(factory -> factory.setBeanExpressionResolver(null));
 
         if (excludedProps.length > 0) {
             final List<String> excludedPropsList = Arrays.asList(excludedProps);
