@@ -943,7 +943,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return null;
 
         if (inMemoryCdc && cdcDisabled.getOrDefault(false)) {
-            LT.warn(log, "Logging CDC data records to WAL skipped. '" + CDC_DISABLED +
+            LT.warn(log, "Logging CDC data records to WAL skipped. The '" + CDC_DISABLED +
                 "' distributed property is 'true'.");
 
             cdcForceSkipSgmnts.add(currWrHandle.getSegmentId());
@@ -2252,21 +2252,21 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private void createCdcLink(File dstFile, long absIdx) throws IOException {
             if (cdcForceSkipSgmnts.remove(absIdx)) {
                 log.warning("Creation of segment CDC link skipped. The segment does not contain data records " +
-                    "that was skipped while the CDC was disabled.");
+                    "that was skipped while the CDC was disabled [idx=" + absIdx + ']');
 
                 return;
             }
 
             if (cdcDisabled.getOrDefault(false)) {
                 log.warning("Creation of segment CDC link skipped. " +
-                    "'" + CDC_DISABLED + "' distributed property is 'true'.");
+                    "The '" + CDC_DISABLED + "' distributed property is 'true' [idx=" + absIdx + ']');
 
                 return;
             }
 
             if (!checkCdcWalDirectorySize(dstFile.length())) {
                 log.error("Creation of segment CDC link skipped. Configured CDC directory " +
-                    "maximum size exceeded.");
+                    "maximum size exceeded [idx=" + absIdx + ']');
 
                 return;
             }
