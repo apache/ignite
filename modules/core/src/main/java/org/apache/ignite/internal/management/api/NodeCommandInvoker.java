@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientCacheMode;
@@ -33,6 +34,7 @@ import org.apache.ignite.internal.client.GridClientNodeMetrics;
 import org.apache.ignite.internal.client.GridClientProtocol;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -51,13 +53,37 @@ public class NodeCommandInvoker<A extends IgniteDataTransferObject> extends Abst
     }
 
     /** {@inheritDoc} */
+    @Override protected <R> R execute(ComputeCommand<A, R> cmd, A arg, Collection<UUID> nodes) throws GridClientException {
+        return ignite
+            .compute(ignite.cluster().forNodeIds(nodes))
+            .execute(cmd.taskClass(), new VisorTaskArgument<>(nodes, arg, false));
+    }
+
+    /** {@inheritDoc} */
     @Override protected GridClient client() throws GridClientException {
         return null;
     }
 
     /** {@inheritDoc} */
     @Override protected Map<UUID, GridClientNode> nodes() throws GridClientException {
-        return ignite.cluster().nodes().stream().map(n -> new GridClientNode() {
+        return ignite.cluster().nodes().stream()
+            .map(NodeCommandInvoker::node)
+            .collect(Collectors.toMap(GridClientNode::nodeId, Function.identity()));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridClientNode defaultNode() {
+        return node(ignite.localNode());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws Exception {
+        // No-op.
+    }
+
+    /** */
+    private static GridClientNode node(ClusterNode n) {
+        return new GridClientNode() {
             @Override public UUID nodeId() {
                 return n.id();
             }
@@ -109,16 +135,6 @@ public class NodeCommandInvoker<A extends IgniteDataTransferObject> extends Abst
             @Override public Collection<InetSocketAddress> availableAddresses(GridClientProtocol proto, boolean filterResolved) {
                 throw new UnsupportedOperationException();
             }
-        }).collect(Collectors.toMap(n -> n.nodeId(), Function.identity()));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected GridClientNode defaultNode() throws GridClientException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() throws Exception {
-        // No-op.
+        };
     }
 }

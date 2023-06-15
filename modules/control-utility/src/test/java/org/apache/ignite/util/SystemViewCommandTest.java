@@ -60,6 +60,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectEnum;
 import org.apache.ignite.internal.management.SystemViewCommand;
+import org.apache.ignite.internal.management.jmx.JmxCommandRegistryInvokerPluginProvider;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
@@ -162,6 +163,8 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setPluginProviders(new JmxCommandRegistryInvokerPluginProvider());
+
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDataRegionConfigurations(new DataRegionConfiguration()
                 .setName(DATA_REGION_NAME)
@@ -182,6 +185,8 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
 
         ignite0 = ignite(0);
         ignite1 = ignite(1);
+
+        Thread.sleep(180_000);
     }
 
     /** Tests command error output in case of mandatory system view name is omitted. */

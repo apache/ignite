@@ -38,9 +38,11 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.AbstractCommandInvoker;
 import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.PreparableCommand;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static java.util.stream.Collectors.toMap;
@@ -89,33 +91,24 @@ public class CommandInvoker<A extends IgniteDataTransferObject> extends Abstract
     }
 
     /** {@inheritDoc} */
-    @Override protected GridClient client() throws GridClientException {
-        if (client != null && client.connected())
-            return client;
-
-        client = GridClientFactory.start(clientCfg);
-
-        // If connection is unsuccessful, fail before doing any operations:
-        if (!client.connected()) {
-            GridClientException lastErr = client.checkLastError();
-
-            try {
-                client.close();
-            }
-            catch (Throwable e) {
-                lastErr.addSuppressed(e);
-            }
-
-            throw lastErr;
-        }
-
-        return client;
-    }
-
-    /** {@inheritDoc} */
     @Override protected Map<UUID, GridClientNode> nodes() throws GridClientException {
         return client().compute().nodes().stream()
             .collect(toMap(GridClientNode::nodeId, n -> n));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected <R> R execute(ComputeCommand<A, R> cmd, A arg, Collection<UUID> nodes) throws GridClientException {
+        GridClientCompute compute = client().compute();
+
+        Collection<GridClientNode> connectable = compute.nodes().stream()
+            .filter(n -> nodes.contains(n.nodeId()))
+            .filter(GridClientNode::connectable)
+            .collect(Collectors.toList());
+
+        if (!F.isEmpty(nodes))
+            compute = compute.projection(connectable);
+
+        return compute.execute(cmd.taskClass().getName(), new VisorTaskArgument<>(nodes, arg, false));
     }
 
     /** {@inheritDoc} */
@@ -156,6 +149,46 @@ public class CommandInvoker<A extends IgniteDataTransferObject> extends Abstract
             node = balancedNode(client().compute());
 
         return node;
+    }
+
+    /** */
+    @Override protected GridClient client() throws GridClientException {
+        if (client != null && client.connected())
+            return client;
+
+        client = GridClientFactory.start(clientCfg);
+
+        // If connection is unsuccessful, fail before doing any operations:
+        if (!client.connected()) {
+            GridClientException lastErr = client.checkLastError();
+
+            try {
+                client.close();
+            }
+            catch (Throwable e) {
+                lastErr.addSuppressed(e);
+            }
+
+            throw lastErr;
+        }
+
+        return client;
+    }
+
+    /** */
+    public void clientConfiguration(GridClientConfiguration clientCfg) {
+        this.clientCfg = clientCfg;
+    }
+
+    /** */
+    public GridClientConfiguration clientConfiguration() {
+        return clientCfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        if (client != null)
+            client.close();
     }
 
     /**
@@ -233,21 +266,5 @@ public class CommandInvoker<A extends IgniteDataTransferObject> extends Abstract
             throw new GridClientDisconnectedException("Connectable node not found", null);
 
         return compute.balancer().balancedNode(nodes);
-    }
-
-    /** */
-    public void clientConfiguration(GridClientConfiguration clientCfg) {
-        this.clientCfg = clientCfg;
-    }
-
-    /** */
-    public GridClientConfiguration clientConfiguration() {
-        return clientCfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        if (client != null)
-            client.close();
     }
 }

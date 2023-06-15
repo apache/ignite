@@ -22,15 +22,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 import static java.util.Collections.singleton;
-import static java.util.stream.Collectors.toMap;
 
 /**
  *
@@ -49,7 +45,7 @@ public abstract class AbstractCommandInvoker<A extends IgniteDataTransferObject>
     }
 
     /**
-     * Actual command execution with verbose mode if needed.
+     * Actual command execution with verbose mode if required.
      * Implement it if your command supports verbose mode.
      *
      * @param printer Result printer.
@@ -63,10 +59,7 @@ public abstract class AbstractCommandInvoker<A extends IgniteDataTransferObject>
         if (cmd instanceof LocalCommand)
             res = ((LocalCommand<A, R>)cmd).execute(client(), arg, printer);
         else if (cmd instanceof ComputeCommand) {
-            GridClientCompute compute = client().compute();
-
-            Map<UUID, GridClientNode> nodes = compute.nodes().stream()
-                .collect(toMap(GridClientNode::nodeId, n -> n));
+            Map<UUID, GridClientNode> nodes = nodes();
 
             ComputeCommand<A, R> cmd = (ComputeCommand<A, R>)this.cmd;
 
@@ -80,16 +73,7 @@ public abstract class AbstractCommandInvoker<A extends IgniteDataTransferObject>
                     throw new IllegalArgumentException("Node with id=" + id + " not found.");
             }
 
-            Collection<GridClientNode> connectable = F.viewReadOnly(
-                cmdNodes,
-                nodes::get,
-                id -> nodes.get(id).connectable()
-            );
-
-            if (!F.isEmpty(connectable))
-                compute = compute.projection(connectable);
-
-            res = compute.execute(cmd.taskClass().getName(), new VisorTaskArgument<>(cmdNodes, arg, false));
+            res = execute(cmd, arg, cmdNodes);
 
             cmd.printResult(arg, res, printer);
         }
@@ -99,6 +83,9 @@ public abstract class AbstractCommandInvoker<A extends IgniteDataTransferObject>
         return res;
     }
 
+    /** @return Cluster nodes. */
+    protected abstract Map<UUID, GridClientNode> nodes() throws GridClientException;
+
     /**
      * Method to create thin client for communication with cluster.
      *
@@ -107,8 +94,14 @@ public abstract class AbstractCommandInvoker<A extends IgniteDataTransferObject>
      */
     protected abstract GridClient client() throws GridClientException;
 
-    /** @return Cluster nodes. */
-    protected abstract Map<UUID, GridClientNode> nodes() throws GridClientException;
+    /**
+     * @param cmd Command to execute.
+     * @param arg Argument.
+     * @param nodes Nodes.
+     * @return Result.
+     * @param <R> Result type.
+     */
+    protected abstract <R> R execute(ComputeCommand<A, R> cmd, A arg, Collection<UUID> nodes) throws GridClientException;
 
     /** @return Default node to execute commands. */
     protected abstract GridClientNode defaultNode() throws GridClientException;

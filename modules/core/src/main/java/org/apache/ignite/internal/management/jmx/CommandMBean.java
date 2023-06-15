@@ -32,6 +32,7 @@ import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
 import javax.management.ReflectionException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
@@ -40,6 +41,7 @@ import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.NodeCommandInvoker;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static javax.management.MBeanOperationInfo.ACTION;
 import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
@@ -53,12 +55,16 @@ public class CommandMBean<A extends IgniteDataTransferObject> implements Dynamic
     private final IgniteEx ignite;
 
     /** */
+    private final IgniteLogger log;
+
+    /** */
     private final Command<A, ?> cmd;
 
     /** */
     public CommandMBean(IgniteEx ignite, Command<A, ?> cmd) {
         this.ignite = ignite;
         this.cmd = cmd;
+        this.log = ignite.log().getLogger(CommandMBean.class.getName() + '#' + cmd.getClass().getSimpleName());
     }
 
     /** {@inheritDoc} */
@@ -98,6 +104,8 @@ public class CommandMBean<A extends IgniteDataTransferObject> implements Dynamic
             return resStr.toString();
         }
         catch (GridClientException e) {
+            log.error("Invoke error:", e);
+
             throw new RuntimeException(e);
         }
     }
@@ -185,7 +193,7 @@ public class CommandMBean<A extends IgniteDataTransferObject> implements Dynamic
 
             cntr++;
 
-            return val != null ? CommandUtils.parseVal(val, field.getType()) : null;
+            return !F.isEmpty(val) ? CommandUtils.parseVal(val, field.getType()) : null;
         }
     }
 }
