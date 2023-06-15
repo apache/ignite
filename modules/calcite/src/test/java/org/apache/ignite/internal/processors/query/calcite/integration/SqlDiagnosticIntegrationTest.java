@@ -42,11 +42,13 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.RunningQuery;
+import org.apache.ignite.internal.processors.query.calcite.Query;
 import org.apache.ignite.internal.processors.query.calcite.QueryRegistry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
@@ -56,15 +58,31 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.cleanPerformanceStatisticsDir;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.startCollectStatistics;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.stopCollectStatisticsAndRead;
+import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.BIG_RESULT_SET_MSG;
+import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_ERROR_MSG;
+import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_EXEC_MSG;
+import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_FINISHED_MSG;
 
 /**
  * Test SQL diagnostic tools.
  */
 public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
+    /** */
+    private static final long LONG_QRY_TIMEOUT = 1_000L;
+
+    /** */
+    private static final int BIG_RESULT_SET_THRESHOLD = 10_000;
+
+    /** */
+    private ListeningTestLogger log;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setSqlConfiguration(new SqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration()))
+            .setGridLogger(log)
+            .setSqlConfiguration(new SqlConfiguration()
+                .setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration())
+                .setLongQueryWarningTimeout(LONG_QRY_TIMEOUT))
             .setIncludeEventTypes(EVT_SQL_QUERY_EXECUTION, EVT_CACHE_QUERY_EXECUTED, EVT_CACHE_QUERY_OBJECT_READ);
     }
 
@@ -76,6 +94,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        log = new ListeningTestLogger(log());
 
         startGrids(nodeCount());
 
@@ -256,7 +276,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
                 IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
                     List<List<?>> res = sql(grid(0), "SELECT * FROM (VALUES('sensitive')) t(v) " +
-                        "WHERE v = 'sensitive' and waitLatch()");
+                        "WHERE v = 'sensitive' and waitLatch(1000)");
 
                     assertEquals(1, res.size());
                     assertEquals(1, res.get(0).size());
@@ -266,7 +286,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
                 try {
                     QueryRegistry qreg = queryProcessor(grid(0)).queryRegistry();
                     assertTrue(GridTestUtils.waitForCondition(() -> qreg.runningQueries().size() == 1, 1000L));
-                    RunningQuery qry = F.first(qreg.runningQueries());
+                    Query<?> qry = F.first(qreg.runningQueries());
                     assertFalse(qry.toString().contains("sensitive"));
                 }
                 finally {
@@ -301,15 +321,89 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
+    @Test
+    public void testLongRunningQueries() throws Exception {
+        client.getOrCreateCache(new CacheConfiguration<Integer, Integer>("func_cache")
+            .setSqlFunctionClasses(FunctionsLibrary.class)
+            .setSqlSchema("PUBLIC")
+        );
+
+        LogListener logLsnr0 = LogListener.matches(LONG_QUERY_EXEC_MSG).build();
+
+        log.registerListener(logLsnr0);
+
+        FunctionsLibrary.latch = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> sql(grid(0), "SELECT waitLatch(10000)"));
+
+        doSleep(LONG_QRY_TIMEOUT * 3);
+
+        assertTrue(logLsnr0.check());
+
+        LogListener logLsnr1 = LogListener.matches(LONG_QUERY_FINISHED_MSG).build();
+
+        log.registerListener(logLsnr1);
+
+        FunctionsLibrary.latch.countDown();
+
+        fut.get();
+
+        assertTrue(logLsnr1.check(1000L));
+
+        FunctionsLibrary.latch = new CountDownLatch(1);
+
+        fut = GridTestUtils.runAsync(() -> sql(grid(0), "SELECT waitLatch(2000)"));
+
+        LogListener logLsnr2 = LogListener.matches(LONG_QUERY_ERROR_MSG).build();
+
+        log.registerListener(logLsnr2);
+
+        doSleep(LONG_QRY_TIMEOUT * 2);
+
+        try {
+            fut.get();
+        }
+        catch (Exception ignore) {
+            // Expected.
+        }
+
+        assertTrue(logLsnr2.check(1000L));
+    }
+
+    /** */
+    @Test
+    public void testBigResultSet() throws Exception {
+        grid(0).context().query().runningQueryManager().heavyQueriesTracker()
+            .setResultSetSizeThreshold(BIG_RESULT_SET_THRESHOLD);
+
+        int rowCnt = BIG_RESULT_SET_THRESHOLD * 5 + 1;
+
+        LogListener logLsnr0 = LogListener.matches(BIG_RESULT_SET_MSG).build();
+        LogListener logLsnr1 = LogListener.matches("fetched=" + BIG_RESULT_SET_THRESHOLD).build();
+        LogListener logLsnr2 = LogListener.matches("fetched=" + rowCnt).build();
+
+        log.registerListener(logLsnr0);
+        log.registerListener(logLsnr1);
+        log.registerListener(logLsnr2);
+
+        sql(grid(0), "SELECT * FROM TABLE(SYSTEM_RANGE(1, ?))", rowCnt);
+
+        assertTrue(logLsnr0.check(1000L));
+        assertTrue(logLsnr1.check(1000L));
+        assertTrue(logLsnr2.check(1000L));
+    }
+
+    /** */
     public static class FunctionsLibrary {
         /** */
         static volatile CountDownLatch latch;
 
         /** */
         @QuerySqlFunction
-        public static boolean waitLatch() {
+        public static boolean waitLatch(long time) {
             try {
-                latch.await(1000L, TimeUnit.MILLISECONDS);
+                if (!latch.await(time, TimeUnit.MILLISECONDS))
+                    throw new RuntimeException();
             }
             catch (InterruptedException e) {
                 throw new RuntimeException(e);

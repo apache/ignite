@@ -20,6 +20,7 @@ package org.apache.ignite.internal.visor.encryption;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.management.encryption.EncryptionCacheGroupArg;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -34,8 +35,8 @@ public class VisorReencryptionStatusTask extends VisorCacheGroupEncryptionTask<L
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorCacheGroupEncryptionTaskArg, VisorSingleFieldDto<Long>> job(
-        VisorCacheGroupEncryptionTaskArg arg) {
+    @Override protected VisorJob<EncryptionCacheGroupArg, VisorSingleFieldDto<Long>> job(
+        EncryptionCacheGroupArg arg) {
         return new VisorReencryptionStatusJob(arg, debug);
     }
 
@@ -48,7 +49,7 @@ public class VisorReencryptionStatusTask extends VisorCacheGroupEncryptionTask<L
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorReencryptionStatusJob(@Nullable VisorCacheGroupEncryptionTaskArg arg, boolean debug) {
+        protected VisorReencryptionStatusJob(@Nullable EncryptionCacheGroupArg arg, boolean debug) {
             super(arg, debug);
         }
 

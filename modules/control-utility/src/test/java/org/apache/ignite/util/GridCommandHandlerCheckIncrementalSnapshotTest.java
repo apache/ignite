@@ -159,20 +159,24 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
     public void testWrongCommandParams() {
         grid(0).snapshot().createIncrementalSnapshot(SNP).get(getTestTimeout());
 
+        autoConfirmation = false;
+
         // Missed increment index.
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(cmd, "--snapshot", "check", SNP, "--increment"));
-        assertContains(log, testOut.toString(), "Expected incremental snapshot index");
+        assertContains(log, testOut.toString(), "Please specify a value for argument: --increment");
 
         // Wrong params.
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(cmd, "--snapshot", "check", SNP, "--increment", "wrong"));
-        assertContains(log, testOut.toString(), "Invalid value for incremental snapshot index");
+        assertContains(log, testOut.toString(), "Failed to parse --increment command argument. Can't parse number 'wrong'");
 
         // Missed increment index.
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(cmd, "--snapshot", "check", SNP, "--increment", "1", "--increment", "2"));
-        assertContains(log, testOut.toString(), "increment arg specified twice");
+        assertContains(log, testOut.toString(), "--increment argument specified twice");
 
         // Non existent increment.
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(cmd, "--snapshot", "check", SNP, "--increment", "2"));
+
+        autoConfirmation = true;
     }
 
     /** */

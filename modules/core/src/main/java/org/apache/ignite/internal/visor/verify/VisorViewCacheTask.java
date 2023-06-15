@@ -18,30 +18,34 @@
 package org.apache.ignite.internal.visor.verify;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.management.cache.CacheListCommandArg;
 import org.apache.ignite.internal.processors.cache.verify.ViewCacheClosure;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
+import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
+import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
 
 /**
  *
  */
 @GridInternal
-public class VisorViewCacheTask extends VisorOneNodeTask<VisorViewCacheTaskArg, VisorViewCacheTaskResult> {
+public class VisorViewCacheTask extends VisorOneNodeTask<CacheListCommandArg, VisorViewCacheTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorViewCacheTaskArg, VisorViewCacheTaskResult> job(VisorViewCacheTaskArg arg) {
+    @Override protected VisorJob<CacheListCommandArg, VisorViewCacheTaskResult> job(CacheListCommandArg arg) {
         return new VisorViewCacheJob(arg, debug);
     }
 
     /**
      *
      */
-    private static class VisorViewCacheJob extends VisorJob<VisorViewCacheTaskArg, VisorViewCacheTaskResult> {
+    private static class VisorViewCacheJob extends VisorJob<CacheListCommandArg, VisorViewCacheTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -49,14 +53,18 @@ public class VisorViewCacheTask extends VisorOneNodeTask<VisorViewCacheTaskArg, 
          * @param arg Argument.
          * @param debug Debug.
          */
-        protected VisorViewCacheJob(@Nullable VisorViewCacheTaskArg arg, boolean debug) {
+        protected VisorViewCacheJob(CacheListCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorViewCacheTaskResult run(@Nullable VisorViewCacheTaskArg arg) throws IgniteException {
+        @Override protected VisorViewCacheTaskResult run(CacheListCommandArg arg) throws IgniteException {
             try {
-                ViewCacheClosure clo = new ViewCacheClosure(arg.regex(), arg.command());
+                VisorViewCacheCmd cmd = arg.groups()
+                    ? GROUPS
+                    : (arg.seq() ? SEQ : CACHES);
+
+                ViewCacheClosure clo = new ViewCacheClosure(arg.regex(), cmd);
 
                 ignite.context().resource().injectGeneric(clo);
 

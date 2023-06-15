@@ -23,15 +23,14 @@ import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.commandline.property.PropertyArgs;
+import org.apache.ignite.internal.management.property.PropertyGetCommandArg;
+import org.apache.ignite.internal.management.property.PropertySetCommandArg;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.commandline.property.PropertyArgs.Action.GET;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_READ_DISTRIBUTED_PROPERTY;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_WRITE_DISTRIBUTED_PROPERTY;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
@@ -40,12 +39,12 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.sys
  * Task for property operations.
  */
 @GridInternal
-public class PropertyTask extends VisorMultiNodeTask<PropertyArgs, PropertyOperationResult, PropertyOperationResult> {
+public class PropertyTask extends VisorMultiNodeTask<PropertyGetCommandArg, PropertyOperationResult, PropertyOperationResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<PropertyArgs, PropertyOperationResult> job(PropertyArgs arg) {
+    @Override protected VisorJob<PropertyGetCommandArg, PropertyOperationResult> job(PropertyGetCommandArg arg) {
         return new PropertyJob(arg, debug);
     }
 
@@ -66,7 +65,7 @@ public class PropertyTask extends VisorMultiNodeTask<PropertyArgs, PropertyOpera
     /**
      * Job for getting binary metadata.
      */
-    private static class PropertyJob extends VisorJob<PropertyArgs, PropertyOperationResult> {
+    private static class PropertyJob extends VisorJob<PropertyGetCommandArg, PropertyOperationResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -74,45 +73,40 @@ public class PropertyTask extends VisorMultiNodeTask<PropertyArgs, PropertyOpera
          * @param arg Argument.
          * @param debug Debug.
          */
-        protected PropertyJob(@Nullable PropertyArgs arg, boolean debug) {
+        protected PropertyJob(@Nullable PropertyGetCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
         @Override public SecurityPermissionSet requiredPermissions() {
-            return systemPermissions(((PropertyArgs)argument(0)).action() == GET
-                ? ADMIN_READ_DISTRIBUTED_PROPERTY
-                : ADMIN_WRITE_DISTRIBUTED_PROPERTY
+            return systemPermissions(argument(0) instanceof PropertySetCommandArg
+                ? ADMIN_WRITE_DISTRIBUTED_PROPERTY
+                : ADMIN_READ_DISTRIBUTED_PROPERTY
             );
         }
 
         /** {@inheritDoc} */
-        @Override protected PropertyOperationResult run(@Nullable PropertyArgs arg) {
+        @Override protected PropertyOperationResult run(@Nullable PropertyGetCommandArg arg) {
+            if (arg == null)
+                throw new IllegalArgumentException("Argument is null");
+
             DistributedChangeableProperty<Serializable> prop =
                 ignite.context().distributedConfiguration().property(arg.name());
 
             if (prop == null)
                 throw new IllegalArgumentException("Property doesn't not exist [name=" + arg.name() + ']');
 
-            switch (arg.action()) {
-                case GET:
-                    return new PropertyOperationResult(Objects.toString(prop.get()));
+            if (!(arg instanceof PropertySetCommandArg))
+                return new PropertyOperationResult(Objects.toString(prop.get()));
 
-                case SET:
-                    try {
-                        prop.propagate(prop.parse(arg.value()));
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-
-                    return new PropertyOperationResult(null);
-
-                default:
-                    assert false : "unexpected state";
-
-                    return null;
+            try {
+                prop.propagate(prop.parse(((PropertySetCommandArg)arg).val()));
             }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+
+            return new PropertyOperationResult(null);
         }
     }
 }

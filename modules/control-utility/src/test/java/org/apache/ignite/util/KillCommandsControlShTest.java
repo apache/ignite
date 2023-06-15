@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask;
@@ -63,6 +62,18 @@ import static org.apache.ignite.util.KillCommandsTests.doTestScanQueryCancel;
 
 /** Tests cancel of user created entities via control.sh. */
 public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassAbstractTest {
+    /** */
+    public static final String PARALLEL = "--parallel";
+
+    /** */
+    public static final String CACHE = "--cache";
+
+    /** */
+    public static final String STRATEGY = "--strategy";
+
+    /** */
+    public static final String PARTITIONS = "--partitions";
+
     /** */
     private static List<IgniteEx> srvs;
 
@@ -373,12 +384,12 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
 
         List<String> cmd = new ArrayList<>(asList(
             "--consistency", "repair",
-            ConsistencyCommand.STRATEGY, ReadRepairStrategy.CHECK_ONLY.toString(),
-            ConsistencyCommand.PARTITIONS, "0",
-            ConsistencyCommand.CACHE, consistencyCacheName));
+            STRATEGY, ReadRepairStrategy.CHECK_ONLY.toString(),
+            PARTITIONS, "0",
+            CACHE, consistencyCacheName));
 
         if (parallel)
-            cmd.add(ConsistencyCommand.PARALLEL);
+            cmd.add(PARALLEL);
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(cmd));
 

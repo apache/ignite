@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.management.cache.CacheContentionCommandArg;
 import org.apache.ignite.internal.processors.cache.verify.ContentionClosure;
 import org.apache.ignite.internal.processors.cache.verify.ContentionInfo;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -36,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 @GridInternal
-public class VisorContentionTask extends VisorMultiNodeTask<VisorContentionTaskArg,
+public class VisorContentionTask extends VisorMultiNodeTask<CacheContentionCommandArg,
     VisorContentionTaskResult, VisorContentionJobResult> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -57,14 +58,14 @@ public class VisorContentionTask extends VisorMultiNodeTask<VisorContentionTaskA
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorContentionTaskArg, VisorContentionJobResult> job(VisorContentionTaskArg arg) {
+    @Override protected VisorJob<CacheContentionCommandArg, VisorContentionJobResult> job(CacheContentionCommandArg arg) {
         return new VisorContentionJob(arg, debug);
     }
 
     /**
      *
      */
-    private static class VisorContentionJob extends VisorJob<VisorContentionTaskArg, VisorContentionJobResult> {
+    private static class VisorContentionJob extends VisorJob<CacheContentionCommandArg, VisorContentionJobResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -72,12 +73,12 @@ public class VisorContentionTask extends VisorMultiNodeTask<VisorContentionTaskA
          * @param arg Argument.
          * @param debug Debug.
          */
-        protected VisorContentionJob(@Nullable VisorContentionTaskArg arg, boolean debug) {
+        protected VisorContentionJob(@Nullable CacheContentionCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorContentionJobResult run(@Nullable VisorContentionTaskArg arg) throws IgniteException {
+        @Override protected VisorContentionJobResult run(@Nullable CacheContentionCommandArg arg) throws IgniteException {
             try {
                 ContentionClosure clo = new ContentionClosure(arg.minQueueSize(), arg.maxPrint());
 

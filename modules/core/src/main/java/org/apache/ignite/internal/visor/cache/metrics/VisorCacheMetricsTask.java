@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.visor.cache.metrics;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.management.cache.CacheMetricsCommandArg;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
@@ -28,7 +30,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricsOperation.ENABLE;
 
 /**
@@ -36,12 +37,12 @@ import static org.apache.ignite.internal.visor.cache.metrics.CacheMetricsOperati
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorCacheMetricsTask extends VisorOneNodeTask<VisorCacheMetricsTaskArg, VisorCacheMetricsTaskResult> {
+public class VisorCacheMetricsTask extends VisorOneNodeTask<CacheMetricsCommandArg, VisorCacheMetricsTaskResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCacheMetricsJob job(VisorCacheMetricsTaskArg arg) {
+    @Override protected VisorCacheMetricsJob job(CacheMetricsCommandArg arg) {
         return new VisorCacheMetricsJob(arg, false);
     }
 
@@ -50,7 +51,7 @@ public class VisorCacheMetricsTask extends VisorOneNodeTask<VisorCacheMetricsTas
      * exception, caught during execution of job.
      * Results are passed into instance of wrapper class {@link VisorCacheMetricsTaskResult}.
      */
-    private static class VisorCacheMetricsJob extends VisorJob<VisorCacheMetricsTaskArg, VisorCacheMetricsTaskResult> {
+    private static class VisorCacheMetricsJob extends VisorJob<CacheMetricsCommandArg, VisorCacheMetricsTaskResult> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -60,15 +61,15 @@ public class VisorCacheMetricsTask extends VisorOneNodeTask<VisorCacheMetricsTas
          * @param arg   Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorCacheMetricsJob(@Nullable VisorCacheMetricsTaskArg arg, boolean debug) {
+        protected VisorCacheMetricsJob(@Nullable CacheMetricsCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorCacheMetricsTaskResult run(@Nullable VisorCacheMetricsTaskArg arg)
+        @Override protected VisorCacheMetricsTaskResult run(@Nullable CacheMetricsCommandArg arg)
             throws IgniteException {
             if (arg != null) {
-                Collection<String> cacheNames = F.isEmpty(arg.cacheNames()) ? ignite.cacheNames() : arg.cacheNames();
+                Collection<String> cacheNames = F.isEmpty(arg.caches()) ? ignite.cacheNames() : Arrays.asList(arg.caches());
 
                 try {
                     switch (arg.operation()) {

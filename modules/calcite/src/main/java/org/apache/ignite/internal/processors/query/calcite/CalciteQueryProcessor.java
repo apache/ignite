@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
@@ -375,14 +374,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String schemaName,
         String sql
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(ctx, (qry, plan) -> {
-            try {
-                return fieldsMeta(plan, true);
-            }
-            finally {
-                qryReg.unregister(qry.id());
-            }
-        }, schemaName, sql);
+        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, true), schemaName, sql);
     }
 
     /** {@inheritDoc} */
@@ -391,14 +383,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String schemaName,
         String sql
     ) throws IgniteSQLException {
-        return parseAndProcessQuery(ctx, (qry, plan) -> {
-            try {
-                return fieldsMeta(plan, false);
-            }
-            finally {
-                qryReg.unregister(qry.id());
-            }
-        }, schemaName, sql);
+        return parseAndProcessQuery(ctx, (qry, plan) -> fieldsMeta(plan, false), schemaName, sql);
     }
 
     /** {@inheritDoc} */
@@ -534,7 +519,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             params,
             qryCtx,
             exchangeSvc,
-            (q) -> qryReg.unregister(q.id()),
+            (q, ex) -> qryReg.unregister(q.id(), ex),
             log,
             queryPlannerTimeout
         );
@@ -555,7 +540,14 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         }
 
         try {
-            return action.apply(qry);
+            T res = action.apply(qry);
+
+            // Queries without iterator (DDL, EXPLAIN, metadata requests) can be unregistered right after executing,
+            // queries with iterator (SELECT, DML) must be unregistered only after fetching all data or on error/cancel.
+            if (qry.iterator() == null)
+                qryReg.unregister(qry.id(), null);
+
+            return res;
         }
         catch (Throwable e) {
             boolean isCanceled = qry.isCancelled();
@@ -563,7 +555,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             if (qrys != null)
                 qrys.forEach(RootQuery::cancel);
 
-            qryReg.unregister(qry.id());
+            qryReg.unregister(qry.id(), e);
 
             if (isCanceled)
                 throw new IgniteSQLException("The query was cancelled while planning", IgniteQueryErrorCode.QUERY_CANCELED, e);
@@ -613,13 +605,13 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public RunningQuery runningQuery(UUID id) {
+    /** */
+    public Query<?> runningQuery(UUID id) {
         return qryReg.query(id);
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<? extends RunningQuery> runningQueries() {
+    /** */
+    public Collection<? extends Query<?>> runningQueries() {
         return qryReg.runningQueries();
     }
 

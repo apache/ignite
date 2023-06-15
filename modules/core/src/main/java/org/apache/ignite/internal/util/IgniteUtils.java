@@ -378,6 +378,9 @@ public abstract class IgniteUtils {
     /** Empty fields array. */
     public static final Field[] EMPTY_FIELDS = new Field[0];
 
+    /** */
+    public static final UUID[] EMPTY_UUIDS = new UUID[0];
+
     /** System line separator. */
     private static final String NL = System.getProperty("line.separator");
 
@@ -571,6 +574,9 @@ public abstract class IgniteUtils {
     /** MAC OS invalid argument socket error message. */
     public static final String MAC_INVALID_ARG_MSG = "On MAC OS you may have too many file descriptors open " +
         "(simple restart usually solves the issue)";
+
+    /** */
+    public static final String DELIM = "--------------------------------------------------------------------------------";
 
     /** Ignite Logging Directory. */
     public static final String IGNITE_LOG_DIR = System.getenv(IgniteSystemProperties.IGNITE_LOG_DIR);
@@ -1957,6 +1963,29 @@ public abstract class IgniteUtils {
 
             for (int i = 0; i < len; i++)
                 arr[i] = in.readObject();
+        }
+
+        return arr;
+    }
+
+    /**
+     * Reads typed array from input stream.
+     *
+     * @param in Input stream.
+     * @return Deserialized array.
+     * @throws IOException If failed.
+     * @throws ClassNotFoundException If class not found.
+     */
+    @Nullable public static <T> T[] readArray(ObjectInput in, Class<T> cls) throws IOException, ClassNotFoundException {
+        int len = in.readInt();
+
+        T[] arr = null;
+
+        if (len > 0) {
+            arr = (T[])Array.newInstance(cls, len);
+
+            for (int i = 0; i < len; i++)
+                arr[i] = (T)in.readObject();
         }
 
         return arr;
@@ -12495,5 +12524,29 @@ public abstract class IgniteUtils {
         catch (ClassNotFoundException e) {
             return true;
         }
+    }
+
+    /**
+     * Appends spaces to end of input string for extending to needed length.
+     *
+     * @param s Input string.
+     * @param targetLen Needed length.
+     * @return String with appended spaces on the end.
+     */
+    public static String extendToLen(String s, int targetLen) {
+        assert targetLen >= 0;
+        assert s.length() <= targetLen;
+
+        if (s.length() == targetLen)
+            return s;
+
+        SB sb = new SB(targetLen);
+
+        sb.a(s);
+
+        for (int i = 0; i < targetLen - s.length(); i++)
+            sb.a(" ");
+
+        return sb.toString();
     }
 }
