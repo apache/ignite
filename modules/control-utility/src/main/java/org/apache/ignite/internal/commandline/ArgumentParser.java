@@ -42,9 +42,7 @@ import org.apache.ignite.internal.management.api.CliSubcommandsWithPrefix;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.ssl.SslContextFactory;
 
@@ -379,122 +377,5 @@ public class ArgumentParser {
         namedArgs.addAll(common);
 
         return new CLIArgumentParser(positionalArgs, namedArgs);
-    }
-
-    /**
-     * Fill and vaildate command argument.
-     *
-     * @param argCls Argument class.
-     * @param positionalParamProvider Provider of positional parameters.
-     * @param paramProvider Provider of named parameters.
-     * @return Argument filled with parameters.
-     * @param <A> Argument type.
-     */
-    private static <A extends IgniteDataTransferObject> A argument(
-        Class<A> argCls,
-        BiFunction<Field, Integer, Object> positionalParamProvider,
-        Function<Field, Object> paramProvider
-    ) {
-        try {
-            ArgumentState<A> arg = new ArgumentState<>(argCls);
-
-            visitCommandParams(
-                argCls,
-                fld -> arg.accept(fld, positionalParamProvider.apply(fld, arg.nextIdx())),
-                fld -> arg.accept(fld, paramProvider.apply(fld)),
-                (argGrp, flds) -> flds.forEach(fld -> {
-                    if (fld.isAnnotationPresent(Positional.class))
-                        arg.accept(fld, positionalParamProvider.apply(fld, arg.nextIdx()));
-                    else
-                        arg.accept(fld, paramProvider.apply(fld));
-                })
-            );
-
-            if (arg.argGrp != null && (!arg.grpOptional() && !arg.grpFldExists))
-                throw new IllegalArgumentException("One of " + toFormattedNames(argCls, arg.grpdFlds) + " required");
-
-            return arg.res;
-        }
-        catch (InstantiationException | IllegalAccessException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /** */
-    private static class ArgumentState<A extends IgniteDataTransferObject> implements BiConsumer<Field, Object> {
-        /** */
-        final A res;
-
-        /** */
-        final ArgumentGroup argGrp;
-
-        /** */
-        boolean grpFldExists;
-
-        /** */
-        int idx;
-
-        /** */
-        final Set<String> grpdFlds;
-
-        /** */
-        public ArgumentState(Class<A> argCls) throws InstantiationException, IllegalAccessException {
-            res = argCls.newInstance();
-            argGrp = argCls.getAnnotation(ArgumentGroup.class);
-            grpdFlds = argGrp == null
-                ? Collections.emptySet()
-                : new HashSet<>(Arrays.asList(argGrp.value()));
-        }
-
-        /** */
-        public boolean grpOptional() {
-            return argGrp == null || argGrp.optional();
-        }
-
-        /** */
-        private int nextIdx() {
-            int idx0 = idx;
-
-            idx++;
-
-            return idx0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void accept(Field fld, Object val) {
-            boolean grpdFld = grpdFlds.contains(fld.getName());
-
-            if (val == null) {
-                if (grpdFld || fld.getAnnotation(Argument.class).optional())
-                    return;
-
-                String name = fld.isAnnotationPresent(Positional.class)
-                    ? parameterExample(fld, false)
-                    : toFormattedFieldName(fld);
-
-                throw new IllegalArgumentException("Argument " + name + " required.");
-            }
-
-            if (grpdFld) {
-                if (grpFldExists && (argGrp != null && argGrp.onlyOneOf())) {
-                    throw new IllegalArgumentException(
-                        "Only one of " + toFormattedNames(res.getClass(), grpdFlds) + " allowed"
-                    );
-                }
-
-                grpFldExists = true;
-            }
-
-            try {
-                res.getClass().getMethod(fld.getName(), fld.getType()).invoke(res, val);
-            }
-            catch (NoSuchMethodException | IllegalAccessException e) {
-                throw new IgniteException(e);
-            }
-            catch (InvocationTargetException e) {
-                if (e.getTargetException() != null && e.getTargetException() instanceof RuntimeException)
-                    throw (RuntimeException)e.getTargetException();
-            }
-        }
     }
 }

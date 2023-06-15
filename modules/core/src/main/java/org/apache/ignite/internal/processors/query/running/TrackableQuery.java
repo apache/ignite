@@ -15,22 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.api;
+package org.apache.ignite.internal.processors.query.running;
 
-import java.util.function.Consumer;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientException;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Command that must be executed directly using {@link GridClient} instance.
+ * Query, that can be tracked by {@link HeavyQueriesTracker}.
  */
-public interface LocalCommand<A extends IgniteDataTransferObject, R> extends Command<A, R> {
-    /**
-     * @param cli Grid client instance.
-     * @param arg Command argument.
-     * @param printer Results printer.
-     * @return Command result.
-     */
-    public R execute(GridClient cli, A arg, Consumer<String> printer) throws GridClientException;
+public interface TrackableQuery {
+    /** Query execution time. */
+    public long time();
+
+    /** Query info to print to log. */
+    public String queryInfo(@Nullable String additinalInfo);
 }

@@ -16,7 +16,6 @@
  */
 
 package org.apache.ignite.internal.management.api;
-<<<<<<<< HEAD:modules/core/src/main/java/org/apache/ignite/internal/management/api/HelpCommand.java
 
 /**
  * Marker interface only for backward compatibility with {@code ./control.sh}.
@@ -26,22 +25,4 @@ public interface HelpCommand extends Command<NoArg, Void> {
     @Override public default Class<NoArg> argClass() {
         return NoArg.class;
     }
-========
-
-import java.util.function.Consumer;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-
-/**
- * Command that must be executed directly using {@link GridClient} instance.
- */
-public interface LocalCommand<A extends IgniteDataTransferObject, R> extends Command<A, R> {
-    /**
-     * @param cli Grid client instance.
-     * @param arg Command argument.
-     * @param printer Results printer.
-     * @return Command result.
-     */
-    public R execute(GridClient cli, A arg, Consumer<String> printer) throws Exception;
->>>>>>>> master:modules/core/src/main/java/org/apache/ignite/internal/management/api/LocalCommand.java
 }
