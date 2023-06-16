@@ -49,7 +49,7 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.management.cache.CacheFilterEnum;
 import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommandArg;
-import org.apache.ignite.internal.management.cache.CacheIdleVerifyTaskResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyTaskResultV2;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -124,7 +124,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
-        CacheIdleVerifyTaskResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyTaskResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -148,7 +148,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertTrue(part0.toString(), part0.toFile().exists());
         assertTrue(part0.toFile().delete());
 
-        CacheIdleVerifyTaskResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyTaskResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -172,7 +172,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertTrue(dir.toString(), dir.toFile().exists());
         assertTrue(U.delete(dir));
 
-        CacheIdleVerifyTaskResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyTaskResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -195,7 +195,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertTrue(smfs[0].toString(), smfs[0].exists());
         assertTrue(U.delete(smfs[0]));
 
-        CacheIdleVerifyTaskResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyTaskResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -216,7 +216,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(ig0, SNAPSHOT_NAME);
 
-        CacheIdleVerifyTaskResultV2 res = snp(ig0).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyTaskResultV2 res = snp(ig0).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -292,7 +292,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             pageStore.finishRecover();
         }
 
-        CacheIdleVerifyTaskResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyTaskResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -341,7 +341,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().state(ACTIVE);
 
-        CacheIdleVerifyTaskResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyTaskResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -365,7 +365,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         corruptPartitionFile(ignite, SNAPSHOT_NAME, dfltCacheCfg, PART_ID);
 
-        CacheIdleVerifyTaskResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, null, false, -1, false).get().idleVerifyResult();
+        IdleVerifyTaskResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, null, false, -1, false).get().idleVerifyResult();
 
         assertEquals("Check must be disabled", 0, res.exceptions().size());
 
@@ -477,7 +477,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertNotNull(part0);
         assertTrue(part0.toString(), part0.toFile().exists());
 
-        CacheIdleVerifyTaskResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyTaskResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);
@@ -504,9 +504,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         arg.cacheFilter(CacheFilterEnum.USER);
         arg.checkCrc(true);
 
-        CacheIdleVerifyTaskResultV2 idleVerifyRes = ignite.compute().execute(new TestVisorBackupPartitionsTask(), arg);
+        IdleVerifyTaskResultV2 idleVerifyRes = ignite.compute().execute(new TestVisorBackupPartitionsTask(), arg);
 
-        CacheIdleVerifyTaskResultV2 snpVerifyRes = ignite.compute().execute(
+        IdleVerifyTaskResultV2 snpVerifyRes = ignite.compute().execute(
             new TestSnapshotPartitionsVerifyTask(),
             new SnapshotPartitionsVerifyTaskArg(
                 new HashSet<>(),
@@ -688,8 +688,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** */
     private class TestVisorBackupPartitionsTask extends VerifyBackupPartitionsTaskV2 {
         /** {@inheritDoc} */
-        @Override public @Nullable CacheIdleVerifyTaskResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
-            CacheIdleVerifyTaskResultV2 res = super.reduce(results);
+        @Override public @Nullable IdleVerifyTaskResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
+            IdleVerifyTaskResultV2 res = super.reduce(results);
 
             saveHashes(TestVisorBackupPartitionsTask.class, results);
 

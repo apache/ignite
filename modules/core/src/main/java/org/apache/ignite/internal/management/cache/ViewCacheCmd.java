@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public enum CacheListCmd {
+public enum ViewCacheCmd {
     /** Caches. */
     CACHES,
 
@@ -33,7 +33,7 @@ public enum CacheListCmd {
     SEQ;
 
     /** Enumerated values. */
-    private static final CacheListCmd[] VALS = values();
+    private static final ViewCacheCmd[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -41,7 +41,7 @@ public enum CacheListCmd {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static CacheListCmd fromOrdinal(int ord) {
+    @Nullable public static ViewCacheCmd fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

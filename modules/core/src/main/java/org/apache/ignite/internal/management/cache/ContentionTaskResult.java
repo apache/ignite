@@ -32,12 +32,12 @@ import org.apache.ignite.internal.visor.VisorDataTransferObject;
 /**
  *
  */
-public class CacheContentionTaskResult extends VisorDataTransferObject {
+public class ContentionTaskResult extends VisorDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** Cluster infos. */
-    private List<CacheContentionJobResult> clusterInfos;
+    private List<ContentionJobResult> clusterInfos;
 
     /** Exceptions. */
     private Map<UUID, Exception> exceptions;
@@ -46,7 +46,7 @@ public class CacheContentionTaskResult extends VisorDataTransferObject {
      * @param clusterInfos Cluster infos.
      * @param exceptions Exceptions.
      */
-    public CacheContentionTaskResult(List<CacheContentionJobResult> clusterInfos,
+    public ContentionTaskResult(List<ContentionJobResult> clusterInfos,
         Map<UUID, Exception> exceptions) {
         this.clusterInfos = clusterInfos;
         this.exceptions = exceptions;
@@ -55,13 +55,13 @@ public class CacheContentionTaskResult extends VisorDataTransferObject {
     /**
      * For externalization only.
      */
-    public CacheContentionTaskResult() {
+    public ContentionTaskResult() {
     }
 
     /**
      * @return Cluster infos.
      */
-    public Collection<CacheContentionJobResult> jobResults() {
+    public Collection<ContentionJobResult> jobResults() {
         return clusterInfos;
     }
 
@@ -69,7 +69,7 @@ public class CacheContentionTaskResult extends VisorDataTransferObject {
      * @return Collection of {@link ContentionInfo} collected during task execution.
      */
     public Collection<ContentionInfo> getInfos() {
-        return clusterInfos.stream().map(CacheContentionJobResult::info).collect(Collectors.toList());
+        return clusterInfos.stream().map(ContentionJobResult::info).collect(Collectors.toList());
     }
 
     /**
@@ -94,6 +94,6 @@ public class CacheContentionTaskResult extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheContentionTaskResult.class, this);
+        return S.toString(ContentionTaskResult.class, this);
     }
 }

@@ -37,17 +37,17 @@ import static org.apache.ignite.internal.util.IgniteUtils.writeMap;
 /**
  *
  */
-public class CacheValidateIndexesJobResult extends IgniteDataTransferObject {
+public class ValidateIndexesJobResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Results of indexes validation from node. */
     @GridToStringInclude
-    private Map<PartitionKey, CacheValidateIndexesPartitionResult> partRes;
+    private Map<PartitionKey, ValidateIndexesPartitionResult> partRes;
 
     /** Results of reverse indexes validation from node. */
     @GridToStringInclude
-    private Map<String, CacheValidateIndexesPartitionResult> idxRes;
+    private Map<String, ValidateIndexesPartitionResult> idxRes;
 
     /** Integrity check issues. */
     @GridToStringInclude
@@ -55,7 +55,7 @@ public class CacheValidateIndexesJobResult extends IgniteDataTransferObject {
 
     /** Results of checking size cache and index. */
     @GridToStringInclude
-    private Map<String, CacheValidateIndexesCheckSizeResult> checkSizeRes;
+    private Map<String, ValidateIndexesCheckSizeResult> checkSizeRes;
 
     /**
      * Constructor.
@@ -65,11 +65,11 @@ public class CacheValidateIndexesJobResult extends IgniteDataTransferObject {
      * @param integrityCheckFailures Collection of indexes integrity check failures.
      * @param checkSizeRes Results of checking size cache and index.
      */
-    public CacheValidateIndexesJobResult(
-        Map<PartitionKey, CacheValidateIndexesPartitionResult> partRes,
-        @Nullable Map<String, CacheValidateIndexesPartitionResult> idxRes,
+    public ValidateIndexesJobResult(
+        Map<PartitionKey, ValidateIndexesPartitionResult> partRes,
+        @Nullable Map<String, ValidateIndexesPartitionResult> idxRes,
         @Nullable Collection<IndexIntegrityCheckIssue> integrityCheckFailures,
-        @Nullable Map<String, CacheValidateIndexesCheckSizeResult> checkSizeRes
+        @Nullable Map<String, ValidateIndexesCheckSizeResult> checkSizeRes
     ) {
         this.partRes = partRes;
         this.idxRes = idxRes;
@@ -80,20 +80,20 @@ public class CacheValidateIndexesJobResult extends IgniteDataTransferObject {
     /**
      * For externalization only.
      */
-    public CacheValidateIndexesJobResult() {
+    public ValidateIndexesJobResult() {
     }
 
     /**
      * @return Results of indexes validation from node.
      */
-    public Map<PartitionKey, CacheValidateIndexesPartitionResult> partitionResult() {
+    public Map<PartitionKey, ValidateIndexesPartitionResult> partitionResult() {
         return partRes;
     }
 
     /**
      * @return Results of reverse indexes validation from node.
      */
-    public Map<String, CacheValidateIndexesPartitionResult> indexResult() {
+    public Map<String, ValidateIndexesPartitionResult> indexResult() {
         return idxRes == null ? emptyMap() : idxRes;
     }
 
@@ -109,7 +109,7 @@ public class CacheValidateIndexesJobResult extends IgniteDataTransferObject {
      *
      * @return Results of checking size cache and index.
      */
-    public Map<String, CacheValidateIndexesCheckSizeResult> checkSizeResult() {
+    public Map<String, ValidateIndexesCheckSizeResult> checkSizeResult() {
         return checkSizeRes == null ? emptyMap() : checkSizeRes;
     }
 
@@ -144,6 +144,6 @@ public class CacheValidateIndexesJobResult extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheValidateIndexesJobResult.class, this);
+        return S.toString(ValidateIndexesJobResult.class, this);
     }
 }

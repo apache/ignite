@@ -40,8 +40,8 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImp
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.LeafIO;
 import org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexTarget;
-import org.apache.ignite.internal.management.cache.CacheValidateIndexesClosure;
-import org.apache.ignite.internal.management.cache.CacheValidateIndexesJobResult;
+import org.apache.ignite.internal.management.cache.ValidateIndexesClosure;
+import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
@@ -287,7 +287,7 @@ public class IndexCorruptionRebuildTest extends GridCommonAbstractTest {
 
     /** */
     private static void validateIndexes(IgniteEx node) throws Exception {
-        CacheValidateIndexesClosure clo = new CacheValidateIndexesClosure(
+        ValidateIndexesClosure clo = new ValidateIndexesClosure(
             () -> false,
             null,
             0,
@@ -298,7 +298,7 @@ public class IndexCorruptionRebuildTest extends GridCommonAbstractTest {
 
         node.context().resource().injectGeneric(clo);
 
-        CacheValidateIndexesJobResult call = clo.call();
+        ValidateIndexesJobResult call = clo.call();
 
         assertFalse(call.hasIssues());
     }

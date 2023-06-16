@@ -102,7 +102,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.error;
  * 3. If entry is present in cache SQL index, it's present in cache data tree
  * 4. If size of cache and index on same table are not same
  */
-public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidateIndexesJobResult> {
+public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJobResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -166,7 +166,7 @@ public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidate
     private final Set<Integer> failCalcCacheSizeGrpIds = newSetFromMap(new ConcurrentHashMap<>());
 
     /** Validate index context. */
-    private final CacheValidateIndexesContext validateCtx;
+    private final ValidateIndexesContext validateCtx;
 
     /**
      * Constructor.
@@ -178,8 +178,8 @@ public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidate
      * @param checkCrc Check CRC sum on stored pages on disk.
      * @param checkSizes Check that index size and cache size are same.
      */
-    public CacheValidateIndexesClosure(
-        CacheValidateIndexesContext validateCtx,
+    public ValidateIndexesClosure(
+        ValidateIndexesContext validateCtx,
         Set<String> cacheNames,
         int checkFirst,
         int checkThrough,
@@ -195,7 +195,7 @@ public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidate
     }
 
     /** {@inheritDoc} */
-    @Override public CacheValidateIndexesJobResult call() throws Exception {
+    @Override public ValidateIndexesJobResult call() throws Exception {
         calcExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
         try {
@@ -248,7 +248,7 @@ public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidate
     /**
      *
      */
-    private CacheValidateIndexesJobResult call0() {
+    private ValidateIndexesJobResult call0() {
         if (validateCtx.isCancelled())
             throw new IgniteException(CANCELLED_MSG);
 
@@ -299,8 +299,8 @@ public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidate
         totalPartitions = partArgs.size();
         totalIndexes = idxArgs.size();
 
-        List<Future<Map<PartitionKey, CacheValidateIndexesPartitionResult>>> procPartFutures = new ArrayList<>(partArgs.size());
-        List<Future<Map<String, CacheValidateIndexesPartitionResult>>> procIdxFutures = new ArrayList<>(idxArgs.size());
+        List<Future<Map<PartitionKey, ValidateIndexesPartitionResult>>> procPartFutures = new ArrayList<>(partArgs.size());
+        List<Future<Map<String, ValidateIndexesPartitionResult>>> procIdxFutures = new ArrayList<>(idxArgs.size());
 
         List<T3<CacheGroupContext, GridDhtLocalPartition, Future<CacheSize>>> cacheSizeFutures = new ArrayList<>(partArgs.size());
         List<T3<GridCacheContext, InlineIndexImpl, Future<T2<Throwable, Long>>>> idxSizeFutures = new ArrayList<>(idxArgs.size());
@@ -325,9 +325,9 @@ public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidate
             }
         }
 
-        Map<PartitionKey, CacheValidateIndexesPartitionResult> partResults = new HashMap<>();
-        Map<String, CacheValidateIndexesPartitionResult> idxResults = new HashMap<>();
-        Map<String, CacheValidateIndexesCheckSizeResult> checkSizeResults = new HashMap<>();
+        Map<PartitionKey, ValidateIndexesPartitionResult> partResults = new HashMap<>();
+        Map<String, ValidateIndexesPartitionResult> idxResults = new HashMap<>();
+        Map<String, ValidateIndexesCheckSizeResult> checkSizeResults = new HashMap<>();
 
         int curPart = 0;
         int curIdx = 0;
@@ -335,18 +335,18 @@ public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidate
         int curIdxSize = 0;
         try {
             for (; curPart < procPartFutures.size(); curPart++) {
-                Future<Map<PartitionKey, CacheValidateIndexesPartitionResult>> fut = procPartFutures.get(curPart);
+                Future<Map<PartitionKey, ValidateIndexesPartitionResult>> fut = procPartFutures.get(curPart);
 
-                Map<PartitionKey, CacheValidateIndexesPartitionResult> partRes = fut.get();
+                Map<PartitionKey, ValidateIndexesPartitionResult> partRes = fut.get();
 
                 if (!partRes.isEmpty() && partRes.entrySet().stream().anyMatch(e -> !e.getValue().issues().isEmpty()))
                     partResults.putAll(partRes);
             }
 
             for (; curIdx < procIdxFutures.size(); curIdx++) {
-                Future<Map<String, CacheValidateIndexesPartitionResult>> fut = procIdxFutures.get(curIdx);
+                Future<Map<String, ValidateIndexesPartitionResult>> fut = procIdxFutures.get(curIdx);
 
-                Map<String, CacheValidateIndexesPartitionResult> idxRes = fut.get();
+                Map<String, ValidateIndexesPartitionResult> idxRes = fut.get();
 
                 if (!idxRes.isEmpty() && idxRes.entrySet().stream().anyMatch(e -> !e.getValue().issues().isEmpty()))
                     idxResults.putAll(idxRes);
@@ -374,7 +374,7 @@ public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidate
                 }
             }
 
-            log.warning("CacheValidateIndexesClosure finished: processed " + totalPartitions + " partitions and "
+            log.warning("ValidateIndexesClosure finished: processed " + totalPartitions + " partitions and "
                     + totalIndexes + " indexes.");
         }
         catch (InterruptedException | ExecutionException e) {
@@ -396,7 +396,7 @@ public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidate
         if (validateCtx.isCancelled())
             throw new IgniteException(CANCELLED_MSG);
 
-        return new CacheValidateIndexesJobResult(
+        return new ValidateIndexesJobResult(
             partResults,
             idxResults,
             integrityCheckResults.values(),
@@ -492,7 +492,7 @@ public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidate
         finally {
             integrityCheckedIndexes.incrementAndGet();
 
-            printProgressIfNeeded(() -> "Current progress of CacheValidateIndexesClosure: checked integrity of "
+            printProgressIfNeeded(() -> "Current progress of ValidateIndexesClosure: checked integrity of "
                     + integrityCheckedIndexes.get() + " index partitions of " + totalCacheGrps + " cache groups");
         }
     }
@@ -501,12 +501,12 @@ public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidate
      * @param grpCtx Group context.
      * @param part Local partition.
      */
-    private Future<Map<PartitionKey, CacheValidateIndexesPartitionResult>> processPartitionAsync(
+    private Future<Map<PartitionKey, ValidateIndexesPartitionResult>> processPartitionAsync(
         CacheGroupContext grpCtx,
         GridDhtLocalPartition part
     ) {
-        return calcExecutor.submit(new Callable<Map<PartitionKey, CacheValidateIndexesPartitionResult>>() {
-            @Override public Map<PartitionKey, CacheValidateIndexesPartitionResult> call() {
+        return calcExecutor.submit(new Callable<Map<PartitionKey, ValidateIndexesPartitionResult>>() {
+            @Override public Map<PartitionKey, ValidateIndexesPartitionResult> call() {
                 return processPartition(grpCtx, part);
             }
         });
@@ -516,14 +516,14 @@ public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidate
      * @param grpCtx Group context.
      * @param part Local partition.
      */
-    private Map<PartitionKey, CacheValidateIndexesPartitionResult> processPartition(
+    private Map<PartitionKey, ValidateIndexesPartitionResult> processPartition(
         CacheGroupContext grpCtx,
         GridDhtLocalPartition part
     ) {
         if (validateCtx.isCancelled() || !part.reserve())
             return emptyMap();
 
-        CacheValidateIndexesPartitionResult partRes;
+        ValidateIndexesPartitionResult partRes;
 
         try {
             if (part.state() != OWNING)
@@ -533,7 +533,7 @@ public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidate
 
             PartitionUpdateCounter updateCntrBefore = updCntr == null ? null : updCntr.copy();
 
-            partRes = new CacheValidateIndexesPartitionResult();
+            partRes = new ValidateIndexesPartitionResult();
 
             boolean hasMvcc = grpCtx.caches().stream().anyMatch(GridCacheContext::mvccEnabled);
 
@@ -592,7 +592,7 @@ public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidate
      */
     private void processPartIterator(
         CacheGroupContext grpCtx,
-        CacheValidateIndexesPartitionResult partRes,
+        ValidateIndexesPartitionResult partRes,
         IndexQueryContext qryCtx,
         GridIterator<CacheDataRow> it
     ) throws IgniteCheckedException {
@@ -727,7 +727,7 @@ public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidate
      *
      */
     private void printProgressOfIndexValidationIfNeeded() {
-        printProgressIfNeeded(() -> "Current progress of CacheValidateIndexesClosure: processed " +
+        printProgressIfNeeded(() -> "Current progress of ValidateIndexesClosure: processed " +
             processedPartitions.get() + " of " + totalPartitions + " partitions, " +
             processedIndexes.get() + " of " + totalIndexes + " SQL indexes" +
             (checkSizes ? ", " + processedCacheSizePartitions.get() + " of " + totalPartitions +
@@ -750,13 +750,13 @@ public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidate
      * @param cacheCtxWithIdx Cache context and appropriate index.
      * @param idleChecker Idle check closure.
      */
-    private Future<Map<String, CacheValidateIndexesPartitionResult>> processIndexAsync(
+    private Future<Map<String, ValidateIndexesPartitionResult>> processIndexAsync(
         T2<GridCacheContext, InlineIndexImpl> cacheCtxWithIdx,
         IgniteInClosure<Integer> idleChecker
     ) {
-        return calcExecutor.submit(new Callable<Map<String, CacheValidateIndexesPartitionResult>>() {
+        return calcExecutor.submit(new Callable<Map<String, ValidateIndexesPartitionResult>>() {
             /** {@inheritDoc} */
-            @Override public Map<String, CacheValidateIndexesPartitionResult> call() {
+            @Override public Map<String, ValidateIndexesPartitionResult> call() {
                 BPlusTree.suspendFailureDiagnostic.set(true);
 
                 try {
@@ -773,7 +773,7 @@ public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidate
      * @param cacheCtxWithIdx Cache context and appropriate index.
      * @param idleChecker Idle check closure.
      */
-    private Map<String, CacheValidateIndexesPartitionResult> processIndex(
+    private Map<String, ValidateIndexesPartitionResult> processIndex(
         T2<GridCacheContext, InlineIndexImpl> cacheCtxWithIdx,
         IgniteInClosure<Integer> idleChecker
     ) {
@@ -784,7 +784,7 @@ public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidate
 
         InlineIndexImpl idx = cacheCtxWithIdx.get2();
 
-        CacheValidateIndexesPartitionResult idxValidationRes = new CacheValidateIndexesPartitionResult();
+        ValidateIndexesPartitionResult idxValidationRes = new ValidateIndexesPartitionResult();
 
         boolean enoughIssues = false;
 
@@ -1133,7 +1133,7 @@ public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidate
     private void checkSizes(
         List<T3<CacheGroupContext, GridDhtLocalPartition, Future<CacheSize>>> cacheSizesFutures,
         List<T3<GridCacheContext, InlineIndexImpl, Future<T2<Throwable, Long>>>> idxSizeFutures,
-        Map<String, CacheValidateIndexesCheckSizeResult> checkSizeRes
+        Map<String, ValidateIndexesCheckSizeResult> checkSizeRes
     ) throws ExecutionException, InterruptedException {
         if (!checkSizes)
             return;
@@ -1151,8 +1151,8 @@ public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidate
             if (failCalcCacheSizeGrpIds.contains(grpId) && nonNull(cacheSizeErr)) {
                 checkSizeRes.computeIfAbsent(
                     cacheGrpInfo(cacheGrpCtx),
-                    s -> new CacheValidateIndexesCheckSizeResult(0, new ArrayList<>())
-                ).issues().add(new CacheValidateIndexesCheckSizeIssue(null, 0, cacheSizeErr));
+                    s -> new ValidateIndexesCheckSizeResult(0, new ArrayList<>())
+                ).issues().add(new ValidateIndexesCheckSizeIssue(null, 0, cacheSizeErr));
             }
             else {
                 cacheSizeTotal.computeIfAbsent(grpId, i -> new CacheSize(null, new HashMap<>()))
@@ -1187,8 +1187,8 @@ public class CacheValidateIndexesClosure implements IgniteCallable<CacheValidate
             if (nonNull(err)) {
                 checkSizeRes.computeIfAbsent(
                     "[" + cacheGrpInfo(cacheCtx.group()) + ", " + cacheInfo(cacheCtx) + ", tableName=" + tblName + "]",
-                    s -> new CacheValidateIndexesCheckSizeResult(cacheSizeByTbl, new ArrayList<>()))
-                    .issues().add(new CacheValidateIndexesCheckSizeIssue(idx.name(), idxSize, err));
+                    s -> new ValidateIndexesCheckSizeResult(cacheSizeByTbl, new ArrayList<>()))
+                    .issues().add(new ValidateIndexesCheckSizeIssue(idx.name(), idxSize, err));
             }
         }
     }

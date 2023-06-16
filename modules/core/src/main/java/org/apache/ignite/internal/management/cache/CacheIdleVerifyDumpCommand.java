@@ -35,13 +35,13 @@ public class CacheIdleVerifyDumpCommand implements ComputeCommand<CacheIdleVerif
     }
 
     /** {@inheritDoc} */
-    @Override public Class<CacheIdleVerifyDumpTask> taskClass() {
-        return CacheIdleVerifyDumpTask.class;
+    @Override public Class<IdleVerifyDumpTask> taskClass() {
+        return IdleVerifyDumpTask.class;
     }
 
     /** {@inheritDoc} */
     @Override public void printResult(CacheIdleVerifyCommandArg arg, String path, Consumer<String> printer) {
-        printer.accept("CacheIdleVerifyDumpTask successfully written output to '" + path + "'");
+        printer.accept("IdleVerifyDumpTask successfully written output to '" + path + "'");
         logParsedArgs(arg, printer);
     }
 }

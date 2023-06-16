@@ -29,7 +29,7 @@ import org.apache.ignite.internal.visor.VisorDataTransferObject;
 /**
  *
  */
-public class CacheListTaskResult extends VisorDataTransferObject {
+public class ViewCacheTaskResult extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -39,14 +39,14 @@ public class CacheListTaskResult extends VisorDataTransferObject {
     /**
      * @param cacheInfos Cache infos.
      */
-    public CacheListTaskResult(List<CacheInfo> cacheInfos) {
+    public ViewCacheTaskResult(List<CacheInfo> cacheInfos) {
         this.cacheInfos = cacheInfos;
     }
 
     /**
      * For externalization only.
      */
-    public CacheListTaskResult() {
+    public ViewCacheTaskResult() {
     }
 
     /**
@@ -68,6 +68,6 @@ public class CacheListTaskResult extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheListTaskResult.class, this);
+        return S.toString(ViewCacheTaskResult.class, this);
     }
 }

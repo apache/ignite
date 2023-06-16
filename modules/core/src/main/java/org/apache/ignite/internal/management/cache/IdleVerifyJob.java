@@ -34,7 +34,7 @@ import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.op
 /**
  *
  */
-class CacheIdleVerifyJob<ResultT> extends VisorJob<CacheIdleVerifyCommandArg, ResultT> {
+class IdleVerifyJob<ResultT> extends VisorJob<CacheIdleVerifyCommandArg, ResultT> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -57,7 +57,7 @@ class CacheIdleVerifyJob<ResultT> extends VisorJob<CacheIdleVerifyCommandArg, Re
      * @param debug Debug.
      * @param taskCls Task class for execution.
      */
-    CacheIdleVerifyJob(
+    IdleVerifyJob(
         CacheIdleVerifyCommandArg arg,
         boolean debug,
         Class<? extends ComputeTask<CacheIdleVerifyCommandArg, ResultT>> taskCls
@@ -97,6 +97,6 @@ class CacheIdleVerifyJob<ResultT> extends VisorJob<CacheIdleVerifyCommandArg, Re
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheIdleVerifyJob.class, this);
+        return S.toString(IdleVerifyJob.class, this);
     }
 }

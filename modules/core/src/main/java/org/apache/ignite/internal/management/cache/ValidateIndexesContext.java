@@ -20,7 +20,7 @@ package org.apache.ignite.internal.management.cache;
 /**
  * Validate indexes context.
  */
-public interface CacheValidateIndexesContext {
+public interface ValidateIndexesContext {
     /**
      * Returns a boolean value meaning whether the check is canceled or not.
      *

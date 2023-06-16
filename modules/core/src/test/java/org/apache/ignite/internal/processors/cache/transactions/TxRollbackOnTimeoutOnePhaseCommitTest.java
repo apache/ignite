@@ -27,7 +27,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.management.cache.CacheIdleVerifyTaskResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyTaskResultV2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -193,7 +193,7 @@ public class TxRollbackOnTimeoutOnePhaseCommitTest extends GridCommonAbstractTes
 
         fut.get();
 
-        CacheIdleVerifyTaskResultV2 res = idleVerify(client, DEFAULT_CACHE_NAME);
+        IdleVerifyTaskResultV2 res = idleVerify(client, DEFAULT_CACHE_NAME);
 
         assertPartitionsSame(res);
 

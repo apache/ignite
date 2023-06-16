@@ -39,8 +39,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.management.cache.CacheValidateIndexesClosure;
-import org.apache.ignite.internal.management.cache.CacheValidateIndexesJobResult;
+import org.apache.ignite.internal.management.cache.ValidateIndexesClosure;
+import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
@@ -230,10 +230,9 @@ public class RebuildIndexWithHistoricalRebalanceTest extends GridCommonAbstractT
 
         awaitPartitionMapExchange();
 
-        CacheValidateIndexesClosure clo = new CacheValidateIndexesClosure(() -> false, Collections.singleton(CACHE_NAME),
-            0, 0, false, true);
+        ValidateIndexesClosure clo = new ValidateIndexesClosure(() -> false, Collections.singleton(CACHE_NAME), 0, 0, false, true);
         node2.context().resource().injectGeneric(clo);
-        CacheValidateIndexesJobResult res = clo.call();
+        ValidateIndexesJobResult res = clo.call();
 
         assertFalse(res.hasIssues());
     }

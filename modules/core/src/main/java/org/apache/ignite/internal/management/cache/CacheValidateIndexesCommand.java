@@ -32,7 +32,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.join;
 
 /** Validates indexes attempting to read each indexed entry. */
 public class CacheValidateIndexesCommand
-    implements ComputeCommand<CacheValidateIndexesCommandArg, CacheValidateIndexesTaskResult> {
+    implements ComputeCommand<CacheValidateIndexesCommandArg, ValidateIndexesTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Validates indexes for the specified caches/cache groups on an idle cluster " +
@@ -46,8 +46,8 @@ public class CacheValidateIndexesCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Class<CacheValidateIndexesTask> taskClass() {
-        return CacheValidateIndexesTask.class;
+    @Override public Class<ValidateIndexesTask> taskClass() {
+        return ValidateIndexesTask.class;
     }
 
     /** {@inheritDoc} */
@@ -58,13 +58,13 @@ public class CacheValidateIndexesCommand
     /** {@inheritDoc} */
     @Override public void printResult(
         CacheValidateIndexesCommandArg arg,
-        CacheValidateIndexesTaskResult res0,
+        ValidateIndexesTaskResult res0,
         Consumer<String> printer
     ) {
         boolean errors = CommandUtils.printErrors(res0.exceptions(), "Index validation failed on nodes:", printer);
 
-        for (Map.Entry<UUID, CacheValidateIndexesJobResult> nodeEntry : res0.results().entrySet()) {
-            CacheValidateIndexesJobResult jobRes = nodeEntry.getValue();
+        for (Map.Entry<UUID, ValidateIndexesJobResult> nodeEntry : res0.results().entrySet()) {
+            ValidateIndexesJobResult jobRes = nodeEntry.getValue();
 
             if (!jobRes.hasIssues())
                 continue;
@@ -76,8 +76,8 @@ public class CacheValidateIndexesCommand
             for (IndexIntegrityCheckIssue is : jobRes.integrityCheckFailures())
                 printer.accept(INDENT + is);
 
-            for (Map.Entry<PartitionKey, CacheValidateIndexesPartitionResult> e : jobRes.partitionResult().entrySet()) {
-                CacheValidateIndexesPartitionResult res = e.getValue();
+            for (Map.Entry<PartitionKey, ValidateIndexesPartitionResult> e : jobRes.partitionResult().entrySet()) {
+                ValidateIndexesPartitionResult res = e.getValue();
 
                 if (!res.issues().isEmpty()) {
                     printer.accept(INDENT + join(" ", e.getKey(), e.getValue()));
@@ -87,8 +87,8 @@ public class CacheValidateIndexesCommand
                 }
             }
 
-            for (Map.Entry<String, CacheValidateIndexesPartitionResult> e : jobRes.indexResult().entrySet()) {
-                CacheValidateIndexesPartitionResult res = e.getValue();
+            for (Map.Entry<String, ValidateIndexesPartitionResult> e : jobRes.indexResult().entrySet()) {
+                ValidateIndexesPartitionResult res = e.getValue();
 
                 if (!res.issues().isEmpty()) {
                     printer.accept(INDENT + join(" ", "SQL Index", e.getKey(), e.getValue()));
@@ -98,16 +98,16 @@ public class CacheValidateIndexesCommand
                 }
             }
 
-            for (Map.Entry<String, CacheValidateIndexesCheckSizeResult> e : jobRes.checkSizeResult().entrySet()) {
-                CacheValidateIndexesCheckSizeResult res = e.getValue();
-                Collection<CacheValidateIndexesCheckSizeIssue> issues = res.issues();
+            for (Map.Entry<String, ValidateIndexesCheckSizeResult> e : jobRes.checkSizeResult().entrySet()) {
+                ValidateIndexesCheckSizeResult res = e.getValue();
+                Collection<ValidateIndexesCheckSizeIssue> issues = res.issues();
 
                 if (issues.isEmpty())
                     continue;
 
                 printer.accept(INDENT + join(" ", "Size check", e.getKey(), res));
 
-                for (CacheValidateIndexesCheckSizeIssue issue : issues)
+                for (ValidateIndexesCheckSizeIssue issue : issues)
                     printer.accept(DOUBLE_INDENT + issue);
             }
         }

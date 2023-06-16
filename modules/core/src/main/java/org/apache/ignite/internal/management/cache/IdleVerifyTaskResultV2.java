@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.nl;
 /**
  * Encapsulates result of {@link VerifyBackupPartitionsTaskV2}.
  */
-public class CacheIdleVerifyTaskResultV2 extends VisorDataTransferObject {
+public class IdleVerifyTaskResultV2 extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -82,20 +82,20 @@ public class CacheIdleVerifyTaskResultV2 extends VisorDataTransferObject {
     /**
      * Default constructor for Externalizable.
      */
-    public CacheIdleVerifyTaskResultV2() {
+    public IdleVerifyTaskResultV2() {
     }
 
     /**
      * @param exceptions Occurred exceptions.
      */
-    public CacheIdleVerifyTaskResultV2(Map<ClusterNode, Exception> exceptions) {
+    public IdleVerifyTaskResultV2(Map<ClusterNode, Exception> exceptions) {
         this.exceptions = exceptions;
     }
 
     /**
      * @param txHashConflicts Transaction hashes conflicts.
      */
-    public CacheIdleVerifyTaskResultV2(
+    public IdleVerifyTaskResultV2(
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
         List<List<TransactionsHashRecord>> txHashConflicts,
         Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs
@@ -110,7 +110,7 @@ public class CacheIdleVerifyTaskResultV2 extends VisorDataTransferObject {
      * @param clusterHashes Map of cluster partition hashes.
      * @param exceptions Exceptions on each cluster node.
      */
-    public CacheIdleVerifyTaskResultV2(
+    public IdleVerifyTaskResultV2(
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
         Map<ClusterNode, Exception> exceptions
     ) {
@@ -390,7 +390,7 @@ public class CacheIdleVerifyTaskResultV2 extends VisorDataTransferObject {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        CacheIdleVerifyTaskResultV2 v2 = (CacheIdleVerifyTaskResultV2)o;
+        IdleVerifyTaskResultV2 v2 = (IdleVerifyTaskResultV2)o;
 
         return Objects.equals(cntrConflicts, v2.cntrConflicts) && Objects.equals(hashConflicts, v2.hashConflicts) &&
             Objects.equals(movingPartitions, v2.movingPartitions) && Objects.equals(lostPartitions, v2.lostPartitions) &&
@@ -412,6 +412,6 @@ public class CacheIdleVerifyTaskResultV2 extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheIdleVerifyTaskResultV2.class, this);
+        return S.toString(IdleVerifyTaskResultV2.class, this);
     }
 }

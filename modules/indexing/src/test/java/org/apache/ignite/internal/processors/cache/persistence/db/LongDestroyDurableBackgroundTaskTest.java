@@ -62,10 +62,10 @@ import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
 import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandArg;
-import org.apache.ignite.internal.management.cache.CacheValidateIndexesJobResult;
-import org.apache.ignite.internal.management.cache.CacheValidateIndexesPartitionResult;
-import org.apache.ignite.internal.management.cache.CacheValidateIndexesTask;
-import org.apache.ignite.internal.management.cache.CacheValidateIndexesTaskResult;
+import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
+import org.apache.ignite.internal.management.cache.ValidateIndexesPartitionResult;
+import org.apache.ignite.internal.management.cache.ValidateIndexesTask;
+import org.apache.ignite.internal.management.cache.ValidateIndexesTaskResult;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -376,15 +376,15 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         taskArg.checkCrc(true);
         taskArg.checkSizes(true);
 
-        CacheValidateIndexesTaskResult taskRes =
-            ignite.compute().execute(CacheValidateIndexesTask.class.getName(), new VisorTaskArgument<>(nodeIds, taskArg, false));
+        ValidateIndexesTaskResult taskRes =
+            ignite.compute().execute(ValidateIndexesTask.class.getName(), new VisorTaskArgument<>(nodeIds, taskArg, false));
 
         if (!taskRes.exceptions().isEmpty()) {
             for (Map.Entry<UUID, Exception> e : taskRes.exceptions().entrySet())
                 log.error("Exception while validation indexes on node id=" + e.getKey().toString(), e.getValue());
         }
 
-        for (Map.Entry<UUID, CacheValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
+        for (Map.Entry<UUID, ValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
             if (nodeEntry.getValue().hasIssues()) {
                 log.error("Validate indexes issues had been found on node id=" + nodeEntry.getKey().toString());
 
@@ -400,7 +400,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
         assertTrue(taskRes.exceptions().isEmpty());
 
-        for (CacheValidateIndexesJobResult res : taskRes.results().values())
+        for (ValidateIndexesJobResult res : taskRes.results().values())
             assertFalse(res.hasIssues());
     }
 
@@ -410,7 +410,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
      * @param caption Caption of log messages.
      * @param map Map containing issues.
      */
-    private void logIssuesFromMap(String caption, Map<?, CacheValidateIndexesPartitionResult> map) {
+    private void logIssuesFromMap(String caption, Map<?, ValidateIndexesPartitionResult> map) {
         List<String> partResIssues = new LinkedList<>();
 
         map.forEach((k, v) -> v.issues().forEach(vi -> partResIssues.add(k.toString() + ": " + vi.toString())));

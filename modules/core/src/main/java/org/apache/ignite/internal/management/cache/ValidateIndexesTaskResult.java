@@ -29,7 +29,7 @@ import org.apache.ignite.internal.visor.VisorDataTransferObject;
 /**
  *
  */
-public class CacheValidateIndexesTaskResult extends VisorDataTransferObject {
+public class ValidateIndexesTaskResult extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -37,13 +37,13 @@ public class CacheValidateIndexesTaskResult extends VisorDataTransferObject {
     private Map<UUID, Exception> exceptions;
 
     /** Results from cluster. */
-    private Map<UUID, CacheValidateIndexesJobResult> results;
+    private Map<UUID, ValidateIndexesJobResult> results;
 
     /**
      * @param results Results.
      * @param exceptions Exceptions.
      */
-    public CacheValidateIndexesTaskResult(Map<UUID, CacheValidateIndexesJobResult> results,
+    public ValidateIndexesTaskResult(Map<UUID, ValidateIndexesJobResult> results,
         Map<UUID, Exception> exceptions) {
         this.exceptions = exceptions;
         this.results = results;
@@ -52,7 +52,7 @@ public class CacheValidateIndexesTaskResult extends VisorDataTransferObject {
     /**
      * For externalization only.
      */
-    public CacheValidateIndexesTaskResult() {
+    public ValidateIndexesTaskResult() {
     }
 
     /**
@@ -65,7 +65,7 @@ public class CacheValidateIndexesTaskResult extends VisorDataTransferObject {
     /**
      * @return Results from cluster.
      */
-    public Map<UUID, CacheValidateIndexesJobResult> results() {
+    public Map<UUID, ValidateIndexesJobResult> results() {
         return results;
     }
 
@@ -83,6 +83,6 @@ public class CacheValidateIndexesTaskResult extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheValidateIndexesTaskResult.class, this);
+        return S.toString(ValidateIndexesTaskResult.class, this);
     }
 }

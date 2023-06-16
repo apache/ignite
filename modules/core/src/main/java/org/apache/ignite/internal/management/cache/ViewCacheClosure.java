@@ -44,7 +44,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 /**
  * View cache closure.
  */
-public class CacheListClosure implements IgniteCallable<List<CacheInfo>> {
+public class ViewCacheClosure implements IgniteCallable<List<CacheInfo>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -52,7 +52,7 @@ public class CacheListClosure implements IgniteCallable<List<CacheInfo>> {
     private String regex;
 
     /** {@code true} to skip cache destroying. */
-    private CacheListCmd cmd;
+    private ViewCacheCmd cmd;
 
     /** */
     @IgniteInstanceResource
@@ -62,7 +62,7 @@ public class CacheListClosure implements IgniteCallable<List<CacheInfo>> {
      * @param regex Regex name for stopping caches.
      * @param cmd Command.
      */
-    public CacheListClosure(String regex, CacheListCmd cmd) {
+    public ViewCacheClosure(String regex, ViewCacheCmd cmd) {
         this.regex = regex;
         this.cmd = cmd;
     }
@@ -76,7 +76,7 @@ public class CacheListClosure implements IgniteCallable<List<CacheInfo>> {
         IgniteKernal k = (IgniteKernal)ignite;
 
         if (cmd == null)
-            cmd = CacheListCmd.CACHES;
+            cmd = ViewCacheCmd.CACHES;
 
         switch (cmd) {
             case SEQ:

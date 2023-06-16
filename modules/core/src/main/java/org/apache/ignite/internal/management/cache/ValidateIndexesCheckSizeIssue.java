@@ -20,69 +20,56 @@ package org.apache.ignite.internal.management.cache;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Collection;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
-import static java.util.Collections.emptyList;
-import static org.apache.ignite.internal.util.IgniteUtils.readCollection;
-import static org.apache.ignite.internal.util.IgniteUtils.writeCollection;
+import static org.apache.ignite.internal.util.IgniteUtils.readLongString;
+import static org.apache.ignite.internal.util.IgniteUtils.writeLongString;
 
 /**
- * Result of checking size cache and index.
+ * Issue when checking size of cache and index.
  */
-public class CacheValidateIndexesCheckSizeResult extends IgniteDataTransferObject {
+public class ValidateIndexesCheckSizeIssue extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Cache size. */
-    private long cacheSize;
+    /** Index name. */
+    private String idxName;
 
-    /** Issues. */
+    /** Index size. */
+    private long idxSize;
+
+    /** Error. */
     @GridToStringExclude
-    private Collection<CacheValidateIndexesCheckSizeIssue> issues;
+    private Throwable t;
 
     /**
      * Default constructor.
      */
-    public CacheValidateIndexesCheckSizeResult() {
+    public ValidateIndexesCheckSizeIssue() {
         //Default constructor required for Externalizable.
     }
 
     /**
      * Constructor.
      *
-     * @param cacheSize Cache size.
-     * @param issues Issues.
+     * @param idxName    Index name.
+     * @param idxSize    Index size.
+     * @param t          Error.
      */
-    public CacheValidateIndexesCheckSizeResult(long cacheSize, Collection<CacheValidateIndexesCheckSizeIssue> issues) {
-        this.cacheSize = cacheSize;
-        this.issues = issues;
-    }
-
-    /**
-     * Return issues when checking size of cache and index.
-     *
-     * @return Issues when checking size of cache and index.
-     */
-    public Collection<CacheValidateIndexesCheckSizeIssue> issues() {
-        return issues == null ? emptyList() : issues;
-    }
-
-    /**
-     * Return cache size.
-     *
-     * @return Cache size.
-     */
-    public long cacheSize() {
-        return cacheSize;
+    public ValidateIndexesCheckSizeIssue(@Nullable String idxName, long idxSize, @Nullable Throwable t) {
+        this.idxName = idxName;
+        this.idxSize = idxSize;
+        this.t = t;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeLong(cacheSize);
-        writeCollection(out, issues);
+        writeLongString(out, idxName);
+        out.writeLong(idxSize);
+        out.writeObject(t);
     }
 
     /** {@inheritDoc} */
@@ -90,12 +77,31 @@ public class CacheValidateIndexesCheckSizeResult extends IgniteDataTransferObjec
         byte protoVer,
         ObjectInput in
     ) throws IOException, ClassNotFoundException {
-        cacheSize = in.readLong();
-        issues = readCollection(in);
+        idxName = readLongString(in);
+        idxSize = in.readLong();
+        t = (Throwable)in.readObject();
+    }
+
+    /**
+     * Return index size.
+     *
+     * @return Index size.
+     */
+    public long indexSize() {
+        return idxSize;
+    }
+
+    /**
+     * Return error.
+     *
+     * @return Error.
+     */
+    public Throwable error() {
+        return t;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheValidateIndexesCheckSizeResult.class, this);
+        return S.toString(ValidateIndexesCheckSizeIssue.class, this, "err", t);
     }
 }

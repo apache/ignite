@@ -81,8 +81,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommandArg;
-import org.apache.ignite.internal.management.cache.CacheIdleVerifyTaskResultV2;
-import org.apache.ignite.internal.management.cache.CacheIdleVerifyTaskV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyTaskResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyTaskV2;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
@@ -2223,7 +2223,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Conflicts result.
      * @throws IgniteException If none caches or node found.
      */
-    protected CacheIdleVerifyTaskResultV2 idleVerify(Ignite ig, @Nullable String... caches) {
+    protected IdleVerifyTaskResultV2 idleVerify(Ignite ig, @Nullable String... caches) {
         log.info("Starting idleVerify ...");
 
         IgniteEx ig0 = (IgniteEx)ig;
@@ -2248,7 +2248,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         taskArg.caches(cacheNames.toArray(U.EMPTY_STRS));
 
         return ig.compute().execute(
-            CacheIdleVerifyTaskV2.class.getName(),
+            IdleVerifyTaskV2.class.getName(),
             new VisorTaskArgument<>(node.id(), taskArg, false)
         );
     }
@@ -2446,7 +2446,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param res Response.
      */
-    protected static void assertPartitionsSame(CacheIdleVerifyTaskResultV2 res) throws AssertionFailedError {
+    protected static void assertPartitionsSame(IdleVerifyTaskResultV2 res) throws AssertionFailedError {
         if (res.hasConflicts()) {
             StringBuilder b = new StringBuilder();
 

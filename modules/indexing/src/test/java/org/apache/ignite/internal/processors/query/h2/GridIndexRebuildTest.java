@@ -45,9 +45,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.ComputeTaskInternalFuture;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandArg;
-import org.apache.ignite.internal.management.cache.CacheValidateIndexesJobResult;
-import org.apache.ignite.internal.management.cache.CacheValidateIndexesTask;
-import org.apache.ignite.internal.management.cache.CacheValidateIndexesTaskResult;
+import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
+import org.apache.ignite.internal.management.cache.ValidateIndexesTask;
+import org.apache.ignite.internal.management.cache.ValidateIndexesTaskResult;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -225,16 +225,16 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         VisorTaskArgument<CacheValidateIndexesCommandArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
 
-        ComputeTaskInternalFuture<CacheValidateIndexesTaskResult> exec = grid1.context().task().
-            execute(new CacheValidateIndexesTask(), visorTaskArg);
+        ComputeTaskInternalFuture<ValidateIndexesTaskResult> exec = grid1.context().task().
+            execute(new ValidateIndexesTask(), visorTaskArg);
 
-        CacheValidateIndexesTaskResult res = exec.get();
+        ValidateIndexesTaskResult res = exec.get();
 
-        Map<UUID, CacheValidateIndexesJobResult> results = res.results();
+        Map<UUID, ValidateIndexesJobResult> results = res.results();
 
         boolean hasIssue = false;
 
-        for (CacheValidateIndexesJobResult jobResult : results.values()) {
+        for (ValidateIndexesJobResult jobResult : results.values()) {
             System.err.println(jobResult);
 
             hasIssue |= jobResult.hasIssues();
@@ -324,16 +324,16 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         VisorTaskArgument<CacheValidateIndexesCommandArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
 
-        ComputeTaskInternalFuture<CacheValidateIndexesTaskResult> execute = grid1.context().task().
-            execute(new CacheValidateIndexesTask(), visorTaskArg);
+        ComputeTaskInternalFuture<ValidateIndexesTaskResult> execute = grid1.context().task().
+            execute(new ValidateIndexesTask(), visorTaskArg);
 
-        CacheValidateIndexesTaskResult res = execute.get();
+        ValidateIndexesTaskResult res = execute.get();
 
-        Map<UUID, CacheValidateIndexesJobResult> results = res.results();
+        Map<UUID, ValidateIndexesJobResult> results = res.results();
 
         boolean hasIssue = false;
 
-        for (CacheValidateIndexesJobResult jobResult : results.values()) {
+        for (ValidateIndexesJobResult jobResult : results.values()) {
             System.err.println(jobResult);
 
             hasIssue |= jobResult.hasIssues();

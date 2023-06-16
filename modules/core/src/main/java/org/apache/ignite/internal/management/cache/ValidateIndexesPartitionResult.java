@@ -20,60 +20,71 @@ package org.apache.ignite.internal.management.cache;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- *
+ * Encapsulates intermediate results of validation of SQL index.
  */
-public class CacheContentionJobResult extends VisorDataTransferObject {
+public class ValidateIndexesPartitionResult extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Info. */
-    private ContentionInfo info;
+    /** Max issues per result. */
+    private static final int MAX_ISSUES = 10;
+
+    /** Issues. */
+    @GridToStringExclude
+    private List<IndexValidationIssue> issues = new ArrayList<>(MAX_ISSUES);
 
     /**
-     * @param info Info.
+     *
      */
-    public CacheContentionJobResult(ContentionInfo info) {
-        this.info = info;
+    public ValidateIndexesPartitionResult() {
+        // Empty constructor required for Externalizable.
     }
 
     /**
-     * For externalization only.
+     *
      */
-    public CacheContentionJobResult() {
+    public List<IndexValidationIssue> issues() {
+        return issues;
     }
 
     /**
-     * @return Contention info.
+     * @param t Issue.
+     * @return True if there are already enough issues.
      */
-    public ContentionInfo info() {
-        return info;
+    public boolean reportIssue(IndexValidationIssue t) {
+        if (issues.size() == MAX_ISSUES)
+            return true;
+
+        issues.add(t);
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeObject(info.getNode());
-        U.writeCollection(out, info.getEntries());
+        U.writeCollection(out, issues);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        Object node = in.readObject();
-        List<String> entries = U.readList(in);
-
-        info = new ContentionInfo();
-        info.setNode((ClusterNode)node);
-        info.setEntries(entries);
+        issues = U.readList(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheContentionJobResult.class, this);
+        return S.toString(ValidateIndexesPartitionResult.class, this);
     }
 }

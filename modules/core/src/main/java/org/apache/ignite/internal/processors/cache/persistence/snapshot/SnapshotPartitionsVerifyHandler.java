@@ -40,7 +40,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.management.cache.CacheIdleVerifyTaskResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyTaskResultV2;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
@@ -301,7 +301,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 clusterHashes.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
         }
 
-        CacheIdleVerifyTaskResultV2 verifyResult = new CacheIdleVerifyTaskResultV2(clusterHashes, errs);
+        IdleVerifyTaskResultV2 verifyResult = new IdleVerifyTaskResultV2(clusterHashes, errs);
 
         if (errs.isEmpty() && !verifyResult.hasConflicts())
             return;

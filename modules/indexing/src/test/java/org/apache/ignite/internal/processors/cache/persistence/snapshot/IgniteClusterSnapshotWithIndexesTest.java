@@ -30,7 +30,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.management.cache.CacheValidateIndexesClosure;
+import org.apache.ignite.internal.management.cache.ValidateIndexesClosure;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
@@ -117,7 +117,7 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
         forceCheckpoint();
 
         // Validate indexes on start.
-        CacheValidateIndexesClosure clo = new CacheValidateIndexesClosure(() -> false,
+        ValidateIndexesClosure clo = new ValidateIndexesClosure(() -> false,
             new HashSet<>(Arrays.asList(indexedCcfg.getName(), tblName)),
             0, 0, false, true);
 

@@ -34,15 +34,15 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 @GridInternal
-public class CacheContentionTask extends VisorMultiNodeTask<CacheContentionCommandArg,
-    CacheContentionTaskResult, CacheContentionJobResult> {
+public class ContentionTask extends VisorMultiNodeTask<CacheContentionCommandArg,
+    ContentionTaskResult, ContentionJobResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override protected CacheContentionTaskResult reduce0(List<ComputeJobResult> list) throws IgniteException {
+    @Nullable @Override protected ContentionTaskResult reduce0(List<ComputeJobResult> list) throws IgniteException {
         Map<UUID, Exception> exceptions = new HashMap<>();
-        List<CacheContentionJobResult> infos = new ArrayList<>();
+        List<ContentionJobResult> infos = new ArrayList<>();
 
         for (ComputeJobResult res : list) {
             if (res.getException() != null)
@@ -51,18 +51,18 @@ public class CacheContentionTask extends VisorMultiNodeTask<CacheContentionComma
                 infos.add(res.getData());
         }
 
-        return new CacheContentionTaskResult(infos, exceptions);
+        return new ContentionTaskResult(infos, exceptions);
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<CacheContentionCommandArg, CacheContentionJobResult> job(CacheContentionCommandArg arg) {
+    @Override protected VisorJob<CacheContentionCommandArg, ContentionJobResult> job(CacheContentionCommandArg arg) {
         return new CacheContentionJob(arg, debug);
     }
 
     /**
      *
      */
-    private static class CacheContentionJob extends VisorJob<CacheContentionCommandArg, CacheContentionJobResult> {
+    private static class CacheContentionJob extends VisorJob<CacheContentionCommandArg, ContentionJobResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -75,7 +75,7 @@ public class CacheContentionTask extends VisorMultiNodeTask<CacheContentionComma
         }
 
         /** {@inheritDoc} */
-        @Override protected CacheContentionJobResult run(@Nullable CacheContentionCommandArg arg) throws IgniteException {
+        @Override protected ContentionJobResult run(@Nullable CacheContentionCommandArg arg) throws IgniteException {
             try {
                 ContentionClosure clo = new ContentionClosure(arg.minQueueSize(), arg.maxPrint());
 
@@ -83,7 +83,7 @@ public class CacheContentionTask extends VisorMultiNodeTask<CacheContentionComma
 
                 ContentionInfo info = clo.call();
 
-                return new CacheContentionJobResult(info);
+                return new ContentionJobResult(info);
             }
             catch (Exception e) {
                 throw new IgniteException(e);

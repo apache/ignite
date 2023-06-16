@@ -23,27 +23,27 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
-import static org.apache.ignite.internal.management.cache.CacheListCmd.CACHES;
-import static org.apache.ignite.internal.management.cache.CacheListCmd.GROUPS;
-import static org.apache.ignite.internal.management.cache.CacheListCmd.SEQ;
+import static org.apache.ignite.internal.management.cache.ViewCacheCmd.CACHES;
+import static org.apache.ignite.internal.management.cache.ViewCacheCmd.GROUPS;
+import static org.apache.ignite.internal.management.cache.ViewCacheCmd.SEQ;
 
 /**
  *
  */
 @GridInternal
-public class CacheListTask extends VisorOneNodeTask<CacheListCommandArg, CacheListTaskResult> {
+public class ViewCacheTask extends VisorOneNodeTask<CacheListCommandArg, ViewCacheTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<CacheListCommandArg, CacheListTaskResult> job(CacheListCommandArg arg) {
+    @Override protected VisorJob<CacheListCommandArg, ViewCacheTaskResult> job(CacheListCommandArg arg) {
         return new VisorViewCacheJob(arg, debug);
     }
 
     /**
      *
      */
-    private static class VisorViewCacheJob extends VisorJob<CacheListCommandArg, CacheListTaskResult> {
+    private static class VisorViewCacheJob extends VisorJob<CacheListCommandArg, ViewCacheTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -56,17 +56,17 @@ public class CacheListTask extends VisorOneNodeTask<CacheListCommandArg, CacheLi
         }
 
         /** {@inheritDoc} */
-        @Override protected CacheListTaskResult run(CacheListCommandArg arg) throws IgniteException {
+        @Override protected ViewCacheTaskResult run(CacheListCommandArg arg) throws IgniteException {
             try {
-                CacheListCmd cmd = arg.groups()
+                ViewCacheCmd cmd = arg.groups()
                     ? GROUPS
                     : (arg.seq() ? SEQ : CACHES);
 
-                CacheListClosure clo = new CacheListClosure(arg.regex(), cmd);
+                ViewCacheClosure clo = new ViewCacheClosure(arg.regex(), cmd);
 
                 ignite.context().resource().injectGeneric(clo);
 
-                return new CacheListTaskResult(clo.call());
+                return new ViewCacheTaskResult(clo.call());
             }
             catch (Exception e) {
                 throw new IgniteException(e);

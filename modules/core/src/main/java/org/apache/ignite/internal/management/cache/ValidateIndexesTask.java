@@ -45,15 +45,15 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 @InterruptibleVisorTask
-public class CacheValidateIndexesTask extends VisorMultiNodeTask<CacheValidateIndexesCommandArg,
-    CacheValidateIndexesTaskResult, CacheValidateIndexesJobResult> {
+public class ValidateIndexesTask extends VisorMultiNodeTask<CacheValidateIndexesCommandArg,
+    ValidateIndexesTaskResult, ValidateIndexesJobResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override protected CacheValidateIndexesTaskResult reduce0(List<ComputeJobResult> list) throws IgniteException {
+    @Nullable @Override protected ValidateIndexesTaskResult reduce0(List<ComputeJobResult> list) throws IgniteException {
         Map<UUID, Exception> exceptions = new HashMap<>();
-        Map<UUID, CacheValidateIndexesJobResult> jobResults = new HashMap<>();
+        Map<UUID, ValidateIndexesJobResult> jobResults = new HashMap<>();
 
         for (ComputeJobResult res : list) {
             if (res.getException() != null)
@@ -62,11 +62,11 @@ public class CacheValidateIndexesTask extends VisorMultiNodeTask<CacheValidateIn
                 jobResults.put(res.getNode().id(), res.getData());
         }
 
-        return new CacheValidateIndexesTaskResult(jobResults, exceptions);
+        return new ValidateIndexesTaskResult(jobResults, exceptions);
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<CacheValidateIndexesCommandArg, CacheValidateIndexesJobResult> job(CacheValidateIndexesCommandArg arg) {
+    @Override protected VisorJob<CacheValidateIndexesCommandArg, ValidateIndexesJobResult> job(CacheValidateIndexesCommandArg arg) {
         return new VisorValidateIndexesJob(arg, debug);
     }
 
@@ -96,7 +96,7 @@ public class CacheValidateIndexesTask extends VisorMultiNodeTask<CacheValidateIn
     /**
      *
      */
-    private static class VisorValidateIndexesJob extends VisorJob<CacheValidateIndexesCommandArg, CacheValidateIndexesJobResult> {
+    private static class VisorValidateIndexesJob extends VisorJob<CacheValidateIndexesCommandArg, ValidateIndexesJobResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -113,11 +113,11 @@ public class CacheValidateIndexesTask extends VisorMultiNodeTask<CacheValidateIn
         }
 
         /** {@inheritDoc} */
-        @Override protected CacheValidateIndexesJobResult run(CacheValidateIndexesCommandArg arg) throws IgniteException {
+        @Override protected ValidateIndexesJobResult run(CacheValidateIndexesCommandArg arg) throws IgniteException {
             A.notNull(arg, "arg");
 
             try {
-                CacheValidateIndexesClosure clo = new CacheValidateIndexesClosure(
+                ValidateIndexesClosure clo = new ValidateIndexesClosure(
                     this::isCancelled,
                     arg.caches() == null ? null : new HashSet<>(Arrays.asList(arg.caches())),
                     arg.checkFirst(),

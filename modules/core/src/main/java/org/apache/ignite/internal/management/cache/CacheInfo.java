@@ -278,7 +278,7 @@ public class CacheInfo extends VisorDataTransferObject {
      * @param cmd Cache command.
      * @return Header.
      */
-    public Object name(CacheListCmd cmd) {
+    public Object name(ViewCacheCmd cmd) {
         switch (cmd) {
             case CACHES:
                 return getCacheName();
@@ -297,7 +297,7 @@ public class CacheInfo extends VisorDataTransferObject {
     /**
      * @param cmd Command.
      */
-    public Map<String, Object> toMap(CacheListCmd cmd) {
+    public Map<String, Object> toMap(ViewCacheCmd cmd) {
         Map<String, Object> map;
 
         switch (cmd) {
