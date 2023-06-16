@@ -90,4 +90,9 @@ public interface ExchangeService extends Service {
      * Callback after the last batch of the query fragment from the node is processed.
      */
     void onInboundExchangeFinished(UUID nodeId, UUID qryId, long exchangeId);
+
+    /**
+     * Local node ID.
+     */
+    UUID localNodeId();
 }

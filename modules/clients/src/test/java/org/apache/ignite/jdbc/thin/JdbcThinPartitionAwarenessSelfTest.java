@@ -43,7 +43,7 @@ import org.apache.ignite.internal.jdbc.thin.AffinityCache;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinPartitionResultDescriptor;
 import org.apache.ignite.internal.jdbc.thin.QualifiedSQLQuery;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
-import org.apache.ignite.internal.processors.query.QueryHistory;
+import org.apache.ignite.internal.processors.query.running.QueryHistory;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;

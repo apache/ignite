@@ -1296,6 +1296,14 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             cfgPath + "/cache-create-correct.xml"));
 
         assertTrue(crd.cacheNames().containsAll(F.asList("cache1", "cache2")));
+
+        int expSize = G.allGrids().size();
+
+        assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR, "--cache", CREATE,
+                SPRING_XML_CONFIG, cfgPath + "/cache-create-with-spel.xml"),
+            "Spring expressions are prohibited.");
+
+        assertEquals(expSize, G.allGrids().size());
     }
 
     /** */

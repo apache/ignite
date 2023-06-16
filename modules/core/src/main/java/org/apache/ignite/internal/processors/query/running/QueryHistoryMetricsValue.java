@@ -16,7 +16,7 @@
  *
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.internal.processors.query.running;
 
 /**
  * Immutable query metrics.
