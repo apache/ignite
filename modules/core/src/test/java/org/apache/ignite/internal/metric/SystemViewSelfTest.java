@@ -289,6 +289,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 assertEquals(TestNodeFilter.class, sview.nodeFilter());
                 assertFalse(sview.staticallyConfigured());
                 assertEquals(g.localNode().id(), sview.originNodeId());
+                assertEquals(F.asMap(g.localNode().id(), 1), sview.topologySnapshot());
             }
 
             {
@@ -322,6 +323,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 assertEquals(TestNodeFilter.class, sview[0].nodeFilter());
                 assertFalse(sview[0].staticallyConfigured());
                 assertEquals(g.localNode().id(), sview[0].originNodeId());
+                assertEquals(F.asMap(g.localNode().id(), 2), sview[0].topologySnapshot());
             }
         }
     }
