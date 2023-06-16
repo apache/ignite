@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.systemview;
+package org.apache.ignite.internal.management;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -26,7 +26,6 @@ import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.management.SystemViewCommandArg;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
@@ -40,28 +39,28 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.Attrib
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonMap;
+import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.DATE;
+import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.NUMBER;
+import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.STRING;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toSqlName;
-import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.DATE;
-import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.NUMBER;
-import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
 /** Reperesents visor task for obtaining system view content. */
 @GridInternal
 @GridVisorManagementTask
-public class VisorSystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg, VisorSystemViewTaskResult,
-    VisorSystemViewTaskResult> {
+public class SystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg, SystemViewTaskResult,
+    SystemViewTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<SystemViewCommandArg, VisorSystemViewTaskResult> job(SystemViewCommandArg arg) {
-        return new VisorSystemViewJob(arg, false);
+    @Override protected VisorJob<SystemViewCommandArg, SystemViewTaskResult> job(SystemViewCommandArg arg) {
+        return new SystemViewJob(arg, false);
     }
 
     /** {@inheritDoc} */
-    @Override protected @Nullable VisorSystemViewTaskResult reduce0(List<ComputeJobResult> results)
+    @Override protected @Nullable SystemViewTaskResult reduce0(List<ComputeJobResult> results)
         throws IgniteException {
-        VisorSystemViewTaskResult res = null;
+        SystemViewTaskResult res = null;
 
         Map<UUID, List<List<?>>> merged = new TreeMap<>();
 
@@ -77,11 +76,11 @@ public class VisorSystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg
             merged.putAll(res.rows());
         }
 
-        return new VisorSystemViewTaskResult(res.attributes(), res.types(), merged);
+        return new SystemViewTaskResult(res.attributes(), res.types(), merged);
     }
 
     /** */
-    private static class VisorSystemViewJob extends VisorJob<SystemViewCommandArg, VisorSystemViewTaskResult> {
+    private static class SystemViewJob extends VisorJob<SystemViewCommandArg, SystemViewTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -91,12 +90,12 @@ public class VisorSystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSystemViewJob(@Nullable SystemViewCommandArg arg, boolean debug) {
+        protected SystemViewJob(@Nullable SystemViewCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorSystemViewTaskResult run(@Nullable SystemViewCommandArg arg) throws IgniteException {
+        @Override protected SystemViewTaskResult run(@Nullable SystemViewCommandArg arg) throws IgniteException {
             if (arg == null)
                 return null;
 
@@ -180,7 +179,7 @@ public class VisorSystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg
                 rows.add(attrVals);
             }
 
-            return new VisorSystemViewTaskResult(attrNames, attrTypes, singletonMap(ignite.localNode().id(), rows));
+            return new SystemViewTaskResult(attrNames, attrTypes, singletonMap(ignite.localNode().id(), rows));
         }
 
         /**

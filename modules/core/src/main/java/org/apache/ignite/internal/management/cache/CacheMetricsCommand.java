@@ -26,7 +26,7 @@ import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsTask;
 import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsTaskResult;
 import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.management.SystemViewCommand.printTable;
-import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
+import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.STRING;
 
 /** Enable / disable cache metrics collection or show metrics collection status. */
 public class CacheMetricsCommand implements ComputeCommand<CacheMetricsCommandArg, VisorCacheMetricsTaskResult> {
