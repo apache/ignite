@@ -28,18 +28,16 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.api.CliSubcommandsWithPrefix;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2;
 import org.apache.ignite.logger.java.JavaLoggerFileHandler;
-import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.logParsedArgs;
+import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsDumpTask.logParsedArgs;
 
 /** Checks consistency of primary and backup partitions assuming no concurrent updates are happening in the cluster. */
 @CliSubcommandsWithPrefix
 public class CacheIdleVerifyCommand
-    extends CommandRegistryImpl<CacheIdleVerifyCommandArg, IdleVerifyResultV2>
-    implements ComputeCommand<CacheIdleVerifyCommandArg, IdleVerifyResultV2> {
+    extends CommandRegistryImpl<CacheIdleVerifyCommandArg, CacheIdleVerifyTaskResultV2>
+    implements ComputeCommand<CacheIdleVerifyCommandArg, CacheIdleVerifyTaskResultV2> {
     /** */
     public static final String IDLE_VERIFY_FILE_PREFIX = "idle_verify-";
 
@@ -69,12 +67,12 @@ public class CacheIdleVerifyCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorIdleVerifyTaskV2> taskClass() {
-        return VisorIdleVerifyTaskV2.class;
+    @Override public Class<CacheIdleVerifyTaskV2> taskClass() {
+        return CacheIdleVerifyTaskV2.class;
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(CacheIdleVerifyCommandArg arg, IdleVerifyResultV2 res, Consumer<String> printer) {
+    @Override public void printResult(CacheIdleVerifyCommandArg arg, CacheIdleVerifyTaskResultV2 res, Consumer<String> printer) {
         logParsedArgs(arg, printer);
 
         StringBuilder sb = new StringBuilder();

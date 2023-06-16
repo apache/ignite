@@ -36,8 +36,8 @@ import org.apache.ignite.events.DeploymentEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.management.cache.CacheValidateIndexesClosure;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -56,7 +56,7 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
     private static final String IDLE_VERIFY_TASK_V2 = "org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2";
 
     /** Validate index task name. */
-    private static final String VALIDATE_INDEX_TASK = "org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask";
+    private static final String VALIDATE_INDEX_TASK = "org.apache.ignite.internal.visor.verify.CacheValidateIndexesTask";
 
     /** Log listener. */
     private ListeningTestLogger lnsrLog;
@@ -301,7 +301,7 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
 
         AtomicBoolean cancelled = new AtomicBoolean(false);
 
-        ValidateIndexesClosure clo = new ValidateIndexesClosure(cancelled::get, Collections.singleton(DEFAULT_CACHE_NAME),
+        CacheValidateIndexesClosure clo = new CacheValidateIndexesClosure(cancelled::get, Collections.singleton(DEFAULT_CACHE_NAME),
             0, 0, false, true);
 
         ListeningTestLogger listeningLogger = new ListeningTestLogger(log);
@@ -309,12 +309,12 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
         GridTestUtils.setFieldValue(clo, "ignite", ignite0);
         GridTestUtils.setFieldValue(clo, "log", listeningLogger);
 
-        LogListener lnsrValidationStarted = LogListener.matches("Current progress of ValidateIndexesClosure").build();
+        LogListener lnsrValidationStarted = LogListener.matches("Current progress of CacheValidateIndexesClosure").build();
 
         listeningLogger.registerListener(lnsrValidationStarted);
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(() ->
-            GridTestUtils.assertThrows(log, clo::call, IgniteException.class, ValidateIndexesClosure.CANCELLED_MSG));
+            GridTestUtils.assertThrows(log, clo::call, IgniteException.class, CacheValidateIndexesClosure.CANCELLED_MSG));
 
         assertTrue(GridTestUtils.waitForCondition(lnsrValidationStarted::check, 10_000));
 

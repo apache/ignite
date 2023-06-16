@@ -19,8 +19,8 @@ package org.apache.ignite.internal.management.cache;
 
 import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTask;
-import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.logParsedArgs;
+
+import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsDumpTask.logParsedArgs;
 
 /** */
 public class CacheIdleVerifyDumpCommand implements ComputeCommand<CacheIdleVerifyCommandArg, String> {
@@ -35,13 +35,13 @@ public class CacheIdleVerifyDumpCommand implements ComputeCommand<CacheIdleVerif
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorIdleVerifyDumpTask> taskClass() {
-        return VisorIdleVerifyDumpTask.class;
+    @Override public Class<CacheIdleVerifyDumpTask> taskClass() {
+        return CacheIdleVerifyDumpTask.class;
     }
 
     /** {@inheritDoc} */
     @Override public void printResult(CacheIdleVerifyCommandArg arg, String path, Consumer<String> printer) {
-        printer.accept("VisorIdleVerifyDumpTask successfully written output to '" + path + "'");
+        printer.accept("CacheIdleVerifyDumpTask successfully written output to '" + path + "'");
         logParsedArgs(arg, printer);
     }
 }

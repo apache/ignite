@@ -30,9 +30,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.cache.CacheIdleVerifyTaskResultV2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -237,7 +237,7 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
 
         checkCacheData(cacheValues, cacheName);
 
-        IdleVerifyResultV2 idleVerifyResV2 = idleVerify(stoppedNode, null);
+        CacheIdleVerifyTaskResultV2 idleVerifyResV2 = idleVerify(stoppedNode, null);
 
         SB sb = new SB();
 

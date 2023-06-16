@@ -43,12 +43,12 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.cache.CacheIdleVerifyTaskResultV2;
+import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
-import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
@@ -141,8 +141,8 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
         return new SnapshotPartitionsVerifyTaskResult(
             metas,
             errors.isEmpty() ?
-                new IdleVerifyResultV2(partHashes, txHashConflicts, partiallyCommittedTxs)
-                : new IdleVerifyResultV2(errors));
+                new CacheIdleVerifyTaskResultV2(partHashes, txHashConflicts, partiallyCommittedTxs)
+                : new CacheIdleVerifyTaskResultV2(errors));
     }
 
     /** {@inheritDoc} */

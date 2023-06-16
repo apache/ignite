@@ -34,8 +34,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
+import org.apache.ignite.internal.management.cache.CacheValidateIndexesClosure;
+import org.apache.ignite.internal.management.cache.CacheValidateIndexesJobResult;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -158,10 +158,10 @@ public class IndexingMultithreadedLoadContinuousRestartTest extends GridCommonAb
             forceCheckpoint();
 
             // Validate indexes on start.
-            ValidateIndexesClosure clo = new ValidateIndexesClosure(() -> false, Collections.singleton(CACHE_NAME),
+            CacheValidateIndexesClosure clo = new CacheValidateIndexesClosure(() -> false, Collections.singleton(CACHE_NAME),
                 0, 0, false, true);
             ignite.context().resource().injectGeneric(clo);
-            VisorValidateIndexesJobResult res = clo.call();
+            CacheValidateIndexesJobResult res = clo.call();
 
             assertFalse(res.hasIssues());
 

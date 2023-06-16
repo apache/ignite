@@ -29,7 +29,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.CacheIdleVerifyTaskResultV2;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -202,7 +202,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         ig = startGrids(2);
 
-        IdleVerifyResultV2 snpCheckRes = snp(ig).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        CacheIdleVerifyTaskResultV2 snpCheckRes = snp(ig).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         for (Exception e : snpCheckRes.exceptions().values()) {
             if (e.getMessage().contains("different master key digest"))
@@ -244,7 +244,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
             ig.cluster().state(ACTIVE);
 
-            IdleVerifyResultV2 snpCheckRes = snp(ig).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+            CacheIdleVerifyTaskResultV2 snpCheckRes = snp(ig).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
             for (Exception e : snpCheckRes.exceptions().values()) {
                 if (e.getMessage().contains("has encrypted caches while encryption is disabled"))

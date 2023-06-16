@@ -100,6 +100,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.DistributedConfigurationUtils;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.management.cache.CacheIdleVerifyTaskResultV2;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.communication.TransmissionCancelledException;
@@ -148,7 +149,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
@@ -1773,7 +1773,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param name Snapshot name.
      * @param snpPath Snapshot directory path.
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
-     *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
+     *         hashes of {@link CacheIdleVerifyTaskResultV2} also contains the snapshot metadata distribution across the cluster.
      */
     public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(String name, @Nullable String snpPath) {
         return checkSnapshot(name, snpPath, -1);
@@ -1786,7 +1786,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpPath Snapshot directory path.
      * @param incIdx Incremental snapshot index.
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
-     *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
+     *         hashes of {@link CacheIdleVerifyTaskResultV2} also contains the snapshot metadata distribution across the cluster.
      */
     public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(String name, @Nullable String snpPath, int incIdx) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
@@ -1817,7 +1817,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param incIdx Incremental snapshot index.
      * @param check If {@code true} check snapshot integrity.
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
-     *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
+     *         hashes of {@link CacheIdleVerifyTaskResultV2} also contains the snapshot metadata distribution across the cluster.
      */
     public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(
         String name,
@@ -1859,7 +1859,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         byte[] snpMasterKeyDigest = meta.masterKeyDigest();
 
                         if (masterKeyDigest == null && snpMasterKeyDigest != null) {
-                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new IdleVerifyResultV2(
+                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new CacheIdleVerifyTaskResultV2(
                                 Collections.singletonMap(cctx.localNode(), new IllegalArgumentException("Snapshot '" +
                                     meta.snapshotName() + "' has encrypted caches while encryption is disabled. To " +
                                     "restore this snapshot, start Ignite with configured encryption and the same " +
@@ -1869,7 +1869,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         }
 
                         if (snpMasterKeyDigest != null && !Arrays.equals(snpMasterKeyDigest, masterKeyDigest)) {
-                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new IdleVerifyResultV2(
+                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new CacheIdleVerifyTaskResultV2(
                                 Collections.singletonMap(cctx.localNode(), new IllegalArgumentException("Snapshot '" +
                                     meta.snapshotName() + "' has different master key digest. To restore this " +
                                     "snapshot, start Ignite with the same master key.")))));
@@ -1891,7 +1891,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                     "disk page compression is disabled. To check these groups please " +
                                     "start Ignite with ignite-compress module in classpath";
 
-                                res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new IdleVerifyResultV2(
+                                res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new CacheIdleVerifyTaskResultV2(
                                     Collections.singletonMap(cctx.localNode(), new IllegalArgumentException(msg)))));
 
                                 return;
@@ -1904,7 +1904,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 if (!grpIds.isEmpty()) {
                     res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
-                        new IdleVerifyResultV2(Collections.singletonMap(cctx.localNode(),
+                        new CacheIdleVerifyTaskResultV2(Collections.singletonMap(cctx.localNode(),
                             new IllegalArgumentException("Cache group(s) was not " +
                                 "found in the snapshot [groups=" + grpIds.values() + ", snapshot=" + name + ']')))));
 
@@ -1913,7 +1913,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 if (metas.isEmpty()) {
                     res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
-                        new IdleVerifyResultV2(Collections.singletonMap(cctx.localNode(),
+                        new CacheIdleVerifyTaskResultV2(Collections.singletonMap(cctx.localNode(),
                             new IllegalArgumentException("Snapshot does not exists [snapshot=" + name +
                                 (snpPath != null ? ", baseDir=" + snpPath : "") + ']')))));
 
@@ -1936,7 +1936,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             res.onDone(f1.result());
                         else if (f1.error() instanceof IgniteSnapshotVerifyException)
                             res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
-                                new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f1.error()).exceptions())));
+                                new CacheIdleVerifyTaskResultV2(((IgniteSnapshotVerifyException)f1.error()).exceptions())));
                         else
                             res.onDone(f1.error());
                     });
@@ -1946,7 +1946,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     res.onDone(new IgniteSnapshotVerifyException(f0.result().exceptions()));
                 else if (f0.error() instanceof IgniteSnapshotVerifyException)
                     res.onDone(new SnapshotPartitionsVerifyTaskResult(null,
-                        new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f0.error()).exceptions())));
+                        new CacheIdleVerifyTaskResultV2(((IgniteSnapshotVerifyException)f0.error()).exceptions())));
                 else
                     res.onDone(f0.error());
             }

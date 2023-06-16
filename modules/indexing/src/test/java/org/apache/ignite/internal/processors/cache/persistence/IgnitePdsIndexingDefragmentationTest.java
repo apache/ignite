@@ -34,6 +34,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.management.cache.CacheValidateIndexesClosure;
+import org.apache.ignite.internal.management.cache.CacheValidateIndexesJobResult;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -43,8 +45,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -185,7 +185,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
      * @throws Exception If failed.
      */
     private static void validateIndexes(IgniteEx node) throws Exception {
-        ValidateIndexesClosure clo = new ValidateIndexesClosure(
+        CacheValidateIndexesClosure clo = new CacheValidateIndexesClosure(
             () -> false,
             Collections.singleton(DEFAULT_CACHE_NAME),
             0,
@@ -196,7 +196,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         node.context().resource().injectGeneric(clo);
 
-        VisorValidateIndexesJobResult call = clo.call();
+        CacheValidateIndexesJobResult call = clo.call();
 
         assertFalse(call.hasIssues());
     }

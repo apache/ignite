@@ -43,9 +43,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.management.cache.CacheIdleVerifyTaskResultV2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -243,7 +243,7 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
         awaitPartitionMapExchange();
 
         // Ensure that the snapshot check command succeeds.
-        IdleVerifyResultV2 res = emptyNode.context().cache().context().snapshotMgr()
+        CacheIdleVerifyTaskResultV2 res = emptyNode.context().cache().context().snapshotMgr()
             .checkSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT).idleVerifyResult();
 
         StringBuilder buf = new StringBuilder();

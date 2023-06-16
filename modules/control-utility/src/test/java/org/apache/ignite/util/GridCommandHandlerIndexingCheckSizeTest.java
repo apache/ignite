@@ -36,15 +36,16 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.cache.CacheValidateIndexesCheckSizeIssue;
+import org.apache.ignite.internal.management.cache.CacheValidateIndexesCheckSizeResult;
 import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommand;
+import org.apache.ignite.internal.management.cache.CacheValidateIndexesTaskResult;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesCheckSizeIssue;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesCheckSizeResult;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
 import org.apache.ignite.util.GridCommandHandlerIndexingUtils.Organization;
 import org.apache.ignite.util.GridCommandHandlerIndexingUtils.Person;
 import org.junit.Test;
+
 import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
@@ -469,14 +470,14 @@ public class GridCommandHandlerIndexingCheckSizeTest extends GridCommandHandlerC
         assertContains(log, out, "issues found (listed above)");
         assertContains(log, out, "Size check");
 
-        Map<String, ValidateIndexesCheckSizeResult> valIdxCheckSizeResults =
-            ((VisorValidateIndexesTaskResult)lastOperationResult).results().get(node.localNode().id())
+        Map<String, CacheValidateIndexesCheckSizeResult> valIdxCheckSizeResults =
+            ((CacheValidateIndexesTaskResult)lastOperationResult).results().get(node.localNode().id())
                 .checkSizeResult();
 
         assertEquals(rmvByTbl.size(), valIdxCheckSizeResults.size());
 
         for (Map.Entry<String, AtomicInteger> rmvByTblEntry : rmvByTbl.entrySet()) {
-            ValidateIndexesCheckSizeResult checkSizeRes = valIdxCheckSizeResults.entrySet().stream()
+            CacheValidateIndexesCheckSizeResult checkSizeRes = valIdxCheckSizeResults.entrySet().stream()
                 .filter(e -> e.getKey().contains(rmvByTblEntry.getKey()))
                 .map(Map.Entry::getValue)
                 .findAny()
@@ -485,7 +486,7 @@ public class GridCommandHandlerIndexingCheckSizeTest extends GridCommandHandlerC
             assertNotNull(checkSizeRes);
             assertEquals((int)cacheSizeExp.apply(rmvByTblEntry.getValue()), checkSizeRes.cacheSize());
 
-            Collection<ValidateIndexesCheckSizeIssue> issues = checkSizeRes.issues();
+            Collection<CacheValidateIndexesCheckSizeIssue> issues = checkSizeRes.issues();
             assertFalse(issues.isEmpty());
 
             issues.forEach(issue -> {
