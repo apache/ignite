@@ -41,11 +41,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.QueryEngine;
-import org.apache.ignite.internal.processors.query.QueryState;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.Query;
+import org.apache.ignite.internal.processors.query.calcite.QueryState;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableImpl;
@@ -63,8 +62,8 @@ import org.junit.Test;
 
 import static java.util.stream.Collectors.joining;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
-import static org.apache.ignite.internal.processors.query.RunningQueryManager.SQL_QRY_VIEW;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_PLANNER_TIMEOUT;
+import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_QRY_VIEW;
 
 /**
  *
@@ -101,7 +100,7 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
      */
     @Test
     public void testCancelAtPlanningPhase() throws IgniteCheckedException {
-        QueryEngine engine = queryProcessor(client);
+        CalciteQueryProcessor engine = queryProcessor(client);
         int cnt = 9;
 
         for (int i = 0; i < cnt; i++)
@@ -115,11 +114,11 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
         Assert.assertTrue(GridTestUtils.waitForCondition(
             () -> !engine.runningQueries().isEmpty() || fut.isDone(), TIMEOUT_IN_MS));
 
-        Collection<? extends RunningQuery> running = engine.runningQueries();
+        Collection<? extends Query<?>> running = engine.runningQueries();
 
         assertEquals("Running: " + running, 1, running.size());
 
-        RunningQuery qry = F.first(running);
+        Query<?> qry = F.first(running);
 
         assertSame(qry, engine.runningQuery(qry.id()));
 
@@ -195,7 +194,7 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
 
             // Check state on client.
             assertEquals(1, cliEngine.runningQueries().size());
-            RunningQuery qry = F.first(cliEngine.runningQueries());
+            Query<?> qry = F.first(cliEngine.runningQueries());
             assertEquals(QueryState.EXECUTING, qry.state());
 
             qry.cancel();
@@ -221,8 +220,8 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
      */
     @Test
     public void testCancelByRemoteFragment() throws IgniteCheckedException {
-        QueryEngine clientEngine = queryProcessor(client);
-        QueryEngine serverEngine = queryProcessor(srv);
+        CalciteQueryProcessor clientEngine = queryProcessor(client);
+        CalciteQueryProcessor serverEngine = queryProcessor(srv);
         int cnt = 6;
 
         sql("CREATE TABLE t (id int, val varchar)");
@@ -239,7 +238,7 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
 
         Assert.assertTrue(GridTestUtils.waitForCondition(
             () -> {
-                Collection<? extends RunningQuery> queries = clientEngine.runningQueries();
+                Collection<? extends Query<?>> queries = clientEngine.runningQueries();
 
                 return !queries.isEmpty() && F.first(queries).state() == QueryState.EXECUTING;
             },
@@ -247,8 +246,8 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
 
         Assert.assertTrue(GridTestUtils.waitForCondition(() -> !serverEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
 
-        Collection<? extends RunningQuery> running = serverEngine.runningQueries();
-        RunningQuery qry = F.first(running);
+        Collection<? extends Query<?>> running = serverEngine.runningQueries();
+        Query<?> qry = F.first(running);
 
         assertSame(qry, serverEngine.runningQuery(qry.id()));
 

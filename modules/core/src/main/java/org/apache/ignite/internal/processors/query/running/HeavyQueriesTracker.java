@@ -15,21 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+package org.apache.ignite.internal.processors.query.running;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Long running query manager.
+ * Class to track heavy queries (long-running or producing a big result-set).
  */
-public final class LongRunningQueryManager {
+public final class HeavyQueriesTracker {
     /** Check period in ms. */
     private static final long CHECK_PERIOD = 1_000;
 
@@ -42,8 +44,17 @@ public final class LongRunningQueryManager {
     /** Message about the long execution of the query. */
     public static final String LONG_QUERY_EXEC_MSG = "Query execution is too long";
 
+    /** */
+    public static final String LONG_QUERY_FINISHED_MSG = "Long running query is finished";
+
+    /** */
+    public static final String LONG_QUERY_ERROR_MSG = "Long running query is finished with error: ";
+
+    /** */
+    public static final String BIG_RESULT_SET_MSG = "Query produced big result set.";
+
     /** Queries collection. Sorted collection isn't used to reduce 'put' time. */
-    private final ConcurrentHashMap<H2QueryInfo, TimeoutChecker> qrys = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<TrackableQuery, TimeoutChecker> qrys = new ConcurrentHashMap<>();
 
     /** Check worker. */
     private final GridWorker checkWorker;
@@ -82,8 +93,8 @@ public final class LongRunningQueryManager {
     /**
      * @param ctx Kernal context.
      */
-    public LongRunningQueryManager(GridKernalContext ctx) {
-        log = ctx.log(LongRunningQueryManager.class);
+    public HeavyQueriesTracker(GridKernalContext ctx) {
+        log = ctx.log(HeavyQueriesTracker.class);
 
         checkWorker = new GridWorker(ctx.igniteInstanceName(), "long-qry", log) {
             @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
@@ -115,7 +126,7 @@ public final class LongRunningQueryManager {
     /**
      * @param qryInfo Query info to register.
      */
-    public void registerQuery(H2QueryInfo qryInfo) {
+    public void startTracking(TrackableQuery qryInfo) {
         assert qryInfo != null;
 
         final long timeout0 = timeout;
@@ -126,22 +137,38 @@ public final class LongRunningQueryManager {
 
     /**
      * @param qryInfo Query info to remove.
+     * @param err Exception if query executed with error.
      */
-    public void unregisterQuery(H2QueryInfo qryInfo) {
+    public void stopTracking(TrackableQuery qryInfo, @Nullable Throwable err) {
         assert qryInfo != null;
 
         qrys.remove(qryInfo);
+
+        if (qryInfo.time() > timeout) {
+            if (err == null)
+                LT.warn(log, LONG_QUERY_FINISHED_MSG + qryInfo.queryInfo(null));
+            else
+                LT.warn(log, LONG_QUERY_ERROR_MSG + err.getMessage() + qryInfo.queryInfo(null));
+        }
+    }
+
+    /**
+     * Creates new result-set checker.
+     * @param qryInfo Query info.
+     */
+    public ResultSetChecker resultSetChecker(TrackableQuery qryInfo) {
+        return new ResultSetChecker(log, qryInfo, rsSizeThreshold, rsSizeThresholdMult);
     }
 
     /**
      *
      */
     private void checkLongRunning() {
-        for (Map.Entry<H2QueryInfo, TimeoutChecker> e : qrys.entrySet()) {
-            H2QueryInfo qinfo = e.getKey();
+        for (Map.Entry<TrackableQuery, TimeoutChecker> e : qrys.entrySet()) {
+            TrackableQuery qinfo = e.getKey();
 
             if (e.getValue().checkTimeout(qinfo.time())) {
-                qinfo.printLogMessage(log, LONG_QUERY_EXEC_MSG, null);
+                LT.warn(log, LONG_QUERY_EXEC_MSG + qinfo.queryInfo(null));
 
                 if (e.getValue().timeoutMult <= 1)
                     qrys.remove(qinfo);
@@ -235,7 +262,7 @@ public final class LongRunningQueryManager {
         private long timeout;
 
         /** */
-        private int timeoutMult;
+        private final int timeoutMult;
 
         /**
          * @param timeout Initial timeout.
@@ -247,7 +274,6 @@ public final class LongRunningQueryManager {
         }
 
         /**
-         * @param time Query execution time.
          * @return {@code true} if timeout occurred.
          */
         public boolean checkTimeout(long time) {
@@ -259,6 +285,62 @@ public final class LongRunningQueryManager {
             }
             else
                 return false;
+        }
+    }
+
+    /**
+     * Holds result-set limit settings for the specified query.
+     */
+    public static class ResultSetChecker {
+        /** Logger. */
+        private final IgniteLogger log;
+
+        /** Query info. */
+        private final TrackableQuery qryInfo;
+
+        /** Result set size threshold. */
+        private long threshold;
+
+        /** Result set size threshold multiplier. */
+        private final int thresholdMult;
+
+        /** Fetched count of rows. */
+        private long fetchedSize;
+
+        /** Big results flag. */
+        private boolean bigResults;
+
+        /** Ctor. */
+        private ResultSetChecker(IgniteLogger log, TrackableQuery qryInfo, long threshold, int thresholdMult) {
+            this.log = log;
+            this.qryInfo = qryInfo;
+            this.threshold = threshold;
+            this.thresholdMult = thresholdMult;
+        }
+
+        /**
+         * Print warning message to log when query result size fetch count is bigger than specified threshold.
+         * Threshold may be recalculated with multiplier.
+         */
+        public void checkOnFetchNext() {
+            ++fetchedSize;
+
+            if (threshold > 0 && fetchedSize >= threshold) {
+                LT.warn(log, BIG_RESULT_SET_MSG + qryInfo.queryInfo("fetched=" + fetchedSize));
+
+                if (thresholdMult > 1)
+                    threshold *= thresholdMult;
+                else
+                    threshold = 0;
+
+                bigResults = true;
+            }
+        }
+
+        /** */
+        public void checkOnClose() {
+            if (bigResults)
+                LT.warn(log, BIG_RESULT_SET_MSG + qryInfo.queryInfo("fetched=" + fetchedSize));
         }
     }
 }
