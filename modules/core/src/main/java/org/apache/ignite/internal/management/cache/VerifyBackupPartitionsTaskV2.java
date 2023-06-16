@@ -74,13 +74,13 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
  * <br>
  * Argument: Set of cache names, 'null' will trigger verification for all caches.
  * <br>
- * Result: {@link IdleVerifyTaskResultV2} with conflict partitions.
+ * Result: {@link IdleVerifyResultV2} with conflict partitions.
  * <br>
  * Works properly only on idle cluster - there may be false positive conflict reports if data in cluster is being
  * concurrently updated.
  */
 @GridInternal
-public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVerifyCommandArg, IdleVerifyTaskResultV2> {
+public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVerifyCommandArg, IdleVerifyResultV2> {
     /** First version of Ignite that is capable of executing Idle Verify V2. */
     public static final IgniteProductVersion V2_SINCE_VER = IgniteProductVersion.fromString("2.5.3");
 
@@ -105,7 +105,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IdleVerifyTaskResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
+    @Nullable @Override public IdleVerifyResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
         return reduce0(results);
     }
 
@@ -138,7 +138,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
      * @param results Received results of broadcast remote requests.
      * @return Idle verify job result constructed from results of remote executions.
      */
-    public static IdleVerifyTaskResultV2 reduce0(List<ComputeJobResult> results) {
+    public static IdleVerifyResultV2 reduce0(List<ComputeJobResult> results) {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
         Map<ClusterNode, Exception> ex = new HashMap<>();
 
@@ -159,9 +159,9 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
         }
 
         if (results.size() != ex.size())
-            return new IdleVerifyTaskResultV2(clusterHashes, ex);
+            return new IdleVerifyResultV2(clusterHashes, ex);
         else
-            return new IdleVerifyTaskResultV2(ex);
+            return new IdleVerifyResultV2(ex);
     }
 
     /**

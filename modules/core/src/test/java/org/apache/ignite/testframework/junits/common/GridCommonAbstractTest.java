@@ -81,7 +81,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommandArg;
-import org.apache.ignite.internal.management.cache.IdleVerifyTaskResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.management.cache.IdleVerifyTaskV2;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -2223,7 +2223,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Conflicts result.
      * @throws IgniteException If none caches or node found.
      */
-    protected IdleVerifyTaskResultV2 idleVerify(Ignite ig, @Nullable String... caches) {
+    protected IdleVerifyResultV2 idleVerify(Ignite ig, @Nullable String... caches) {
         log.info("Starting idleVerify ...");
 
         IgniteEx ig0 = (IgniteEx)ig;
@@ -2446,7 +2446,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param res Response.
      */
-    protected static void assertPartitionsSame(IdleVerifyTaskResultV2 res) throws AssertionFailedError {
+    protected static void assertPartitionsSame(IdleVerifyResultV2 res) throws AssertionFailedError {
         if (res.hasConflicts()) {
             StringBuilder b = new StringBuilder();
 

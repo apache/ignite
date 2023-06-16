@@ -49,7 +49,7 @@ import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.management.cache.IdleVerifyTaskResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
@@ -331,7 +331,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
         for (String snpName : Arrays.asList(SNAPSHOT_WITH_HOLES, SNAPSHOT_WITHOUT_HOLES)) {
             snp(ignite).createSnapshot(snpName, null, false, onlyPrimary).get(TIMEOUT);
 
-            IdleVerifyTaskResultV2 res = ignite.context().cache().context().snapshotMgr().checkSnapshot(snpName, null)
+            IdleVerifyResultV2 res = ignite.context().cache().context().snapshotMgr().checkSnapshot(snpName, null)
                 .get().idleVerifyResult();
 
             StringBuilder b = new StringBuilder();

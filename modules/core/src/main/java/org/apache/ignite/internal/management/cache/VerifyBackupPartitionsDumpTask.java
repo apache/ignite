@@ -172,7 +172,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<CacheIdle
      */
     private String writeHashes(
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> partitions,
-        IdleVerifyTaskResultV2 conflictRes,
+        IdleVerifyResultV2 conflictRes,
         int skippedRecords
     ) throws IgniteException {
         String wd = ignite.configuration().getWorkDirectory();
@@ -204,7 +204,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<CacheIdle
     /** */
     private void writeResult(
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> partitions,
-        IdleVerifyTaskResultV2 conflictRes,
+        IdleVerifyResultV2 conflictRes,
         int skippedRecords,
         PrintWriter writer
     ) {

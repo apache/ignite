@@ -37,7 +37,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.management.cache.IdleVerifyTaskResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
@@ -210,7 +210,7 @@ public class IgniteSnapshotConsistencyTest extends GridCommonAbstractTest {
         snpFut.get(getTestTimeout());
         putFut.get(getTestTimeout());
 
-        IdleVerifyTaskResultV2 snpVerifyRes = crd.context().cache().context().snapshotMgr()
+        IdleVerifyResultV2 snpVerifyRes = crd.context().cache().context().snapshotMgr()
             .checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         assertFalse(snpVerifyRes.hasConflicts());

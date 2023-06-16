@@ -25,12 +25,12 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Task to verify checksums of backup partitions.
  */
 @GridInternal
-public class IdleVerifyTaskV2 extends VisorOneNodeTask<CacheIdleVerifyCommandArg, IdleVerifyTaskResultV2> {
+public class IdleVerifyTaskV2 extends VisorOneNodeTask<CacheIdleVerifyCommandArg, IdleVerifyResultV2> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<CacheIdleVerifyCommandArg, IdleVerifyTaskResultV2> job(CacheIdleVerifyCommandArg arg) {
+    @Override protected VisorJob<CacheIdleVerifyCommandArg, IdleVerifyResultV2> job(CacheIdleVerifyCommandArg arg) {
         return new IdleVerifyJob<>(arg, debug, VerifyBackupPartitionsTaskV2.class);
     }
 }

@@ -36,8 +36,8 @@ import static org.apache.ignite.internal.management.cache.VerifyBackupPartitions
 /** Checks consistency of primary and backup partitions assuming no concurrent updates are happening in the cluster. */
 @CliSubcommandsWithPrefix
 public class CacheIdleVerifyCommand
-    extends CommandRegistryImpl<CacheIdleVerifyCommandArg, IdleVerifyTaskResultV2>
-    implements ComputeCommand<CacheIdleVerifyCommandArg, IdleVerifyTaskResultV2> {
+    extends CommandRegistryImpl<CacheIdleVerifyCommandArg, IdleVerifyResultV2>
+    implements ComputeCommand<CacheIdleVerifyCommandArg, IdleVerifyResultV2> {
     /** */
     public static final String IDLE_VERIFY_FILE_PREFIX = "idle_verify-";
 
@@ -72,7 +72,7 @@ public class CacheIdleVerifyCommand
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(CacheIdleVerifyCommandArg arg, IdleVerifyTaskResultV2 res, Consumer<String> printer) {
+    @Override public void printResult(CacheIdleVerifyCommandArg arg, IdleVerifyResultV2 res, Consumer<String> printer) {
         logParsedArgs(arg, printer);
 
         StringBuilder sb = new StringBuilder();

@@ -29,7 +29,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.management.cache.IdleVerifyTaskResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
@@ -369,7 +369,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
 
         grid(0).snapshot().restoreSnapshot(atomicSnp, null, 1).get();
 
-        IdleVerifyTaskResultV2 idleVerRes = idleVerify(grid(0), CACHE, atomicCache);
+        IdleVerifyResultV2 idleVerRes = idleVerify(grid(0), CACHE, atomicCache);
 
         idleVerRes.print(System.out::println, true);
 
