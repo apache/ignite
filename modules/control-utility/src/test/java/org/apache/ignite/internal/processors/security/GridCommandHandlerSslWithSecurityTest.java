@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.ToIntFunction;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -31,7 +32,7 @@ import org.apache.ignite.internal.commandline.NoopConsole;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.util.GridCommandHandlerFactoryAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -45,7 +46,7 @@ import static org.apache.ignite.testframework.GridTestUtils.sslTrustedFactory;
 /**
  * Command line handler test with SSL and security.
  */
-public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTest {
+public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFactoryAbstractTest {
     /** Login. */
     private final String login = "testUsr";
 
@@ -92,7 +93,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
      * Flushes all Logger handlers to make log data available to test.
      * @param hnd Command handler.
      */
-    private void flushCommandOutput(CommandHandler hnd) {
+    private void flushCommandOutput(CliFrontend hnd) {
         U.<IgniteLoggerEx>field(hnd, "logger").flush();
     }
 
@@ -121,7 +122,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
 
         crd.cluster().state(ACTIVE);
 
-        CommandHandler cmd = new CommandHandler();
+        CliFrontend cmd = cmdHndFactory.get();
 
         AtomicInteger keyStorePwdCnt = new AtomicInteger();
         AtomicInteger trustStorePwdCnt = new AtomicInteger();
@@ -159,7 +160,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
         args.add("--truststore");
         args.add(keyStorePath("trustthree"));
 
-        assertEquals(EXIT_CODE_OK, cmd.execute(args));
+        assertEquals(EXIT_CODE_OK, cmd.applyAsInt(args));
         assertEquals(1, keyStorePwdCnt.get());
         assertEquals(1, trustStorePwdCnt.get());
     }
@@ -175,9 +176,9 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
 
         injectTestSystemOut();
 
-        CommandHandler hnd = new CommandHandler();
+        CliFrontend hnd = cmdHndFactory.get();
 
-        int exitCode = hnd.execute(Arrays.asList(
+        int exitCode = hnd.applyAsInt(Arrays.asList(
             "--state",
             "--user", login,
             "--password", pwd,

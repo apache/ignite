@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.ToIntFunction;
 import java.util.function.UnaryOperator;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
@@ -92,7 +93,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
 
         ListeningTestLogger testLog = new ListeningTestLogger();
 
-        CommandHandler cmd = createCommandHandler(testLog);
+        CliFrontend cmd = createCommandHandler(testLog);
 
         LogListener logLsnr = LogListener.matches("Scheduling completed successfully.").build();
 
@@ -172,7 +173,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
 
         ListeningTestLogger testLog = new ListeningTestLogger();
 
-        CommandHandler cmd = createCommandHandler(testLog);
+        CliFrontend cmd = createCommandHandler(testLog);
 
         assertEquals(EXIT_CODE_OK, execute(
             cmd,
@@ -233,7 +234,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
 
         ListeningTestLogger testLog = new ListeningTestLogger();
 
-        CommandHandler cmd = createCommandHandler(testLog);
+        CliFrontend cmd = createCommandHandler(testLog);
 
         assertEquals(EXIT_CODE_OK, execute(
             cmd,
@@ -345,7 +346,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
 
         ListeningTestLogger testLog = new ListeningTestLogger();
 
-        CommandHandler cmd = createCommandHandler(testLog);
+        CliFrontend cmd = createCommandHandler(testLog);
 
         assertEquals(EXIT_CODE_OK, execute(
             cmd,
@@ -466,6 +467,6 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
             }
         }));
 
-        return new CommandHandler(new JavaLogger(log, false));
+        return cmdHndFactory0.apply(new JavaLogger(log, false));
     }
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.util;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.ToIntFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -81,7 +82,7 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
 
         assertFalse(ignite.cluster().state().active());
 
-        final CommandHandler cmd = new CommandHandler();
+        final CliFrontend cmd = cmdHndFactory.get();
 
         List<String> params = new ArrayList<>();
 
@@ -101,7 +102,7 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
         else
             assertFalse(ignite.cluster().state().active());
 
-        assertEquals(EXIT_CODE_CONNECTION_FAILED, cmd.execute(Arrays.asList("--deactivate", "--yes")));
+        assertEquals(EXIT_CODE_CONNECTION_FAILED, cmd.applyAsInt(Arrays.asList("--deactivate", "--yes")));
     }
 
     /**

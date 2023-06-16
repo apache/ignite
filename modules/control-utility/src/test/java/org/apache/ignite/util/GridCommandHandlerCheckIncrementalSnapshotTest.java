@@ -20,6 +20,7 @@ package org.apache.ignite.util;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
+import java.util.function.ToIntFunction;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -69,7 +70,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
     private static final String SNP = "testSnapshot";
 
     /** */
-    private CommandHandler cmd;
+    private CliFrontend cmd;
 
     /** */
     private volatile IgniteBiPredicate<Object, TxRecord> skipTxRec;
@@ -132,7 +133,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
 
         injectTestSystemOut();
 
-        cmd = new CommandHandler();
+        cmd = cmdHndFactory.get();
     }
 
     /** */

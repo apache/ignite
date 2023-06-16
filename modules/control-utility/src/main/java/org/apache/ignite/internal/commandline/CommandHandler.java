@@ -31,6 +31,7 @@ import java.util.Scanner;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.ToIntFunction;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
@@ -98,7 +99,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.visitComman
 /**
  * Class that execute several commands passed via command line.
  */
-public class CommandHandler {
+public class CommandHandler implements ToIntFunction<List<String>> {
     /** */
     static final String CMD_HELP = "--help";
 
@@ -151,7 +152,7 @@ public class CommandHandler {
     public GridConsole console = GridConsoleAdapter.getInstance();
 
     /** */
-    private Object lastOperationRes;
+    private Object res;
 
     /** Date format. */
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
@@ -162,7 +163,7 @@ public class CommandHandler {
     public static void main(String[] args) {
         CommandHandler hnd = new CommandHandler();
 
-        System.exit(hnd.execute(Arrays.asList(args)));
+        System.exit(hnd.applyAsInt(Arrays.asList(args)));
     }
 
     /**
@@ -220,13 +221,18 @@ public class CommandHandler {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public int applyAsInt(List<String> rawArgs) {
+        return execute(rawArgs);
+    }
+
     /**
      * Parse and execute command.
      *
      * @param rawArgs Arguments to parse and execute.
      * @return Exit code.
      */
-    public <A extends IgniteDataTransferObject> int execute(List<String> rawArgs) {
+    private <A extends IgniteDataTransferObject> int execute(List<String> rawArgs) {
         LocalDateTime startTime = LocalDateTime.now();
 
         Thread.currentThread().setName("session=" + ses);
@@ -290,9 +296,9 @@ public class CommandHandler {
                         if (args.command() instanceof HelpCommand)
                             printUsage(logger, args.root());
                         else if (args.command() instanceof BeforeNodeStartCommand)
-                            lastOperationRes = invoker.invokeBeforeNodeStart(logger::info);
+                            res = invoker.invokeBeforeNodeStart(logger::info);
                         else
-                            lastOperationRes = invoker.invoke(logger::info, args.verbose());
+                            res = invoker.invoke(logger::info, args.verbose());
 
                         break;
                     }
@@ -660,8 +666,8 @@ public class CommandHandler {
      *
      * @return Last operation result;
      */
-    public <T> T getLastOperationResult() {
-        return (T)lastOperationRes;
+    public <T> T result() {
+        return (T)res;
     }
 
     /**

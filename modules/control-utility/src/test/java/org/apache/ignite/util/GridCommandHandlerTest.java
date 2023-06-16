@@ -78,7 +78,6 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.impl.GridClientImpl;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.ClusterStateTestUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -1695,7 +1694,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         doSleep(5000);
 
-        CommandHandler h = new CommandHandler();
+        CliFrontend h = cmdHndFactory.get();
 
         final VisorTxInfo[] toKill = {null};
 
@@ -1961,7 +1960,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             }, 10_000);
         }
 
-        CommandHandler h = new CommandHandler();
+        CliFrontend h = cmdHndFactory.get();
 
         // Check listing.
         validate(h, map -> {
@@ -2412,11 +2411,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * @param validateClo Validate clo.
      * @param args Args.
      */
-    private void validate(CommandHandler h, IgniteInClosure<Map<ClusterNode, VisorTxTaskResult>> validateClo,
+    private void validate(CliFrontend h, IgniteInClosure<Map<ClusterNode, VisorTxTaskResult>> validateClo,
         String... args) {
         assertEquals(EXIT_CODE_OK, execute(h, args));
 
-        validateClo.apply(h.getLastOperationResult());
+        validateClo.apply(h.result());
     }
 
     /**
@@ -2699,7 +2698,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertNotNull(tx0);
 
-        CommandHandler h = new CommandHandler();
+        CliFrontend h = cmdHndFactory.get();
 
         validate(h, map -> {
             ClusterNode node = grid(0).cluster().localNode();
@@ -3007,11 +3006,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         Ignite ignite = startGrids(1);
 
-        CommandHandler h = new CommandHandler(createTestLogger());
+        CliFrontend h = cmdHndFactory0.apply(createTestLogger());
 
         assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "get_master_key_name"));
 
-        Object res = h.getLastOperationResult();
+        Object res = h.result();
 
         assertEquals(ignite.encryption().getMasterKeyName(), res);
 
@@ -3164,7 +3163,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         injectTestSystemOut();
 
-        CommandHandler h = new CommandHandler(createTestLogger());
+        CliFrontend h = cmdHndFactory0.apply(createTestLogger());
 
         // Invalid command syntax check.
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "create", snpName, "blah"));
@@ -3198,7 +3197,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 waitForCondition(endTimeMetricPredicate::getAsBoolean, getTestTimeout()));
         }
 
-        assertContains(log, (String)((VisorSnapshotTaskResult)h.getLastOperationResult()).result(), snpName);
+        assertContains(log, (String)((VisorSnapshotTaskResult)h.result()).result(), snpName);
 
         stopAllGrids();
 
@@ -3238,7 +3237,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         createCacheAndPreload(startCli, 100);
 
-        CommandHandler h = new CommandHandler();
+        CliFrontend h = cmdHndFactory.get();
 
         // Cancel snapshot using operation ID.
         doSnapshotCancellationTest(startCli, Collections.singletonList(srv), startCli.cache(DEFAULT_CACHE_NAME),
@@ -3267,13 +3266,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         snp(ig).createSnapshot(snpName)
             .get();
 
-        CommandHandler h = new CommandHandler();
+        CliFrontend h = cmdHndFactory.get();
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "check", snpName));
 
         StringBuilder sb = new StringBuilder();
 
-        ((SnapshotPartitionsVerifyTaskResult)((VisorSnapshotTaskResult)h.getLastOperationResult()).result()).print(sb::append);
+        ((SnapshotPartitionsVerifyTaskResult)((VisorSnapshotTaskResult)h.result()).result()).print(sb::append);
 
         assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
     }
@@ -3372,7 +3371,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertNull(ig.cache(cacheName2));
         assertNull(ig.cache(cacheName3));
 
-        CommandHandler h = new CommandHandler(createTestLogger());
+        CliFrontend h = cmdHndFactory0.apply(createTestLogger());
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, cacheName1));
         assertContains(log, testOut.toString(), "Unexpected argument: " + cacheName1);
@@ -3902,7 +3901,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         IgniteEx ignite,
         boolean delFoundGarbage
     ) {
-        CommandHandler hnd = new CommandHandler();
+        CliFrontend hnd = cmdHndFactory.get();
 
         List<String> args = new ArrayList<>(Arrays.asList("--yes", "--port", "11212", "--cache", "find_garbage",
             ignite.localNode().id().toString()));
@@ -3910,9 +3909,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         if (delFoundGarbage)
             args.add("--delete");
 
-        hnd.execute(args);
+        hnd.applyAsInt(args);
 
-        return hnd.getLastOperationResult();
+        return hnd.result();
     }
 
     /**

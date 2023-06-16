@@ -18,11 +18,13 @@
 package org.apache.ignite.util;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.ToIntFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterState;
@@ -137,7 +139,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         injectTestSystemOut();
         idxRebuildsStartedNum.set(0);
 
-        final CommandHandler handler = new CommandHandler(createTestLogger());
+        final CliFrontend handler = cmdHndFactory0.apply(createTestLogger());
 
         stopGrid(GRIDS_NUM - 1);
         stopGrid(GRIDS_NUM - 2);
@@ -172,7 +174,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         injectTestSystemOut();
         idxRebuildsStartedNum.set(0);
 
-        final CommandHandler handler = new CommandHandler(createTestLogger());
+        final CliFrontend handler = cmdHndFactory0.apply(createTestLogger());
 
         stopGrid(GRIDS_NUM - 1);
         stopGrid(GRIDS_NUM - 2);
@@ -219,10 +221,10 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
      * @param handler CommandHandler used to run command.
      * @param nodeIds Ids to check.
      */
-    private void checkResult(CommandHandler handler, UUID... nodeIds) {
+    private void checkResult(CliFrontend handler, UUID... nodeIds) {
         String output = testOut.toString();
 
-        Map<UUID, Set<IndexRebuildStatusInfoContainer>> cmdResult = handler.getLastOperationResult();
+        Map<UUID, Set<IndexRebuildStatusInfoContainer>> cmdResult = handler.result();
         assertNotNull(cmdResult);
         assertEquals("Unexpected number of nodes in result", nodeIds.length, cmdResult.size());
 

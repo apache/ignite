@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
@@ -1752,7 +1753,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         String... args) {
         assertEquals(EXIT_CODE_OK, execute(h, args));
 
-        validateClo.apply(h.getLastOperationResult());
+        validateClo.apply(h.result());
     }
 
     /**
@@ -2083,7 +2084,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         }));
 
         int resCode = EXIT_CODE_UNEXPECTED_ERROR;
-        CommandHandler cmd = new CommandHandler(new JavaLogger(log, false));
+        CliFrontend cmd = cmdHndFactory0.apply(new JavaLogger(log, false));
 
         assertEquals(resCode, execute(cmd, BASELINE));
         assertContains(GridAbstractTest.log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);

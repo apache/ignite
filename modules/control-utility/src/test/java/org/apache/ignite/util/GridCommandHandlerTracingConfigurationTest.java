@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand;
 import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTaskResult;
 import org.apache.ignite.spi.tracing.Scope;
@@ -94,7 +93,7 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
     protected IgniteEx ignite;
 
     /** */
-    private static CommandHandler hnd;
+    private static CliFrontend hnd;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -102,7 +101,7 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
 
         ignite = startGrids(2);
 
-        hnd = new CommandHandler();
+        hnd = cmdHndFactory.get();
     }
 
     /** {@inheritDoc} */
@@ -383,7 +382,7 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
      * @param expRes Expected command result.
      */
     private void verifyResult(VisorTracingConfigurationTaskResult expRes) {
-        VisorTracingConfigurationTaskResult gotRes = hnd.getLastOperationResult();
+        VisorTracingConfigurationTaskResult gotRes = hnd.result();
 
         assertNotNull(gotRes);
 

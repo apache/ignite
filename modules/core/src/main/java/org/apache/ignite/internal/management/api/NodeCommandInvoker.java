@@ -76,11 +76,6 @@ public class NodeCommandInvoker<A extends IgniteDataTransferObject> extends Abst
         return node(ignite.localNode());
     }
 
-    /** {@inheritDoc} */
-    @Override public void close() throws Exception {
-        // No-op.
-    }
-
     /** */
     private static GridClientNode node(ClusterNode n) {
         return new GridClientNode() {

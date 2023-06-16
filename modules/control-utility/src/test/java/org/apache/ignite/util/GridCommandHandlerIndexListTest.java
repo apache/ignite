@@ -18,13 +18,14 @@
 package org.apache.ignite.util;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.visor.cache.index.IndexListInfoContainer;
 import org.junit.Test;
 
@@ -82,7 +83,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
         injectTestSystemOut();
 
-        final CommandHandler handler = new CommandHandler(createTestLogger());
+        final CliFrontend handler = cmdHndFactory0.apply(createTestLogger());
 
         assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_list", "--index-name", idxName));
 
@@ -107,7 +108,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
         assertEquals("Unexpected number of index description lines: " + indexDescrLinesNum,
             indexDescrLinesNum, expectedIndexDescrLinesNum);
 
-        Set<IndexListInfoContainer> cmdResult = handler.getLastOperationResult();
+        Set<IndexListInfoContainer> cmdResult = handler.result();
         assertNotNull(cmdResult);
 
         final int resSetSize = cmdResult.size();
@@ -130,7 +131,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
         injectTestSystemOut();
 
-        final CommandHandler handler = new CommandHandler(createTestLogger());
+        final CliFrontend handler = cmdHndFactory0.apply(createTestLogger());
 
         assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_list",
             "--node-id", grid(0).localNode().id().toString(),
@@ -153,7 +154,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
         injectTestSystemOut();
 
-        final CommandHandler handler = new CommandHandler(createTestLogger());
+        final CliFrontend handler = cmdHndFactory0.apply(createTestLogger());
 
         try {
             ignite.createCache(tmpCacheName);
@@ -212,11 +213,11 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
     /** */
     private void checkGroup(String grpRegEx, Predicate<String> predicate, int expectedResNum) {
-        final CommandHandler handler = new CommandHandler(createTestLogger());
+        final CliFrontend handler = cmdHndFactory0.apply(createTestLogger());
 
         assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_list", "--group-name", grpRegEx));
 
-        Set<IndexListInfoContainer> cmdResult = handler.getLastOperationResult();
+        Set<IndexListInfoContainer> cmdResult = handler.result();
         assertNotNull(cmdResult);
 
         boolean isResCorrect =
@@ -259,11 +260,11 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
     /** */
     private void checkCacheNameFilter(String cacheRegEx, Predicate<String> predicate, int expectedResNum) {
-        final CommandHandler handler = new CommandHandler(createTestLogger());
+        final CliFrontend handler = cmdHndFactory0.apply(createTestLogger());
 
         assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_list", "--cache-name", cacheRegEx));
 
-        Set<IndexListInfoContainer> cmdResult = handler.getLastOperationResult();
+        Set<IndexListInfoContainer> cmdResult = handler.result();
         assertNotNull(cmdResult);
 
         boolean isResCorrect =

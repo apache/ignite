@@ -28,6 +28,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.ToIntFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -65,8 +66,8 @@ import org.apache.ignite.logger.java.JavaLoggerFileHandler;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+
 import static java.lang.String.join;
 import static java.lang.System.lineSeparator;
 import static java.nio.file.Files.delete;
@@ -90,7 +91,7 @@ import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPar
  * {@link GridCommandHandlerClusterByClassAbstractTest}
  */
 @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
-public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
+public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerFactoryAbstractTest {
     /** */
     protected static final String CLIENT_NODE_NAME_PREFIX = "client";
 
@@ -347,7 +348,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
      * @return Result of execution
      */
     protected int execute(List<String> args) {
-        return execute(new CommandHandler(createTestLogger()), args);
+        return execute(cmdHndFactory0.apply(createTestLogger()), args);
     }
 
     /**
@@ -357,21 +358,21 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
      * @param args Arguments.
      * @return Result of execution
      */
-    protected int execute(CommandHandler hnd, String... args) {
+    protected int execute(CliFrontend hnd, String... args) {
         return execute(hnd, new ArrayList<>(asList(args)));
     }
 
     /**
      * Before command executed {@link #testOut} reset.
      */
-    protected int execute(CommandHandler hnd, List<String> args) {
+    protected int execute(CliFrontend hnd, List<String> args) {
         if (!F.isEmpty(args) && !"--help".equalsIgnoreCase(args.get(0)))
             addExtraArguments(args);
 
         testOut.reset();
 
-        int exitCode = hnd.execute(args);
-        lastOperationResult = hnd.getLastOperationResult();
+        int exitCode = hnd.applyAsInt(args);
+        lastOperationResult = hnd.result();
 
         // Flush all Logger handlers to make log data available to test.
         U.<IgniteLoggerEx>field(hnd, "logger").flush();
