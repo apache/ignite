@@ -47,7 +47,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
     }
 
     /** */
-    private class CommandHandlerCliFrontend implements CliFrontend {
+    private static class CommandHandlerCliFrontend implements CliFrontend {
         /** */
         private final CommandHandler hnd;
 
@@ -75,6 +75,24 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
         /** {@inheritDoc} */
         @Override public int applyAsInt(List<String> rawArgs) {
             return hnd.execute(rawArgs);
+        }
+    }
+
+    /** */
+    private static class JMXCliFrontend implements CliFrontend {
+        /** {@inheritDoc} */
+        @Override public <T> T result() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void flushLogger() {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int applyAsInt(List<String> value) {
+            return 0;
         }
     }
 }
