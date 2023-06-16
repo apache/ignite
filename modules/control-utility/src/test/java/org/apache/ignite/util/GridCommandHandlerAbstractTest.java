@@ -81,7 +81,7 @@ import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
-import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
+import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
 
 /**
  * Common abstract class for testing {@link CommandHandler}.

@@ -30,16 +30,16 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.cache.PartitionKeyV2;
+import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
-import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
-import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2.reduce0;
+import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2.reduce0;
 
 /**
  * Task for checking snapshot partitions consistency the same way as {@link VerifyBackupPartitionsTaskV2} does.

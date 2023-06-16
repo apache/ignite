@@ -31,7 +31,6 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.LocalCommand;
-import org.apache.ignite.internal.processors.cache.verify.CacheInfo;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.cache.VisorCacheAffinityConfiguration;
@@ -43,15 +42,13 @@ import org.apache.ignite.internal.visor.cache.VisorCacheNearConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheStoreConfiguration;
 import org.apache.ignite.internal.visor.query.VisorQueryConfiguration;
-import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
-import org.apache.ignite.internal.visor.verify.VisorViewCacheTask;
-import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskResult;
-import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
-import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
-import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
+
+import static org.apache.ignite.internal.management.cache.ViewCacheCmd.CACHES;
+import static org.apache.ignite.internal.management.cache.ViewCacheCmd.GROUPS;
+import static org.apache.ignite.internal.management.cache.ViewCacheCmd.SEQ;
 
 /** Prints info regarding caches, groups or sequences. */
-public class CacheListCommand implements LocalCommand<CacheListCommandArg, VisorViewCacheTaskResult> {
+public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewCacheTaskResult> {
     /** */
     Function<CacheListCommandArg, Predicate<GridClientNode>> FILTER = arg -> node ->
         node.connectable() && (arg.nodeId() == null || Objects.equals(node.nodeId(), arg.nodeId()));
@@ -68,12 +65,12 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
     }
 
     /** {@inheritDoc} */
-    @Override public VisorViewCacheTaskResult execute(
+    @Override public ViewCacheTaskResult execute(
         GridClient cli,
         CacheListCommandArg arg,
         Consumer<String> printer
     ) throws Exception {
-        VisorViewCacheCmd cmd = arg.groups()
+        ViewCacheCmd cmd = arg.groups()
             ? GROUPS
             : (arg.seq() ? SEQ : CACHES);
 
@@ -85,8 +82,8 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
         if (!node.isPresent())
             throw new IllegalArgumentException("Node not found: id=" + arg.nodeId());
 
-        VisorViewCacheTaskResult res = cli.compute().projection(node.get()).execute(
-            VisorViewCacheTask.class.getName(),
+        ViewCacheTaskResult res = cli.compute().projection(node.get()).execute(
+            ViewCacheTask.class.getName(),
             new VisorTaskArgument<>(Collections.singleton(node.get().nodeId()), arg, false)
         );
 
@@ -106,7 +103,7 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
     private void cachesConfig(
         GridClient cli,
         CacheListCommandArg arg,
-        VisorViewCacheTaskResult viewRes,
+        ViewCacheTaskResult viewRes,
         Consumer<String> printer
     ) throws GridClientException {
         Collection<GridClientNode> nodes = cli.compute().nodes()
@@ -135,7 +132,7 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
      * @param infos Caches info.
      * @param cmd Command.
      */
-    private void printCacheInfos(Collection<CacheInfo> infos, VisorViewCacheCmd cmd, Consumer<String> printer) {
+    private void printCacheInfos(Collection<CacheInfo> infos, ViewCacheCmd cmd, Consumer<String> printer) {
         for (CacheInfo info : infos) {
             Map<String, Object> map = info.toMap(cmd);
 
