@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.ToIntFunction;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -33,6 +32,7 @@ import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.util.GridCommandHandlerFactoryAbstractTest;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -124,10 +124,12 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
 
         CliFrontend cmd = cmdHndFactory.get();
 
+        Assume.assumeTrue(cmd instanceof CommandHandler);
+
         AtomicInteger keyStorePwdCnt = new AtomicInteger();
         AtomicInteger trustStorePwdCnt = new AtomicInteger();
 
-        cmd.console = new NoopConsole() {
+        ((CommandHandler)cmd).console = new NoopConsole() {
             /** {@inheritDoc} */
             @Override public char[] readPassword(String fmt, Object... args) {
                 if (fmt.contains("keystore")) {

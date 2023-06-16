@@ -28,7 +28,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.ToIntFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -51,7 +50,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommand;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
@@ -374,8 +372,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerF
         int exitCode = hnd.applyAsInt(args);
         lastOperationResult = hnd.result();
 
-        // Flush all Logger handlers to make log data available to test.
-        U.<IgniteLoggerEx>field(hnd, "logger").flush();
+        hnd.flushLogger();
 
         return exitCode;
     }

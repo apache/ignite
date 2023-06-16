@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.function.ToIntFunction;
 import java.util.function.UnaryOperator;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
@@ -36,7 +35,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -453,7 +451,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
     }
 
     /** */
-    private CommandHandler createCommandHandler(ListeningTestLogger testLog) {
+    private CliFrontend createCommandHandler(ListeningTestLogger testLog) {
         Logger log = GridCommandHandlerAbstractTest.initLogger(null);
 
         log.addHandler(new StreamHandler(System.out, new Formatter() {

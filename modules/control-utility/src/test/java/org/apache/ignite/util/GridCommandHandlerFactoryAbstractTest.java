@@ -23,6 +23,8 @@ import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -39,6 +41,9 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
     public static interface CliFrontend extends ToIntFunction<List<String>> {
         /** */
         public <T> T result();
+
+        /** */
+        public void flushLogger();
     }
 
     /** */
@@ -53,7 +58,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
 
         /** */
         public CommandHandlerCliFrontend(IgniteLogger log) {
-            this.hnd = new CommandHandler(log)
+            this.hnd = new CommandHandler(log);
         }
 
         /** {@inheritDoc} */
@@ -62,8 +67,14 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public int applyAsInt(List<String> value) {
-            return 0;
+        @Override public void flushLogger() {
+            // Flush all Logger handlers to make log data available to test.
+            U.<IgniteLoggerEx>field(hnd, "logger").flush();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int applyAsInt(List<String> rawArgs) {
+            return hnd.execute(rawArgs);
         }
     }
 }

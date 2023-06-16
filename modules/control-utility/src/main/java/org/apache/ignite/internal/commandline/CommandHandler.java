@@ -31,7 +31,6 @@ import java.util.Scanner;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.ToIntFunction;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
@@ -99,7 +98,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.visitComman
 /**
  * Class that execute several commands passed via command line.
  */
-public class CommandHandler implements ToIntFunction<List<String>> {
+public class CommandHandler {
     /** */
     static final String CMD_HELP = "--help";
 
@@ -163,7 +162,7 @@ public class CommandHandler implements ToIntFunction<List<String>> {
     public static void main(String[] args) {
         CommandHandler hnd = new CommandHandler();
 
-        System.exit(hnd.applyAsInt(Arrays.asList(args)));
+        System.exit(hnd.execute(Arrays.asList(args)));
     }
 
     /**
@@ -221,18 +220,13 @@ public class CommandHandler implements ToIntFunction<List<String>> {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public int applyAsInt(List<String> rawArgs) {
-        return execute(rawArgs);
-    }
-
     /**
      * Parse and execute command.
      *
      * @param rawArgs Arguments to parse and execute.
      * @return Exit code.
      */
-    private <A extends IgniteDataTransferObject> int execute(List<String> rawArgs) {
+    public <A extends IgniteDataTransferObject> int execute(List<String> rawArgs) {
         LocalDateTime startTime = LocalDateTime.now();
 
         Thread.currentThread().setName("session=" + ses);
