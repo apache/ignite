@@ -79,6 +79,35 @@ public class CommandUtils {
     }
 
     /**
+     *
+     * @param cmdCls
+     * @param parent
+     * @return
+     */
+    public static String commandKey(Class<?> cmdCls, Class<? extends CommandsRegistry<?, ?>> parent) {
+        String name = cmdCls.getSimpleName();
+
+        if (parent != null) {
+            String parentName = parent.getSimpleName();
+            parentName = parentName.substring(0, parentName.length() - CMD_NAME_POSTFIX.length());
+
+            if (!name.startsWith(parentName)) {
+                throw new IllegalArgumentException(
+                    "Command class name must starts with parent name [parent=" + parentName + ']');
+            }
+
+            name = name.substring(parentName.length());
+        }
+
+        if (!name.endsWith(CMD_NAME_POSTFIX))
+            throw new IllegalArgumentException("Command class name must ends with 'Command'");
+
+        name = name.substring(0, name.length() - CMD_NAME_POSTFIX.length());
+
+        return name;
+    }
+
+    /**
      * Example: {@code "SystemView" -> "system-view"}.
      *
      * @param cls Command name class.
@@ -498,7 +527,7 @@ public class CommandUtils {
      */
     private static <T> T parseSingleVal(String val, Class<T> type) {
         if (isBoolean(type))
-            return (T)Boolean.TRUE;
+            return (T)(Boolean)Boolean.parseBoolean(val);
         if (type == String.class)
             return (T)val;
         else if (type == Integer.class || type == int.class) {

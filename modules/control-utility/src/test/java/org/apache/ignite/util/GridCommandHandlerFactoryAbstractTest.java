@@ -17,9 +17,13 @@
 
 package org.apache.ignite.util;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -27,32 +31,40 @@ import java.util.function.ToIntFunction;
 import javax.management.DynamicMBean;
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.commandline.ArgumentParser;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.ConnectionAndSslParameters;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
-import org.apache.ignite.internal.management.jmx.CommandMBean;
+import org.apache.ignite.internal.management.api.CommandsRegistry;
+import org.apache.ignite.internal.management.jmx.JmxCommandRegistryInvokerPluginProvider;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static java.util.Collections.singletonList;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
+import static org.apache.ignite.internal.management.api.CommandUtils.commandKey;
+import static org.apache.ignite.internal.management.api.CommandUtils.isBoolean;
 import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
 import static org.apache.ignite.internal.management.jmx.CommandMBean.METHOD;
 
 /**
  *
  */
+@RunWith(Parameterized.class)
 public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTest {
     /** */
     public static final String JMX_INVOKER = "jmx";
@@ -61,7 +73,17 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
     public static final String CLI_INVOKER = "cli";
 
     /** */
-    public String invoker = CLI_INVOKER;
+    public static final List<String> INVOKERS = Arrays.asList(JMX_INVOKER, CLI_INVOKER);
+
+    /** */
+    @Parameterized.Parameter
+    public String invoker;
+
+    /** */
+    @Parameterized.Parameters(name = "invoker={0}")
+    public static List<String> invokers() {
+        return INVOKERS;
+    }
 
     /** Command executor factory. */
     protected Function<IgniteLogger, CliFrontend> cmdHndFactory0 = log -> {
@@ -79,6 +101,12 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
 
     /** Command executor factory. */
     protected Supplier<CliFrontend> cmdHndFactory = () -> cmdHndFactory0.apply(null);
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setPluginProviders(new JmxCommandRegistryInvokerPluginProvider());
+    }
 
     /** */
     public static interface CliFrontend extends ToIntFunction<List<String>> {
@@ -140,43 +168,56 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
         /** {@inheritDoc} */
         @Override public int applyAsInt(List<String> value) {
             if (grid == null) {
-                grid = IgnitionEx.localIgnite();
+                List<Ignite> grids = IgnitionEx.allGrids();
+
+                grid = (IgniteEx)grids.get(0);
 
                 if (log == null)
                     log = (IgniteLoggerEx)grid.log();
             }
 
-            ArgumentParser parser = new ArgumentParser(log, new IgniteCommandRegistry());
-
-            ConnectionAndSslParameters<IgniteDataTransferObject> p = parser.parseAndValidate(value);
-
-            List<String> grp = p.root() == null ? null : singletonList(toFormattedCommandName(p.root().getClass()));
-
-            DynamicMBean mbean = getMxBean(
-                grid.context().igniteInstanceName(),
-                "management",
-                toFormattedCommandName(p.command().getClass()),
-                CommandMBean.class
-            );
-
-            List<String> params = new ArrayList<>();
-            List<String> signature = new ArrayList<>();
-
-            Consumer<Field> fldCnsmr = fld -> {
-                signature.add(String.class.getName());
-
-                Object val = U.field(p.commandArg(), fld.getName());
-
-                params.add(val == null ? "" : toString(val.getClass(), val));
-            };
-
-            visitCommandParams(p.command().argClass(), fldCnsmr, fldCnsmr, (optional, flds) -> flds.forEach(fldCnsmr));
-
             try {
-                res = mbean.invoke(METHOD, params.toArray(X.EMPTY_OBJECT_ARRAY), signature.toArray(U.EMPTY_STRS));
+                ArgumentParser parser = new ArgumentParser(log, new IgniteCommandRegistry());
+
+                ConnectionAndSslParameters<IgniteDataTransferObject> p = parser.parseAndValidate(value);
+
+                List<String> grps = p.root() == p.command()
+                    ? Collections.emptyList()
+                    : singletonList(commandKey(p.root().getClass(), null));
+
+                DynamicMBean mbean = getMxBean(
+                    grid.context().igniteInstanceName(),
+                    "management",
+                    grps,
+                    commandKey(
+                        p.command().getClass(),
+                        p.root() == p.command() ? null : (Class<? extends CommandsRegistry<?, ?>>)p.root().getClass()
+                    ),
+                    DynamicMBean.class
+                );
+
+                List<String> params = new ArrayList<>();
+
+                Consumer<Field> fldCnsmr = fld -> params.add(toString(U.field(p.commandArg(), fld.getName())));
+
+                visitCommandParams(p.command().argClass(), fldCnsmr, fldCnsmr, (optional, flds) -> flds.forEach(fldCnsmr));
+
+                String[] signature = new String[params.size()];
+
+                Arrays.fill(signature, String.class.getName());
+
+                String out = (String)mbean.invoke(METHOD, params.toArray(X.EMPTY_OBJECT_ARRAY), signature);
+
+                log.info(out);
             }
             catch (MBeanException | ReflectionException e) {
                 throw new IgniteException(e);
+            }
+            catch (IllegalArgumentException e) {
+                log.error("Failed to perform operation.");
+                log.error(CommandLogger.errorMessage(e));
+
+                return EXIT_CODE_INVALID_ARGUMENTS;
             }
 
             return EXIT_CODE_OK;
@@ -193,8 +234,29 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
         }
 
         /** */
-        private static <T> String toString(Class<?> cls, Object val) {
-            return S.toString((Class<T>)cls, (T)val);
+        private static String toString(Object val) {
+            if (val == null || (isBoolean(val.getClass()) && !(boolean)val))
+                return "";
+
+            if (val.getClass().isArray()) {
+                int length = Array.getLength(val);
+
+                if (length == 0)
+                    return "";
+
+                StringBuffer sb = new StringBuffer();
+
+                for (int i = 0; i < length; i++) {
+                    if (i != 0)
+                        sb.append(',');
+
+                    sb.append(toString(Array.get(val, i)));
+                }
+
+                return sb.toString();
+            }
+
+            return Objects.toString(val);
         }
     }
 }

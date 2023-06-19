@@ -182,6 +182,8 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testConfigureHistogram() {
         String mregName = "configure-registry";
 
+        ignite0.context().metric().remove(mregName);
+
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
         long[] bounds = new long[] {50, 500};
@@ -209,6 +211,8 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testConfigureHitrate() {
         String mregName = "configure-registry";
 
+        ignite0.context().metric().remove(mregName);
+
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
         HitRateMetric hitrate = mreg.hitRateMetric("hitrate", null, 500, 5);
@@ -224,6 +228,8 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     @Test
     public void testHistogramMetrics() {
         String mregName = "histogram-registry";
+
+        ignite0.context().metric().remove(mregName);
 
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
@@ -280,6 +286,8 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testRegistryMetrics() {
         String mregName = "test-metric-registry";
 
+        ignite0.context().metric().remove(mregName);
+
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
         mreg.booleanMetric("boolean-metric", "");
@@ -327,6 +335,8 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testLongMetrics() {
         String mregName = "long-metric-registry";
 
+        ignite0.context().metric().remove(mregName);
+
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
         mreg.longMetric("long-metric", "").add(Long.MAX_VALUE);
@@ -343,6 +353,8 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testIntegerMetrics() {
         String mregName = "int-metric-registry";
 
+        ignite0.context().metric().remove(mregName);
+
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
         mreg.intMetric("int-metric", "").add(Integer.MAX_VALUE);
@@ -358,6 +370,8 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     @Test
     public void testDoubleMetrics() {
         String mregName = "int-double-registry";
+
+        ignite0.context().metric().remove(mregName);
 
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
@@ -396,6 +410,8 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     @Test
     public void testHitrateMetrics() {
         String mregName = "hitrate-registry";
+
+        ignite0.context().metric().remove(mregName);
 
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
@@ -445,14 +461,18 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
      * @return Metric values.
      */
     private Map<String, String> parseMetricCommandOutput(String out) {
-        String outStart = "--------------------------------------------------------------------------------";
+        if (invoker.equals(CLI_INVOKER)) {
+            String outStart = "--------------------------------------------------------------------------------";
 
-        String outEnd = "Command [METRIC] finished with code: " + EXIT_CODE_OK;
+            String outEnd = "Command [METRIC] finished with code: " + EXIT_CODE_OK;
 
-        String[] rows = out.substring(
-            out.indexOf(outStart) + outStart.length() + 1,
-            out.indexOf(outEnd) - 1
-        ).split(U.nl());
+            out = out.substring(
+                out.indexOf(outStart) + outStart.length() + 1,
+                out.indexOf(outEnd) - 1
+            );
+        }
+
+        String[] rows = out.split(U.nl());
 
         Map<String, String> res = new HashMap<>();
 

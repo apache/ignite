@@ -90,6 +90,12 @@ public class CommandMBean<A extends IgniteDataTransferObject> implements Dynamic
         if (!METHOD.equals(actionName))
             throw new UnsupportedOperationException(actionName);
 
+        // Default JMX invoker pass arguments in for params: Object[] = { "invoke", parameter_values_array, types_array}
+        // while JConsole pass params values directly in params array.
+        // This check supports both way of invocation.
+        if (params.length == 3 && params[0].equals(METHOD) && params[1] instanceof Object[])
+            return invoke(METHOD, (Object[])params[1], (String[])params[2]);
+
         try {
             StringBuilder resStr = new StringBuilder();
 
