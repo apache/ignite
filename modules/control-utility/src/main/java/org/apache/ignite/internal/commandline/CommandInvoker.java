@@ -104,7 +104,7 @@ public class CommandInvoker<A extends IgniteDataTransferObject> extends Abstract
             .filter(GridClientNode::connectable)
             .collect(Collectors.toList());
 
-        if (!F.isEmpty(nodes))
+        if (!F.isEmpty(connectable))
             compute = compute.projection(connectable);
 
         return compute.execute(cmd.taskClass().getName(), new VisorTaskArgument<>(nodes, arg, false));
