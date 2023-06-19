@@ -17,25 +17,68 @@
 
 package org.apache.ignite.util;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
+import javax.management.DynamicMBean;
+import javax.management.MBeanException;
+import javax.management.ReflectionException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.commandline.ArgumentParser;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.commandline.ConnectionAndSslParameters;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
+import org.apache.ignite.internal.management.jmx.CommandMBean;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
+
+import static java.util.Collections.singletonList;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
+import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
+import static org.apache.ignite.internal.management.jmx.CommandMBean.METHOD;
 
 /**
  *
  */
 public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTest {
-    /** Command executor factory. */
-    protected Supplier<CliFrontend> cmdHndFactory = CommandHandlerCliFrontend::new;
+    /** */
+    public static final String JMX_INVOKER = "jmx";
+
+    /** */
+    public static final String CLI_INVOKER = "cli";
+
+    /** */
+    public String invoker = CLI_INVOKER;
 
     /** Command executor factory. */
-    protected Function<IgniteLogger, CliFrontend> cmdHndFactory0 = CommandHandlerCliFrontend::new;
+    protected Function<IgniteLogger, CliFrontend> cmdHndFactory0 = log -> {
+        switch (invoker) {
+            case CLI_INVOKER:
+                return new CliCmdFrontend(log);
+
+            case JMX_INVOKER:
+                return new JmxCmdFrontend(log);
+
+            default:
+                throw new IllegalArgumentException("Unknown invoker: " + invoker);
+        }
+    };
+
+    /** Command executor factory. */
+    protected Supplier<CliFrontend> cmdHndFactory = () -> cmdHndFactory0.apply(null);
 
     /** */
     public static interface CliFrontend extends ToIntFunction<List<String>> {
@@ -47,18 +90,23 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
     }
 
     /** */
-    private static class CommandHandlerCliFrontend implements CliFrontend {
+    private static class CliCmdFrontend implements CliFrontend {
         /** */
         private final CommandHandler hnd;
 
         /** */
-        public CommandHandlerCliFrontend() {
+        public CliCmdFrontend() {
             this.hnd = new CommandHandler();
         }
 
         /** */
-        public CommandHandlerCliFrontend(IgniteLogger log) {
-            this.hnd = new CommandHandler(log);
+        public CliCmdFrontend(@Nullable IgniteLogger log) {
+            this.hnd = log == null ? new CommandHandler() : new CommandHandler(log);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int applyAsInt(List<String> rawArgs) {
+            return hnd.execute(rawArgs);
         }
 
         /** {@inheritDoc} */
@@ -71,28 +119,82 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
             // Flush all Logger handlers to make log data available to test.
             U.<IgniteLoggerEx>field(hnd, "logger").flush();
         }
-
-        /** {@inheritDoc} */
-        @Override public int applyAsInt(List<String> rawArgs) {
-            return hnd.execute(rawArgs);
-        }
     }
 
     /** */
-    private static class JMXCliFrontend implements CliFrontend {
-        /** {@inheritDoc} */
-        @Override public <T> T result() {
-            return null;
-        }
+    private static class JmxCmdFrontend implements CliFrontend {
+        /** */
+        private IgniteLoggerEx log;
 
-        /** {@inheritDoc} */
-        @Override public void flushLogger() {
+        /** */
+        private IgniteEx grid;
 
+        /** */
+        private Object res;
+
+        /** */
+        public JmxCmdFrontend(@Nullable IgniteLogger log) {
+            this.log = (IgniteLoggerEx)log;
         }
 
         /** {@inheritDoc} */
         @Override public int applyAsInt(List<String> value) {
-            return 0;
+            if (grid == null) {
+                grid = IgnitionEx.localIgnite();
+
+                if (log == null)
+                    log = (IgniteLoggerEx)grid.log();
+            }
+
+            ArgumentParser parser = new ArgumentParser(log, new IgniteCommandRegistry());
+
+            ConnectionAndSslParameters<IgniteDataTransferObject> p = parser.parseAndValidate(value);
+
+            List<String> grp = p.root() == null ? null : singletonList(toFormattedCommandName(p.root().getClass()));
+
+            DynamicMBean mbean = getMxBean(
+                grid.context().igniteInstanceName(),
+                "management",
+                toFormattedCommandName(p.command().getClass()),
+                CommandMBean.class
+            );
+
+            List<String> params = new ArrayList<>();
+            List<String> signature = new ArrayList<>();
+
+            Consumer<Field> fldCnsmr = fld -> {
+                signature.add(String.class.getName());
+
+                Object val = U.field(p.commandArg(), fld.getName());
+
+                params.add(val == null ? "" : toString(val.getClass(), val));
+            };
+
+            visitCommandParams(p.command().argClass(), fldCnsmr, fldCnsmr, (optional, flds) -> flds.forEach(fldCnsmr));
+
+            try {
+                res = mbean.invoke(METHOD, params.toArray(X.EMPTY_OBJECT_ARRAY), signature.toArray(U.EMPTY_STRS));
+            }
+            catch (MBeanException | ReflectionException e) {
+                throw new IgniteException(e);
+            }
+
+            return EXIT_CODE_OK;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> T result() {
+            return (T)res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void flushLogger() {
+            log.flush();
+        }
+
+        /** */
+        private static <T> String toString(Class<?> cls, Object val) {
+            return S.toString((Class<T>)cls, (T)val);
         }
     }
 }

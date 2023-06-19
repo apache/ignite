@@ -185,8 +185,6 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
 
         ignite0 = ignite(0);
         ignite1 = ignite(1);
-
-        Thread.sleep(180_000);
     }
 
     /** Tests command error output in case of mandatory system view name is omitted. */
