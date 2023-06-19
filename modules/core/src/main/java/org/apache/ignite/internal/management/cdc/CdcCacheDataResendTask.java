@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.cdc;
+package org.apache.ignite.internal.management.cdc;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,7 +28,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.management.cdc.CdcResendCommandArg;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CdcDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -54,7 +53,7 @@ import org.jetbrains.annotations.Nullable;
  * Iterates over caches and writes primary copies of data entries to the WAL to get captured by CDC.
  */
 @GridInternal
-public class VisorCdcCacheDataResendTask extends VisorMultiNodeTask<CdcResendCommandArg, Void, Void> {
+public class CdcCacheDataResendTask extends VisorMultiNodeTask<CdcResendCommandArg, Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 

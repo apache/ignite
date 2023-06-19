@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.misc;
+package org.apache.ignite.internal.management;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class VisorClusterChangeTagTaskResult extends IgniteDataTransferObject {
+public class ClusterChangeTagTaskResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,7 +40,7 @@ public class VisorClusterChangeTagTaskResult extends IgniteDataTransferObject {
     private String errResp;
 
     /** Default constructor. */
-    public VisorClusterChangeTagTaskResult() {
+    public ClusterChangeTagTaskResult() {
         // No-op.
     }
 
@@ -49,7 +49,7 @@ public class VisorClusterChangeTagTaskResult extends IgniteDataTransferObject {
      * @param success Success of update tag operation.
      * @param errResp Error response returned if cluster tag update has failed.
      */
-    public VisorClusterChangeTagTaskResult(String tag, @Nullable Boolean success, @Nullable String errResp) {
+    public ClusterChangeTagTaskResult(String tag, @Nullable Boolean success, @Nullable String errResp) {
         this.tag = tag;
         this.success = success;
         this.errResp = errResp;

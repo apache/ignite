@@ -14,7 +14,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.apache.ignite.internal.visor.tx;
+package org.apache.ignite.internal.management.tx;
 
 import java.io.IOException;
 import java.io.ObjectInput;

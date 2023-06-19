@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.tx;
+package org.apache.ignite.internal.management.tx;
 
 import org.jetbrains.annotations.Nullable;
 
 /**
  */
-public enum VisorTxSortOrder {
+public enum TxSortOrder {
     /** Sort by duration. */
     DURATION,
     /** Sort by size. */
@@ -30,7 +30,7 @@ public enum VisorTxSortOrder {
     START_TIME;
 
     /** Enumerated values. */
-    private static final VisorTxSortOrder[] VALS = values();
+    private static final TxSortOrder[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -38,7 +38,7 @@ public enum VisorTxSortOrder {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static VisorTxSortOrder fromOrdinal(int ord) {
+    @Nullable public static TxSortOrder fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

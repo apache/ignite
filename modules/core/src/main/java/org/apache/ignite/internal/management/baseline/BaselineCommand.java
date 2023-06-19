@@ -29,15 +29,13 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
+import org.apache.ignite.internal.management.baseline.BaselineCommand.BaselineTaskArg;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.coordinatorOrNull;
 
 /** */
-public class BaselineCommand extends CommandRegistryImpl<VisorBaselineTaskArg, VisorBaselineTaskResult>
-    implements ComputeCommand<VisorBaselineTaskArg, VisorBaselineTaskResult> {
+public class BaselineCommand extends CommandRegistryImpl<BaselineCommand.BaselineTaskArg, BaselineTaskResult>
+    implements ComputeCommand<BaselineTaskArg, BaselineTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print cluster baseline topology";
@@ -60,30 +58,30 @@ public class BaselineCommand extends CommandRegistryImpl<VisorBaselineTaskArg, V
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorBaselineTask> taskClass() {
-        return VisorBaselineTask.class;
+    @Override public Class<BaselineTask> taskClass() {
+        return BaselineTask.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, VisorBaselineTaskArg arg) {
+    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, BaselineTaskArg arg) {
         return coordinatorOrNull(nodes);
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(VisorBaselineTaskArg arg, VisorBaselineTaskResult res, Consumer<String> printer) {
+    @Override public void printResult(BaselineTaskArg arg, BaselineTaskResult res, Consumer<String> printer) {
         new AbstractBaselineCommand() {
             @Override public String description() {
                 return null;
             }
 
-            @Override public Class<? extends VisorBaselineTaskArg> argClass() {
+            @Override public Class<? extends BaselineTaskArg> argClass() {
                 return null;
             }
         }.printResult(arg, res, printer);
     }
 
     /** */
-    public abstract static class VisorBaselineTaskArg extends IgniteDataTransferObject {
+    public abstract static class BaselineTaskArg extends IgniteDataTransferObject {
         /** */
         @Argument(optional = true, description = "Show the full list of node ips")
         private boolean verbose;

@@ -29,16 +29,14 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationCommandArg;
-import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTask;
-import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTaskResult;
 import org.apache.ignite.lang.IgniteExperimental;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.coordinatorOrNull;
 
 /** */
 @IgniteExperimental
-public class TracingConfigurationCommand extends CommandRegistryImpl<TracingConfigurationCommandArg, VisorTracingConfigurationTaskResult>
-    implements ComputeCommand<TracingConfigurationCommandArg, VisorTracingConfigurationTaskResult> {
+public class TracingConfigurationCommand extends CommandRegistryImpl<TracingConfigurationCommandArg, TracingConfigurationTaskResult>
+    implements ComputeCommand<TracingConfigurationCommandArg, TracingConfigurationTaskResult> {
     /** */
     public TracingConfigurationCommand() {
         super(
@@ -61,8 +59,8 @@ public class TracingConfigurationCommand extends CommandRegistryImpl<TracingConf
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorTracingConfigurationTask> taskClass() {
-        return VisorTracingConfigurationTask.class;
+    @Override public Class<TracingConfigurationTask> taskClass() {
+        return TracingConfigurationTask.class;
     }
 
     /** {@inheritDoc} */
@@ -73,7 +71,7 @@ public class TracingConfigurationCommand extends CommandRegistryImpl<TracingConf
     /** {@inheritDoc} */
     @Override public void printResult(
         TracingConfigurationCommandArg arg,
-        VisorTracingConfigurationTaskResult res,
+        TracingConfigurationTaskResult res,
         Consumer<String> printer
     ) {
         res.print(printer);

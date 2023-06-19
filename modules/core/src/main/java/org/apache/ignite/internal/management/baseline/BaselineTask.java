@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.baseline;
+package org.apache.ignite.internal.management.baseline;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,12 +27,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
-import org.apache.ignite.internal.management.baseline.BaselineAddCommandArg;
-import org.apache.ignite.internal.management.baseline.BaselineAutoAdjustCommandArg;
-import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
-import org.apache.ignite.internal.management.baseline.BaselineRemoveCommandArg;
-import org.apache.ignite.internal.management.baseline.BaselineSetCommandArg;
-import org.apache.ignite.internal.management.baseline.BaselineVersionCommandArg;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
@@ -47,19 +41,19 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, VisorBaselineTaskResult> {
+public class BaselineTask extends VisorOneNodeTask<BaselineCommand.BaselineTaskArg, BaselineTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorBaselineJob job(VisorBaselineTaskArg arg) {
+    @Override protected VisorBaselineJob job(BaselineCommand.BaselineTaskArg arg) {
         return new VisorBaselineJob(arg, debug);
     }
 
     /**
      * Job that will collect baseline topology information.
      */
-    private static class VisorBaselineJob extends VisorJob<VisorBaselineTaskArg, VisorBaselineTaskResult> {
+    private static class VisorBaselineJob extends VisorJob<BaselineCommand.BaselineTaskArg, BaselineTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -67,7 +61,7 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
          * @param arg Formal job argument.
          * @param debug Debug flag.
          */
-        private VisorBaselineJob(VisorBaselineTaskArg arg, boolean debug) {
+        private VisorBaselineJob(BaselineCommand.BaselineTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -76,21 +70,21 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
          *
          * @return Baseline descriptor.
          */
-        private VisorBaselineTaskResult collect() {
+        private BaselineTaskResult collect() {
             IgniteClusterEx cluster = ignite.cluster();
 
             Collection<? extends BaselineNode> baseline = cluster.currentBaselineTopology();
 
             Collection<? extends BaselineNode> srvrs = cluster.forServers().nodes();
 
-            VisorBaselineAutoAdjustSettings autoAdjustSettings = new VisorBaselineAutoAdjustSettings(
+            BaselineAutoAdjustSettings autoAdjustSettings = new BaselineAutoAdjustSettings(
                 cluster.isBaselineAutoAdjustEnabled(),
                 cluster.baselineAutoAdjustTimeout()
             );
 
             BaselineAutoAdjustStatus adjustStatus = cluster.baselineAutoAdjustStatus();
 
-            return new VisorBaselineTaskResult(
+            return new BaselineTaskResult(
                 ignite.cluster().state().active(),
                 cluster.topologyVersion(),
                 F.isEmpty(baseline) ? null : baseline,
@@ -107,7 +101,7 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
          * @param baselineTop Collection of baseline node.
          * @return Baseline descriptor.
          */
-        private VisorBaselineTaskResult set0(Collection<BaselineNode> baselineTop) {
+        private BaselineTaskResult set0(Collection<BaselineNode> baselineTop) {
             ignite.cluster().setBaselineTopology(baselineTop);
 
             return collect();
@@ -147,7 +141,7 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
          * @param consistentIds Collection of consistent IDs to set.
          * @return New baseline.
          */
-        private VisorBaselineTaskResult set(List<String> consistentIds) {
+        private BaselineTaskResult set(List<String> consistentIds) {
             Map<String, BaselineNode> baseline = currentBaseLine();
             Map<String, BaselineNode> srvrs = currentServers();
 
@@ -175,7 +169,7 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
          * @param consistentIds Collection of consistent IDs to add.
          * @return New baseline.
          */
-        private VisorBaselineTaskResult add(List<String> consistentIds) {
+        private BaselineTaskResult add(List<String> consistentIds) {
             Map<String, BaselineNode> baseline = currentBaseLine();
             Map<String, BaselineNode> srvrs = currentServers();
 
@@ -197,7 +191,7 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
          * @param consistentIds Collection of consistent IDs to remove.
          * @return New baseline.
          */
-        private VisorBaselineTaskResult remove(List<String> consistentIds) {
+        private BaselineTaskResult remove(List<String> consistentIds) {
             Map<String, BaselineNode> baseline = currentBaseLine();
 
             if (F.isEmpty(baseline))
@@ -219,7 +213,7 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
          * @param targetVer Target topology version.
          * @return New baseline.
          */
-        private VisorBaselineTaskResult version(long targetVer) {
+        private BaselineTaskResult version(long targetVer) {
             IgniteClusterEx cluster = ignite.cluster();
 
             if (targetVer > cluster.topologyVersion())
@@ -236,7 +230,7 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
          * @param settings Baseline autoAdjustment settings.
          * @return New baseline.
          */
-        private VisorBaselineTaskResult updateAutoAdjustmentSettings(BaselineAutoAdjustCommandArg settings) {
+        private BaselineTaskResult updateAutoAdjustmentSettings(BaselineAutoAdjustCommandArg settings) {
             if (settings.timeout() != null)
                 ignite.cluster().baselineAutoAdjustTimeout(settings.timeout());
 
@@ -247,7 +241,7 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorBaselineTaskResult run(@Nullable VisorBaselineTaskArg arg) throws IgniteException {
+        @Override protected BaselineTaskResult run(@Nullable BaselineCommand.BaselineTaskArg arg) throws IgniteException {
             if (arg instanceof BaselineRemoveCommandArg)
                 return remove(F.asList(((BaselineAddCommandArg)arg).consistentIDs()));
             else if (arg instanceof BaselineSetCommandArg)

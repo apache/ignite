@@ -15,58 +15,59 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.defragmentation;
+package org.apache.ignite.internal.management.tx;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import java.util.List;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
-/** */
-public class VisorDefragmentationTaskResult extends IgniteDataTransferObject {
-    /** Serial version uid. */
+/**
+ * Result for {@link TxTask}.
+ */
+public class TxTaskResult extends VisorDataTransferObject {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private boolean success;
+    private List<TxInfo> infos;
 
-    /** */
-    private String msg;
-
-    /** Empty constructor for serialization. */
-    public VisorDefragmentationTaskResult() {
+    /**
+     * Default constructor.
+     */
+    public TxTaskResult() {
         // No-op.
     }
 
-    /** */
-    public VisorDefragmentationTaskResult(boolean success, String msg) {
-        this.success = success;
-
-        this.msg = msg;
+    /**
+     * Constructor.
+     *
+     * @param infos Infos.
+     */
+    public TxTaskResult(List<TxInfo> infos) {
+        this.infos = infos;
     }
 
     /** */
-    public boolean isSuccess() {
-        return success;
-    }
-
-    /** */
-    public String getMessage() {
-        return msg;
+    public List<TxInfo> getInfos() {
+        return infos;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeBoolean(success);
-
-        U.writeString(out, msg);
+        U.writeCollection(out, infos);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException {
-        success = in.readBoolean();
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        infos = U.readList(in);
+    }
 
-        msg = U.readString(in);
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TxTaskResult.class, this);
     }
 }

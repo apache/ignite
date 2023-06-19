@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.tx;
+package org.apache.ignite.internal.management.tx;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,8 +39,6 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.management.tx.TxCommand.AbstractTxCommandArg;
-import org.apache.ignite.internal.management.tx.TxCommandArg;
-import org.apache.ignite.internal.management.tx.TxInfoCommandArg;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -68,6 +66,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
@@ -76,13 +75,13 @@ import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
  *
  */
 @GridInternal
-public class VisorTxTask
-    extends VisorMultiNodeTask<AbstractTxCommandArg, Map<ClusterNode, VisorTxTaskResult>, VisorTxTaskResult> {
+public class TxTask
+    extends VisorMultiNodeTask<AbstractTxCommandArg, Map<ClusterNode, TxTaskResult>, TxTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<AbstractTxCommandArg, VisorTxTaskResult> job(AbstractTxCommandArg arg) {
+    @Override protected VisorJob<AbstractTxCommandArg, TxTaskResult> job(AbstractTxCommandArg arg) {
         return new VisorTxJob(arg, debug);
     }
 
@@ -130,21 +129,21 @@ public class VisorTxTask
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Map<ClusterNode, VisorTxTaskResult> reduce0(List<ComputeJobResult> results) throws IgniteException {
+    @Nullable @Override protected Map<ClusterNode, TxTaskResult> reduce0(List<ComputeJobResult> results) throws IgniteException {
         return reduce0(results, taskArg instanceof TxInfoCommandArg);
     }
 
     /** */
-    public static Map<ClusterNode, VisorTxTaskResult> reduce0(
+    public static Map<ClusterNode, TxTaskResult> reduce0(
         List<ComputeJobResult> results,
         boolean detailedInfo
     ) {
-        Map<ClusterNode, VisorTxTaskResult> mapRes = new TreeMap<>();
+        Map<ClusterNode, TxTaskResult> mapRes = new TreeMap<>();
 
         Map<UUID, ClusterNode> nodeMap = new HashMap<>();
 
         for (ComputeJobResult result : results) {
-            VisorTxTaskResult data = result.getData();
+            TxTaskResult data = result.getData();
 
             if (data == null || data.getInfos().isEmpty())
                 continue;
@@ -156,13 +155,13 @@ public class VisorTxTask
 
         if (!detailedInfo) {
             // If not in verbose mode, remove local and remote txs for which near txs are present.
-            for (VisorTxTaskResult result : mapRes.values()) {
-                List<VisorTxInfo> infos = result.getInfos();
+            for (TxTaskResult result : mapRes.values()) {
+                List<TxInfo> infos = result.getInfos();
 
-                Iterator<VisorTxInfo> it = infos.iterator();
+                Iterator<TxInfo> it = infos.iterator();
 
                 while (it.hasNext()) {
-                    VisorTxInfo info = it.next();
+                    TxInfo info = it.next();
 
                     if (!info.getXid().equals(info.getNearXid())) {
                         UUID nearNodeId = info.getMasterNodeIds().iterator().next();
@@ -173,14 +172,14 @@ public class VisorTxTask
                         if (node == null)
                             continue;
 
-                        VisorTxTaskResult res0 = mapRes.get(node);
+                        TxTaskResult res0 = mapRes.get(node);
 
                         if (res0 == null)
                             continue;
 
                         boolean exists = false;
 
-                        for (VisorTxInfo txInfo : res0.getInfos()) {
+                        for (TxInfo txInfo : res0.getInfos()) {
                             if (txInfo.getXid().equals(info.getNearXid())) {
                                 exists = true;
 
@@ -201,7 +200,7 @@ public class VisorTxTask
     /**
      *
      */
-    static class VisorTxJob extends VisorJob<AbstractTxCommandArg, VisorTxTaskResult> {
+    static class VisorTxJob extends VisorJob<AbstractTxCommandArg, TxTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -226,7 +225,7 @@ public class VisorTxTask
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorTxTaskResult run(@Nullable AbstractTxCommandArg arg) throws IgniteException {
+        @Override protected TxTaskResult run(@Nullable AbstractTxCommandArg arg) throws IgniteException {
             if (arg instanceof TxCommandArg)
                 return run(ignite, (TxCommandArg)arg, null);
             else
@@ -234,15 +233,15 @@ public class VisorTxTask
         }
 
         /** */
-        static VisorTxTaskResult run(IgniteEx ignite, TxCommandArg arg, @Nullable TxInfoCommandArg infoArg) {
+        static TxTaskResult run(IgniteEx ignite, TxCommandArg arg, @Nullable TxInfoCommandArg infoArg) {
             if (arg == null)
-                return new VisorTxTaskResult(Collections.emptyList());
+                return new TxTaskResult(Collections.emptyList());
 
             IgniteTxManager tm = ignite.context().cache().context().tm();
 
             Collection<IgniteInternalTx> transactions = tm.activeTransactions();
 
-            List<VisorTxInfo> infos = new ArrayList<>();
+            List<TxInfo> infos = new ArrayList<>();
 
             int limit = arg.limit() == null ? DEFAULT_LIMIT : arg.limit();
 
@@ -349,7 +348,7 @@ public class VisorTxTask
 
                 TxVerboseInfo verboseInfo = infoArg != null ? createVerboseInfo(ignite, locTx) : null;
 
-                infos.add(new VisorTxInfo(locTx.xid(), locTx.startTime(), duration, locTx.isolation(),
+                infos.add(new TxInfo(locTx.xid(), locTx.startTime(), duration, locTx.isolation(),
                     locTx.concurrency(), locTx.timeout(), lb, mappings, locTx.state(), size,
                     locTx.nearXidVersion().asIgniteUuid(), locTx.masterNodeIds(), locTx.topologyVersionSnapshot(),
                     verboseInfo));
@@ -367,13 +366,13 @@ public class VisorTxTask
 
                 if (completed != null) {
                     if (Boolean.TRUE.equals(completed))
-                        infos.add(new VisorTxInfo(infoArg.gridCacheVersion().asIgniteUuid(), COMMITTED));
+                        infos.add(new TxInfo(infoArg.gridCacheVersion().asIgniteUuid(), COMMITTED));
                     else if (Boolean.FALSE.equals(completed))
-                        infos.add(new VisorTxInfo(infoArg.gridCacheVersion().asIgniteUuid(), ROLLED_BACK));
+                        infos.add(new TxInfo(infoArg.gridCacheVersion().asIgniteUuid(), ROLLED_BACK));
                 }
             }
 
-            Comparator<VisorTxInfo> comp = TxDurationComparator.INSTANCE;
+            Comparator<TxInfo> comp = TxDurationComparator.INSTANCE;
 
             if (arg.order() != null) {
                 switch (arg.order()) {
@@ -398,7 +397,7 @@ public class VisorTxTask
 
             Collections.sort(infos, comp);
 
-            return new VisorTxTaskResult(infos);
+            return new TxTaskResult(infos);
         }
     }
 
@@ -571,12 +570,12 @@ public class VisorTxTask
     /**
      *
      */
-    private static class TxStartTimeComparator implements Comparator<VisorTxInfo> {
+    private static class TxStartTimeComparator implements Comparator<TxInfo> {
         /** Instance. */
         public static final TxStartTimeComparator INSTANCE = new TxStartTimeComparator();
 
         /** {@inheritDoc} */
-        @Override public int compare(VisorTxInfo o1, VisorTxInfo o2) {
+        @Override public int compare(TxInfo o1, TxInfo o2) {
             return Long.compare(o2.getStartTime(), o1.getStartTime());
         }
     }
@@ -584,12 +583,12 @@ public class VisorTxTask
     /**
      *
      */
-    private static class TxDurationComparator implements Comparator<VisorTxInfo> {
+    private static class TxDurationComparator implements Comparator<TxInfo> {
         /** Instance. */
         public static final TxDurationComparator INSTANCE = new TxDurationComparator();
 
         /** {@inheritDoc} */
-        @Override public int compare(VisorTxInfo o1, VisorTxInfo o2) {
+        @Override public int compare(TxInfo o1, TxInfo o2) {
             return Long.compare(o2.getDuration(), o1.getDuration());
         }
     }
@@ -597,12 +596,12 @@ public class VisorTxTask
     /**
      *
      */
-    private static class TxSizeComparator implements Comparator<VisorTxInfo> {
+    private static class TxSizeComparator implements Comparator<TxInfo> {
         /** Instance. */
         public static final TxSizeComparator INSTANCE = new TxSizeComparator();
 
         /** {@inheritDoc} */
-        @Override public int compare(VisorTxInfo o1, VisorTxInfo o2) {
+        @Override public int compare(TxInfo o1, TxInfo o2) {
             return Long.compare(o2.getSize(), o1.getSize());
         }
     }

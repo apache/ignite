@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.misc;
+package org.apache.ignite.internal.management;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
-import org.apache.ignite.internal.management.ChangeTagCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -31,18 +30,18 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorClusterChangeTagTask extends VisorOneNodeTask<ChangeTagCommandArg, VisorClusterChangeTagTaskResult> {
+public class ClusterChangeTagTask extends VisorOneNodeTask<ChangeTagCommandArg, ClusterChangeTagTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<ChangeTagCommandArg, VisorClusterChangeTagTaskResult> job(
+    @Override protected VisorJob<ChangeTagCommandArg, ClusterChangeTagTaskResult> job(
         ChangeTagCommandArg arg) {
         return new VisorClusterChangeTagJob(arg, debug);
     }
 
     /** */
-    private static class VisorClusterChangeTagJob extends VisorJob<ChangeTagCommandArg, VisorClusterChangeTagTaskResult> {
+    private static class VisorClusterChangeTagJob extends VisorJob<ChangeTagCommandArg, ClusterChangeTagTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -58,7 +57,7 @@ public class VisorClusterChangeTagTask extends VisorOneNodeTask<ChangeTagCommand
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorClusterChangeTagTaskResult run(
+        @Override protected ClusterChangeTagTaskResult run(
             ChangeTagCommandArg arg
         ) throws IgniteException {
             return update(arg.newTagValue());
@@ -67,7 +66,7 @@ public class VisorClusterChangeTagTask extends VisorOneNodeTask<ChangeTagCommand
         /**
          * @param newTag New tag.
          */
-        private VisorClusterChangeTagTaskResult update(String newTag) {
+        private ClusterChangeTagTaskResult update(String newTag) {
             IgniteClusterEx cl = ignite.cluster();
 
             boolean success = false;
@@ -84,7 +83,7 @@ public class VisorClusterChangeTagTask extends VisorOneNodeTask<ChangeTagCommand
                 errMsg = e.getMessage();
             }
 
-            return new VisorClusterChangeTagTaskResult(oldTag, Boolean.valueOf(success), errMsg);
+            return new ClusterChangeTagTaskResult(oldTag, Boolean.valueOf(success), errMsg);
         }
     }
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.baseline;
+package org.apache.ignite.internal.management.baseline;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
@@ -40,9 +39,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- * Result for {@link VisorBaselineTask}.
+ * Result for {@link BaselineTask}.
  */
-public class VisorBaselineTaskResult extends VisorDataTransferObject {
+public class BaselineTaskResult extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -53,13 +52,13 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
     private long topVer;
 
     /** Current baseline nodes. */
-    private Map<String, VisorBaselineNode> baseline;
+    private Map<String, BaselineNode> baseline;
 
     /** Current server nodes. */
-    private Map<String, VisorBaselineNode> servers;
+    private Map<String, BaselineNode> servers;
 
     /** Baseline autoadjustment settings. */
-    private VisorBaselineAutoAdjustSettings autoAdjustSettings;
+    private BaselineAutoAdjustSettings autoAdjustSettings;
 
     /** Time to next baseline adjust. */
     private long remainingTimeToBaselineAdjust = -1;
@@ -70,7 +69,7 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
     /**
      * Default constructor.
      */
-    public VisorBaselineTaskResult() {
+    public BaselineTaskResult() {
         // No-op.
     }
 
@@ -78,14 +77,14 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
      * @param nodes Nodes to process.
      * @return Map of DTO objects.
      */
-    private static Map<String, VisorBaselineNode> toMap(Collection<? extends BaselineNode> nodes) {
+    private static Map<String, BaselineNode> toMap(Collection<? extends org.apache.ignite.cluster.BaselineNode> nodes) {
         if (F.isEmpty(nodes))
             return null;
 
-        Map<String, VisorBaselineNode> map = new TreeMap<>();
+        Map<String, BaselineNode> map = new TreeMap<>();
 
-        for (BaselineNode node : nodes) {
-            VisorBaselineNode dto = new VisorBaselineNode(node, Collections.emptyList());
+        for (org.apache.ignite.cluster.BaselineNode node : nodes) {
+            BaselineNode dto = new BaselineNode(node, Collections.emptyList());
 
             map.put(dto.getConsistentId(), dto);
         }
@@ -97,21 +96,22 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
      * @param nodes Nodes to process.
      * @return Map of DTO objects, with resolved ip->hostname pairs.
      */
-    private static Map<String, VisorBaselineNode> toMapWithResolvedAddresses(Collection<? extends BaselineNode> nodes) {
+    private static Map<String, BaselineNode> toMapWithResolvedAddresses(Collection<? extends
+        org.apache.ignite.cluster.BaselineNode> nodes) {
         if (F.isEmpty(nodes))
             return null;
 
-        Map<String, VisorBaselineNode> map = new TreeMap<>();
+        Map<String, BaselineNode> map = new TreeMap<>();
 
-        for (BaselineNode node : nodes) {
-            Collection<VisorBaselineNode.ResolvedAddresses> addrs = new ArrayList<>();
+        for (org.apache.ignite.cluster.BaselineNode node : nodes) {
+            Collection<BaselineNode.ResolvedAddresses> addrs = new ArrayList<>();
 
             if (node instanceof IgniteClusterNode) {
                 for (InetAddress inetAddress: resolveInetAddresses((ClusterNode)node))
-                    addrs.add(new VisorBaselineNode.ResolvedAddresses(inetAddress));
+                    addrs.add(new BaselineNode.ResolvedAddresses(inetAddress));
             }
 
-            VisorBaselineNode dto = new VisorBaselineNode(node, addrs);
+            BaselineNode dto = new BaselineNode(node, addrs);
 
             map.put(dto.getConsistentId(), dto);
         }
@@ -177,12 +177,12 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
      * @param remainingTimeToBaselineAdjust Time to next baseline adjust.
      * @param baselineAdjustInProgress {@code true} If baseline adjust is in progress.
      */
-    public VisorBaselineTaskResult(
+    public BaselineTaskResult(
         boolean active,
         long topVer,
-        Collection<? extends BaselineNode> baseline,
-        Collection<? extends BaselineNode> servers,
-        VisorBaselineAutoAdjustSettings autoAdjustSettings,
+        Collection<? extends org.apache.ignite.cluster.BaselineNode> baseline,
+        Collection<? extends org.apache.ignite.cluster.BaselineNode> servers,
+        BaselineAutoAdjustSettings autoAdjustSettings,
         long remainingTimeToBaselineAdjust,
         boolean baselineAdjustInProgress) {
         this.active = active;
@@ -211,14 +211,14 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
     /**
      * @return Baseline nodes.
      */
-    public Map<String, VisorBaselineNode> getBaseline() {
+    public Map<String, BaselineNode> getBaseline() {
         return baseline;
     }
 
     /**
      * @return Server nodes.
      */
-    public Map<String, VisorBaselineNode> getServers() {
+    public Map<String, BaselineNode> getServers() {
         return servers;
     }
 
@@ -230,7 +230,7 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
     /**
      * @return Baseline autoadjustment settings.
      */
-    public VisorBaselineAutoAdjustSettings getAutoAdjustSettings() {
+    public BaselineAutoAdjustSettings getAutoAdjustSettings() {
         return autoAdjustSettings;
     }
 
@@ -268,7 +268,7 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
         servers = U.readTreeMap(in);
 
         if (protoVer > V1) {
-            autoAdjustSettings = (VisorBaselineAutoAdjustSettings)in.readObject();
+            autoAdjustSettings = (BaselineAutoAdjustSettings)in.readObject();
             remainingTimeToBaselineAdjust = in.readLong();
             baselineAdjustInProgress = in.readBoolean();
         }
@@ -276,6 +276,6 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorBaselineTaskResult.class, this);
+        return S.toString(BaselineTaskResult.class, this);
     }
 }

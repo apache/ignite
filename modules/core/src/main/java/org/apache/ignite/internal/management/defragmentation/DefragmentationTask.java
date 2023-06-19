@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.defragmentation;
+package org.apache.ignite.internal.management.defragmentation;
 
 import java.util.Arrays;
 import java.util.List;
@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand.DefragmentationCancelCommandArg;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand.DefragmentationStatusCommandArg;
-import org.apache.ignite.internal.management.defragmentation.DefragmentationScheduleCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
@@ -36,20 +35,20 @@ import org.jetbrains.annotations.Nullable;
 /** */
 @GridInternal
 @GridVisorManagementTask
-public class VisorDefragmentationTask extends VisorMultiNodeTask
-    <DefragmentationStatusCommandArg, VisorDefragmentationTaskResult, VisorDefragmentationTaskResult> {
+public class DefragmentationTask extends VisorMultiNodeTask
+    <DefragmentationStatusCommandArg, DefragmentationTaskResult, DefragmentationTaskResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<DefragmentationStatusCommandArg, VisorDefragmentationTaskResult> job(
+    @Override protected VisorJob<DefragmentationStatusCommandArg, DefragmentationTaskResult> job(
         DefragmentationStatusCommandArg arg
     ) {
         return new VisorDefragmentationJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected VisorDefragmentationTaskResult reduce0(List<ComputeJobResult> results) {
+    @Nullable @Override protected DefragmentationTaskResult reduce0(List<ComputeJobResult> results) {
         if (taskArg instanceof DefragmentationScheduleCommandArg) {
             StringBuilder msg = new StringBuilder();
 
@@ -59,14 +58,14 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask
                 if (res.getData() == null)
                     msg.append("    err=").append(res.getException()).append('\n');
                 else {
-                    VisorDefragmentationTaskResult data = res.getData();
+                    DefragmentationTaskResult data = res.getData();
 
                     msg.append("    success=").append(data.isSuccess()).append('\n');
                     msg.append("    msg=").append(data.getMessage()).append('\n');
                 }
             }
 
-            return new VisorDefragmentationTaskResult(true, msg.toString());
+            return new DefragmentationTaskResult(true, msg.toString());
         }
 
         assert results.size() == 1;
@@ -80,7 +79,7 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask
     }
 
     /** */
-    private static class VisorDefragmentationJob extends VisorJob<DefragmentationStatusCommandArg, VisorDefragmentationTaskResult> {
+    private static class VisorDefragmentationJob extends VisorJob<DefragmentationStatusCommandArg, DefragmentationTaskResult> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -95,7 +94,7 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorDefragmentationTaskResult run(
+        @Override protected DefragmentationTaskResult run(
             @Nullable DefragmentationStatusCommandArg arg
         ) throws IgniteException {
             if (arg instanceof DefragmentationScheduleCommandArg)
@@ -111,7 +110,7 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask
         }
 
         /** */
-        private VisorDefragmentationTaskResult runSchedule(DefragmentationScheduleCommandArg arg) {
+        private DefragmentationTaskResult runSchedule(DefragmentationScheduleCommandArg arg) {
             final IgniteDefragmentation defragmentation = ignite.context().defragmentation();
 
             final IgniteDefragmentation.ScheduleResult scheduleResult;
@@ -120,7 +119,7 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask
                 scheduleResult = defragmentation.schedule(F.isEmpty(arg.caches()) ? null : Arrays.asList(arg.caches()));
             }
             catch (IgniteCheckedException e) {
-                return new VisorDefragmentationTaskResult(false, e.getMessage());
+                return new DefragmentationTaskResult(false, e.getMessage());
             }
 
             String message;
@@ -135,23 +134,23 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask
                     break;
             }
 
-            return new VisorDefragmentationTaskResult(true, message);
+            return new DefragmentationTaskResult(true, message);
         }
 
         /** */
-        private VisorDefragmentationTaskResult runStatus() {
+        private DefragmentationTaskResult runStatus() {
             final IgniteDefragmentation defragmentation = ignite.context().defragmentation();
 
             try {
-                return new VisorDefragmentationTaskResult(true, defragmentation.status().toString());
+                return new DefragmentationTaskResult(true, defragmentation.status().toString());
             }
             catch (IgniteCheckedException e) {
-                return new VisorDefragmentationTaskResult(false, e.getMessage());
+                return new DefragmentationTaskResult(false, e.getMessage());
             }
         }
 
         /** */
-        private VisorDefragmentationTaskResult runCancel() {
+        private DefragmentationTaskResult runCancel() {
             final IgniteDefragmentation defragmentation = ignite.context().defragmentation();
 
             try {
@@ -175,10 +174,10 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask
                         break;
                 }
 
-                return new VisorDefragmentationTaskResult(true, message);
+                return new DefragmentationTaskResult(true, message);
             }
             catch (IgniteCheckedException e) {
-                return new VisorDefragmentationTaskResult(false, e.getMessage());
+                return new DefragmentationTaskResult(false, e.getMessage());
             }
         }
     }

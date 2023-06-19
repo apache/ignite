@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.performancestatistics;
+package org.apache.ignite.internal.management.performancestatistics;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -33,7 +33,7 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
 /** Represents visor task to manage performance statistics. */
 @GridInternal
 @GridVisorManagementTask
-public class VisorPerformanceStatisticsTask extends VisorOneNodeTask<IgniteDataTransferObject, String> {
+public class PerformanceStatisticsTask extends VisorOneNodeTask<IgniteDataTransferObject, String> {
     /** Performance statistics enabled status. */
     public static final String STATUS_ENABLED = "Enabled.";
 

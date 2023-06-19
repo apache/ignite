@@ -15,16 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.metric;
+package org.apache.ignite.internal.management.metric;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.management.metric.MetricCommandArg;
-import org.apache.ignite.internal.management.metric.MetricConfigureHistogramCommandArg;
-import org.apache.ignite.internal.management.metric.MetricConfigureHitrateCommandArg;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
@@ -38,23 +35,24 @@ import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;
 import static org.apache.ignite.spi.metric.jmx.MetricRegistryMBean.searchHistogram;
 
 /** Reperesents visor task for obtaining metric values. */
 @GridInternal
 @GridVisorManagementTask
-public class VisorMetricTask extends VisorOneNodeTask<MetricCommandArg, Map<String, ?>> {
+public class MetricTask extends VisorOneNodeTask<MetricCommandArg, Map<String, ?>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override protected VisorJob<MetricCommandArg, Map<String, ?>> job(MetricCommandArg arg) {
-        return new VisorMetricJob(arg, false);
+        return new MetricJob(arg, false);
     }
 
     /** */
-    private static class VisorMetricJob extends VisorJob<MetricCommandArg, Map<String, ?>> {
+    private static class MetricJob extends VisorJob<MetricCommandArg, Map<String, ?>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -64,7 +62,7 @@ public class VisorMetricTask extends VisorOneNodeTask<MetricCommandArg, Map<Stri
          * @param arg   Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorMetricJob(@Nullable MetricCommandArg arg, boolean debug) {
+        protected MetricJob(@Nullable MetricCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.tracing.configuration;
+package org.apache.ignite.internal.management.tracing;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -31,7 +31,7 @@ import org.apache.ignite.spi.tracing.Scope;
  * Data transfer object that contains scope, label, sampling rate and set of included scopes.
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-public class VisorTracingConfigurationItem extends IgniteDataTransferObject {
+public class TracingConfigurationItem extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -63,7 +63,7 @@ public class VisorTracingConfigurationItem extends IgniteDataTransferObject {
     /**
      * Default constructor.
      */
-    public VisorTracingConfigurationItem() {
+    public TracingConfigurationItem() {
         // No-op.
     }
 
@@ -80,7 +80,7 @@ public class VisorTracingConfigurationItem extends IgniteDataTransferObject {
      *  otherwise it'll be skipped.
      *  See {@link Span#isChainable(Scope)} for more details.
      */
-    public VisorTracingConfigurationItem(
+    public TracingConfigurationItem(
         Scope scope,
         String lb,
         Double samplingRate,
@@ -154,7 +154,7 @@ public class VisorTracingConfigurationItem extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorTracingConfigurationItem.class, this);
+        return S.toString(TracingConfigurationItem.class, this);
     }
 
     /** {@inheritDoc} */
@@ -164,7 +164,7 @@ public class VisorTracingConfigurationItem extends IgniteDataTransferObject {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        VisorTracingConfigurationItem that = (VisorTracingConfigurationItem)o;
+        TracingConfigurationItem that = (TracingConfigurationItem)o;
 
         if (scope != that.scope)
             return false;

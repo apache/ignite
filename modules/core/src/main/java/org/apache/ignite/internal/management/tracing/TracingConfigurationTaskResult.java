@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.tracing.configuration;
+package org.apache.ignite.internal.management.tracing;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -32,9 +32,9 @@ import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
 import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
 
 /**
- * Result for {@link VisorTracingConfigurationTask}.
+ * Result for {@link TracingConfigurationTask}.
  */
-public class VisorTracingConfigurationTaskResult extends IgniteDataTransferObject {
+public class TracingConfigurationTaskResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,12 +42,12 @@ public class VisorTracingConfigurationTaskResult extends IgniteDataTransferObjec
     private static final Character RES_PRINTER_SEPARATOR = ',';
 
     /** Retrieved reseted or updated tracing configuration. */
-    private List<VisorTracingConfigurationItem> tracingConfigurations = new ArrayList<>();
+    private List<TracingConfigurationItem> tracingConfigurations = new ArrayList<>();
 
     /**
      * Default constructor.
      */
-    public VisorTracingConfigurationTaskResult() {
+    public TracingConfigurationTaskResult() {
         // No-op.
     }
 
@@ -59,7 +59,7 @@ public class VisorTracingConfigurationTaskResult extends IgniteDataTransferObjec
      */
     @SuppressWarnings("unchecked")
     public void add(TracingConfigurationCoordinates coordinates, TracingConfigurationParameters parameters) {
-        tracingConfigurations.add(new VisorTracingConfigurationItem(
+        tracingConfigurations.add(new TracingConfigurationItem(
             coordinates.scope(),
             coordinates.label(),
             parameters.samplingRate(),
@@ -84,9 +84,9 @@ public class VisorTracingConfigurationTaskResult extends IgniteDataTransferObjec
     public void print(Consumer<String> printer) {
         printer.accept("Scope, Label, Sampling Rate, included scopes");
 
-        Collections.sort(tracingConfigurations, Comparator.comparing(VisorTracingConfigurationItem::scope));
+        Collections.sort(tracingConfigurations, Comparator.comparing(TracingConfigurationItem::scope));
 
-        for (VisorTracingConfigurationItem tracingConfiguration : tracingConfigurations) {
+        for (TracingConfigurationItem tracingConfiguration : tracingConfigurations) {
             printer.accept(
                 tracingConfiguration.scope().name() + RES_PRINTER_SEPARATOR +
                     (tracingConfiguration.label() == null ? "" : tracingConfiguration.label()) + RES_PRINTER_SEPARATOR +
@@ -98,7 +98,7 @@ public class VisorTracingConfigurationTaskResult extends IgniteDataTransferObjec
     /**
      * @return Retrieved reseted or updated tracing configuration.
      */
-    public List<VisorTracingConfigurationItem> tracingConfigurations() {
+    public List<TracingConfigurationItem> tracingConfigurations() {
         return tracingConfigurations;
     }
 }

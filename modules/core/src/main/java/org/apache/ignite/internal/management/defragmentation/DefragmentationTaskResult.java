@@ -15,50 +15,58 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.shutdown;
+package org.apache.ignite.internal.management.defragmentation;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-/**
- * Shutdown policy visor trsk result.
- */
-public class VisorShutdownPolicyTaskResult extends IgniteDataTransferObject {
-    /** Serial version id. */
+/** */
+public class DefragmentationTaskResult extends IgniteDataTransferObject {
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Shutdown policy on result. */
-    private ShutdownPolicy shutdown;
+    /** */
+    private boolean success;
 
-    /**
-     * Get policy.
-     *
-     * @return Shutdown policy.
-     */
-    public ShutdownPolicy getShutdown() {
-        return shutdown;
+    /** */
+    private String msg;
+
+    /** Empty constructor for serialization. */
+    public DefragmentationTaskResult() {
+        // No-op.
     }
 
-    /**
-     * Set policy.
-     *
-     * @param shutdown Shutdown policy.
-     */
-    public void setShutdown(ShutdownPolicy shutdown) {
-        this.shutdown = shutdown;
+    /** */
+    public DefragmentationTaskResult(boolean success, String msg) {
+        this.success = success;
+
+        this.msg = msg;
+    }
+
+    /** */
+    public boolean isSuccess() {
+        return success;
+    }
+
+    /** */
+    public String getMessage() {
+        return msg;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeInt(shutdown == null ? -1 : shutdown.index());
+        out.writeBoolean(success);
+
+        U.writeString(out, msg);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        shutdown = ShutdownPolicy.fromOrdinal(in.readInt());
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException {
+        success = in.readBoolean();
 
+        msg = U.readString(in);
     }
 }

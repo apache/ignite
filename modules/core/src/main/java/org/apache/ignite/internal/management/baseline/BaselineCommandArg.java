@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.management.baseline;
 
-import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
-
 /** */
-public class BaselineCommandArg extends VisorBaselineTaskArg {
+public class BaselineCommandArg extends BaselineCommand.BaselineTaskArg {
     /** */
     private static final long serialVersionUID = 0;
 }

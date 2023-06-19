@@ -28,7 +28,6 @@ import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CliSubcommandsWithPrefix;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.metric.VisorMetricTask;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.management.SystemViewCommand.printTable;
@@ -58,8 +57,8 @@ public class MetricCommand extends CommandRegistryImpl<MetricCommandArg, Map<Str
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorMetricTask> taskClass() {
-        return VisorMetricTask.class;
+    @Override public Class<MetricTask> taskClass() {
+        return MetricTask.class;
     }
 
     /** {@inheritDoc} */
