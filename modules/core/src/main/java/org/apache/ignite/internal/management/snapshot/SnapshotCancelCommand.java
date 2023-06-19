@@ -17,8 +17,7 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask.CancelSnapshotArg;
+import org.apache.ignite.internal.management.snapshot.SnapshotCancelTask.CancelSnapshotArg;
 
 /** */
 public class SnapshotCancelCommand extends AbstractSnapshotCommand<CancelSnapshotArg> {
@@ -33,7 +32,7 @@ public class SnapshotCancelCommand extends AbstractSnapshotCommand<CancelSnapsho
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorSnapshotCancelTask> taskClass() {
-        return VisorSnapshotCancelTask.class;
+    @Override public Class<SnapshotCancelTask> taskClass() {
+        return SnapshotCancelTask.class;
     }
 }

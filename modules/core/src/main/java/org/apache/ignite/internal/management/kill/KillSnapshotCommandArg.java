@@ -23,8 +23,8 @@ import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
+import org.apache.ignite.internal.management.snapshot.SnapshotCancelTask.CancelSnapshotArg;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask.CancelSnapshotArg;
 
 /** */
 public class KillSnapshotCommandArg extends CancelSnapshotArg {

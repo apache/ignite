@@ -79,6 +79,7 @@ import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.impl.GridClientImpl;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.management.snapshot.SnapshotTaskResult;
 import org.apache.ignite.internal.management.tx.TxInfo;
 import org.apache.ignite.internal.management.tx.TxTaskResult;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -120,7 +121,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskResult;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -3198,7 +3198,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 waitForCondition(endTimeMetricPredicate::getAsBoolean, getTestTimeout()));
         }
 
-        assertContains(log, (String)((VisorSnapshotTaskResult)h.getLastOperationResult()).result(), snpName);
+        assertContains(log, (String)((SnapshotTaskResult)h.getLastOperationResult()).result(), snpName);
 
         stopAllGrids();
 
@@ -3273,7 +3273,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         StringBuilder sb = new StringBuilder();
 
-        ((SnapshotPartitionsVerifyTaskResult)((VisorSnapshotTaskResult)h.getLastOperationResult()).result()).print(sb::append);
+        ((SnapshotPartitionsVerifyTaskResult)((SnapshotTaskResult)h.getLastOperationResult()).result()).print(sb::append);
 
         assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
     }

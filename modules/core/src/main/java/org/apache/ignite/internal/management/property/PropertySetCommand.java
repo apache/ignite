@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.management.property;
 
-import org.apache.ignite.internal.commandline.property.tasks.PropertyOperationResult;
-import org.apache.ignite.internal.commandline.property.tasks.PropertyTask;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 
 /** */

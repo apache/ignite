@@ -23,7 +23,6 @@ import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.tx.KillTransactionTask;
 import org.apache.ignite.internal.management.tx.TxTaskResult;
 
 /** */
