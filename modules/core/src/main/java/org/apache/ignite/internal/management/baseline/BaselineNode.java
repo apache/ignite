@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.baseline;
+package org.apache.ignite.internal.management.baseline;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -24,7 +24,6 @@ import java.net.InetAddress;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -34,9 +33,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Data transfer object for {@link BaselineNode}.
+ * Data transfer object for {@link org.apache.ignite.cluster.BaselineNode}.
  */
-public class VisorBaselineNode extends VisorDataTransferObject {
+public class BaselineNode extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -58,7 +57,7 @@ public class VisorBaselineNode extends VisorDataTransferObject {
     /**
      * Default constructor.
      */
-    public VisorBaselineNode() {
+    public BaselineNode() {
         // No-op.
     }
 
@@ -68,7 +67,7 @@ public class VisorBaselineNode extends VisorDataTransferObject {
      * @param node Baseline node.
      * @param resolvedInetAddrs List of resolved ip, hostnames pairs.
      */
-    public VisorBaselineNode(BaselineNode node, @NotNull Collection<ResolvedAddresses> resolvedInetAddrs) {
+    public BaselineNode(org.apache.ignite.cluster.BaselineNode node, @NotNull Collection<ResolvedAddresses> resolvedInetAddrs) {
         consistentId = String.valueOf(node.consistentId());
         attrs = node.attributes();
 
@@ -139,7 +138,7 @@ public class VisorBaselineNode extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorBaselineNode.class, this);
+        return S.toString(BaselineNode.class, this);
     }
 
     /**

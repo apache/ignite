@@ -31,20 +31,13 @@ import org.apache.ignite.internal.management.tx.TxCommand.AbstractTxCommandArg;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.tx.FetchNearXidVersionTask;
-import org.apache.ignite.internal.visor.tx.TxKeyLockType;
-import org.apache.ignite.internal.visor.tx.TxMappingType;
-import org.apache.ignite.internal.visor.tx.TxVerboseInfo;
-import org.apache.ignite.internal.visor.tx.TxVerboseKey;
-import org.apache.ignite.internal.visor.tx.VisorTxInfo;
-import org.apache.ignite.internal.visor.tx.VisorTxTask;
-import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.transactions.TransactionState;
+
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 import static org.apache.ignite.internal.management.tx.TxCommand.nodeDescription;
 
 /** */
-public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<ClusterNode, VisorTxTaskResult>> {
+public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<ClusterNode, TxTaskResult>> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print detailed information (topology and key lock ownership) about specific transaction";
@@ -56,7 +49,7 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
     }
 
     /** {@inheritDoc} */
-    @Override public Map<ClusterNode, VisorTxTaskResult> execute(
+    @Override public Map<ClusterNode, TxTaskResult> execute(
         GridClient cli,
         AbstractTxCommandArg arg0,
         Consumer<String> printer
@@ -99,8 +92,8 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
             }
         }
 
-        Map<ClusterNode, VisorTxTaskResult> res = cli.compute().projection(node.get())
-            .execute(VisorTxTask.class.getName(), new VisorTaskArgument<>(node.get().nodeId(), arg, false));
+        Map<ClusterNode, TxTaskResult> res = cli.compute().projection(node.get())
+            .execute(TxTask.class.getName(), new VisorTaskArgument<>(node.get().nodeId(), arg, false));
 
         if (histMode)
             printTxInfoHistoricalResult(res, printer);
@@ -115,13 +108,13 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
      *
      * @param res Response.
      */
-    private void printTxInfoHistoricalResult(Map<ClusterNode, VisorTxTaskResult> res, Consumer<String> printer) {
+    private void printTxInfoHistoricalResult(Map<ClusterNode, TxTaskResult> res, Consumer<String> printer) {
         if (F.isEmpty(res))
             printer.accept("Transaction was not found in history across the cluster.");
         else {
             printer.accept("Transaction was found in completed versions history of the following nodes:");
 
-            for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
+            for (Map.Entry<ClusterNode, TxTaskResult> entry : res.entrySet()) {
                 printer.accept(DOUBLE_INDENT + nodeDescription(entry.getKey()) + ':');
                 printer.accept(DOUBLE_INDENT + DOUBLE_INDENT + "State: " + entry.getValue().getInfos().get(0).getState());
             }
@@ -133,17 +126,17 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
      *
      * @param res Response.
      */
-    private void printTxInfoResult(Map<ClusterNode, VisorTxTaskResult> res, Consumer<String> printer) {
+    private void printTxInfoResult(Map<ClusterNode, TxTaskResult> res, Consumer<String> printer) {
         String lb = null;
 
         Map<Integer, String> usedCaches = new HashMap<>();
         Map<Integer, String> usedCacheGroups = new HashMap<>();
-        VisorTxInfo firstInfo = null;
+        TxInfo firstInfo = null;
         TxVerboseInfo firstVerboseInfo = null;
         Set<TransactionState> states = new HashSet<>();
 
-        for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
-            for (VisorTxInfo info : entry.getValue().getInfos()) {
+        for (Map.Entry<ClusterNode, TxTaskResult> entry : res.entrySet()) {
+            for (TxInfo info : entry.getValue().getInfos()) {
                 assert info.getTxVerboseInfo() != null;
 
                 if (lb == null)
@@ -180,8 +173,8 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
      * @param states States.
      * @param indent Indent.
      */
-    private void printTransactionDetailedInfo(Map<ClusterNode, VisorTxTaskResult> res, Map<Integer, String> usedCaches,
-                                              Map<Integer, String> usedCacheGroups, VisorTxInfo firstInfo, TxVerboseInfo firstVerboseInfo,
+    private void printTransactionDetailedInfo(Map<ClusterNode, TxTaskResult> res, Map<Integer, String> usedCaches,
+                                              Map<Integer, String> usedCacheGroups, TxInfo firstInfo, TxVerboseInfo firstVerboseInfo,
                                               Set<TransactionState> states, String indent, Consumer<String> printer) {
         printer.accept(indent + "Near XID version: " +
             (firstVerboseInfo == null ? null : firstVerboseInfo.nearXidVersion()));
@@ -215,8 +208,8 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
      * @param res Response.
      * @param indent Indent.
      */
-    private void printTransactionTopology(Map<ClusterNode, VisorTxTaskResult> res, String indent, Consumer<String> printer) {
-        for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
+    private void printTransactionTopology(Map<ClusterNode, TxTaskResult> res, String indent, Consumer<String> printer) {
+        for (Map.Entry<ClusterNode, TxTaskResult> entry : res.entrySet()) {
             printer.accept(indent + nodeDescription(entry.getKey()) + ':');
 
             printTransactionMappings(indent + DOUBLE_INDENT, entry, printer);
@@ -229,8 +222,8 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
      * @param indent Indent.
      * @param entry Entry.
      */
-    private void printTransactionMappings(String indent, Map.Entry<ClusterNode, VisorTxTaskResult> entry, Consumer<String> printer) {
-        for (VisorTxInfo info : entry.getValue().getInfos()) {
+    private void printTransactionMappings(String indent, Map.Entry<ClusterNode, TxTaskResult> entry, Consumer<String> printer) {
+        for (TxInfo info : entry.getValue().getInfos()) {
             TxVerboseInfo verboseInfo = info.getTxVerboseInfo();
 
             if (verboseInfo != null) {
@@ -253,7 +246,7 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
      * @param info Info.
      * @param verboseInfo Verbose info.
      */
-    private void printTransactionMapping(String indent, VisorTxInfo info, TxVerboseInfo verboseInfo, Consumer<String> printer) {
+    private void printTransactionMapping(String indent, TxInfo info, TxVerboseInfo verboseInfo, Consumer<String> printer) {
         printer.accept(indent + "XID version (UUID): " + info.getXid());
         printer.accept(indent + "State: " + info.getState());
 

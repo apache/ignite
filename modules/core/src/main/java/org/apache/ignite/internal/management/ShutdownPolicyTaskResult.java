@@ -15,59 +15,50 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.tx;
+package org.apache.ignite.internal.management;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.List;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.apache.ignite.ShutdownPolicy;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
- * Result for {@link VisorTxTask}.
+ * Shutdown policy visor trsk result.
  */
-public class VisorTxTaskResult extends VisorDataTransferObject {
-    /** */
+public class ShutdownPolicyTaskResult extends IgniteDataTransferObject {
+    /** Serial version id. */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private List<VisorTxInfo> infos;
+    /** Shutdown policy on result. */
+    private ShutdownPolicy shutdown;
 
     /**
-     * Default constructor.
-     */
-    public VisorTxTaskResult() {
-        // No-op.
-    }
-
-    /**
-     * Constructor.
+     * Get policy.
      *
-     * @param infos Infos.
+     * @return Shutdown policy.
      */
-    public VisorTxTaskResult(List<VisorTxInfo> infos) {
-        this.infos = infos;
+    public ShutdownPolicy getShutdown() {
+        return shutdown;
     }
 
-    /** */
-    public List<VisorTxInfo> getInfos() {
-        return infos;
+    /**
+     * Set policy.
+     *
+     * @param shutdown Shutdown policy.
+     */
+    public void setShutdown(ShutdownPolicy shutdown) {
+        this.shutdown = shutdown;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, infos);
+        out.writeInt(shutdown == null ? -1 : shutdown.index());
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        infos = U.readList(in);
-    }
+        shutdown = ShutdownPolicy.fromOrdinal(in.readInt());
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(VisorTxTaskResult.class, this);
     }
 }

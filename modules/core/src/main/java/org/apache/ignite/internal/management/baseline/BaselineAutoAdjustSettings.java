@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.baseline;
+package org.apache.ignite.internal.management.baseline;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -23,7 +23,7 @@ import java.io.ObjectOutput;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /** */
-public class VisorBaselineAutoAdjustSettings extends VisorDataTransferObject {
+public class BaselineAutoAdjustSettings extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -34,11 +34,11 @@ public class VisorBaselineAutoAdjustSettings extends VisorDataTransferObject {
     public Long softTimeout;
 
     /** Default constructor. */
-    public VisorBaselineAutoAdjustSettings() {
+    public BaselineAutoAdjustSettings() {
     }
 
     /** Constructor. */
-    public VisorBaselineAutoAdjustSettings(Boolean enabled, Long softTimeout) {
+    public BaselineAutoAdjustSettings(Boolean enabled, Long softTimeout) {
         this.enabled = enabled;
         this.softTimeout = softTimeout;
     }

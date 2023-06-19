@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.tx;
+package org.apache.ignite.internal.management.tx;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -40,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  */
-public class VisorTxInfo extends VisorDataTransferObject {
+public class TxInfo extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -94,7 +94,7 @@ public class VisorTxInfo extends VisorDataTransferObject {
     /**
      * Default constructor.
      */
-    public VisorTxInfo() {
+    public TxInfo() {
         // No-op.
     }
 
@@ -111,10 +111,10 @@ public class VisorTxInfo extends VisorDataTransferObject {
      * @param size Size.
      * @param info Verbose TX info.
      */
-    public VisorTxInfo(IgniteUuid xid, long startTime, long duration, TransactionIsolation isolation,
-        TransactionConcurrency concurrency, long timeout, String lb, Collection<UUID> primaryNodes,
-        TransactionState state, int size, IgniteUuid nearXid, Collection<UUID> masterNodeIds,
-        AffinityTopologyVersion topVer, TxVerboseInfo info) {
+    public TxInfo(IgniteUuid xid, long startTime, long duration, TransactionIsolation isolation,
+                  TransactionConcurrency concurrency, long timeout, String lb, Collection<UUID> primaryNodes,
+                  TransactionState state, int size, IgniteUuid nearXid, Collection<UUID> masterNodeIds,
+                  AffinityTopologyVersion topVer, TxVerboseInfo info) {
         this.xid = xid;
         this.startTime = startTime;
         this.duration = duration;
@@ -138,7 +138,7 @@ public class VisorTxInfo extends VisorDataTransferObject {
      * @param xid Xid.
      * @param state State.
      */
-    public VisorTxInfo(IgniteUuid xid, TransactionState state) {
+    public TxInfo(IgniteUuid xid, TransactionState state) {
         this(xid, 0L, 0L, null, null, 0L, null, null, state, 0, null, null, null, null);
     }
 
@@ -307,6 +307,6 @@ public class VisorTxInfo extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorTxInfo.class, this);
+        return S.toString(TxInfo.class, this);
     }
 }

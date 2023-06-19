@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.cdc;
+package org.apache.ignite.internal.management.cdc;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +32,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.cdc.CdcFileLockHolder;
-import org.apache.ignite.internal.management.cdc.CdcDeleteLostSegmentLinksCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -40,6 +39,7 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.internal.cdc.CdcConsumerState.WAL_STATE_FILE_NAME;
 import static org.apache.ignite.internal.cdc.CdcMain.STATE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
@@ -48,7 +48,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
  * Task to delete lost segment CDC links.
  */
 @GridInternal
-public class VisorCdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostSegmentLinksCommandArg, Void, Void> {
+public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostSegmentLinksCommandArg, Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -14,25 +14,25 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.apache.ignite.internal.visor.tx;
+package org.apache.ignite.internal.management.tx;
 
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Describes transaction key lock ownership type.
+ * Describes transaction mapping type.
  */
-public enum TxKeyLockType {
-    /** Transaction doesn't hold lock for given key. */
-    NO_LOCK,
+public enum TxMappingType {
+    /** Initiator node mapping (contains both near and primary keys). */
+    NEAR,
 
-    /** Transaction is enqueued to acquire lock for given key. */
-    AWAITS_LOCK,
+    /** Primary node mapping. */
+    DHT,
 
-    /** Transaction is exclusive lock owner for given key. */
-    OWNS_LOCK;
+    /** Backup node mapping. */
+    REMOTE;
 
     /** Enumerated values. */
-    private static final TxKeyLockType[] VALS = values();
+    private static final TxMappingType[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -40,7 +40,7 @@ public enum TxKeyLockType {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    public static @Nullable TxKeyLockType fromOrdinal(int ord) {
+    public static @Nullable TxMappingType fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

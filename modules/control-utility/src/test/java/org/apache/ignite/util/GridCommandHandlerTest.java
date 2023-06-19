@@ -79,6 +79,8 @@ import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.impl.GridClientImpl;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.management.tx.TxInfo;
+import org.apache.ignite.internal.management.tx.TxTaskResult;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.ClusterStateTestUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -119,8 +121,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
-import org.apache.ignite.internal.visor.tx.VisorTxInfo;
-import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -1697,13 +1697,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         CommandHandler h = new CommandHandler();
 
-        final VisorTxInfo[] toKill = {null};
+        final TxInfo[] toKill = {null};
 
         // Basic test.
         validate(h, map -> {
-            VisorTxTaskResult res = map.get(grid(0).cluster().localNode());
+            TxTaskResult res = map.get(grid(0).cluster().localNode());
 
-            for (VisorTxInfo info : res.getInfos()) {
+            for (TxInfo info : res.getInfos()) {
                 if (info.getSize() == 100) {
                     toKill[0] = info; // Store for further use.
 
@@ -1720,7 +1720,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         validate(h, map -> {
             ClusterNode node = grid(0).cluster().localNode();
 
-            for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : map.entrySet())
+            for (Map.Entry<ClusterNode, TxTaskResult> entry : map.entrySet())
                 assertEquals(entry.getKey().equals(node) ? 1 : 0, entry.getValue().getInfos().size());
         }, "--tx", "--label", "label1");
 
@@ -1729,7 +1729,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             ClusterNode node1 = grid(0).cluster().localNode();
             ClusterNode node2 = grid("client").cluster().localNode();
 
-            for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : map.entrySet()) {
+            for (Map.Entry<ClusterNode, TxTaskResult> entry : map.entrySet()) {
                 if (entry.getKey().equals(node1)) {
                     assertEquals(1, entry.getValue().getInfos().size());
 
@@ -1748,9 +1748,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Test filter by empty label.
         validate(h, map -> {
-            VisorTxTaskResult res = map.get(grid(0).localNode());
+            TxTaskResult res = map.get(grid(0).localNode());
 
-            for (VisorTxInfo info : res.getInfos())
+            for (TxInfo info : res.getInfos())
                 assertNull(info.getLabel());
 
         }, "--tx", "--label", "null");
@@ -1759,31 +1759,31 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         int minSize = 10;
 
         validate(h, map -> {
-            VisorTxTaskResult res = map.get(grid(0).localNode());
+            TxTaskResult res = map.get(grid(0).localNode());
 
             assertNotNull(res);
 
-            for (VisorTxInfo txInfo : res.getInfos())
+            for (TxInfo txInfo : res.getInfos())
                 assertTrue(txInfo.getSize() >= minSize);
         }, "--tx", "--min-size", Integer.toString(minSize));
 
         // test order by size.
         validate(h, map -> {
-            VisorTxTaskResult res = map.get(grid(0).localNode());
+            TxTaskResult res = map.get(grid(0).localNode());
 
             assertTrue(res.getInfos().get(0).getSize() >= res.getInfos().get(1).getSize());
         }, "--tx", "--order", "SIZE");
 
         // test order by duration.
         validate(h, map -> {
-            VisorTxTaskResult res = map.get(grid(0).localNode());
+            TxTaskResult res = map.get(grid(0).localNode());
 
             assertTrue(res.getInfos().get(0).getDuration() >= res.getInfos().get(1).getDuration());
         }, "--tx", "--order", "DURATION");
 
         // test order by start_time.
         validate(h, map -> {
-            VisorTxTaskResult res = map.get(grid(0).localNode());
+            TxTaskResult res = map.get(grid(0).localNode());
 
             for (int i = res.getInfos().size() - 1; i > 1; i--)
                 assertTrue(res.getInfos().get(i - 1).getStartTime() >= res.getInfos().get(i).getStartTime());
@@ -1807,9 +1807,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         validate(h, map -> {
             assertEquals(1, map.size());
 
-            Map.Entry<ClusterNode, VisorTxTaskResult> killedEntry = map.entrySet().iterator().next();
+            Map.Entry<ClusterNode, TxTaskResult> killedEntry = map.entrySet().iterator().next();
 
-            VisorTxInfo info = killedEntry.getValue().getInfos().get(0);
+            TxInfo info = killedEntry.getValue().getInfos().get(0);
 
             assertEquals(toKill[0].getXid(), info.getXid());
         }, "--tx", "--kill",
@@ -1972,9 +1972,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 if (grid.localNode().id().equals(prim.cluster().localNode().id()))
                     continue;
 
-                VisorTxTaskResult res = map.get(grid.localNode());
+                TxTaskResult res = map.get(grid.localNode());
 
-                List<VisorTxInfo> infos = res.getInfos()
+                List<TxInfo> infos = res.getInfos()
                     .stream()
                     .filter(info -> xidSet.contains(info.getNearXid()))
                     .collect(Collectors.toList());
@@ -2412,7 +2412,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * @param validateClo Validate clo.
      * @param args Args.
      */
-    private void validate(CommandHandler h, IgniteInClosure<Map<ClusterNode, VisorTxTaskResult>> validateClo,
+    private void validate(CommandHandler h, IgniteInClosure<Map<ClusterNode, TxTaskResult>> validateClo,
         String... args) {
         assertEquals(EXIT_CODE_OK, execute(h, args));
 
@@ -2704,9 +2704,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         validate(h, map -> {
             ClusterNode node = grid(0).cluster().localNode();
 
-            VisorTxTaskResult res = map.get(node);
+            TxTaskResult res = map.get(node);
 
-            for (VisorTxInfo info : res.getInfos())
+            for (TxInfo info : res.getInfos())
                 assertEquals(tx0.xid(), info.getXid());
 
             assertEquals(1, map.size());

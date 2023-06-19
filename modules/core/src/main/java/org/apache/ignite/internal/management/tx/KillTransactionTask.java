@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.tx;
+package org.apache.ignite.internal.management.tx;
 
 import java.util.List;
 import java.util.Map;
@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.kill.KillTransactionCommandArg;
-import org.apache.ignite.internal.management.tx.TxCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -32,24 +31,24 @@ import org.jetbrains.annotations.Nullable;
 /** */
 @GridInternal
 public class KillTransactionTask
-    extends VisorMultiNodeTask<KillTransactionCommandArg, Map<ClusterNode, VisorTxTaskResult>, VisorTxTaskResult> {
+    extends VisorMultiNodeTask<KillTransactionCommandArg, Map<ClusterNode, TxTaskResult>, TxTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<KillTransactionCommandArg, VisorTxTaskResult> job(KillTransactionCommandArg arg) {
+    @Override protected VisorJob<KillTransactionCommandArg, TxTaskResult> job(KillTransactionCommandArg arg) {
         return new KillTransactionJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Override protected @Nullable Map<ClusterNode, VisorTxTaskResult> reduce0(
+    @Override protected @Nullable Map<ClusterNode, TxTaskResult> reduce0(
         List<ComputeJobResult> results
     ) throws IgniteException {
-        return VisorTxTask.reduce0(results, false);
+        return TxTask.reduce0(results, false);
     }
 
     /** */
-    private static class KillTransactionJob extends VisorJob<KillTransactionCommandArg, VisorTxTaskResult> {
+    private static class KillTransactionJob extends VisorJob<KillTransactionCommandArg, TxTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -59,13 +58,13 @@ public class KillTransactionTask
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorTxTaskResult run(KillTransactionCommandArg arg) throws IgniteException {
+        @Override protected TxTaskResult run(KillTransactionCommandArg arg) throws IgniteException {
             TxCommandArg arg0 = new TxCommandArg();
 
             arg0.kill(true);
             arg0.xid(arg.xid());
 
-            return VisorTxTask.VisorTxJob.run(ignite, arg0, null);
+            return TxTask.VisorTxJob.run(ignite, arg0, null);
         }
     }
 }
