@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.NodeMappingE
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -142,8 +143,12 @@ public class Fragment {
         try {
             FragmentMapping mapping = IgniteMdFragmentMapping._fragmentMapping(root, mq, ctx);
 
-            if (rootFragment())
-                mapping = FragmentMapping.create(ctx.localNodeId()).colocate(mapping);
+            if (rootFragment()) {
+                if (ctx.isLocal() && !(root instanceof IgniteTableModify))
+                    mapping = mapping.local(ctx.localNodeId());
+                else
+                    mapping = FragmentMapping.create(ctx.localNodeId()).colocate(mapping);
+            }
 
             if (single() && mapping.nodeIds().size() > 1) {
                 // this is possible when the fragment contains scan of a replicated cache, which brings

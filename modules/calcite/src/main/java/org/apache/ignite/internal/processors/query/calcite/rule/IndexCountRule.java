@@ -30,6 +30,7 @@ import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
+import org.apache.ignite.internal.processors.query.QueryProperties;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
@@ -101,10 +102,17 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
         if (idx == null)
             return;
 
+        RelDistribution distribution;
+        QueryProperties qryProps = call.getPlanner().getContext().unwrap(QueryProperties.class);
+        if (qryProps.isLocal())
+            distribution = IgniteDistributions.single();
+        else
+            distribution = table.distribution();
+
         RelTraitSet idxTraits = aggr.getTraitSet()
             .replace(IgniteConvention.INSTANCE)
             .replace(table.distribution().getType() == RelDistribution.Type.HASH_DISTRIBUTED ?
-                IgniteDistributions.random() : table.distribution())
+                IgniteDistributions.random() : distribution)
             .replace(RewindabilityTrait.REWINDABLE);
 
         IgniteIndexCount idxCnt = new IgniteIndexCount(

@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
@@ -36,6 +35,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.internal.processors.query.QueryProperties;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -70,7 +71,13 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                     return null;
                 }
 
-                RelDistribution distribution = table.distribution();
+                RelDistribution distribution;
+                QueryProperties qryProps = planner.getContext().unwrap(QueryProperties.class);
+                if (qryProps.isLocal())
+                    distribution = IgniteDistributions.single();
+                else
+                    distribution = table.distribution();
+
                 RelCollation collation = idx.collation();
 
                 if (rel.projects() != null || rel.requiredColumns() != null) {
@@ -125,7 +132,13 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                 RelOptCluster cluster = rel.getCluster();
                 IgniteTable table = rel.getTable().unwrap(IgniteTable.class);
 
-                RelDistribution distribution = table.distribution();
+                RelDistribution distribution;
+                QueryProperties qryProps = planner.getContext().unwrap(QueryProperties.class);
+                if (qryProps.isLocal())
+                    distribution = IgniteDistributions.single();
+                else
+                    distribution = table.distribution();
+
                 if (rel.requiredColumns() != null) {
                     Mappings.TargetMapping mapping = createMapping(
                         rel.projects(),

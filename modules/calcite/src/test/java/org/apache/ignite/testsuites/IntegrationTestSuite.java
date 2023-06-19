@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.KillComma
 import org.apache.ignite.internal.processors.query.calcite.integration.KillQueryCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.LimitOffsetIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.LocalDateTimeSupportTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.LocalQueryIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.MemoryQuotasIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.MetadataIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryEngineConfigurationIntegrationTest;
@@ -114,6 +115,7 @@ import org.junit.runners.Suite;
     QueryEngineConfigurationIntegrationTest.class,
     SearchSargOnIndexIntegrationTest.class,
     KeepBinaryIntegrationTest.class,
+    LocalQueryIntegrationTest.class,
     QueryMetadataIntegrationTest.class,
     MemoryQuotasIntegrationTest.class,
     LocalDateTimeSupportTest.class,

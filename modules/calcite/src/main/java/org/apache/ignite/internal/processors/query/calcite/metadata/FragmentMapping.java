@@ -117,6 +117,18 @@ public class FragmentMapping implements MarshalableMessage {
     }
 
     /** */
+    public FragmentMapping local(UUID nodeId) throws ColocationMappingException {
+        assert colocationGroups.size() == 1;
+
+        ColocationGroup oldGroup = colocationGroups.get(0);
+
+        List<List<UUID>> assignments = oldGroup.assignments().stream()
+                .map(l -> nodeId.equals(l.get(0)) ? l : Collections.<UUID>emptyList()).collect(Collectors.toList());
+
+        return new FragmentMapping(ColocationGroup.create(oldGroup.sourceIds(), Collections.singletonList(nodeId), assignments));
+    }
+
+    /** */
     public List<UUID> nodeIds() {
         return colocationGroups.stream()
             .flatMap(g -> g.nodeIds().stream())

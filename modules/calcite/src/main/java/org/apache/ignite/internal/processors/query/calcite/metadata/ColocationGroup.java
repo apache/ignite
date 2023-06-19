@@ -49,6 +49,9 @@ import org.jetbrains.annotations.NotNull;
 /** */
 public class ColocationGroup implements MarshalableMessage {
     /** */
+    public static final long[] EMPTY_SOURCE_IDS = {};
+
+    /** */
     private long[] sourceIds;
 
     /** */
@@ -78,6 +81,11 @@ public class ColocationGroup implements MarshalableMessage {
     }
 
     /** */
+    public static ColocationGroup create(long[] sourceIds, List<UUID> nodeIds, List<List<UUID>> assignments) {
+        return new ColocationGroup(Arrays.copyOf(sourceIds, sourceIds.length), nodeIds, assignments);
+    }
+
+    /** */
     public ColocationGroup() {
     }
 
@@ -93,6 +101,13 @@ public class ColocationGroup implements MarshalableMessage {
      */
     public List<UUID> nodeIds() {
         return nodeIds == null ? Collections.emptyList() : nodeIds;
+    }
+
+    /**
+     * @return Array of source ids;
+     */
+    public long[] sourceIds() {
+        return sourceIds == null ? EMPTY_SOURCE_IDS : sourceIds;
     }
 
     /**
