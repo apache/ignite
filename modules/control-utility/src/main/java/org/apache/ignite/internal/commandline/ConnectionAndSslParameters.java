@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.Deque;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.CommandsRegistry;
 
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_HOST;
@@ -58,10 +60,7 @@ public class ConnectionAndSslParameters<A extends IgniteDataTransferObject> {
     private char[] sslTrustStorePassword;
 
     /** Command to execute. */
-    private final Command<A, ?> command;
-
-    /** Command to execute. */
-    private final Command<?, ?> root;
+    private final Deque<Command<?, ?>> cmdPath;
 
     /** Command argument. */
     private final A arg;
@@ -70,16 +69,16 @@ public class ConnectionAndSslParameters<A extends IgniteDataTransferObject> {
     private final CLIArgumentParser parser;
 
     /**
-     * @param command Command.
+     * @param cmdPath Path to the command in {@link CommandsRegistry} hierarchy.
+     * @param arg Command argument.
+     * @param parser CLI arguments parser.
      */
     public ConnectionAndSslParameters(
-        Command<A, ?> command,
-        Command<?, ?> root,
+        Deque<Command<?, ?>> cmdPath,
         A arg,
         CLIArgumentParser parser
     ) {
-        this.command = command;
-        this.root = root;
+        this.cmdPath = cmdPath;
         this.arg = arg;
         this.parser = parser;
 
@@ -93,14 +92,14 @@ public class ConnectionAndSslParameters<A extends IgniteDataTransferObject> {
      * @return High-level command which were defined by user to run.
      */
     public Command<A, ?> command() {
-        return command;
+        return (Command<A, ?>)cmdPath.peek();
     }
 
     /**
      * @return High-level command which were defined by user to run.
      */
-    public Command<?, ?> root() {
-        return root != null ? root : command;
+    public Deque<Command<?, ?>> cmdPath() {
+        return cmdPath;
     }
 
     /** */

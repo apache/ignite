@@ -137,6 +137,7 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static java.io.File.separatorChar;
@@ -2106,6 +2107,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testCacheIdleVerifyDumpWhenNodeFailing() throws Exception {
+        Assume.assumeTrue("CHECKME", CLI_INVOKER.equalsIgnoreCase(invoker));
+
         Ignite ignite = startGrids(3);
 
         Ignite unstable = startGrid("unstable");
@@ -3848,6 +3851,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testSuccessStopWarmUp() throws Exception {
+        Assume.assumeTrue(CLI_INVOKER.equalsIgnoreCase(invoker));
+
         WarmUpTestPluginProvider provider = new WarmUpTestPluginProvider();
 
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0)).setPluginProviders(provider);

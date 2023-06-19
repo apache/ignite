@@ -19,9 +19,11 @@
 package org.apache.ignite.internal.commandline;
 
 import java.lang.reflect.Field;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -78,10 +80,7 @@ public class ArgumentParser {
     private final IgniteCommandRegistry registry;
 
     /** */
-    Command<?, ?> root;
-
-    /** */
-    Command<?, ?> cmd;
+    Deque<Command<?, ?>> cmdPath = new ArrayDeque<>();
 
     /** */
     static final String CMD_HOST = "--host";
@@ -258,12 +257,12 @@ public class ArgumentParser {
         parser.parse(args.iterator());
 
         A arg = (A)argument(
-            cmd.argClass(),
+            cmdPath.peek().argClass(),
             (fld, pos) -> parser.get(pos),
             fld -> parser.get(toFormattedFieldName(fld).toLowerCase())
         );
 
-        if (!parser.<Boolean>get(CMD_ENABLE_EXPERIMENTAL) && cmd.getClass().isAnnotationPresent(IgniteExperimental.class)) {
+        if (!parser.<Boolean>get(CMD_ENABLE_EXPERIMENTAL) && cmdPath.peek().getClass().isAnnotationPresent(IgniteExperimental.class)) {
             log.warning(
                 String.format("To use experimental command add " + CMD_ENABLE_EXPERIMENTAL + " parameter for %s",
                     UTILITY_NAME)
@@ -272,7 +271,7 @@ public class ArgumentParser {
             throw new IllegalArgumentException("Experimental commands disabled");
         }
 
-        return new ConnectionAndSslParameters<>((Command<A, ?>)cmd, root, arg, parser);
+        return new ConnectionAndSslParameters<>(cmdPath, arg, parser);
     }
 
     /**
@@ -281,29 +280,34 @@ public class ArgumentParser {
      * @param iter Iterator of CLI arguments.
      */
     protected void findCommand(Iterator<String> iter) {
-        assert cmd == null && root == null;
+        assert cmdPath.isEmpty();
 
-        while (iter.hasNext() && cmd == null) {
+        while (iter.hasNext() && cmdPath.isEmpty()) {
             String cmdName = iter.next();
 
             if (!cmdName.startsWith(NAME_PREFIX))
                 continue;
 
-            cmd = registry.command(fromFormattedCommandName(cmdName.substring(NAME_PREFIX.length()), CMD_WORDS_DELIM));
+            Command<?, ?> cmd = registry.command(fromFormattedCommandName(cmdName.substring(NAME_PREFIX.length()), CMD_WORDS_DELIM));
+
+            if (cmd == null)
+                continue;
+
+            cmdPath.push(cmd);
         }
 
-        if (cmd == null)
+        if (cmdPath.isEmpty())
             throw new IllegalArgumentException("No action was specified");
 
         // Remove command name parameter to exclude it from ongoing parsing.
         iter.remove();
 
-        while (cmd instanceof CommandsRegistry && iter.hasNext()) {
+        while (cmdPath.peek() instanceof CommandsRegistry && iter.hasNext()) {
             String name = iter.next();
 
             char delim = PARAM_WORDS_DELIM;
 
-            if (cmd.getClass().isAnnotationPresent(CliSubcommandsWithPrefix.class)) {
+            if (cmdPath.peek().getClass().isAnnotationPresent(CliSubcommandsWithPrefix.class)) {
                 if (!name.startsWith(NAME_PREFIX))
                     break;
 
@@ -312,28 +316,27 @@ public class ArgumentParser {
                 delim = CMD_WORDS_DELIM;
             }
 
-            Command<?, ?> cmd1 = ((CommandsRegistry<?, ?>)cmd).command(fromFormattedCommandName(name, delim));
+            Command<?, ?> cmd1 = ((CommandsRegistry<?, ?>)cmdPath.peek()).command(fromFormattedCommandName(name, delim));
 
             if (cmd1 == null)
                 break;
 
-            root = cmd;
-            cmd = cmd1;
+            cmdPath.push(cmd1);
 
             // Remove command name parameter to exclude it from ongoing parsing.
             iter.remove();
         }
 
-        if (!executable(cmd)) {
+        if (!executable(cmdPath.peek())) {
             throw new IllegalArgumentException(
-                "Command " + toFormattedCommandName(cmd.getClass()) + " can't be executed"
+                "Command " + toFormattedCommandName(cmdPath.peek().getClass()) + " can't be executed"
             );
         }
     }
 
     /** */
     private CLIArgumentParser createArgumentParser() {
-        assert cmd != null;
+        assert !cmdPath.isEmpty();
 
         List<CLIArgument<?>> positionalArgs = new ArrayList<>();
         List<CLIArgument<?>> namedArgs = new ArrayList<>();
@@ -347,7 +350,7 @@ public class ArgumentParser {
             (name, val) -> {}
         );
 
-        ArgumentGroup argGrp = cmd.argClass().getAnnotation(ArgumentGroup.class);
+        ArgumentGroup argGrp = cmdPath.peek().argClass().getAnnotation(ArgumentGroup.class);
         Set<String> grpdFlds = argGrp == null
             ? Collections.emptySet()
             : new HashSet<>(Arrays.asList(argGrp.value()));
@@ -372,7 +375,7 @@ public class ArgumentParser {
                 namedArgCb.accept(fld);
         });
 
-        visitCommandParams(cmd.argClass(), positionalArgCb, namedArgCb, argGrpCb);
+        visitCommandParams(cmdPath.peek().argClass(), positionalArgCb, namedArgCb, argGrpCb);
 
         namedArgs.addAll(common);
 

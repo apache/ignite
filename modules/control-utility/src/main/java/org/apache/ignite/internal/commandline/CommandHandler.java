@@ -252,7 +252,7 @@ public class CommandHandler {
 
             ConnectionAndSslParameters<A> args = new ArgumentParser(logger, registry).parseAndValidate(rawArgs);
 
-            commandName = toFormattedCommandName(args.root().getClass()).toUpperCase();
+            commandName = toFormattedCommandName(args.cmdPath().peekLast().getClass()).toUpperCase();
 
             try (CommandInvoker<A> invoker = new CommandInvoker<>(
                 args.command(),
@@ -288,7 +288,7 @@ public class CommandHandler {
                             logger.warning(deprecationMsg);
 
                         if (args.command() instanceof HelpCommand)
-                            printUsage(logger, args.root());
+                            printUsage(logger, args.cmdPath().peekLast());
                         else {
                             try {
                                 if (args.command() instanceof BeforeNodeStartCommand)

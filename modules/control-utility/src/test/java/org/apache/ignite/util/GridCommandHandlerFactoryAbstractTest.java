@@ -19,9 +19,10 @@ package org.apache.ignite.util;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -44,6 +45,7 @@ import org.apache.ignite.internal.commandline.ConnectionAndSslParameters;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
+import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.jmx.JmxCommandRegistryInvokerPluginProvider;
 import org.apache.ignite.internal.util.typedef.X;
@@ -53,11 +55,13 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.internal.commandline.CommandLogger.errorMessage;
 import static org.apache.ignite.internal.management.api.CommandUtils.commandKey;
 import static org.apache.ignite.internal.management.api.CommandUtils.isBoolean;
+import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
 import static org.apache.ignite.internal.management.jmx.CommandMBean.METHOD;
 
@@ -176,23 +180,33 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
                     log = (IgniteLoggerEx)grid.log();
             }
 
+            String commandName = null;
+
             try {
                 ArgumentParser parser = new ArgumentParser(log, new IgniteCommandRegistry());
 
                 ConnectionAndSslParameters<IgniteDataTransferObject> p = parser.parseAndValidate(value);
 
-                List<String> grps = p.root() == p.command()
-                    ? Collections.emptyList()
-                    : singletonList(commandKey(p.root().getClass(), null));
+                commandName = toFormattedCommandName(p.cmdPath().peekLast().getClass()).toUpperCase();
+
+                Deque<Command<?, ?>> cmdPath = new ArrayDeque<>(p.cmdPath());
+
+                List<String> grps = new ArrayList<>();
+
+                while (!cmdPath.isEmpty()) {
+                    grps.add(commandKey(
+                        cmdPath.pop().getClass(),
+                        !cmdPath.isEmpty() ? (Class<? extends CommandsRegistry<?, ?>>)cmdPath.peek().getClass() : null)
+                    );
+                }
+
+                String name = grps.remove(0);
 
                 DynamicMBean mbean = getMxBean(
                     grid.context().igniteInstanceName(),
                     "management",
                     grps,
-                    commandKey(
-                        p.command().getClass(),
-                        p.root() == p.command() ? null : (Class<? extends CommandsRegistry<?, ?>>)p.root().getClass()
-                    ),
+                    name,
                     DynamicMBean.class
                 );
 
@@ -213,11 +227,20 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
             catch (MBeanException | ReflectionException e) {
                 throw new IgniteException(e);
             }
-            catch (IllegalArgumentException e) {
+            catch (Throwable e) {
                 log.error("Failed to perform operation.");
                 log.error(CommandLogger.errorMessage(e));
 
-                return EXIT_CODE_INVALID_ARGUMENTS;
+                if (X.hasCause(e, IllegalArgumentException.class)) {
+                    IllegalArgumentException iae = X.cause(e, IllegalArgumentException.class);
+
+                    log.error("Check arguments. " + errorMessage(iae));
+                    log.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
+
+                    return EXIT_CODE_INVALID_ARGUMENTS;
+                }
+
+                return EXIT_CODE_UNEXPECTED_ERROR;
             }
 
             return EXIT_CODE_OK;
