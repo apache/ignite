@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
  */
 public class QueryParserMetricsHolder {
     /** Query parser metric group name. */
-    static final String QUERY_PARSER_METRIC_GROUP_NAME = "sql.parser.cache";
+    public static final String QUERY_PARSER_METRIC_GROUP_NAME = "sql.parser.cache";
 
     /** Query cache hits counter. */
     private final LongAdderMetric qryCacheHits;

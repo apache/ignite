@@ -28,11 +28,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
-import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionCancelledException;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.QueryMemoryTracker;
@@ -165,9 +165,9 @@ public class Query<RowT> {
         }
 
         for (RunningFragment<RowT> frag : fragments)
-            frag.context().execute(() -> frag.root().onError(new ExecutionCancelledException()), frag.root()::onError);
+            frag.context().execute(() -> frag.root().onError(new QueryCancelledException()), frag.root()::onError);
 
-        tryClose(new ExecutionCancelledException());
+        tryClose(queryCanceledException());
     }
 
     /** */
@@ -176,13 +176,8 @@ public class Query<RowT> {
             if (state == QueryState.INITED)
                 state = QueryState.EXECUTING;
 
-            if (state == QueryState.CLOSING || state == QueryState.CLOSED) {
-                throw new IgniteSQLException(
-                    "The query was cancelled",
-                    IgniteQueryErrorCode.QUERY_CANCELED,
-                    new ExecutionCancelledException()
-                );
-            }
+            if (state == QueryState.CLOSING || state == QueryState.CLOSED)
+                throw queryCanceledException();
 
             fragments.add(f);
         }
@@ -191,6 +186,15 @@ public class Query<RowT> {
     /** */
     public boolean isCancelled() {
         return cancel.isCanceled();
+    }
+
+    /** */
+    protected IgniteSQLException queryCanceledException() {
+        return new IgniteSQLException(
+            "The query was cancelled",
+            IgniteQueryErrorCode.QUERY_CANCELED,
+            new QueryCancelledException()
+        );
     }
 
     /** */
