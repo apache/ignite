@@ -40,6 +40,7 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
@@ -51,19 +52,20 @@ import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableImpl
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.systemview.view.SqlQueryView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.joining;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_PLANNER_TIMEOUT;
 import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_QRY_VIEW;
+import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_USER_QUERIES_REG_NAME;
 
 /**
  *
@@ -100,6 +102,9 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
      */
     @Test
     public void testCancelAtPlanningPhase() throws IgniteCheckedException {
+        MetricRegistry mreg = client.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        mreg.reset();
+
         CalciteQueryProcessor engine = queryProcessor(client);
         int cnt = 9;
 
@@ -111,7 +116,7 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
 
         IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> sql(sql));
 
-        Assert.assertTrue(GridTestUtils.waitForCondition(
+        assertTrue(GridTestUtils.waitForCondition(
             () -> !engine.runningQueries().isEmpty() || fut.isDone(), TIMEOUT_IN_MS));
 
         Collection<? extends Query<?>> running = engine.runningQueries();
@@ -123,15 +128,17 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
         assertSame(qry, engine.runningQuery(qry.id()));
 
         // Waits for planning.
-        Assert.assertTrue(GridTestUtils.waitForCondition(
+        assertTrue(GridTestUtils.waitForCondition(
             () -> qry.state() == QueryState.PLANNING, TIMEOUT_IN_MS));
 
         qry.cancel();
 
-        Assert.assertTrue(GridTestUtils.waitForCondition(
+        assertTrue(GridTestUtils.waitForCondition(
             () -> engine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(0), IgniteSQLException.class, "The query was cancelled while planning");
+
+        assertEquals(1, ((LongMetric)mreg.findMetric("canceled")).value());
     }
 
     /**
@@ -140,6 +147,9 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
      */
     @Test
     public void testCancelAtExecutionPhase() throws Exception {
+        MetricRegistry mreg = client.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        mreg.reset();
+
         CalciteQueryProcessor cliEngine = queryProcessor(client);
         CalciteQueryProcessor srvEngine = queryProcessor(srv);
 
@@ -199,10 +209,10 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
 
             qry.cancel();
 
-            Assert.assertTrue(GridTestUtils.waitForCondition(
+            assertTrue(GridTestUtils.waitForCondition(
                 () -> srvEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
 
-            Assert.assertTrue(GridTestUtils.waitForCondition(
+            assertTrue(GridTestUtils.waitForCondition(
                 () -> cliEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
         }
         finally {
@@ -210,7 +220,9 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
         }
 
         GridTestUtils.assertThrowsAnyCause(log,
-            () -> fut.get(100), IgniteSQLException.class, "The query was cancelled while executing.");
+            () -> fut.get(100), IgniteSQLException.class, "The query was cancelled");
+
+        assertEquals(1, ((LongMetric)mreg.findMetric("canceled")).value());
     }
 
     /**
@@ -220,6 +232,9 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
      */
     @Test
     public void testCancelByRemoteFragment() throws IgniteCheckedException {
+        MetricRegistry mreg = client.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        mreg.reset();
+
         CalciteQueryProcessor clientEngine = queryProcessor(client);
         CalciteQueryProcessor serverEngine = queryProcessor(srv);
         int cnt = 6;
@@ -236,7 +251,7 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
 
         IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> sql(sql));
 
-        Assert.assertTrue(GridTestUtils.waitForCondition(
+        assertTrue(GridTestUtils.waitForCondition(
             () -> {
                 Collection<? extends Query<?>> queries = clientEngine.runningQueries();
 
@@ -244,7 +259,7 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
             },
             TIMEOUT_IN_MS));
 
-        Assert.assertTrue(GridTestUtils.waitForCondition(() -> !serverEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
+        assertTrue(GridTestUtils.waitForCondition(() -> !serverEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
 
         Collection<? extends Query<?>> running = serverEngine.runningQueries();
         Query<?> qry = F.first(running);
@@ -253,13 +268,15 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
 
         qry.cancel();
 
-        Assert.assertTrue(GridTestUtils.waitForCondition(
+        assertTrue(GridTestUtils.waitForCondition(
             () -> clientEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
 
-        Assert.assertTrue(GridTestUtils.waitForCondition(
+        assertTrue(GridTestUtils.waitForCondition(
             () -> serverEngine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(100), IgniteSQLException.class, "The query was cancelled while executing.");
+        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(100), IgniteSQLException.class, "The query was cancelled");
+
+        assertEquals(1, ((LongMetric)mreg.findMetric("canceled")).value());
     }
 
     /** */
