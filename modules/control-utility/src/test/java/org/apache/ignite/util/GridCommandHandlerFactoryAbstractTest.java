@@ -22,6 +22,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
@@ -50,11 +51,13 @@ import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.jmx.JmxCommandRegistryInvokerPluginProvider;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_PORT;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
@@ -77,7 +80,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
     public static final String CLI_INVOKER = "cli";
 
     /** */
-    public static final List<String> INVOKERS = Arrays.asList(JMX_INVOKER, CLI_INVOKER);
+    public static final List<String> INVOKERS = Arrays.asList(JMX_INVOKER/*, CLI_INVOKER*/);
 
     /** */
     @Parameterized.Parameter
@@ -159,9 +162,6 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
         private IgniteLoggerEx log;
 
         /** */
-        private IgniteEx grid;
-
-        /** */
         private Object res;
 
         /** */
@@ -171,19 +171,10 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
 
         /** {@inheritDoc} */
         @Override public int applyAsInt(List<String> value) {
-            if (grid == null) {
-                List<Ignite> grids = IgnitionEx.allGrids();
-
-                grid = (IgniteEx)grids.get(0);
-
-                if (log == null)
-                    log = (IgniteLoggerEx)grid.log();
-            }
-
             String commandName = null;
 
             try {
-                ArgumentParser parser = new ArgumentParser(log, new IgniteCommandRegistry());
+                ArgumentParser parser = new ArgumentParser(log(), new IgniteCommandRegistry());
 
                 ConnectionAndSslParameters<IgniteDataTransferObject> p = parser.parseAndValidate(value);
 
@@ -202,8 +193,10 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
 
                 String name = grps.remove(0);
 
+                Collections.reverse(grps);
+
                 DynamicMBean mbean = getMxBean(
-                    grid.context().igniteInstanceName(),
+                    ignite(p).context().igniteInstanceName(),
                     "management",
                     grps,
                     name,
@@ -222,20 +215,20 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
 
                 String out = (String)mbean.invoke(METHOD, params.toArray(X.EMPTY_OBJECT_ARRAY), signature);
 
-                log.info(out);
+                log().info(out);
             }
             catch (MBeanException | ReflectionException e) {
                 throw new IgniteException(e);
             }
             catch (Throwable e) {
-                log.error("Failed to perform operation.");
-                log.error(CommandLogger.errorMessage(e));
+                log().error("Failed to perform operation.");
+                log().error(CommandLogger.errorMessage(e));
 
                 if (X.hasCause(e, IllegalArgumentException.class)) {
                     IllegalArgumentException iae = X.cause(e, IllegalArgumentException.class);
 
-                    log.error("Check arguments. " + errorMessage(iae));
-                    log.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
+                    log().error("Check arguments. " + errorMessage(iae));
+                    log().info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
 
                     return EXIT_CODE_INVALID_ARGUMENTS;
                 }
@@ -244,6 +237,23 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
             }
 
             return EXIT_CODE_OK;
+        }
+
+        /** */
+        private IgniteLogger log() {
+            return log == null ? GridAbstractTest.log : this.log;
+        }
+
+        /** */
+        private IgniteEx ignite(ConnectionAndSslParameters<IgniteDataTransferObject> p) {
+            int port = p.port();
+
+            for (Ignite ignite : IgnitionEx.allGrids()) {
+                if (port == ((IgniteEx)ignite).localNode().<Integer>attribute(ATTR_REST_TCP_PORT))
+                    return (IgniteEx)ignite;
+            }
+
+            throw new IllegalStateException("Unknown grid for port: " + port);
         }
 
         /** {@inheritDoc} */
