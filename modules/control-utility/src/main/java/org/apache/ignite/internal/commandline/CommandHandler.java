@@ -289,10 +289,20 @@ public class CommandHandler {
 
                         if (args.command() instanceof HelpCommand)
                             printUsage(logger, args.root());
-                        else if (args.command() instanceof BeforeNodeStartCommand)
-                            res = invoker.invokeBeforeNodeStart(logger::info);
-                        else
-                            res = invoker.invoke(logger::info, args.verbose());
+                        else {
+                            try {
+                                if (args.command() instanceof BeforeNodeStartCommand)
+                                    res = invoker.invokeBeforeNodeStart(logger::info);
+                                else
+                                    res = invoker.invoke(logger::info, args.verbose());
+                            }
+                            catch (Throwable e) {
+                                logger.error("Failed to perform operation.");
+                                logger.error(CommandLogger.errorMessage(e));
+
+                                throw e;
+                            }
+                        }
 
                         break;
                     }
