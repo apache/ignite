@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.consistency;
+package org.apache.ignite.internal.management.consistency;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  *
  */
-public class VisorConsistencyTaskResult extends IgniteDataTransferObject {
+public class ConsistencyTaskResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 

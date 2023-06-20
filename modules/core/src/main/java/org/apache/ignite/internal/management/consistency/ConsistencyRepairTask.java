@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.consistency;
+package org.apache.ignite.internal.management.consistency;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -35,7 +35,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheConsistencyViolationEvent;
-import org.apache.ignite.internal.management.consistency.ConsistencyRepairCommandArg;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -54,7 +53,7 @@ import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 /**
  *
  */
-public class VisorConsistencyRepairTask extends AbstractConsistencyTask<ConsistencyRepairCommandArg, String> {
+public class ConsistencyRepairTask extends AbstractConsistencyTask<ConsistencyRepairCommandArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -72,13 +71,13 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<Consiste
 
     /** {@inheritDoc} */
     @Override protected VisorJob<ConsistencyRepairCommandArg, String> job(ConsistencyRepairCommandArg arg) {
-        return new VisorConsistencyRepairJob(arg, debug);
+        return new ConsistencyRepairJob(arg, debug);
     }
 
     /**
      *
      */
-    private static class VisorConsistencyRepairJob extends VisorJob<ConsistencyRepairCommandArg, String> {
+    private static class ConsistencyRepairJob extends VisorJob<ConsistencyRepairCommandArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -93,7 +92,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<Consiste
          * @param arg Arguments.
          * @param debug Debug.
          */
-        protected VisorConsistencyRepairJob(ConsistencyRepairCommandArg arg, boolean debug) {
+        protected ConsistencyRepairJob(ConsistencyRepairCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -171,7 +170,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<Consiste
 
             String statusKey = "[node=" + ignite.localNode() + ", cacheGroup=" + grpCtx.cacheOrGroupName() + ", part=" + p + "]";
 
-            if (VisorConsistencyStatusTask.MAP.putIfAbsent(statusKey, "0/" + part.fullSize()) != null) {
+            if (ConsistencyStatusTask.MAP.putIfAbsent(statusKey, "0/" + part.fullSize()) != null) {
                 throw new IllegalStateException("Consistency check already started " +
                     "[grp=" + grpCtx.cacheOrGroupName() + ", part=" + p + "]");
             }
@@ -215,7 +214,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<Consiste
 
                             batch.keys.clear();
 
-                            VisorConsistencyStatusTask.MAP.put(statusKey, checked + "/" + part.fullSize());
+                            ConsistencyStatusTask.MAP.put(statusKey, checked + "/" + part.fullSize());
                         }
 
                         assert batch.keys.size() < batchSize;
@@ -258,7 +257,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<Consiste
             finally {
                 part.release();
 
-                VisorConsistencyStatusTask.MAP.remove(statusKey);
+                ConsistencyStatusTask.MAP.remove(statusKey);
             }
 
             if (!evts.isEmpty())
