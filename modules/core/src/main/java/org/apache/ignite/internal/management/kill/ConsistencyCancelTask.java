@@ -22,10 +22,10 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.internal.management.consistency.ConsistencyRepairTask;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
-import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.systemview.view.ComputeJobView;
 
@@ -74,7 +74,7 @@ public class ConsistencyCancelTask extends VisorMultiNodeTask<NoArg, Void, Void>
             F.iterator(ignite.context().systemView().view(JOBS_VIEW),
                 ComputeJobView::sessionId,
                 true,
-                job -> job.taskClassName().equals(VisorConsistencyRepairTask.class.getName())
+                job -> job.taskClassName().equals(ConsistencyRepairTask.class.getName())
             ).forEach(sesId -> ignite.context().job().cancelJob(sesId, null, false));
 
             return null;

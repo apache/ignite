@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.consistency;
+package org.apache.ignite.internal.management.consistency;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -26,19 +26,19 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
 /**
  *
  */
-public class VisorConsistencyCountersFinalizationTask extends VisorOneNodeTask<NoArg, String> {
+public class ConsistencyCountersFinalizationTask extends VisorOneNodeTask<NoArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override protected VisorJob<NoArg, String> job(NoArg arg) {
-        return new VisorConsistencyCountersFinalizationJob(arg, debug);
+        return new ConsistencyCountersFinalizationJob(arg, debug);
     }
 
     /**
      *
      */
-    private static class VisorConsistencyCountersFinalizationJob extends VisorJob<NoArg, String> {
+    private static class ConsistencyCountersFinalizationJob extends VisorJob<NoArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -46,7 +46,7 @@ public class VisorConsistencyCountersFinalizationTask extends VisorOneNodeTask<N
          * @param arg Arguments.
          * @param debug Debug.
          */
-        protected VisorConsistencyCountersFinalizationJob(NoArg arg, boolean debug) {
+        protected ConsistencyCountersFinalizationJob(NoArg arg, boolean debug) {
             super(arg, debug);
         }
 

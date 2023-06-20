@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.consistency;
+package org.apache.ignite.internal.management.consistency;
 
 import java.util.List;
 import java.util.Map;
@@ -30,7 +30,7 @@ import org.apache.ignite.resources.LoggerResource;
 /**
  *
  */
-public class VisorConsistencyStatusTask extends AbstractConsistencyTask<NoArg, String> {
+public class ConsistencyStatusTask extends AbstractConsistencyTask<NoArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -42,12 +42,12 @@ public class VisorConsistencyStatusTask extends AbstractConsistencyTask<NoArg, S
 
     /** {@inheritDoc} */
     @Override protected VisorJob<NoArg, String> job(NoArg arg) {
-        return new VisorConsistencyStatusJob(arg, debug);
+        return new ConsistencyStatusJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorConsistencyTaskResult reduce0(List<ComputeJobResult> results) throws IgniteException {
-        VisorConsistencyTaskResult taskRes = super.reduce0(results);
+    @Override protected ConsistencyTaskResult reduce0(List<ComputeJobResult> results) throws IgniteException {
+        ConsistencyTaskResult taskRes = super.reduce0(results);
 
         if (taskRes.message() == null)
             taskRes.message(NOTHING_FOUND);
@@ -58,7 +58,7 @@ public class VisorConsistencyStatusTask extends AbstractConsistencyTask<NoArg, S
     /**
      *
      */
-    private static class VisorConsistencyStatusJob extends VisorJob<NoArg, String> {
+    private static class ConsistencyStatusJob extends VisorJob<NoArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -70,7 +70,7 @@ public class VisorConsistencyStatusTask extends AbstractConsistencyTask<NoArg, S
          * @param arg Arguments.
          * @param debug Debug.
          */
-        protected VisorConsistencyStatusJob(NoArg arg, boolean debug) {
+        protected ConsistencyStatusJob(NoArg arg, boolean debug) {
             super(arg, debug);
         }
 

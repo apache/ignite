@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.consistency;
+package org.apache.ignite.internal.management.consistency;
 
 import java.util.List;
 import org.apache.ignite.IgniteException;
@@ -29,10 +29,10 @@ import org.apache.ignite.internal.visor.VisorMultiNodeTask;
  * @param <A> Task argument type.
  * @param <J> Job result type
  */
-public abstract class AbstractConsistencyTask<A, J> extends VisorMultiNodeTask<A, VisorConsistencyTaskResult, J> {
+public abstract class AbstractConsistencyTask<A, J> extends VisorMultiNodeTask<A, ConsistencyTaskResult, J> {
     /** {@inheritDoc} */
-    @Override protected VisorConsistencyTaskResult reduce0(List<ComputeJobResult> results) throws IgniteException {
-        VisorConsistencyTaskResult taskRes = new VisorConsistencyTaskResult();
+    @Override protected ConsistencyTaskResult reduce0(List<ComputeJobResult> results) throws IgniteException {
+        ConsistencyTaskResult taskRes = new ConsistencyTaskResult();
         StringBuilder sb = new StringBuilder();
 
         for (ComputeJobResult res : results) {
