@@ -19,6 +19,7 @@ package org.apache.ignite.internal.visor.snapshot;
 
 import java.util.Arrays;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.management.kill.SnapshotCancelTask;
 import org.apache.ignite.internal.management.snapshot.SnapshotRestoreCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -83,7 +84,7 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<SnapshotR
     }
 
     /**
-     * @deprecated Use {@link VisorSnapshotCancelTask} instead.
+     * @deprecated Use {@link SnapshotCancelTask} instead.
      */
     @Deprecated
     private static class VisorSnapshotRestoreCancelJob extends VisorSnapshotJob<SnapshotRestoreCommandArg, String> {

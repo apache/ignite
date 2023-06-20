@@ -15,64 +15,57 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.compute;
+package org.apache.ignite.internal.management.kill;
 
 import java.util.List;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.ComputeMXBeanImpl;
-import org.apache.ignite.internal.management.kill.KillComputeCommandArg;
+import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Cancels given tasks sessions on all cluster nodes.
+ * Task to cancel queries on initiator node.
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorComputeCancelSessionTask extends VisorOneNodeTask<KillComputeCommandArg, Void> {
+public class QueryCancelOnInitiatorTask extends VisorOneNodeTask<KillSqlCommandArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorComputeCancelSessionJob job(KillComputeCommandArg arg) {
-        return new VisorComputeCancelSessionJob(arg, debug);
+    @Override protected CancelQueryOnInitiatorJob job(KillSqlCommandArg arg) {
+        return new CancelQueryOnInitiatorJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) {
-        // No-op, just awaiting all jobs done.
+    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) throws IgniteException {
         return null;
     }
 
-    /**
-     * Job that cancel tasks.
-     */
-    private static class VisorComputeCancelSessionJob extends VisorJob<KillComputeCommandArg, Void> {
+    /** Job to cancel query on node. */
+    private static class CancelQueryOnInitiatorJob extends VisorJob<KillSqlCommandArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param arg Map with task sessions IDs to cancel.
-         * @param debug Debug flag.
+         * Create job with specified argument.
+         *
+         * @param arg Job argument.
+         * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        private VisorComputeCancelSessionJob(KillComputeCommandArg arg, boolean debug) {
+        protected CancelQueryOnInitiatorJob(KillSqlCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(KillComputeCommandArg arg) {
-            new ComputeMXBeanImpl(ignite.context()).cancel(arg.sessionId());
+        @Override protected Void run(KillSqlCommandArg arg) throws IgniteException {
+            new QueryMXBeanImpl(ignite.context()).cancelSQL(arg.nodeId(), arg.qryId());
 
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(VisorComputeCancelSessionJob.class, this);
         }
     }
 }

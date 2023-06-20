@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.consistency;
+package org.apache.ignite.internal.management.kill;
 
 import java.util.List;
 import org.apache.ignite.IgniteException;
@@ -25,6 +25,7 @@ import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.systemview.view.ComputeJobView;
 
@@ -33,13 +34,13 @@ import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VI
 /**
  * Cancels given consistency repairs on all cluster nodes.
  */
-public class VisorConsistencyCancelTask extends VisorMultiNodeTask<NoArg, Void, Void> {
+public class ConsistencyCancelTask extends VisorMultiNodeTask<NoArg, Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorConsistencyCancelJob job(NoArg arg) {
-        return new VisorConsistencyCancelJob(arg, debug);
+    @Override protected ConsistencyCancelJob job(NoArg arg) {
+        return new ConsistencyCancelJob(arg, debug);
     }
 
     /** {@inheritDoc} */
@@ -51,7 +52,7 @@ public class VisorConsistencyCancelTask extends VisorMultiNodeTask<NoArg, Void, 
     /**
      * Job that cancels the tasks.
      */
-    private static class VisorConsistencyCancelJob extends VisorJob<NoArg, Void> {
+    private static class ConsistencyCancelJob extends VisorJob<NoArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -64,7 +65,7 @@ public class VisorConsistencyCancelTask extends VisorMultiNodeTask<NoArg, Void, 
         /**
          * Default constructor.
          */
-        protected VisorConsistencyCancelJob(NoArg arg, boolean debug) {
+        protected ConsistencyCancelJob(NoArg arg, boolean debug) {
             super(arg, debug);
         }
 

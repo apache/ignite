@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.query;
+package org.apache.ignite.internal.management.kill;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.QueryMXBeanImpl;
-import org.apache.ignite.internal.management.kill.KillScanCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -30,19 +29,19 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorScanQueryCancelTask extends VisorOneNodeTask<KillScanCommandArg, Void> {
+public class ScanQueryCancelTask extends VisorOneNodeTask<KillScanCommandArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorScanQueryCancelJob job(KillScanCommandArg arg) {
-        return new VisorScanQueryCancelJob(arg, debug);
+    @Override protected ScanQueryCancelJob job(KillScanCommandArg arg) {
+        return new ScanQueryCancelJob(arg, debug);
     }
 
     /**
      * Job to cancel scan queries on node.
      */
-    private static class VisorScanQueryCancelJob extends VisorJob<KillScanCommandArg, Void> {
+    private static class ScanQueryCancelJob extends VisorJob<KillScanCommandArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -52,7 +51,7 @@ public class VisorScanQueryCancelTask extends VisorOneNodeTask<KillScanCommandAr
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorScanQueryCancelJob(KillScanCommandArg arg, boolean debug) {
+        protected ScanQueryCancelJob(KillScanCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 

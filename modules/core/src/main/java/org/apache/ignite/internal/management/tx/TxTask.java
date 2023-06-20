@@ -82,7 +82,7 @@ public class TxTask
 
     /** {@inheritDoc} */
     @Override protected VisorJob<AbstractTxCommandArg, TxTaskResult> job(AbstractTxCommandArg arg) {
-        return new VisorTxJob(arg, debug);
+        return new TxJob(arg, debug);
     }
 
     /** {@inheritDoc} */
@@ -200,7 +200,7 @@ public class TxTask
     /**
      *
      */
-    static class VisorTxJob extends VisorJob<AbstractTxCommandArg, TxTaskResult> {
+    public static class TxJob extends VisorJob<AbstractTxCommandArg, TxTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -220,7 +220,7 @@ public class TxTask
          * @param arg Formal job argument.
          * @param debug Debug flag.
          */
-        VisorTxJob(AbstractTxCommandArg arg, boolean debug) {
+        TxJob(AbstractTxCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -233,7 +233,7 @@ public class TxTask
         }
 
         /** */
-        static TxTaskResult run(IgniteEx ignite, TxCommandArg arg, @Nullable TxInfoCommandArg infoArg) {
+        public static TxTaskResult run(IgniteEx ignite, TxCommandArg arg, @Nullable TxInfoCommandArg infoArg) {
             if (arg == null)
                 return new TxTaskResult(Collections.emptyList());
 
