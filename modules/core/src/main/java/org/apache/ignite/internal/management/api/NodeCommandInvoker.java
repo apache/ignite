@@ -55,7 +55,7 @@ public class NodeCommandInvoker<A extends IgniteDataTransferObject> extends Abst
     /** {@inheritDoc} */
     @Override protected <R> R execute(ComputeCommand<A, R> cmd, A arg, Collection<UUID> nodes) throws GridClientException {
         return ignite
-            .compute(ignite.cluster().forNodeIds(nodes))
+            .compute(ignite.cluster())
             .execute(cmd.taskClass(), new VisorTaskArgument<>(nodes, arg, false));
     }
 

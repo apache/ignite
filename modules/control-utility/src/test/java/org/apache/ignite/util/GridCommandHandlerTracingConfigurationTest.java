@@ -93,15 +93,13 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
     protected IgniteEx ignite;
 
     /** */
-    private static CliFrontend hnd;
+    private CliFrontend hnd;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         ignite = startGrids(2);
-
-        hnd = cmdHndFactory.get();
     }
 
     /** {@inheritDoc} */
@@ -114,6 +112,8 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        hnd = cmdHndFactory.get();
 
         // Cleanup configuration.
         grid(0).tracingConfiguration().resetAll(null);

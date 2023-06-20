@@ -47,9 +47,12 @@ import static javax.management.MBeanOperationInfo.ACTION;
 import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
 
 /** */
-public class CommandMBean<A extends IgniteDataTransferObject> implements DynamicMBean {
+public class CommandMBean<A extends IgniteDataTransferObject, R> implements DynamicMBean {
     /** */
-    public static final String METHOD = "invoke";
+    public static final String INVOKE = "invoke";
+
+    /** */
+    public static final String LAST_RES_METHOD = "lastResult";
 
     /** */
     private final IgniteEx ignite;
@@ -61,7 +64,10 @@ public class CommandMBean<A extends IgniteDataTransferObject> implements Dynamic
     private final Command<A, ?> cmd;
 
     /** */
-    public CommandMBean(IgniteEx ignite, Command<A, ?> cmd) {
+    private R res;
+
+    /** */
+    public CommandMBean(IgniteEx ignite, Command<A, R> cmd) {
         this.ignite = ignite;
         this.cmd = cmd;
         this.log = ignite.log().getLogger(CommandMBean.class.getName() + '#' + cmd.getClass().getSimpleName());
@@ -87,21 +93,26 @@ public class CommandMBean<A extends IgniteDataTransferObject> implements Dynamic
         Object[] params,
         String[] signature
     ) throws MBeanException, ReflectionException {
-        if (!METHOD.equals(actionName))
-            throw new UnsupportedOperationException(actionName);
-
         // Default JMX invoker pass arguments in for params: Object[] = { "invoke", parameter_values_array, types_array}
         // while JConsole pass params values directly in params array.
         // This check supports both way of invocation.
-        if (params.length == 3 && params[0].equals(METHOD) && params[1] instanceof Object[])
-            return invoke(METHOD, (Object[])params[1], (String[])params[2]);
+        if (params.length == 3
+            && (params[0].equals(INVOKE) || params[0].equals(LAST_RES_METHOD))
+            && params[1] instanceof Object[])
+            return invoke((String)params[0], (Object[])params[1], (String[])params[2]);
+
+        if (LAST_RES_METHOD.equals(actionName))
+            return res;
+
+        if (!INVOKE.equals(actionName))
+            throw new UnsupportedOperationException(actionName);
 
         try {
             StringBuilder resStr = new StringBuilder();
 
             Consumer<String> printer = str -> resStr.append(str).append('\n');
 
-            new NodeCommandInvoker<>(
+            res = new NodeCommandInvoker<>(
                 cmd,
                 new ParamsToArgument(params).argument(),
                 ignite
@@ -124,7 +135,7 @@ public class CommandMBean<A extends IgniteDataTransferObject> implements Dynamic
             null,
             null,
             new MBeanOperationInfo[]{
-                new MBeanOperationInfo(METHOD, cmd.description(), argumentsDescription(), String.class.getName(), ACTION)
+                new MBeanOperationInfo(INVOKE, cmd.description(), argumentsDescription(), String.class.getName(), ACTION)
             },
             null
         );

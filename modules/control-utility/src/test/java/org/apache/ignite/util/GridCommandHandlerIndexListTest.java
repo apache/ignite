@@ -18,10 +18,8 @@
 package org.apache.ignite.util;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.function.ToIntFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cluster.ClusterState;
@@ -78,7 +76,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
     @Test
     public void testCacheIndexList() {
         final String idxName = "PERSON_ORGID_ASC_IDX";
-        final int expectedLinesNum = 15;
+        final int expectedLinesNum = 4 + invokerExtraLines();
         final int expectedIndexDescrLinesNum = 2;
 
         injectTestSystemOut();
@@ -89,10 +87,12 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
         String outStr = testOut.toString();
 
+        String typePattern = invoker.equals(CLI_INVOKER) ? "ArrayList" : "LinkedKeySet";
+
         assertTrue(outStr.contains("grpName=" + GROUP_NAME + ", cacheName=" + CACHE_NAME + ", idxName=PERSON_ORGID_ASC_IDX, " +
-            "colsNames=ArrayList [ORGID, _KEY], tblName=PERSON"));
+            "colsNames=" + typePattern + " [ORGID, _KEY], tblName=PERSON"));
         assertTrue(outStr.contains("grpName=" + GROUP_NAME_SECOND + ", cacheName=" + CACHE_NAME_SECOND +
-            ", idxName=PERSON_ORGID_ASC_IDX, colsNames=ArrayList [ORGID, _KEY], tblName=PERSON"));
+            ", idxName=PERSON_ORGID_ASC_IDX, colsNames=" + typePattern + " [ORGID, _KEY], tblName=PERSON"));
 
         final String[] outputLines = outStr.split("\n");
 
@@ -139,8 +139,10 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
             "--cache-name", CACHE_NAME,
             "--index-name", idxName));
 
+        String typePattern = invoker.equals(CLI_INVOKER) ? "ArrayList" : "LinkedKeySet";
+
         assertTrue(testOut.toString().contains("grpName=" + GROUP_NAME + ", cacheName=" + CACHE_NAME +
-            ", idxName=PERSON_ORGID_ASC_IDX, colsNames=ArrayList [ORGID, _KEY], tblName=PERSON"));
+            ", idxName=PERSON_ORGID_ASC_IDX, colsNames=" + typePattern + " [ORGID, _KEY], tblName=PERSON"));
     }
 
     /**
@@ -170,7 +172,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
             String[] lines = str.split("\n");
 
-            assertEquals("Unexpected output size", 11, lines.length);
+            assertEquals("Unexpected output size", invokerExtraLines(), lines.length);
         }
         finally {
             ignite.destroyCache(tmpCacheName);
@@ -276,5 +278,10 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
         int indexesNum = cmdResult.size();
         assertEquals("Unexpected number of indexes: " + indexesNum, indexesNum, expectedResNum);
+    }
+
+    /** */
+    private int invokerExtraLines() {
+        return invoker.equals(CLI_INVOKER) ? 11 : 0;
     }
 }

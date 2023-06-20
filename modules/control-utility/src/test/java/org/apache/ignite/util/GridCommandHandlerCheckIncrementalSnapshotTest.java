@@ -20,7 +20,7 @@ package org.apache.ignite.util;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
-import java.util.function.ToIntFunction;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -29,7 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.management.jmx.JmxCommandRegistryInvokerPluginProvider;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
@@ -79,25 +79,34 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
     private volatile IgniteBiPredicate<Object, DataRecord> skipDataRec;
 
     /** Count of server nodes to start. */
-    @Parameterized.Parameter
+    @Parameterized.Parameter(1)
     public int nodesCnt;
 
     /** Count of primary nodes participated in a transaction. */
-    @Parameterized.Parameter(1)
+    @Parameterized.Parameter(2)
     public int txPrimNodesCnt;
 
     /** Count of primary nodes participated in a transaction. */
-    @Parameterized.Parameter(2)
+    @Parameterized.Parameter(3)
     public int backupsCnt;
 
     /** */
-    @Parameterized.Parameters(name = "nodesCnt={0}, primNodesCnt={1}, backupsCnt={2}")
+    @Parameterized.Parameters(name = "invoker={0},nodesCnt={1},primNodesCnt={2}, backupsCnt={3}")
     public static List<Object[]> params() {
         return F.asList(
             new Object[]{2, 1, 1},
             new Object[]{2, 2, 1},
             new Object[]{3, 1, 1},
-            new Object[]{3, 1, 2});
+            new Object[]{3, 1, 2}
+        ).stream().flatMap(row -> invokers().stream().map(invoker -> {
+            Object[] res = new Object[row.length + 1];
+
+            res[0] = invoker;
+
+            System.arraycopy(row, 0, res, 1, row.length);
+
+            return res;
+        })).collect(Collectors.toList());
     }
 
 
@@ -109,7 +118,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
 
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        cfg.setPluginProviders(new TransactionFilterWALPluginProvider());
+        cfg.setPluginProviders(new TransactionFilterWALPluginProvider(), new JmxCommandRegistryInvokerPluginProvider());
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 

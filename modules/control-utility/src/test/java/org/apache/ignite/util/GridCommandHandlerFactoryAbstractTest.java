@@ -51,7 +51,6 @@ import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.jmx.JmxCommandRegistryInvokerPluginProvider;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.runner.RunWith;
@@ -61,12 +60,14 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_PORT
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.internal.commandline.CommandHandler.setupJavaLogger;
 import static org.apache.ignite.internal.commandline.CommandLogger.errorMessage;
 import static org.apache.ignite.internal.management.api.CommandUtils.commandKey;
 import static org.apache.ignite.internal.management.api.CommandUtils.isBoolean;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
-import static org.apache.ignite.internal.management.jmx.CommandMBean.METHOD;
+import static org.apache.ignite.internal.management.jmx.CommandMBean.INVOKE;
+import static org.apache.ignite.internal.management.jmx.CommandMBean.LAST_RES_METHOD;
 
 /**
  *
@@ -80,7 +81,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
     public static final String CLI_INVOKER = "cli";
 
     /** */
-    public static final List<String> INVOKERS = Arrays.asList(JMX_INVOKER/*, CLI_INVOKER*/);
+    public static final List<String> INVOKERS = Arrays.asList(JMX_INVOKER, CLI_INVOKER);
 
     /** */
     @Parameterized.Parameter
@@ -159,6 +160,12 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
     /** */
     private static class JmxCmdFrontend implements CliFrontend {
         /** */
+        private int port;
+
+        /** */
+        private IgniteEx ignite;
+
+        /** */
         private IgniteLoggerEx log;
 
         /** */
@@ -166,7 +173,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
 
         /** */
         public JmxCmdFrontend(@Nullable IgniteLogger log) {
-            this.log = (IgniteLoggerEx)log;
+            this.log = (IgniteLoggerEx)(log == null ? setupJavaLogger("jmx-invoker", CommandHandler.class) : log);
         }
 
         /** {@inheritDoc} */
@@ -174,7 +181,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
             String commandName = null;
 
             try {
-                ArgumentParser parser = new ArgumentParser(log(), new IgniteCommandRegistry());
+                ArgumentParser parser = new ArgumentParser(log, new IgniteCommandRegistry());
 
                 ConnectionAndSslParameters<IgniteDataTransferObject> p = parser.parseAndValidate(value);
 
@@ -213,22 +220,24 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
 
                 Arrays.fill(signature, String.class.getName());
 
-                String out = (String)mbean.invoke(METHOD, params.toArray(X.EMPTY_OBJECT_ARRAY), signature);
+                String out = (String)mbean.invoke(INVOKE, params.toArray(X.EMPTY_OBJECT_ARRAY), signature);
 
-                log().info(out);
+                log.info(out);
+
+                res = mbean.invoke(LAST_RES_METHOD, X.EMPTY_OBJECT_ARRAY, U.EMPTY_STRS);
             }
             catch (MBeanException | ReflectionException e) {
                 throw new IgniteException(e);
             }
             catch (Throwable e) {
-                log().error("Failed to perform operation.");
-                log().error(CommandLogger.errorMessage(e));
+                log.error("Failed to perform operation.");
+                log.error(CommandLogger.errorMessage(e));
 
                 if (X.hasCause(e, IllegalArgumentException.class)) {
                     IllegalArgumentException iae = X.cause(e, IllegalArgumentException.class);
 
-                    log().error("Check arguments. " + errorMessage(iae));
-                    log().info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
+                    log.error("Check arguments. " + errorMessage(iae));
+                    log.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
 
                     return EXIT_CODE_INVALID_ARGUMENTS;
                 }
@@ -240,17 +249,19 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
         }
 
         /** */
-        private IgniteLogger log() {
-            return log == null ? GridAbstractTest.log : this.log;
-        }
-
-        /** */
         private IgniteEx ignite(ConnectionAndSslParameters<IgniteDataTransferObject> p) {
             int port = p.port();
 
-            for (Ignite ignite : IgnitionEx.allGrids()) {
-                if (port == ((IgniteEx)ignite).localNode().<Integer>attribute(ATTR_REST_TCP_PORT))
-                    return (IgniteEx)ignite;
+            if (port == this.port)
+                return ignite;
+
+            for (Ignite node : IgnitionEx.allGrids()) {
+                if (port == ((IgniteEx)node).localNode().<Integer>attribute(ATTR_REST_TCP_PORT)) {
+                    this.port = port;
+                    ignite = (IgniteEx)node;
+
+                    return ignite;
+                }
             }
 
             throw new IllegalStateException("Unknown grid for port: " + port);

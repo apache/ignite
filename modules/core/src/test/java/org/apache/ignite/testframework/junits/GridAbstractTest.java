@@ -3151,7 +3151,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If failed.
      */
     public static <T> T getMxBean(String igniteInstanceName, String grp, String name, Class<T> clazz) {
-        return getMxBean(igniteInstanceName, grp, name, clazz);
+        return getMxBean(igniteInstanceName, grp, Collections.emptyList(), name, clazz);
     }
 
     /**

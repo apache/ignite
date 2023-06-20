@@ -2457,15 +2457,17 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         ignite.cluster().state(ACTIVE);
 
-        assertEquals(
-            EXIT_CODE_OK,
-            execute("--diagnostic")
-        );
+        if (invoker.equals(CLI_INVOKER)) {
+            assertEquals(
+                EXIT_CODE_OK,
+                execute("--diagnostic")
+            );
 
-        assertEquals(
-            EXIT_CODE_OK,
-            execute("--diagnostic", "help")
-        );
+            assertEquals(
+                EXIT_CODE_OK,
+                execute("--diagnostic", "help")
+            );
+        }
 
         // Dump locks only on connected node to default path.
         assertEquals(
@@ -3316,16 +3318,20 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Cache exists.
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--snapshot", "restore", snpName, "--start", "--sync"));
-        assertContains(log, testOut.toString(), "Command option '--start' is redundant and must be avoided.");
-        assertContains(log, testOut.toString(), "Unable to restore cache group - directory is not empty. " +
-            "Cache group should be destroyed manually before perform restore operation [group=" + cacheName);
+        if (invoker.equals(CLI_INVOKER)) {
+            assertContains(log, testOut.toString(), "Command option '--start' is redundant and must be avoided.");
+            assertContains(log, testOut.toString(), "Unable to restore cache group - directory is not empty. " +
+                "Cache group should be destroyed manually before perform restore operation [group=" + cacheName);
+        }
 
         ig.cache(cacheName).destroy();
         awaitPartitionMapExchange();
 
         assertEquals(EXIT_CODE_OK, execute("--snapshot", "restore", snpName, "--sync"));
-        assertNotContains(log, testOut.toString(), "Command option '--start' is redundant and must be avoided.");
-        assertContains(log, testOut.toString(), "Snapshot cache group restore operation completed successfully");
+        if (invoker.equals(CLI_INVOKER)) {
+            assertNotContains(log, testOut.toString(), "Command option '--start' is redundant and must be avoided.");
+            assertContains(log, testOut.toString(), "Snapshot cache group restore operation completed successfully");
+        }
 
         IgniteCache<Object, Object> cache = ig.cache(cacheName);
 
@@ -3442,9 +3448,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             else
                 assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName));
 
-            String out = testOut.toString();
-            assertContains(log, out, "Warning: command will restore ALL USER-CREATED CACHE GROUPS from the snapshot");
-            assertContains(log, out, "Snapshot cache group restore operation started [name=" + snpName);
+            if (invoker.equals(CLI_INVOKER)) {
+                String out = testOut.toString();
+                assertContains(log, out, "Warning: command will restore ALL USER-CREATED CACHE GROUPS from the snapshot");
+                assertContains(log, out, "Snapshot cache group restore operation started [name=" + snpName);
+            }
 
             waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
             waitForCondition(() -> ig.cache(cacheName2) != null, getTestTimeout());
@@ -3891,6 +3899,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testFailStopWarmUp() throws Exception {
+        Assume.assumeTrue(invoker.equalsIgnoreCase(CLI_INVOKER));
+
         startGrid(0);
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--warm-up", "--stop"));

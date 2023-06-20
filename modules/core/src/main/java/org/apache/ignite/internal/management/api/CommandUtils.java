@@ -28,6 +28,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -693,6 +694,9 @@ public class CommandUtils {
                 throw new IllegalArgumentException("Argument " + name + " required.");
             }
 
+            if (Objects.equals(val, get(fld)))
+                return;
+
             if (grpdFld) {
                 if (grpFldExists && (argGrp != null && argGrp.onlyOneOf())) {
                     throw new IllegalArgumentException(
@@ -703,6 +707,27 @@ public class CommandUtils {
                 grpFldExists = true;
             }
 
+            set(fld, val);
+        }
+
+        /** */
+        private Object get(Field fld) {
+            try {
+                return res.getClass().getMethod(fld.getName()).invoke(res);
+            }
+            catch (NoSuchMethodException | IllegalAccessException e) {
+                throw new IgniteException(e);
+            }
+            catch (InvocationTargetException e) {
+                if (e.getTargetException() != null && e.getTargetException() instanceof RuntimeException)
+                    throw (RuntimeException)e.getTargetException();
+
+                throw new IgniteException(e);
+            }
+        }
+
+        /** */
+        private void set(Field fld, Object val) {
             try {
                 res.getClass().getMethod(fld.getName(), fld.getType()).invoke(res, val);
             }
@@ -712,6 +737,8 @@ public class CommandUtils {
             catch (InvocationTargetException e) {
                 if (e.getTargetException() != null && e.getTargetException() instanceof RuntimeException)
                     throw (RuntimeException)e.getTargetException();
+
+                throw new IgniteException(e);
             }
         }
     }
