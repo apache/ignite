@@ -46,7 +46,7 @@ public class ReencryptionRateTask extends VisorMultiNodeTask<
     /** {@inheritDoc} */
     @Override protected VisorJob<EncryptionReencryptionRateLimitCommandArg, ReencryptionRateJobResult> job(
         EncryptionReencryptionRateLimitCommandArg arg) {
-        return new VisorReencryptionRateJob(arg, debug);
+        return new ReencryptionRateJob(arg, debug);
     }
 
     /** {@inheritDoc} */
@@ -72,7 +72,7 @@ public class ReencryptionRateTask extends VisorMultiNodeTask<
     }
 
     /** The job for view/change cache group re-encryption rate limit. */
-    private static class VisorReencryptionRateJob
+    private static class ReencryptionRateJob
         extends VisorJob<EncryptionReencryptionRateLimitCommandArg, ReencryptionRateJobResult> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
@@ -81,7 +81,7 @@ public class ReencryptionRateTask extends VisorMultiNodeTask<
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorReencryptionRateJob(EncryptionReencryptionRateLimitCommandArg arg, boolean debug) {
+        protected ReencryptionRateJob(EncryptionReencryptionRateLimitCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
