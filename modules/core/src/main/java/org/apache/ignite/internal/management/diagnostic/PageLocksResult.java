@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.diagnostic;
+package org.apache.ignite.internal.management.diagnostic;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  *
  */
-public class VisorPageLocksResult extends IgniteDataTransferObject {
+public class PageLocksResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -36,14 +36,14 @@ public class VisorPageLocksResult extends IgniteDataTransferObject {
     /**
      *
      */
-    public VisorPageLocksResult() {
+    public PageLocksResult() {
         //No-op.
     }
 
     /**
      * @param payload Result payload as string.
      */
-    public VisorPageLocksResult(String payload) {
+    public PageLocksResult(String payload) {
         this.payload = payload;
     }
 

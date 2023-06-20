@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.meta.tasks;
+package org.apache.ignite.internal.management.meta;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Collection;
+import java.util.Collections;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -29,36 +31,30 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Represents information about cluster metadata.
  */
 @GridInternal
-public class MetadataMarshalled extends IgniteDataTransferObject {
+public class MetadataListResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Marshaled metadata. */
-    private byte[] metaMarshalled;
-
-    /** Metadata. */
-    private BinaryMetadata meta;
+    /** Cluster metadata. */
+    private Collection<BinaryMetadata> meta = Collections.emptyList();
 
     /**
      * Constructor for optimized marshaller.
      */
-    public MetadataMarshalled() {
+    public MetadataListResult() {
         // No-op.
     }
 
     /**
-     * @param metaMarshalled Marshaled metadata.
      * @param meta Meta.
      */
-    public MetadataMarshalled(byte[] metaMarshalled, BinaryMetadata meta) {
-        this.metaMarshalled = metaMarshalled;
+    public MetadataListResult(Collection<BinaryMetadata> meta) {
         this.meta = meta;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeByteArray(out, metaMarshalled);
-        out.writeObject(meta);
+        U.writeCollection(out, meta);
     }
 
     /** {@inheritDoc} */
@@ -66,21 +62,13 @@ public class MetadataMarshalled extends IgniteDataTransferObject {
         byte protoVer,
         ObjectInput in
     ) throws IOException, ClassNotFoundException {
-        metaMarshalled = U.readByteArray(in);
-        meta = (BinaryMetadata)in.readObject();
+        meta = U.readCollection(in);
     }
 
     /**
      * @return Cluster binary metadata.
      */
-    public BinaryMetadata metadata() {
+    public Collection<BinaryMetadata> metadata() {
         return meta;
-    }
-
-    /**
-     * @return Marshalled metadata.
-     */
-    public byte[] metadataMarshalled() {
-        return metaMarshalled;
     }
 }

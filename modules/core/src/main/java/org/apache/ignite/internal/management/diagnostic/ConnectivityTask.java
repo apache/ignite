@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.diagnostic.availability;
+package org.apache.ignite.internal.management.diagnostic;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.management.diagnostic.DiagnosticConnectivityCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -44,27 +43,27 @@ import org.jetbrains.annotations.Nullable;
  * Visor task that checks connectivity status between nodes.
  */
 @GridInternal
-public class VisorConnectivityTask
-    extends VisorMultiNodeTask<DiagnosticConnectivityCommandArg, Map<ClusterNode, VisorConnectivityResult>, VisorConnectivityResult> {
+public class ConnectivityTask
+    extends VisorMultiNodeTask<DiagnosticConnectivityCommandArg, Map<ClusterNode, ConnectivityResult>, ConnectivityResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<DiagnosticConnectivityCommandArg, VisorConnectivityResult> job(DiagnosticConnectivityCommandArg arg) {
-        return new VisorConnectivityJob(arg, debug);
+    @Override protected VisorJob<DiagnosticConnectivityCommandArg, ConnectivityResult> job(DiagnosticConnectivityCommandArg arg) {
+        return new ConnectivityJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Map<ClusterNode, VisorConnectivityResult> reduce0(
+    @Nullable @Override protected Map<ClusterNode, ConnectivityResult> reduce0(
         List<ComputeJobResult> results) throws IgniteException {
-        Map<ClusterNode, VisorConnectivityResult> map = new HashMap<>();
+        Map<ClusterNode, ConnectivityResult> map = new HashMap<>();
 
         results.forEach(result -> {
             if (result.getException() != null)
                 return;
 
             final ClusterNode node = result.getNode();
-            final VisorConnectivityResult data = result.getData();
+            final ConnectivityResult data = result.getData();
             map.put(node, data);
         });
 
@@ -80,7 +79,7 @@ public class VisorConnectivityTask
      * This job is sent to every node in cluster. It then use compute on every other node just to check
      * that there is a connection between nodes.
      */
-    private static class VisorConnectivityJob extends VisorJob<DiagnosticConnectivityCommandArg, VisorConnectivityResult> {
+    private static class ConnectivityJob extends VisorJob<DiagnosticConnectivityCommandArg, ConnectivityResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -88,12 +87,12 @@ public class VisorConnectivityTask
          * @param arg   Formal job argument.
          * @param debug Debug flag.
          */
-        private VisorConnectivityJob(DiagnosticConnectivityCommandArg arg, boolean debug) {
+        private ConnectivityJob(DiagnosticConnectivityCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorConnectivityResult run(DiagnosticConnectivityCommandArg arg) {
+        @Override protected ConnectivityResult run(DiagnosticConnectivityCommandArg arg) {
             List<UUID> ids = ignite.cluster().nodes().stream()
                 .map(ClusterNode::id)
                 .filter(uuid -> !Objects.equals(ignite.localNode().id(), uuid))
@@ -116,12 +115,12 @@ public class VisorConnectivityTask
                 }
             }
 
-            return new VisorConnectivityResult(statuses);
+            return new ConnectivityResult(statuses);
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorConnectivityJob.class, this);
+            return S.toString(ConnectivityJob.class, this);
         }
     }
 

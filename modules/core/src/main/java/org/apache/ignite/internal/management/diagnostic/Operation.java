@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.diagnostic;
+package org.apache.ignite.internal.management.diagnostic;
 
 /**
- * Operation type for {@link VisorPageLocksTask}
+ * Operation type for {@link PageLocksTask}
  */
 public enum Operation {
     /** Dump page locks to file operation. */

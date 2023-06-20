@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.diagnostic;
+package org.apache.ignite.internal.management.diagnostic;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
-import org.apache.ignite.internal.management.diagnostic.DiagnosticPagelocksCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToStringDumpHelper;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -38,23 +37,23 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 @GridInternal
-public class VisorPageLocksTask
-    extends VisorMultiNodeTask<DiagnosticPagelocksCommandArg, Map<ClusterNode, VisorPageLocksResult>, VisorPageLocksResult> {
+public class PageLocksTask
+    extends VisorMultiNodeTask<DiagnosticPagelocksCommandArg, Map<ClusterNode, PageLocksResult>, PageLocksResult> {
     /**
      *
      */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<DiagnosticPagelocksCommandArg, VisorPageLocksResult> job(DiagnosticPagelocksCommandArg arg) {
-        return new VisorPageLocksTrackerJob(arg, debug);
+    @Override protected VisorJob<DiagnosticPagelocksCommandArg, PageLocksResult> job(DiagnosticPagelocksCommandArg arg) {
+        return new PageLocksTrackerJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Map<ClusterNode, VisorPageLocksResult> reduce0(
+    @Nullable @Override protected Map<ClusterNode, PageLocksResult> reduce0(
         List<ComputeJobResult> results
     ) throws IgniteException {
-        Map<ClusterNode, VisorPageLocksResult> mapRes = new TreeMap<>(NodeOrderComparator.getInstance());
+        Map<ClusterNode, PageLocksResult> mapRes = new TreeMap<>(NodeOrderComparator.getInstance());
 
         results.forEach(j -> {
             if (j.getException() == null)
@@ -65,7 +64,7 @@ public class VisorPageLocksTask
 
                 j.getException().printStackTrace(pw);
 
-                mapRes.put(j.getNode(), new VisorPageLocksResult(sw.toString()));
+                mapRes.put(j.getNode(), new PageLocksResult(sw.toString()));
             }
         });
 
@@ -75,7 +74,7 @@ public class VisorPageLocksTask
     /**
      *
      */
-    private static class VisorPageLocksTrackerJob extends VisorJob<DiagnosticPagelocksCommandArg, VisorPageLocksResult> {
+    private static class PageLocksTrackerJob extends VisorJob<DiagnosticPagelocksCommandArg, PageLocksResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -83,12 +82,12 @@ public class VisorPageLocksTask
          * @param arg Formal job argument.
          * @param debug Debug flag.
          */
-        private VisorPageLocksTrackerJob(DiagnosticPagelocksCommandArg arg, boolean debug) {
+        private PageLocksTrackerJob(DiagnosticPagelocksCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorPageLocksResult run(DiagnosticPagelocksCommandArg arg) {
+        @Override protected PageLocksResult run(DiagnosticPagelocksCommandArg arg) {
             PageLockTrackerManager lockTrackerMgr = ignite.context().cache().context().diagnostic().pageLockTracker();
 
             String result;
@@ -113,12 +112,12 @@ public class VisorPageLocksTask
                     result = "Unsupported operation: " + arg.operation();
             }
 
-            return new VisorPageLocksResult(result);
+            return new PageLocksResult(result);
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorPageLocksTrackerJob.class, this);
+            return S.toString(PageLocksTrackerJob.class, this);
         }
     }
 }

@@ -15,60 +15,55 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.meta.tasks;
+package org.apache.ignite.internal.management.diagnostic;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Collection;
-import java.util.Collections;
-import org.apache.ignite.internal.binary.BinaryMetadata;
+import java.util.Map;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Represents information about cluster metadata.
+ * Connectivity task result
  */
-@GridInternal
-public class MetadataListResult extends IgniteDataTransferObject {
+public class ConnectivityResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Cluster metadata. */
-    private Collection<BinaryMetadata> meta = Collections.emptyList();
+    /** */
+    @Nullable private Map<ClusterNode, Boolean> nodeStatuses;
 
     /**
-     * Constructor for optimized marshaller.
+     * Default constructor.
      */
-    public MetadataListResult() {
-        // No-op.
+    public ConnectivityResult() {
     }
 
     /**
-     * @param meta Meta.
+     * @param nodeStatuses Node statuses.
      */
-    public MetadataListResult(Collection<BinaryMetadata> meta) {
-        this.meta = meta;
+    public ConnectivityResult(@Nullable Map<ClusterNode, Boolean> nodeStatuses) {
+        this.nodeStatuses = nodeStatuses;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, meta);
+        U.writeMap(out, nodeStatuses);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(
-        byte protoVer,
-        ObjectInput in
-    ) throws IOException, ClassNotFoundException {
-        meta = U.readCollection(in);
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        nodeStatuses = U.readMap(in);
     }
 
     /**
-     * @return Cluster binary metadata.
+     * Get connectivity statuses for a node
      */
-    public Collection<BinaryMetadata> metadata() {
-        return meta;
+    public @Nullable Map<ClusterNode, Boolean> getNodeIds() {
+        return nodeStatuses;
     }
+
 }
