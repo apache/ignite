@@ -51,14 +51,29 @@ public class StateCommand implements LocalCommand<NoArg, GridTuple3<UUID, String
         NoArg arg,
         Consumer<String> printer
     ) throws GridClientException {
-        GridClientClusterState state = cli.state();
+        ClusterState state;
+        UUID id;
+        String tag;
 
-        printer.accept("Cluster  ID: " + state.id());
-        printer.accept("Cluster tag: " + state.tag());
+        if (cli != null) {
+            GridClientClusterState state0 = cli.state();
+
+            state = state0.state();
+            id = state0.id();
+            tag = state0.tag();
+        }
+        else {
+            state = ignite.cluster().state();
+            id = ignite.cluster().id();
+            tag = ignite.cluster().tag();
+        }
+
+        printer.accept("Cluster  ID: " + id);
+        printer.accept("Cluster tag: " + tag);
 
         printer.accept(DELIM);
 
-        switch (state.state()) {
+        switch (state) {
             case ACTIVE:
                 printer.accept("Cluster is active");
 
@@ -75,9 +90,9 @@ public class StateCommand implements LocalCommand<NoArg, GridTuple3<UUID, String
                 break;
 
             default:
-                throw new IllegalStateException("Unknown state: " + state.state());
+                throw new IllegalStateException("Unknown state: " + state);
         }
 
-        return F.t(state.id(), state.tag(), state.state());
+        return F.t(id, tag, state);
     }
 }

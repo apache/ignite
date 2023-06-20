@@ -265,7 +265,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(ACTIVE, ignite.cluster().state());
 
-        assertContains(log, testOut.toString(), "Command deprecated. Use --set-state instead.");
+        if (invoker.equals(CLI_INVOKER))
+            assertContains(log, testOut.toString(), "Command deprecated. Use --set-state instead.");
     }
 
     /**
@@ -868,11 +869,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--deactivate"));
         assertFalse(igniteEx.cluster().state().active());
 
-        assertContains(
-            log,
-            testOut.toString(),
-            "Warning: the command will deactivate a cluster \"" + clusterName + "\"."
-        );
+        if (invoker.equals(CLI_INVOKER)) {
+            assertContains(
+                log,
+                testOut.toString(),
+                "Warning: the command will deactivate a cluster \"" + clusterName + "\"."
+            );
+        }
     }
 
     /**

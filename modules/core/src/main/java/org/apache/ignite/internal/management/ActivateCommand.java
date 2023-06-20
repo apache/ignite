@@ -48,9 +48,13 @@ public class ActivateCommand implements LocalCommand<NoArg, NoArg> {
         NoArg arg,
         Consumer<String> printer
     ) throws GridClientException {
-        GridClientClusterState state = cli.state();
+        if (cli != null) {
+            GridClientClusterState state = cli.state();
 
-        state.state(ACTIVE, false);
+            state.state(ACTIVE, false);
+        }
+        else
+            ignite.cluster().state(ACTIVE);
 
         printer.accept("Cluster activated");
 

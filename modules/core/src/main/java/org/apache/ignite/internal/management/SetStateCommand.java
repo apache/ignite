@@ -44,7 +44,7 @@ public class SetStateCommand implements LocalCommand<SetStateCommandArg, Boolean
         SetStateCommandArg arg,
         Consumer<String> printer
     ) throws GridClientException {
-        ClusterState clusterState = cli.state().state();
+        ClusterState clusterState = cli != null ? cli.state().state() : ignite.cluster().state();
 
         if (clusterState == arg.state()) {
             printer.accept("Cluster state is already " + arg.state() + '.');
@@ -52,7 +52,10 @@ public class SetStateCommand implements LocalCommand<SetStateCommandArg, Boolean
             return false;
         }
 
-        cli.state().state(arg.state(), arg.force());
+        if (cli != null)
+            cli.state().state(arg.state(), arg.force());
+        else
+            ignite.cluster().state(arg.state());
 
         printer.accept("Cluster state changed to " + arg.state() + '.');
 

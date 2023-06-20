@@ -54,9 +54,13 @@ public class DeactivateCommand implements LocalCommand<DeactivateCommandArg, NoA
         DeactivateCommandArg arg,
         Consumer<String> printer
     ) throws GridClientException {
-        GridClientClusterState state = cli.state();
+        if (cli != null) {
+            GridClientClusterState state = cli.state();
 
-        state.state(INACTIVE, arg.force());
+            state.state(INACTIVE, arg.force());
+        }
+        else
+            ignite.cluster().state(INACTIVE);
 
         printer.accept("Cluster deactivated");
 
