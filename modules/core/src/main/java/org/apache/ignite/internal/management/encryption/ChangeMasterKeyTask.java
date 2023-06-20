@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.encryption;
+package org.apache.ignite.internal.management.encryption;
 
 import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.management.encryption.EncryptionChangeMasterKeyCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -30,17 +29,17 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * @see IgniteEncryption#changeMasterKey(String)
  */
 @GridInternal
-public class VisorChangeMasterKeyTask extends VisorOneNodeTask<EncryptionChangeMasterKeyCommandArg, String> {
+public class ChangeMasterKeyTask extends VisorOneNodeTask<EncryptionChangeMasterKeyCommandArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override protected VisorJob<EncryptionChangeMasterKeyCommandArg, String> job(EncryptionChangeMasterKeyCommandArg arg) {
-        return new VisorChangeMasterKeyJob(arg, debug);
+        return new ChangeMasterKeyJob(arg, debug);
     }
 
     /** The job for changing the master key. */
-    private static class VisorChangeMasterKeyJob extends VisorJob<EncryptionChangeMasterKeyCommandArg, String> {
+    private static class ChangeMasterKeyJob extends VisorJob<EncryptionChangeMasterKeyCommandArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -50,7 +49,7 @@ public class VisorChangeMasterKeyTask extends VisorOneNodeTask<EncryptionChangeM
          * @param masterKeyName Master key name.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorChangeMasterKeyJob(EncryptionChangeMasterKeyCommandArg masterKeyName, boolean debug) {
+        protected ChangeMasterKeyJob(EncryptionChangeMasterKeyCommandArg masterKeyName, boolean debug) {
             super(masterKeyName, debug);
         }
 

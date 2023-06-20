@@ -15,32 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.encryption;
+package org.apache.ignite.internal.management.encryption;
 
-import java.util.Collection;
-import java.util.Collections;
-import org.apache.ignite.IgniteEncryption;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.management.encryption.EncryptionCacheGroupArg;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * The task for changing the encryption key of the cache group.
- *
- * @see IgniteEncryption#changeCacheGroupKey(Collection)
+ * Resume re-encryption of the cache group.
  */
-public class VisorChangeCacheGroupKeyTask extends VisorOneNodeTask<EncryptionCacheGroupArg, Void> {
+@GridInternal
+public class ReencryptionResumeTask extends CacheGroupEncryptionTask<Boolean> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<EncryptionCacheGroupArg, Void> job(EncryptionCacheGroupArg arg) {
-        return new VisorChangeCacheGroupKeyJob(arg, debug);
+    @Override protected VisorJob<EncryptionCacheGroupArg, SingleFieldDto<Boolean>> job(
+        EncryptionCacheGroupArg arg) {
+        return new ReencryptionResumeJob(arg, debug);
     }
 
-    /** The job for changing the encryption key of the cache group. */
-    private static class VisorChangeCacheGroupKeyJob extends VisorJob<EncryptionCacheGroupArg, Void> {
+    /** The job to resume re-encryption of the cache group. */
+    private static class ReencryptionResumeJob extends ReencryptionBaseJob<Boolean> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -48,15 +46,14 @@ public class VisorChangeCacheGroupKeyTask extends VisorOneNodeTask<EncryptionCac
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorChangeCacheGroupKeyJob(EncryptionCacheGroupArg arg, boolean debug) {
+        protected ReencryptionResumeJob(@Nullable EncryptionCacheGroupArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(EncryptionCacheGroupArg taskArg) throws IgniteException {
-            ignite.encryption().changeCacheGroupKey(Collections.singleton(taskArg.cacheGroupName())).get();
-
-            return null;
+        @Override protected SingleFieldDto<Boolean> run0(CacheGroupContext grp) throws IgniteCheckedException {
+            return new ReencryptionSuspendTask.ReencryptionSuspendResumeJobResult().value(
+                ignite.context().encryption().resumeReencryption(grp.groupId()));
         }
     }
 }

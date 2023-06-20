@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.encryption;
+package org.apache.ignite.internal.management.encryption;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -35,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * @param <T> Job result type.
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-public class VisorCacheGroupEncryptionTaskResult<T> extends IgniteDataTransferObject {
+public class CacheGroupEncryptionTaskResult<T> extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -51,13 +51,13 @@ public class VisorCacheGroupEncryptionTaskResult<T> extends IgniteDataTransferOb
      * @param results Per node job result.
      * @param exceptions Per node execution problems.
      */
-    public VisorCacheGroupEncryptionTaskResult(Map<UUID, T> results, Map<UUID, IgniteException> exceptions) {
+    public CacheGroupEncryptionTaskResult(Map<UUID, T> results, Map<UUID, IgniteException> exceptions) {
         this.results = results;
         this.exceptions = exceptions;
     }
 
     /** */
-    public VisorCacheGroupEncryptionTaskResult() {
+    public CacheGroupEncryptionTaskResult() {
         // No-op.
     }
 
@@ -85,6 +85,6 @@ public class VisorCacheGroupEncryptionTaskResult<T> extends IgniteDataTransferOb
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorCacheGroupEncryptionTaskResult.class, this);
+        return S.toString(CacheGroupEncryptionTaskResult.class, this);
     }
 }
