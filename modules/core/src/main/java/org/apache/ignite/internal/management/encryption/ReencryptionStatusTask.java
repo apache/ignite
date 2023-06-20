@@ -15,34 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.encryption;
+package org.apache.ignite.internal.management.encryption;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.management.encryption.EncryptionCacheGroupArg;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Suspend re-encryption of the cache group.
+ * Get re-encryption status of the cache group.
  */
 @GridInternal
-public class VisorReencryptionSuspendTask extends VisorCacheGroupEncryptionTask<Boolean> {
+public class ReencryptionStatusTask extends CacheGroupEncryptionTask<Long> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<EncryptionCacheGroupArg, VisorSingleFieldDto<Boolean>> job(
+    @Override protected VisorJob<EncryptionCacheGroupArg, SingleFieldDto<Long>> job(
         EncryptionCacheGroupArg arg) {
-        return new VisorReencryptionSuspendJob(arg, debug);
+        return new ReencryptionStatusJob(arg, debug);
     }
 
-    /** The job to suspend re-encryption of the cache group. */
-    private static class VisorReencryptionSuspendJob extends VisorReencryptionBaseJob<Boolean> {
+    /** The job to get re-encryption status of the cache group. */
+    private static class ReencryptionStatusJob extends ReencryptionBaseJob<Long> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -50,35 +48,41 @@ public class VisorReencryptionSuspendTask extends VisorCacheGroupEncryptionTask<
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorReencryptionSuspendJob(@Nullable EncryptionCacheGroupArg arg, boolean debug) {
+        protected ReencryptionStatusJob(@Nullable EncryptionCacheGroupArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorSingleFieldDto<Boolean> run0(CacheGroupContext grp) throws IgniteCheckedException {
-            return new VisorReencryptionSuspendResumeJobResult().value(
-                ignite.context().encryption().suspendReencryption(grp.groupId()));
+        @Override protected SingleFieldDto<Long> run0(CacheGroupContext grp) {
+            long res;
+
+            if (!ignite.context().encryption().reencryptionInProgress(grp.groupId()))
+                res = -1;
+            else
+                res = ignite.context().encryption().getBytesLeftForReencryption(grp.groupId());
+
+            return new ReencryptionStatusResult().value(res);
         }
     }
 
     /** */
-    protected static class VisorReencryptionSuspendResumeJobResult extends VisorSingleFieldDto<Boolean> {
+    protected static class ReencryptionStatusResult extends SingleFieldDto<Long> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /** */
-        public VisorReencryptionSuspendResumeJobResult() {
+        public ReencryptionStatusResult() {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-            out.writeBoolean(value());
+            out.writeLong(value());
         }
 
         /** {@inheritDoc} */
         @Override protected void readExternalData(byte ver, ObjectInput in) throws IOException, ClassNotFoundException {
-            value(in.readBoolean());
+            value(in.readLong());
         }
     }
 }

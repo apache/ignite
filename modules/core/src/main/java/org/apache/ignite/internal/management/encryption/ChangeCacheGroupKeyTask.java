@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.encryption;
+package org.apache.ignite.internal.management.encryption;
 
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.management.encryption.EncryptionCacheGroupArg;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
@@ -30,17 +29,17 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  *
  * @see IgniteEncryption#changeCacheGroupKey(Collection)
  */
-public class VisorChangeCacheGroupKeyTask extends VisorOneNodeTask<EncryptionCacheGroupArg, Void> {
+public class ChangeCacheGroupKeyTask extends VisorOneNodeTask<EncryptionCacheGroupArg, Void> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override protected VisorJob<EncryptionCacheGroupArg, Void> job(EncryptionCacheGroupArg arg) {
-        return new VisorChangeCacheGroupKeyJob(arg, debug);
+        return new ChangeCacheGroupKeyJob(arg, debug);
     }
 
     /** The job for changing the encryption key of the cache group. */
-    private static class VisorChangeCacheGroupKeyJob extends VisorJob<EncryptionCacheGroupArg, Void> {
+    private static class ChangeCacheGroupKeyJob extends VisorJob<EncryptionCacheGroupArg, Void> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -48,7 +47,7 @@ public class VisorChangeCacheGroupKeyTask extends VisorOneNodeTask<EncryptionCac
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorChangeCacheGroupKeyJob(EncryptionCacheGroupArg arg, boolean debug) {
+        protected ChangeCacheGroupKeyJob(EncryptionCacheGroupArg arg, boolean debug) {
             super(arg, debug);
         }
 

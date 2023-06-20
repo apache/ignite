@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.encryption;
+package org.apache.ignite.internal.management.encryption;
 
 import java.util.HashMap;
 import java.util.List;
@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.encryption.EncryptionCacheGroupArg;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -38,10 +37,10 @@ import org.jetbrains.annotations.Nullable;
  *
  * @param <T> The type of the task result.
  */
-public abstract class VisorCacheGroupEncryptionTask<T> extends VisorMultiNodeTask<EncryptionCacheGroupArg,
-    VisorCacheGroupEncryptionTaskResult<T>, VisorCacheGroupEncryptionTask.VisorSingleFieldDto<T>> {
+public abstract class CacheGroupEncryptionTask<T> extends VisorMultiNodeTask<EncryptionCacheGroupArg,
+    CacheGroupEncryptionTaskResult<T>, CacheGroupEncryptionTask.SingleFieldDto<T>> {
     /** {@inheritDoc} */
-    @Nullable @Override protected VisorCacheGroupEncryptionTaskResult<T> reduce0(List<ComputeJobResult> results) {
+    @Nullable @Override protected CacheGroupEncryptionTaskResult<T> reduce0(List<ComputeJobResult> results) {
         Map<UUID, T> jobResults = new HashMap<>();
         Map<UUID, IgniteException> exceptions = new HashMap<>();
 
@@ -54,16 +53,16 @@ public abstract class VisorCacheGroupEncryptionTask<T> extends VisorMultiNodeTas
                 continue;
             }
 
-            VisorSingleFieldDto<T> dtoRes = res.getData();
+            SingleFieldDto<T> dtoRes = res.getData();
 
             jobResults.put(nodeId, dtoRes.value());
         }
 
-        return new VisorCacheGroupEncryptionTaskResult<>(jobResults, exceptions);
+        return new CacheGroupEncryptionTaskResult<>(jobResults, exceptions);
     }
 
     /** */
-    public abstract static class VisorSingleFieldDto<T> extends IgniteDataTransferObject {
+    public abstract static class SingleFieldDto<T> extends IgniteDataTransferObject {
         /** Object value. */
         private T val;
 
@@ -78,7 +77,7 @@ public abstract class VisorCacheGroupEncryptionTask<T> extends VisorMultiNodeTas
          * @param val Data object.
          * @return {@code this} for chaining.
          */
-        protected VisorSingleFieldDto<T> value(T val) {
+        protected SingleFieldDto<T> value(T val) {
             this.val = val;
 
             return this;
@@ -88,18 +87,18 @@ public abstract class VisorCacheGroupEncryptionTask<T> extends VisorMultiNodeTas
     /**
      * @param <T> Type of job result.
      */
-    protected abstract static class VisorReencryptionBaseJob<T>
-        extends VisorJob<EncryptionCacheGroupArg, VisorSingleFieldDto<T>> {
+    protected abstract static class ReencryptionBaseJob<T>
+        extends VisorJob<EncryptionCacheGroupArg, SingleFieldDto<T>> {
         /**
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorReencryptionBaseJob(@Nullable EncryptionCacheGroupArg arg, boolean debug) {
+        protected ReencryptionBaseJob(@Nullable EncryptionCacheGroupArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorSingleFieldDto<T> run(EncryptionCacheGroupArg arg) throws IgniteException {
+        @Override protected SingleFieldDto<T> run(EncryptionCacheGroupArg arg) throws IgniteException {
             try {
                 String grpName = arg.cacheGroupName();
                 CacheGroupContext grp = ignite.context().cache().cacheGroup(CU.cacheId(grpName));
@@ -132,6 +131,6 @@ public abstract class VisorCacheGroupEncryptionTask<T> extends VisorMultiNodeTas
          * @return Result.
          * @throws IgniteCheckedException In case of error.
          */
-        protected abstract VisorSingleFieldDto<T> run0(CacheGroupContext grp) throws IgniteCheckedException;
+        protected abstract SingleFieldDto<T> run0(CacheGroupContext grp) throws IgniteCheckedException;
     }
 }

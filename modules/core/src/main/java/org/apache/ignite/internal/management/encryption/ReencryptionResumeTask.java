@@ -15,50 +15,45 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.encryption;
+package org.apache.ignite.internal.management.encryption;
 
-import org.apache.ignite.IgniteEncryption;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.management.encryption.EncryptionChangeMasterKeyCommandArg;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * The task for changing the master key.
- *
- * @see IgniteEncryption#changeMasterKey(String)
+ * Resume re-encryption of the cache group.
  */
 @GridInternal
-public class VisorChangeMasterKeyTask extends VisorOneNodeTask<EncryptionChangeMasterKeyCommandArg, String> {
+public class ReencryptionResumeTask extends CacheGroupEncryptionTask<Boolean> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<EncryptionChangeMasterKeyCommandArg, String> job(EncryptionChangeMasterKeyCommandArg arg) {
-        return new VisorChangeMasterKeyJob(arg, debug);
+    @Override protected VisorJob<EncryptionCacheGroupArg, SingleFieldDto<Boolean>> job(
+        EncryptionCacheGroupArg arg) {
+        return new ReencryptionResumeJob(arg, debug);
     }
 
-    /** The job for changing the master key. */
-    private static class VisorChangeMasterKeyJob extends VisorJob<EncryptionChangeMasterKeyCommandArg, String> {
+    /** The job to resume re-encryption of the cache group. */
+    private static class ReencryptionResumeJob extends ReencryptionBaseJob<Boolean> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /**
-         * Create job with specified argument.
-         *
-         * @param masterKeyName Master key name.
+         * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorChangeMasterKeyJob(EncryptionChangeMasterKeyCommandArg masterKeyName, boolean debug) {
-            super(masterKeyName, debug);
+        protected ReencryptionResumeJob(@Nullable EncryptionCacheGroupArg arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(EncryptionChangeMasterKeyCommandArg arg) throws IgniteException {
-            ignite.encryption().changeMasterKey(arg.newMasterKeyName()).get();
-
-            return "The master key changed.";
+        @Override protected SingleFieldDto<Boolean> run0(CacheGroupContext grp) throws IgniteCheckedException {
+            return new ReencryptionSuspendTask.ReencryptionSuspendResumeJobResult().value(
+                ignite.context().encryption().resumeReencryption(grp.groupId()));
         }
     }
 }

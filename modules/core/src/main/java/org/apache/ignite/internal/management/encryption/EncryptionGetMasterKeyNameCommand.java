@@ -20,7 +20,6 @@ package org.apache.ignite.internal.management.encryption;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.NoArg;
-import org.apache.ignite.internal.visor.encryption.VisorGetMasterKeyNameTask;
 
 /** */
 public class EncryptionGetMasterKeyNameCommand implements ComputeCommand<NoArg, String> {
@@ -35,8 +34,8 @@ public class EncryptionGetMasterKeyNameCommand implements ComputeCommand<NoArg, 
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorGetMasterKeyNameTask> taskClass() {
-        return VisorGetMasterKeyNameTask.class;
+    @Override public Class<GetMasterKeyNameTask> taskClass() {
+        return GetMasterKeyNameTask.class;
     }
 
     /** {@inheritDoc} */

@@ -15,47 +15,48 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.encryption;
+package org.apache.ignite.internal.management.encryption;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.management.encryption.EncryptionCacheGroupArg;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.IgniteEncryption;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.encryption.VisorReencryptionSuspendTask.VisorReencryptionSuspendResumeJobResult;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 /**
- * Resume re-encryption of the cache group.
+ * The task for getting the master key name.
+ *
+ * @see IgniteEncryption#getMasterKeyName()
  */
 @GridInternal
-public class VisorReencryptionResumeTask extends VisorCacheGroupEncryptionTask<Boolean> {
+public class GetMasterKeyNameTask extends VisorOneNodeTask<NoArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<EncryptionCacheGroupArg, VisorSingleFieldDto<Boolean>> job(
-        EncryptionCacheGroupArg arg) {
-        return new VisorReencryptionResumeJob(arg, debug);
+    @Override protected VisorJob<NoArg, String> job(NoArg arg) {
+        return new GetMasterKeyNameJob(arg, debug);
     }
 
-    /** The job to resume re-encryption of the cache group. */
-    private static class VisorReencryptionResumeJob extends VisorReencryptionBaseJob<Boolean> {
+    /** The job for getting the master key name. */
+    private static class GetMasterKeyNameJob extends VisorJob<NoArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /**
+         * Create job with specified argument.
+         *
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorReencryptionResumeJob(@Nullable EncryptionCacheGroupArg arg, boolean debug) {
+        protected GetMasterKeyNameJob(NoArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorSingleFieldDto<Boolean> run0(CacheGroupContext grp) throws IgniteCheckedException {
-            return new VisorReencryptionSuspendResumeJobResult().value(
-                ignite.context().encryption().resumeReencryption(grp.groupId()));
+        @Override protected String run(NoArg arg) throws IgniteException {
+            return ignite.encryption().getMasterKeyName();
         }
     }
 }

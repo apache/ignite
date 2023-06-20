@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.encryption;
+package org.apache.ignite.internal.management.encryption;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -27,7 +27,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.encryption.EncryptionReencryptionRateLimitCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -37,21 +36,21 @@ import org.jetbrains.annotations.Nullable;
  * View/change cache group re-encryption rate limit .
  */
 @GridInternal
-public class VisorReencryptionRateTask extends VisorMultiNodeTask<
+public class ReencryptionRateTask extends VisorMultiNodeTask<
     EncryptionReencryptionRateLimitCommandArg,
-    VisorCacheGroupEncryptionTaskResult<Double>,
-    VisorReencryptionRateTask.ReencryptionRateJobResult> {
+    CacheGroupEncryptionTaskResult<Double>,
+    ReencryptionRateTask.ReencryptionRateJobResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override protected VisorJob<EncryptionReencryptionRateLimitCommandArg, ReencryptionRateJobResult> job(
         EncryptionReencryptionRateLimitCommandArg arg) {
-        return new VisorReencryptionRateJob(arg, debug);
+        return new ReencryptionRateJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected VisorCacheGroupEncryptionTaskResult<Double> reduce0(List<ComputeJobResult> results) {
+    @Nullable @Override protected CacheGroupEncryptionTaskResult<Double> reduce0(List<ComputeJobResult> results) {
         Map<UUID, Double> jobResults = new HashMap<>();
         Map<UUID, IgniteException> exceptions = new HashMap<>();
 
@@ -69,11 +68,11 @@ public class VisorReencryptionRateTask extends VisorMultiNodeTask<
             jobResults.put(nodeId, dtoRes.limit());
         }
 
-        return new VisorCacheGroupEncryptionTaskResult<>(jobResults, exceptions);
+        return new CacheGroupEncryptionTaskResult<>(jobResults, exceptions);
     }
 
     /** The job for view/change cache group re-encryption rate limit. */
-    private static class VisorReencryptionRateJob
+    private static class ReencryptionRateJob
         extends VisorJob<EncryptionReencryptionRateLimitCommandArg, ReencryptionRateJobResult> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
@@ -82,7 +81,7 @@ public class VisorReencryptionRateTask extends VisorMultiNodeTask<
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorReencryptionRateJob(EncryptionReencryptionRateLimitCommandArg arg, boolean debug) {
+        protected ReencryptionRateJob(EncryptionReencryptionRateLimitCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
