@@ -279,9 +279,4 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
         int indexesNum = cmdResult.size();
         assertEquals("Unexpected number of indexes: " + indexesNum, indexesNum, expectedResNum);
     }
-
-    /** */
-    private int invokerExtraLines() {
-        return invoker.equals(CLI_INVOKER) ? 11 : 0;
-    }
 }

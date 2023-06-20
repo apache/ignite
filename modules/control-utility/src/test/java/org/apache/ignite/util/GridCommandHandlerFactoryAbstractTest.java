@@ -303,4 +303,9 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
             return Objects.toString(val);
         }
     }
+
+    /** */
+    protected int invokerExtraLines() {
+        return invoker.equals(CLI_INVOKER) ? 11 : 0;
+    }
 }
