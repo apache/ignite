@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.meta.tasks;
+package org.apache.ignite.internal.management.meta;
 
 import java.util.List;
 import java.util.Objects;
@@ -26,7 +26,6 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.management.meta.MetaRemoveCommandArg;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -39,7 +38,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
-import static org.apache.ignite.internal.commandline.meta.tasks.MetadataInfoTask.typeId;
+import static org.apache.ignite.internal.management.meta.MetadataInfoTask.typeId;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_METADATA_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;

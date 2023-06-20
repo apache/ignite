@@ -15,55 +15,72 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.diagnostic.availability;
+package org.apache.ignite.internal.management.meta;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Map;
-import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Connectivity task result
+ * Represents information about cluster metadata.
  */
-public class VisorConnectivityResult extends IgniteDataTransferObject {
+@GridInternal
+public class MetadataMarshalled extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    @Nullable private Map<ClusterNode, Boolean> nodeStatuses;
+    /** Marshaled metadata. */
+    private byte[] metaMarshalled;
+
+    /** Metadata. */
+    private BinaryMetadata meta;
 
     /**
-     * Default constructor.
+     * Constructor for optimized marshaller.
      */
-    public VisorConnectivityResult() {
+    public MetadataMarshalled() {
+        // No-op.
     }
 
     /**
-     * @param nodeStatuses Node statuses.
+     * @param metaMarshalled Marshaled metadata.
+     * @param meta Meta.
      */
-    public VisorConnectivityResult(@Nullable Map<ClusterNode, Boolean> nodeStatuses) {
-        this.nodeStatuses = nodeStatuses;
+    public MetadataMarshalled(byte[] metaMarshalled, BinaryMetadata meta) {
+        this.metaMarshalled = metaMarshalled;
+        this.meta = meta;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, nodeStatuses);
+        U.writeByteArray(out, metaMarshalled);
+        out.writeObject(meta);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        nodeStatuses = U.readMap(in);
+    @Override protected void readExternalData(
+        byte protoVer,
+        ObjectInput in
+    ) throws IOException, ClassNotFoundException {
+        metaMarshalled = U.readByteArray(in);
+        meta = (BinaryMetadata)in.readObject();
     }
 
     /**
-     * Get connectivity statuses for a node
+     * @return Cluster binary metadata.
      */
-    public @Nullable Map<ClusterNode, Boolean> getNodeIds() {
-        return nodeStatuses;
+    public BinaryMetadata metadata() {
+        return meta;
     }
 
+    /**
+     * @return Marshalled metadata.
+     */
+    public byte[] metadataMarshalled() {
+        return metaMarshalled;
+    }
 }
