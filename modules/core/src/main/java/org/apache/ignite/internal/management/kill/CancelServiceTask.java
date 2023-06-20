@@ -15,36 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.query;
+package org.apache.ignite.internal.management.kill;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.QueryMXBeanImpl;
-import org.apache.ignite.internal.management.kill.KillContinuousCommandArg;
+import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Task to cancel continuous query.
+ * Task for cancel services with specified name.
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorContinuousQueryCancelTask extends VisorOneNodeTask<KillContinuousCommandArg, Void> {
+public class CancelServiceTask extends VisorOneNodeTask<KillServiceCommandArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorContinuousQueryCancelJob job(KillContinuousCommandArg arg) {
-        return new VisorContinuousQueryCancelJob(arg, debug);
+    @Override protected CancelServiceJob job(KillServiceCommandArg arg) {
+        return new CancelServiceJob(arg, debug);
     }
 
     /**
-     * Job to cancel scan queries on node.
+     * Job for cancel services with specified name.
      */
-    private static class VisorContinuousQueryCancelJob extends VisorJob<KillContinuousCommandArg, Void> {
+    private static class CancelServiceJob extends VisorJob<KillServiceCommandArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -52,25 +49,22 @@ public class VisorContinuousQueryCancelTask extends VisorOneNodeTask<KillContinu
          * Create job with specified argument.
          *
          * @param arg Job argument.
-         * @param debug Flag indicating whether debug information should be printed into node log.
+         * @param debug Debug flag.
          */
-        protected VisorContinuousQueryCancelJob(@Nullable KillContinuousCommandArg arg, boolean debug) {
+        protected CancelServiceJob(KillServiceCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(@Nullable KillContinuousCommandArg arg) throws IgniteException {
-            if (arg == null)
-                return null;
-
-            IgniteLogger log = ignite.log().getLogger(VisorContinuousQueryCancelJob.class);
-
-            if (log.isInfoEnabled())
-                log.info("Cancelling continuous query[routineId=" + arg.routineId() + ']');
-
-            new QueryMXBeanImpl(ignite.context()).cancelContinuous(arg.originNodeId(), arg.routineId());
+        @Override protected Void run(final KillServiceCommandArg arg) {
+            new ServiceMXBeanImpl(ignite.context()).cancel(arg.name());
 
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(CancelServiceJob.class, this);
         }
     }
 }

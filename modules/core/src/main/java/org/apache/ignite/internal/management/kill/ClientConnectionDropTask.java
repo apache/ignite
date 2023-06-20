@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.client;
+package org.apache.ignite.internal.management.kill;
 
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.management.kill.KillClientCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -33,13 +32,13 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorClientConnectionDropTask extends VisorMultiNodeTask<KillClientCommandArg, Void, Boolean> {
+public class ClientConnectionDropTask extends VisorMultiNodeTask<KillClientCommandArg, Void, Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override protected VisorJob<KillClientCommandArg, Boolean> job(KillClientCommandArg arg) {
-        return new VisorClientConnectionDropJob(arg, debug);
+        return new ClientConnectionDropJob(arg, debug);
     }
 
     /** {@inheritDoc} */
@@ -62,7 +61,7 @@ public class VisorClientConnectionDropTask extends VisorMultiNodeTask<KillClient
     /**
      * Job to cancel client connection(s).
      */
-    private static class VisorClientConnectionDropJob extends VisorJob<KillClientCommandArg, Boolean> {
+    private static class ClientConnectionDropJob extends VisorJob<KillClientCommandArg, Boolean> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -72,7 +71,7 @@ public class VisorClientConnectionDropTask extends VisorMultiNodeTask<KillClient
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorClientConnectionDropJob(@Nullable KillClientCommandArg arg, boolean debug) {
+        protected ClientConnectionDropJob(@Nullable KillClientCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 

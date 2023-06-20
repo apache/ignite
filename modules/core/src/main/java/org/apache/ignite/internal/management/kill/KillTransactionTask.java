@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.tx;
+package org.apache.ignite.internal.management.kill;
 
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.management.kill.KillTransactionCommandArg;
+import org.apache.ignite.internal.management.tx.TxCommandArg;
+import org.apache.ignite.internal.management.tx.TxTask;
+import org.apache.ignite.internal.management.tx.TxTaskResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -64,7 +66,7 @@ public class KillTransactionTask
             arg0.kill(true);
             arg0.xid(arg.xid());
 
-            return TxTask.VisorTxJob.run(ignite, arg0, null);
+            return TxTask.TxJob.run(ignite, arg0, null);
         }
     }
 }

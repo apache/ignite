@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.management.kill;
 
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.service.VisorCancelServiceTask;
 
 /** */
 public class KillServiceCommand implements ComputeCommand<KillServiceCommandArg, Void> {
@@ -33,8 +32,8 @@ public class KillServiceCommand implements ComputeCommand<KillServiceCommandArg,
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorCancelServiceTask> taskClass() {
-        return VisorCancelServiceTask.class;
+    @Override public Class<CancelServiceTask> taskClass() {
+        return CancelServiceTask.class;
     }
 
 }

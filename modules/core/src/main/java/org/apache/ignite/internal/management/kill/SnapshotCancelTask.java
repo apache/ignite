@@ -15,32 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.snapshot;
+package org.apache.ignite.internal.management.kill;
 
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.kill.SnapshotCancelTask.CancelSnapshotArg;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask.CancelSnapshotArg;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotJob;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotOneNodeTask;
 
 /**
  * @see IgniteSnapshotManager#cancelSnapshotOperation(UUID)
  */
 @GridInternal
-public class VisorSnapshotCancelTask extends VisorSnapshotOneNodeTask<CancelSnapshotArg, String> {
+public class SnapshotCancelTask extends VisorSnapshotOneNodeTask<CancelSnapshotArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override protected VisorJob<CancelSnapshotArg, String> job(CancelSnapshotArg arg) {
-        return new VisorSnapshotCancelJob(arg, debug);
+        return new SnapshotCancelJob(arg, debug);
     }
 
     /** */
-    private static class VisorSnapshotCancelJob extends VisorSnapshotJob<CancelSnapshotArg, String> {
+    private static class SnapshotCancelJob extends VisorSnapshotJob<CancelSnapshotArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -48,7 +50,7 @@ public class VisorSnapshotCancelTask extends VisorSnapshotOneNodeTask<CancelSnap
          * @param taskArg Task argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotCancelJob(CancelSnapshotArg taskArg, boolean debug) {
+        protected SnapshotCancelJob(CancelSnapshotArg taskArg, boolean debug) {
             super(taskArg, debug);
         }
 
