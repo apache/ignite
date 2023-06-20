@@ -21,10 +21,12 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singleton;
 
@@ -57,7 +59,7 @@ public abstract class AbstractCommandInvoker<A extends IgniteDataTransferObject>
         R res;
 
         if (cmd instanceof LocalCommand)
-            res = ((LocalCommand<A, R>)cmd).execute(client(), arg, printer);
+            res = ((LocalCommand<A, R>)cmd).execute(client(), ignite(), arg, printer);
         else if (cmd instanceof ComputeCommand) {
             Map<UUID, GridClientNode> nodes = nodes();
 
@@ -92,7 +94,12 @@ public abstract class AbstractCommandInvoker<A extends IgniteDataTransferObject>
      * @return Grid thin client instance which is already connected to cluster.
      * @throws GridClientException If error occur.
      */
-    protected abstract GridClient client() throws GridClientException;
+    protected abstract @Nullable GridClient client() throws GridClientException;
+
+    /**
+     * @return Local Ignite node.
+     */
+    protected abstract @Nullable Ignite ignite();
 
     /**
      * @param cmd Command to execute.

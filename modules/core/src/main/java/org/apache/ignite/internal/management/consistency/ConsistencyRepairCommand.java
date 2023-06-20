@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
@@ -31,6 +32,7 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyTaskResult;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.jetbrains.annotations.Nullable;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -49,7 +51,8 @@ public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairC
 
     /** {@inheritDoc} */
     @Override public String execute(
-        GridClient cli,
+        @Nullable GridClient cli,
+        @Nullable Ignite ignite,
         ConsistencyRepairCommandArg arg,
         Consumer<String> printer
     ) throws GridClientException, IgniteException {

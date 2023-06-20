@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
@@ -62,6 +63,11 @@ public class NodeCommandInvoker<A extends IgniteDataTransferObject> extends Abst
     /** {@inheritDoc} */
     @Override protected GridClient client() throws GridClientException {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Ignite ignite() {
+        return ignite;
     }
 
     /** {@inheritDoc} */

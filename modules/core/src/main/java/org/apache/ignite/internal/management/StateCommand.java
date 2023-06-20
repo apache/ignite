@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management;
 
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
@@ -27,6 +28,8 @@ import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.internal.util.typedef.internal.U.DELIM;
 
 /** */
@@ -43,7 +46,8 @@ public class StateCommand implements LocalCommand<NoArg, GridTuple3<UUID, String
 
     /** {@inheritDoc} */
     @Override public GridTuple3<UUID, String, ClusterState> execute(
-        GridClient cli,
+        @Nullable GridClient cli,
+        @Nullable Ignite ignite,
         NoArg arg,
         Consumer<String> printer
     ) throws GridClientException {

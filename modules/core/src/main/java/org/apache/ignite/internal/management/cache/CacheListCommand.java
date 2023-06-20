@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
@@ -46,6 +47,8 @@ import org.apache.ignite.internal.visor.query.VisorQueryConfiguration;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTask;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskResult;
+import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
@@ -69,7 +72,8 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
 
     /** {@inheritDoc} */
     @Override public VisorViewCacheTaskResult execute(
-        GridClient cli,
+        @Nullable GridClient cli,
+        @Nullable Ignite ignite,
         CacheListCommandArg arg,
         Consumer<String> printer
     ) throws GridClientException {

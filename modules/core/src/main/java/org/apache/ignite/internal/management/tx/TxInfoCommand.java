@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
@@ -41,6 +42,8 @@ import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 import static org.apache.ignite.internal.management.tx.TxCommand.nodeDescription;
 
@@ -58,7 +61,8 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
 
     /** {@inheritDoc} */
     @Override public Map<ClusterNode, VisorTxTaskResult> execute(
-        GridClient cli,
+        @Nullable GridClient cli,
+        @Nullable Ignite ignite,
         AbstractTxCommandArg arg0,
         Consumer<String> printer
     ) throws GridClientException {

@@ -18,19 +18,31 @@
 package org.apache.ignite.internal.management.api;
 
 import java.util.function.Consumer;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Command that must be executed directly using {@link GridClient} instance.
+ * Command that must be executed directly using {@link GridClient} or {@link Ignite} instance.
  */
 public interface LocalCommand<A extends IgniteDataTransferObject, R> extends Command<A, R> {
     /**
-     * @param cli Grid client instance.
+     * Executes command logic.
+     * Commands invoked in two different environments:
+     * <ul>
+     *     <li>CLI utility using {@link GridClient} connection to interact with cluster.</li>
+     *     <li>Inside {@link Ignite} node therefore local node can be used to interact with cluster.</li>
+     * </ul>
+     *
+     * Please, keep in mind that {@link GridClient} protocol is obsolete and can be removed in future releases.
+     *
+     * @param cli Optional grid client instance.
+     * @param ignite Optional ignite node.
      * @param arg Command argument.
      * @param printer Results printer.
      * @return Command result.
      */
-    public R execute(GridClient cli, A arg, Consumer<String> printer) throws GridClientException;
+    public R execute(@Nullable GridClient cli, @Nullable Ignite ignite, A arg, Consumer<String> printer) throws GridClientException;
 }
