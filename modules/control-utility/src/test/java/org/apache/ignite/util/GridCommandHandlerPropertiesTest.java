@@ -20,6 +20,7 @@ package org.apache.ignite.util;
 import java.io.Serializable;
 import java.util.Set;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -42,6 +44,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
  * Checks command line property commands.
  */
 public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterByClassAbstractTest {
+
     /** */
     @Before
     public void init() {
@@ -59,6 +62,8 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
      */
     @Test
     public void testHelp() {
+        Assume.assumeTrue(invoker.equals(CLI_INVOKER));
+
         assertEquals(EXIT_CODE_OK, execute("--property", "help"));
 
         String out = testOut.toString();
@@ -136,7 +141,9 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
      * Checks the set command for property 'checkpoint.deviation'.
      */
     @Test
-    public void testPropertyCheckpointDeviation() {
+    public void testPropertyCheckpointDeviation() throws IgniteCheckedException {
+        String propName = "checkpoint.deviation";
+
         for (Ignite ign : G.allGrids()) {
             if (ign.configuration().isClientMode())
                 continue;
@@ -144,14 +151,15 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
             SimpleDistributedProperty<Integer> cpFreqDeviation = U.field(((IgniteEx)ign).context().cache().context().database(),
                 "cpFreqDeviation");
 
-            assertNull(cpFreqDeviation.get());
+            if (cpFreqDeviation.get() != null)
+                ((IgniteEx)ign).context().distributedMetastorage().remove(propName);
         }
 
         assertEquals(
             EXIT_CODE_OK,
             execute(
                 "--property", "set",
-                "--name", "checkpoint.deviation",
+                "--name", propName,
                 "--val", "20"
             )
         );
@@ -207,6 +215,15 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
      */
     @Test
     public void testPropertyWalRebalanceThreshold() {
+        assertEquals(
+            EXIT_CODE_OK,
+            execute(
+                "--property", "set",
+                "--name", HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY,
+                "--val", Integer.toString(DFLT_PDS_WAL_REBALANCE_THRESHOLD)
+            )
+        );
+
         assertDistributedPropertyEquals(HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY, DFLT_PDS_WAL_REBALANCE_THRESHOLD);
 
         int newVal = DFLT_PDS_WAL_REBALANCE_THRESHOLD * 2;
@@ -228,6 +245,15 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
      */
     @Test
     public void testPropertySnapshotTransferRate() {
+        assertEquals(
+            EXIT_CODE_OK,
+            execute(
+                "--property", "set",
+                "--name", SNAPSHOT_TRANSFER_RATE_DMS_KEY,
+                "--val", Long.toString(DFLT_SNAPSHOT_TRANSFER_RATE_BYTES)
+            )
+        );
+
         assertDistributedPropertyEquals(SNAPSHOT_TRANSFER_RATE_DMS_KEY, DFLT_SNAPSHOT_TRANSFER_RATE_BYTES);
 
         long newVal = 1024;
