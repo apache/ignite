@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.snapshot;
+package org.apache.ignite.internal.management.snapshot;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -41,21 +41,21 @@ import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.management.snapshot.SnapshotStatusTask.SnapshotStatus;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
-import static org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask.SnapshotStatus;
 
 /**
  * Task to get the status of the current snapshot operation in the cluster.
  */
 @GridInternal
-public class VisorSnapshotStatusTask extends VisorMultiNodeTask<NoArg, VisorSnapshotTaskResult, SnapshotStatus> {
+public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotTaskResult, SnapshotStatus> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override protected VisorJob<NoArg, SnapshotStatus> job(NoArg arg) {
-        return new VisorSnapshotStatusJob(arg, debug);
+        return new SnapshotStatusJob(arg, debug);
     }
 
     /** {@inheritDoc} */
@@ -64,21 +64,21 @@ public class VisorSnapshotStatusTask extends VisorMultiNodeTask<NoArg, VisorSnap
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected VisorSnapshotTaskResult reduce0(List<ComputeJobResult> results) {
+    @Nullable @Override protected SnapshotTaskResult reduce0(List<ComputeJobResult> results) {
         if (results.isEmpty())
-            return new VisorSnapshotTaskResult(null, new IgniteException("Failed to get the snapshot status. Topology is empty."));
+            return new SnapshotTaskResult(null, new IgniteException("Failed to get the snapshot status. Topology is empty."));
 
         IgniteException error = F.find(F.viewReadOnly(results, ComputeJobResult::getException,
             r -> r.getException() != null), null, F.notNull());
 
         if (error != null)
-            return new VisorSnapshotTaskResult(null, new IgniteException("Failed to get the snapshot status.", error));
+            return new SnapshotTaskResult(null, new IgniteException("Failed to get the snapshot status.", error));
 
         Collection<SnapshotStatus> res = F.viewReadOnly(results, ComputeJobResult::getData, r -> r.getData() != null);
 
         // There is no snapshot operation.
         if (res.isEmpty())
-            return new VisorSnapshotTaskResult(null, null);
+            return new SnapshotTaskResult(null, null);
 
         SnapshotStatus s0 = F.first(res);
 
@@ -90,11 +90,11 @@ public class VisorSnapshotStatusTask extends VisorMultiNodeTask<NoArg, VisorSnap
 
         res.forEach(s -> progress.putAll(s.progress));
 
-        return new VisorSnapshotTaskResult(new SnapshotStatus(s0.op, s0.name, s0.incIdx, s0.requestId, s0.startTime, progress), null);
+        return new SnapshotTaskResult(new SnapshotStatus(s0.op, s0.name, s0.incIdx, s0.requestId, s0.startTime, progress), null);
     }
 
     /** */
-    private static class VisorSnapshotStatusJob extends VisorSnapshotJob<NoArg, SnapshotStatus> {
+    private static class SnapshotStatusJob extends SnapshotJob<NoArg, SnapshotStatus> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -102,7 +102,7 @@ public class VisorSnapshotStatusTask extends VisorMultiNodeTask<NoArg, VisorSnap
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotStatusJob(@Nullable NoArg arg, boolean debug) {
+        protected SnapshotStatusJob(@Nullable NoArg arg, boolean debug) {
             super(arg, debug);
         }
 

@@ -27,16 +27,16 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.snapshot.SnapshotStatusTask;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Snapshot restore status task.
  *
- * @deprecated Use {@link VisorSnapshotStatusTask} instead.
+ * @deprecated Use {@link SnapshotStatusTask} instead.
  */
 @GridInternal
 @Deprecated

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.snapshot;
+package org.apache.ignite.internal.management.snapshot;
 
 import java.util.List;
 import org.apache.ignite.compute.ComputeJobResult;
@@ -26,13 +26,13 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Base class for single node visor snapshot task.
  */
-public abstract class VisorSnapshotOneNodeTask<A, R> extends VisorMultiNodeTask<A, VisorSnapshotTaskResult, R> {
+public abstract class SnapshotOneNodeTask<A, R> extends VisorMultiNodeTask<A, SnapshotTaskResult, R> {
     /** {@inheritDoc} */
-    @Nullable @Override protected VisorSnapshotTaskResult reduce0(List<ComputeJobResult> results) {
+    @Nullable @Override protected SnapshotTaskResult reduce0(List<ComputeJobResult> results) {
         assert results.size() == 1 : results.size();
 
         ComputeJobResult res = F.first(results);
 
-        return new VisorSnapshotTaskResult(res.getData(), res.getException());
+        return new SnapshotTaskResult(res.getData(), res.getException());
     }
 }

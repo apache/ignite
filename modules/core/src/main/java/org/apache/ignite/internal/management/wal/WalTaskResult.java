@@ -15,7 +15,7 @@
  *  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.misc;
+package org.apache.ignite.internal.management.wal;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -28,9 +28,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- *  Result of {@link VisorWalTask}.
+ *  Result of {@link WalTask}.
  */
-public class VisorWalTaskResult extends VisorDataTransferObject {
+public class WalTaskResult extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,24 +44,24 @@ public class VisorWalTaskResult extends VisorDataTransferObject {
 
     /** Nodes info by node consistent id. */
     @GridToStringInclude
-    private Map<String, VisorClusterNode> nodesInfo;
+    private Map<String, ClusterNode> nodesInfo;
 
     /**
      * Default constructor.
      */
-    public VisorWalTaskResult() {
+    public WalTaskResult() {
         // No-op.
     }
 
     /**
-     * Create {@link VisorWalTask } result with given parameters.
+     * Create {@link WalTask } result with given parameters.
      *
      * @param results List of log search results.
      * @param exceptions List of exceptions by node id.
      * @param nodesInfo Nodes info.
      */
-    public VisorWalTaskResult(Map<String, Collection<String>> results, Map<String, Exception> exceptions,
-                              Map<String, VisorClusterNode> nodesInfo) {
+    public WalTaskResult(Map<String, Collection<String>> results, Map<String, Exception> exceptions,
+                              Map<String, ClusterNode> nodesInfo) {
         this.exceptions = exceptions;
         this.results = results;
         this.nodesInfo = nodesInfo;
@@ -88,7 +88,7 @@ public class VisorWalTaskResult extends VisorDataTransferObject {
      *
      * @return Nodes info.
      */
-    public Map<String, VisorClusterNode> getNodesInfo() {
+    public Map<String, ClusterNode> getNodesInfo() {
         return nodesInfo;
     }
 
@@ -108,6 +108,6 @@ public class VisorWalTaskResult extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorWalTaskResult.class, this);
+        return S.toString(WalTaskResult.class, this);
     }
 }

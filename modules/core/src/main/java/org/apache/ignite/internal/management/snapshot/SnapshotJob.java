@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.snapshot;
+package org.apache.ignite.internal.management.snapshot;
 
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
@@ -25,9 +25,9 @@ import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHO
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
 
 /** */
-public abstract class VisorSnapshotJob<A, R> extends VisorJob<A, R> {
+public abstract class SnapshotJob<A, R> extends VisorJob<A, R> {
     /** */
-    protected VisorSnapshotJob(@Nullable A arg, boolean debug) {
+    protected SnapshotJob(@Nullable A arg, boolean debug) {
         super(arg, debug);
     }
 
