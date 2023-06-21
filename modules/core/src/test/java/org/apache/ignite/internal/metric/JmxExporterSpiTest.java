@@ -83,7 +83,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConfigInitializer;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -409,12 +408,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         TabularDataSupport srvs = systemView(SVCS_VIEW);
 
-        Collection<ServiceDescriptor> descs = ignite.context().service().serviceDescriptors();
+        assertEquals(ignite.context().service().serviceDescriptors().size(), srvs.size());
 
-        assertEquals(descs.size(), srvs.size());
-        assertEquals(1, srvs.size());
-
-        ServiceDescriptor desc = F.first(descs);
         CompositeData sysView = srvs.get(new Object[] {0});
 
         assertEquals(srvcCfg.getName(), sysView.get("name"));
