@@ -206,7 +206,7 @@ public class RecordV2Serializer implements RecordSerializer {
 
     /**
      * Create an instance of Record V2 serializer.
-     *  @param dataSerializer V2 data serializer.
+     * @param dataSerializer V2 data serializer.
      * @param marshalledMode Marshalled mode.
      * @param skipPositionCheck Skip position check mode.
      * @param skipIndexCheck Skip index check mode

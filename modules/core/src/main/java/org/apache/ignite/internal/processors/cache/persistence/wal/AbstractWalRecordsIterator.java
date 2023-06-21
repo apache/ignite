@@ -38,22 +38,22 @@ public abstract class AbstractWalRecordsIterator
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Logger */
-    @NotNull protected final IgniteLogger log;
-
     /**
      * Current record preloaded, to be returned on next()<br> Normally this should be not null because advance() method
      * should already prepare some value<br>
      */
     protected IgniteBiTuple<WALPointer, WALRecord> curRec;
 
-    /** Position of last read valid record. */
-    protected WALPointer lastRead;
-
     /**
      * Current WAL segment read file handle. To be filled by subclass advanceSegment
      */
     protected AbstractWalSegmentHandle currWalSegment;
+
+    /** Logger */
+    @NotNull protected final IgniteLogger log;
+
+    /** Position of last read valid record. */
+    protected WALPointer lastRead;
 
     /**
      * The exception which can be thrown during reading next record. It holds until the next calling of next record.
@@ -141,6 +141,11 @@ public abstract class AbstractWalRecordsIterator
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public Optional<WALPointer> lastRead() {
+        return Optional.ofNullable(lastRead);
+    }
+
     /**
      * @param tailReachedException Tail reached exception.
      * @param currWalSegment Current WAL segment read handler.
@@ -149,12 +154,6 @@ public abstract class AbstractWalRecordsIterator
     protected abstract IgniteCheckedException validateTailReachedException(
         WalSegmentTailReachedException tailReachedException,
         AbstractWalSegmentHandle currWalSegment);
-
-
-    /** {@inheritDoc} */
-    @Override public Optional<WALPointer> lastRead() {
-        return Optional.ofNullable(lastRead);
-    }
 
     /**
      * Switches records iterator to the next WAL segment as result of this method, new reference to segment should be
