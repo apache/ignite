@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.misc;
+package org.apache.ignite.internal.management.wal;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -33,12 +33,10 @@ import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.management.wal.WalDeleteCommandArg;
 import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
@@ -56,7 +54,7 @@ import org.jetbrains.annotations.Nullable;
  * Performs WAL cleanup clusterwide.
  */
 @GridInternal
-public class VisorWalTask extends VisorMultiNodeTask<WalDeleteCommandArg, VisorWalTaskResult, Collection<String>> {
+public class WalTask extends VisorMultiNodeTask<WalDeleteCommandArg, WalTaskResult, Collection<String>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -75,13 +73,13 @@ public class VisorWalTask extends VisorMultiNodeTask<WalDeleteCommandArg, VisorW
     };
 
     /** {@inheritDoc} */
-    @Override protected VisorWalJob job(WalDeleteCommandArg arg) {
-        return new VisorWalJob(arg, debug);
+    @Override protected WalJob job(WalDeleteCommandArg arg) {
+        return new WalJob(arg, debug);
     }
 
     /** {@inheritDoc} */
     @Override protected Collection<UUID> jobNodes(VisorTaskArgument<WalDeleteCommandArg> arg) {
-        Collection<ClusterNode> srvNodes = ignite.cluster().forServers().nodes();
+        Collection<org.apache.ignite.cluster.ClusterNode> srvNodes = ignite.cluster().forServers().nodes();
         Collection<UUID> ret = new ArrayList<>(srvNodes.size());
 
         WalDeleteCommandArg taskArg = arg.getArgument();
@@ -91,11 +89,11 @@ public class VisorWalTask extends VisorMultiNodeTask<WalDeleteCommandArg, VisorW
             : null;
 
         if (nodeIds == null) {
-            for (ClusterNode node : srvNodes)
+            for (org.apache.ignite.cluster.ClusterNode node : srvNodes)
                 ret.add(node.id());
         }
         else {
-            for (ClusterNode node : srvNodes) {
+            for (org.apache.ignite.cluster.ClusterNode node : srvNodes) {
                 if (nodeIds.contains(node.consistentId().toString()))
                     ret.add(node.id());
             }
@@ -105,13 +103,13 @@ public class VisorWalTask extends VisorMultiNodeTask<WalDeleteCommandArg, VisorW
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected VisorWalTaskResult reduce0(List<ComputeJobResult> results) throws IgniteException {
+    @Nullable @Override protected WalTaskResult reduce0(List<ComputeJobResult> results) throws IgniteException {
         Map<String, Exception> exRes = U.newHashMap(0);
         Map<String, Collection<String>> res = U.newHashMap(results.size());
-        Map<String, VisorClusterNode> nodesInfo = U.newHashMap(results.size());
+        Map<String, ClusterNode> nodesInfo = U.newHashMap(results.size());
 
         for (ComputeJobResult result: results) {
-            ClusterNode node = result.getNode();
+            org.apache.ignite.cluster.ClusterNode node = result.getNode();
 
             String nodeId = node.consistentId().toString();
 
@@ -124,16 +122,16 @@ public class VisorWalTask extends VisorMultiNodeTask<WalDeleteCommandArg, VisorW
                     res.put(nodeId, data);
             }
 
-            nodesInfo.put(nodeId, new VisorClusterNode(node));
+            nodesInfo.put(nodeId, new ClusterNode(node));
         }
 
-        return new VisorWalTaskResult(res, exRes, nodesInfo);
+        return new WalTaskResult(res, exRes, nodesInfo);
     }
 
     /**
      * Performs WAL cleanup per node.
      */
-    private static class VisorWalJob extends VisorJob<WalDeleteCommandArg, Collection<String>> {
+    private static class WalJob extends VisorJob<WalDeleteCommandArg, Collection<String>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -145,7 +143,7 @@ public class VisorWalTask extends VisorMultiNodeTask<WalDeleteCommandArg, VisorW
          *  @param arg WAL task argument.
          *  @param debug Debug flag.
          */
-        public VisorWalJob(WalDeleteCommandArg arg, boolean debug) {
+        public WalJob(WalDeleteCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 

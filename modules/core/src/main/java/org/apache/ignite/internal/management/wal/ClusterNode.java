@@ -15,23 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.misc;
+package org.apache.ignite.internal.management.wal;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Map;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- *  Data transfer object for {@link ClusterNode}.
+ *  Data transfer object for {@link org.apache.ignite.cluster.ClusterNode}.
  */
-public class VisorClusterNode extends VisorDataTransferObject {
+public class ClusterNode extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -53,7 +52,7 @@ public class VisorClusterNode extends VisorDataTransferObject {
     /**
      * Default constructor.
      */
-    public VisorClusterNode() {
+    public ClusterNode() {
         // No-op.
     }
 
@@ -62,7 +61,7 @@ public class VisorClusterNode extends VisorDataTransferObject {
      *
      * @param node Baseline node.
      */
-    public VisorClusterNode(ClusterNode node) {
+    public ClusterNode(org.apache.ignite.cluster.ClusterNode node) {
         consistentId = String.valueOf(node.consistentId());
         addrs = node.addresses();
         hostNames = node.hostNames();
@@ -124,6 +123,6 @@ public class VisorClusterNode extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorClusterNode.class, this);
+        return S.toString(ClusterNode.class, this);
     }
 }

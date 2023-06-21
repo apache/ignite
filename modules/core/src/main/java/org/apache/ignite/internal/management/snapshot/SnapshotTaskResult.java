@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.snapshot;
+package org.apache.ignite.internal.management.snapshot;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Snapshot task result wrapper.
  */
-public class VisorSnapshotTaskResult extends IgniteDataTransferObject {
+public class SnapshotTaskResult extends IgniteDataTransferObject {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
@@ -37,7 +37,7 @@ public class VisorSnapshotTaskResult extends IgniteDataTransferObject {
     private @Nullable Exception err;
 
     /** Default constructor. */
-    public VisorSnapshotTaskResult() {
+    public SnapshotTaskResult() {
         // No-op.
     }
 
@@ -45,7 +45,7 @@ public class VisorSnapshotTaskResult extends IgniteDataTransferObject {
      * @param res Task result.
      * @param err Error.
      */
-    public VisorSnapshotTaskResult(@Nullable Object res, @Nullable Exception err) {
+    public SnapshotTaskResult(@Nullable Object res, @Nullable Exception err) {
         this.err = err;
         this.res = res;
     }

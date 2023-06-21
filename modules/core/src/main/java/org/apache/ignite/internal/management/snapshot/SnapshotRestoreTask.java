@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.snapshot;
+package org.apache.ignite.internal.management.snapshot;
 
 import java.util.Arrays;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.kill.SnapshotCancelTask;
-import org.apache.ignite.internal.management.snapshot.SnapshotRestoreCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -30,22 +29,22 @@ import org.apache.ignite.internal.visor.VisorJob;
  * Visor snapshot restore task.
  */
 @GridInternal
-public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<SnapshotRestoreCommandArg, String> {
+public class SnapshotRestoreTask extends SnapshotOneNodeTask<SnapshotRestoreCommandArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override protected VisorJob<SnapshotRestoreCommandArg, String> job(SnapshotRestoreCommandArg arg) {
         if (arg.cancel())
-            return new VisorSnapshotRestoreCancelJob(arg, debug);
+            return new SnapshotRestoreCancelJob(arg, debug);
         else if (arg.status())
-            return new VisorSnapshotRestoreStatusJob(arg, debug);
+            return new SnapshotRestoreStatusJob(arg, debug);
 
-        return new VisorSnapshotStartRestoreJob(arg, debug);
+        return new SnapshotStartRestoreJob(arg, debug);
     }
 
     /** */
-    private static class VisorSnapshotStartRestoreJob extends VisorSnapshotJob<SnapshotRestoreCommandArg, String> {
+    private static class SnapshotStartRestoreJob extends SnapshotJob<SnapshotRestoreCommandArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -53,7 +52,7 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<SnapshotR
          * @param arg Restore task argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotStartRestoreJob(SnapshotRestoreCommandArg arg, boolean debug) {
+        protected SnapshotStartRestoreJob(SnapshotRestoreCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -87,7 +86,7 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<SnapshotR
      * @deprecated Use {@link SnapshotCancelTask} instead.
      */
     @Deprecated
-    private static class VisorSnapshotRestoreCancelJob extends VisorSnapshotJob<SnapshotRestoreCommandArg, String> {
+    private static class SnapshotRestoreCancelJob extends SnapshotJob<SnapshotRestoreCommandArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -95,7 +94,7 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<SnapshotR
          * @param arg Restore task argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotRestoreCancelJob(SnapshotRestoreCommandArg arg, boolean debug) {
+        protected SnapshotRestoreCancelJob(SnapshotRestoreCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -109,10 +108,10 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<SnapshotR
     }
 
     /**
-     * @deprecated Use {@link VisorSnapshotStatusTask} instead.
+     * @deprecated Use {@link SnapshotStatusTask} instead.
      */
     @Deprecated
-    private static class VisorSnapshotRestoreStatusJob extends VisorSnapshotJob<SnapshotRestoreCommandArg, String> {
+    private static class SnapshotRestoreStatusJob extends SnapshotJob<SnapshotRestoreCommandArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -120,7 +119,7 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<SnapshotR
          * @param arg Restore task argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotRestoreStatusJob(SnapshotRestoreCommandArg arg, boolean debug) {
+        protected SnapshotRestoreStatusJob(SnapshotRestoreCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 

@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.snapshot;
+package org.apache.ignite.internal.management.snapshot;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.management.snapshot.SnapshotCheckCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -29,19 +28,19 @@ import org.apache.ignite.internal.visor.VisorJob;
  * @see IgniteSnapshotManager#checkSnapshot(String, String)
  */
 @GridInternal
-public class VisorSnapshotCheckTask extends VisorSnapshotOneNodeTask<SnapshotCheckCommandArg,
+public class SnapshotCheckTask extends SnapshotOneNodeTask<SnapshotCheckCommandArg,
     SnapshotPartitionsVerifyTaskResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override protected VisorJob<SnapshotCheckCommandArg, SnapshotPartitionsVerifyTaskResult> job(SnapshotCheckCommandArg arg) {
-        return new VisorSnapshotCheckJob(arg, debug);
+        return new SnapshotCheckJob(arg, debug);
     }
 
     /** */
-    private static class VisorSnapshotCheckJob extends VisorSnapshotJob<SnapshotCheckCommandArg,
-        SnapshotPartitionsVerifyTaskResult> {
+    private static class SnapshotCheckJob extends SnapshotJob<SnapshotCheckCommandArg,
+            SnapshotPartitionsVerifyTaskResult> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -49,7 +48,7 @@ public class VisorSnapshotCheckTask extends VisorSnapshotOneNodeTask<SnapshotChe
          * @param arg Snapshot check task argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotCheckJob(SnapshotCheckCommandArg arg, boolean debug) {
+        protected SnapshotCheckJob(SnapshotCheckCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 

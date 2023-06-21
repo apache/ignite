@@ -21,18 +21,18 @@ import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.kill.SnapshotCancelTask.CancelSnapshotArg;
+import org.apache.ignite.internal.management.snapshot.SnapshotJob;
+import org.apache.ignite.internal.management.snapshot.SnapshotOneNodeTask;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotJob;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotOneNodeTask;
 
 /**
  * @see IgniteSnapshotManager#cancelSnapshotOperation(UUID)
  */
 @GridInternal
-public class SnapshotCancelTask extends VisorSnapshotOneNodeTask<CancelSnapshotArg, String> {
+public class SnapshotCancelTask extends SnapshotOneNodeTask<CancelSnapshotArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -42,7 +42,7 @@ public class SnapshotCancelTask extends VisorSnapshotOneNodeTask<CancelSnapshotA
     }
 
     /** */
-    private static class SnapshotCancelJob extends VisorSnapshotJob<CancelSnapshotArg, String> {
+    private static class SnapshotCancelJob extends SnapshotJob<CancelSnapshotArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 

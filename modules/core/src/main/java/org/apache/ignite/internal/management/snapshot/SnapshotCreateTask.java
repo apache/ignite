@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.snapshot;
+package org.apache.ignite.internal.management.snapshot;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
-import org.apache.ignite.internal.management.snapshot.SnapshotCreateCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -29,17 +28,17 @@ import org.apache.ignite.internal.visor.VisorJob;
  * @see IgniteSnapshot#createSnapshot(String)
  */
 @GridInternal
-public class VisorSnapshotCreateTask extends VisorSnapshotOneNodeTask<SnapshotCreateCommandArg, String> {
+public class SnapshotCreateTask extends SnapshotOneNodeTask<SnapshotCreateCommandArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override protected VisorJob<SnapshotCreateCommandArg, String> job(SnapshotCreateCommandArg arg) {
-        return new VisorSnapshotCreateJob(arg, debug);
+        return new SnapshotCreateJob(arg, debug);
     }
 
     /** */
-    private static class VisorSnapshotCreateJob extends VisorSnapshotJob<SnapshotCreateCommandArg, String> {
+    private static class SnapshotCreateJob extends SnapshotJob<SnapshotCreateCommandArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -47,7 +46,7 @@ public class VisorSnapshotCreateTask extends VisorSnapshotOneNodeTask<SnapshotCr
          * @param arg Snapshot create task argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotCreateJob(SnapshotCreateCommandArg arg, boolean debug) {
+        protected SnapshotCreateJob(SnapshotCreateCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
