@@ -52,13 +52,13 @@ public abstract class AbstractWalRecordsIterator
     /** Logger */
     @NotNull protected final IgniteLogger log;
 
-    /** Position of last read valid record. */
-    protected WALPointer lastRead;
-
     /**
      * The exception which can be thrown during reading next record. It holds until the next calling of next record.
      */
     private IgniteCheckedException curException;
+
+    /** Position of last read valid record. */
+    protected WALPointer lastRead;
 
     /**
      * @param log Logger.
