@@ -281,7 +281,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                 assertEquals(srvcCfg.getName(), sview.name());
                 assertNotNull(sview.serviceId());
-                assertEquals(srvcCfg.getMaxPerNodeCount(), sview.maxPerNodeCount());
                 assertEquals(DummyService.class, sview.serviceClass());
                 assertEquals(srvcCfg.getMaxPerNodeCount(), sview.maxPerNodeCount());
                 assertNull(sview.cacheName());
@@ -315,7 +314,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                 assertEquals(srvcCfg.getName(), sview[0].name());
                 assertNotNull(sview[0].serviceId());
-                assertEquals(srvcCfg.getMaxPerNodeCount(), sview[0].maxPerNodeCount());
                 assertEquals(DummyService.class, sview[0].serviceClass());
                 assertEquals(srvcCfg.getMaxPerNodeCount(), sview[0].maxPerNodeCount());
                 assertEquals("test-cache", sview[0].cacheName());
