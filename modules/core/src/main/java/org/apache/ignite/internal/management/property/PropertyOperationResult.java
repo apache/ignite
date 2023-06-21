@@ -15,45 +15,43 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.property.tasks;
+package org.apache.ignite.internal.management.property;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Collection;
-import java.util.Collections;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * List of the distributed properties names.
+ * Result of an operation with property.
  */
 @GridInternal
-public class PropertiesListResult extends IgniteDataTransferObject {
+public class PropertyOperationResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Properties names. */
-    private Collection<String> props = Collections.emptyList();
+    /** Property value. */
+    private String val;
 
     /**
      * Constructor for optimized marshaller.
      */
-    public PropertiesListResult() {
+    public PropertyOperationResult() {
         // No-op.
     }
 
     /**
-     * @param props Properties.
+     * @param val Value.
      */
-    public PropertiesListResult(Collection<String> props) {
-        this.props = props;
+    public PropertyOperationResult(String val) {
+        this.val = val;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, props);
+        U.writeString(out, val);
     }
 
     /** {@inheritDoc} */
@@ -61,13 +59,13 @@ public class PropertiesListResult extends IgniteDataTransferObject {
         byte protoVer,
         ObjectInput in
     ) throws IOException, ClassNotFoundException {
-        props = U.readCollection(in);
+        val = U.readString(in);
     }
 
     /**
-     * @return Properties (name, description) collection.
+     * @return Property value.
      */
-    public Collection<String> properties() {
-        return props;
+    public String value() {
+        return val;
     }
 }

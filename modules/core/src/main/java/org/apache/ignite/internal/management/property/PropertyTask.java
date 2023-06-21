@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.property.tasks;
+package org.apache.ignite.internal.management.property;
 
 import java.io.Serializable;
 import java.util.List;
@@ -23,8 +23,6 @@ import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.management.property.PropertyGetCommandArg;
-import org.apache.ignite.internal.management.property.PropertySetCommandArg;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
