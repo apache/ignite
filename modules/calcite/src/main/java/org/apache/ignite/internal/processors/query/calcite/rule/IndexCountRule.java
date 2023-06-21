@@ -104,7 +104,7 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
 
         RelDistribution distribution;
         QueryProperties qryProps = call.getPlanner().getContext().unwrap(QueryProperties.class);
-        if (qryProps.isLocal())
+        if (qryProps != null && qryProps.isLocal())
             distribution = IgniteDistributions.single();
         else
             distribution = table.distribution();

@@ -433,7 +433,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                         AtomicBoolean miss = new AtomicBoolean();
 
                         plan = queryPlanCache().queryPlan(
-                                new CacheKey(schema.getName(), sql, qryCtx.unwrap(QueryProperties.class), params),
+                                new CacheKey(schema.getName(), sql, qryCtx != null ? qryCtx.unwrap(QueryProperties.class) : qryCtx, params),
                                 () -> {
                                     miss.set(true);
 

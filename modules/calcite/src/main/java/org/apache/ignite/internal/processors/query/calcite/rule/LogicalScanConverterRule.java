@@ -73,7 +73,7 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
 
                 RelDistribution distribution;
                 QueryProperties qryProps = planner.getContext().unwrap(QueryProperties.class);
-                if (qryProps.isLocal())
+                if (qryProps != null && qryProps.isLocal())
                     distribution = IgniteDistributions.single();
                 else
                     distribution = table.distribution();
@@ -134,7 +134,7 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
 
                 RelDistribution distribution;
                 QueryProperties qryProps = planner.getContext().unwrap(QueryProperties.class);
-                if (qryProps.isLocal())
+                if (qryProps != null && qryProps.isLocal())
                     distribution = IgniteDistributions.single();
                 else
                     distribution = table.distribution();
