@@ -46,6 +46,9 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
     /** Skip position check flag. Should be set for reading compacted wal file with skipped physical records. */
     private boolean skipPositionCheck;
 
+    /** Skip index check flag.  */
+    private boolean skipIndexCheck;
+
     /**
      * @param cctx Cctx.
      */
@@ -84,6 +87,7 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
                     needWritePointer,
                     marshalledMode,
                     skipPositionCheck,
+                    skipIndexCheck,
                     recordDeserializeFilter
                 );
 
@@ -147,6 +151,20 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
     /** {@inheritDoc} */
     @Override public RecordSerializerFactoryImpl skipPositionCheck(boolean skipPositionCheck) {
         this.skipPositionCheck = skipPositionCheck;
+
+        return this;
+    }
+
+    /**
+     * @return Skip index check flag.
+     */
+    public boolean skipIndexCheck() {
+        return skipIndexCheck;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RecordSerializerFactory skipIndexCheck(boolean skipIndexCheck) {
+        this.skipIndexCheck = skipIndexCheck;
 
         return this;
     }

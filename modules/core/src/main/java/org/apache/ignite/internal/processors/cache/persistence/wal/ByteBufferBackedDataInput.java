@@ -36,4 +36,20 @@ public interface ByteBufferBackedDataInput extends DataInput {
      * @throws IOException If failed.
      */
     public void ensure(int requested) throws IOException;
+
+    /**
+     * @param pos Position in bytes from file begin.
+     */
+    void seek(long pos) throws IOException;
+
+    /**
+     * @return Position in the stream.
+     */
+    long position();
+
+    /**
+     * @param skipCheck If CRC check should be skipped.
+     * @return autoclosable fileInput, after its closing crc32 will be calculated and compared with saved one
+     */
+    Crc32CheckingDataInput startRead(boolean skipCheck);
 }

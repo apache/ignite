@@ -71,4 +71,12 @@ public interface RecordSerializerFactory {
      * @param skipPositionCheck Skip position check.
      */
     public RecordSerializerFactory skipPositionCheck(boolean skipPositionCheck);
+
+    /**
+     * If skipIndexCheck is true, created serializer won't check that actual segment index is equal to
+     * segment index in saved record's {@link WALPointer}.
+     *
+     * @param skipIndexCheck Skip index check.
+     */
+    public RecordSerializerFactory skipIndexCheck(boolean skipIndexCheck);
 }

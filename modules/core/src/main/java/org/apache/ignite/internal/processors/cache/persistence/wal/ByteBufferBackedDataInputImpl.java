@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -46,6 +47,27 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
     @Override public void ensure(int requested) throws IOException {
         if (buf.remaining() < requested)
             throw new IOException("Requested size is greater than buffer: " + requested);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void seek(long pos) throws IOException {
+        A.ensure(pos >= 0, "pos not be negative");
+        A.ensure(pos <= Integer.MAX_VALUE, "pos should be int");
+
+        buf.position((int)pos);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long position() {
+        return buf.position();
+    }
+
+    /**
+     * @param skipCheck If CRC check should be skipped.
+     * @return autoclosable ByteBufferBackedDataInput, after its closing crc will be calculated and compared with saved one
+     */
+    @Override public Crc32CheckingDataInput startRead(boolean skipCheck) {
+        return new Crc32CheckingDataInput(this, skipCheck);
     }
 
     /** {@inheritDoc} */

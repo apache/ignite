@@ -31,6 +31,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
+import org.apache.ignite.internal.processors.cache.persistence.wal.Crc32CheckingDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
@@ -38,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -226,7 +226,7 @@ public class RecordV1Serializer implements RecordSerializer {
     }
 
     /** {@inheritDoc} */
-    @Override public WALRecord readRecord(FileInput in0, WALPointer expPtr) throws IOException, IgniteCheckedException {
+    @Override public WALRecord readRecord(ByteBufferBackedDataInput in0, WALPointer expPtr) throws IOException, IgniteCheckedException {
         return readWithCrc(in0, expPtr, recordIO);
     }
 
@@ -362,13 +362,13 @@ public class RecordV1Serializer implements RecordSerializer {
      * @throws IgniteCheckedException If it's unable to read record.
      */
     static WALRecord readWithCrc(
-        FileInput in0,
+        ByteBufferBackedDataInput in0,
         WALPointer expPtr,
         RecordIO reader
     ) throws EOFException, IgniteCheckedException {
         long startPos = -1;
 
-        try (SimpleFileInput.Crc32CheckingFileInput in = in0.startRead(skipCrc)) {
+        try (Crc32CheckingDataInput in = in0.startRead(skipCrc)) {
             startPos = in0.position();
 
             WALRecord res = reader.readWithHeaders(in, expPtr);
@@ -385,12 +385,15 @@ public class RecordV1Serializer implements RecordSerializer {
         catch (Exception e) {
             long size = -1;
 
-            try {
-                size = in0.io().size();
-            }
-            catch (IOException ignore) {
-                // It just for information. Fail calculate file size.
-                e.addSuppressed(ignore);
+            if (in0 instanceof FileInput) {
+                FileInput fileInput = (FileInput)in0;
+                try {
+                    size = fileInput.io().size();
+                }
+                catch (IOException ignore) {
+                    // It just for information. Fail calculate file size.
+                    e.addSuppressed(ignore);
+                }
             }
 
             throw new IgniteCheckedException(

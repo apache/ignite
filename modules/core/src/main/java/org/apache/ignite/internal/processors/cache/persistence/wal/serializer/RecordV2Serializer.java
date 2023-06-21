@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBac
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
@@ -74,6 +73,9 @@ public class RecordV2Serializer implements RecordSerializer {
     /** Skip position check flag. Should be set for reading compacted wal file with skipped physical records. */
     private final boolean skipPositionCheck;
 
+    /** Skip index check mode. */
+    private final boolean skipIndexCheck;
+
     /** Thread-local heap byte buffer. */
     private final ThreadLocal<ByteBuffer> heapTlb =
         ThreadLocal.withInitial(() -> ByteBuffer.allocate(4096).order(GridUnsafe.NATIVE_BYTE_ORDER));
@@ -108,7 +110,7 @@ public class RecordV2Serializer implements RecordSerializer {
             if (recType == SWITCH_SEGMENT_RECORD)
                 throw new SegmentEofException("Reached end of segment", null);
 
-            WALPointer ptr = readPositionAndCheckPoint(in, expPtr, skipPositionCheck, recType);
+            WALPointer ptr = readPositionAndCheckPoint(in, expPtr, skipPositionCheck, skipIndexCheck, recType);
 
             if (recType == null) {
                 throw new IOException("Unknown record type: " + recType +
@@ -204,10 +206,10 @@ public class RecordV2Serializer implements RecordSerializer {
 
     /**
      * Create an instance of Record V2 serializer.
-     *
-     * @param dataSerializer V2 data serializer.
+     *  @param dataSerializer V2 data serializer.
      * @param marshalledMode Marshalled mode.
      * @param skipPositionCheck Skip position check mode.
+     * @param skipIndexCheck Skip index check mode
      * @param recordFilter Record type filter. {@link FilteredRecord} is deserialized instead of original record.
      */
     public RecordV2Serializer(
@@ -215,12 +217,14 @@ public class RecordV2Serializer implements RecordSerializer {
         boolean writePointer,
         boolean marshalledMode,
         boolean skipPositionCheck,
+        boolean skipIndexCheck,
         IgniteBiPredicate<RecordType, WALPointer> recordFilter
     ) {
         this.dataSerializer = dataSerializer;
         this.writePointer = writePointer;
         this.marshalledMode = marshalledMode;
         this.skipPositionCheck = skipPositionCheck;
+        this.skipIndexCheck = skipIndexCheck;
         this.recordFilter = recordFilter;
     }
 
@@ -245,13 +249,14 @@ public class RecordV2Serializer implements RecordSerializer {
     }
 
     /** {@inheritDoc} */
-    @Override public WALRecord readRecord(FileInput in, WALPointer expPtr) throws IOException, IgniteCheckedException {
+    @Override public WALRecord readRecord(ByteBufferBackedDataInput in, WALPointer expPtr) throws IOException, IgniteCheckedException {
         return RecordV1Serializer.readWithCrc(in, expPtr, recordIO);
     }
 
     /**
      * @param in Data input to read pointer from.
      * @param skipPositionCheck Flag for skipping position check.
+     * @param skipIndexCheck Flag for skipping index check.
      * @return Read file WAL pointer.
      * @throws IOException If failed to write.
      */
@@ -260,13 +265,14 @@ public class RecordV2Serializer implements RecordSerializer {
         DataInput in,
         WALPointer expPtr,
         boolean skipPositionCheck,
+        boolean skipIndexCheck,
         RecordType type
     ) throws IgniteCheckedException, IOException {
         long idx = in.readLong();
         int fileOff = in.readInt();
         int len = in.readInt();
 
-        if (!F.eq(idx, expPtr.index()) || (!skipPositionCheck && !F.eq(fileOff, expPtr.fileOffset())))
+        if ((!skipIndexCheck && !F.eq(idx, expPtr.index())) || (!skipPositionCheck && !F.eq(fileOff, expPtr.fileOffset())))
             throw new WalSegmentTailReachedException(
                 "WAL segment tail reached. [ " +
                     "Expected next state: {Index=" + expPtr.index() + ",Offset=" + expPtr.fileOffset() + "}, " +

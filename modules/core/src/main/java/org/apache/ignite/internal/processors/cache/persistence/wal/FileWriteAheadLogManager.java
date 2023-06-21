@@ -2842,7 +2842,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      *
      */
-    public static class ReadFileHandle extends AbstractFileHandle implements AbstractWalRecordsIterator.AbstractReadFileHandle {
+    public static class ReadFileHandle extends AbstractFileHandle implements FileWalRecordsIterator.AbstractReadFileHandle {
         /** Entry serializer. */
         RecordSerializer ser;
 
@@ -2908,7 +2908,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      * Iterator over WAL-log.
      */
-    private static class RecordsIterator extends AbstractWalRecordsIterator {
+    private static class RecordsIterator extends FileWalRecordsIterator {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -3076,8 +3076,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
 
         /** {@inheritDoc} */
-        @Override protected AbstractReadFileHandle advanceSegment(
-            @Nullable final AbstractReadFileHandle curWalSegment
+        @Override protected AbstractWalSegmentHandle advanceSegment(
+            @Nullable final AbstractWalRecordsIterator.AbstractWalSegmentHandle curWalSegment
         ) throws IgniteCheckedException {
             if (curWalSegment != null)
                 curWalSegment.close();
@@ -3240,7 +3240,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
 
         /** {@inheritDoc} */
-        @Override protected AbstractReadFileHandle createReadFileHandle(SegmentIO fileIO,
+        @Override protected AbstractWalSegmentHandle createReadFileHandle(SegmentIO fileIO,
             RecordSerializer ser, FileInput in) {
             return new ReadFileHandle(fileIO, ser, in, segmentAware);
         }
