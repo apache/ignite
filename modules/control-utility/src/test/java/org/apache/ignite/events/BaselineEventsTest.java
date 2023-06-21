@@ -195,7 +195,7 @@ public abstract class BaselineEventsTest extends GridCommandHandlerFactoryAbstra
             CommandHandler.EXIT_CODE_OK,
             cmdHndFactory.get().applyAsInt(Arrays.asList("--baseline", "auto_adjust", "disable", "--yes"))
         );
-        assertFalse(autoAdjustEnabled.get());
+        assertTrue(GridTestUtils.waitForCondition(() -> !autoAdjustEnabled.get(), 3_000));
 
         cluster.baselineAutoAdjustEnabled(true);
         assertTrue(GridTestUtils.waitForCondition(autoAdjustEnabled::get, 3_000));
