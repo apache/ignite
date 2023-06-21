@@ -33,15 +33,6 @@ import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.cache.VisorCacheAffinityConfiguration;
-import org.apache.ignite.internal.visor.cache.VisorCacheConfiguration;
-import org.apache.ignite.internal.visor.cache.VisorCacheConfigurationCollectorTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheConfigurationCollectorTaskArg;
-import org.apache.ignite.internal.visor.cache.VisorCacheEvictionConfiguration;
-import org.apache.ignite.internal.visor.cache.VisorCacheNearConfiguration;
-import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceConfiguration;
-import org.apache.ignite.internal.visor.cache.VisorCacheStoreConfiguration;
-import org.apache.ignite.internal.visor.query.VisorQueryConfiguration;
 
 import static org.apache.ignite.internal.management.cache.ViewCacheCmd.CACHES;
 import static org.apache.ignite.internal.management.cache.ViewCacheCmd.GROUPS;
@@ -111,11 +102,11 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewC
             .filter(FILTER.apply(arg))
             .collect(Collectors.toSet());
 
-        Map<String, VisorCacheConfiguration> res = cli.compute().projection(nodes).execute(
-            VisorCacheConfigurationCollectorTask.class.getName(),
+        Map<String, CacheConfiguration> res = cli.compute().projection(nodes).execute(
+            CacheConfigurationCollectorTask.class.getName(),
             new VisorTaskArgument<>(
                 nodes.stream().map(GridClientNode::nodeId).collect(Collectors.toSet()),
-                new VisorCacheConfigurationCollectorTaskArg(arg.regex()),
+                new CacheConfigurationCollectorTaskArg(arg.regex()),
                 false
             )
         );
@@ -157,13 +148,13 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewC
      * @param cacheToMapped Map cache name to mapped.
      */
     private void printCachesConfig(
-        Map<String, VisorCacheConfiguration> caches,
+        Map<String, CacheConfiguration> caches,
         OutputFormat outputFormat,
         Map<String, Integer> cacheToMapped,
         Consumer<String> printer
     ) {
 
-        for (Map.Entry<String, VisorCacheConfiguration> entry : caches.entrySet()) {
+        for (Map.Entry<String, CacheConfiguration> entry : caches.entrySet()) {
             String cacheName = entry.getKey();
 
             switch (outputFormat) {
@@ -192,20 +183,20 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewC
     }
 
     /**
-     * Maps VisorCacheConfiguration to key-value pairs.
+     * Maps CacheConfiguration to key-value pairs.
      *
      * @param cfg Visor cache configuration.
      * @return map of key-value pairs.
      */
-    private static Map<String, Object> mapToPairs(VisorCacheConfiguration cfg) {
+    private static Map<String, Object> mapToPairs(CacheConfiguration cfg) {
         Map<String, Object> params = new LinkedHashMap<>();
 
-        VisorCacheAffinityConfiguration affinityCfg = cfg.getAffinityConfiguration();
-        VisorCacheNearConfiguration nearCfg = cfg.getNearConfiguration();
-        VisorCacheRebalanceConfiguration rebalanceCfg = cfg.getRebalanceConfiguration();
-        VisorCacheEvictionConfiguration evictCfg = cfg.getEvictionConfiguration();
-        VisorCacheStoreConfiguration storeCfg = cfg.getStoreConfiguration();
-        VisorQueryConfiguration qryCfg = cfg.getQueryConfiguration();
+        CacheAffinityConfiguration affinityCfg = cfg.getAffinityConfiguration();
+        CacheNearConfiguration nearCfg = cfg.getNearConfiguration();
+        CacheRebalanceConfiguration rebalanceCfg = cfg.getRebalanceConfiguration();
+        CacheEvictionConfiguration evictCfg = cfg.getEvictionConfiguration();
+        CacheStoreConfiguration storeCfg = cfg.getStoreConfiguration();
+        QueryConfiguration qryCfg = cfg.getQueryConfiguration();
 
         params.put("Name", cfg.getName());
         params.put("Group", cfg.getGroupName());
@@ -298,7 +289,7 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewC
      * @param cfg Visor cache configuration for invocation.
      * @return String representation without class name in begin of string.
      */
-    private String toString(VisorCacheConfiguration cfg) {
+    private String toString(CacheConfiguration cfg) {
         return cfg.toString().substring(cfg.getClass().getSimpleName().length() + 1);
     }
 

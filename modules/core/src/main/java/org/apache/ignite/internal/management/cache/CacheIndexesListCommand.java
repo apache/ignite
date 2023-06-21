@@ -27,8 +27,6 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.cache.index.IndexListInfoContainer;
-import org.apache.ignite.internal.visor.cache.index.IndexListTask;
 
 /** Index list. */
 public class CacheIndexesListCommand implements ComputeCommand<CacheIndexesListCommandArg, Set<IndexListInfoContainer>> {
