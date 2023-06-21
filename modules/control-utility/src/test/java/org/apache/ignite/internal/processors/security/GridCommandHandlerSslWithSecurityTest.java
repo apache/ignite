@@ -28,9 +28,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.NoopConsole;
-import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.util.GridCommandHandlerFactoryAbstractTest;
 import org.junit.Assume;
 import org.junit.Test;
@@ -101,7 +100,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
      * @param hnd Command handler.
      */
     private void flushCommandOutput(CliFrontend hnd) {
-        U.<IgniteLoggerEx>field(hnd, "logger").flush();
+        hnd.flushLogger();
     }
 
     /** {@inheritDoc} */
@@ -134,7 +133,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
         AtomicInteger keyStorePwdCnt = new AtomicInteger();
         AtomicInteger trustStorePwdCnt = new AtomicInteger();
 
-        ((CommandHandler)cmd).console = new NoopConsole() {
+        ((CommandHandler)GridTestUtils.getFieldValue(cmd, "hnd")).console = new NoopConsole() {
             /** {@inheritDoc} */
             @Override public char[] readPassword(String fmt, Object... args) {
                 if (fmt.contains("keystore")) {

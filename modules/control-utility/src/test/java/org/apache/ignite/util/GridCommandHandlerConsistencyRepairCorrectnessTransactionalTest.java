@@ -68,9 +68,12 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
     public static final String PARALLEL = "--parallel";
 
     /** Test parameters. */
-    @Parameterized.Parameters(name = "misses={0}, nulls={1}, strategy={2}, parallel={3}")
+    @Parameterized.Parameters(name = "invoker={0}, misses={1}, nulls={2}, strategy={3}, parallel={4}")
     public static Iterable<Object[]> parameters() {
         List<Object[]> res = new ArrayList<>();
+
+        int cntr = 0;
+        List<String> invokers = invokers();
 
         for (boolean misses : new boolean[] {false, true}) {
             for (boolean nulls : new boolean[] {false, true}) {
@@ -79,7 +82,7 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
                         if (parallel && strategy != ReadRepairStrategy.CHECK_ONLY)
                             continue; // see https://issues.apache.org/jira/browse/IGNITE-15316
 
-                        res.add(new Object[] {misses, nulls, strategy, parallel});
+                        res.add(new Object[] {invokers.get(cntr++ % invokers.size()), misses, nulls, strategy, parallel});
                     }
                 }
             }
@@ -89,19 +92,19 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
     }
 
     /** Misses. */
-    @Parameterized.Parameter
+    @Parameterized.Parameter(1)
     public boolean misses;
 
     /** Nulls. */
-    @Parameterized.Parameter(1)
+    @Parameterized.Parameter(2)
     public boolean nulls;
 
     /** Strategy. */
-    @Parameterized.Parameter(2)
+    @Parameterized.Parameter(3)
     public ReadRepairStrategy strategy;
 
     /** Parallel consistency check. */
-    @Parameterized.Parameter(3)
+    @Parameterized.Parameter(4)
     public boolean parallel;
 
     /** Partitions. */
