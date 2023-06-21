@@ -15,43 +15,45 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.property.tasks;
+package org.apache.ignite.internal.management.property;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Collection;
+import java.util.Collections;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Result of an operation with property.
+ * List of the distributed properties names.
  */
 @GridInternal
-public class PropertyOperationResult extends IgniteDataTransferObject {
+public class PropertiesListResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Property value. */
-    private String val;
+    /** Properties names. */
+    private Collection<String> props = Collections.emptyList();
 
     /**
      * Constructor for optimized marshaller.
      */
-    public PropertyOperationResult() {
+    public PropertiesListResult() {
         // No-op.
     }
 
     /**
-     * @param val Value.
+     * @param props Properties.
      */
-    public PropertyOperationResult(String val) {
-        this.val = val;
+    public PropertiesListResult(Collection<String> props) {
+        this.props = props;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, val);
+        U.writeCollection(out, props);
     }
 
     /** {@inheritDoc} */
@@ -59,13 +61,13 @@ public class PropertyOperationResult extends IgniteDataTransferObject {
         byte protoVer,
         ObjectInput in
     ) throws IOException, ClassNotFoundException {
-        val = U.readString(in);
+        props = U.readCollection(in);
     }
 
     /**
-     * @return Property value.
+     * @return Properties (name, description) collection.
      */
-    public String value() {
-        return val;
+    public Collection<String> properties() {
+        return props;
     }
 }

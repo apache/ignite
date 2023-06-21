@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.persistence;
+package org.apache.ignite.internal.management.persistence;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,8 +33,6 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.internal.management.persistence.PersistenceBackupCachesTaskArg;
-import org.apache.ignite.internal.management.persistence.PersistenceCleanCachesTaskArg;
 import org.apache.ignite.internal.management.persistence.PersistenceCommand.PersistenceBackupAllTaskArg;
 import org.apache.ignite.internal.management.persistence.PersistenceCommand.PersistenceBackupCorruptedTaskArg;
 import org.apache.ignite.internal.management.persistence.PersistenceCommand.PersistenceCleanAllTaskArg;

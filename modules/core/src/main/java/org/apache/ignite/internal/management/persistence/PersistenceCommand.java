@@ -25,8 +25,6 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.persistence.PersistenceCommand.PersistenceTaskArg;
-import org.apache.ignite.internal.visor.persistence.PersistenceTask;
-import org.apache.ignite.internal.visor.persistence.PersistenceTaskResult;
 
 /** */
 public class PersistenceCommand extends CommandRegistryImpl<PersistenceTaskArg, PersistenceTaskResult>

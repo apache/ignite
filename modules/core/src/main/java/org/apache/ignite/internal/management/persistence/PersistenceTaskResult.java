@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.persistence;
+package org.apache.ignite.internal.management.persistence;
 
 import java.io.IOException;
 import java.io.ObjectInput;

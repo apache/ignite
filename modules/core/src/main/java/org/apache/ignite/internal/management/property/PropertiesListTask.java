@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.property.tasks;
+package org.apache.ignite.internal.management.property;
 
 import java.util.List;
 import java.util.stream.Collectors;
