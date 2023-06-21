@@ -20,16 +20,15 @@ package org.apache.ignite.util;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.ToIntFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
@@ -52,6 +51,13 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
         factory.setCipherSuites(cipherSuites);
 
         return factory;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        Assume.assumeTrue(invoker.equalsIgnoreCase(CLI_INVOKER));
+
+        super.beforeTest();
     }
 
     /** {@inheritDoc} */

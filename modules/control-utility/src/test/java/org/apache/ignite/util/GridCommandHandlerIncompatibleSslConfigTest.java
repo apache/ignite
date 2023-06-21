@@ -18,6 +18,7 @@
 package org.apache.ignite.util;
 
 import java.util.List;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
@@ -38,6 +39,13 @@ public class GridCommandHandlerIncompatibleSslConfigTest extends GridCommandHand
         params.add("src/test/resources/some-file.xml");
         params.add("--keystore");     // incompatible
         params.add("src/test/resources/some-file.jks");
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        Assume.assumeTrue(invoker.equalsIgnoreCase(CLI_INVOKER));
+
+        super.beforeTest();
     }
 
     /** */

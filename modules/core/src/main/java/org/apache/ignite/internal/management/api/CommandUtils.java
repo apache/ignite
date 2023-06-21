@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.api;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -38,12 +39,21 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientCacheMode;
+import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.client.GridClientNodeMetrics;
+import org.apache.ignite.internal.client.GridClientProtocol;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -456,6 +466,20 @@ public class CommandUtils {
     }
 
     /**
+     * @param cli Grid client.
+     * @param ignite Ignite node.
+     * @return Collection of cluster nodes.
+     */
+    public static Collection<GridClientNode> nodes(@Nullable GridClient cli, @Nullable Ignite ignite) throws GridClientException {
+        if (cli != null)
+            return cli.compute().nodes();
+
+        return ignite.cluster().nodes().stream()
+            .map(CommandUtils::clusterToClientNode)
+            .collect(Collectors.toList());
+    }
+
+    /**
      * Join input parameters with specified {@code delimeter} between them.
      *
      * @param delimeter Specified delimeter.
@@ -640,6 +664,30 @@ public class CommandUtils {
     }
 
     /** */
+    public static <A, R> R execute(
+        @Nullable GridClient cli,
+        @Nullable Ignite ignite,
+        Class<? extends ComputeTask<VisorTaskArgument<A>, R>> taskCls,
+        A arg,
+        Collection<GridClientNode> nodes
+    ) throws GridClientException {
+        Collection<UUID> nodesIds = nodes.stream()
+            .map(GridClientNode::nodeId)
+            .collect(Collectors.toList());
+
+        if (cli != null) {
+            return cli.compute().projection(nodes).execute(
+                taskCls.getName(),
+                new VisorTaskArgument<>(nodesIds, arg, false)
+            );
+        }
+
+        return ignite
+            .compute(ignite.cluster())
+            .execute(taskCls, new VisorTaskArgument<>(nodesIds, arg, false));
+    }
+
+    /** */
     private static class ArgumentState<A extends IgniteDataTransferObject> implements BiConsumer<Field, Object> {
         /** */
         final A res;
@@ -741,5 +789,62 @@ public class CommandUtils {
                 throw new IgniteException(e);
             }
         }
+    }
+
+    /** */
+    public static GridClientNode clusterToClientNode(ClusterNode n) {
+        return new GridClientNode() {
+            @Override public UUID nodeId() {
+                return n.id();
+            }
+
+            @Override public Object consistentId() {
+                return n.consistentId();
+            }
+
+            @Override public boolean connectable() {
+                return true;
+            }
+
+            @Override public long order() {
+                return n.order();
+            }
+
+            @Override public boolean isClient() {
+                return n.isClient();
+            }
+
+            @Override public List<String> tcpAddresses() {
+                return U.arrayList(n.addresses());
+            }
+
+            @Override public List<String> tcpHostNames() {
+                return U.arrayList(n.hostNames());
+            }
+
+            @Override public int tcpPort() {
+                return -1;
+            }
+
+            @Override public Map<String, Object> attributes() {
+                return n.attributes();
+            }
+
+            @Override public <T> @Nullable T attribute(String name) {
+                return n.attribute(name);
+            }
+
+            @Override public GridClientNodeMetrics metrics() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override public Map<String, GridClientCacheMode> caches() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override public Collection<InetSocketAddress> availableAddresses(GridClientProtocol proto, boolean filterResolved) {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 }

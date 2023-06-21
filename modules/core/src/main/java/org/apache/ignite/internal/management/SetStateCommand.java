@@ -22,6 +22,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,7 +56,7 @@ public class SetStateCommand implements LocalCommand<SetStateCommandArg, Boolean
         if (cli != null)
             cli.state().state(arg.state(), arg.force());
         else
-            ignite.cluster().state(arg.state());
+            ((IgniteClusterEx)ignite.cluster()).state(arg.state(), arg.force());
 
         printer.accept("Cluster state changed to " + arg.state() + '.');
 

@@ -276,6 +276,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testClientsLeakage() throws Exception {
+        Assume.assumeTrue(invoker.equalsIgnoreCase(CLI_INVOKER));
+
         startGrids(1);
 
         Map<UUID, GridClientImpl> clnts = U.field(GridClientFactory.class, "openClients");
@@ -742,7 +744,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertFalse(ignite.cluster().state().active());
         assertEquals(INACTIVE, ignite.cluster().state());
 
-        assertContains(log, testOut.toString(), "Command deprecated. Use --set-state instead.");
+        if (invoker.equals(CLI_INVOKER))
+            assertContains(log, testOut.toString(), "Command deprecated. Use --set-state instead.");
     }
 
     /**
@@ -2050,7 +2053,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                                         .noneMatch(s -> s.contains(getTestIgniteInstanceName() + "1"));
 
         assertTrue(testOutStr, testOutStr.contains("Node not found for consistent ID:"));
-        assertFalse(testOutStr, isInstanse1Found);
+
+        if (invoker.equals(CLI_INVOKER))
+            assertFalse(testOutStr, isInstanse1Found);
     }
 
     /** */

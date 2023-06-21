@@ -72,6 +72,13 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        Assume.assumeTrue(invoker.equalsIgnoreCase(CLI_INVOKER));
+
+        super.beforeTest();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
@@ -123,8 +130,6 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
         crd.cluster().state(ACTIVE);
 
         CliFrontend cmd = cmdHndFactory.get();
-
-        Assume.assumeTrue(cmd instanceof CommandHandler);
 
         AtomicInteger keyStorePwdCnt = new AtomicInteger();
         AtomicInteger trustStorePwdCnt = new AtomicInteger();

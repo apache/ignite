@@ -71,7 +71,7 @@ public class CommandInvoker<A extends IgniteDataTransferObject> extends Abstract
         if (!(cmd instanceof PreparableCommand))
             return true;
 
-        return ((PreparableCommand<A, ?>)cmd).prepare(client(), arg, printer);
+        return ((PreparableCommand<A, ?>)cmd).prepare(client(), null, arg, printer);
     }
 
     /**

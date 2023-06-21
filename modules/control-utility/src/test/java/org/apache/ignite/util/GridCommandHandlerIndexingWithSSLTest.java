@@ -17,6 +17,8 @@
 
 package org.apache.ignite.util;
 
+import org.junit.Assume;
+
 /**
  *
  */
@@ -24,5 +26,12 @@ public class GridCommandHandlerIndexingWithSSLTest extends GridCommandHandlerInd
     /** {@inheritDoc} */
     @Override protected boolean sslEnabled() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        Assume.assumeTrue(invoker.equalsIgnoreCase(CLI_INVOKER));
+
+        super.beforeTest();
     }
 }

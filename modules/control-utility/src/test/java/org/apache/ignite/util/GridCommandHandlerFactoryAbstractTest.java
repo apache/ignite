@@ -256,7 +256,9 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
                 return ignite;
 
             for (Ignite node : IgnitionEx.allGrids()) {
-                if (port == ((IgniteEx)node).localNode().<Integer>attribute(ATTR_REST_TCP_PORT)) {
+                Integer nodePort = ((IgniteEx)node).localNode().<Integer>attribute(ATTR_REST_TCP_PORT);
+
+                if (nodePort != null && port == nodePort) {
                     this.port = port;
                     ignite = (IgniteEx)node;
 
