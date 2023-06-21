@@ -25,9 +25,6 @@ import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.cache.index.IndexForceRebuildTask;
-import org.apache.ignite.internal.visor.cache.index.IndexForceRebuildTaskRes;
-import org.apache.ignite.internal.visor.cache.index.IndexRebuildStatusInfoContainer;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 

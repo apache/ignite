@@ -17,26 +17,37 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.util.Set;
-import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.IgniteComponentType.SPRING;
+/**
+ * Enum for cache metrics command operations.
+ */
+public enum CacheMetricsOperation {
+    /** Enable operation. */
+    ENABLE,
 
-/** Create caches. */
-public class CacheCreateCommand implements ComputeCommand<CacheCreateCommandArg, Set<String>> {
-    /** {@inheritDoc} */
-    @Override public String description() {
-        return "Create caches from Spring XML configuration. Note that the '" +
-            SPRING.module() + "' module should be enabled";
+    /** Disable operation. */
+    DISABLE,
+
+    /** Status operation. */
+    STATUS;
+
+    /**
+     * @param strRep String representation of operation.
+     *
+     * @return Operation corresponding to the specified string representation.
+     */
+    public static @Nullable CacheMetricsOperation of(String strRep) {
+        for (CacheMetricsOperation op : values()) {
+            if (op.name().equalsIgnoreCase(strRep))
+                return op;
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<CacheCreateCommandArg> argClass() {
-        return CacheCreateCommandArg.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<CacheCreateTask> taskClass() {
-        return CacheCreateTask.class;
+    @Override public String toString() {
+        return super.toString().toLowerCase();
     }
 }

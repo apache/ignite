@@ -25,7 +25,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.visor.cache.index.IndexListInfoContainer;
+import org.apache.ignite.internal.management.cache.IndexListInfoContainer;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
