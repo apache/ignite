@@ -39,6 +39,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.systemview.view.ComputeJobView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
@@ -280,6 +281,8 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
      *
      */
     private void testCancelConsistencyTask(boolean parallel) throws InterruptedException {
+        Assume.assumeTrue(invoker.equals(CLI_INVOKER));
+
         String consistencyCacheName = "consistencyCache";
 
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>();

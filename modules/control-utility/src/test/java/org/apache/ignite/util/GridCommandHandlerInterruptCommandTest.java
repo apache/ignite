@@ -41,6 +41,7 @@ import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
@@ -63,6 +64,8 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        Assume.assumeTrue(invoker.equals(CLI_INVOKER));
+
         super.beforeTest();
 
         cleanPersistenceDir();
