@@ -2204,7 +2204,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public void testCacheIdleVerifyDumpCrcWithCorruptedPartition() throws Exception {
         testCacheIdleVerifyWithCorruptedPartition("--cache", "idle_verify", "--dump", "--check-crc");
 
-        String parts[] = testOut.toString().split(IdleVerifyDumpTask.class.getName() + " successfully written output to '");
+        String parts[] = testOut.toString().split(IdleVerifyDumpTask.class.getSimpleName() + " successfully written output to '");
 
         assertEquals(2, parts.length);
 
@@ -2341,8 +2341,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * @return Build matcher for dump file name.
      */
     @NotNull private Matcher dumpFileNameMatcher() {
-        Pattern fileNamePattern = Pattern.compile(".*" + IdleVerifyDumpTask.class.getName() + " successfully written output to '(.*)'");
-
+        Pattern fileNamePattern = Pattern.compile(".*" + IdleVerifyDumpTask.class.getSimpleName()
+            + " successfully written output to '(.*)'");
         return fileNamePattern.matcher(testOut.toString());
     }
 
