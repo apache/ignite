@@ -90,16 +90,16 @@ public class CommandUtils {
     }
 
     /**
-     *
-     * @param cmdCls
-     * @param parent
-     * @return
+     * @param cmdCls Command class.
+     * @param parent Parent registry.
+     * @return Command key without parent prefix.
      */
-    public static String commandKey(Class<?> cmdCls, Class<? extends CommandsRegistry<?, ?>> parent) {
+    public static String cmdKey(Class<?> cmdCls, Class<? extends CommandsRegistry<?, ?>> parent) {
         String name = cmdCls.getSimpleName();
 
         if (parent != null) {
             String parentName = parent.getSimpleName();
+
             parentName = parentName.substring(0, parentName.length() - CMD_NAME_POSTFIX.length());
 
             if (!name.startsWith(parentName)) {
@@ -113,9 +113,7 @@ public class CommandUtils {
         if (!name.endsWith(CMD_NAME_POSTFIX))
             throw new IllegalArgumentException("Command class name must ends with 'Command'");
 
-        name = name.substring(0, name.length() - CMD_NAME_POSTFIX.length());
-
-        return name;
+        return name.substring(0, name.length() - CMD_NAME_POSTFIX.length());
     }
 
     /**

@@ -59,7 +59,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandHandler.setupJavaLogger;
 import static org.apache.ignite.internal.commandline.CommandLogger.errorMessage;
-import static org.apache.ignite.internal.management.api.CommandUtils.commandKey;
+import static org.apache.ignite.internal.management.api.CommandUtils.cmdKey;
 import static org.apache.ignite.internal.management.api.CommandUtils.isBoolean;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
@@ -192,7 +192,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
                 List<String> grps = new ArrayList<>();
 
                 while (!cmdPath.isEmpty()) {
-                    grps.add(commandKey(
+                    grps.add(cmdKey(
                         cmdPath.pop().getClass(),
                         !cmdPath.isEmpty() ? (Class<? extends CommandsRegistry<?, ?>>)cmdPath.peek().getClass() : null)
                     );

@@ -31,7 +31,9 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Collections.singleton;
 
 /**
+ * Abstract class to implement command invokers for specific protocols.
  *
+ * @see NodeCommandInvoker
  */
 public abstract class AbstractCommandInvoker<A extends IgniteDataTransferObject> {
     /** Command to execute. */
@@ -60,7 +62,6 @@ public abstract class AbstractCommandInvoker<A extends IgniteDataTransferObject>
 
     /**
      * Actual command execution with verbose mode if required.
-     * Implement it if your command supports verbose mode.
      *
      * @param printer Result printer.
      * @param verbose Use verbose mode or not
@@ -101,16 +102,12 @@ public abstract class AbstractCommandInvoker<A extends IgniteDataTransferObject>
     protected abstract Map<UUID, GridClientNode> nodes() throws GridClientException;
 
     /**
-     * Method to create thin client for communication with cluster.
-     *
      * @return Grid thin client instance which is already connected to cluster.
      * @throws GridClientException If failed.
      */
     protected abstract @Nullable GridClient client() throws GridClientException;
 
-    /**
-     * @return Local Ignite node.
-     */
+    /** @return Local Ignite node. */
     protected abstract @Nullable Ignite ignite();
 
     /**

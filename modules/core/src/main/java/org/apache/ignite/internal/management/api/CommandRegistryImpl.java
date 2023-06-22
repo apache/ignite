@@ -23,7 +23,7 @@ import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 
-import static org.apache.ignite.internal.management.api.CommandUtils.commandKey;
+import static org.apache.ignite.internal.management.api.CommandUtils.cmdKey;
 
 /**
  * All commands class names stored in registry must ends with {@link Command#CMD_NAME_POSTFIX}.
@@ -49,7 +49,7 @@ public abstract class CommandRegistryImpl<A extends IgniteDataTransferObject, R>
         boolean hasParent = CommandsRegistry.class.isAssignableFrom(getClass())
             && getClass() != IgniteCommandRegistry.class;
 
-        String key = commandKey(
+        String key = cmdKey(
             cmd.getClass(),
             hasParent ? (Class<? extends CommandsRegistry<?, ?>>)getClass() : null
         );

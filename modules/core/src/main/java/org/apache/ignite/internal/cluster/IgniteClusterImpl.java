@@ -396,7 +396,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState) throws IgniteException {
-        state(newState, false);
+        state(newState, true);
     }
 
     /** {@inheritDoc} */
