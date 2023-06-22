@@ -61,7 +61,7 @@ public class DefragmentationScheduleCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, DefragmentationStatusCommandArg arg0) {
+    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, DefragmentationStatusCommandArg arg0) {
         DefragmentationScheduleCommandArg arg = (DefragmentationScheduleCommandArg)arg0;
 
         if (F.isEmpty(arg.nodes()))
@@ -71,7 +71,7 @@ public class DefragmentationScheduleCommand
 
         return nodes.entrySet().stream()
             .filter(e -> nodesArg.contains(Objects.toString(e.getValue().consistentId())))
-            .map(Map.Entry::getKey)
+            .map(Map.Entry::getValue)
             .collect(Collectors.toList());
     }
 }

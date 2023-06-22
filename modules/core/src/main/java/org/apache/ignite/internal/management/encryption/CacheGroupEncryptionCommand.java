@@ -57,8 +57,8 @@ abstract class CacheGroupEncryptionCommand<T>
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, EncryptionCacheGroupArg arg) {
-        return nodes.keySet();
+    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, EncryptionCacheGroupArg arg) {
+        return nodes.values();
     }
 
     /**

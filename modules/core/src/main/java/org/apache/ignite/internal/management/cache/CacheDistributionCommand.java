@@ -46,7 +46,7 @@ public class CacheDistributionCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, CacheDistributionCommandArg arg) {
+    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, CacheDistributionCommandArg arg) {
         return CommandUtils.nodeOrAll(arg.nodeId(), nodes);
     }
 

@@ -45,7 +45,7 @@ public class KillTransactionCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, KillTransactionCommandArg arg) {
-        return nodes.keySet();
+    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, KillTransactionCommandArg arg) {
+        return nodes.values();
     }
 }

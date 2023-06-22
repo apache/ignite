@@ -49,14 +49,14 @@ public class CacheIndexesForceRebuildCommand implements ComputeCommand<CacheInde
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, CacheIndexesForceRebuildCommandArg arg) {
+    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, CacheIndexesForceRebuildCommandArg arg) {
         if (arg.nodeId() != null) {
             GridClientNode node = nodes.get(arg.nodeId());
 
             if (node != null && node.isClient())
                 throw new IllegalArgumentException("Please, specify server node id");
 
-            return Collections.singleton(arg.nodeId());
+            return Collections.singleton(node);
         }
 
         return null;

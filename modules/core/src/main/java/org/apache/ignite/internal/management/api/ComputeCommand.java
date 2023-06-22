@@ -49,7 +49,7 @@ public interface ComputeCommand<A extends IgniteDataTransferObject, R> extends C
      * @param arg Argument.
      * @return nodes to execute command on, {@code null} means default node must be used.
      */
-    public default @Nullable Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, A arg) {
+    public default @Nullable Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, A arg) {
         return null;
     }
 }

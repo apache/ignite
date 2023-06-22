@@ -49,7 +49,7 @@ public class ConsistencyStatusCommand implements ComputeCommand<NoArg, VisorCons
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, NoArg arg) {
+    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, NoArg arg) {
         return servers(nodes);
     }
 

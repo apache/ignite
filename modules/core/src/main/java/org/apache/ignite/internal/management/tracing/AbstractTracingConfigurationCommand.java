@@ -33,7 +33,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.coordinator
 public abstract class AbstractTracingConfigurationCommand implements
     ComputeCommand<TracingConfigurationCommandArg, VisorTracingConfigurationTaskResult> {
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, TracingConfigurationCommandArg arg) {
+    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, TracingConfigurationCommandArg arg) {
         return coordinatorOrNull(nodes);
     }
 

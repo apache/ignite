@@ -43,7 +43,7 @@ public class KillConsistencyCommand implements ComputeCommand<NoArg, Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, NoArg arg) {
-        return nodes.keySet();
+    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, NoArg arg) {
+        return nodes.values();
     }
 }

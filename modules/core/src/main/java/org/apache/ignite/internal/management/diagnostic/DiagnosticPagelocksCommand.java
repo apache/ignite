@@ -50,9 +50,9 @@ public class DiagnosticPagelocksCommand implements ComputeCommand<DiagnosticPage
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, DiagnosticPagelocksCommandArg arg) {
+    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, DiagnosticPagelocksCommandArg arg) {
         if (arg.all())
-            return nodes.keySet();
+            return nodes.values();
 
         if (F.isEmpty(arg.nodes()))
             return null;
@@ -62,7 +62,7 @@ public class DiagnosticPagelocksCommand implements ComputeCommand<DiagnosticPage
         return nodes.entrySet().stream()
             .filter(entry -> argNodes.contains(entry.getKey().toString())
                 || argNodes.contains(String.valueOf(entry.getValue().consistentId())))
-            .map(Map.Entry::getKey)
+            .map(Map.Entry::getValue)
             .collect(Collectors.toList());
     }
 

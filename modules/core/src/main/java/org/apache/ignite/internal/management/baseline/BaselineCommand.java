@@ -65,7 +65,7 @@ public class BaselineCommand extends CommandRegistryImpl<VisorBaselineTaskArg, V
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, VisorBaselineTaskArg arg) {
+    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, VisorBaselineTaskArg arg) {
         return coordinatorOrNull(nodes);
     }
 

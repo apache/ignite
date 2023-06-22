@@ -46,7 +46,7 @@ public class CacheContentionCommand implements ComputeCommand<CacheContentionCom
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, CacheContentionCommandArg arg) {
+    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, CacheContentionCommandArg arg) {
         return CommandUtils.nodeOrAll(arg.nodeId(), nodes);
     }
 

@@ -63,8 +63,8 @@ public class MetricCommand extends CommandRegistryImpl<MetricCommandArg, Map<Str
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, MetricCommandArg arg) {
-        return nodeOrNull(arg.nodeId());
+    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, MetricCommandArg arg) {
+        return nodeOrNull(arg.nodeId(), nodes);
     }
 
     /** {@inheritDoc} */

@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.management.api;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -83,17 +81,10 @@ public abstract class AbstractCommandInvoker<A extends IgniteDataTransferObject>
 
             ComputeCommand<A, R> cmd = (ComputeCommand<A, R>)this.cmd;
 
-            Collection<UUID> cmdNodesIds = cmd.nodes(allNodes, arg);
-            List<GridClientNode> cmdNodes = new ArrayList<>();
+            Collection<GridClientNode> cmdNodes = cmd.nodes(allNodes, arg);
 
-            if (cmdNodesIds == null)
+            if (cmdNodes == null)
                 cmdNodes = singletonList(defaultNode());
-            else {
-                for (UUID id : cmdNodesIds) {
-                    if (!allNodes.containsKey(id))
-                        throw new IllegalArgumentException("Node with id=" + id + " not found.");
-                }
-            }
 
             res = CommandUtils.execute(client(), ignite(), cmd.taskClass(), arg, cmdNodes);
 

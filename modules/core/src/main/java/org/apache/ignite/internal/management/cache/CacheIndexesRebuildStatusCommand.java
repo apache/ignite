@@ -47,7 +47,7 @@ public class CacheIndexesRebuildStatusCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, CacheIndexesRebuildStatusCommandArg arg) {
+    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, CacheIndexesRebuildStatusCommandArg arg) {
         return CommandUtils.nodeOrAll(arg.nodeId(), nodes);
     }
 

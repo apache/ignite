@@ -48,8 +48,8 @@ public class CacheIndexesListCommand implements ComputeCommand<CacheIndexesListC
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, CacheIndexesListCommandArg arg) {
-        return CommandUtils.nodeOrNull(arg.nodeId());
+    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, CacheIndexesListCommandArg arg) {
+        return CommandUtils.nodeOrNull(arg.nodeId(), nodes);
     }
 
     /** {@inheritDoc} */

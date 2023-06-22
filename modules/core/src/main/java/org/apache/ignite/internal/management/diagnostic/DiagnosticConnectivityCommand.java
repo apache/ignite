@@ -76,7 +76,7 @@ public class DiagnosticConnectivityCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, DiagnosticConnectivityCommandArg arg) {
+    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, DiagnosticConnectivityCommandArg arg) {
         // Task runs on default node but maps to all nodes in cluster.
         arg.nodes(nodes.keySet().toArray(EMPTY_UUIDS));
 

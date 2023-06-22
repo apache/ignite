@@ -429,32 +429,50 @@ public class CommandUtils {
      * @param nodes Nodes.
      * @return Coordinator ID or null is {@code nodes} are empty.
      */
-    public static @Nullable Collection<UUID> coordinatorOrNull(Map<UUID, GridClientNode> nodes) {
+    public static @Nullable Collection<GridClientNode> coordinatorOrNull(Map<UUID, GridClientNode> nodes) {
         return nodes.entrySet().stream()
             .filter(e -> !e.getValue().isClient())
             .min(Comparator.comparingLong(e -> e.getValue().order()))
-            .map(e -> Collections.singleton(e.getKey()))
+            .map(e -> Collections.singleton(e.getValue()))
             .orElse(null);
     }
 
     /** */
-    public static Collection<UUID> nodeOrNull(@Nullable UUID nodeId) {
-        return nodeId == null ? null : Collections.singleton(nodeId);
+    public static Collection<GridClientNode> nodeOrNull(@Nullable UUID nodeId, Map<UUID, GridClientNode> nodes) {
+        return nodeId == null ? null : node(nodeId, nodes);
     }
 
     /** */
-    public static Collection<UUID> nodeOrAll(@Nullable UUID nodeId, Map<UUID, GridClientNode> nodes) {
-        return nodeId == null ? nodes.keySet() : Collections.singleton(nodeId);
+    public static Collection<GridClientNode> nodeOrAll(@Nullable UUID nodeId, Map<UUID, GridClientNode> nodes) {
+        return nodeId == null ? nodes.values() : node(nodeId, nodes);
+    }
+
+    /** */
+    public static Collection<GridClientNode> nodes(UUID[] nodeIds, Map<UUID, GridClientNode> nodes) {
+        List<GridClientNode> res = new ArrayList<>();
+
+        for (UUID nodeId : nodeIds)
+            res.addAll(node(nodeId, nodes));
+
+        return res;
+    }
+
+    /** */
+    public static Collection<GridClientNode> node(UUID nodeId, Map<UUID, GridClientNode> nodes) {
+        if (!nodes.containsKey(nodeId))
+            throw new IllegalArgumentException("Node with id=" + nodeId + " not found.");
+
+        return Collections.singleton(nodes.get(nodeId));
     }
 
     /**
      * @param nodes Nodes.
      * @return Server nodes.
      */
-    public static Collection<UUID> servers(Map<UUID, GridClientNode> nodes) {
+    public static Collection<GridClientNode> servers(Map<UUID, GridClientNode> nodes) {
         return nodes.entrySet().stream()
             .filter(e -> !e.getValue().isClient())
-            .map(Map.Entry::getKey)
+            .map(Map.Entry::getValue)
             .collect(Collectors.toList());
     }
 
