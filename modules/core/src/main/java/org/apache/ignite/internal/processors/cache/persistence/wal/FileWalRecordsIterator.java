@@ -121,22 +121,6 @@ public abstract class FileWalRecordsIterator extends AbstractWalRecordsIterator 
 
     }
 
-    /**
-     * Closes and returns WAL segment (if any)
-     *
-     * @return closed handle
-     * @throws IgniteCheckedException if IO failed
-     */
-    @Nullable protected AbstractWalRecordsIterator.AbstractWalSegmentHandle closeCurrentWalSegment() throws IgniteCheckedException {
-        final AbstractWalSegmentHandle walSegmentClosed = currWalSegment;
-
-        if (walSegmentClosed != null) {
-            walSegmentClosed.close();
-            currWalSegment = null;
-        }
-        return walSegmentClosed;
-    }
-
     /** {@inheritDoc} */
     @Override protected abstract AbstractWalSegmentHandle advanceSegment(
         @Nullable final AbstractWalRecordsIterator.AbstractWalSegmentHandle curWalSegment

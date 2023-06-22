@@ -21,9 +21,11 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,12 +44,21 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIterator {
     public ByteBufferWalIterator(
         @NotNull IgniteLogger log,
         ByteBuffer byteBuffer) throws IgniteCheckedException {
+        this(log, null, byteBuffer);
+    }
+
+    /** */
+    public ByteBufferWalIterator(
+        @NotNull IgniteLogger log,
+        GridCacheSharedContext cctx,
+        ByteBuffer byteBuffer) throws IgniteCheckedException {
         super(log);
 
         buffer = byteBuffer;
 
-        RecordSerializerFactory rsf = new RecordSerializerFactoryImpl(null,
+        RecordSerializerFactory rsf = new RecordSerializerFactoryImpl(cctx,
             (t, p) -> t.purpose() == WALRecord.RecordPurpose.LOGICAL).skipPositionCheck(true).skipIndexCheck(true);
+
         serializer = rsf.createSerializer(RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
 
         advance();
@@ -68,6 +79,14 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIterator {
             return new BufferSegment(in, serializer);
         }
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteBiTuple<WALPointer, WALRecord> advanceRecord(
+        @Nullable AbstractWalSegmentHandle hnd) throws IgniteCheckedException {
+        return buffer.hasRemaining()
+            ? super.advanceRecord(hnd)
+            : null;
     }
 
     /** */

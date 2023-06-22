@@ -51,8 +51,8 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
 
     /** {@inheritDoc} */
     @Override public void seek(long pos) throws IOException {
-        A.ensure(pos >= 0, "pos not be negative");
-        A.ensure(pos <= Integer.MAX_VALUE, "pos should be int");
+        A.ensure(pos >= 0, "pos must not be negative");
+        A.ensure(pos <= Integer.MAX_VALUE, "pos must be int");
 
         buf.position((int)pos);
     }

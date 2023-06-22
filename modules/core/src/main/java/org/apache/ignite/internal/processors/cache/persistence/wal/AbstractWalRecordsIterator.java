@@ -47,7 +47,7 @@ public abstract class AbstractWalRecordsIterator
     /**
      * Current WAL segment read file handle. To be filled by subclass advanceSegment
      */
-    protected AbstractWalSegmentHandle currWalSegment;
+    private AbstractWalSegmentHandle currWalSegment;
 
     /** Logger */
     @NotNull protected final IgniteLogger log;
@@ -154,6 +154,22 @@ public abstract class AbstractWalRecordsIterator
     protected abstract IgniteCheckedException validateTailReachedException(
         WalSegmentTailReachedException tailReachedException,
         AbstractWalSegmentHandle currWalSegment);
+
+    /**
+     * Closes and returns WAL segment (if any)
+     *
+     * @return closed handle
+     * @throws IgniteCheckedException if IO failed
+     */
+    @Nullable protected AbstractWalRecordsIterator.AbstractWalSegmentHandle closeCurrentWalSegment() throws IgniteCheckedException {
+        final AbstractWalSegmentHandle walSegmentClosed = currWalSegment;
+
+        if (walSegmentClosed != null) {
+            walSegmentClosed.close();
+            currWalSegment = null;
+        }
+        return walSegmentClosed;
+    }
 
     /**
      * Switches records iterator to the next WAL segment as result of this method, new reference to segment should be
