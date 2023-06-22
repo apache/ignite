@@ -113,7 +113,7 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        hnd = commandHandler();
+        hnd = newCommandHandler();
 
         // Cleanup configuration.
         grid(0).tracingConfiguration().resetAll(null);

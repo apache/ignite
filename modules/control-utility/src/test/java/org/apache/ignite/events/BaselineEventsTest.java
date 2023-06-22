@@ -102,7 +102,7 @@ public abstract class BaselineEventsTest extends GridCommandHandlerFactoryAbstra
 
         assertEquals(
             CommandHandler.EXIT_CODE_OK,
-            commandHandler().execute(Arrays.asList("--baseline", "set", consistentIds, "--yes"))
+            newCommandHandler().execute(Arrays.asList("--baseline", "set", consistentIds, "--yes"))
         );
 
         assertTrue(GridTestUtils.waitForCondition(baselineChanged::get, 3_000));
@@ -187,14 +187,14 @@ public abstract class BaselineEventsTest extends GridCommandHandlerFactoryAbstra
 
         assertEquals(
             CommandHandler.EXIT_CODE_OK,
-            commandHandler().execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
+            newCommandHandler().execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
 
         );
         assertTrue(GridTestUtils.waitForCondition(autoAdjustEnabled::get, 3_000));
 
         assertEquals(
             CommandHandler.EXIT_CODE_OK,
-            commandHandler().execute(Arrays.asList("--baseline", "auto_adjust", "disable", "--yes"))
+            newCommandHandler().execute(Arrays.asList("--baseline", "auto_adjust", "disable", "--yes"))
         );
         assertTrue(GridTestUtils.waitForCondition(() -> !autoAdjustEnabled.get(), 3_000));
 
@@ -228,7 +228,7 @@ public abstract class BaselineEventsTest extends GridCommandHandlerFactoryAbstra
 
         assertEquals(
             CommandHandler.EXIT_CODE_OK,
-            commandHandler().execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
+            newCommandHandler().execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
         );
         assertTrue(GridTestUtils.waitForCondition(() -> autoAdjustTimeout.get() == 10L, 3_000));
 
@@ -264,7 +264,7 @@ public abstract class BaselineEventsTest extends GridCommandHandlerFactoryAbstra
 
         assertEquals(
             CommandHandler.EXIT_CODE_OK,
-            commandHandler().execute(Arrays.asList("--baseline", "set", consistentIds, "--yes"))
+            newCommandHandler().execute(Arrays.asList("--baseline", "set", consistentIds, "--yes"))
         );
 
         awaitPartitionMapExchange();
@@ -277,7 +277,7 @@ public abstract class BaselineEventsTest extends GridCommandHandlerFactoryAbstra
 
         assertEquals(
             CommandHandler.EXIT_CODE_OK,
-            commandHandler().execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
+            newCommandHandler().execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
         );
 
         cluster.baselineAutoAdjustEnabled(false);

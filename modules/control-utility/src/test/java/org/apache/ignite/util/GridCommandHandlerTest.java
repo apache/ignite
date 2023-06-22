@@ -265,7 +265,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(ACTIVE, ignite.cluster().state());
 
-        if (invoker.equals(CLI_CMD_HND))
+        if (commandHandler.equals(CLI_CMD_HND))
             assertContains(log, testOut.toString(), "Command deprecated. Use --set-state instead.");
     }
 
@@ -276,7 +276,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testClientsLeakage() throws Exception {
-        Assume.assumeTrue(invoker.equalsIgnoreCase(CLI_CMD_HND));
+        Assume.assumeTrue(commandHandler.equalsIgnoreCase(CLI_CMD_HND));
 
         startGrids(1);
 
@@ -744,7 +744,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertFalse(ignite.cluster().state().active());
         assertEquals(INACTIVE, ignite.cluster().state());
 
-        if (invoker.equals(CLI_CMD_HND))
+        if (commandHandler.equals(CLI_CMD_HND))
             assertContains(log, testOut.toString(), "Command deprecated. Use --set-state instead.");
     }
 
@@ -872,7 +872,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--deactivate"));
         assertFalse(igniteEx.cluster().state().active());
 
-        if (invoker.equals(CLI_CMD_HND)) {
+        if (commandHandler.equals(CLI_CMD_HND)) {
             assertContains(
                 log,
                 testOut.toString(),
@@ -1701,7 +1701,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         doSleep(5000);
 
-        TestCommandHandler h = commandHandler();
+        TestCommandHandler h = newCommandHandler();
 
         final VisorTxInfo[] toKill = {null};
 
@@ -1967,7 +1967,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             }, 10_000);
         }
 
-        TestCommandHandler h = commandHandler();
+        TestCommandHandler h = newCommandHandler();
 
         // Check listing.
         validate(h, map -> {
@@ -2054,7 +2054,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertTrue(testOutStr, testOutStr.contains("Node not found for consistent ID:"));
 
-        if (invoker.equals(CLI_CMD_HND))
+        if (commandHandler.equals(CLI_CMD_HND))
             assertFalse(testOutStr, isInstanse1Found);
     }
 
@@ -2115,7 +2115,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testCacheIdleVerifyDumpWhenNodeFailing() throws Exception {
-        Assume.assumeTrue("CHECKME", CLI_CMD_HND.equalsIgnoreCase(invoker));
+        Assume.assumeTrue("CHECKME", CLI_CMD_HND.equalsIgnoreCase(commandHandler));
 
         Ignite ignite = startGrids(3);
 
@@ -2423,7 +2423,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * @param args Args.
      */
     private void validate(TestCommandHandler h, IgniteInClosure<Map<ClusterNode, VisorTxTaskResult>> validateClo,
-                          String... args) {
+        String... args) {
         assertEquals(EXIT_CODE_OK, execute(h, args));
 
         validateClo.apply(h.getLastOperationResult());
@@ -2465,7 +2465,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         ignite.cluster().state(ACTIVE);
 
-        if (invoker.equals(CLI_CMD_HND)) {
+        if (commandHandler.equals(CLI_CMD_HND)) {
             assertEquals(
                 EXIT_CODE_OK,
                 execute("--diagnostic")
@@ -2711,7 +2711,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertNotNull(tx0);
 
-        TestCommandHandler h = commandHandler();
+        TestCommandHandler h = newCommandHandler();
 
         validate(h, map -> {
             ClusterNode node = grid(0).cluster().localNode();
@@ -3018,7 +3018,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         Ignite ignite = startGrids(1);
 
-        TestCommandHandler h = commandHandler(createTestLogger());
+        TestCommandHandler h = newCommandHandler(createTestLogger());
 
         assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "get_master_key_name"));
 
@@ -3175,7 +3175,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         injectTestSystemOut();
 
-        TestCommandHandler h = commandHandler(createTestLogger());
+        TestCommandHandler h = newCommandHandler(createTestLogger());
 
         // Invalid command syntax check.
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "create", snpName, "blah"));
@@ -3249,7 +3249,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         createCacheAndPreload(startCli, 100);
 
-        TestCommandHandler h = commandHandler();
+        TestCommandHandler h = newCommandHandler();
 
         // Cancel snapshot using operation ID.
         doSnapshotCancellationTest(startCli, Collections.singletonList(srv), startCli.cache(DEFAULT_CACHE_NAME),
@@ -3278,7 +3278,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         snp(ig).createSnapshot(snpName)
             .get();
 
-        TestCommandHandler h = commandHandler();
+        TestCommandHandler h = newCommandHandler();
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "check", snpName));
 
@@ -3326,7 +3326,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Cache exists.
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--snapshot", "restore", snpName, "--start", "--sync"));
-        if (invoker.equals(CLI_CMD_HND)) {
+        if (commandHandler.equals(CLI_CMD_HND)) {
             assertContains(log, testOut.toString(), "Command option '--start' is redundant and must be avoided.");
             assertContains(log, testOut.toString(), "Unable to restore cache group - directory is not empty. " +
                 "Cache group should be destroyed manually before perform restore operation [group=" + cacheName);
@@ -3336,7 +3336,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         awaitPartitionMapExchange();
 
         assertEquals(EXIT_CODE_OK, execute("--snapshot", "restore", snpName, "--sync"));
-        if (invoker.equals(CLI_CMD_HND)) {
+        if (commandHandler.equals(CLI_CMD_HND)) {
             assertNotContains(log, testOut.toString(), "Command option '--start' is redundant and must be avoided.");
             assertContains(log, testOut.toString(), "Snapshot cache group restore operation completed successfully");
         }
@@ -3387,7 +3387,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertNull(ig.cache(cacheName2));
         assertNull(ig.cache(cacheName3));
 
-        TestCommandHandler h = commandHandler(createTestLogger());
+        TestCommandHandler h = newCommandHandler(createTestLogger());
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, cacheName1));
         assertContains(log, testOut.toString(), "Unexpected argument: " + cacheName1);
@@ -3456,7 +3456,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             else
                 assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName));
 
-            if (invoker.equals(CLI_CMD_HND)) {
+            if (commandHandler.equals(CLI_CMD_HND)) {
                 String out = testOut.toString();
                 assertContains(log, out, "Warning: command will restore ALL USER-CREATED CACHE GROUPS from the snapshot");
                 assertContains(log, out, "Snapshot cache group restore operation started [name=" + snpName);
@@ -3867,7 +3867,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testSuccessStopWarmUp() throws Exception {
-        Assume.assumeTrue(CLI_CMD_HND.equalsIgnoreCase(invoker));
+        Assume.assumeTrue(CLI_CMD_HND.equalsIgnoreCase(commandHandler));
 
         WarmUpTestPluginProvider provider = new WarmUpTestPluginProvider();
 
@@ -3907,7 +3907,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testFailStopWarmUp() throws Exception {
-        Assume.assumeTrue(invoker.equalsIgnoreCase(CLI_CMD_HND));
+        Assume.assumeTrue(commandHandler.equalsIgnoreCase(CLI_CMD_HND));
 
         startGrid(0);
 
@@ -3923,7 +3923,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         IgniteEx ignite,
         boolean delFoundGarbage
     ) {
-        TestCommandHandler hnd = commandHandler();
+        TestCommandHandler hnd = newCommandHandler();
 
         List<String> args = new ArrayList<>(Arrays.asList("--yes", "--port", "11212", "--cache", "find_garbage",
             ignite.localNode().id().toString()));

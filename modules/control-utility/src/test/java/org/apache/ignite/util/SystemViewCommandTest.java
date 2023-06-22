@@ -1162,7 +1162,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
 
         int sz = systemView(ignite0, SNAPSHOT_SYS_VIEW).size();
 
-        String snap0 = "testSnapshot" + invoker;
+        String snap0 = "testSnapshot" + commandHandler;
 
         ignite0.snapshot().createSnapshot(snap0).get();
 
@@ -1281,7 +1281,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      * @return System view values.
      */
     private Map<UUID, List<List<String>>> parseSystemViewCommandOutput(String out) {
-        if (invoker.equals(CLI_CMD_HND)) {
+        if (commandHandler.equals(CLI_CMD_HND)) {
             String outStart = "--------------------------------------------------------------------------------";
 
             String outEnd = "Command [SYSTEM-VIEW] finished with code: " + EXIT_CODE_OK;

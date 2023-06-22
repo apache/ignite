@@ -66,15 +66,13 @@ import static org.apache.ignite.internal.management.api.CommandUtils.visitComman
 import static org.apache.ignite.internal.management.jmx.CommandMBean.INVOKE;
 import static org.apache.ignite.internal.management.jmx.CommandMBean.LAST_RES_METHOD;
 
-/**
- *
- */
+/** Class to check command execution via all available handlers. */
 @RunWith(Parameterized.class)
 public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTest {
-    /** */
+    /** @see JmxCommandHandler */
     public static final String JMX_CMD_HND = "jmx";
 
-    /** */
+    /** @see CliCommandHandler */
     public static final String CLI_CMD_HND = "cli";
 
     /** */
@@ -82,7 +80,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
 
     /** */
     @Parameterized.Parameter
-    public String invoker;
+    public String commandHandler;
 
     /** */
     @Parameterized.Parameters(name = "cmdHnd={0}")
@@ -91,13 +89,13 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
     }
 
     /** */
-    protected TestCommandHandler commandHandler() {
-        return commandHandler(null);
+    protected TestCommandHandler newCommandHandler() {
+        return newCommandHandler(null);
     }
 
     /** Command executor factory. */
-    protected TestCommandHandler commandHandler(@Nullable IgniteLogger log) {
-        switch (invoker) {
+    protected TestCommandHandler newCommandHandler(@Nullable IgniteLogger log) {
+        switch (commandHandler) {
             case CLI_CMD_HND:
                 return new CliCommandHandler(log);
 
@@ -105,7 +103,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
                 return new JmxCommandHandler(log);
 
             default:
-                throw new IllegalArgumentException("Unknown handler: " + invoker);
+                throw new IllegalArgumentException("Unknown handler: " + commandHandler);
         }
     }
 
@@ -309,7 +307,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
     }
 
     /** */
-    protected int invokerExtraLines() {
-        return invoker.equals(CLI_CMD_HND) ? 11 : 0;
+    protected int commandHandlerExtraLines() {
+        return commandHandler.equals(CLI_CMD_HND) ? 11 : 0;
     }
 }

@@ -367,7 +367,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /** */
     @Test
     public void testCacheHelp() throws Exception {
-        Assume.assumeTrue(invoker.equals(CLI_CMD_HND));
+        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
 
         injectTestSystemOut();
 
@@ -420,7 +420,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /** */
     @Test
     public void testHelp() throws Exception {
-        Assume.assumeTrue(invoker.equals(CLI_CMD_HND));
+        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
 
         injectTestSystemOut();
 
@@ -498,7 +498,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /** */
     @Test
     public void testPrintTimestampAtEndsOfExecution() {
-        Assume.assumeTrue(invoker.equals(CLI_CMD_HND));
+        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
 
         injectTestSystemOut();
 
@@ -1309,7 +1309,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         String out = executeCommand(EXIT_CODE_UNEXPECTED_ERROR, "--cache", CREATE,
             SPRING_XML_CONFIG, cfgPath + "/cache-create-with-spel.xml");
 
-        if (invoker.equals(CLI_CMD_HND))
+        if (commandHandler.equals(CLI_CMD_HND))
             assertContains(log, out, "Spring expressions are prohibited.");
 
         assertEquals(expSize, G.allGrids().size());
@@ -1385,7 +1385,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         injectTestSystemIn(CONFIRM_MSG);
         assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY, DESTROY_ALL_ARG));
 
-        if (invoker.equals(CLI_CMD_HND))
+        if (commandHandler.equals(CLI_CMD_HND))
             assertContains(log, testOut.toString(), expConfirmation);
         assertTrue("Caches must be destroyed: " + crd.cacheNames().toString(), crd.cacheNames().isEmpty());
 
@@ -1413,7 +1413,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", CLEAR, CACHES, "X,Y", "Z"));
         assertContains(log, testOut.toString(), "Unexpected argument: Z");
 
-        if (invoker.equals(CLI_CMD_HND)) {
+        if (commandHandler.equals(CLI_CMD_HND)) {
             autoConfirmation = false;
 
             String expConfirmation = String.format(CacheClearCommand.CONFIRM_MSG, 2, "cache1, cache2");
@@ -1952,7 +1952,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     @Test
     @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
     public void testContainsNotExperimentalCmdInHelpOutputWhenEnableExperimentalTrue() {
-        Assume.assumeTrue(invoker.equals(CLI_CMD_HND));
+        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
 
         checkContainsNotExperimentalCmdInHelpOutput();
     }
@@ -1966,7 +1966,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     @Test
     @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "false")
     public void testContainsNotExperimentalCmdInHelpOutputWhenEnableExperimentalFalse() {
-        Assume.assumeTrue(invoker.equals(CLI_CMD_HND));
+        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
 
         checkContainsNotExperimentalCmdInHelpOutput();
     }
@@ -1978,7 +1978,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     @Test
     @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
     public void testContainsExperimentalCmdInHelpOutput() {
-        Assume.assumeTrue(invoker.equals(CLI_CMD_HND));
+        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
 
         checkExperimentalCmdInHelpOutput(true);
     }
@@ -1990,7 +1990,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     @Test
     @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "false")
     public void testNotContainsExperimentalCmdInHelpOutput() {
-        Assume.assumeTrue(invoker.equals(CLI_CMD_HND));
+        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
 
         checkExperimentalCmdInHelpOutput(false);
     }
@@ -2065,7 +2065,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      */
     @Test
     public void testErrInvalidArgumentsWithVerbose() {
-        Assume.assumeTrue(invoker.equals(CLI_CMD_HND));
+        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
 
         injectTestSystemOut();
 
@@ -2085,7 +2085,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      */
     @Test
     public void testErrConnectionWithVerbose() {
-        Assume.assumeTrue(invoker.equals(CLI_CMD_HND));
+        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
 
         injectTestSystemOut();
 
@@ -2105,7 +2105,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      */
     @Test
     public void testErrUnexpectedWithWithoutVerbose() {
-        Assume.assumeTrue(invoker.equals(CLI_CMD_HND));
+        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
 
         injectTestSystemOut();
 
@@ -2123,7 +2123,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         }));
 
         int resCode = EXIT_CODE_UNEXPECTED_ERROR;
-        TestCommandHandler cmd = commandHandler(new JavaLogger(log, false));
+        TestCommandHandler cmd = newCommandHandler(new JavaLogger(log, false));
 
         assertEquals(resCode, execute(cmd, BASELINE));
         assertContains(GridAbstractTest.log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);

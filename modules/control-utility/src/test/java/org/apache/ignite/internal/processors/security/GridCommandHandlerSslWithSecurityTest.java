@@ -72,7 +72,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Assume.assumeTrue(invoker.equalsIgnoreCase(CLI_CMD_HND));
+        Assume.assumeTrue(commandHandler.equalsIgnoreCase(CLI_CMD_HND));
 
         super.beforeTest();
     }
@@ -93,14 +93,6 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
      */
     protected void injectTestSystemOut() {
         System.setOut(new PrintStream(testOut));
-    }
-
-    /**
-     * Flushes all Logger handlers to make log data available to test.
-     * @param hnd Command handler.
-     */
-    private void flushCommandOutput(TestCommandHandler hnd) {
-        hnd.flushLogger();
     }
 
     /** {@inheritDoc} */
@@ -128,7 +120,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
 
         crd.cluster().state(ACTIVE);
 
-        TestCommandHandler cmd = commandHandler();
+        TestCommandHandler cmd = newCommandHandler();
 
         AtomicInteger keyStorePwdCnt = new AtomicInteger();
         AtomicInteger trustStorePwdCnt = new AtomicInteger();
@@ -182,7 +174,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
 
         injectTestSystemOut();
 
-        TestCommandHandler hnd = commandHandler();
+        TestCommandHandler hnd = newCommandHandler();
 
         int exitCode = hnd.execute(Arrays.asList(
             "--state",
@@ -195,7 +187,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
 
         assertEquals(EXIT_CODE_OK, exitCode);
 
-        flushCommandOutput(hnd);
+        hnd.flushLogger();
 
         // Make sure all sensitive information is masked.
         String testOutput = testOut.toString();

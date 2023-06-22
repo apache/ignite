@@ -55,7 +55,7 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Assume.assumeTrue(invoker.equalsIgnoreCase(CLI_CMD_HND));
+        Assume.assumeTrue(commandHandler.equalsIgnoreCase(CLI_CMD_HND));
 
         super.beforeTest();
     }
@@ -88,7 +88,7 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
 
         assertFalse(ignite.cluster().state().active());
 
-        final TestCommandHandler cmd = commandHandler();
+        final TestCommandHandler cmd = newCommandHandler();
 
         List<String> params = new ArrayList<>();
 

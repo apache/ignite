@@ -44,7 +44,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
  * Checks command line property commands.
  */
 public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterByClassAbstractTest {
-
     /** */
     @Before
     public void init() {
@@ -62,7 +61,7 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
      */
     @Test
     public void testHelp() {
-        Assume.assumeTrue(invoker.equals(CLI_CMD_HND));
+        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
 
         assertEquals(EXIT_CODE_OK, execute("--property", "help"));
 

@@ -142,7 +142,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
 
         injectTestSystemOut();
 
-        cmd = commandHandler();
+        cmd = newCommandHandler();
     }
 
     /** */

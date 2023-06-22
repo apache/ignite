@@ -169,7 +169,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
     public void testMetadataForInternalClassesIsNotRegistered() {
         IgniteCache<Object, Object> dfltCache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME).withKeepBinary();
 
-        String typeName = TestValue.class.getName() + invoker;
+        String typeName = TestValue.class.getName() + commandHandler;
 
         BinaryObjectBuilder bldr = grid(0).binary().builder(typeName);
 
