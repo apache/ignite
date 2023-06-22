@@ -37,9 +37,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
 /** */
 public class JmxComandRegistryInvoker implements IgnitePlugin {
     /** */
-    private PluginContext ctx;
-
-    /** */
     private IgniteLogger log;
 
     /** */
@@ -50,7 +47,6 @@ public class JmxComandRegistryInvoker implements IgnitePlugin {
 
     /** */
     public void context(PluginContext ctx) {
-        this.ctx = ctx;
         this.grid = (IgniteEx)ctx.grid();
         this.log = ctx.log(JmxComandRegistryInvoker.class);
     }
