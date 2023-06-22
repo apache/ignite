@@ -93,7 +93,7 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
     protected IgniteEx ignite;
 
     /** */
-    private CliFrontend hnd;
+    private TestCommandHandler hnd;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -113,7 +113,7 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        hnd = cmdHndFactory.get();
+        hnd = commandHandler();
 
         // Cleanup configuration.
         grid(0).tracingConfiguration().resetAll(null);
@@ -382,7 +382,7 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
      * @param expRes Expected command result.
      */
     private void verifyResult(VisorTracingConfigurationTaskResult expRes) {
-        VisorTracingConfigurationTaskResult gotRes = hnd.result();
+        VisorTracingConfigurationTaskResult gotRes = hnd.getLastOperationResult();
 
         assertNotNull(gotRes);
 

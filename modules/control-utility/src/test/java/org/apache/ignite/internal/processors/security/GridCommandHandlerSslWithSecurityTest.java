@@ -72,7 +72,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Assume.assumeTrue(invoker.equalsIgnoreCase(CLI_INVOKER));
+        Assume.assumeTrue(invoker.equalsIgnoreCase(CLI_CMD_HND));
 
         super.beforeTest();
     }
@@ -99,7 +99,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
      * Flushes all Logger handlers to make log data available to test.
      * @param hnd Command handler.
      */
-    private void flushCommandOutput(CliFrontend hnd) {
+    private void flushCommandOutput(TestCommandHandler hnd) {
         hnd.flushLogger();
     }
 
@@ -128,7 +128,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
 
         crd.cluster().state(ACTIVE);
 
-        CliFrontend cmd = cmdHndFactory.get();
+        TestCommandHandler cmd = commandHandler();
 
         AtomicInteger keyStorePwdCnt = new AtomicInteger();
         AtomicInteger trustStorePwdCnt = new AtomicInteger();
@@ -166,7 +166,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
         args.add("--truststore");
         args.add(keyStorePath("trustthree"));
 
-        assertEquals(EXIT_CODE_OK, cmd.applyAsInt(args));
+        assertEquals(EXIT_CODE_OK, cmd.execute(args));
         assertEquals(1, keyStorePwdCnt.get());
         assertEquals(1, trustStorePwdCnt.get());
     }
@@ -182,9 +182,9 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
 
         injectTestSystemOut();
 
-        CliFrontend hnd = cmdHndFactory.get();
+        TestCommandHandler hnd = commandHandler();
 
-        int exitCode = hnd.applyAsInt(Arrays.asList(
+        int exitCode = hnd.execute(Arrays.asList(
             "--state",
             "--user", login,
             "--password", pwd,

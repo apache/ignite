@@ -49,7 +49,7 @@ public class GridCommandHandlerWithSslFactoryTest extends GridCommandHandlerWith
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Assume.assumeTrue(invoker.equalsIgnoreCase(CLI_INVOKER));
+        Assume.assumeTrue(invoker.equalsIgnoreCase(CLI_CMD_HND));
 
         super.beforeTest();
     }
@@ -63,7 +63,7 @@ public class GridCommandHandlerWithSslFactoryTest extends GridCommandHandlerWith
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        Assume.assumeTrue(invoker.equalsIgnoreCase(CLI_INVOKER));
+        Assume.assumeTrue(invoker.equalsIgnoreCase(CLI_CMD_HND));
 
         super.afterTest();
 

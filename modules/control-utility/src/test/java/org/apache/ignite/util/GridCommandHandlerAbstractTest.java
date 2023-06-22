@@ -346,7 +346,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerF
      * @return Result of execution
      */
     protected int execute(List<String> args) {
-        return execute(cmdHndFactory0.apply(createTestLogger()), args);
+        return execute(commandHandler(createTestLogger()), args);
     }
 
     /**
@@ -356,22 +356,23 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerF
      * @param args Arguments.
      * @return Result of execution
      */
-    protected int execute(CliFrontend hnd, String... args) {
+    protected int execute(TestCommandHandler hnd, String... args) {
         return execute(hnd, new ArrayList<>(asList(args)));
     }
 
     /**
      * Before command executed {@link #testOut} reset.
      */
-    protected int execute(CliFrontend hnd, List<String> args) {
+    protected int execute(TestCommandHandler hnd, List<String> args) {
         if (!F.isEmpty(args) && !"--help".equalsIgnoreCase(args.get(0)))
             addExtraArguments(args);
 
         testOut.reset();
 
-        int exitCode = hnd.applyAsInt(args);
-        lastOperationResult = hnd.result();
+        int exitCode = hnd.execute(args);
+        lastOperationResult = hnd.getLastOperationResult();
 
+        // Flush all Logger handlers to make log data available to test.
         hnd.flushLogger();
 
         return exitCode;

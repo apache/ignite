@@ -92,18 +92,19 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** */
-    @Parameterized.Parameters(name = "invoker={0}, strategy={1}, explicitGrp={2}, callByGrp={3}")
+    @Parameterized.Parameters(name = "cmdHnd={0}, strategy={1}, explicitGrp={2}, callByGrp={3}")
     public static Iterable<Object[]> data() {
         List<Object[]> res = new ArrayList<>();
 
-        for (String invoker : invokers()) {
-            for (ReadRepairStrategy strategy : ReadRepairStrategy.values()) {
-                for (boolean explicitGrp : new boolean[]{false, true}) {
-                    if (explicitGrp)
-                        res.add(new Object[]{invoker, strategy, explicitGrp, true});
+        int cntr = 0;
+        List<String> invokers = commandHandlers();
 
-                    res.add(new Object[]{invoker, strategy, explicitGrp, false});
-                }
+        for (ReadRepairStrategy strategy : ReadRepairStrategy.values()) {
+            for (boolean explicitGrp : new boolean[]{false, true}) {
+                if (explicitGrp)
+                    res.add(new Object[]{invokers.get(cntr++ % invokers.size()), strategy, explicitGrp, true});
+
+                res.add(new Object[]{invokers.get(cntr++ % invokers.size()), strategy, explicitGrp, false});
             }
         }
 

@@ -27,9 +27,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.function.ToIntFunction;
 import javax.management.DynamicMBean;
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
@@ -75,40 +72,42 @@ import static org.apache.ignite.internal.management.jmx.CommandMBean.LAST_RES_ME
 @RunWith(Parameterized.class)
 public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTest {
     /** */
-    public static final String JMX_INVOKER = "jmx";
+    public static final String JMX_CMD_HND = "jmx";
 
     /** */
-    public static final String CLI_INVOKER = "cli";
+    public static final String CLI_CMD_HND = "cli";
 
     /** */
-    public static final List<String> INVOKERS = Arrays.asList(JMX_INVOKER, CLI_INVOKER);
+    public static final List<String> CMD_HNDS = Arrays.asList(JMX_CMD_HND, CLI_CMD_HND);
 
     /** */
     @Parameterized.Parameter
     public String invoker;
 
     /** */
-    @Parameterized.Parameters(name = "invoker={0}")
-    public static List<String> invokers() {
-        return INVOKERS;
+    @Parameterized.Parameters(name = "cmdHnd={0}")
+    public static List<String> commandHandlers() {
+        return CMD_HNDS;
+    }
+
+    /** */
+    protected TestCommandHandler commandHandler() {
+        return commandHandler(null);
     }
 
     /** Command executor factory. */
-    protected Function<IgniteLogger, CliFrontend> cmdHndFactory0 = log -> {
+    protected TestCommandHandler commandHandler(@Nullable IgniteLogger log) {
         switch (invoker) {
-            case CLI_INVOKER:
-                return new CliCmdFrontend(log);
+            case CLI_CMD_HND:
+                return new CliCommandHandler(log);
 
-            case JMX_INVOKER:
-                return new JmxCmdFrontend(log);
+            case JMX_CMD_HND:
+                return new JmxCommandHandler(log);
 
             default:
-                throw new IllegalArgumentException("Unknown invoker: " + invoker);
+                throw new IllegalArgumentException("Unknown handler: " + invoker);
         }
-    };
-
-    /** Command executor factory. */
-    protected Supplier<CliFrontend> cmdHndFactory = () -> cmdHndFactory0.apply(null);
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -117,37 +116,40 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
     }
 
     /** */
-    public static interface CliFrontend extends ToIntFunction<List<String>> {
+    public interface TestCommandHandler {
         /** */
-        public <T> T result();
+        public <T> T getLastOperationResult();
 
         /** */
         public void flushLogger();
+
+        /** */
+        public int execute(List<String> rawArgs);
     }
 
     /** */
-    private static class CliCmdFrontend implements CliFrontend {
+    private static class CliCommandHandler implements TestCommandHandler {
         /** */
         private final CommandHandler hnd;
 
         /** */
-        public CliCmdFrontend() {
+        public CliCommandHandler() {
             this.hnd = new CommandHandler();
         }
 
         /** */
-        public CliCmdFrontend(@Nullable IgniteLogger log) {
+        public CliCommandHandler(@Nullable IgniteLogger log) {
             this.hnd = log == null ? new CommandHandler() : new CommandHandler(log);
         }
 
         /** {@inheritDoc} */
-        @Override public int applyAsInt(List<String> rawArgs) {
+        @Override public int execute(List<String> rawArgs) {
             return hnd.execute(rawArgs);
         }
 
         /** {@inheritDoc} */
-        @Override public <T> T result() {
-            return hnd.result();
+        @Override public <T> T getLastOperationResult() {
+            return hnd.getLastOperationResult();
         }
 
         /** {@inheritDoc} */
@@ -158,7 +160,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
     }
 
     /** */
-    private static class JmxCmdFrontend implements CliFrontend {
+    private static class JmxCommandHandler implements TestCommandHandler {
         /** */
         private int port;
 
@@ -172,12 +174,12 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
         private Object res;
 
         /** */
-        public JmxCmdFrontend(@Nullable IgniteLogger log) {
+        public JmxCommandHandler(@Nullable IgniteLogger log) {
             this.log = (IgniteLoggerEx)(log == null ? setupJavaLogger("jmx-invoker", CommandHandler.class) : log);
         }
 
         /** {@inheritDoc} */
-        @Override public int applyAsInt(List<String> value) {
+        @Override public int execute(List<String> value) {
             String commandName = null;
 
             try {
@@ -270,7 +272,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public <T> T result() {
+        @Override public <T> T getLastOperationResult() {
             return (T)res;
         }
 
@@ -308,6 +310,6 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
 
     /** */
     protected int invokerExtraLines() {
-        return invoker.equals(CLI_INVOKER) ? 11 : 0;
+        return invoker.equals(CLI_CMD_HND) ? 11 : 0;
     }
 }

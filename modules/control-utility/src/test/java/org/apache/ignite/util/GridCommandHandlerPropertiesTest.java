@@ -62,7 +62,7 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
      */
     @Test
     public void testHelp() {
-        Assume.assumeTrue(invoker.equals(CLI_INVOKER));
+        Assume.assumeTrue(invoker.equals(CLI_CMD_HND));
 
         assertEquals(EXIT_CODE_OK, execute("--property", "help"));
 

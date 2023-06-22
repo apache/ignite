@@ -136,7 +136,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         injectTestSystemOut();
         idxRebuildsStartedNum.set(0);
 
-        final CliFrontend handler = cmdHndFactory0.apply(createTestLogger());
+        final TestCommandHandler handler = commandHandler(createTestLogger());
 
         stopGrid(GRIDS_NUM - 1);
         stopGrid(GRIDS_NUM - 2);
@@ -171,7 +171,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         injectTestSystemOut();
         idxRebuildsStartedNum.set(0);
 
-        final CliFrontend handler = cmdHndFactory0.apply(createTestLogger());
+        final TestCommandHandler handler = commandHandler(createTestLogger());
 
         stopGrid(GRIDS_NUM - 1);
         stopGrid(GRIDS_NUM - 2);
@@ -218,10 +218,10 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
      * @param handler CommandHandler used to run command.
      * @param nodeIds Ids to check.
      */
-    private void checkResult(CliFrontend handler, UUID... nodeIds) {
+    private void checkResult(TestCommandHandler handler, UUID... nodeIds) {
         String output = testOut.toString();
 
-        Map<UUID, Set<IndexRebuildStatusInfoContainer>> cmdResult = handler.result();
+        Map<UUID, Set<IndexRebuildStatusInfoContainer>> cmdResult = handler.getLastOperationResult();
         assertNotNull(cmdResult);
         assertEquals("Unexpected number of nodes in result", nodeIds.length, cmdResult.size());
 

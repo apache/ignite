@@ -91,7 +91,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
 
         ListeningTestLogger testLog = new ListeningTestLogger();
 
-        CliFrontend cmd = createCommandHandler(testLog);
+        TestCommandHandler cmd = createCommandHandler(testLog);
 
         LogListener logLsnr = LogListener.matches("Scheduling completed successfully.").build();
 
@@ -171,7 +171,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
 
         ListeningTestLogger testLog = new ListeningTestLogger();
 
-        CliFrontend cmd = createCommandHandler(testLog);
+        TestCommandHandler cmd = createCommandHandler(testLog);
 
         assertEquals(EXIT_CODE_OK, execute(
             cmd,
@@ -232,7 +232,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
 
         ListeningTestLogger testLog = new ListeningTestLogger();
 
-        CliFrontend cmd = createCommandHandler(testLog);
+        TestCommandHandler cmd = createCommandHandler(testLog);
 
         assertEquals(EXIT_CODE_OK, execute(
             cmd,
@@ -344,7 +344,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
 
         ListeningTestLogger testLog = new ListeningTestLogger();
 
-        CliFrontend cmd = createCommandHandler(testLog);
+        TestCommandHandler cmd = createCommandHandler(testLog);
 
         assertEquals(EXIT_CODE_OK, execute(
             cmd,
@@ -451,7 +451,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
     }
 
     /** */
-    private CliFrontend createCommandHandler(ListeningTestLogger testLog) {
+    private TestCommandHandler createCommandHandler(ListeningTestLogger testLog) {
         Logger log = GridCommandHandlerAbstractTest.initLogger(null);
 
         log.addHandler(new StreamHandler(System.out, new Formatter() {
@@ -465,6 +465,6 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
             }
         }));
 
-        return cmdHndFactory0.apply(new JavaLogger(log, false));
+        return commandHandler(new JavaLogger(log, false));
     }
 }

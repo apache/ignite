@@ -81,13 +81,13 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
         injectTestSystemOut();
 
-        final CliFrontend handler = cmdHndFactory0.apply(createTestLogger());
+        final TestCommandHandler handler = commandHandler(createTestLogger());
 
         assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_list", "--index-name", idxName));
 
         String outStr = testOut.toString();
 
-        String typePattern = invoker.equals(CLI_INVOKER) ? "ArrayList" : "LinkedKeySet";
+        String typePattern = invoker.equals(CLI_CMD_HND) ? "ArrayList" : "LinkedKeySet";
 
         assertTrue(outStr.contains("grpName=" + GROUP_NAME + ", cacheName=" + CACHE_NAME + ", idxName=PERSON_ORGID_ASC_IDX, " +
             "colsNames=" + typePattern + " [ORGID, _KEY], tblName=PERSON"));
@@ -108,7 +108,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
         assertEquals("Unexpected number of index description lines: " + indexDescrLinesNum,
             indexDescrLinesNum, expectedIndexDescrLinesNum);
 
-        Set<IndexListInfoContainer> cmdResult = handler.result();
+        Set<IndexListInfoContainer> cmdResult = handler.getLastOperationResult();
         assertNotNull(cmdResult);
 
         final int resSetSize = cmdResult.size();
@@ -131,7 +131,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
         injectTestSystemOut();
 
-        final CliFrontend handler = cmdHndFactory0.apply(createTestLogger());
+        final TestCommandHandler handler = commandHandler(createTestLogger());
 
         assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_list",
             "--node-id", grid(0).localNode().id().toString(),
@@ -139,7 +139,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
             "--cache-name", CACHE_NAME,
             "--index-name", idxName));
 
-        String typePattern = invoker.equals(CLI_INVOKER) ? "ArrayList" : "LinkedKeySet";
+        String typePattern = invoker.equals(CLI_CMD_HND) ? "ArrayList" : "LinkedKeySet";
 
         assertTrue(testOut.toString().contains("grpName=" + GROUP_NAME + ", cacheName=" + CACHE_NAME +
             ", idxName=PERSON_ORGID_ASC_IDX, colsNames=" + typePattern + " [ORGID, _KEY], tblName=PERSON"));
@@ -156,7 +156,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
         injectTestSystemOut();
 
-        final CliFrontend handler = cmdHndFactory0.apply(createTestLogger());
+        final TestCommandHandler handler = commandHandler(createTestLogger());
 
         try {
             ignite.createCache(tmpCacheName);
@@ -215,11 +215,11 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
     /** */
     private void checkGroup(String grpRegEx, Predicate<String> predicate, int expectedResNum) {
-        final CliFrontend handler = cmdHndFactory0.apply(createTestLogger());
+        final TestCommandHandler handler = commandHandler(createTestLogger());
 
         assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_list", "--group-name", grpRegEx));
 
-        Set<IndexListInfoContainer> cmdResult = handler.result();
+        Set<IndexListInfoContainer> cmdResult = handler.getLastOperationResult();
         assertNotNull(cmdResult);
 
         boolean isResCorrect =
@@ -262,11 +262,11 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
     /** */
     private void checkCacheNameFilter(String cacheRegEx, Predicate<String> predicate, int expectedResNum) {
-        final CliFrontend handler = cmdHndFactory0.apply(createTestLogger());
+        final TestCommandHandler handler = commandHandler(createTestLogger());
 
         assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_list", "--cache-name", cacheRegEx));
 
-        Set<IndexListInfoContainer> cmdResult = handler.result();
+        Set<IndexListInfoContainer> cmdResult = handler.getLastOperationResult();
         assertNotNull(cmdResult);
 
         boolean isResCorrect =

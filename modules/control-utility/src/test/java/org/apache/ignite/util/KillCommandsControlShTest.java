@@ -287,7 +287,7 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
      *
      */
     private void testCancelConsistencyTask(boolean parallel) throws InterruptedException {
-        Assume.assumeTrue(invoker.equals(CLI_INVOKER));
+        Assume.assumeTrue(invoker.equals(CLI_CMD_HND));
 
         String consistencyCacheName = "consistencyCache";
 

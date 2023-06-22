@@ -70,7 +70,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
     private static final String SNP = "testSnapshot";
 
     /** */
-    private CliFrontend cmd;
+    private TestCommandHandler cmd;
 
     /** */
     private volatile IgniteBiPredicate<Object, TxRecord> skipTxRec;
@@ -91,14 +91,14 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
     public int backupsCnt;
 
     /** */
-    @Parameterized.Parameters(name = "invoker={0},nodesCnt={1},primNodesCnt={2}, backupsCnt={3}")
+    @Parameterized.Parameters(name = "cmdHnd={0},nodesCnt={1},primNodesCnt={2},backupsCnt={3}")
     public static List<Object[]> params() {
         return F.asList(
             new Object[]{2, 1, 1},
             new Object[]{2, 2, 1},
             new Object[]{3, 1, 1},
             new Object[]{3, 1, 2}
-        ).stream().flatMap(row -> invokers().stream().map(invoker -> {
+        ).stream().flatMap(row -> commandHandlers().stream().map(invoker -> {
             Object[] res = new Object[row.length + 1];
 
             res[0] = invoker;
@@ -142,7 +142,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
 
         injectTestSystemOut();
 
-        cmd = cmdHndFactory.get();
+        cmd = commandHandler();
     }
 
     /** */

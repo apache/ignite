@@ -40,7 +40,6 @@ import org.apache.ignite.internal.management.api.AbstractCommandInvoker;
 import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.PreparableCommand;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -64,14 +63,6 @@ public class CommandInvoker<A extends IgniteDataTransferObject> extends Abstract
     public CommandInvoker(Command<A, ?> cmd, A arg, GridClientConfiguration clientCfg) {
         super(cmd, arg);
         this.clientCfg = clientCfg;
-    }
-
-    /** */
-    public boolean prepare(Consumer<String> printer) throws Exception {
-        if (!(cmd instanceof PreparableCommand))
-            return true;
-
-        return ((PreparableCommand<A, ?>)cmd).prepare(client(), null, arg, printer);
     }
 
     /**
@@ -181,16 +172,6 @@ public class CommandInvoker<A extends IgniteDataTransferObject> extends Abstract
         return null;
     }
 
-    /** */
-    public void clientConfiguration(GridClientConfiguration clientCfg) {
-        this.clientCfg = clientCfg;
-    }
-
-    /** */
-    public GridClientConfiguration clientConfiguration() {
-        return clientCfg;
-    }
-
     /** {@inheritDoc} */
     @Override public void close() {
         if (client != null)
@@ -272,5 +253,15 @@ public class CommandInvoker<A extends IgniteDataTransferObject> extends Abstract
             throw new GridClientDisconnectedException("Connectable node not found", null);
 
         return compute.balancer().balancedNode(nodes);
+    }
+
+    /** */
+    public void clientConfiguration(GridClientConfiguration clientCfg) {
+        this.clientCfg = clientCfg;
+    }
+
+    /** */
+    public GridClientConfiguration clientConfiguration() {
+        return clientCfg;
     }
 }

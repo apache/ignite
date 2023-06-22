@@ -79,7 +79,7 @@ public class ArgumentParser {
     /** */
     private final IgniteCommandRegistry registry;
 
-    /** */
+    /** Path to the specific command. Command to execute is on top of stack, parent commands below. */
     Deque<Command<?, ?>> cmdPath = new ArrayDeque<>();
 
     /** */

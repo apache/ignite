@@ -68,12 +68,12 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
     public static final String PARALLEL = "--parallel";
 
     /** Test parameters. */
-    @Parameterized.Parameters(name = "invoker={0}, misses={1}, nulls={2}, strategy={3}, parallel={4}")
+    @Parameterized.Parameters(name = "cmdHnd={0}, misses={1}, nulls={2}, strategy={3}, parallel={4}")
     public static Iterable<Object[]> parameters() {
         List<Object[]> res = new ArrayList<>();
 
         int cntr = 0;
-        List<String> invokers = invokers();
+        List<String> invokers = commandHandlers();
 
         for (boolean misses : new boolean[] {false, true}) {
             for (boolean nulls : new boolean[] {false, true}) {

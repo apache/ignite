@@ -151,7 +151,7 @@ public class CommandHandler {
     public GridConsole console = GridConsoleAdapter.getInstance();
 
     /** */
-    private Object res;
+    private Object lastOperationRes;
 
     /** Date format. */
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
@@ -254,11 +254,7 @@ public class CommandHandler {
 
             commandName = toFormattedCommandName(args.cmdPath().peekLast().getClass()).toUpperCase();
 
-            try (CommandInvoker<A> invoker = new CommandInvoker<>(
-                args.command(),
-                args.commandArg(),
-                getClientConfiguration(args)
-            )) {
+            try (CommandInvoker<A> invoker = new CommandInvoker<>(args.command(), args.commandArg(), getClientConfiguration(args))) {
                 int tryConnectMaxCount = 3;
 
                 boolean suppliedAuth = !F.isEmpty(args.userName()) && !F.isEmpty(args.password());
@@ -292,9 +288,9 @@ public class CommandHandler {
                         else {
                             try {
                                 if (args.command() instanceof BeforeNodeStartCommand)
-                                    res = invoker.invokeBeforeNodeStart(logger::info);
+                                    lastOperationRes = invoker.invokeBeforeNodeStart(logger::info);
                                 else
-                                    res = invoker.invoke(logger::info, args.verbose());
+                                    lastOperationRes = invoker.invoke(logger::info, args.verbose());
                             }
                             catch (Throwable e) {
                                 logger.error("Failed to perform operation.");
@@ -670,8 +666,8 @@ public class CommandHandler {
      *
      * @return Last operation result;
      */
-    public <T> T result() {
-        return (T)res;
+    public <T> T getLastOperationResult() {
+        return (T)lastOperationRes;
     }
 
     /**

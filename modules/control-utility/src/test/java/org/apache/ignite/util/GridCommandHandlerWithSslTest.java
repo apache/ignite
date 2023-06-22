@@ -30,7 +30,7 @@ public class GridCommandHandlerWithSslTest extends GridCommandHandlerTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Assume.assumeTrue(invoker.equalsIgnoreCase(CLI_INVOKER));
+        Assume.assumeTrue(invoker.equalsIgnoreCase(CLI_CMD_HND));
 
         super.beforeTest();
     }

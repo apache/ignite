@@ -47,13 +47,25 @@ public abstract class AbstractCommandInvoker<A extends IgniteDataTransferObject>
     }
 
     /**
+     * @param printer Result printer.
+     * @return {@code True} of command successfully prepared and can be invoked, {@code false} otherwise.
+     * @throws GridClientException In failed.
+     */
+    public boolean prepare(Consumer<String> printer) throws GridClientException {
+        if (!(cmd instanceof PreparableCommand))
+            return true;
+
+        return ((PreparableCommand<A, ?>)cmd).prepare(client(), ignite(), arg, printer);
+    }
+
+    /**
      * Actual command execution with verbose mode if required.
      * Implement it if your command supports verbose mode.
      *
      * @param printer Result printer.
      * @param verbose Use verbose mode or not
      * @return Result of operation (mostly usable for tests).
-     * @throws GridClientException In case of error.
+     * @throws GridClientException In failed.
      */
     public <R> R invoke(Consumer<String> printer, boolean verbose) throws GridClientException {
         R res;
@@ -92,7 +104,7 @@ public abstract class AbstractCommandInvoker<A extends IgniteDataTransferObject>
      * Method to create thin client for communication with cluster.
      *
      * @return Grid thin client instance which is already connected to cluster.
-     * @throws GridClientException If error occur.
+     * @throws GridClientException If failed.
      */
     protected abstract @Nullable GridClient client() throws GridClientException;
 

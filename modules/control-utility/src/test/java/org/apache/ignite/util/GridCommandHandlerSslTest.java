@@ -55,7 +55,7 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Assume.assumeTrue(invoker.equalsIgnoreCase(CLI_INVOKER));
+        Assume.assumeTrue(invoker.equalsIgnoreCase(CLI_CMD_HND));
 
         super.beforeTest();
     }
@@ -88,7 +88,7 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
 
         assertFalse(ignite.cluster().state().active());
 
-        final CliFrontend cmd = cmdHndFactory.get();
+        final TestCommandHandler cmd = commandHandler();
 
         List<String> params = new ArrayList<>();
 
@@ -108,7 +108,7 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
         else
             assertFalse(ignite.cluster().state().active());
 
-        assertEquals(EXIT_CODE_CONNECTION_FAILED, cmd.applyAsInt(Arrays.asList("--deactivate", "--yes")));
+        assertEquals(EXIT_CODE_CONNECTION_FAILED, cmd.execute(Arrays.asList("--deactivate", "--yes")));
     }
 
     /**

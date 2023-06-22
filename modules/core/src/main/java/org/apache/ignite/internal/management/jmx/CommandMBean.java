@@ -41,7 +41,6 @@ import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.NodeCommandInvoker;
-import org.apache.ignite.internal.management.api.PreparableCommand;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static javax.management.MBeanOperationInfo.ACTION;
@@ -113,13 +112,10 @@ public class CommandMBean<A extends IgniteDataTransferObject, R> implements Dyna
 
             Consumer<String> printer = str -> resStr.append(str).append('\n');
 
-            A arg = new ParamsToArgument(params).argument();
+            NodeCommandInvoker<A> invoker = new NodeCommandInvoker<>(cmd, new ParamsToArgument(params).argument(), ignite);
 
-            if ((cmd instanceof PreparableCommand)
-                && !((PreparableCommand<A, R>)cmd).prepare(null, ignite, arg, printer))
-                return resStr.toString();
-
-            res = new NodeCommandInvoker<>(cmd, arg, ignite).invoke(printer, false);
+            if (invoker.prepare(printer))
+                res = invoker.invoke(printer, false);
 
             return resStr.toString();
         }
