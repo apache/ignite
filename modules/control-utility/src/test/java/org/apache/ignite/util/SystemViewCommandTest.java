@@ -347,6 +347,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
         assertEquals(srvcCfg.getName(), sysView.get(1)); // name
         assertEquals(DummyService.class.getName(), sysView.get(2)); // serviceClass
         assertEquals(Integer.toString(srvcCfg.getMaxPerNodeCount()), sysView.get(6)); // maxPerNodeCount
+        assertEquals(F.first(ignite0.services().serviceDescriptors()).topologySnapshot().toString(), sysView.get(10));
     }
 
     /** */
