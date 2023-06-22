@@ -188,7 +188,6 @@ public abstract class BaselineEventsTest extends GridCommandHandlerFactoryAbstra
         assertEquals(
             CommandHandler.EXIT_CODE_OK,
             newCommandHandler().execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
-
         );
         assertTrue(GridTestUtils.waitForCondition(autoAdjustEnabled::get, 3_000));
 
