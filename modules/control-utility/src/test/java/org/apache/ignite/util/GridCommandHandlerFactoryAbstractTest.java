@@ -33,7 +33,6 @@ import javax.management.ReflectionException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.commandline.ArgumentParser;
@@ -45,7 +44,6 @@ import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
-import org.apache.ignite.internal.management.jmx.JmxCommandRegistryInvokerPluginProvider;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -63,8 +61,8 @@ import static org.apache.ignite.internal.management.api.CommandUtils.cmdKey;
 import static org.apache.ignite.internal.management.api.CommandUtils.isBoolean;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
-import static org.apache.ignite.internal.management.jmx.CommandMBean.INVOKE;
-import static org.apache.ignite.internal.management.jmx.CommandMBean.LAST_RES_METHOD;
+import static org.apache.ignite.internal.managers.management.CommandMBean.INVOKE;
+import static org.apache.ignite.internal.managers.management.CommandMBean.LAST_RES_METHOD;
 
 /** Class to check command execution via all available handlers. */
 @RunWith(Parameterized.class)
@@ -105,12 +103,6 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
             default:
                 throw new IllegalArgumentException("Unknown handler: " + commandHandler);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setPluginProviders(new JmxCommandRegistryInvokerPluginProvider());
     }
 
     /** */

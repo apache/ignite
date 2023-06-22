@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.jmx;
+package org.apache.ignite.internal.managers.management;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;

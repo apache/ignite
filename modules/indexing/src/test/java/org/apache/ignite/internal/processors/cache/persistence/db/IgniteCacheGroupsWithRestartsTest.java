@@ -45,7 +45,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.cache.CacheFindGarbageCommandArg;
-import org.apache.ignite.internal.management.jmx.JmxCommandRegistryInvokerPluginProvider;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -97,8 +96,6 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
 
         if (startExtraStaticCache)
             configuration.setCacheConfiguration(getCacheConfiguration(3));
-
-        configuration.setPluginProviders(new JmxCommandRegistryInvokerPluginProvider());
 
         return configuration;
     }

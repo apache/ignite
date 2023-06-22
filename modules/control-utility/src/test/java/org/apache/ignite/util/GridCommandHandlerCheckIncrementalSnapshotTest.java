@@ -29,7 +29,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.management.jmx.JmxCommandRegistryInvokerPluginProvider;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
@@ -118,7 +117,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
 
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        cfg.setPluginProviders(new TransactionFilterWALPluginProvider(), new JmxCommandRegistryInvokerPluginProvider());
+        cfg.setPluginProviders(new TransactionFilterWALPluginProvider());
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
