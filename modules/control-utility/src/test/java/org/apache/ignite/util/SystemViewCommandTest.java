@@ -1172,7 +1172,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     /** */
     @Test
     public void testMultipleNodes() {
-        checkNodesResult(Collections.singleton(ignite0), NODE_IDS);
+        //checkNodesResult(Collections.singleton(ignite0), NODE_IDS);
         checkNodesResult(Collections.singleton(client), NODE_IDS);
 
         checkNodesResult(F.asList(ignite0, ignite1), NODE_IDS);

@@ -17,18 +17,12 @@
 
 package org.apache.ignite.internal.management.api;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 /** */
 public class NodeCommandInvoker<A extends IgniteDataTransferObject> extends AbstractCommandInvoker<A> {
@@ -46,13 +40,6 @@ public class NodeCommandInvoker<A extends IgniteDataTransferObject> extends Abst
     }
 
     /** {@inheritDoc} */
-    @Override protected <R> R execute(ComputeCommand<A, R> cmd, A arg, Collection<UUID> nodes) throws GridClientException {
-        return ignite
-            .compute(ignite.cluster())
-            .execute(cmd.taskClass(), new VisorTaskArgument<>(nodes, arg, false));
-    }
-
-    /** {@inheritDoc} */
     @Override protected GridClient client() throws GridClientException {
         return null;
     }
@@ -60,13 +47,6 @@ public class NodeCommandInvoker<A extends IgniteDataTransferObject> extends Abst
     /** {@inheritDoc} */
     @Override protected Ignite ignite() {
         return ignite;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Map<UUID, GridClientNode> nodes() throws GridClientException {
-        return CommandUtils.nodes(null, ignite)
-            .stream()
-            .collect(Collectors.toMap(GridClientNode::nodeId, Function.identity()));
     }
 
     /** {@inheritDoc} */

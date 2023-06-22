@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -39,14 +37,11 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.AbstractCommandInvoker;
 import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
 import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 
 /**
@@ -80,27 +75,6 @@ public class CommandInvoker<A extends IgniteDataTransferObject> extends Abstract
         catch (GridClientDisconnectedException e) {
             throw new GridClientException(e.getCause());
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Map<UUID, GridClientNode> nodes() throws GridClientException {
-        return client().compute().nodes().stream()
-            .collect(toMap(GridClientNode::nodeId, n -> n));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected <R> R execute(ComputeCommand<A, R> cmd, A arg, Collection<UUID> nodes) throws GridClientException {
-        GridClientCompute compute = client().compute();
-
-        Collection<GridClientNode> connectable = compute.nodes().stream()
-            .filter(n -> nodes.contains(n.nodeId()))
-            .filter(GridClientNode::connectable)
-            .collect(Collectors.toList());
-
-        if (!F.isEmpty(connectable))
-            compute = compute.projection(connectable);
-
-        return compute.execute(cmd.taskClass().getName(), new VisorTaskArgument<>(nodes, arg, false));
     }
 
     /** {@inheritDoc} */

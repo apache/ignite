@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.management.api;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
@@ -28,7 +31,8 @@ import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.Collections.singleton;
+import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toMap;
 
 /**
  * Abstract class to implement command invokers for specific protocols.
@@ -74,21 +78,24 @@ public abstract class AbstractCommandInvoker<A extends IgniteDataTransferObject>
         if (cmd instanceof LocalCommand)
             res = ((LocalCommand<A, R>)cmd).execute(client(), ignite(), arg, printer);
         else if (cmd instanceof ComputeCommand) {
-            Map<UUID, GridClientNode> nodes = nodes();
+            Map<UUID, GridClientNode> allNodes = CommandUtils.nodes(client(), ignite()).stream()
+                .collect(toMap(GridClientNode::nodeId, Function.identity()));
 
             ComputeCommand<A, R> cmd = (ComputeCommand<A, R>)this.cmd;
 
-            Collection<UUID> cmdNodes = cmd.nodes(nodes, arg);
+            Collection<UUID> cmdNodesIds = cmd.nodes(allNodes, arg);
+            List<GridClientNode> cmdNodes = new ArrayList<>();
 
-            if (cmdNodes == null)
-                cmdNodes = singleton(defaultNode().nodeId());
-
-            for (UUID id : cmdNodes) {
-                if (!nodes.containsKey(id))
-                    throw new IllegalArgumentException("Node with id=" + id + " not found.");
+            if (cmdNodesIds == null)
+                cmdNodes = singletonList(defaultNode());
+            else {
+                for (UUID id : cmdNodesIds) {
+                    if (!allNodes.containsKey(id))
+                        throw new IllegalArgumentException("Node with id=" + id + " not found.");
+                }
             }
 
-            res = execute(cmd, arg, cmdNodes);
+            res = CommandUtils.execute(client(), ignite(), cmd.taskClass(), arg, cmdNodes);
 
             cmd.printResult(arg, res, printer);
         }
@@ -98,9 +105,6 @@ public abstract class AbstractCommandInvoker<A extends IgniteDataTransferObject>
         return res;
     }
 
-    /** @return Cluster nodes. */
-    protected abstract Map<UUID, GridClientNode> nodes() throws GridClientException;
-
     /**
      * @return Grid thin client instance which is already connected to cluster.
      * @throws GridClientException If failed.
@@ -109,15 +113,6 @@ public abstract class AbstractCommandInvoker<A extends IgniteDataTransferObject>
 
     /** @return Local Ignite node. */
     protected abstract @Nullable Ignite ignite();
-
-    /**
-     * @param cmd Command to execute.
-     * @param arg Argument.
-     * @param nodes Nodes.
-     * @return Result.
-     * @param <R> Result type.
-     */
-    protected abstract <R> R execute(ComputeCommand<A, R> cmd, A arg, Collection<UUID> nodes) throws GridClientException;
 
     /** @return Default node to execute commands. */
     protected abstract GridClientNode defaultNode() throws GridClientException;

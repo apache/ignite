@@ -45,6 +45,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientCacheMode;
+import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientNodeMetrics;
@@ -441,6 +442,11 @@ public class CommandUtils {
         return nodeId == null ? null : Collections.singleton(nodeId);
     }
 
+    /** */
+    public static Collection<UUID> nodeOrAll(@Nullable UUID nodeId, Map<UUID, GridClientNode> nodes) {
+        return nodeId == null ? nodes.keySet() : Collections.singleton(nodeId);
+    }
+
     /**
      * @param nodes Nodes.
      * @return Server nodes.
@@ -674,7 +680,17 @@ public class CommandUtils {
             .collect(Collectors.toList());
 
         if (cli != null) {
-            return cli.compute().projection(nodes).execute(
+            GridClientCompute compute = cli.compute();
+
+            Collection<GridClientNode> connectable = compute.nodes().stream()
+                .filter(nodes::contains)
+                .filter(GridClientNode::connectable)
+                .collect(Collectors.toList());
+
+            if (!connectable.isEmpty())
+                compute = compute.projection(nodes);
+
+            return compute.execute(
                 taskCls.getName(),
                 new VisorTaskArgument<>(nodesIds, arg, false)
             );
