@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
@@ -76,9 +75,9 @@ public class DiagnosticConnectivityCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, DiagnosticConnectivityCommandArg arg) {
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, DiagnosticConnectivityCommandArg arg) {
         // Task runs on default node but maps to all nodes in cluster.
-        arg.nodes(nodes.keySet().toArray(EMPTY_UUIDS));
+        arg.nodes(nodes.stream().map(GridClientNode::nodeId).collect(Collectors.toList()).toArray(EMPTY_UUIDS));
 
         return null;
     }

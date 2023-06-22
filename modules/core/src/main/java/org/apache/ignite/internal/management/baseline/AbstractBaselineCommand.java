@@ -24,7 +24,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -52,7 +51,7 @@ public abstract class AbstractBaselineCommand implements ComputeCommand<VisorBas
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, VisorBaselineTaskArg arg) {
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, VisorBaselineTaskArg arg) {
         return coordinatorOrNull(nodes);
     }
 

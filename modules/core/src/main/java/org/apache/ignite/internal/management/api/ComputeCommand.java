@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.management.api;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.client.GridClientNode;
@@ -49,7 +47,7 @@ public interface ComputeCommand<A extends IgniteDataTransferObject, R> extends C
      * @param arg Argument.
      * @return nodes to execute command on, {@code null} means default node must be used.
      */
-    public default @Nullable Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, A arg) {
+    public default @Nullable Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, A arg) {
         return null;
     }
 }

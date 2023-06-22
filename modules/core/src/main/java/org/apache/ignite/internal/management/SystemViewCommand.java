@@ -22,8 +22,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.client.GridClientNode;
@@ -59,9 +57,9 @@ public class SystemViewCommand implements ComputeCommand<SystemViewCommandArg, V
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, SystemViewCommandArg arg) {
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, SystemViewCommandArg arg) {
         if (arg.allNodes())
-            return nodes.values();
+            return nodes;
 
         return arg.nodeIds() != null
             ? CommandUtils.nodes(arg.nodeIds(), nodes)

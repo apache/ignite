@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
@@ -46,7 +44,7 @@ public class CacheContentionCommand implements ComputeCommand<CacheContentionCom
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, CacheContentionCommandArg arg) {
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, CacheContentionCommandArg arg) {
         return CommandUtils.nodeOrAll(arg.nodeId(), nodes);
     }
 

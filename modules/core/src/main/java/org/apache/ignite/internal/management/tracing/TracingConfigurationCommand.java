@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
@@ -66,7 +64,7 @@ public class TracingConfigurationCommand extends CommandRegistryImpl<TracingConf
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, TracingConfigurationCommandArg arg) {
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, TracingConfigurationCommandArg arg) {
         return coordinatorOrNull(nodes);
     }
 

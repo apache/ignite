@@ -20,9 +20,7 @@ package org.apache.ignite.internal.management.cache;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
@@ -48,7 +46,7 @@ public class CacheIndexesListCommand implements ComputeCommand<CacheIndexesListC
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, CacheIndexesListCommandArg arg) {
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, CacheIndexesListCommandArg arg) {
         return CommandUtils.nodeOrNull(arg.nodeId(), nodes);
     }
 

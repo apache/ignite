@@ -60,7 +60,7 @@ public class CacheValidateIndexesCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, CacheValidateIndexesCommandArg arg) {
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, CacheValidateIndexesCommandArg arg) {
         if (F.isEmpty(arg.nodeIds()))
             return null;
 

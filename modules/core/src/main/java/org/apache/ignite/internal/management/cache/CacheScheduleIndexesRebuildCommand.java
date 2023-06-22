@@ -20,7 +20,6 @@ package org.apache.ignite.internal.management.cache;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
@@ -51,10 +50,7 @@ public class CacheScheduleIndexesRebuildCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(
-        Map<UUID, GridClientNode> nodes,
-        CacheScheduleIndexesRebuildCommandArg arg
-    ) {
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, CacheScheduleIndexesRebuildCommandArg arg) {
         return nodeOrAll(arg.nodeId(), nodes);
     }
 

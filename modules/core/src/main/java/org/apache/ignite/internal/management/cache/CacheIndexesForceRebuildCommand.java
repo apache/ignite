@@ -18,11 +18,10 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.UUID;
+import java.util.List;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.cache.index.IndexForceRebuildTask;
@@ -49,14 +48,14 @@ public class CacheIndexesForceRebuildCommand implements ComputeCommand<CacheInde
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Map<UUID, GridClientNode> nodes, CacheIndexesForceRebuildCommandArg arg) {
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, CacheIndexesForceRebuildCommandArg arg) {
         if (arg.nodeId() != null) {
-            GridClientNode node = nodes.get(arg.nodeId());
+            List<GridClientNode> node = CommandUtils.node(arg.nodeId(), nodes);
 
-            if (node != null && node.isClient())
+            if (node.get(0) != null && node.get(0).isClient())
                 throw new IllegalArgumentException("Please, specify server node id");
 
-            return Collections.singleton(node);
+            return node;
         }
 
         return null;

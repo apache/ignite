@@ -429,26 +429,26 @@ public class CommandUtils {
      * @param nodes Nodes.
      * @return Coordinator ID or null is {@code nodes} are empty.
      */
-    public static @Nullable Collection<GridClientNode> coordinatorOrNull(Map<UUID, GridClientNode> nodes) {
-        return nodes.entrySet().stream()
-            .filter(e -> !e.getValue().isClient())
-            .min(Comparator.comparingLong(e -> e.getValue().order()))
-            .map(e -> Collections.singleton(e.getValue()))
+    public static @Nullable Collection<GridClientNode> coordinatorOrNull(Collection<GridClientNode> nodes) {
+        return nodes.stream()
+            .filter(n -> !n.isClient())
+            .min(Comparator.comparingLong(GridClientNode::order))
+            .map(Collections::singleton)
             .orElse(null);
     }
 
     /** */
-    public static Collection<GridClientNode> nodeOrNull(@Nullable UUID nodeId, Map<UUID, GridClientNode> nodes) {
+    public static Collection<GridClientNode> nodeOrNull(@Nullable UUID nodeId, Collection<GridClientNode> nodes) {
         return nodeId == null ? null : node(nodeId, nodes);
     }
 
     /** */
-    public static Collection<GridClientNode> nodeOrAll(@Nullable UUID nodeId, Map<UUID, GridClientNode> nodes) {
-        return nodeId == null ? nodes.values() : node(nodeId, nodes);
+    public static Collection<GridClientNode> nodeOrAll(@Nullable UUID nodeId, Collection<GridClientNode> nodes) {
+        return nodeId == null ? nodes : node(nodeId, nodes);
     }
 
     /** */
-    public static Collection<GridClientNode> nodes(UUID[] nodeIds, Map<UUID, GridClientNode> nodes) {
+    public static Collection<GridClientNode> nodes(UUID[] nodeIds, Collection<GridClientNode> nodes) {
         List<GridClientNode> res = new ArrayList<>();
 
         for (UUID nodeId : nodeIds)
@@ -458,21 +458,22 @@ public class CommandUtils {
     }
 
     /** */
-    public static Collection<GridClientNode> node(UUID nodeId, Map<UUID, GridClientNode> nodes) {
-        if (!nodes.containsKey(nodeId))
-            throw new IllegalArgumentException("Node with id=" + nodeId + " not found.");
+    public static List<GridClientNode> node(UUID nodeId, Collection<GridClientNode> nodes) {
+        for (GridClientNode node : nodes) {
+            if (node.nodeId().equals(nodeId))
+                return Collections.singletonList(node);
+        }
 
-        return Collections.singleton(nodes.get(nodeId));
+        throw new IllegalArgumentException("Node with id=" + nodeId + " not found.");
     }
 
     /**
      * @param nodes Nodes.
      * @return Server nodes.
      */
-    public static Collection<GridClientNode> servers(Map<UUID, GridClientNode> nodes) {
-        return nodes.entrySet().stream()
-            .filter(e -> !e.getValue().isClient())
-            .map(Map.Entry::getValue)
+    public static Collection<GridClientNode> servers(Collection<GridClientNode> nodes) {
+        return nodes.stream()
+            .filter(e -> !e.isClient())
             .collect(Collectors.toList());
     }
 

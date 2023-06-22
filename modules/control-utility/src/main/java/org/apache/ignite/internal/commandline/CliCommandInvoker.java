@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientBeforeNodeStart;
 import org.apache.ignite.internal.client.GridClientCompute;
@@ -40,7 +39,6 @@ import org.apache.ignite.internal.management.api.CommandInvoker;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 
@@ -139,11 +137,6 @@ public class CliCommandInvoker<A extends IgniteDataTransferObject> extends Comma
         }
 
         return client;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected @Nullable Ignite ignite() {
-        return null;
     }
 
     /** {@inheritDoc} */

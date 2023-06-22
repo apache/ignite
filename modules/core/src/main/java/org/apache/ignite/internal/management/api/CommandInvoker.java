@@ -18,11 +18,7 @@
 package org.apache.ignite.internal.management.api;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
@@ -31,7 +27,6 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
-import static java.util.stream.Collectors.toMap;
 
 /**
  * Command invoker.
@@ -66,7 +61,7 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
         if (!(cmd instanceof PreparableCommand))
             return true;
 
-        return ((PreparableCommand<A, ?>)cmd).prepare(client(), ignite(), arg, printer);
+        return ((PreparableCommand<A, ?>)cmd).prepare(client(), ignite, arg, printer);
     }
 
     /**
@@ -81,19 +76,16 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
         R res;
 
         if (cmd instanceof LocalCommand)
-            res = ((LocalCommand<A, R>)cmd).execute(client(), ignite(), arg, printer);
+            res = ((LocalCommand<A, R>)cmd).execute(client(), ignite, arg, printer);
         else if (cmd instanceof ComputeCommand) {
-            Map<UUID, GridClientNode> allNodes = CommandUtils.nodes(client(), ignite()).stream()
-                .collect(toMap(GridClientNode::nodeId, Function.identity()));
-
             ComputeCommand<A, R> cmd = (ComputeCommand<A, R>)this.cmd;
 
-            Collection<GridClientNode> cmdNodes = cmd.nodes(allNodes, arg);
+            Collection<GridClientNode> cmdNodes = cmd.nodes(CommandUtils.nodes(client(), ignite), arg);
 
             if (cmdNodes == null)
                 cmdNodes = singletonList(defaultNode());
 
-            res = CommandUtils.execute(client(), ignite(), cmd.taskClass(), arg, cmdNodes);
+            res = CommandUtils.execute(client(), ignite, cmd.taskClass(), arg, cmdNodes);
 
             cmd.printResult(arg, res, printer);
         }
@@ -101,11 +93,6 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
             throw new IllegalArgumentException("Unknown command type: " + cmd);
 
         return res;
-    }
-
-    /** @return Local Ignite node. */
-    protected @Nullable Ignite ignite() {
-        return ignite;
     }
 
     /** @return Default node to execute commands. */
