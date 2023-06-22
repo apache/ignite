@@ -6904,7 +6904,7 @@ public abstract class IgniteUtils {
      * @return Replaces string.
      */
     public static String compact(String s) {
-        return s.replace("org.apache.ignite.internal.visor.", "o.a.i.i.v.").
+        return s.replace("org.apache.ignite.internal.manager.", "o.a.i.i.m.").
             replace("org.apache.ignite.internal.", "o.a.i.i.").
             replace(IGNITE_PKG, "o.a.i.");
     }
