@@ -37,9 +37,9 @@ import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.TransactionMetricsMxBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.CommandMBean;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.managers.encryption.EncryptionMXBeanImpl;
-import org.apache.ignite.internal.managers.management.CommandMBean;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
@@ -236,7 +236,7 @@ public class IgniteMBeansManager {
 
     /** Registers all management API beans. */
     private void registerManagementBeans() {
-        ctx.grid().commands().commands().forEachRemaining(cmd -> register(cmd.getKey(), new LinkedList<>(), cmd.getValue()));
+        ctx.grid().commandsRegistry().commands().forEachRemaining(cmd -> register(cmd.getKey(), new LinkedList<>(), cmd.getValue()));
     }
 
     /** Recursively register management commands. */

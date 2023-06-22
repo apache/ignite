@@ -178,5 +178,5 @@ public interface IgniteEx extends Ignite {
      * @return Registry with all management commands known by node.
      * @see org.apache.ignite.internal.management.api.Command
      */
-    public IgniteCommandRegistry commands();
+    public IgniteCommandRegistry commandsRegistry();
 }

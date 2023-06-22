@@ -3099,7 +3099,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCommandRegistry commands() {
+    @Override public IgniteCommandRegistry commandsRegistry() {
         return cmdReg;
     }
 

@@ -557,7 +557,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCommandRegistry commands() {
+    @Override public IgniteCommandRegistry commandsRegistry() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 

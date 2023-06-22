@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.management;
+package org.apache.ignite.internal.management.api;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -36,37 +36,46 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.CommandInvoker;
-import org.apache.ignite.internal.management.api.CommandUtils;
-import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static javax.management.MBeanOperationInfo.ACTION;
 import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
 
-/** */
+/**
+ * Bean expose single mamagement command via JMX interface.
+ *
+ * @see Command
+ * @see CommandsRegistry
+ */
 public class CommandMBean<A extends IgniteDataTransferObject, R> implements DynamicMBean {
-    /** */
+    /** Name of the JMX method to invoke command. */
     public static final String INVOKE = "invoke";
 
-    /** */
+    /**
+     * Used for tests.
+     * Name of the method to retrive last method result.
+     */
     public static final String LAST_RES_METHOD = "lastResult";
 
-    /** */
+    /** Local ignite node. */
     private final IgniteEx ignite;
 
-    /** */
+    /** Logger. */
     private final IgniteLogger log;
 
-    /** */
+    /** Management command to expose. */
     private final Command<A, ?> cmd;
 
-    /** */
+    /**
+     * Used for tests.
+     * Last invocation result.
+     */
     private R res;
 
-    /** */
+    /**
+     * @param ignite Ignite node.
+     * @param cmd Management command to expose.
+     */
     public CommandMBean(IgniteEx ignite, Command<A, R> cmd) {
         this.ignite = ignite;
         this.cmd = cmd;
@@ -128,20 +137,6 @@ public class CommandMBean<A extends IgniteDataTransferObject, R> implements Dyna
 
     /** {@inheritDoc} */
     @Override public MBeanInfo getMBeanInfo() {
-        return new MBeanInfo(
-            CommandMBean.class.getName(),
-            cmd.getClass().getSimpleName(),
-            null,
-            null,
-            new MBeanOperationInfo[]{
-                new MBeanOperationInfo(INVOKE, cmd.description(), argumentsDescription(), String.class.getName(), ACTION)
-            },
-            null
-        );
-    }
-
-    /** */
-    public MBeanParameterInfo[] argumentsDescription() {
         List<MBeanParameterInfo> args = new ArrayList<>();
 
         Consumer<Field> fldCnsmr = fld -> {
@@ -171,7 +166,22 @@ public class CommandMBean<A extends IgniteDataTransferObject, R> implements Dyna
 
         visitCommandParams(cmd.argClass(), fldCnsmr, fldCnsmr, (optional, flds) -> flds.forEach(fldCnsmr));
 
-        return args.toArray(new MBeanParameterInfo[args.size()]);
+        return new MBeanInfo(
+            CommandMBean.class.getName(),
+            cmd.getClass().getSimpleName(),
+            null,
+            null,
+            new MBeanOperationInfo[]{
+                new MBeanOperationInfo(
+                    INVOKE,
+                    cmd.description(),
+                    args.toArray(new MBeanParameterInfo[0]),
+                    String.class.getName(),
+                    ACTION
+                )
+            },
+            null
+        );
     }
 
     /** {@inheritDoc} */

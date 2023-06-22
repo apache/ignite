@@ -57,12 +57,12 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandHandler.setupJavaLogger;
 import static org.apache.ignite.internal.commandline.CommandLogger.errorMessage;
+import static org.apache.ignite.internal.management.api.CommandMBean.INVOKE;
+import static org.apache.ignite.internal.management.api.CommandMBean.LAST_RES_METHOD;
 import static org.apache.ignite.internal.management.api.CommandUtils.cmdKey;
 import static org.apache.ignite.internal.management.api.CommandUtils.isBoolean;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
-import static org.apache.ignite.internal.managers.management.CommandMBean.INVOKE;
-import static org.apache.ignite.internal.managers.management.CommandMBean.LAST_RES_METHOD;
 
 /** Class to check command execution via all available handlers. */
 @RunWith(Parameterized.class)
