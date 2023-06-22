@@ -36,7 +36,9 @@ import org.apache.ignite.events.DeploymentEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.management.cache.IdleVerifyTaskV2;
 import org.apache.ignite.internal.management.cache.ValidateIndexesClosure;
+import org.apache.ignite.internal.management.cache.ValidateIndexesTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -53,10 +55,10 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
     private static final int LOAD_LOOP = 500_000;
 
     /** Idle verify task name. */
-    private static final String IDLE_VERIFY_TASK_V2 = "org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2";
+    private static final String IDLE_VERIFY_TASK_V2 = IdleVerifyTaskV2.class.getName();
 
     /** Validate index task name. */
-    private static final String VALIDATE_INDEX_TASK = "org.apache.ignite.internal.visor.verify.ValidateIndexesTask";
+    private static final String VALIDATE_INDEX_TASK = ValidateIndexesTask.class.getName();
 
     /** Log listener. */
     private ListeningTestLogger lnsrLog;
