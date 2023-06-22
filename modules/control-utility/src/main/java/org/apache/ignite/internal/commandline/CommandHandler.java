@@ -254,7 +254,7 @@ public class CommandHandler {
 
             commandName = toFormattedCommandName(args.cmdPath().peekLast().getClass()).toUpperCase();
 
-            try (CommandInvoker<A> invoker = new CommandInvoker<>(args.command(), args.commandArg(), getClientConfiguration(args))) {
+            try (CliCommandInvoker<A> invoker = new CliCommandInvoker<>(args.command(), args.commandArg(), getClientConfiguration(args))) {
                 int tryConnectMaxCount = 3;
 
                 boolean suppliedAuth = !F.isEmpty(args.userName()) && !F.isEmpty(args.password());

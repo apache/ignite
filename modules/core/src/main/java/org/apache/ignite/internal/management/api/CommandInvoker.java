@@ -23,6 +23,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
@@ -33,21 +34,27 @@ import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toMap;
 
 /**
- * Abstract class to implement command invokers for specific protocols.
- *
- * @see NodeCommandInvoker
+ * Command invoker.
  */
-public abstract class AbstractCommandInvoker<A extends IgniteDataTransferObject> {
+public class CommandInvoker<A extends IgniteDataTransferObject> {
+    /** */
+    private final @Nullable IgniteEx ignite;
+
     /** Command to execute. */
     protected final Command<A, ?> cmd;
 
     /** Parsed argument. */
     protected final A arg;
 
-    /** @param cmd Command to execute. */
-    protected AbstractCommandInvoker(Command<A, ?> cmd, A arg) {
+    /**
+     * @param cmd Command to execute.
+     * @param arg Argument
+     * @param ignite Optional ignite instance.
+     */
+    public CommandInvoker(Command<A, ?> cmd, A arg, @Nullable IgniteEx ignite) {
         this.cmd = cmd;
         this.arg = arg;
+        this.ignite = ignite;
     }
 
     /**
@@ -96,15 +103,21 @@ public abstract class AbstractCommandInvoker<A extends IgniteDataTransferObject>
         return res;
     }
 
+    /** @return Local Ignite node. */
+    protected @Nullable Ignite ignite() {
+        return ignite;
+    }
+
+    /** @return Default node to execute commands. */
+    protected GridClientNode defaultNode() throws GridClientException {
+        return CommandUtils.clusterToClientNode(ignite.localNode());
+    }
+
     /**
      * @return Grid thin client instance which is already connected to cluster.
      * @throws GridClientException If failed.
      */
-    protected abstract @Nullable GridClient client() throws GridClientException;
-
-    /** @return Local Ignite node. */
-    protected abstract @Nullable Ignite ignite();
-
-    /** @return Default node to execute commands. */
-    protected abstract GridClientNode defaultNode() throws GridClientException;
+    protected @Nullable GridClient client() throws GridClientException {
+        return null;
+    }
 }

@@ -34,9 +34,9 @@ import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.AbstractCommandInvoker;
 import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.CommandInvoker;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 /**
  * Adapter of new management API command for legacy {@code control.sh} execution flow.
  */
-public class CommandInvoker<A extends IgniteDataTransferObject> extends AbstractCommandInvoker<A> implements AutoCloseable {
+public class CliCommandInvoker<A extends IgniteDataTransferObject> extends CommandInvoker<A> implements AutoCloseable {
     /** Client configuration. */
     private GridClientConfiguration clientCfg;
 
@@ -55,8 +55,8 @@ public class CommandInvoker<A extends IgniteDataTransferObject> extends Abstract
     private GridClient client;
 
     /** @param cmd Command to execute. */
-    public CommandInvoker(Command<A, ?> cmd, A arg, GridClientConfiguration clientCfg) {
-        super(cmd, arg);
+    public CliCommandInvoker(Command<A, ?> cmd, A arg, GridClientConfiguration clientCfg) {
+        super(cmd, arg, null);
         this.clientCfg = clientCfg;
     }
 

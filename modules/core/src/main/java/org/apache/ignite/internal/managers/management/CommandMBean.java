@@ -38,9 +38,9 @@ import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.CommandInvoker;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.EnumDescription;
-import org.apache.ignite.internal.management.api.NodeCommandInvoker;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static javax.management.MBeanOperationInfo.ACTION;
@@ -112,7 +112,7 @@ public class CommandMBean<A extends IgniteDataTransferObject, R> implements Dyna
 
             Consumer<String> printer = str -> resStr.append(str).append('\n');
 
-            NodeCommandInvoker<A> invoker = new NodeCommandInvoker<>(cmd, new ParamsToArgument(params).argument(), ignite);
+            CommandInvoker<A> invoker = new CommandInvoker<>(cmd, new ParamsToArgument(params).argument(), ignite);
 
             if (invoker.prepare(printer))
                 res = invoker.invoke(printer, false);
