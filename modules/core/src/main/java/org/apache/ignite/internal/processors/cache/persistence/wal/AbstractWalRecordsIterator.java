@@ -125,7 +125,6 @@ public abstract class AbstractWalRecordsIterator
                 }
             }
             catch (WalSegmentTailReachedException e) {
-                AbstractWalSegmentHandle currWalSegment = this.currWalSegment;
 
                 IgniteCheckedException e0 = validateTailReachedException(e, currWalSegment);
 
