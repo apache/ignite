@@ -47,7 +47,7 @@ public abstract class AbstractWalRecordsIterator
     /**
      * Current WAL segment read file handle. To be filled by subclass advanceSegment
      */
-    private AbstractWalSegmentHandle currWalSegment;
+    private transient AbstractWalSegmentHandle currWalSegment;
 
     /** Logger */
     @NotNull protected final IgniteLogger log;

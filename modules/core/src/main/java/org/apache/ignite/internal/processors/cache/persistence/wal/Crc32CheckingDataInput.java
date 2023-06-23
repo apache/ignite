@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
-import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -63,8 +63,9 @@ public class Crc32CheckingDataInput implements ByteBufferBackedDataInput, AutoCl
 
     /** {@inheritDoc} */
     @Override public void seek(long pos) throws IOException {
-        A.ensure(pos >= 0, "pos not be negative");
-        A.ensure(pos <= Integer.MAX_VALUE, "pos should be int");
+        GridArgumentCheck.ensure(pos >= 0, "pos must not be negative");
+
+        GridArgumentCheck.ensure(pos <= Integer.MAX_VALUE, "pos must be int");
 
         buffer().position((int)pos);
     }
@@ -88,7 +89,7 @@ public class Crc32CheckingDataInput implements ByteBufferBackedDataInput, AutoCl
         int writtenCrc = this.readInt();
 
         if ((val ^ writtenCrc) != 0 && !skipCheck) {
-            // If it last message we will skip it (EOF will be thrown).
+            // If it is a last message we will skip it (EOF will be thrown).
             ensure(5);
 
             throw new IgniteDataIntegrityViolationException(

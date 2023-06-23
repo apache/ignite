@@ -35,10 +35,10 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIterator {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final ByteBuffer buffer;
+    private final transient ByteBuffer buffer;
 
     /** */
-    private final RecordSerializer serializer;
+    private final transient RecordSerializer serializer;
 
     /** constructor */
     public ByteBufferWalIterator(
@@ -50,7 +50,7 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIterator {
     /** */
     public ByteBufferWalIterator(
         @NotNull IgniteLogger log,
-        GridCacheSharedContext cctx,
+        GridCacheSharedContext<?, ?> cctx,
         ByteBuffer byteBuffer) throws IgniteCheckedException {
         super(log);
 
@@ -106,6 +106,7 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIterator {
 
         /** */
         @Override public void close() throws IgniteCheckedException {
+            // NOOP.
         }
 
         /** */

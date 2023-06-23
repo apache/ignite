@@ -34,8 +34,8 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.SegmentHeader;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.P2;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,19 +59,19 @@ public abstract class FileWalRecordsIterator extends AbstractWalRecordsIterator 
      * Shared context for creating serializer of required version and grid name access. Also cacheObjects processor from
      * this context may be used to covert Data entry key and value from its binary representation into objects.
      */
-    @NotNull protected final GridCacheSharedContext sharedCtx;
+    @NotNull protected final transient GridCacheSharedContext<?, ?> sharedCtx;
 
     /** Serializer factory. */
-    @NotNull private final RecordSerializerFactory serializerFactory;
+    @NotNull private final transient RecordSerializerFactory serializerFactory;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
-    @NotNull protected final FileIOFactory ioFactory;
+    @NotNull protected final transient FileIOFactory ioFactory;
 
     /** Utility buffer for reading records */
-    private final ByteBufferExpander buf;
+    private final transient ByteBufferExpander buf;
 
     /** Factory to provide I/O interfaces for read primitives with files. */
-    private final SegmentFileInputFactory segmentFileInputFactory;
+    private final transient SegmentFileInputFactory segmentFileInputFactory;
 
     /**
      * @param log Logger.
@@ -83,7 +83,7 @@ public abstract class FileWalRecordsIterator extends AbstractWalRecordsIterator 
      */
     protected FileWalRecordsIterator(
         @NotNull final IgniteLogger log,
-        @NotNull final GridCacheSharedContext sharedCtx,
+        @NotNull final GridCacheSharedContext<?, ?> sharedCtx,
         @NotNull final RecordSerializerFactory serializerFactory,
         @NotNull final FileIOFactory ioFactory,
         final int initialReadBufferSize,
@@ -168,22 +168,17 @@ public abstract class FileWalRecordsIterator extends AbstractWalRecordsIterator 
             return createReadFileHandle(fileIO, serializerFactory.createSerializer(serVer), in);
         }
         catch (SegmentEofException | EOFException ignore) {
-            try {
-                fileIO.close();
-            }
-            catch (IOException ce) {
-                throw new IgniteCheckedException(ce);
-            }
+            closeFieIO(fileIO);
 
             return null;
         }
         catch (IgniteCheckedException e) {
-            U.closeWithSuppressingException(fileIO, e);
+            IgniteUtils.closeWithSuppressingException(fileIO, e);
 
             throw e;
         }
         catch (IOException e) {
-            U.closeWithSuppressingException(fileIO, e);
+            IgniteUtils.closeWithSuppressingException(fileIO, e);
 
             throw new IgniteCheckedException(
                 "Failed to initialize WAL segment after reading segment header: " + desc.file().getAbsolutePath(), e);
@@ -209,39 +204,52 @@ public abstract class FileWalRecordsIterator extends AbstractWalRecordsIterator 
         try {
             fileIO = desc.toReadOnlyIO(ioFactory);
 
-            SegmentHeader segmentHeader;
-
-            try {
-                segmentHeader = readSegmentHeader(fileIO, segmentFileInputFactory);
-            }
-            catch (SegmentEofException | EOFException ignore) {
-                try {
-                    fileIO.close();
-                }
-                catch (IOException ce) {
-                    throw new IgniteCheckedException(ce);
-                }
-
+            SegmentHeader segmentHeader = initHeader(fileIO);
+            if (segmentHeader == null)
                 return null;
-            }
-            catch (IOException | IgniteCheckedException e) {
-                U.closeWithSuppressingException(fileIO, e);
-
-                throw e;
-            }
 
             return initReadHandle(desc, start, fileIO, segmentHeader);
         }
         catch (FileNotFoundException e) {
-            U.closeQuiet(fileIO);
+            IgniteUtils.closeQuiet(fileIO);
 
             throw e;
         }
         catch (IOException e) {
-            U.closeQuiet(fileIO);
+            IgniteUtils.closeQuiet(fileIO);
 
             throw new IgniteCheckedException(
                 "Failed to initialize WAL segment: " + desc.file().getAbsolutePath(), e);
+        }
+    }
+
+    /** */
+    @Nullable private SegmentHeader initHeader(SegmentIO fileIO) throws IgniteCheckedException, IOException {
+        SegmentHeader segmentHeader;
+
+        try {
+            segmentHeader = readSegmentHeader(fileIO, segmentFileInputFactory);
+        }
+        catch (SegmentEofException | EOFException ignore) {
+            closeFieIO(fileIO);
+
+            return null;
+        }
+        catch (IOException | IgniteCheckedException e) {
+            IgniteUtils.closeWithSuppressingException(fileIO, e);
+
+            throw e;
+        }
+        return segmentHeader;
+    }
+
+    /** */
+    private void closeFieIO(SegmentIO fileIO) throws IgniteCheckedException {
+        try {
+            fileIO.close();
+        }
+        catch (IOException ce) {
+            throw new IgniteCheckedException(ce);
         }
     }
 

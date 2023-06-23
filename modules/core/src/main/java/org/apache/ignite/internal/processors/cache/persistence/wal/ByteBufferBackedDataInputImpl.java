@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -51,8 +51,9 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
 
     /** {@inheritDoc} */
     @Override public void seek(long pos) throws IOException {
-        A.ensure(pos >= 0, "pos must not be negative");
-        A.ensure(pos <= Integer.MAX_VALUE, "pos must be int");
+        GridArgumentCheck.ensure(pos >= 0, "pos must not be negative");
+
+        GridArgumentCheck.ensure(pos <= Integer.MAX_VALUE, "pos must be int");
 
         buf.position((int)pos);
     }

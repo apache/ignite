@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
@@ -272,9 +272,9 @@ public class RecordV2Serializer implements RecordSerializer {
         int fileOff = in.readInt();
         int len = in.readInt();
 
-        if ((!skipIndexCheck && !F.eq(idx, expPtr.index())) || (!skipPositionCheck && !F.eq(fileOff, expPtr.fileOffset())))
+        if ((!skipIndexCheck && !GridFunc.eq(idx, expPtr.index())) || (!skipPositionCheck && !GridFunc.eq(fileOff, expPtr.fileOffset())))
             throw new WalSegmentTailReachedException(
-                "WAL segment tail reached. [ " +
+                "WAL segment tail   reached. [ " +
                     "Expected next state: {Index=" + expPtr.index() + ",Offset=" + expPtr.fileOffset() + "}, " +
                     "Actual state : {Index=" + idx + ",Offset=" + fileOff + "} ] recordType=" + type, null);
 
