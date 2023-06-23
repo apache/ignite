@@ -29,9 +29,9 @@ public class IgniteMath {
     public static long addExact(long x, long y) {
         long r = x + y;
 
-        if (((x ^ r) & (y ^ r)) < 0) {
+        if (((x ^ r) & (y ^ r)) < 0)
             throw new ArithmeticException(BIGINT.getName() + " overflow");
-        }
+
         return r;
     }
 
@@ -39,9 +39,9 @@ public class IgniteMath {
     public static int addExact(int x, int y) {
         int r = x + y;
 
-        if (((x ^ r) & (y ^ r)) < 0) {
+        if (((x ^ r) & (y ^ r)) < 0)
             throw new ArithmeticException(INTEGER.getName() + " overflow");
-        }
+
         return r;
     }
 
@@ -49,9 +49,9 @@ public class IgniteMath {
     public static short addExact(short x, short y) {
         int r = x + y;
 
-        if (r != (short)r) {
+        if (r != (short)r)
             throw new ArithmeticException(SMALLINT.getName() + " overflow");
-        }
+
         return (short)r;
     }
 
@@ -59,19 +59,59 @@ public class IgniteMath {
     public static byte addExact(byte x, byte y) {
         int r = x + y;
 
-        if (r != (byte)r) {
+        if (r != (byte)r)
             throw new ArithmeticException(TINYINT.getName() + " overflow");
-        }
+
         return (byte)r;
+    }
+
+    /** Returns the negation of the argument, throwing an exception if the result overflows an {@code long}. */
+    public static long negateExact(long x) {
+        long res = -x;
+
+        if (x != 0 && x == res)
+            throw new ArithmeticException(BIGINT.getName() + " overflow");
+
+        return res;
+    }
+
+    /** Returns the negation of the argument, throwing an exception if the result overflows an {@code int}. */
+    public static int negateExact(int x) {
+        int res = -x;
+
+        if (x != 0 && x == res)
+            throw new ArithmeticException(INTEGER.getName() + " overflow");
+
+        return res;
+    }
+
+    /** Returns the negation of the argument, throwing an exception if the result overflows an {@code short}. */
+    public static short negateExact(short x) {
+        int res = -x;
+
+        if (res > Short.MAX_VALUE)
+            throw new ArithmeticException(SMALLINT.getName() + " overflow");
+
+        return (short)res;
+    }
+
+    /** Returns the negation of the argument, throwing an exception if the result overflows an {@code byte}. */
+    public static byte negateExact(byte x) {
+        int res = -x;
+
+        if (res > Byte.MAX_VALUE)
+            throw new ArithmeticException(TINYINT.getName() + " overflow");
+
+        return (byte)res;
     }
 
     /** Returns the difference of the arguments, throwing an exception if the result overflows an {@code long}.*/
     public static long subtractExact(long x, long y) {
         long r = x - y;
 
-        if (((x ^ y) & (x ^ r)) < 0) {
+        if (((x ^ y) & (x ^ r)) < 0)
             throw new ArithmeticException(BIGINT.getName() + " overflow");
-        }
+
         return r;
     }
 
@@ -79,9 +119,9 @@ public class IgniteMath {
     public static int subtractExact(int x, int y) {
         int r = x - y;
 
-        if (((x ^ y) & (x ^ r)) < 0) {
+        if (((x ^ y) & (x ^ r)) < 0)
             throw new ArithmeticException(INTEGER.getName() + " overflow");
-        }
+
         return r;
     }
 
@@ -89,9 +129,9 @@ public class IgniteMath {
     public static short subtractExact(short x, short y) {
         int r = x - y;
 
-        if (r != (short)r) {
+        if (r != (short)r)
             throw new ArithmeticException(SMALLINT.getName() + " overflow");
-        }
+
         return (short)r;
     }
 
@@ -99,9 +139,9 @@ public class IgniteMath {
     public static byte subtractExact(byte x, byte y) {
         int r = x - y;
 
-        if (r != (byte)r) {
+        if (r != (byte)r)
             throw new ArithmeticException(TINYINT.getName() + " overflow");
-        }
+
         return (byte)r;
     }
 
@@ -123,9 +163,9 @@ public class IgniteMath {
     public static int multiplyExact(int x, int y) {
         long r = (long)x * (long)y;
 
-        if ((int)r != r) {
+        if ((int)r != r)
             throw new ArithmeticException(INTEGER.getName() + " overflow");
-        }
+
         return (int)r;
     }
 
@@ -133,9 +173,9 @@ public class IgniteMath {
     public static short multiplyExact(short x, short y) {
         int r = x * y;
 
-        if (r != (short)r) {
+        if (r != (short)r)
             throw new ArithmeticException(SMALLINT.getName() + " overflow");
-        }
+
         return (short)r;
     }
 
@@ -143,16 +183,49 @@ public class IgniteMath {
     public static byte multiplyExact(byte x, byte y) {
         int r = x * y;
 
-        if (r != (byte)r) {
+        if (r != (byte)r)
             throw new ArithmeticException(TINYINT.getName() + " overflow");
-        }
+
         return (byte)r;
+    }
+
+    /** Returns the quotient of the arguments, throwing an exception if the result overflows an {@code long}. */
+    public static long divideExact(long x, long y) {
+        if (y == -1)
+            return negateExact(x);
+
+        return x / y;
+    }
+
+    /** Returns the quotient of the arguments, throwing an exception if the result overflows an {@code int}. */
+    public static int divideExact(int x, int y) {
+        if (y == -1)
+            return negateExact(x);
+
+        return x / y;
+    }
+
+    /** Returns the quotient of the arguments, throwing an exception if the result overflows an {@code short}. */
+    public static short divideExact(short x, short y) {
+        if (y == -1)
+            return negateExact(x);
+
+        return (short)(x / y);
+    }
+
+    /** Returns the quotient of the arguments, throwing an exception if the result overflows an {@code byte}. */
+    public static byte divideExact(byte x, byte y) {
+        if (y == -1)
+            return negateExact(x);
+
+        return (byte)(x / y);
     }
 
     /** Cast value to {@code int}, throwing an exception if the result overflows an {@code int}. */
     public static int convertToIntExact(long x) {
         if ((int)x != x)
             throw new ArithmeticException(INTEGER.getName() + " overflow");
+
         return (int)x;
     }
 
@@ -160,6 +233,7 @@ public class IgniteMath {
     public static short convertToShortExact(long x) {
         if ((short)x != x)
             throw new ArithmeticException(SMALLINT.getName() + " overflow");
+
         return (short)x;
     }
 
@@ -167,6 +241,7 @@ public class IgniteMath {
     public static byte convertToByteExact(long x) {
         if ((byte)x != x)
             throw new ArithmeticException(TINYINT.getName() + " overflow");
+
         return (byte)x;
     }
 }

@@ -1283,7 +1283,7 @@ public class RexImpTable {
                 && null != backupMethodName)
                 e = Expressions.call(argValue, backupMethodName);
             else
-                e = Expressions.makeUnary(expressionType, argValue);
+                e = IgniteExpressions.makeUnary(expressionType, argValue);
 
             if (e.type.equals(argValue.type))
                 return e;

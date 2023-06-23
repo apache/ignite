@@ -23,9 +23,8 @@ import org.apache.calcite.linq4j.tree.ExpressionType;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
 
-/** Calcite liq4j expressions customized for Ignite*/
+/** Calcite liq4j expressions customized for Ignite. */
 public class IgniteExpressions {
-
     /** Make binary expression with arithmetic operations override. */
     public static Expression makeBinary(ExpressionType binaryType, Expression left, Expression right) {
         switch (binaryType) {
@@ -35,9 +34,34 @@ public class IgniteExpressions {
                 return subtractExact(left, right);
             case Multiply:
                 return multiplyExact(left, right);
+            case Divide:
+                return divideExact(left, right);
             default:
                 return Expressions.makeBinary(binaryType, left, right);
         }
+    }
+
+    /** */
+    public static Expression makeUnary(ExpressionType unaryType, Expression operand) {
+        switch (unaryType) {
+            case Negate:
+            case NegateChecked:
+                return negateExact(unaryType, operand);
+            default:
+                return Expressions.makeUnary(unaryType, operand);
+        }
+    }
+
+    /** Generate expression for method IgniteMath.negateExact() for integer subtypes. */
+    public static Expression negateExact(ExpressionType unaryType, Expression operand) {
+        assert unaryType == ExpressionType.Negate || unaryType == ExpressionType.NegateChecked;
+
+        Type opType = operand.getType();
+
+        if (opType == Integer.TYPE || opType == Long.TYPE || opType == Short.TYPE || opType == Byte.TYPE)
+            return Expressions.call(IgniteMath.class, "negateExact", operand);
+
+        return Expressions.makeUnary(unaryType, operand);
     }
 
     /** Generate expression for method IgniteMath.addExact() for integer subtypes. */
@@ -45,10 +69,8 @@ public class IgniteExpressions {
         Type largerType = larger(left.getType(), right.getType());
 
         if (largerType == Integer.TYPE || largerType == Long.TYPE || largerType == Short.TYPE || largerType == Byte.TYPE)
-            return Expressions.call(
-                IgniteMath.class,
-                "addExact",
-                left, right);
+            return Expressions.call(IgniteMath.class, "addExact", left, right);
+
         return Expressions.makeBinary(ExpressionType.Add, left, right);
     }
 
@@ -57,10 +79,8 @@ public class IgniteExpressions {
         Type largerType = larger(left.getType(), right.getType());
 
         if (largerType == Integer.TYPE || largerType == Long.TYPE || largerType == Short.TYPE || largerType == Byte.TYPE)
-            return Expressions.call(
-                IgniteMath.class,
-                "subtractExact",
-                left, right);
+            return Expressions.call(IgniteMath.class, "subtractExact", left, right);
+
         return Expressions.makeBinary(ExpressionType.Subtract, left, right);
     }
 
@@ -69,11 +89,19 @@ public class IgniteExpressions {
         Type largerType = larger(left.getType(), right.getType());
 
         if (largerType == Integer.TYPE || largerType == Long.TYPE || largerType == Short.TYPE || largerType == Byte.TYPE)
-            return Expressions.call(
-                IgniteMath.class,
-                "multiplyExact",
-                left, right);
+            return Expressions.call(IgniteMath.class, "multiplyExact", left, right);
+
         return Expressions.makeBinary(ExpressionType.Multiply, left, right);
+    }
+
+    /** Generate expression for method IgniteMath.divideExact() for integer subtypes. */
+    public static Expression divideExact(Expression left, Expression right) {
+        Type largerType = larger(left.getType(), right.getType());
+
+        if (largerType == Integer.TYPE || largerType == Long.TYPE || largerType == Short.TYPE || largerType == Byte.TYPE)
+            return Expressions.call(IgniteMath.class, "divideExact", left, right);
+
+        return Expressions.makeBinary(ExpressionType.Divide, left, right);
     }
 
     /** Generate expression for method IgniteMath.convertToIntExact(). */
@@ -81,10 +109,8 @@ public class IgniteExpressions {
         Type type = exp.getType();
 
         if (type == Long.TYPE || type == Long.class)
-            return Expressions.call(
-                IgniteMath.class,
-                "convertToIntExact",
-                exp);
+            return Expressions.call(IgniteMath.class, "convertToIntExact", exp);
+
         return exp;
     }
 
@@ -93,10 +119,8 @@ public class IgniteExpressions {
         Type type = exp.getType();
 
         if (type == Long.TYPE || type == Long.class || type == Integer.TYPE || type == Integer.class)
-            return Expressions.call(
-                IgniteMath.class,
-                "convertToShortExact",
-                exp);
+            return Expressions.call(IgniteMath.class, "convertToShortExact", exp);
+
         return exp;
     }
 
@@ -106,10 +130,8 @@ public class IgniteExpressions {
 
         if (type == Long.TYPE || type == Long.class || type == Integer.TYPE || type == Integer.class
             || type == Short.TYPE || type == Short.class)
-            return Expressions.call(
-                IgniteMath.class,
-                "convertToByteExact",
-                exp);
+            return Expressions.call(IgniteMath.class, "convertToByteExact", exp);
+
         return exp;
     }
 

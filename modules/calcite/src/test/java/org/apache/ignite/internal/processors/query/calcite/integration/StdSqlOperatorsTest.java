@@ -355,18 +355,34 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertThrows("select 9223372036854775807 + 1", IgniteSQLException.class, "BIGINT overflow");
         assertThrows("select 9223372036854775807 * 2", IgniteSQLException.class, "BIGINT overflow");
         assertThrows("select -9223372036854775808 - 1", IgniteSQLException.class, "BIGINT overflow");
+        assertThrows("select -(-9223372036854775807 - 1)", IgniteSQLException.class, "BIGINT overflow");
+        assertThrows("select -CAST(-9223372036854775808 AS BIGINT)", IgniteSQLException.class, "BIGINT overflow");
+        assertThrows("select -(?)", IgniteSQLException.class, "BIGINT overflow", -9223372036854775808L);
+        assertThrows("select -9223372036854775808/-1", IgniteSQLException.class, "BIGINT overflow");
 
         assertThrows("select 2147483647 + 1", IgniteSQLException.class, "INTEGER overflow");
         assertThrows("select 2147483647 * 2", IgniteSQLException.class, "INTEGER overflow");
         assertThrows("select -2147483648 - 1", IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("select -(-2147483647 - 1)", IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("select -CAST(-2147483648 AS INTEGER)", IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("select -(?)", IgniteSQLException.class, "INTEGER overflow", -2147483648);
+        assertThrows("select -2147483648/-1", IgniteSQLException.class, "INTEGER overflow");
 
         assertThrows("select 32000::smallint + 1000::smallint", IgniteSQLException.class, "SMALLINT overflow");
         assertThrows("select 17000::smallint * 2::smallint", IgniteSQLException.class, "SMALLINT overflow");
         assertThrows("select -32000::smallint - 1000::smallint", IgniteSQLException.class, "SMALLINT overflow");
+        assertThrows("select -(-32767::smallint - 1::smallint)", IgniteSQLException.class, "SMALLINT overflow");
+        assertThrows("select -CAST(-32768 AS smallint)", IgniteSQLException.class, "SMALLINT overflow");
+        assertThrows("select -CAST(? AS smallint)", IgniteSQLException.class, "SMALLINT overflow", -32768);
+        assertThrows("select -32768::smallint/-1::smallint", IgniteSQLException.class, "SMALLINT overflow");
 
         assertThrows("select 2::tinyint + 127::tinyint", IgniteSQLException.class, "TINYINT overflow");
         assertThrows("select 2::tinyint * 127::tinyint", IgniteSQLException.class, "TINYINT overflow");
         assertThrows("select -2::tinyint - 127::tinyint", IgniteSQLException.class, "TINYINT overflow");
+        assertThrows("select -(-127::tinyint - 1::tinyint)", IgniteSQLException.class, "TINYINT overflow");
+        assertThrows("select -CAST(-128 AS tinyint)", IgniteSQLException.class, "TINYINT overflow");
+        assertThrows("select -CAST(? AS tinyint)", IgniteSQLException.class, "TINYINT overflow", -128);
+        assertThrows("select -128::tinyint/-1::tinyint", IgniteSQLException.class, "TINYINT overflow");
     }
 
     /** */
