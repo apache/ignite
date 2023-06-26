@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.SegmentHeader;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -318,7 +317,12 @@ public abstract class AbstractWalRecordsIterator extends WalRecordsIteratorAdapt
             return createReadFileHandle(fileIO, serializerFactory.createSerializer(serVer), in);
         }
         catch (SegmentEofException | EOFException ignore) {
-            closeFieIO(fileIO);
+            try {
+                fileIO.close();
+            }
+            catch (IOException ce) {
+                throw new IgniteCheckedException(ce);
+            }
 
             return null;
         }
@@ -333,36 +337,6 @@ public abstract class AbstractWalRecordsIterator extends WalRecordsIteratorAdapt
             throw new IgniteCheckedException(
                 "Failed to initialize WAL segment after reading segment header: " + desc.file().getAbsolutePath(), e);
         }
-    }
-
-    /** */
-    private void closeFieIO(SegmentIO fileIO) throws IgniteCheckedException {
-        try {
-            fileIO.close();
-        }
-        catch (IOException ce) {
-            throw new IgniteCheckedException(ce);
-        }
-    }
-
-    /** */
-    @Nullable private SegmentHeader initHeader(SegmentIO fileIO) throws IgniteCheckedException, IOException {
-        SegmentHeader segmentHeader;
-
-        try {
-            segmentHeader = readSegmentHeader(fileIO, segmentFileInputFactory);
-        }
-        catch (SegmentEofException | EOFException ignore) {
-            closeFieIO(fileIO);
-
-            return null;
-        }
-        catch (IOException | IgniteCheckedException e) {
-            IgniteUtils.closeWithSuppressingException(fileIO, e);
-
-            throw e;
-        }
-        return segmentHeader;
     }
 
     /**
@@ -384,9 +358,26 @@ public abstract class AbstractWalRecordsIterator extends WalRecordsIteratorAdapt
         try {
             fileIO = desc.toReadOnlyIO(ioFactory);
 
-            SegmentHeader segmentHeader = initHeader(fileIO);
-            if (segmentHeader == null)
+            SegmentHeader segmentHeader;
+
+            try {
+                segmentHeader = readSegmentHeader(fileIO, segmentFileInputFactory);
+            }
+            catch (SegmentEofException | EOFException ignore) {
+                try {
+                    fileIO.close();
+                }
+                catch (IOException ce) {
+                    throw new IgniteCheckedException(ce);
+                }
+
                 return null;
+            }
+            catch (IOException | IgniteCheckedException e) {
+                U.closeWithSuppressingException(fileIO, e);
+
+                throw e;
+            }
 
             return initReadHandle(desc, start, fileIO, segmentHeader);
         }
