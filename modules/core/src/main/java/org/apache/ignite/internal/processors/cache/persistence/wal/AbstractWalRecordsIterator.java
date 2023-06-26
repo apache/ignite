@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.Re
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.SegmentHeader;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.P2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -65,19 +66,19 @@ public abstract class AbstractWalRecordsIterator extends WalRecordsIteratorAdapt
      * Shared context for creating serializer of required version and grid name access. Also cacheObjects processor from
      * this context may be used to covert Data entry key and value from its binary representation into objects.
      */
-    @NotNull protected final transient GridCacheSharedContext<?, ?> sharedCtx;
+    @NotNull protected final GridCacheSharedContext sharedCtx;
 
     /** Serializer factory. */
-    @NotNull private final transient RecordSerializerFactory serializerFactory;
+    @NotNull private final RecordSerializerFactory serializerFactory;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
-    @NotNull protected final transient FileIOFactory ioFactory;
+    @NotNull protected final FileIOFactory ioFactory;
 
     /** Utility buffer for reading records */
-    private final transient ByteBufferExpander buf;
+    private final ByteBufferExpander buf;
 
     /** Factory to provide I/O interfaces for read primitives with files. */
-    private final transient SegmentFileInputFactory segmentFileInputFactory;
+    private final SegmentFileInputFactory segmentFileInputFactory;
 
     /**
      * @param log Logger.
@@ -89,7 +90,7 @@ public abstract class AbstractWalRecordsIterator extends WalRecordsIteratorAdapt
      */
     protected AbstractWalRecordsIterator(
         @NotNull final IgniteLogger log,
-        @NotNull final GridCacheSharedContext<?, ?> sharedCtx,
+        @NotNull final GridCacheSharedContext sharedCtx,
         @NotNull final RecordSerializerFactory serializerFactory,
         @NotNull final FileIOFactory ioFactory,
         final int initialReadBufferSize,
@@ -322,12 +323,12 @@ public abstract class AbstractWalRecordsIterator extends WalRecordsIteratorAdapt
             return null;
         }
         catch (IgniteCheckedException e) {
-            IgniteUtils.closeWithSuppressingException(fileIO, e);
+            U.closeWithSuppressingException(fileIO, e);
 
             throw e;
         }
         catch (IOException e) {
-            IgniteUtils.closeWithSuppressingException(fileIO, e);
+            U.closeWithSuppressingException(fileIO, e);
 
             throw new IgniteCheckedException(
                 "Failed to initialize WAL segment after reading segment header: " + desc.file().getAbsolutePath(), e);
@@ -390,12 +391,12 @@ public abstract class AbstractWalRecordsIterator extends WalRecordsIteratorAdapt
             return initReadHandle(desc, start, fileIO, segmentHeader);
         }
         catch (FileNotFoundException e) {
-            IgniteUtils.closeQuiet(fileIO);
+            U.closeQuiet(fileIO);
 
             throw e;
         }
         catch (IOException e) {
-            IgniteUtils.closeQuiet(fileIO);
+            U.closeQuiet(fileIO);
 
             throw new IgniteCheckedException(
                 "Failed to initialize WAL segment: " + desc.file().getAbsolutePath(), e);
