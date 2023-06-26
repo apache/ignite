@@ -110,7 +110,9 @@ public interface FileInput extends ByteBufferBackedDataInput {
             }
         }
 
-        /** */
+        /**
+         *
+         */
         private void updateCrc() {
             if (skipCheck)
                 return;
@@ -135,90 +137,118 @@ public interface FileInput extends ByteBufferBackedDataInput {
             return skipped;
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public void readFully(@NotNull byte[] b) throws IOException {
             ensure(b.length);
 
             buffer().get(b);
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public void readFully(@NotNull byte[] b, int off, int len) throws IOException {
             ensure(len);
 
             buffer().get(b, off, len);
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public boolean readBoolean() throws IOException {
             return readByte() == 1;
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public byte readByte() throws IOException {
             ensure(1);
 
             return buffer().get();
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public int readUnsignedByte() throws IOException {
             return readByte() & 0xFF;
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public short readShort() throws IOException {
             ensure(2);
 
             return buffer().getShort();
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public int readUnsignedShort() throws IOException {
             return readShort() & 0xFFFF;
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public char readChar() throws IOException {
             ensure(2);
 
             return buffer().getChar();
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public int readInt() throws IOException {
             ensure(4);
 
             return buffer().getInt();
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public long readLong() throws IOException {
             ensure(8);
 
             return buffer().getLong();
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public float readFloat() throws IOException {
             ensure(4);
 
             return buffer().getFloat();
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public double readDouble() throws IOException {
             ensure(8);
 
             return buffer().getDouble();
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public String readLine() throws IOException {
             throw new UnsupportedOperationException();
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public String readUTF() throws IOException {
             throw new UnsupportedOperationException();
         }

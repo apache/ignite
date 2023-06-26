@@ -193,36 +193,6 @@ public abstract class AbstractWalRecordsIterator extends ParentAbstractWalRecord
         @Nullable final AbstractReadFileHandle curWalSegment
     ) throws IgniteCheckedException;
 
-
-    /**
-     * Performs final conversions with record loaded from WAL. To be overridden by subclasses if any processing
-     * required.
-     *
-     * @param rec record to post process.
-     * @return post processed record.
-     */
-    @NotNull protected WALRecord postProcessRecord(@NotNull final WALRecord rec) {
-        return rec;
-    }
-
-    /**
-     * Handler for record deserialization exception.
-     *
-     * @param e problem from records reading
-     * @param ptr file pointer was accessed
-     * @return {@code null} if the error was handled and we can go ahead, {@code IgniteCheckedException} if the error
-     * was not handled, and we should stop the iteration.
-     */
-    protected IgniteCheckedException handleRecordException(
-        @NotNull final Exception e,
-        @Nullable final WALPointer ptr
-    ) {
-        if (log.isInfoEnabled())
-            log.info("Stopping WAL iteration due to an exception: " + e.getMessage() + ", ptr=" + ptr);
-
-        return new IgniteCheckedException(e);
-    }
-
     /**
      * Switches to new record.
      *
@@ -264,6 +234,35 @@ public abstract class AbstractWalRecordsIterator extends ParentAbstractWalRecord
 
             return null;
         }
+    }
+
+    /**
+     * Performs final conversions with record loaded from WAL. To be overridden by subclasses if any processing
+     * required.
+     *
+     * @param rec record to post process.
+     * @return post processed record.
+     */
+    @NotNull protected WALRecord postProcessRecord(@NotNull final WALRecord rec) {
+        return rec;
+    }
+
+    /**
+     * Handler for record deserialization exception.
+     *
+     * @param e problem from records reading
+     * @param ptr file pointer was accessed
+     * @return {@code null} if the error was handled and we can go ahead, {@code IgniteCheckedException} if the error
+     * was not handled, and we should stop the iteration.
+     */
+    protected IgniteCheckedException handleRecordException(
+        @NotNull final Exception e,
+        @Nullable final WALPointer ptr
+    ) {
+        if (log.isInfoEnabled())
+            log.info("Stopping WAL iteration due to an exception: " + e.getMessage() + ", ptr=" + ptr);
+
+        return new IgniteCheckedException(e);
     }
 
     /**
