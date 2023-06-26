@@ -60,7 +60,7 @@ public abstract class AbstractWalRecordsIterator extends WalRecordsIteratorAdapt
     /**
      * Current WAL segment read file handle. To be filled by subclass advanceSegment
      */
-    private transient AbstractReadFileHandle currWalSegment;
+    private AbstractReadFileHandle currWalSegment;
 
     /**
      * Shared context for creating serializer of required version and grid name access. Also cacheObjects processor from
