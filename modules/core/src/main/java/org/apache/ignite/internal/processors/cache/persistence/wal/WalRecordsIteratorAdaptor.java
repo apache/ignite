@@ -38,7 +38,7 @@ public abstract class WalRecordsIteratorAdaptor
      * Current record preloaded, to be returned on next()<br> Normally this should be not null because advance() method
      * should already prepare some value<br>
      */
-    protected IgniteBiTuple<WALPointer, WALRecord> curRec;
+    protected transient IgniteBiTuple<WALPointer, WALRecord> curRec;
 
     /**
      * The exception which can be thrown during reading next record. It holds until the next calling of next record.
@@ -46,7 +46,7 @@ public abstract class WalRecordsIteratorAdaptor
     private IgniteCheckedException curException;
 
     /** Logger */
-    @NotNull protected final IgniteLogger log;
+    @NotNull protected final transient IgniteLogger log;
 
     /** Position of last read valid record. */
     protected WALPointer lastRead;
