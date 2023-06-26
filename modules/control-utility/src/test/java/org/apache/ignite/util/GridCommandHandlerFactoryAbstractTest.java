@@ -19,14 +19,19 @@ package org.apache.ignite.util;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.ServiceLoader;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import javax.management.DynamicMBean;
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
@@ -74,7 +79,23 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
     public static final String CLI_CMD_HND = "cli";
 
     /** */
-    public static final List<String> CMD_HNDS = Arrays.asList(JMX_CMD_HND, CLI_CMD_HND);
+    public static final Map<String, Function<IgniteLogger, TestCommandHandler>> CMD_HNDS = new HashMap<>();
+
+    static {
+        ServiceLoader<TestCommandHandler> svc = ServiceLoader.load(TestCommandHandler.class);
+
+        for (TestCommandHandler hnd : svc) {
+            CMD_HNDS.put(hnd.name(), log -> {
+                try {
+                    return hnd.getClass().getConstructor(IgniteLogger.class).newInstance(log);
+                }
+                catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                       NoSuchMethodException e) {
+                    throw new IgniteException(e);
+                }
+            });
+        }
+    }
 
     /** */
     @Parameterized.Parameter
@@ -83,7 +104,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
     /** */
     @Parameterized.Parameters(name = "cmdHnd={0}")
     public static List<String> commandHandlers() {
-        return CMD_HNDS;
+        return new ArrayList<>(CMD_HNDS.keySet());
     }
 
     /** */
@@ -93,16 +114,10 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
 
     /** Command executor factory. */
     protected TestCommandHandler newCommandHandler(@Nullable IgniteLogger log) {
-        switch (commandHandler) {
-            case CLI_CMD_HND:
-                return new CliCommandHandler(log);
+        if (!CMD_HNDS.containsKey(commandHandler))
+            throw new IllegalArgumentException("Unknown handler: " + commandHandler);
 
-            case JMX_CMD_HND:
-                return new JmxCommandHandler(log);
-
-            default:
-                throw new IllegalArgumentException("Unknown handler: " + commandHandler);
-        }
+        return CMD_HNDS.get(commandHandler).apply(log);
     }
 
     /** */
@@ -115,10 +130,13 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
 
         /** */
         public int execute(List<String> rawArgs);
+
+        /** */
+        public String name();
     }
 
     /** */
-    private static class CliCommandHandler implements TestCommandHandler {
+    public static class CliCommandHandler implements TestCommandHandler {
         /** */
         private final CommandHandler hnd;
 
@@ -147,10 +165,15 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
             // Flush all Logger handlers to make log data available to test.
             U.<IgniteLoggerEx>field(hnd, "logger").flush();
         }
+
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return CLI_CMD_HND;
+        }
     }
 
     /** */
-    private static class JmxCommandHandler implements TestCommandHandler {
+    public static class JmxCommandHandler implements TestCommandHandler {
         /** */
         private int port;
 
@@ -162,6 +185,11 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
 
         /** */
         private Object res;
+
+        /** */
+        public JmxCommandHandler() {
+            this(null);
+        }
 
         /** */
         public JmxCommandHandler(@Nullable IgniteLogger log) {
@@ -238,6 +266,11 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
             }
 
             return EXIT_CODE_OK;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return JMX_CMD_HND;
         }
 
         /** */
