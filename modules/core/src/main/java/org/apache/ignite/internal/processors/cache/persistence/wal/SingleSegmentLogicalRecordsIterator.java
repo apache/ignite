@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
  * Iterates over logical records of one WAL segment from archive. Used for WAL archive compression.
  * Doesn't deserialize actual record data, returns {@link MarshalledRecord} instances instead.
  */
-public class SingleSegmentLogicalRecordsIterator extends FileWalRecordsIterator {
+public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsIterator {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -89,8 +89,8 @@ public class SingleSegmentLogicalRecordsIterator extends FileWalRecordsIterator 
     }
 
     /** {@inheritDoc} */
-    @Override protected AbstractWalSegmentHandle advanceSegment(
-        @Nullable AbstractWalRecordsIterator.AbstractWalSegmentHandle curWalSegment) throws IgniteCheckedException {
+    @Override protected AbstractReadFileHandle advanceSegment(
+        @Nullable AbstractWalRecordsIterator.AbstractReadFileHandle curWalSegment) throws IgniteCheckedException {
         if (segmentInitialized) {
             closeCurrentWalSegment();
             // No advance as we iterate over single segment.
@@ -120,7 +120,7 @@ public class SingleSegmentLogicalRecordsIterator extends FileWalRecordsIterator 
     }
 
     /** {@inheritDoc} */
-    @Override protected AbstractWalSegmentHandle createReadFileHandle(
+    @Override protected AbstractReadFileHandle createReadFileHandle(
         SegmentIO fileIO,
         RecordSerializer ser, FileInput in) {
         return new FileWriteAheadLogManager.ReadFileHandle(fileIO, ser, in, null);

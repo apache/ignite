@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -27,10 +28,9 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.Re
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /** Byte Buffer WAL Iterator */
-public class ByteBufferWalIterator extends AbstractWalRecordsIterator {
+public class ByteBufferWalIterator extends ParentAbstractWalRecordsIterator {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -39,6 +39,9 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIterator {
 
     /** */
     private final transient RecordSerializer serializer;
+
+    /** */
+    private ByteBufferBackedDataInputImpl dataInput;
 
     /** constructor */
     public ByteBufferWalIterator(
@@ -61,67 +64,50 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIterator {
 
         serializer = rsf.createSerializer(RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
 
+        dataInput = new ByteBufferBackedDataInputImpl();
+
+        dataInput.buffer(buffer);
+
         advance();
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteCheckedException validateTailReachedException(WalSegmentTailReachedException tailReachedException,
-        AbstractWalSegmentHandle currWalSegment) {
-        return null;
-    }
+    /** */
+    private IgniteBiTuple<WALPointer, WALRecord> advanceRecord() throws IgniteCheckedException {
+        IgniteBiTuple<WALPointer, WALRecord> result = null;
 
-    /** {@inheritDoc} */
-    @Override protected AbstractWalSegmentHandle advanceSegment(
-        @Nullable AbstractWalSegmentHandle segment) {
-        if (segment == null) {
-            ByteBufferBackedDataInput in = new ByteBufferBackedDataInputImpl().buffer(buffer);
+        WALPointer actualFilePtr = new WALPointer(-1, (int)dataInput.position(), 0);
+        try {
+            WALRecord rec = serializer.readRecord(dataInput, actualFilePtr);
 
-            return new BufferSegment(in, serializer);
+            actualFilePtr.length(rec.size());
+
+            result = new IgniteBiTuple<>(actualFilePtr, rec);
         }
-        return null;
-    }
+        catch (IOException e) {
+            throw new IgniteCheckedException(e);
+        }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteBiTuple<WALPointer, WALRecord> advanceRecord(
-        @Nullable AbstractWalSegmentHandle hnd) throws IgniteCheckedException {
         return buffer.hasRemaining()
-            ? super.advanceRecord(hnd)
+            ? result
             : null;
     }
 
-    /** */
-    private static class BufferSegment implements AbstractWalSegmentHandle {
+    /** {@inheritDoc} */
+    @Override protected void advance() throws IgniteCheckedException {
+        if (curRec != null)
+            lastRead = curRec.get1();
 
-        /** */
-        private ByteBufferBackedDataInput in;
+        while (true) {
+            curRec = advanceRecord();
 
-        /** */
-        private RecordSerializer ser;
+            if (curRec != null && curRec.get2().type() == null) {
+                lastRead = curRec.get1();
 
-        /** */
-        public BufferSegment(ByteBufferBackedDataInput in, RecordSerializer ser) {
-            this.in = in;
-            this.ser = ser;
-        }
+                continue; // Record was skipped by filter of current serializer, should read next record.
+            }
 
-        /** */
-        @Override public void close() throws IgniteCheckedException {
-            // NOOP.
-        }
-
-        /** */
-        @Override public long idx() {
-            return -1;
-        }
-
-        /** */
-        @Override public ByteBufferBackedDataInput in() {
-            return in;
-        }
-
-        /** */
-        @Override public RecordSerializer ser() {
-            return ser;
+            return;
         }
     }
+
 }

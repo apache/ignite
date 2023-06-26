@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWalRecordsIterator;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.ReadFileHandle;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
@@ -71,7 +70,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  * WAL reader iterator, for creation in standalone WAL reader tool Operates over one directory, does not provide start
  * and end boundaries
  */
-class StandaloneWalRecordsIterator extends FileWalRecordsIterator {
+class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     /** Record buffer size */
     public static final int DFLT_BUF_SIZE = 2 * 1024 * 1024;
 
@@ -219,7 +218,7 @@ class StandaloneWalRecordsIterator extends FileWalRecordsIterator {
     /** {@inheritDoc} */
     @Override protected IgniteCheckedException validateTailReachedException(
         WalSegmentTailReachedException tailReachedException,
-        AbstractWalSegmentHandle currWalSegment
+        AbstractReadFileHandle currWalSegment
     ) {
         FileDescriptor lastWALSegmentDesc = walFileDescriptors.get(walFileDescriptors.size() - 1);
 
@@ -236,8 +235,8 @@ class StandaloneWalRecordsIterator extends FileWalRecordsIterator {
     }
 
     /** {@inheritDoc} */
-    @Override protected AbstractWalSegmentHandle advanceSegment(
-        @Nullable final AbstractWalRecordsIterator.AbstractWalSegmentHandle curWalSegment
+    @Override protected AbstractReadFileHandle advanceSegment(
+        @Nullable final AbstractWalRecordsIterator.AbstractReadFileHandle curWalSegment
     ) throws IgniteCheckedException {
 
         if (curWalSegment != null)
@@ -282,7 +281,7 @@ class StandaloneWalRecordsIterator extends FileWalRecordsIterator {
 
     /** {@inheritDoc} */
     @Override protected IgniteBiTuple<WALPointer, WALRecord> advanceRecord(
-        @Nullable AbstractWalRecordsIterator.AbstractWalSegmentHandle hnd
+        @Nullable AbstractWalRecordsIterator.AbstractReadFileHandle hnd
     ) throws IgniteCheckedException {
         IgniteBiTuple<WALPointer, WALRecord> tup = super.advanceRecord(hnd);
 
@@ -321,7 +320,7 @@ class StandaloneWalRecordsIterator extends FileWalRecordsIterator {
     }
 
     /** {@inheritDoc} */
-    @Override protected AbstractWalSegmentHandle initReadHandle(
+    @Override protected AbstractReadFileHandle initReadHandle(
         @NotNull AbstractFileDescriptor desc,
         @Nullable WALPointer start
     ) throws IgniteCheckedException, FileNotFoundException {
@@ -522,7 +521,7 @@ class StandaloneWalRecordsIterator extends FileWalRecordsIterator {
     }
 
     /** {@inheritDoc} */
-    @Override protected AbstractWalSegmentHandle createReadFileHandle(
+    @Override protected AbstractReadFileHandle createReadFileHandle(
         SegmentIO fileIO, RecordSerializer ser, FileInput in
     ) {
         return new ReadFileHandle(fileIO, ser, in, null);

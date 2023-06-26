@@ -16,12 +16,12 @@
 */
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWalRecordsIterator;
+import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
 
 /**
  * Special type of WAL record. Shouldn't be stored in file.
  * Returned by deserializer if next record is not matched by filter. Automatically handled by
- * {@link FileWalRecordsIterator}.
+ * {@link AbstractWalRecordsIterator}.
  */
 public class FilteredRecord extends WALRecord {
     /** Instance. */

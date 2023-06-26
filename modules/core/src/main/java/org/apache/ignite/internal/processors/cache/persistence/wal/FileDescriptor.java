@@ -32,7 +32,7 @@ import static java.nio.file.StandardOpenOption.READ;
 /**
  * WAL file descriptor.
  */
-public class FileDescriptor implements Comparable<FileDescriptor>, FileWalRecordsIterator.AbstractFileDescriptor {
+public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRecordsIterator.AbstractFileDescriptor {
     /** file extension of WAL segment. */
     private static final String WAL_SEGMENT_FILE_EXT = ".wal";
 
