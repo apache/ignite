@@ -4098,8 +4098,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (!FINISH_FUT_UPD.compareAndSet(this, null, fut = finishFuture(fastFinish = clearThreadMap && fastFinish(), false)))
             return chainFinishFuture(finishFut, false, clearThreadMap, onTimeout);
 
-        rollbackFuture(fut);
-
         if (!fastFinish) {
             if (prepFut == null || prepFut.isDone()) {
                 try {
