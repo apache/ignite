@@ -30,7 +30,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 
 /** Byte Buffer WAL Iterator */
-public class ByteBufferWalIterator extends ParentAbstractWalRecordsIterator {
+public class ByteBufferWalIterator extends WalRecordsIteratorAdaptor {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  * Iterator over WAL segments. This abstract class provides most functionality for reading records in log. Subclasses
  * are to override segment switching functionality
  */
-public abstract class AbstractWalRecordsIterator extends ParentAbstractWalRecordsIterator {
+public abstract class AbstractWalRecordsIterator extends WalRecordsIteratorAdaptor {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -101,6 +101,16 @@ public abstract class AbstractWalRecordsIterator extends ParentAbstractWalRecord
         this.segmentFileInputFactory = segmentFileInputFactory;
 
         buf = new ByteBufferExpander(initialReadBufferSize, ByteOrder.nativeOrder());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onClose() throws IgniteCheckedException {
+        try {
+            buf.close();
+        }
+        catch (Exception ex) {
+            throw new IgniteCheckedException(ex);
+        }
     }
 
     /**
@@ -334,16 +344,6 @@ public abstract class AbstractWalRecordsIterator extends ParentAbstractWalRecord
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void onClose() throws IgniteCheckedException {
-        try {
-            buf.close();
-        }
-        catch (Exception ex) {
-            throw new IgniteCheckedException(ex);
-        }
-    }
-
     /** */
     @Nullable private SegmentHeader initHeader(SegmentIO fileIO) throws IgniteCheckedException, IOException {
         SegmentHeader segmentHeader;
@@ -447,12 +447,14 @@ public abstract class AbstractWalRecordsIterator extends ParentAbstractWalRecord
         long idx();
 
         /** */
-        abstract FileInput in();
+        FileInput in();
 
         /** */
         RecordSerializer ser();
 
-        /** */
+        /**
+         *
+         */
         boolean workDir();
     }
 
