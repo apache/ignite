@@ -23,7 +23,12 @@ import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
  * This interface defines JMX view on {@link DistributedBaselineConfiguration}.
  */
 public interface BaselineAutoAdjustMXBean {
-    /** @return Whether baseline autoadjustment is enabled ot not. */
+    /**
+     * @return Whether baseline autoadjustment is enabled ot not.
+     * @see org.apache.ignite.internal.management.api.CommandMBean
+     * @deprecated Use managements API beans, instead.
+     */
+    @Deprecated
     @MXBeanDescription("Whether baseline autoadjustment is enabled ot not.")
     boolean isAutoAdjustmentEnabled();
 
@@ -31,7 +36,11 @@ public interface BaselineAutoAdjustMXBean {
     @MXBeanDescription("Baseline autoadjustment timeout value.")
     long getAutoAdjustmentTimeout();
 
-    /** @return Time until baseline will be adjusted automatically. */
+    /**
+     * @return Time until baseline will be adjusted automatically.
+     * @see org.apache.ignite.internal.management.api.CommandMBean
+     * @deprecated Use managements API beans, instead.
+     */
     @MXBeanDescription("Time until baseline will be adjusted automatically.")
     long getTimeUntilAutoAdjust();
 

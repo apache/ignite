@@ -19,7 +19,11 @@ package org.apache.ignite.mxbean;
 
 /**
  * Warm-up MXBean interface.
+ *
+ * @see org.apache.ignite.internal.management.api.CommandMBean
+ * @deprecated Use managements API beans, instead.
  */
+@Deprecated
 @MXBeanDescription("MBean that provides access to warm-up.")
 public interface WarmUpMXBean {
     /**
