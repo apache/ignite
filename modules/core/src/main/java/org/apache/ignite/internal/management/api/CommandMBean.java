@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.api;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.management.Attribute;
@@ -139,11 +140,14 @@ public class CommandMBean<A extends IgniteDataTransferObject, R> implements Dyna
     @Override public MBeanInfo getMBeanInfo() {
         List<MBeanParameterInfo> args = new ArrayList<>();
 
-        Consumer<Field> fldCnsmr = fld -> {
-            String descStr;
+        BiConsumer<ArgumentGroup, Field> fldCnsmr = (argGrp, fld) -> {
+            String descStr = "";
+
+            if ((argGrp != null && argGrp.optional()) || fld.getAnnotation(Argument.class).optional())
+                descStr += "Optional. ";
 
             if (!fld.isAnnotationPresent(EnumDescription.class))
-                descStr = fld.getAnnotation(Argument.class).description();
+                descStr += fld.getAnnotation(Argument.class).description();
             else {
                 EnumDescription enumDesc = fld.getAnnotation(EnumDescription.class);
 
@@ -158,13 +162,18 @@ public class CommandMBean<A extends IgniteDataTransferObject, R> implements Dyna
                     bldr.append(names[i]).append(" - ").append(descriptions[i]);
                 }
 
-                descStr = bldr.toString();
+                descStr += bldr.toString();
             }
 
             args.add(new MBeanParameterInfo(fld.getName(), String.class.getName(), descStr));
         };
 
-        visitCommandParams(cmd.argClass(), fldCnsmr, fldCnsmr, (optional, flds) -> flds.forEach(fldCnsmr));
+        visitCommandParams(
+            cmd.argClass(),
+            fld -> fldCnsmr.accept(null, fld),
+            fld -> fldCnsmr.accept(null, fld),
+            (grp, flds) -> flds.forEach(fld -> fldCnsmr.accept(grp, fld))
+        );
 
         return new MBeanInfo(
             CommandMBean.class.getName(),

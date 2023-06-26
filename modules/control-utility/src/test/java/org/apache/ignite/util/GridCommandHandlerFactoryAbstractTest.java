@@ -234,7 +234,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
 
                 Consumer<Field> fldCnsmr = fld -> params.add(toString(U.field(p.commandArg(), fld.getName())));
 
-                visitCommandParams(p.command().argClass(), fldCnsmr, fldCnsmr, (optional, flds) -> flds.forEach(fldCnsmr));
+                visitCommandParams(p.command().argClass(), fldCnsmr, fldCnsmr, (grp, flds) -> flds.forEach(fldCnsmr));
 
                 String[] signature = new String[params.size()];
 
