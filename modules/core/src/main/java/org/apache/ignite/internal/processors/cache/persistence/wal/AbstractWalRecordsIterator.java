@@ -45,17 +45,17 @@ public abstract class AbstractWalRecordsIterator
     protected IgniteBiTuple<WALPointer, WALRecord> curRec;
 
     /**
+     * The exception which can be thrown during reading next record. It holds until the next calling of next record.
+     */
+    private IgniteCheckedException curException;
+
+    /**
      * Current WAL segment read file handle. To be filled by subclass advanceSegment
      */
     private transient AbstractWalSegmentHandle currWalSegment;
 
     /** Logger */
     @NotNull protected final IgniteLogger log;
-
-    /**
-     * The exception which can be thrown during reading next record. It holds until the next calling of next record.
-     */
-    private IgniteCheckedException curException;
 
     /** Position of last read valid record. */
     protected WALPointer lastRead;
