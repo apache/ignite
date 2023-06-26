@@ -57,7 +57,7 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIterator {
         buffer = byteBuffer;
 
         RecordSerializerFactory rsf = new RecordSerializerFactoryImpl(cctx,
-            (t, p) -> t.purpose() == WALRecord.RecordPurpose.LOGICAL).skipPositionCheck(true).skipIndexCheck(true);
+            (t, p) -> t.purpose() == WALRecord.RecordPurpose.LOGICAL).skipPositionCheck(true);
 
         serializer = rsf.createSerializer(RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
 

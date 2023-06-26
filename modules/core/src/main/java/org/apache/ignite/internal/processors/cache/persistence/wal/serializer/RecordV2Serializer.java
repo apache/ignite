@@ -73,9 +73,6 @@ public class RecordV2Serializer implements RecordSerializer {
     /** Skip position check flag. Should be set for reading compacted wal file with skipped physical records. */
     private final boolean skipPositionCheck;
 
-    /** Skip index check mode. */
-    private final boolean skipIndexCheck;
-
     /** Thread-local heap byte buffer. */
     private final ThreadLocal<ByteBuffer> heapTlb =
         ThreadLocal.withInitial(() -> ByteBuffer.allocate(4096).order(GridUnsafe.NATIVE_BYTE_ORDER));
@@ -110,7 +107,7 @@ public class RecordV2Serializer implements RecordSerializer {
             if (recType == SWITCH_SEGMENT_RECORD)
                 throw new SegmentEofException("Reached end of segment", null);
 
-            WALPointer ptr = readPositionAndCheckPoint(in, expPtr, skipPositionCheck, skipIndexCheck, recType);
+            WALPointer ptr = readPositionAndCheckPoint(in, expPtr, skipPositionCheck, recType);
 
             if (recType == null) {
                 throw new IOException("Unknown record type: " + recType +
@@ -209,7 +206,6 @@ public class RecordV2Serializer implements RecordSerializer {
      * @param dataSerializer V2 data serializer.
      * @param marshalledMode Marshalled mode.
      * @param skipPositionCheck Skip position check mode.
-     * @param skipIndexCheck Skip index check mode
      * @param recordFilter Record type filter. {@link FilteredRecord} is deserialized instead of original record.
      */
     public RecordV2Serializer(
@@ -217,14 +213,12 @@ public class RecordV2Serializer implements RecordSerializer {
         boolean writePointer,
         boolean marshalledMode,
         boolean skipPositionCheck,
-        boolean skipIndexCheck,
         IgniteBiPredicate<RecordType, WALPointer> recordFilter
     ) {
         this.dataSerializer = dataSerializer;
         this.writePointer = writePointer;
         this.marshalledMode = marshalledMode;
         this.skipPositionCheck = skipPositionCheck;
-        this.skipIndexCheck = skipIndexCheck;
         this.recordFilter = recordFilter;
     }
 
@@ -256,7 +250,6 @@ public class RecordV2Serializer implements RecordSerializer {
     /**
      * @param in Data input to read pointer from.
      * @param skipPositionCheck Flag for skipping position check.
-     * @param skipIndexCheck Flag for skipping index check.
      * @return Read file WAL pointer.
      * @throws IOException If failed to write.
      */
@@ -265,16 +258,15 @@ public class RecordV2Serializer implements RecordSerializer {
         DataInput in,
         WALPointer expPtr,
         boolean skipPositionCheck,
-        boolean skipIndexCheck,
         RecordType type
     ) throws IgniteCheckedException, IOException {
         long idx = in.readLong();
         int fileOff = in.readInt();
         int len = in.readInt();
 
-        if ((!skipIndexCheck && !GridFunc.eq(idx, expPtr.index())) || (!skipPositionCheck && !GridFunc.eq(fileOff, expPtr.fileOffset())))
+        if (!skipPositionCheck && (!GridFunc.eq(idx, expPtr.index()) || !GridFunc.eq(fileOff, expPtr.fileOffset())))
             throw new WalSegmentTailReachedException(
-                "WAL segment tail   reached. [ " +
+                "WAL segment tail reached. [ " +
                     "Expected next state: {Index=" + expPtr.index() + ",Offset=" + expPtr.fileOffset() + "}, " +
                     "Actual state : {Index=" + idx + ",Offset=" + fileOff + "} ] recordType=" + type, null);
 
