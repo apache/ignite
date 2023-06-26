@@ -90,7 +90,7 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
 
     /** {@inheritDoc} */
     @Override protected AbstractReadFileHandle advanceSegment(
-        @Nullable AbstractWalRecordsIterator.AbstractReadFileHandle curWalSegment) throws IgniteCheckedException {
+        @Nullable AbstractReadFileHandle curWalSegment) throws IgniteCheckedException {
         if (segmentInitialized) {
             closeCurrentWalSegment();
             // No advance as we iterate over single segment.

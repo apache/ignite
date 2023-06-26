@@ -3077,7 +3077,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override protected AbstractReadFileHandle advanceSegment(
-            @Nullable final AbstractWalRecordsIterator.AbstractReadFileHandle curWalSegment
+            @Nullable final AbstractReadFileHandle curWalSegment
         ) throws IgniteCheckedException {
             if (curWalSegment != null)
                 curWalSegment.close();

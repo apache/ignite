@@ -236,7 +236,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
     /** {@inheritDoc} */
     @Override protected AbstractReadFileHandle advanceSegment(
-        @Nullable final AbstractWalRecordsIterator.AbstractReadFileHandle curWalSegment
+        @Nullable final AbstractReadFileHandle curWalSegment
     ) throws IgniteCheckedException {
 
         if (curWalSegment != null)
@@ -281,7 +281,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
     /** {@inheritDoc} */
     @Override protected IgniteBiTuple<WALPointer, WALRecord> advanceRecord(
-        @Nullable AbstractWalRecordsIterator.AbstractReadFileHandle hnd
+        @Nullable AbstractReadFileHandle hnd
     ) throws IgniteCheckedException {
         IgniteBiTuple<WALPointer, WALRecord> tup = super.advanceRecord(hnd);
 

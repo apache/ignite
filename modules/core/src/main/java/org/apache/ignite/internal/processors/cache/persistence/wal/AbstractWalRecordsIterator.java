@@ -103,46 +103,6 @@ public abstract class AbstractWalRecordsIterator extends ParentAbstractWalRecord
         buf = new ByteBufferExpander(initialReadBufferSize, ByteOrder.nativeOrder());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void onClose() throws IgniteCheckedException {
-        try {
-            buf.close();
-        }
-        catch (Exception ex) {
-            throw new IgniteCheckedException(ex);
-        }
-    }
-
-    /** */
-    @Nullable private SegmentHeader initHeader(SegmentIO fileIO) throws IgniteCheckedException, IOException {
-        SegmentHeader segmentHeader;
-
-        try {
-            segmentHeader = readSegmentHeader(fileIO, segmentFileInputFactory);
-        }
-        catch (SegmentEofException | EOFException ignore) {
-            closeFieIO(fileIO);
-
-            return null;
-        }
-        catch (IOException | IgniteCheckedException e) {
-            IgniteUtils.closeWithSuppressingException(fileIO, e);
-
-            throw e;
-        }
-        return segmentHeader;
-    }
-
-    /** */
-    private void closeFieIO(SegmentIO fileIO) throws IgniteCheckedException {
-        try {
-            fileIO.close();
-        }
-        catch (IOException ce) {
-            throw new IgniteCheckedException(ce);
-        }
-    }
-
     /**
      * Switches records iterator to the next record. <ul> <li>{@link #curRec} will be updated.</li> <li> If end of
      * segment reached, switch to new segment is called. {@link #currWalSegment} will be updated.</li> </ul>
@@ -200,13 +160,9 @@ public abstract class AbstractWalRecordsIterator extends ParentAbstractWalRecord
         WalSegmentTailReachedException tailReachedException,
         AbstractReadFileHandle currWalSegment
     ) {
-        if (!currWalSegment.workDir())
-            return new IgniteCheckedException(
-                "WAL tail reached in archive directory, " +
-                    "WAL segment file is corrupted.",
-                tailReachedException);
-        return null;
-
+        return !currWalSegment.workDir() ? new IgniteCheckedException(
+            "WAL tail reached in archive directory, " +
+                "WAL segment file is corrupted.", tailReachedException) : null;
     }
 
     /**
@@ -234,8 +190,38 @@ public abstract class AbstractWalRecordsIterator extends ParentAbstractWalRecord
      * @throws IgniteCheckedException if reading failed
      */
     protected abstract AbstractReadFileHandle advanceSegment(
-        @Nullable final AbstractWalRecordsIterator.AbstractReadFileHandle curWalSegment
+        @Nullable final AbstractReadFileHandle curWalSegment
     ) throws IgniteCheckedException;
+
+
+    /**
+     * Performs final conversions with record loaded from WAL. To be overridden by subclasses if any processing
+     * required.
+     *
+     * @param rec record to post process.
+     * @return post processed record.
+     */
+    @NotNull protected WALRecord postProcessRecord(@NotNull final WALRecord rec) {
+        return rec;
+    }
+
+    /**
+     * Handler for record deserialization exception.
+     *
+     * @param e problem from records reading
+     * @param ptr file pointer was accessed
+     * @return {@code null} if the error was handled and we can go ahead, {@code IgniteCheckedException} if the error
+     * was not handled, and we should stop the iteration.
+     */
+    protected IgniteCheckedException handleRecordException(
+        @NotNull final Exception e,
+        @Nullable final WALPointer ptr
+    ) {
+        if (log.isInfoEnabled())
+            log.info("Stopping WAL iteration due to an exception: " + e.getMessage() + ", ptr=" + ptr);
+
+        return new IgniteCheckedException(e);
+    }
 
     /**
      * Switches to new record.
@@ -279,7 +265,7 @@ public abstract class AbstractWalRecordsIterator extends ParentAbstractWalRecord
             return null;
         }
     }
-    
+
     /**
      * Assumes fileIO will be closed in this method in case of error occurred.
      *
@@ -339,6 +325,46 @@ public abstract class AbstractWalRecordsIterator extends ParentAbstractWalRecord
         }
     }
 
+    /** */
+    private void closeFieIO(SegmentIO fileIO) throws IgniteCheckedException {
+        try {
+            fileIO.close();
+        }
+        catch (IOException ce) {
+            throw new IgniteCheckedException(ce);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onClose() throws IgniteCheckedException {
+        try {
+            buf.close();
+        }
+        catch (Exception ex) {
+            throw new IgniteCheckedException(ex);
+        }
+    }
+
+    /** */
+    @Nullable private SegmentHeader initHeader(SegmentIO fileIO) throws IgniteCheckedException, IOException {
+        SegmentHeader segmentHeader;
+
+        try {
+            segmentHeader = readSegmentHeader(fileIO, segmentFileInputFactory);
+        }
+        catch (SegmentEofException | EOFException ignore) {
+            closeFieIO(fileIO);
+
+            return null;
+        }
+        catch (IOException | IgniteCheckedException e) {
+            IgniteUtils.closeWithSuppressingException(fileIO, e);
+
+            throw e;
+        }
+        return segmentHeader;
+    }
+
     /**
      * Assumes file descriptor will be opened in this method. The caller of this method must be responsible for closing
      * opened file descriptor File descriptor will be closed ONLY in case of error occurred.
@@ -385,53 +411,6 @@ public abstract class AbstractWalRecordsIterator extends ParentAbstractWalRecord
     );
 
     /**
-     * Performs final conversions with record loaded from WAL. To be overridden by subclasses if any processing
-     * required.
-     *
-     * @param rec record to post process.
-     * @return post processed record.
-     */
-    @NotNull protected WALRecord postProcessRecord(@NotNull final WALRecord rec) {
-        return rec;
-    }
-
-    /**
-     * Handler for record deserialization exception.
-     *
-     * @param e problem from records reading
-     * @param ptr file pointer was accessed
-     * @return {@code null} if the error was handled and we can go ahead, {@code IgniteCheckedException} if the error
-     * was not handled, and we should stop the iteration.
-     */
-    protected IgniteCheckedException handleRecordException(
-        @NotNull final Exception e,
-        @Nullable final WALPointer ptr
-    ) {
-        if (log.isInfoEnabled())
-            log.info("Stopping WAL iteration due to an exception: " + e.getMessage() + ", ptr=" + ptr);
-
-        return new IgniteCheckedException(e);
-    }
-
-    /** */
-    protected interface AbstractReadFileHandle {
-        /** */
-        void close() throws IgniteCheckedException;
-
-        /** */
-        long idx();
-
-        /** */
-        abstract FileInput in();
-
-        /** */
-        RecordSerializer ser();
-
-        /** */
-        boolean workDir();
-    }
-
-    /**
      * Filter that drops all records until given start pointer is reached.
      */
     private static class StartSeekingFilter implements P2<WALRecord.RecordType, WALPointer> {
@@ -458,6 +437,24 @@ public abstract class AbstractWalRecordsIterator extends ParentAbstractWalRecord
 
             return startReached;
         }
+    }
+
+    /** */
+    protected interface AbstractReadFileHandle {
+        /** */
+        void close() throws IgniteCheckedException;
+
+        /** */
+        long idx();
+
+        /** */
+        abstract FileInput in();
+
+        /** */
+        RecordSerializer ser();
+
+        /** */
+        boolean workDir();
     }
 
     /** */

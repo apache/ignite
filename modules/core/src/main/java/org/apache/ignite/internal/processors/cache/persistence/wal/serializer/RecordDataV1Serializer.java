@@ -184,10 +184,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     public RecordDataV1Serializer(GridCacheSharedContext cctx) {
         this.cctx = cctx;
         this.txRecordSerializer = new TxRecordSerializer();
-        this.co = cctx == null ? null : cctx.kernalContext().cacheObjects();
-        this.pageSize = cctx == null ? -1 : cctx.database().pageSize();
-        this.encSpi = cctx == null ? null : cctx.gridConfig().getEncryptionSpi();
-        this.encMgr = cctx == null ? null : cctx.kernalContext().encryption();
+        this.co = cctx.kernalContext().cacheObjects();
+        this.pageSize = cctx.database().pageSize();
+        this.encSpi = cctx.gridConfig().getEncryptionSpi();
+        this.encMgr = cctx.kernalContext().encryption();
 
         encryptionDisabled = encSpi instanceof NoopEncryptionSpi;
 
@@ -197,7 +197,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         else
             this.realPageSize = pageSize;
 
-        log = cctx == null ? null : cctx.logger(getClass());
+        log = cctx.logger(getClass());
     }
 
     /** {@inheritDoc} */

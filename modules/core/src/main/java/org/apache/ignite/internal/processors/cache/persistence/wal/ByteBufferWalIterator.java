@@ -41,7 +41,7 @@ public class ByteBufferWalIterator extends ParentAbstractWalRecordsIterator {
     private final transient RecordSerializer serializer;
 
     /** */
-    private ByteBufferBackedDataInputImpl dataInput;
+    private final transient ByteBufferBackedDataInputImpl dataInput;
 
     /** constructor */
     public ByteBufferWalIterator(
@@ -87,9 +87,7 @@ public class ByteBufferWalIterator extends ParentAbstractWalRecordsIterator {
             throw new IgniteCheckedException(e);
         }
 
-        return buffer.hasRemaining()
-            ? result
-            : null;
+        return buffer.hasRemaining() ? result : null;
     }
 
     /** {@inheritDoc} */

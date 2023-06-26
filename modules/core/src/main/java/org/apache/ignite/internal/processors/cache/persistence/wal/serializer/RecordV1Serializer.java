@@ -31,7 +31,6 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
-import org.apache.ignite.internal.processors.cache.persistence.wal.Crc32CheckingDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
@@ -368,7 +367,7 @@ public class RecordV1Serializer implements RecordSerializer {
     ) throws EOFException, IgniteCheckedException {
         long startPos = -1;
 
-        try (Crc32CheckingDataInput in = in0.startRead(skipCrc)) {
+        try (FileInput.Crc32CheckingFileInput in = in0.startRead(skipCrc)) {
             startPos = in0.position();
 
             WALRecord res = reader.readWithHeaders(in, expPtr);

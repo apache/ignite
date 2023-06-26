@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.jetbrains.annotations.NotNull;
 
@@ -67,8 +68,8 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
      * @param skipCheck If CRC check should be skipped.
      * @return autoclosable ByteBufferBackedDataInput, after its closing crc will be calculated and compared with saved one
      */
-    @Override public Crc32CheckingDataInput startRead(boolean skipCheck) {
-        return new Crc32CheckingDataInput(this, skipCheck);
+    @Override public FileInput.Crc32CheckingFileInput startRead(boolean skipCheck) {
+        return new FileInput.Crc32CheckingFileInput(this, skipCheck);
     }
 
     /** {@inheritDoc} */

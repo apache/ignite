@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
-import org.apache.ignite.internal.processors.cache.persistence.wal.Crc32CheckingDataInput;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -268,7 +267,7 @@ public class SimpleFileInput implements FileInput {
      * @param skipCheck If CRC check should be skipped.
      * @return autoclosable fileInput, after its closing crc will be calculated and compared with saved one
      */
-    @Override public Crc32CheckingDataInput startRead(boolean skipCheck) {
-        return new Crc32CheckingDataInput(this, skipCheck);
+    @Override public Crc32CheckingFileInput startRead(boolean skipCheck) {
+        return new Crc32CheckingFileInput(this, skipCheck);
     }
 }
