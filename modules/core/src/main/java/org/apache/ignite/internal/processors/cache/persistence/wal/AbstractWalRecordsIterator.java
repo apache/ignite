@@ -57,6 +57,11 @@ public abstract class AbstractWalRecordsIterator extends ParentAbstractWalRecord
     protected long curWalSegmIdx = -1;
 
     /**
+     * Current WAL segment read file handle. To be filled by subclass advanceSegment
+     */
+    private transient AbstractReadFileHandle currWalSegment;
+
+    /**
      * Shared context for creating serializer of required version and grid name access. Also cacheObjects processor from
      * this context may be used to covert Data entry key and value from its binary representation into objects.
      */
@@ -73,11 +78,6 @@ public abstract class AbstractWalRecordsIterator extends ParentAbstractWalRecord
 
     /** Factory to provide I/O interfaces for read primitives with files. */
     private final transient SegmentFileInputFactory segmentFileInputFactory;
-    
-    /**
-     * Current WAL segment read file handle. To be filled by subclass advanceSegment
-     */
-    private transient AbstractReadFileHandle currWalSegment;
 
     /**
      * @param log Logger.
@@ -113,11 +113,89 @@ public abstract class AbstractWalRecordsIterator extends ParentAbstractWalRecord
         }
     }
 
+    /** */
+    @Nullable private SegmentHeader initHeader(SegmentIO fileIO) throws IgniteCheckedException, IOException {
+        SegmentHeader segmentHeader;
+
+        try {
+            segmentHeader = readSegmentHeader(fileIO, segmentFileInputFactory);
+        }
+        catch (SegmentEofException | EOFException ignore) {
+            closeFieIO(fileIO);
+
+            return null;
+        }
+        catch (IOException | IgniteCheckedException e) {
+            IgniteUtils.closeWithSuppressingException(fileIO, e);
+
+            throw e;
+        }
+        return segmentHeader;
+    }
+
+    /** */
+    private void closeFieIO(SegmentIO fileIO) throws IgniteCheckedException {
+        try {
+            fileIO.close();
+        }
+        catch (IOException ce) {
+            throw new IgniteCheckedException(ce);
+        }
+    }
+
     /**
-         * @param tailReachedException Tail reached exception.
-         * @param currWalSegment Current WAL segment read handler.
-         * @return If need to throw exception after validation.
-         */
+     * Switches records iterator to the next record. <ul> <li>{@link #curRec} will be updated.</li> <li> If end of
+     * segment reached, switch to new segment is called. {@link #currWalSegment} will be updated.</li> </ul>
+     *
+     * {@code advance()} runs a step ahead {@link #next()}
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    @Override protected void advance() throws IgniteCheckedException {
+        if (curRec != null)
+            lastRead = curRec.get1();
+
+        while (true) {
+            try {
+                curRec = advanceRecord(currWalSegment);
+
+                if (curRec != null) {
+                    if (curRec.get2().type() == null) {
+                        lastRead = curRec.get1();
+
+                        continue; // Record was skipped by filter of current serializer, should read next record.
+                    }
+
+                    return;
+                }
+                else {
+                    currWalSegment = advanceSegment(currWalSegment);
+
+                    if (currWalSegment == null)
+                        return;
+                }
+            }
+            catch (WalSegmentTailReachedException e) {
+
+                IgniteCheckedException e0 = validateTailReachedException(e, currWalSegment);
+
+                if (e0 != null)
+                    throw e0;
+
+                log.warning(e.getMessage());
+
+                curRec = null;
+
+                return;
+            }
+        }
+    }
+
+    /**
+     * @param tailReachedException Tail reached exception.
+     * @param currWalSegment Current WAL segment read handler.
+     * @return If need to throw exception after validation.
+     */
     protected IgniteCheckedException validateTailReachedException(
         WalSegmentTailReachedException tailReachedException,
         AbstractReadFileHandle currWalSegment
@@ -132,17 +210,76 @@ public abstract class AbstractWalRecordsIterator extends ParentAbstractWalRecord
     }
 
     /**
-         * Switches records iterator to the next WAL segment as result of this method, new reference to segment should be
-         * returned. Null for current handle means stop of iteration.
-         *
-         * @param curWalSegment current open WAL segment or null if there is no open segment yet
-         * @return new WAL segment to read or null for stop iteration
-         * @throws IgniteCheckedException if reading failed
-         */
+     * Closes and returns WAL segment (if any)
+     *
+     * @return closed handle
+     * @throws IgniteCheckedException if IO failed
+     */
+    @Nullable protected AbstractReadFileHandle closeCurrentWalSegment() throws IgniteCheckedException {
+        final AbstractReadFileHandle walSegmentClosed = currWalSegment;
+
+        if (walSegmentClosed != null) {
+            walSegmentClosed.close();
+            currWalSegment = null;
+        }
+        return walSegmentClosed;
+    }
+
+    /**
+     * Switches records iterator to the next WAL segment as result of this method, new reference to segment should be
+     * returned. Null for current handle means stop of iteration.
+     *
+     * @param curWalSegment current open WAL segment or null if there is no open segment yet
+     * @return new WAL segment to read or null for stop iteration
+     * @throws IgniteCheckedException if reading failed
+     */
     protected abstract AbstractReadFileHandle advanceSegment(
         @Nullable final AbstractWalRecordsIterator.AbstractReadFileHandle curWalSegment
     ) throws IgniteCheckedException;
 
+    /**
+     * Switches to new record.
+     *
+     * @param hnd currently opened read handle.
+     * @return next advanced record.
+     */
+    protected IgniteBiTuple<WALPointer, WALRecord> advanceRecord(
+        @Nullable final AbstractReadFileHandle hnd
+    ) throws IgniteCheckedException {
+        if (hnd == null)
+            return null;
+
+        WALPointer actualFilePtr = new WALPointer(hnd.idx(), (int)hnd.in().position(), 0);
+
+        try {
+            WALRecord rec = hnd.ser().readRecord(hnd.in(), actualFilePtr);
+
+            actualFilePtr.length(rec.size());
+
+            // cast using diamond operator here can break compile for 7
+            return new IgniteBiTuple<>(actualFilePtr, postProcessRecord(rec));
+        }
+        catch (IOException | IgniteCheckedException e) {
+            if (e instanceof WalSegmentTailReachedException) {
+                throw new WalSegmentTailReachedException(
+                    "WAL segment tail reached. [idx=" + hnd.idx() +
+                        ", isWorkDir=" + hnd.workDir() + ", serVer=" + hnd.ser() +
+                        ", actualFilePtr=" + actualFilePtr + ']',
+                    e
+                );
+            }
+
+            if (!(e instanceof SegmentEofException) && !(e instanceof EOFException)) {
+                IgniteCheckedException e0 = handleRecordException(e, actualFilePtr);
+
+                if (e0 != null)
+                    throw e0;
+            }
+
+            return null;
+        }
+    }
+    
     /**
      * Assumes fileIO will be closed in this method in case of error occurred.
      *
@@ -241,148 +378,11 @@ public abstract class AbstractWalRecordsIterator extends ParentAbstractWalRecord
     }
 
     /** */
-    @Nullable private SegmentHeader initHeader(SegmentIO fileIO) throws IgniteCheckedException, IOException {
-        SegmentHeader segmentHeader;
-
-        try {
-            segmentHeader = readSegmentHeader(fileIO, segmentFileInputFactory);
-        }
-        catch (SegmentEofException | EOFException ignore) {
-            closeFieIO(fileIO);
-
-            return null;
-        }
-        catch (IOException | IgniteCheckedException e) {
-            IgniteUtils.closeWithSuppressingException(fileIO, e);
-
-            throw e;
-        }
-        return segmentHeader;
-    }
-
-    /** */
-    private void closeFieIO(SegmentIO fileIO) throws IgniteCheckedException {
-        try {
-            fileIO.close();
-        }
-        catch (IOException ce) {
-            throw new IgniteCheckedException(ce);
-        }
-    }
-
-    /** */
     protected abstract AbstractReadFileHandle createReadFileHandle(
         SegmentIO fileIO,
         RecordSerializer ser,
         FileInput in
     );
-
-    /**
-     * Switches records iterator to the next record. <ul> <li>{@link #curRec} will be updated.</li> <li> If end of
-     * segment reached, switch to new segment is called. {@link #currWalSegment} will be updated.</li> </ul>
-     *
-     * {@code advance()} runs a step ahead {@link #next()}
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    @Override protected void advance() throws IgniteCheckedException {
-        if (curRec != null)
-            lastRead = curRec.get1();
-
-        while (true) {
-            try {
-                curRec = advanceRecord(currWalSegment);
-
-                if (curRec != null) {
-                    if (curRec.get2().type() == null) {
-                        lastRead = curRec.get1();
-
-                        continue; // Record was skipped by filter of current serializer, should read next record.
-                    }
-
-                    return;
-                }
-                else {
-                    currWalSegment = advanceSegment(currWalSegment);
-
-                    if (currWalSegment == null)
-                        return;
-                }
-            }
-            catch (WalSegmentTailReachedException e) {
-
-                IgniteCheckedException e0 = validateTailReachedException(e, currWalSegment);
-
-                if (e0 != null)
-                    throw e0;
-
-                log.warning(e.getMessage());
-
-                curRec = null;
-
-                return;
-            }
-        }
-    }
-
-    /**
-     * Closes and returns WAL segment (if any)
-     *
-     * @return closed handle
-     * @throws IgniteCheckedException if IO failed
-     */
-    @Nullable protected AbstractWalRecordsIterator.AbstractReadFileHandle closeCurrentWalSegment() throws IgniteCheckedException {
-        final AbstractReadFileHandle walSegmentClosed = currWalSegment;
-
-        if (walSegmentClosed != null) {
-            walSegmentClosed.close();
-            currWalSegment = null;
-        }
-        return walSegmentClosed;
-    }
-
-    /**
-     * Switches to new record.
-     *
-     * @param hnd currently opened read handle.
-     * @return next advanced record.
-     */
-    protected IgniteBiTuple<WALPointer, WALRecord> advanceRecord(
-        @Nullable final AbstractWalRecordsIterator.AbstractReadFileHandle hnd
-    ) throws IgniteCheckedException {
-        if (hnd == null)
-            return null;
-
-        WALPointer actualFilePtr = new WALPointer(hnd.idx(), (int)hnd.in().position(), 0);
-
-        try {
-            WALRecord rec = hnd.ser().readRecord(hnd.in(), actualFilePtr);
-
-            actualFilePtr.length(rec.size());
-
-            // cast using diamond operator here can break compile for 7
-            return new IgniteBiTuple<>(actualFilePtr, postProcessRecord(rec));
-        }
-        catch (IOException | IgniteCheckedException e) {
-            if (e instanceof WalSegmentTailReachedException) {
-                throw new WalSegmentTailReachedException(
-                    "WAL segment tail reached. [idx=" + hnd.idx() +
-                        ", isWorkDir=" + hnd.workDir() + ", serVer=" + hnd.ser() +
-                        ", actualFilePtr=" + actualFilePtr + ']',
-                    e
-                );
-            }
-
-            if (!(e instanceof SegmentEofException) && !(e instanceof EOFException)) {
-                IgniteCheckedException e0 = handleRecordException(e, actualFilePtr);
-
-                if (e0 != null)
-                    throw e0;
-            }
-
-            return null;
-        }
-    }
 
     /**
      * Performs final conversions with record loaded from WAL. To be overridden by subclasses if any processing
