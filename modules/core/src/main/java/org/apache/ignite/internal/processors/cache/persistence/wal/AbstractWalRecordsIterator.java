@@ -138,16 +138,13 @@ public abstract class AbstractWalRecordsIterator extends WalRecordsIteratorAdapt
 
                     return;
                 }
-                else {
-                    currWalSegment = advanceSegment(currWalSegment);
 
-                    if (currWalSegment == null)
-                        return;
-                }
+                currWalSegment = advanceSegment(currWalSegment);
+
+                if (currWalSegment == null)
+                    return;
             }
             catch (WalSegmentTailReachedException e) {
-                AbstractReadFileHandle currWalSegment = this.currWalSegment;
-
                 IgniteCheckedException e0 = validateTailReachedException(e, currWalSegment);
 
                 if (e0 != null)
