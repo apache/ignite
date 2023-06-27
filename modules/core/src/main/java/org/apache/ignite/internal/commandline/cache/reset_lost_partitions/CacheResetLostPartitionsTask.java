@@ -21,6 +21,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.management.cache.CacheResetLostPartitionsCommandArg;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -33,18 +34,19 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Reset status of lost partitions.
  */
-public class CacheResetLostPartitionsTask extends VisorOneNodeTask<CacheResetLostPartitionsTaskArg, CacheResetLostPartitionsTaskResult> {
+public class CacheResetLostPartitionsTask extends VisorOneNodeTask<CacheResetLostPartitionsCommandArg, CacheResetLostPartitionsTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<CacheResetLostPartitionsTaskArg, CacheResetLostPartitionsTaskResult> job(
-        CacheResetLostPartitionsTaskArg arg) {
+    @Override protected VisorJob<CacheResetLostPartitionsCommandArg, CacheResetLostPartitionsTaskResult> job(
+        CacheResetLostPartitionsCommandArg arg) {
         return new CacheResetLostPartitionsJob(arg, debug);
     }
 
     /** Job for node. */
-    private static class CacheResetLostPartitionsJob extends VisorJob<CacheResetLostPartitionsTaskArg, CacheResetLostPartitionsTaskResult> {
+    private static class CacheResetLostPartitionsJob
+        extends VisorJob<CacheResetLostPartitionsCommandArg, CacheResetLostPartitionsTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -52,40 +54,41 @@ public class CacheResetLostPartitionsTask extends VisorOneNodeTask<CacheResetLos
          * @param arg Argument.
          * @param debug Debug.
          */
-        public CacheResetLostPartitionsJob(@Nullable CacheResetLostPartitionsTaskArg arg, boolean debug) {
+        public CacheResetLostPartitionsJob(@Nullable CacheResetLostPartitionsCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
         @Override public CacheResetLostPartitionsTaskResult run(
-            CacheResetLostPartitionsTaskArg arg) throws IgniteException {
+            CacheResetLostPartitionsCommandArg arg) throws IgniteException {
             try {
                 final CacheResetLostPartitionsTaskResult res = new CacheResetLostPartitionsTaskResult();
                 res.setMessageMap(new HashMap<>());
 
-                if (!F.isEmpty(arg.getCaches())) {
-                    for (String groupName : arg.getCaches()) {
-                        final int grpId = CU.cacheId(groupName);
+                if (F.isEmpty(arg.caches()))
+                    return res;
 
-                        CacheGroupContext grp = ignite.context().cache().cacheGroup(grpId);
+                for (String groupName : arg.caches()) {
+                    final int grpId = CU.cacheId(groupName);
 
-                        if (grp != null) {
-                            SortedSet<String> cacheNames = grp.caches().stream()
-                                .map(GridCacheContext::name)
-                                .collect(Collectors.toCollection(TreeSet::new));
+                    CacheGroupContext grp = ignite.context().cache().cacheGroup(grpId);
 
-                            if (!F.isEmpty(cacheNames)) {
-                                ignite.resetLostPartitions(cacheNames);
+                    if (grp != null) {
+                        SortedSet<String> cacheNames = grp.caches().stream()
+                            .map(GridCacheContext::name)
+                            .collect(Collectors.toCollection(TreeSet::new));
 
-                                res.put(groupName, String.format("Reset LOST-partitions performed successfully. " +
-                                        "Cache group (name = '%s', id = %d), caches (%s).",
-                                    groupName, grpId, cacheNames));
-                            }
+                        if (!F.isEmpty(cacheNames)) {
+                            ignite.resetLostPartitions(cacheNames);
+
+                            res.put(groupName, String.format("Reset LOST-partitions performed successfully. " +
+                                    "Cache group (name = '%s', id = %d), caches (%s).",
+                                groupName, grpId, cacheNames));
                         }
-                        else
-                            res.put(groupName, String.format("Cache group (name = '%s', id = %d) not found.",
-                                groupName, grpId));
                     }
+                    else
+                        res.put(groupName, String.format("Cache group (name = '%s', id = %d) not found.",
+                            groupName, grpId));
                 }
 
                 return res;

@@ -30,6 +30,7 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
+import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Tracing;
@@ -104,8 +105,8 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
     /** Canceled. */
     private boolean canceled;
 
-    /** Fetch size interceptor. */
-    final H2QueryFetchSizeInterceptor fetchSizeInterceptor;
+    /** Fetch size checker. */
+    final HeavyQueriesTracker.ResultSetChecker resultSetChecker;
 
     /** Tracing processor. */
     protected final Tracing tracing;
@@ -161,7 +162,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         assert h2 != null;
         assert qryInfo != null;
 
-        fetchSizeInterceptor = new H2QueryFetchSizeInterceptor(h2, qryInfo, log);
+        resultSetChecker = h2.heavyQueriesTracker().resultSetChecker(qryInfo);
     }
 
     /**
@@ -277,7 +278,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         if (rowIter != null && rowIter.hasNext()) {
             row = rowIter.next();
 
-            fetchSizeInterceptor.checkOnFetchNext();
+            resultSetChecker.checkOnFetchNext();
 
             return true;
         }
@@ -291,7 +292,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         if (rowIter != null && rowIter.hasNext()) {
             row = rowIter.next();
 
-            fetchSizeInterceptor.checkOnFetchNext();
+            resultSetChecker.checkOnFetchNext();
 
             return true;
         }
@@ -315,7 +316,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         lockTables();
 
         try {
-            fetchSizeInterceptor.checkOnClose();
+            resultSetChecker.checkOnClose();
 
             data.close();
         }

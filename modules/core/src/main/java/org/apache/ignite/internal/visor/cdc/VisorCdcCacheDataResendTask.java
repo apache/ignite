@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.management.cdc.CdcResendCommandArg;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CdcDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -53,7 +54,7 @@ import org.jetbrains.annotations.Nullable;
  * Iterates over caches and writes primary copies of data entries to the WAL to get captured by CDC.
  */
 @GridInternal
-public class VisorCdcCacheDataResendTask extends VisorMultiNodeTask<VisorCdcCacheDataResendTaskArg, Void, Void> {
+public class VisorCdcCacheDataResendTask extends VisorMultiNodeTask<CdcResendCommandArg, Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -61,12 +62,12 @@ public class VisorCdcCacheDataResendTask extends VisorMultiNodeTask<VisorCdcCach
     private AffinityTopologyVersion topVer;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorCdcCacheDataResendTaskArg, Void> job(VisorCdcCacheDataResendTaskArg arg) {
+    @Override protected VisorJob<CdcResendCommandArg, Void> job(CdcResendCommandArg arg) {
         return new VisorCdcCacheDataResendJob(arg, topVer);
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<VisorCdcCacheDataResendTaskArg> arg) {
+    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<CdcResendCommandArg> arg) {
         // Check there is no rebalance.
         GridDhtPartitionsExchangeFuture fut = ignite.context().cache().context().exchange().lastFinishedFuture();
 
@@ -94,7 +95,7 @@ public class VisorCdcCacheDataResendTask extends VisorMultiNodeTask<VisorCdcCach
     }
 
     /** */
-    private static class VisorCdcCacheDataResendJob extends VisorJob<VisorCdcCacheDataResendTaskArg, Void> {
+    private static class VisorCdcCacheDataResendJob extends VisorJob<CdcResendCommandArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -118,14 +119,14 @@ public class VisorCdcCacheDataResendTask extends VisorMultiNodeTask<VisorCdcCach
          * @param arg Job argument.
          * @param topVer Topology version when task was started.
          */
-        protected VisorCdcCacheDataResendJob(VisorCdcCacheDataResendTaskArg arg, AffinityTopologyVersion topVer) {
+        protected VisorCdcCacheDataResendJob(CdcResendCommandArg arg, AffinityTopologyVersion topVer) {
             super(arg, false);
 
             this.topVer = topVer;
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(VisorCdcCacheDataResendTaskArg arg) throws IgniteException {
+        @Override protected Void run(CdcResendCommandArg arg) throws IgniteException {
             if (F.isEmpty(arg.caches()))
                 throw new IllegalArgumentException("Caches are not specified.");
 

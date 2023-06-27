@@ -27,6 +27,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.encryption.EncryptionReencryptionRateLimitCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -37,15 +38,15 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 public class VisorReencryptionRateTask extends VisorMultiNodeTask<
-    VisorReencryptionRateTaskArg,
+    EncryptionReencryptionRateLimitCommandArg,
     VisorCacheGroupEncryptionTaskResult<Double>,
     VisorReencryptionRateTask.ReencryptionRateJobResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorReencryptionRateTaskArg, ReencryptionRateJobResult> job(
-        VisorReencryptionRateTaskArg arg) {
+    @Override protected VisorJob<EncryptionReencryptionRateLimitCommandArg, ReencryptionRateJobResult> job(
+        EncryptionReencryptionRateLimitCommandArg arg) {
         return new VisorReencryptionRateJob(arg, debug);
     }
 
@@ -73,7 +74,7 @@ public class VisorReencryptionRateTask extends VisorMultiNodeTask<
 
     /** The job for view/change cache group re-encryption rate limit. */
     private static class VisorReencryptionRateJob
-        extends VisorJob<VisorReencryptionRateTaskArg, ReencryptionRateJobResult> {
+        extends VisorJob<EncryptionReencryptionRateLimitCommandArg, ReencryptionRateJobResult> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -81,16 +82,16 @@ public class VisorReencryptionRateTask extends VisorMultiNodeTask<
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorReencryptionRateJob(VisorReencryptionRateTaskArg arg, boolean debug) {
+        protected VisorReencryptionRateJob(EncryptionReencryptionRateLimitCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected ReencryptionRateJobResult run(VisorReencryptionRateTaskArg arg) throws IgniteException {
+        @Override protected ReencryptionRateJobResult run(EncryptionReencryptionRateLimitCommandArg arg) throws IgniteException {
             double prevRate = ignite.context().encryption().getReencryptionRate();
 
-            if (arg.rate() != null)
-                ignite.context().encryption().setReencryptionRate(arg.rate());
+            if (arg.newLimit() != null)
+                ignite.context().encryption().setReencryptionRate(arg.newLimit());
 
             return new ReencryptionRateJobResult(prevRate);
         }

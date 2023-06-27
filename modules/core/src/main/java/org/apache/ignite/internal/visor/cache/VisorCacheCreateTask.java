@@ -28,30 +28,30 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.cache.CacheCreateCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.resources.IgniteInstanceResource;
-
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 
 /**
  * Task to create caches from Spring XML configuration.
  */
 @GridInternal
-public class VisorCacheCreateTask extends VisorOneNodeTask<String, Set<String>> {
+public class VisorCacheCreateTask extends VisorOneNodeTask<CacheCreateCommandArg, Set<String>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<String, Set<String>> job(String springXmlConfig) {
+    @Override protected VisorJob<CacheCreateCommandArg, Set<String>> job(CacheCreateCommandArg springXmlConfig) {
         return new VisorCacheCreateJob(springXmlConfig, false);
     }
 
     /** */
-    private static class VisorCacheCreateJob extends VisorJob<String, Set<String>> {
+    private static class VisorCacheCreateJob extends VisorJob<CacheCreateCommandArg, Set<String>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -60,13 +60,13 @@ public class VisorCacheCreateTask extends VisorOneNodeTask<String, Set<String>> 
         protected transient IgniteEx ignite;
 
         /** */
-        protected VisorCacheCreateJob(String springXmlConfig, boolean debug) {
-            super(springXmlConfig, debug);
+        protected VisorCacheCreateJob(CacheCreateCommandArg arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Set<String> run(String springXmlConfig) throws IgniteException {
-            if (F.isEmpty(springXmlConfig))
+        @Override protected Set<String> run(CacheCreateCommandArg arg) throws IgniteException {
+            if (F.isEmpty(arg.fileContent()))
                 throw new IllegalArgumentException("Configurations not specified.");
 
             IgniteSpringHelper spring;
@@ -81,8 +81,8 @@ public class VisorCacheCreateTask extends VisorOneNodeTask<String, Set<String>> 
             Collection<CacheConfiguration> ccfgs;
 
             try {
-                ccfgs = spring.loadConfigurations(new ByteArrayInputStream(springXmlConfig.getBytes()),
-                    CacheConfiguration.class).get1();
+                ccfgs = spring.loadConfigurations(new ByteArrayInputStream(arg.fileContent().getBytes()),
+                    CacheConfiguration.class, false).get1();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to create caches. Make sure that Spring XML contains '" +

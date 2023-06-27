@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.visor.verify;
 
+import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommandArg;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -26,12 +27,12 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Task to verify checksums of backup partitions and return all collected information.
  */
 @GridInternal
-public class VisorIdleVerifyDumpTask extends VisorOneNodeTask<VisorIdleVerifyTaskArg, String> {
+public class VisorIdleVerifyDumpTask extends VisorOneNodeTask<CacheIdleVerifyCommandArg, String> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorIdleVerifyTaskArg, String> job(VisorIdleVerifyTaskArg arg) {
+    @Override protected VisorJob<CacheIdleVerifyCommandArg, String> job(CacheIdleVerifyCommandArg arg) {
         return new VisorIdleVerifyJob<>(arg, debug, VerifyBackupPartitionsDumpTask.class);
     }
 }

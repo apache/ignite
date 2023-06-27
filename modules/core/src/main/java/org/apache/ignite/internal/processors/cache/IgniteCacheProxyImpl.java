@@ -558,6 +558,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             if (grp != null)
                 qry.projection(grp);
 
+            if (q.getLimit() > 0)
+                qry.limit(q.getLimit());
+
             fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.INDEX, q.getValueType(), ctx,
                 new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
                     @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() {

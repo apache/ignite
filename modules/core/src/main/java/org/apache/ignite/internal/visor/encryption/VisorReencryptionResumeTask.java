@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.encryption;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.management.encryption.EncryptionCacheGroupArg;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -33,8 +34,8 @@ public class VisorReencryptionResumeTask extends VisorCacheGroupEncryptionTask<B
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorCacheGroupEncryptionTaskArg, VisorSingleFieldDto<Boolean>> job(
-        VisorCacheGroupEncryptionTaskArg arg) {
+    @Override protected VisorJob<EncryptionCacheGroupArg, VisorSingleFieldDto<Boolean>> job(
+        EncryptionCacheGroupArg arg) {
         return new VisorReencryptionResumeJob(arg, debug);
     }
 
@@ -47,7 +48,7 @@ public class VisorReencryptionResumeTask extends VisorCacheGroupEncryptionTask<B
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorReencryptionResumeJob(@Nullable VisorCacheGroupEncryptionTaskArg arg, boolean debug) {
+        protected VisorReencryptionResumeJob(@Nullable EncryptionCacheGroupArg arg, boolean debug) {
             super(arg, debug);
         }
 

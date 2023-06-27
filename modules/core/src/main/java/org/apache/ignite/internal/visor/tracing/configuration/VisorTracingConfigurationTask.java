@@ -17,9 +17,17 @@
 
 package org.apache.ignite.internal.visor.tracing.configuration;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationCommandArg;
+import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationResetAllCommandArg;
+import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationResetCommandArg;
+import org.apache.ignite.internal.management.tracing.TracingConfigurationGetAllCommandArg;
+import org.apache.ignite.internal.management.tracing.TracingConfigurationGetCommandArg;
+import org.apache.ignite.internal.management.tracing.TracingConfigurationSetCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -37,12 +45,12 @@ import org.jetbrains.annotations.Nullable;
 @GridInternal
 @GridVisorManagementTask
 public class VisorTracingConfigurationTask
-    extends VisorOneNodeTask<VisorTracingConfigurationTaskArg, VisorTracingConfigurationTaskResult> {
+    extends VisorOneNodeTask<TracingConfigurationCommandArg, VisorTracingConfigurationTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorTracingConfigurationJob job(VisorTracingConfigurationTaskArg arg) {
+    @Override protected VisorTracingConfigurationJob job(TracingConfigurationCommandArg arg) {
         return new VisorTracingConfigurationJob(arg, debug);
     }
 
@@ -50,7 +58,7 @@ public class VisorTracingConfigurationTask
      * Job that will collect and update tracing configuration.
      */
     private static class VisorTracingConfigurationJob
-        extends VisorJob<VisorTracingConfigurationTaskArg, VisorTracingConfigurationTaskResult> {
+        extends VisorJob<TracingConfigurationCommandArg, VisorTracingConfigurationTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -58,35 +66,41 @@ public class VisorTracingConfigurationTask
          * @param arg Formal job argument.
          * @param debug Debug flag.
          */
-        private VisorTracingConfigurationJob(VisorTracingConfigurationTaskArg arg, boolean debug) {
+        private VisorTracingConfigurationJob(TracingConfigurationCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
         @Override protected @NotNull VisorTracingConfigurationTaskResult run(
-            VisorTracingConfigurationTaskArg arg) throws IgniteException {
-            switch (arg.operation()) {
-                case GET_ALL:
-                    return getAll(arg.scope());
+            TracingConfigurationCommandArg arg) throws IgniteException {
+            if (arg instanceof TracingConfigurationResetAllCommandArg)
+                return resetAll(((TracingConfigurationResetAllCommandArg)arg).scope());
+            else if (arg instanceof TracingConfigurationResetCommandArg) {
+                TracingConfigurationResetCommandArg arg0 = (TracingConfigurationResetCommandArg)arg;
 
-                case GET:
-                    return get(arg.scope(), arg.label());
+                return reset(arg0.scope(), arg0.label());
+            }
+            else if (arg instanceof TracingConfigurationSetCommandArg) {
+                TracingConfigurationSetCommandArg arg0 = (TracingConfigurationSetCommandArg)arg;
 
-                case RESET:
-                    return reset(arg.scope(), arg.label());
+                Set<Scope> includedScopes = arg0.includedScopes() == null
+                    ? null
+                    : new HashSet<>(Arrays.asList(arg0.includedScopes()));
 
-                case RESET_ALL:
-                    return resetAll(arg.scope());
+                return set(arg0.scope(), arg0.label(), arg0.samplingRate(), includedScopes);
+            }
+            else if (arg instanceof TracingConfigurationGetAllCommandArg)
+                return getAll(((TracingConfigurationGetAllCommandArg)arg).scope());
+            else if (arg instanceof TracingConfigurationGetCommandArg) {
+                TracingConfigurationGetCommandArg arg0 = (TracingConfigurationGetCommandArg)arg;
 
-                case SET:
-                    return set(arg.scope(), arg.label(), arg.samplingRate(), arg.includedScopes());
+                return get(arg0.scope(), arg0.label());
+            }
+            else {
+                // We should never get here.
+                assert false : "Unexpected tracing configuration argument [arg= " + arg + ']';
 
-                default: {
-                    // We should never get here.
-                    assert false : "Unexpected tracing configuration argument [arg= " + arg + ']';
-
-                    return getAll(null); // Just in case.
-                }
+                return getAll(null); // Just in case.
             }
         }
 

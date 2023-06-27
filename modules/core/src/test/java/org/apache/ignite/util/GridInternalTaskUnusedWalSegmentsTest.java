@@ -31,15 +31,15 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.wal.WalCommand;
+import org.apache.ignite.internal.management.wal.WalDeleteCommandArg;
+import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommandArg;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.misc.VisorWalTask;
-import org.apache.ignite.internal.visor.misc.VisorWalTaskArg;
-import org.apache.ignite.internal.visor.misc.VisorWalTaskOperation;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskResult;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 
 /**
@@ -84,7 +84,7 @@ public class GridInternalTaskUnusedWalSegmentsTest extends GridCommonAbstractTes
     }
 
     /**
-     * Tests correctness of {@link VisorWalTaskOperation}.
+     * Tests correctness of {@link WalCommand}.
      *
      * @throws Exception if failed.
      */
@@ -112,7 +112,7 @@ public class GridInternalTaskUnusedWalSegmentsTest extends GridCommonAbstractTes
 
             VisorWalTaskResult printRes = ig0.compute().execute(VisorWalTask.class,
                     new VisorTaskArgument<>(ig0.cluster().node().id(),
-                            new VisorWalTaskArg(VisorWalTaskOperation.PRINT_UNUSED_WAL_SEGMENTS), false));
+                            new WalPrintCommandArg(), false));
 
             assertEquals("Check that print task finished without exceptions", printRes.results().size(), 4);
 
@@ -125,7 +125,7 @@ public class GridInternalTaskUnusedWalSegmentsTest extends GridCommonAbstractTes
 
             VisorWalTaskResult delRes = ig0.compute().execute(VisorWalTask.class,
                     new VisorTaskArgument<>(ig0.cluster().node().id(),
-                            new VisorWalTaskArg(VisorWalTaskOperation.DELETE_UNUSED_WAL_SEGMENTS), false));
+                            new WalDeleteCommandArg(), false));
 
             assertEquals("Check that delete task finished with no exceptions", delRes.results().size(), 4);
 

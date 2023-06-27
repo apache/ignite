@@ -32,7 +32,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.LongRunningQueryManager;
+import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -40,10 +40,10 @@ import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static java.lang.Thread.currentThread;
-import static org.apache.ignite.internal.processors.query.h2.LongRunningQueryManager.LONG_QUERY_EXEC_MSG;
+import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_EXEC_MSG;
 
 /**
- * Tests for log print for long running query.
+ * Tests for log print for long-running query.
  */
 public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     /** Keys count. */
@@ -115,7 +115,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testCorrectThreadName() {
-        GridWorker checkWorker = GridTestUtils.getFieldValue(longRunningQueryManager(), "checkWorker");
+        GridWorker checkWorker = GridTestUtils.getFieldValue(heavyQueriesTracker(), "checkWorker");
 
         LogListener logLsnr = LogListener
             .matches(LONG_QUERY_EXEC_MSG)
@@ -172,7 +172,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Do long running query canceled by timeout and check log output.
+     * Do long-running query canceled by timeout and check log output.
      * Log messages must contain info about long query.
      */
     private void checkLongRunning() {
@@ -219,7 +219,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Execute long running sql with a check for errors.
+     * Execute long-running sql with a check for errors.
      */
     private void sqlCheckLongRunning() {
         sqlCheckLongRunning("SELECT T0.id FROM test AS T0, test AS T1, test AS T2 where T0.id > ?", 0);
@@ -268,7 +268,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     private ListeningTestLogger testLog() {
         ListeningTestLogger testLog = new ListeningTestLogger(log);
 
-        GridTestUtils.setFieldValue(((IgniteH2Indexing)grid().context().query().getIndexing()).longRunningQueries(),
+        GridTestUtils.setFieldValue(((IgniteH2Indexing)grid().context().query().getIndexing()).heavyQueriesTracker(),
             "log", testLog);
 
         GridTestUtils.setFieldValue(((IgniteH2Indexing)grid().context().query().getIndexing()).mapQueryExecutor(),
@@ -280,11 +280,11 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Getting {@link LongRunningQueryManager} from the node.
+     * Getting {@link HeavyQueriesTracker} from the node.
      *
-     * @return LongRunningQueryManager.
+     * @return Heavy queries tracker.
      */
-    private LongRunningQueryManager longRunningQueryManager() {
-        return ((IgniteH2Indexing)grid().context().query().getIndexing()).longRunningQueries();
+    private HeavyQueriesTracker heavyQueriesTracker() {
+        return ((IgniteH2Indexing)grid().context().query().getIndexing()).heavyQueriesTracker();
     }
 }

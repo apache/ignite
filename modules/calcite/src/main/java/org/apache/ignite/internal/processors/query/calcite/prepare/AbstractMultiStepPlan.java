@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public abstract class AbstractMultiStepPlan implements MultiStepPlan {
+public abstract class AbstractMultiStepPlan extends AbstractQueryPlan implements MultiStepPlan {
     /** */
     protected final FieldsMetadata fieldsMetadata;
 
@@ -49,10 +49,13 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
 
     /** */
     protected AbstractMultiStepPlan(
+        String qry,
         QueryTemplate queryTemplate,
         FieldsMetadata fieldsMetadata,
         @Nullable FieldsMetadata paramsMetadata
     ) {
+        super(qry);
+
         this.queryTemplate = queryTemplate;
         this.fieldsMetadata = fieldsMetadata;
         this.paramsMetadata = paramsMetadata;

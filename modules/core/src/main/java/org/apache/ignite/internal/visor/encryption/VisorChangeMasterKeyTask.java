@@ -19,6 +19,7 @@ package org.apache.ignite.internal.visor.encryption;
 
 import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.management.encryption.EncryptionChangeMasterKeyCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -29,17 +30,17 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * @see IgniteEncryption#changeMasterKey(String)
  */
 @GridInternal
-public class VisorChangeMasterKeyTask extends VisorOneNodeTask<String, String> {
+public class VisorChangeMasterKeyTask extends VisorOneNodeTask<EncryptionChangeMasterKeyCommandArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<String, String> job(String arg) {
+    @Override protected VisorJob<EncryptionChangeMasterKeyCommandArg, String> job(EncryptionChangeMasterKeyCommandArg arg) {
         return new VisorChangeMasterKeyJob(arg, debug);
     }
 
     /** The job for changing the master key. */
-    private static class VisorChangeMasterKeyJob extends VisorJob<String, String> {
+    private static class VisorChangeMasterKeyJob extends VisorJob<EncryptionChangeMasterKeyCommandArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -49,13 +50,13 @@ public class VisorChangeMasterKeyTask extends VisorOneNodeTask<String, String> {
          * @param masterKeyName Master key name.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorChangeMasterKeyJob(String masterKeyName, boolean debug) {
+        protected VisorChangeMasterKeyJob(EncryptionChangeMasterKeyCommandArg masterKeyName, boolean debug) {
             super(masterKeyName, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(String masterKeyName) throws IgniteException {
-            ignite.encryption().changeMasterKey(masterKeyName).get();
+        @Override protected String run(EncryptionChangeMasterKeyCommandArg arg) throws IgniteException {
+            ignite.encryption().changeMasterKey(arg.newMasterKeyName()).get();
 
             return "The master key changed.";
         }
