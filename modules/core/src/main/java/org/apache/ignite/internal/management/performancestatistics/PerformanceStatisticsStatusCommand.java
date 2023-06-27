@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.performancestatistics;
 
+import java.util.function.Consumer;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand.PerformanceStatisticsStatusCommandArg;
@@ -36,5 +37,10 @@ public class PerformanceStatisticsStatusCommand implements ComputeCommand<Ignite
     /** {@inheritDoc} */
     @Override public Class<PerformanceStatisticsTask> taskClass() {
         return PerformanceStatisticsTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printResult(IgniteDataTransferObject arg, String res, Consumer<String> printer) {
+        printer.accept(res);
     }
 }

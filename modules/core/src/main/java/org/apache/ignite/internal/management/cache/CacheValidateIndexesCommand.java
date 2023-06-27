@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -25,6 +24,7 @@ import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
@@ -51,8 +51,11 @@ public class CacheValidateIndexesCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, CacheValidateIndexesCommandArg arg) {
-        return arg.nodeIds() != null ? Arrays.asList(arg.nodeIds()) : null;
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, CacheValidateIndexesCommandArg arg) {
+        if (F.isEmpty(arg.nodeIds()))
+            return null;
+
+        return CommandUtils.nodes(arg.nodeIds(), nodes);
     }
 
     /** {@inheritDoc} */

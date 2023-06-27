@@ -18,12 +18,16 @@
 package org.apache.ignite.internal.management;
 
 import java.util.function.Consumer;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.api.PreparableCommand;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 
@@ -46,10 +50,19 @@ public class DeactivateCommand implements LocalCommand<DeactivateCommandArg, NoA
     }
 
     /** {@inheritDoc} */
-    @Override public NoArg execute(GridClient cli, DeactivateCommandArg arg, Consumer<String> printer) throws Exception {
-        GridClientClusterState state = cli.state();
+    @Override public NoArg execute(
+        @Nullable GridClient cli,
+        @Nullable Ignite ignite,
+        DeactivateCommandArg arg,
+        Consumer<String> printer
+    ) throws GridClientException {
+        if (cli != null) {
+            GridClientClusterState state = cli.state();
 
-        state.state(INACTIVE, arg.force());
+            state.state(INACTIVE, arg.force());
+        }
+        else
+            ((IgniteClusterEx)ignite.cluster()).state(INACTIVE, arg.force());
 
         printer.accept("Cluster deactivated");
 
@@ -62,8 +75,13 @@ public class DeactivateCommand implements LocalCommand<DeactivateCommandArg, NoA
     }
 
     /** {@inheritDoc} */
-    @Override public boolean prepare(GridClient cli, DeactivateCommandArg arg, Consumer<String> printer) throws GridClientException {
-        arg.clusterName(cli.state().clusterName());
+    @Override public boolean prepare(
+        @Nullable GridClient cli,
+        @Nullable Ignite ignite,
+        DeactivateCommandArg arg,
+        Consumer<String> printer
+    ) throws GridClientException {
+        arg.clusterName(cli != null ? cli.state().clusterName() : ((IgniteEx)ignite).context().cluster().clusterName());
 
         return true;
     }

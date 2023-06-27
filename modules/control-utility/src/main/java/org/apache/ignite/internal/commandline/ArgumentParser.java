@@ -19,10 +19,11 @@
 package org.apache.ignite.internal.commandline;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -30,8 +31,6 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -41,13 +40,9 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
-import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
 import org.apache.ignite.internal.management.api.CliSubcommandsWithPrefix;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
-import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.HelpCommand;
-import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -63,13 +58,13 @@ import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument
 import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.NAME_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
+import static org.apache.ignite.internal.management.api.CommandUtils.argument;
 import static org.apache.ignite.internal.management.api.CommandUtils.asOptional;
+import static org.apache.ignite.internal.management.api.CommandUtils.executable;
 import static org.apache.ignite.internal.management.api.CommandUtils.fromFormattedCommandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.isBoolean;
-import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedFieldName;
-import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedNames;
 import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 
@@ -84,11 +79,8 @@ public class ArgumentParser {
     /** */
     private final IgniteCommandRegistry registry;
 
-    /** */
-    Command<?, ?> root;
-
-    /** */
-    Command<?, ?> cmd;
+    /** Path to the specific command. Command to execute is on top of stack, parent commands below. */
+    Deque<Command<?, ?>> cmdPath = new ArrayDeque<>();
 
     /** */
     static final String CMD_HOST = "--host";
@@ -255,7 +247,7 @@ public class ArgumentParser {
      * @return Arguments bean.
      * @throws IllegalArgumentException In case arguments aren't valid.
      */
-    <A extends IgniteDataTransferObject> ConnectionAndSslParameters<A> parseAndValidate(List<String> raw) {
+    public <A extends IgniteDataTransferObject> ConnectionAndSslParameters<A> parseAndValidate(List<String> raw) {
         List<String> args = new ArrayList<>(raw);
 
         findCommand(args.iterator());
@@ -265,12 +257,12 @@ public class ArgumentParser {
         parser.parse(args.iterator());
 
         A arg = (A)argument(
-            cmd.argClass(),
+            cmdPath.peek().argClass(),
             (fld, pos) -> parser.get(pos),
             fld -> parser.get(toFormattedFieldName(fld).toLowerCase())
         );
 
-        if (!parser.<Boolean>get(CMD_ENABLE_EXPERIMENTAL) && cmd.getClass().isAnnotationPresent(IgniteExperimental.class)) {
+        if (!parser.<Boolean>get(CMD_ENABLE_EXPERIMENTAL) && cmdPath.peek().getClass().isAnnotationPresent(IgniteExperimental.class)) {
             log.warning(
                 String.format("To use experimental command add " + CMD_ENABLE_EXPERIMENTAL + " parameter for %s",
                     UTILITY_NAME)
@@ -279,7 +271,7 @@ public class ArgumentParser {
             throw new IllegalArgumentException("Experimental commands disabled");
         }
 
-        return new ConnectionAndSslParameters<>((Command<A, ?>)cmd, root, arg, parser);
+        return new ConnectionAndSslParameters<>(cmdPath, arg, parser);
     }
 
     /**
@@ -288,29 +280,34 @@ public class ArgumentParser {
      * @param iter Iterator of CLI arguments.
      */
     protected void findCommand(Iterator<String> iter) {
-        assert cmd == null && root == null;
+        assert cmdPath.isEmpty();
 
-        while (iter.hasNext() && cmd == null) {
+        while (iter.hasNext() && cmdPath.isEmpty()) {
             String cmdName = iter.next();
 
             if (!cmdName.startsWith(NAME_PREFIX))
                 continue;
 
-            cmd = registry.command(fromFormattedCommandName(cmdName.substring(NAME_PREFIX.length()), CMD_WORDS_DELIM));
+            Command<?, ?> cmd = registry.command(fromFormattedCommandName(cmdName.substring(NAME_PREFIX.length()), CMD_WORDS_DELIM));
+
+            if (cmd == null)
+                continue;
+
+            cmdPath.push(cmd);
         }
 
-        if (cmd == null)
+        if (cmdPath.isEmpty())
             throw new IllegalArgumentException("No action was specified");
 
         // Remove command name parameter to exclude it from ongoing parsing.
         iter.remove();
 
-        while (cmd instanceof CommandsRegistry && iter.hasNext()) {
+        while (cmdPath.peek() instanceof CommandsRegistry && iter.hasNext()) {
             String name = iter.next();
 
             char delim = PARAM_WORDS_DELIM;
 
-            if (cmd.getClass().isAnnotationPresent(CliSubcommandsWithPrefix.class)) {
+            if (cmdPath.peek().getClass().isAnnotationPresent(CliSubcommandsWithPrefix.class)) {
                 if (!name.startsWith(NAME_PREFIX))
                     break;
 
@@ -319,31 +316,27 @@ public class ArgumentParser {
                 delim = CMD_WORDS_DELIM;
             }
 
-            Command<?, ?> cmd1 = ((CommandsRegistry<?, ?>)cmd).command(fromFormattedCommandName(name, delim));
+            Command<?, ?> cmd1 = ((CommandsRegistry<?, ?>)cmdPath.peek()).command(fromFormattedCommandName(name, delim));
 
             if (cmd1 == null)
                 break;
 
-            root = cmd;
-            cmd = cmd1;
+            cmdPath.push(cmd1);
 
             // Remove command name parameter to exclude it from ongoing parsing.
             iter.remove();
         }
 
-        if (!(cmd instanceof ComputeCommand)
-            && !(cmd instanceof LocalCommand)
-            && !(cmd instanceof BeforeNodeStartCommand)
-            && !(cmd instanceof HelpCommand)) {
+        if (!executable(cmdPath.peek())) {
             throw new IllegalArgumentException(
-                "Command " + toFormattedCommandName(cmd.getClass()) + " can't be executed"
+                "Command " + toFormattedCommandName(cmdPath.peek().getClass()) + " can't be executed"
             );
         }
     }
 
     /** */
     private CLIArgumentParser createArgumentParser() {
-        assert cmd != null;
+        assert !cmdPath.isEmpty();
 
         List<CLIArgument<?>> positionalArgs = new ArrayList<>();
         List<CLIArgument<?>> namedArgs = new ArrayList<>();
@@ -357,7 +350,7 @@ public class ArgumentParser {
             (name, val) -> {}
         );
 
-        ArgumentGroup argGrp = cmd.argClass().getAnnotation(ArgumentGroup.class);
+        ArgumentGroup argGrp = cmdPath.peek().argClass().getAnnotation(ArgumentGroup.class);
         Set<String> grpdFlds = argGrp == null
             ? Collections.emptySet()
             : new HashSet<>(Arrays.asList(argGrp.value()));
@@ -382,127 +375,10 @@ public class ArgumentParser {
                 namedArgCb.accept(fld);
         });
 
-        visitCommandParams(cmd.argClass(), positionalArgCb, namedArgCb, argGrpCb);
+        visitCommandParams(cmdPath.peek().argClass(), positionalArgCb, namedArgCb, argGrpCb);
 
         namedArgs.addAll(common);
 
         return new CLIArgumentParser(positionalArgs, namedArgs);
-    }
-
-    /**
-     * Fill and vaildate command argument.
-     *
-     * @param argCls Argument class.
-     * @param positionalParamProvider Provider of positional parameters.
-     * @param paramProvider Provider of named parameters.
-     * @return Argument filled with parameters.
-     * @param <A> Argument type.
-     */
-    private static <A extends IgniteDataTransferObject> A argument(
-        Class<A> argCls,
-        BiFunction<Field, Integer, Object> positionalParamProvider,
-        Function<Field, Object> paramProvider
-    ) {
-        try {
-            ArgumentState<A> arg = new ArgumentState<>(argCls);
-
-            visitCommandParams(
-                argCls,
-                fld -> arg.accept(fld, positionalParamProvider.apply(fld, arg.nextIdx())),
-                fld -> arg.accept(fld, paramProvider.apply(fld)),
-                (argGrp, flds) -> flds.forEach(fld -> {
-                    if (fld.isAnnotationPresent(Positional.class))
-                        arg.accept(fld, positionalParamProvider.apply(fld, arg.nextIdx()));
-                    else
-                        arg.accept(fld, paramProvider.apply(fld));
-                })
-            );
-
-            if (arg.argGrp != null && (!arg.grpOptional() && !arg.grpFldExists))
-                throw new IllegalArgumentException("One of " + toFormattedNames(argCls, arg.grpdFlds) + " required");
-
-            return arg.res;
-        }
-        catch (InstantiationException | IllegalAccessException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /** */
-    private static class ArgumentState<A extends IgniteDataTransferObject> implements BiConsumer<Field, Object> {
-        /** */
-        final A res;
-
-        /** */
-        final ArgumentGroup argGrp;
-
-        /** */
-        boolean grpFldExists;
-
-        /** */
-        int idx;
-
-        /** */
-        final Set<String> grpdFlds;
-
-        /** */
-        public ArgumentState(Class<A> argCls) throws InstantiationException, IllegalAccessException {
-            res = argCls.newInstance();
-            argGrp = argCls.getAnnotation(ArgumentGroup.class);
-            grpdFlds = argGrp == null
-                ? Collections.emptySet()
-                : new HashSet<>(Arrays.asList(argGrp.value()));
-        }
-
-        /** */
-        public boolean grpOptional() {
-            return argGrp == null || argGrp.optional();
-        }
-
-        /** */
-        private int nextIdx() {
-            int idx0 = idx;
-
-            idx++;
-
-            return idx0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void accept(Field fld, Object val) {
-            boolean grpdFld = grpdFlds.contains(fld.getName());
-
-            if (val == null) {
-                if (grpdFld || fld.getAnnotation(Argument.class).optional())
-                    return;
-
-                String name = fld.isAnnotationPresent(Positional.class)
-                    ? parameterExample(fld, false)
-                    : toFormattedFieldName(fld);
-
-                throw new IllegalArgumentException("Argument " + name + " required.");
-            }
-
-            if (grpdFld) {
-                if (grpFldExists && (argGrp != null && argGrp.onlyOneOf())) {
-                    throw new IllegalArgumentException(
-                        "Only one of " + toFormattedNames(res.getClass(), grpdFlds) + " allowed"
-                    );
-                }
-
-                grpFldExists = true;
-            }
-
-            try {
-                res.getClass().getMethod(fld.getName(), fld.getType()).invoke(res, val);
-            }
-            catch (NoSuchMethodException | IllegalAccessException e) {
-                throw new IgniteException(e);
-            }
-            catch (InvocationTargetException e) {
-                if (e.getTargetException() != null && e.getTargetException() instanceof RuntimeException)
-                    throw (RuntimeException)e.getTargetException();
-            }
-        }
     }
 }

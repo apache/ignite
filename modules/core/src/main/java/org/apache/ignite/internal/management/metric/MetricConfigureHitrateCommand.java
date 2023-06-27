@@ -19,7 +19,6 @@ package org.apache.ignite.internal.management.metric;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 
@@ -43,7 +42,7 @@ public class MetricConfigureHitrateCommand implements ComputeCommand<MetricComma
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, MetricCommandArg arg) {
-        return nodeOrNull(arg.nodeId());
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, MetricCommandArg arg) {
+        return nodeOrNull(arg.nodeId(), nodes);
     }
 }

@@ -5053,6 +5053,26 @@ public abstract class IgniteUtils {
      */
     public static ObjectName makeMBeanName(@Nullable String igniteInstanceName, @Nullable String grp, String name)
         throws MalformedObjectNameException {
+        return makeMBeanName(igniteInstanceName, grp, Collections.emptyList(), name);
+    }
+
+    /**
+     * Constructs JMX object name with given properties.
+     * Map with ordered {@code groups} used for proper object name construction.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param grp Name of the group.
+     * @param grps Names of extended groups.
+     * @param name Name of mbean.
+     * @return JMX object name.
+     * @throws MalformedObjectNameException Thrown in case of any errors.
+     */
+    public static ObjectName makeMBeanName(
+        @Nullable String igniteInstanceName,
+        @Nullable String grp,
+        List<String> grps,
+        String name
+    ) throws MalformedObjectNameException {
         SB sb = new SB(JMX_DOMAIN + ':');
 
         appendClassLoaderHash(sb);
@@ -5064,6 +5084,9 @@ public abstract class IgniteUtils {
 
         if (grp != null)
             sb.a("group=").a(escapeObjectNameValue(grp)).a(',');
+
+        for (int i = 0; i < grps.size(); i++)
+            sb.a("group").a(i).a("=").a(grps.get(i)).a(',');
 
         sb.a("name=").a(escapeObjectNameValue(name));
 

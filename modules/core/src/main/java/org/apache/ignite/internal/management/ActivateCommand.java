@@ -18,10 +18,14 @@
 package org.apache.ignite.internal.management;
 
 import java.util.function.Consumer;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
+import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
+import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 
 /** */
@@ -38,10 +42,19 @@ public class ActivateCommand implements LocalCommand<NoArg, NoArg> {
     }
 
     /** {@inheritDoc} */
-    @Override public NoArg execute(GridClient cli, NoArg arg, Consumer<String> printer) throws Exception {
-        GridClientClusterState state = cli.state();
+    @Override public NoArg execute(
+        @Nullable GridClient cli,
+        @Nullable Ignite ignite,
+        NoArg arg,
+        Consumer<String> printer
+    ) throws GridClientException {
+        if (cli != null) {
+            GridClientClusterState state = cli.state();
 
-        state.state(ACTIVE, false);
+            state.state(ACTIVE, false);
+        }
+        else
+            ignite.cluster().state(ACTIVE);
 
         printer.accept("Cluster activated");
 

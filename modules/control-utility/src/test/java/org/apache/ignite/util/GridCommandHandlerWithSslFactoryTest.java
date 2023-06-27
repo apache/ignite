@@ -24,6 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.AfterClass;
+import org.junit.Assume;
 
 /**
  *
@@ -46,6 +47,13 @@ public class GridCommandHandlerWithSslFactoryTest extends GridCommandHandlerWith
         super.beforeTestsStarted();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        Assume.assumeTrue(commandHandler.equalsIgnoreCase(CLI_CMD_HND));
+
+        super.beforeTest();
+    }
+
     /** */
     @AfterClass
     public static void tearDown() {
@@ -55,6 +63,8 @@ public class GridCommandHandlerWithSslFactoryTest extends GridCommandHandlerWith
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        Assume.assumeTrue(commandHandler.equalsIgnoreCase(CLI_CMD_HND));
+
         super.afterTest();
 
         assertTrue(factoryUsed);

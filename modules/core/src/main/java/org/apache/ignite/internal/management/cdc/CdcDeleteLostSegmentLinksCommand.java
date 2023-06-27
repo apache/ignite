@@ -18,15 +18,13 @@
 package org.apache.ignite.internal.management.cdc;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
 
+import static org.apache.ignite.internal.management.api.CommandUtils.node;
 import static org.apache.ignite.internal.management.api.CommandUtils.servers;
 
 /**
@@ -50,9 +48,9 @@ public class CdcDeleteLostSegmentLinksCommand implements ComputeCommand<CdcDelet
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, CdcDeleteLostSegmentLinksCommandArg arg) {
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, CdcDeleteLostSegmentLinksCommandArg arg) {
         return arg.nodeId() != null
-            ? Collections.singleton(arg.nodeId())
+            ? node(arg.nodeId(), nodes)
             : servers(nodes);
     }
 
