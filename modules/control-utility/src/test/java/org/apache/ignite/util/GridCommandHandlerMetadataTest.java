@@ -167,9 +167,15 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
      */
     @Test
     public void testMetadataForInternalClassesIsNotRegistered() {
-        IgniteCache<Object, Object> dfltCache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> dfltCache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME).withKeepBinary();
 
-        dfltCache.put(1, new TestValue());
+        String typeName = TestValue.class.getName() + commandHandler;
+
+        BinaryObjectBuilder bldr = grid(0).binary().builder(typeName);
+
+        bldr.setField("val", 3);
+
+        dfltCache.put(1, bldr.build());
 
         Collection<BinaryType> metadata = crd.context().cacheObjects().metadata();
 
@@ -177,7 +183,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
 
         assertEquals(metadata.toString(), 1, metadata.size());
 
-        assertContains(log, testOut.toString(), "typeName=" + TestValue.class.getTypeName());
+        assertContains(log, testOut.toString(), "typeName=" + typeName);
 
         grid(0).destroyCache(DEFAULT_CACHE_NAME);
 
@@ -185,7 +191,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
 
         assertEquals(metadata.toString(), 1, metadata.size());
 
-        assertEquals(EXIT_CODE_OK, execute("--meta", "remove", "--typeName", TestValue.class.getTypeName()));
+        assertEquals(EXIT_CODE_OK, execute("--meta", "remove", "--typeName", typeName));
 
         metadata = crd.context().cacheObjects().metadata();
 

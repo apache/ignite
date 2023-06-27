@@ -19,13 +19,17 @@ package org.apache.ignite.internal.management;
 
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
+import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.internal.util.typedef.internal.U.DELIM;
 
 /** */
@@ -41,15 +45,35 @@ public class StateCommand implements LocalCommand<NoArg, GridTuple3<UUID, String
     }
 
     /** {@inheritDoc} */
-    @Override public GridTuple3<UUID, String, ClusterState> execute(GridClient cli, NoArg arg, Consumer<String> printer) throws Exception {
-        GridClientClusterState state = cli.state();
+    @Override public GridTuple3<UUID, String, ClusterState> execute(
+        @Nullable GridClient cli,
+        @Nullable Ignite ignite,
+        NoArg arg,
+        Consumer<String> printer
+    ) throws GridClientException {
+        ClusterState state;
+        UUID id;
+        String tag;
 
-        printer.accept("Cluster  ID: " + state.id());
-        printer.accept("Cluster tag: " + state.tag());
+        if (cli != null) {
+            GridClientClusterState state0 = cli.state();
+
+            state = state0.state();
+            id = state0.id();
+            tag = state0.tag();
+        }
+        else {
+            state = ignite.cluster().state();
+            id = ignite.cluster().id();
+            tag = ignite.cluster().tag();
+        }
+
+        printer.accept("Cluster  ID: " + id);
+        printer.accept("Cluster tag: " + tag);
 
         printer.accept(DELIM);
 
-        switch (state.state()) {
+        switch (state) {
             case ACTIVE:
                 printer.accept("Cluster is active");
 
@@ -66,9 +90,9 @@ public class StateCommand implements LocalCommand<NoArg, GridTuple3<UUID, String
                 break;
 
             default:
-                throw new IllegalStateException("Unknown state: " + state.state());
+                throw new IllegalStateException("Unknown state: " + state);
         }
 
-        return F.t(state.id(), state.tag(), state.state());
+        return F.t(id, tag, state);
     }
 }

@@ -23,6 +23,7 @@ import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Consumer;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
@@ -64,7 +65,7 @@ public class CommandsProviderExtImpl implements CommandsProvider {
         }
 
         /** {@inheritDoc} */
-        @Override public Void execute(GridClient cli, TestCommandCommandArg arg, Consumer<String> printer) {
+        @Override public Void execute(GridClient cli, Ignite ignite, TestCommandCommandArg arg, Consumer<String> printer) {
             printer.accept(TEST_COMMAND_OUTPUT + ": " + arg.testPrint);
 
             return null;

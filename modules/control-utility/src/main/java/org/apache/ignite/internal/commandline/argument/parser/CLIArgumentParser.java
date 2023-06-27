@@ -107,7 +107,7 @@ public class CLIArgumentParser {
             if (!bool && !argsIter.hasNext())
                 throw new IllegalArgumentException("Please specify a value for argument: " + arg);
 
-            String strVal = bool ? null : argsIter.next();
+            String strVal = bool ? "true" : argsIter.next();
 
             if (strVal != null && strVal.startsWith(NAME_PREFIX))
                 throw new IllegalArgumentException("Unexpected value: " + strVal);

@@ -22,7 +22,11 @@ import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 
 /**
  * Compute MXBean interface.
+ *
+ * @see org.apache.ignite.internal.management.api.CommandMBean
+ * @deprecated Use managements API beans, instead.
  */
+@Deprecated
 public interface ComputeMXBean {
     /**
      * Kills compute task by the session idenitifier.

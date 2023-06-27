@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
@@ -65,7 +63,7 @@ public class BaselineCommand extends CommandRegistryImpl<VisorBaselineTaskArg, V
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, VisorBaselineTaskArg arg) {
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, VisorBaselineTaskArg arg) {
         return coordinatorOrNull(nodes);
     }
 

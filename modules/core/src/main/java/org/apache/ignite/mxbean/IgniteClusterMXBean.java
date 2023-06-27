@@ -22,7 +22,11 @@ import javax.management.JMException;
 
 /**
  * MX Bean allows to access information about cluster ID and tag and change tag.
+ *
+ * @see org.apache.ignite.internal.management.api.CommandMBean
+ * @deprecated Use managements API beans, instead.
  */
+@Deprecated
 @MXBeanDescription("MBean that provides access to information about cluster ID and tag.")
 public interface IgniteClusterMXBean {
     /**
