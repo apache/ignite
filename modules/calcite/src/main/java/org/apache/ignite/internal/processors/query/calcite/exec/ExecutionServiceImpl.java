@@ -34,6 +34,7 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryReadEvent;
@@ -833,7 +834,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             Exception e = new RemoteException(nodeId, msg.queryId(), msg.fragmentId(), msg.error());
 
-            if (X.hasCause(msg.error(), ExecutionCancelledException.class)) {
+            if (X.hasCause(msg.error(), QueryCancelledException.class)) {
                 e = new IgniteSQLException(
                     "The query was cancelled while executing.",
                     IgniteQueryErrorCode.QUERY_CANCELED,

@@ -895,6 +895,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.SERVICES.NODE_FILTER.null",
                 "SYS.SERVICES.STATICALLY_CONFIGURED.null",
                 "SYS.SERVICES.SERVICE_ID.null",
+                "SYS.SERVICES.TOPOLOGY_SNAPSHOT.null",
                 "SYS.TASKS.AFFINITY_CACHE_NAME.null",
                 "SYS.TASKS.INTERNAL.null",
                 "SYS.TASKS.END_TIME.null",
