@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -28,6 +26,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -47,8 +47,10 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.wal.record.RecordUtils;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_FORWARD_PAGE_SPLIT;
@@ -66,16 +68,54 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "cache";
 
     /** */
-    private static ByteBuffer readFile(File file) throws IOException {
-        int byteCount = (int)file.length();
+    private IgniteEx ig;
 
-        FileInputStream fileInputStream = new FileInputStream(file);
+    /** */
+    private GridCacheSharedContext<Object, Object> sharedCtx;
 
-        final byte[] bytes = new byte[byteCount];
+    /** */
+    private GridCacheContext<Object, Object> cctx;
 
-        int l = fileInputStream.read(bytes);
+    /** */
+    private IgniteWriteAheadLogManager wal;
 
-        return ByteBuffer.wrap(bytes, 0, l);
+    /** */
+    private RecordSerializer serializer;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        ig = startGrid(0);
+
+        ig.cluster().state(ClusterState.ACTIVE);
+
+        sharedCtx = ig.context().cache().context();
+
+        cctx = sharedCtx.cache().cache(CACHE_NAME).context();
+
+        wal = sharedCtx.wal();
+
+        RecordSerializerFactory serializerFactory = new RecordSerializerFactoryImpl(sharedCtx);
+
+        serializer = serializerFactory.createSerializer(RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
+    /** */
+    private void writeRecord(IgniteWriteAheadLogManager wal, RecordSerializer serializer, ByteBuffer byteBuffer,
+        WALRecord walRecord) throws IgniteCheckedException {
+
+        // make sure walpointer is set.
+        wal.log(walRecord);
+
+        serializer.writeRecord(walRecord, byteBuffer);
     }
 
     /** */
@@ -95,7 +135,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setCacheConfiguration(new CacheConfiguration(CACHE_NAME));
+        cfg.setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME));
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
@@ -111,20 +151,6 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void test() throws Exception {
-        IgniteEx ig = startGrid(0);
-
-        ig.cluster().state(ClusterState.ACTIVE);
-
-        GridCacheSharedContext<Object, Object> sharedCtx = ig.context().cache().context();
-
-        GridCacheContext<Object, Object> cctx = sharedCtx.cache().cache(CACHE_NAME).context();
-
-        IgniteWriteAheadLogManager wal = sharedCtx.wal();
-
-        RecordSerializerFactory serializerFactory = new RecordSerializerFactoryImpl(sharedCtx);
-
-        RecordSerializer serializer = serializerFactory.createSerializer(RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
-
         List<WALRecord.RecordType> skipTypes = Arrays.asList(
             BTREE_PAGE_INNER_REPLACE,
             BTREE_FORWARD_PAGE_SPLIT,
@@ -142,37 +168,12 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         final int cnt = physicalRecords.size();
 
-        List<DataEntry> entries = new ArrayList<>(cnt);
-
-        for (int i = 0; i < cnt; i++) {
-            GridCacheOperation op = i % 2 == 0 ? GridCacheOperation.UPDATE : GridCacheOperation.DELETE;
-
-            KeyCacheObject key = cctx.toCacheKeyObject(i);
-
-            CacheObject val = null;
-
-            if (op != GridCacheOperation.DELETE)
-                val = cctx.toCacheObject("value-" + i);
-
-            entries.add(
-                new DataEntry(cctx.cacheId(), key, val, op, null, cctx.cache().nextVersion(),
-                    0L,
-                    cctx.affinity().partition(i), i, DataEntry.EMPTY_FLAGS));
-        }
+        List<DataEntry> entries = generateEntries(cctx, cnt);
 
         for (int i = 0; i < entries.size(); i++) {
-            DataRecord dataRecord = new DataRecord(entries.get(i));
+            writeRecord(wal, serializer, byteBuffer, new DataRecord(entries.get(i)));
 
-            // make sure walpointer is set.
-            wal.log(dataRecord);
-
-            serializer.writeRecord(dataRecord, byteBuffer);
-
-            WALRecord physicalRecord = physicalRecords.get(i);
-
-            wal.log(physicalRecord);
-
-            serializer.writeRecord(physicalRecord, byteBuffer);
+            writeRecord(wal, serializer, byteBuffer, physicalRecords.get(i));
         }
 
         byteBuffer.flip();
@@ -196,5 +197,67 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
         }
 
         assertFalse(dataEntriesIterator.hasNext());
+    }
+
+    /** */
+    @NotNull private List<DataEntry> generateEntries(GridCacheContext<Object, Object> cctx, int cnt) {
+        List<DataEntry> entries = new ArrayList<>(cnt);
+
+        for (int i = 0; i < cnt; i++) {
+            GridCacheOperation op = i % 2 == 0 ? GridCacheOperation.UPDATE : GridCacheOperation.DELETE;
+
+            KeyCacheObject key = cctx.toCacheKeyObject(i);
+
+            CacheObject val = null;
+
+            if (op != GridCacheOperation.DELETE)
+                val = cctx.toCacheObject("value-" + i);
+
+            entries.add(
+                new DataEntry(cctx.cacheId(), key, val, op, null, cctx.cache().nextVersion(),
+                    0L,
+                    cctx.affinity().partition(i), i, DataEntry.EMPTY_FLAGS));
+        }
+        return entries;
+    }
+
+    /** */
+    @Test
+    public void testBrokenTail() throws Exception {
+        ByteBuffer byteBuffer = ByteBuffer.allocate(1024 * 1024).order(ByteOrder.nativeOrder());
+
+        List<DataEntry> entries = generateEntries(cctx, 3);
+
+        for (int i = 0; i < 2; i++)
+            writeRecord(wal, serializer, byteBuffer, new DataRecord(entries.get(i)));
+
+        int position1 = byteBuffer.position();
+
+        writeRecord(wal, serializer, byteBuffer, new DataRecord(entries.get(2)));
+
+        int position2 = byteBuffer.position();
+
+        byteBuffer.flip();
+
+        byteBuffer.limit((position1 + position2) >> 1);
+
+        WALIterator walIterator = new ByteBufferWalIterator(log, sharedCtx, byteBuffer);
+
+        assertTrue(walIterator.hasNext());
+
+        walIterator.next();
+
+        assertTrue(walIterator.hasNext());
+
+        walIterator.next();
+
+        try {
+            walIterator.hasNext();
+
+            fail("hasNext() expected to fail");
+        }
+        catch (IgniteException e) {
+            assertTrue(X.hasCause(e, IOException.class));
+        }
     }
 }
