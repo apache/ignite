@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationTaskResult;
 import org.apache.ignite.spi.tracing.Scope;
@@ -94,15 +93,13 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
     protected IgniteEx ignite;
 
     /** */
-    private static CommandHandler hnd;
+    private TestCommandHandler hnd;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         ignite = startGrids(2);
-
-        hnd = new CommandHandler();
     }
 
     /** {@inheritDoc} */
@@ -115,6 +112,8 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        hnd = newCommandHandler();
 
         // Cleanup configuration.
         grid(0).tracingConfiguration().resetAll(null);

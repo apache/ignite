@@ -299,7 +299,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
                 "  AFFINITY_KEY, " +
                 "  NODE_FILTER, " +
                 "  STATICALLY_CONFIGURED, " +
-                "  ORIGIN_NODE_ID " +
+                "  ORIGIN_NODE_ID, " +
+                "  TOPOLOGY_SNAPSHOT " +
                 "FROM SYS.SERVICES");
 
         assertEquals(ignite0.context().service().serviceDescriptors().size(), srvs.size());
@@ -309,6 +310,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(srvcCfg.getName(), sysView.get(0));
         assertEquals(DummyService.class.getName(), sysView.get(2));
         assertEquals(srvcCfg.getMaxPerNodeCount(), sysView.get(4));
+        assertEquals(F.first(ignite0.services().serviceDescriptors()).topologySnapshot().toString(), sysView.get(10));
     }
 
     /** */

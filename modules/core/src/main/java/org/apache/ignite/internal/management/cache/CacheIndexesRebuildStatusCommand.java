@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 
 /** Index rebuild status. */
@@ -45,10 +45,8 @@ public class CacheIndexesRebuildStatusCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, CacheIndexesRebuildStatusCommandArg arg) {
-        return arg.nodeId() != null
-            ? Collections.singleton(arg.nodeId())
-            : nodes.keySet();
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, CacheIndexesRebuildStatusCommandArg arg) {
+        return CommandUtils.nodeOrAll(arg.nodeId(), nodes);
     }
 
     /** {@inheritDoc} */

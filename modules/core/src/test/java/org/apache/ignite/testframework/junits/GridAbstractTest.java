@@ -3151,10 +3151,25 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If failed.
      */
     public static <T> T getMxBean(String igniteInstanceName, String grp, String name, Class<T> clazz) {
+        return getMxBean(igniteInstanceName, grp, Collections.emptyList(), name, clazz);
+    }
+
+    /**
+     * Return JMX bean.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param grp Name of the group.
+     * @param grps Extended groups.
+     * @param name Name of the bean.
+     * @param clazz Class of the mbean.
+     * @return MX bean.
+     * @throws Exception If failed.
+     */
+    public static <T> T getMxBean(String igniteInstanceName, String grp, List<String> grps, String name, Class<T> clazz) {
         ObjectName mbeanName = null;
 
         try {
-            mbeanName = U.makeMBeanName(igniteInstanceName, grp, name);
+            mbeanName = U.makeMBeanName(igniteInstanceName, grp, grps, name);
         }
         catch (MalformedObjectNameException e) {
             fail("Failed to register MBean.");
@@ -3163,7 +3178,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
 
         if (!mbeanSrv.isRegistered(mbeanName))
-            throw new IgniteException("MBean not registered.");
+            throw new IgniteException("MBean not registered: " + mbeanName);
 
         return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, clazz, false);
     }

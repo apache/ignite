@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.apache.calcite.DataContexts;
@@ -49,6 +50,7 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.QueryEngineConfiguration;
 import org.apache.ignite.events.SqlQueryExecutionEvent;
@@ -60,6 +62,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.QueryParserMetricsHolder;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
@@ -178,6 +181,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final QueryPlanCache qryPlanCache;
 
     /** */
+    private final QueryParserMetricsHolder parserMetrics;
+
+    /** */
     private final QueryTaskExecutor taskExecutor;
 
     /** */
@@ -225,6 +231,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         failureProcessor = ctx.failure();
         schemaHolder = new SchemaHolderImpl(ctx);
         qryPlanCache = new QueryPlanCacheImpl(ctx);
+        parserMetrics = new QueryParserMetricsHolder(ctx.metric());
         mailboxRegistry = new MailboxRegistryImpl(ctx);
         taskExecutor = new QueryTaskExecutorImpl(ctx);
         executionSvc = new ExecutionServiceImpl<>(ctx, ArrayRowHandler.INSTANCE);
@@ -422,9 +429,18 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
                 @Override public QueryPlan apply(RootQuery<Object[]> qry, Object[] params) {
                     if (plan == null) {
-                        plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql, null, params), () ->
-                            prepareSvc.prepareSingle(qryNode, qry.planningContext())
-                        );
+                        AtomicBoolean miss = new AtomicBoolean();
+
+                        plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql, null, params), () -> {
+                            miss.set(true);
+
+                            return prepareSvc.prepareSingle(qryNode, qry.planningContext());
+                        });
+
+                        if (miss.get())
+                            parserMetrics.countCacheMiss();
+                        else
+                            parserMetrics.countCacheHit();
                     }
 
                     return plan;
@@ -457,10 +473,14 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql, null, params));
 
         if (plan != null) {
+            parserMetrics.countCacheHit();
+
             return Collections.singletonList(
                 processQuery(qryCtx, qry -> action.apply(qry, plan), schema.getName(), plan.query(), null, params)
             );
         }
+
+        parserMetrics.countCacheMiss();
 
         SqlNodeList qryList = Commons.parse(sql, FRAMEWORK_CONFIG.getParserConfig());
 
@@ -555,12 +575,17 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             if (qrys != null)
                 qrys.forEach(RootQuery::cancel);
 
-            qryReg.unregister(qry.id(), e);
+            if (isCanceled) {
+                qryReg.unregister(qry.id(), new QueryCancelledException());
 
-            if (isCanceled)
-                throw new IgniteSQLException("The query was cancelled while planning", IgniteQueryErrorCode.QUERY_CANCELED, e);
-            else
+                throw new IgniteSQLException("The query was cancelled while planning",
+                    IgniteQueryErrorCode.QUERY_CANCELED, e);
+            }
+            else {
+                qryReg.unregister(qry.id(), e);
+
                 throw e;
+            }
         }
     }
 

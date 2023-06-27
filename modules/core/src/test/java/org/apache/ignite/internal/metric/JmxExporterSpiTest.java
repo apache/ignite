@@ -415,6 +415,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(srvcCfg.getName(), sysView.get("name"));
         assertEquals(srvcCfg.getMaxPerNodeCount(), sysView.get("maxPerNodeCount"));
         assertEquals(DummyService.class.getName(), sysView.get("serviceClass"));
+        assertEquals(F.asMap(ignite.localNode().id(), 1).toString(), sysView.get("topologySnapshot"));
     }
 
     /** */
