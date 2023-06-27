@@ -49,8 +49,8 @@ public class EncryptionReencryptionRateLimitCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, EncryptionReencryptionRateLimitCommandArg arg) {
-        return nodes.keySet();
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, EncryptionReencryptionRateLimitCommandArg arg) {
+        return nodes;
     }
 
     /** {@inheritDoc} */

@@ -54,10 +54,8 @@ import org.apache.ignite.internal.management.api.CliSubcommandsWithPrefix;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
-import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.HelpCommand;
-import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.cache.CacheCommand;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -90,6 +88,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.NAME_PREFIX
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.asOptional;
 import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
+import static org.apache.ignite.internal.management.api.CommandUtils.executable;
 import static org.apache.ignite.internal.management.api.CommandUtils.join;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
@@ -253,68 +252,83 @@ public class CommandHandler {
 
             ConnectionAndSslParameters<A> args = new ArgumentParser(logger, registry).parseAndValidate(rawArgs);
 
-            commandName = toFormattedCommandName(args.root().getClass()).toUpperCase();
+            commandName = toFormattedCommandName(args.cmdPath().peekLast().getClass()).toUpperCase();
 
-            CommandInvoker<A> invoker = new CommandInvoker<>(args.command(), args.commandArg(), getClientConfiguration(args));
+            try (CliCommandInvoker<A> invoker = new CliCommandInvoker<>(args.command(), args.commandArg(), getClientConfiguration(args))) {
+                int tryConnectMaxCount = 3;
 
-            int tryConnectMaxCount = 3;
+                boolean suppliedAuth = !F.isEmpty(args.userName()) && !F.isEmpty(args.password());
 
-            boolean suppliedAuth = !F.isEmpty(args.userName()) && !F.isEmpty(args.password());
+                boolean credentialsRequested = false;
 
-            boolean credentialsRequested = false;
-
-            while (true) {
-                try {
-                    if (!invoker.prepare(logger))
-                        return EXIT_CODE_OK;
-
-                    if (!args.autoConfirmation()) {
-                        if (!confirm(invoker.confirmationPrompt())) {
-                            logger.info("Operation cancelled.");
-
+                while (true) {
+                    try {
+                        if (!invoker.prepare(logger::info))
                             return EXIT_CODE_OK;
+
+                        if (!args.autoConfirmation()) {
+                            if (!confirm(invoker.confirmationPrompt())) {
+                                logger.info("Operation cancelled.");
+
+                                return EXIT_CODE_OK;
+                            }
                         }
+
+                        logger.info("Command [" + commandName + "] started");
+                        logger.info("Arguments: " + argumentsToString(rawArgs));
+                        logger.info(U.DELIM);
+
+                        String deprecationMsg = args.command().deprecationMessage(args.commandArg());
+
+                        if (deprecationMsg != null)
+                            logger.warning(deprecationMsg);
+
+                        if (args.command() instanceof HelpCommand)
+                            printUsage(logger, args.cmdPath().peekLast());
+                        else {
+                            try {
+                                if (args.command() instanceof BeforeNodeStartCommand)
+                                    lastOperationRes = invoker.invokeBeforeNodeStart(logger::info);
+                                else
+                                    lastOperationRes = invoker.invoke(logger::info, args.verbose());
+                            }
+                            catch (Throwable e) {
+                                logger.error("Failed to perform operation.");
+                                logger.error(CommandLogger.errorMessage(e));
+
+                                throw e;
+                            }
+                        }
+
+                        break;
                     }
+                    catch (Throwable e) {
+                        if (!isAuthError(e))
+                            throw e;
 
-                    logger.info("Command [" + commandName + "] started");
-                    logger.info("Arguments: " + argumentsToString(rawArgs));
-                    logger.info(U.DELIM);
+                        if (suppliedAuth)
+                            throw new GridClientAuthenticationException("Wrong credentials.");
 
-                    if (args.command() instanceof HelpCommand)
-                        printUsage(logger, args.root());
-                    else if (args.command() instanceof BeforeNodeStartCommand)
-                        lastOperationRes = invoker.invokeBeforeNodeStart(logger);
-                    else
-                        lastOperationRes = invoker.invoke(logger, args.verbose());
+                        if (tryConnectMaxCount == 0) {
+                            throw new GridClientAuthenticationException("Maximum number of " +
+                                "retries exceeded");
+                        }
 
-                    break;
-                }
-                catch (Throwable e) {
-                    if (!isAuthError(e))
-                        throw e;
+                        logger.info(credentialsRequested ?
+                            "Authentication error, please try again." :
+                            "This cluster requires authentication.");
 
-                    if (suppliedAuth)
-                        throw new GridClientAuthenticationException("Wrong credentials.");
+                        if (credentialsRequested)
+                            tryConnectMaxCount--;
 
-                    if (tryConnectMaxCount == 0) {
-                        throw new GridClientAuthenticationException("Maximum number of " +
-                            "retries exceeded");
+                        invoker.clientConfiguration(getClientConfiguration(
+                            retrieveUserName(args, invoker.clientConfiguration()),
+                            new String(requestPasswordFromConsole("password: ")),
+                            args
+                        ));
+
+                        credentialsRequested = true;
                     }
-
-                    logger.info(credentialsRequested ?
-                        "Authentication error, please try again." :
-                        "This cluster requires authentication.");
-
-                    if (credentialsRequested)
-                        tryConnectMaxCount--;
-
-                    invoker.clientConfiguration(getClientConfiguration(
-                        retrieveUserName(args, invoker.clientConfiguration()),
-                        new String(requestPasswordFromConsole("password: ")),
-                        args
-                    ));
-
-                    credentialsRequested = true;
                 }
             }
 
@@ -827,10 +841,7 @@ public class CommandHandler {
      * @param logger Logger to print help to.
      */
     public static void usage(Command<?, ?> cmd, List<Command<?, ?>> parents, IgniteLogger logger) {
-        if (cmd instanceof LocalCommand
-            || cmd instanceof ComputeCommand
-            || cmd instanceof HelpCommand
-            || cmd instanceof BeforeNodeStartCommand) {
+        if (executable(cmd)) {
             logger.info("");
 
             if (cmd.getClass().isAnnotationPresent(IgniteExperimental.class))

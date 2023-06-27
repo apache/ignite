@@ -18,17 +18,14 @@
 package org.apache.ignite.internal.management;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
@@ -60,16 +57,13 @@ public class SystemViewCommand implements ComputeCommand<SystemViewCommandArg, V
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, SystemViewCommandArg arg) {
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, SystemViewCommandArg arg) {
         if (arg.allNodes())
-            return nodes.keySet();
+            return nodes;
 
-        if (arg.nodeIds() != null)
-            return Arrays.asList(arg.nodeIds());
-
-        return arg.nodeId() != null
-                ? Collections.singleton(arg.nodeId())
-                : null;
+        return arg.nodeIds() != null
+            ? CommandUtils.nodes(arg.nodeIds(), nodes)
+            : CommandUtils.nodeOrNull(arg.nodeId(), nodes);
     }
 
     /** {@inheritDoc} */

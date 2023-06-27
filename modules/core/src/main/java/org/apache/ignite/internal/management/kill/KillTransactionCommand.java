@@ -19,7 +19,6 @@ package org.apache.ignite.internal.management.kill;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
@@ -45,7 +44,7 @@ public class KillTransactionCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, KillTransactionCommandArg arg) {
-        return nodes.keySet();
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, KillTransactionCommandArg arg) {
+        return nodes;
     }
 }
