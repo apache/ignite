@@ -291,7 +291,10 @@ public abstract class WALRecord {
         INCREMENTAL_SNAPSHOT_FINISH_RECORD(77, LOGICAL),
 
         /** CDC data record. */
-        CDC_DATA_RECORD(78, CUSTOM);
+        CDC_DATA_RECORD(78, CUSTOM),
+
+        /** CDC disabled record. */
+        CDC_DISABLED(79, CUSTOM);
 
         /** Index for serialization. Should be consistent throughout all versions. */
         private final int idx;

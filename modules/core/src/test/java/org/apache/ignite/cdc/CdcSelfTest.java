@@ -830,7 +830,7 @@ public class CdcSelfTest extends AbstractCdcTest {
         addData(cache, 0, 1);
 
         assertTrue(waitForCondition(() -> 2 == walCdcDir.list().length, 2 * WAL_ARCHIVE_TIMEOUT));
-        assertEquals(3, archiveDir.listFiles().length);
+        assertEquals(persistenceEnabled ? 3 : 2, archiveDir.listFiles().length);
 
         UserCdcConsumer cnsmr = new UserCdcConsumer();
 
@@ -839,7 +839,7 @@ public class CdcSelfTest extends AbstractCdcTest {
         waitForSize(1, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
 
         // Cdc application must fail due to skipped data.
-        assertThrowsAnyCause(log, cdcFut::get, IgniteException.class, "Found missed segments. Some events are missed.");
+        assertThrowsAnyCause(log, cdcFut::get, IgniteException.class, "Found the CDC disabled record. Some events are missed.");
 
         ign.compute().execute(VisorCdcDeleteLostSegmentsTask.class, new VisorTaskArgument<>(ign.localNode().id(), false));
 

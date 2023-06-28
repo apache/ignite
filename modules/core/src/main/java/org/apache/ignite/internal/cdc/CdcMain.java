@@ -79,6 +79,7 @@ import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgnitionEx.initializeDefaultMBeanServer;
 import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DATA_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DISABLED;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.segmentIndex;
@@ -486,7 +487,7 @@ public class CdcMain implements Runnable {
                 .marshallerMappingFileStoreDir(marshaller)
                 .keepBinary(cdcCfg.isKeepBinary())
                 .filesOrDirs(segment.toFile())
-                .addFilter((type, ptr) -> type == DATA_RECORD_V2 || type == CDC_DATA_RECORD);
+                .addFilter((type, ptr) -> type == DATA_RECORD_V2 || type == CDC_DATA_RECORD || type == CDC_DISABLED);
 
         if (igniteCfg.getDataStorageConfiguration().getPageSize() != 0)
             builder.pageSize(igniteCfg.getDataStorageConfiguration().getPageSize());

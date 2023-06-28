@@ -303,6 +303,11 @@ public class WalRecordsConsumer<K, V> {
 
             curRec = walIter.next();
 
+            if (curRec.get2().type() == WALRecord.RecordType.CDC_DISABLED) {
+                throw new IgniteException("Found the CDC disabled record. Some events are missed. Exiting! " +
+                    "[state=" + curRec.get1() + ']');
+            }
+
             next = ((DataRecord)curRec.get2()).get(entryIdx);
         }
 
