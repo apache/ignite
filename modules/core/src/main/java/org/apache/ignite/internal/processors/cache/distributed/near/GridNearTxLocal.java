@@ -2991,7 +2991,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             cacheCtx,
             topVer,
             readThrough,
-            /*async*/true,
             keys,
             /*skipVals*/singleRmv,
             needReadVer,
@@ -3094,7 +3093,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /**
      * @param cacheCtx Cache context.
      * @param readThrough Read through flag.
-     * @param async if {@code True}, then loading will happen in a separate thread.
      * @param keys Keys.
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} version is required for loaded values.
@@ -3107,7 +3105,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final GridCacheContext cacheCtx,
         AffinityTopologyVersion topVer,
         boolean readThrough,
-        boolean async,
         final Collection<KeyCacheObject> keys,
         final boolean skipVals,
         final boolean needVer,
@@ -4754,7 +4751,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 cacheCtx,
                 topVer,
                 !skipStore,
-                false,
                 missedMap.keySet(),
                 skipVals,
                 needReadVer,
