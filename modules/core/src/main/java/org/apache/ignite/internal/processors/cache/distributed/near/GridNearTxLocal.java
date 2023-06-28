@@ -928,7 +928,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 invokeMap0,
                 invokeArgs,
                 retval,
-                false,
                 CU.filterArray(null),
                 ret,
                 enlisted,
@@ -1151,7 +1150,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param invokeMap Map with entry processors for invoke operation.
      * @param invokeArgs Optional arguments for EntryProcessor.
      * @param retval Flag indicating whether a value should be returned.
-     * @param lockOnly If {@code true}, then entry will be enlisted as noop.
      * @param filter User filters.
      * @param ret Return value.
      * @param enlisted Collection of keys enlisted into this transaction.
@@ -1173,7 +1171,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable Map<?, EntryProcessor<K, V, Object>> invokeMap,
         @Nullable Object[] invokeArgs,
         final boolean retval,
-        boolean lockOnly,
         final CacheEntryPredicate[] filter,
         final GridCacheReturn ret,
         Collection<KeyCacheObject> enlisted,
@@ -1274,7 +1271,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         invokeArgs,
                         expiryPlc,
                         retval,
-                        lockOnly,
+                        false,
                         filter,
                         drVer,
                         drTtl,
@@ -1819,7 +1816,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             /*invoke map*/null,
             /*invoke arguments*/null,
             retval,
-            /*lock only*/false,
             filters,
             ret,
             enlisted,
