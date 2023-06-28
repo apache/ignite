@@ -3517,22 +3517,21 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @throws IgniteCheckedException If the transaction is in an incorrect state, or timed out.
      */
     public void resume() throws IgniteCheckedException {
-        resume(true, Thread.currentThread().getId());
+        resume(Thread.currentThread().getId());
     }
 
     /**
      * Resumes transaction (possibly in another thread) if it was previously suspended.
      *
-     * @param checkTimeout Whether timeout should be checked.
      * @param threadId Thread id to restore.
      * @throws IgniteCheckedException If the transaction is in an incorrect state, or timed out.
      */
-    private void resume(boolean checkTimeout, long threadId) throws IgniteCheckedException {
+    private void resume(long threadId) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Resume near local tx: " + this);
 
         synchronized (this) {
-            checkValid(checkTimeout);
+            checkValid(true);
 
             cctx.tm().resumeTx(this, threadId);
         }
