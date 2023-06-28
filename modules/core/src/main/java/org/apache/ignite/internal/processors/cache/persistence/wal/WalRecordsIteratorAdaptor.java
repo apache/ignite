@@ -49,7 +49,7 @@ public abstract class WalRecordsIteratorAdaptor
     @NotNull protected final IgniteLogger log;
 
     /** Position of last read valid record. */
-    protected WALPointer lastRead;
+    private WALPointer lastRead;
 
     /**
      * @param log Logger.
@@ -97,4 +97,7 @@ public abstract class WalRecordsIteratorAdaptor
         return Optional.ofNullable(lastRead);
     }
 
+    protected void lastRead(WALPointer lastRead) {
+        this.lastRead = lastRead;
+    }
 }

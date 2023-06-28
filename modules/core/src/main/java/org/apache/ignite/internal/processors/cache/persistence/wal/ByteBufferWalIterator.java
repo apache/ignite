@@ -93,13 +93,13 @@ public class ByteBufferWalIterator extends WalRecordsIteratorAdaptor {
     /** {@inheritDoc} */
     @Override protected void advance() throws IgniteCheckedException {
         if (curRec != null)
-            lastRead = curRec.get1();
+            lastRead(curRec.get1());
 
         while (true) {
             curRec = advanceRecord();
 
             if (curRec != null && curRec.get2().type() == null) {
-                lastRead = curRec.get1();
+                lastRead(curRec.get1());
 
                 continue; // Record was skipped by filter of current serializer, should read next record.
             }
