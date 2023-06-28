@@ -133,9 +133,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /** Base for completed versions. */
     private GridCacheVersion completedBase;
 
-    /** Flag indicating that transformed values should be sent to remote nodes. */
-    private boolean sndTransformedVals;
-
     /** Commit error. */
     protected volatile Throwable commitErr;
 
@@ -360,14 +357,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      */
     public boolean hasInterceptor() {
         return txState().hasInterceptor(cctx);
-    }
-
-    /**
-     * @param snd {@code True} if values in tx entries should be replaced with transformed values and sent
-     * to remote nodes.
-     */
-    public void sendTransformedValues(boolean snd) {
-        sndTransformedVals = snd;
     }
 
     /**
@@ -717,8 +706,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     // Nullify explicit version so that innerSet/innerRemove will work as usual.
                                     explicitVer = null;
 
-                                if (sndTransformedVals || conflictNeedResolve) {
-                                    assert sndTransformedVals && cacheCtx.isReplicated() || conflictNeedResolve;
+                                if (conflictNeedResolve) {
+                                    assert cacheCtx.isReplicated() || conflictNeedResolve;
 
                                     txEntry.value(val, true, false);
                                     txEntry.op(op);
