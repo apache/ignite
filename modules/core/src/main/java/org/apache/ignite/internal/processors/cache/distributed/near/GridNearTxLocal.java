@@ -117,11 +117,11 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
@@ -1077,7 +1077,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     invokeArgs,
                     expiryPlc,
                     retval,
-                    false,
                     filter,
                     /*drVer*/drVer,
                     /*drTtl*/-1L,
@@ -1268,7 +1267,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         invokeArgs,
                         expiryPlc,
                         retval,
-                        false,
                         filter,
                         drVer,
                         drTtl,
@@ -1342,7 +1340,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param invokeArgs Optional arguments for EntryProcessor.
      * @param expiryPlc Explicitly specified expiry policy for entry.
      * @param retval Return value flag.
-     * @param lockOnly Lock only flag.
      * @param filter Filter.
      * @param drVer DR version.
      * @param drTtl DR ttl.
@@ -1365,7 +1362,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable final Object[] invokeArgs,
         @Nullable final ExpiryPolicy expiryPlc,
         final boolean retval,
-        final boolean lockOnly,
         final CacheEntryPredicate[] filter,
         final GridCacheVersion drVer,
         final long drTtl,
@@ -1466,7 +1462,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     else
                         old = entry.rawGet();
 
-                    final GridCacheOperation op = lockOnly ? NOOP : rmv ? DELETE :
+                    final GridCacheOperation op = rmv ? DELETE :
                         entryProcessor != null ? TRANSFORM : old != null ? UPDATE : CREATE;
 
                     if (old != null && hasFilters && !filter(entry.context(), cacheKey, old, filter)) {
