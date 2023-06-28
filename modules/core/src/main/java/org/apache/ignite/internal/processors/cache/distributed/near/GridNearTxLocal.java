@@ -641,7 +641,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 entryProcessor,
                 invokeArgs,
                 retval,
-                /*lockOnly*/false,
                 filters,
                 ret,
                 opCtx != null && opCtx.skipStore(),
@@ -893,18 +892,16 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         else
             dataCenterId = null;
 
-        // Cached entry may be passed only from entry wrapper.
-        final Map<?, ?> map0 = map;
         final Map<?, EntryProcessor<K, V, Object>> invokeMap0 = (Map<K, EntryProcessor<K, V, Object>>)invokeMap;
 
         if (log.isDebugEnabled())
-            log.debug("Called putAllAsync(...) [tx=" + this + ", map=" + map0 + ", retval=" + retval + "]");
+            log.debug("Called putAllAsync(...) [tx=" + this + ", map=" + map + ", retval=" + retval + "]");
 
-        assert map0 != null || invokeMap0 != null;
+        assert map != null || invokeMap0 != null;
 
         final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
 
-        if (F.isEmpty(map0) && F.isEmpty(invokeMap0)) {
+        if (F.isEmpty(map) && F.isEmpty(invokeMap0)) {
             if (implicit())
                 try {
                     commit();
@@ -917,7 +914,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         }
 
         try {
-            Set<?> keySet = map0 != null ? map0.keySet() : invokeMap0.keySet();
+            Set<?> keySet = map != null ? map.keySet() : invokeMap0.keySet();
 
             final Collection<KeyCacheObject> enlisted = new ArrayList<>(keySet.size());
 
@@ -928,7 +925,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 entryTopVer,
                 keySet,
                 opCtx != null ? opCtx.expiry() : null,
-                map0,
+                map,
                 invokeMap0,
                 invokeArgs,
                 retval,
@@ -1035,7 +1032,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param entryProcessor Entry processor (for invoke operation).
      * @param invokeArgs Optional arguments for EntryProcessor.
      * @param retval Flag indicating whether a value should be returned.
-     * @param lockOnly If {@code true}, then entry will be enlisted as noop.
      * @param filter User filters.
      * @param ret Return value.
      * @param skipStore Skip store flag.
@@ -1053,7 +1049,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable EntryProcessor<K, V, Object> entryProcessor,
         @Nullable Object[] invokeArgs,
         final boolean retval,
-        boolean lockOnly,
         final CacheEntryPredicate[] filter,
         final GridCacheReturn ret,
         boolean skipStore,
@@ -1088,7 +1083,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     invokeArgs,
                     expiryPlc,
                     retval,
-                    lockOnly,
+                    false,
                     filter,
                     /*drVer*/drVer,
                     /*drTtl*/-1L,
@@ -2465,7 +2460,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                                     expiryPlc0,
                                                     null,
                                                     null,
-                                                    false,
                                                     false,
                                                     null,
                                                     null,
