@@ -834,7 +834,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                     return new IgniteBiTuple<>(next.getKey(), next.getValue());
                 }
-            }, retval, filter, remainingTime(), true);
+            }, retval, filter, remainingTime());
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture(e);
@@ -2028,7 +2028,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             @Override public KeyCacheObject nextX() throws IgniteCheckedException {
                 return it.next();
             }
-        }, retval, filter, remainingTime(), true);
+        }, retval, filter, remainingTime());
     }
 
     /**
@@ -2105,15 +2105,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param retval Return value flag.
      * @param filter Filter.
      * @param timeout Timeout.
-     * @param sequential Sequential locking flag.
      * @return Operation future.
      */
     private IgniteInternalFuture<GridCacheReturn> updateAsync(GridCacheContext cacheCtx,
         UpdateSourceIterator<?> it,
         boolean retval,
         @Nullable CacheEntryPredicate filter,
-        long timeout,
-        boolean sequential) {
+        long timeout) {
         try {
             final CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
@@ -2123,7 +2121,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
              but possibly we can safely optimize this. */
 
             GridNearTxEnlistFuture fut = new GridNearTxEnlistFuture(cacheCtx, this,
-                timeout, it, 0, sequential, filter, retval, keepBinary);
+                timeout, it, 0, true, filter, retval, keepBinary);
 
             fut.init();
 
