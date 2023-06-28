@@ -1091,8 +1091,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     hasFilters,
                     needVal,
                     needReadVer,
-                    keepBinary,
-                    recovery);
+                    keepBinary);
 
                 if (loadMissed) {
                     AffinityTopologyVersion topVer = topologyVersionSnapshot();
@@ -1283,8 +1282,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         hasFilters,
                         needVal,
                         needReadVer,
-                        keepBinary,
-                        recovery);
+                        keepBinary);
 
                     if (loadMissed) {
                         if (missedForLoad == null)
@@ -1381,8 +1379,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         boolean hasFilters,
         final boolean needVal,
         boolean needReadVer,
-        boolean keepBinary,
-        boolean recovery
+        boolean keepBinary
     ) throws IgniteCheckedException {
         boolean loadMissed = false;
 
