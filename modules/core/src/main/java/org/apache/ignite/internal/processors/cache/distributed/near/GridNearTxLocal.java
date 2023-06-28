@@ -644,7 +644,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 filters,
                 ret,
                 opCtx != null && opCtx.skipStore(),
-                /*singleRmv*/false,
                 keepBinary,
                 opCtx != null && opCtx.recovery(),
                 dataCenterId);
@@ -1035,7 +1034,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param filter User filters.
      * @param ret Return value.
      * @param skipStore Skip store flag.
-     * @param singleRmv {@code True} for single key remove operation ({@link Cache#remove(Object)}.
      * @param recovery Recovery flag.
      * @param dataCenterId Optional data center Id.
      * @return Future for entry values loading.
@@ -1052,7 +1050,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final CacheEntryPredicate[] filter,
         final GridCacheReturn ret,
         boolean skipStore,
-        final boolean singleRmv,
         boolean keepBinary,
         boolean recovery,
         Byte dataCenterId) {
@@ -1067,7 +1064,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 addActiveCache(cacheCtx, recovery);
 
                 final boolean hasFilters = !F.isEmptyOrNulls(filter) && !F.isAlwaysTrue(filter);
-                final boolean needVal = singleRmv || retval || hasFilters;
+                final boolean needVal = retval || hasFilters;
                 final boolean needReadVer = needVal && (serializable() && optimistic());
 
                 if (entryProcessor != null)
@@ -1091,7 +1088,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     ret,
                     /*enlisted*/null,
                     skipStore,
-                    singleRmv,
+                    false,
                     hasFilters,
                     needVal,
                     needReadVer,
@@ -1110,7 +1107,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         filter,
                         ret,
                         needReadVer,
-                        singleRmv,
+                        false,
                         hasFilters,
                         /*read through*/(entryProcessor != null || cacheCtx.config().isLoadPreviousValue()) && !skipStore,
                         retval,
@@ -2464,7 +2461,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                                     null,
                                                     null,
                                                     skipStore,
-                                                    false,
                                                     !deserializeBinary,
                                                     recovery,
                                                     null);
