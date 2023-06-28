@@ -25,7 +25,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.LongStream;
 import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
@@ -180,18 +179,14 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        AtomicReference<IgniteLogger> logRef = GridTestUtils.getFieldValue(IgniteTxAdapter.class, "logRef");
+        oldLog = GridTestUtils.getFieldValue(IgniteTxAdapter.class, "log");
 
-        oldLog = logRef.get();
-
-        logRef.set(testLog);
+        GridTestUtils.setFieldValue(IgniteTxAdapter.class, "log", testLog);
     }
 
     /** */
     @Override protected void afterTestsStopped() throws Exception {
-        AtomicReference<IgniteLogger> logRef = GridTestUtils.getFieldValue(IgniteTxAdapter.class, "logRef");
-
-        logRef.set(oldLog);
+        GridTestUtils.setFieldValue(IgniteTxAdapter.class, "log", oldLog);
 
         oldLog = null;
 

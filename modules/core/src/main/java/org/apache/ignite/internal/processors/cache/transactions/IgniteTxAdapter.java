@@ -136,7 +136,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         AtomicReferenceFieldUpdater.newUpdater(IgniteTxAdapter.class, TxCounters.class, "txCounters");
 
     /** Logger. */
-    protected final IgniteLogger log;
+    protected static IgniteLogger log;
 
     /** Transaction ID. */
     @GridToStringInclude
@@ -334,7 +334,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         threadId = Thread.currentThread().getId();
 
-        log = U.logger(cctx.kernalContext(), logRef, this);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, this);
 
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
 
@@ -390,7 +391,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         implicit = false;
         loc = false;
 
-        log = U.logger(cctx.kernalContext(), logRef, this);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, this);
 
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
 
