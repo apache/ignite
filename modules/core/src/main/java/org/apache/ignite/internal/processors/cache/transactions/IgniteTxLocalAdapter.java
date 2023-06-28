@@ -121,7 +121,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     protected GridCacheVersion minVer;
 
     /** Flag indicating with TM commit happened. */
-    protected volatile int doneFlag;
+    private volatile int doneFlag;
 
     /** Committed versions, relative to base. */
     private Collection<GridCacheVersion> committedVers = Collections.emptyList();
@@ -133,7 +133,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     private GridCacheVersion completedBase;
 
     /** Commit error. */
-    protected volatile Throwable commitErr;
+    private volatile Throwable commitErr;
 
     /** Implicit transaction result. */
     protected GridCacheReturn implicitRes;
@@ -146,7 +146,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     protected final IgniteTxLocalState txState;
 
     /** */
-    protected CacheWriteSynchronizationMode syncMode;
+    private CacheWriteSynchronizationMode syncMode;
 
     /** */
     protected volatile boolean qryEnlisted;
