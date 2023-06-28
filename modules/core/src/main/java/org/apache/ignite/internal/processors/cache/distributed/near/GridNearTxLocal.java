@@ -2222,7 +2222,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final ReadRepairStrategy readRepairStrategy,
         final boolean needVer) {
         if (F.isEmpty(keys))
-            return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
+            return new GridFinishedFuture<>(Collections.emptyMap());
 
         if (cacheCtx.mvccEnabled() && !isOperationAllowed(true))
             return txTypeMismatchFinishFuture();
@@ -4244,7 +4244,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             this,
             timeout,
             0,
-            Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
+            Collections.emptyMap(),
             req.last(),
             needReturnValue() && implicit());
 
