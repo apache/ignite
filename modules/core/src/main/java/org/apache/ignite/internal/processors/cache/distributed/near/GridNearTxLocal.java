@@ -825,11 +825,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     return transform ? EnlistOperation.TRANSFORM : EnlistOperation.UPSERT;
                 }
 
-                @Override public boolean hasNextX() throws IgniteCheckedException {
+                @Override public boolean hasNextX() {
                     return it.hasNext();
                 }
 
-                @Override public IgniteBiTuple<KeyCacheObject, Object> nextX() throws IgniteCheckedException {
+                @Override public IgniteBiTuple<KeyCacheObject, Object> nextX() {
                     Map.Entry<KeyCacheObject, Object> next = it.next();
 
                     return new IgniteBiTuple<>(next.getKey(), next.getValue());
@@ -2021,11 +2021,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 return EnlistOperation.DELETE;
             }
 
-            @Override public boolean hasNextX() throws IgniteCheckedException {
+            @Override public boolean hasNextX() {
                 return it.hasNext();
             }
 
-            @Override public KeyCacheObject nextX() throws IgniteCheckedException {
+            @Override public KeyCacheObject nextX() {
                 return it.next();
             }
         }, retval, filter, remainingTime());
@@ -5077,9 +5077,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         /**
          * @param t Argument.
          * @return Result.
-         * @throws IgniteCheckedException If failed.
          */
-        abstract T finish(T t) throws IgniteCheckedException;
+        abstract T finish(T t);
     }
 
     /** */
