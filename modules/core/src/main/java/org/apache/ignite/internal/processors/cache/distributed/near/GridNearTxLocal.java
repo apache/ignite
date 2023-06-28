@@ -1969,7 +1969,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         try {
             MvccUtils.requestSnapshot(this);
 
-            beforeRemove(cacheCtx, retval, true);
+            beforeRemove(cacheCtx, retval);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture(e);
@@ -4912,17 +4912,16 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /**
      * @param cacheCtx Cache context.
      * @param retval Return value flag.
-     * @param mvccOp SQL operation flag.
      * @throws IgniteCheckedException If failed.
      */
-    private void beforeRemove(GridCacheContext cacheCtx, boolean retval, boolean mvccOp) throws IgniteCheckedException {
-        assert !mvccOp || cacheCtx.mvccEnabled();
+    private void beforeRemove(GridCacheContext cacheCtx, boolean retval) throws IgniteCheckedException {
+        assert cacheCtx.mvccEnabled();
 
         checkUpdatesAllowed(cacheCtx);
 
         cacheCtx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
-        if (cacheCtx.mvccEnabled() && !isOperationAllowed(mvccOp))
+        if (cacheCtx.mvccEnabled() && !isOperationAllowed(true))
             throw new IgniteCheckedException(TX_TYPE_MISMATCH_ERR_MSG);
 
         if (retval)
