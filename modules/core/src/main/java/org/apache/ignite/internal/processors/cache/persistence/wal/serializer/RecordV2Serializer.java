@@ -249,7 +249,7 @@ public class RecordV2Serializer implements RecordSerializer {
         if (in instanceof FileInput)
             return RecordV1Serializer.readWithCrc((FileInput)in, expPtr, recordIO);
         else
-            return RecordV1Serializer.read(in, expPtr, recordIO);
+            return RecordV1Serializer.readWithoutCrcCheck(in, expPtr, recordIO);
     }
 
     /**

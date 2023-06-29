@@ -230,7 +230,7 @@ public class RecordV1Serializer implements RecordSerializer {
         if (in0 instanceof FileInput)
             return readWithCrc((FileInput)in0, expPtr, recordIO);
         else
-            return read(in0, expPtr, recordIO);
+            return readWithoutCrcCheck(in0, expPtr, recordIO);
     }
 
     /** {@inheritDoc} */
@@ -362,7 +362,7 @@ public class RecordV1Serializer implements RecordSerializer {
      * @return WAL record.
      * @throws IgniteCheckedException If it's unable to read record.
      */
-    static WALRecord read(
+    static WALRecord readWithoutCrcCheck(
         ByteBufferBackedDataInput in,
         WALPointer expPtr,
         RecordIO reader
@@ -382,7 +382,7 @@ public class RecordV1Serializer implements RecordSerializer {
 
             res.size((int)size);
 
-            // read CRC
+            // CRC.
             in.readInt();
 
             return res;

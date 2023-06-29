@@ -43,13 +43,6 @@ public class ByteBufferWalIterator extends WalRecordsIteratorAdaptor {
     /** */
     private final transient ByteBufferBackedDataInputImpl dataInput;
 
-    /** constructor */
-    public ByteBufferWalIterator(
-        @NotNull IgniteLogger log,
-        ByteBuffer byteBuffer) throws IgniteCheckedException {
-        this(log, null, byteBuffer);
-    }
-
     /** */
     public ByteBufferWalIterator(
         @NotNull IgniteLogger log,
@@ -98,13 +91,11 @@ public class ByteBufferWalIterator extends WalRecordsIteratorAdaptor {
         while (true) {
             curRec = advanceRecord();
 
-            if (curRec != null && curRec.get2().type() == null) {
-                lastRead(curRec.get1());
-
-                continue; // Record was skipped by filter of current serializer, should read next record.
+            if (curRec == null || curRec.get2().type() != null) {
+                return;
             }
 
-            return;
+            lastRead(curRec.get1());
         }
     }
 
