@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
-import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -36,6 +35,22 @@ public interface FileInput extends ByteBufferBackedDataInput {
      * File I/O.
      */
     FileIO io();
+
+    /**
+     * @param pos Position in bytes from file begin.
+     */
+    void seek(long pos) throws IOException;
+
+    /**
+     * @return Position in the stream.
+     */
+    long position();
+
+    /**
+     * @param skipCheck If CRC check should be skipped.
+     * @return autoclosable fileInput, after its closing crc32 will be calculated and compared with saved one
+     */
+    FileInput.Crc32CheckingFileInput startRead(boolean skipCheck);
 
     /**
      * Checking of CRC32.
@@ -74,23 +89,11 @@ public interface FileInput extends ByteBufferBackedDataInput {
             lastCalcPosition = 0;
         }
 
-        /** {@inheritDoc} */
-        @Override public void seek(long pos) throws IOException {
-            GridArgumentCheck.ensure(pos >= 0, "pos must not be negative");
-
-            GridArgumentCheck.ensure(pos <= Integer.MAX_VALUE, "pos must be int");
-
-            buffer().position((int)pos);
-        }
-
-        /** {@inheritDoc} */
-        @Override public long position() {
+        /**
+         * @return Position in the stream.
+         */
+        public long position() {
             return buffer().position();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Crc32CheckingFileInput startRead(boolean skipCheck) {
-            return null;
         }
 
         /** {@inheritDoc} */

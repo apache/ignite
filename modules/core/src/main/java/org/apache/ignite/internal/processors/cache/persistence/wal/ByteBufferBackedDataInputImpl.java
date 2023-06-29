@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
-import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -48,28 +46,6 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
     @Override public void ensure(int requested) throws IOException {
         if (buf.remaining() < requested)
             throw new IOException("Requested size is greater than buffer: " + requested);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void seek(long pos) throws IOException {
-        GridArgumentCheck.ensure(pos >= 0, "pos must not be negative");
-
-        GridArgumentCheck.ensure(pos <= Integer.MAX_VALUE, "pos must be int");
-
-        buf.position((int)pos);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long position() {
-        return buf.position();
-    }
-
-    /**
-     * @param skipCheck If CRC check should be skipped.
-     * @return autoclosable ByteBufferBackedDataInput, after its closing crc will be calculated and compared with saved one
-     */
-    @Override public FileInput.Crc32CheckingFileInput startRead(boolean skipCheck) {
-        return new FileInput.Crc32CheckingFileInput(this, skipCheck);
     }
 
     /** {@inheritDoc} */

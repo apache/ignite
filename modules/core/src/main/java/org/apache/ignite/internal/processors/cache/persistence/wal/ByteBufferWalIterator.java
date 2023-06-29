@@ -75,7 +75,7 @@ public class ByteBufferWalIterator extends WalRecordsIteratorAdaptor {
     private IgniteBiTuple<WALPointer, WALRecord> advanceRecord() throws IgniteCheckedException {
         IgniteBiTuple<WALPointer, WALRecord> result = null;
 
-        WALPointer actualFilePtr = new WALPointer(-1, (int)dataInput.position(), 0);
+        WALPointer actualFilePtr = new WALPointer(-1, buffer.position(), 0);
         try {
             WALRecord rec = serializer.readRecord(dataInput, actualFilePtr);
 

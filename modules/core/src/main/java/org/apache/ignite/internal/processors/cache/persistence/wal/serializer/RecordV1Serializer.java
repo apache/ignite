@@ -227,7 +227,10 @@ public class RecordV1Serializer implements RecordSerializer {
 
     /** {@inheritDoc} */
     @Override public WALRecord readRecord(ByteBufferBackedDataInput in0, WALPointer expPtr) throws IOException, IgniteCheckedException {
-        return readWithCrc(in0, expPtr, recordIO);
+        if (in0 instanceof FileInput)
+            return readWithCrc((FileInput)in0, expPtr, recordIO);
+        else
+            return read(in0, expPtr, recordIO);
     }
 
     /** {@inheritDoc} */
@@ -352,6 +355,44 @@ public class RecordV1Serializer implements RecordSerializer {
     }
 
     /**
+     * Reads record from input {@code in}.
+     * @param in ByteBufferBackedDataInput.
+     * @param expPtr Expected WAL pointer for record. Used to validate actual position against expected from the file.
+     * @param reader Record reader I/O interface.
+     * @return WAL record.
+     * @throws IgniteCheckedException If it's unable to read record.
+     */
+    static WALRecord read(
+        ByteBufferBackedDataInput in,
+        WALPointer expPtr,
+        RecordIO reader
+    ) throws IgniteCheckedException {
+        long startPos = -1;
+
+        long size = -1;
+
+        try {
+            startPos = in.buffer().position();
+
+            WALRecord res = reader.readWithHeaders(in, expPtr);
+
+            assert res != null;
+
+            size = in.buffer().position() - startPos + CRC_SIZE;
+
+            res.size((int)size);
+
+            // read CRC
+            in.readInt();
+
+            return res;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Failed to read WAL record at position: " + startPos + ", size: " + size, e);
+        }
+    }
+
+    /**
      * Reads record from file {@code in0} and validates CRC of record.
      *
      * @param in0 File input.
@@ -362,7 +403,7 @@ public class RecordV1Serializer implements RecordSerializer {
      * @throws IgniteCheckedException If it's unable to read record.
      */
     static WALRecord readWithCrc(
-        ByteBufferBackedDataInput in0,
+        FileInput in0,
         WALPointer expPtr,
         RecordIO reader
     ) throws EOFException, IgniteCheckedException {
@@ -385,15 +426,12 @@ public class RecordV1Serializer implements RecordSerializer {
         catch (Exception e) {
             long size = -1;
 
-            if (in0 instanceof FileInput) {
-                FileInput fileInput = (FileInput)in0;
-                try {
-                    size = fileInput.io().size();
-                }
-                catch (IOException ignore) {
-                    // It just for information. Fail calculate file size.
-                    e.addSuppressed(ignore);
-                }
+            try {
+                size = in0.io().size();
+            }
+            catch (IOException ignore) {
+                // It just for information. Fail calculate file size.
+                e.addSuppressed(ignore);
             }
 
             throw new IgniteCheckedException(

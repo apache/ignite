@@ -97,6 +97,7 @@ public abstract class WalRecordsIteratorAdaptor
         return Optional.ofNullable(lastRead);
     }
 
+    /** */
     protected void lastRead(WALPointer lastRead) {
         this.lastRead = lastRead;
     }
