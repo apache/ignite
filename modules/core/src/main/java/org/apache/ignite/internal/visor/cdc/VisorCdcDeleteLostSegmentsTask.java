@@ -89,10 +89,10 @@ public class VisorCdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDelete
         protected IgniteLogger log;
 
         /** */
-        private FileWriteAheadLogManager wal;
+        private transient FileWriteAheadLogManager wal;
 
         /** */
-        private File walCdcDir;
+        private transient File walCdcDir;
 
         /**
          * Create job with specified argument.
