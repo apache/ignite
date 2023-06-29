@@ -50,7 +50,7 @@ public interface FileInput extends ByteBufferBackedDataInput {
      * @param skipCheck If CRC check should be skipped.
      * @return autoclosable fileInput, after its closing crc32 will be calculated and compared with saved one
      */
-    FileInput.Crc32CheckingFileInput startRead(boolean skipCheck);
+    SimpleFileInput.Crc32CheckingFileInput startRead(boolean skipCheck);
 
     /**
      * Checking of CRC32.
@@ -89,13 +89,6 @@ public interface FileInput extends ByteBufferBackedDataInput {
             lastCalcPosition = 0;
         }
 
-        /**
-         * @return Position in the stream.
-         */
-        public long position() {
-            return buffer().position();
-        }
-
         /** {@inheritDoc} */
         @Override public void close() throws Exception {
             updateCrc();
@@ -105,7 +98,7 @@ public interface FileInput extends ByteBufferBackedDataInput {
             int writtenCrc = this.readInt();
 
             if ((val ^ writtenCrc) != 0 && !skipCheck) {
-                // If it is a last message we will skip it (EOF will be thrown).
+                // If it last message we will skip it (EOF will be thrown).
                 ensure(5);
 
                 throw new IgniteDataIntegrityViolationException(
