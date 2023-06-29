@@ -68,7 +68,8 @@ public interface FileInput extends ByteBufferBackedDataInput {
         /** */
         private FileInput delegate;
 
-        /** */
+        /**
+         */
         public Crc32CheckingFileInput(FileInput delegate, boolean skipCheck) {
             this.delegate = delegate;
             this.lastCalcPosition = delegate.buffer().position();
