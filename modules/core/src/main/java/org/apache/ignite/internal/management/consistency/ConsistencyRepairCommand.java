@@ -21,18 +21,20 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.LocalCommand;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyTaskResult;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.jetbrains.annotations.Nullable;
 
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.internal.management.api.CommandUtils.nodes;
 
 /** */
 @IgniteExperimental
@@ -49,22 +51,23 @@ public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairC
 
     /** {@inheritDoc} */
     @Override public String execute(
-        GridClient cli,
+        @Nullable GridClient cli,
+        @Nullable Ignite ignite,
         ConsistencyRepairCommandArg arg,
         Consumer<String> printer
-    ) throws Exception {
+    ) throws GridClientException, IgniteException {
         StringBuilder sb = new StringBuilder();
         boolean failed = false;
 
         if (arg.parallel())
-            failed = execute(cli, arg, cli.compute().nodes(GridClientNode::connectable), sb);
+            failed = execute(cli, ignite, arg, nodes(cli, ignite), sb);
         else {
-            Set<GridClientNode> nodes = cli.compute().nodes().stream()
+            Set<GridClientNode> nodes = nodes(cli, ignite).stream()
                 .filter(node -> !node.isClient())
                 .collect(toSet());
 
             for (GridClientNode node : nodes) {
-                failed = execute(cli, arg, Collections.singleton(node), sb);
+                failed = execute(cli, ignite, arg, Collections.singleton(node), sb);
 
                 if (failed)
                     break;
@@ -74,7 +77,7 @@ public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairC
         String res = sb.toString();
 
         if (failed)
-            throw new IgniteCheckedException(res);
+            throw new IgniteException(res);
 
         printer.accept(res);
 
@@ -83,16 +86,20 @@ public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairC
 
     /** */
     private boolean execute(
-        GridClient cli,
+        @Nullable GridClient cli,
+        @Nullable Ignite ignite,
         ConsistencyRepairCommandArg arg,
         Collection<GridClientNode> nodes,
         StringBuilder sb
     ) throws GridClientException {
         boolean failed = false;
 
-        VisorConsistencyTaskResult res = cli.compute().projection(nodes).execute(
-            VisorConsistencyRepairTask.class.getName(),
-            new VisorTaskArgument<>(nodes.stream().map(GridClientNode::nodeId).collect(Collectors.toList()), arg, false)
+        VisorConsistencyTaskResult res = CommandUtils.execute(
+            cli,
+            ignite,
+            VisorConsistencyRepairTask.class,
+            arg,
+            nodes
         );
 
         if (res.cancelled()) {

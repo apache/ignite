@@ -246,7 +246,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
             validateOutputIndicesRebuildWasStarted(outputStr, F.asMap(GRP_NAME_1, F.asList(CACHE_NAME_1_1)));
 
-            assertEquals("Unexpected number of lines in output.", 19, outputStr.split("\n").length);
+            assertEquals("Unexpected number of lines in output.", 8 + commandHandlerExtraLines(), outputStr.split("\n").length);
 
             // Index rebuild must be triggered only for cache1_1 and only on node3.
             assertFalse(cache1Listeners[0].check());
@@ -311,7 +311,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
                 )
             );
 
-            assertEquals("Unexpected number of lines in outputStr.", 20, outputStr.split("\n").length);
+            assertEquals("Unexpected number of lines in outputStr.", 9 + commandHandlerExtraLines(), outputStr.split("\n").length);
 
             assertFalse(cache1Listeners[0].check());
             assertFalse(cache1Listeners[1].check());

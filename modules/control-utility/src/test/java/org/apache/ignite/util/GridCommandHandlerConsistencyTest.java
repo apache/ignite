@@ -92,16 +92,19 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** */
-    @Parameterized.Parameters(name = "strategy={0}, explicitGrp={1}, callByGrp={2}")
+    @Parameterized.Parameters(name = "cmdHnd={0}, strategy={1}, explicitGrp={2}, callByGrp={3}")
     public static Iterable<Object[]> data() {
         List<Object[]> res = new ArrayList<>();
 
-        for (ReadRepairStrategy strategy : ReadRepairStrategy.values()) {
-            for (boolean explicitGrp : new boolean[] {false, true}) {
-                if (explicitGrp)
-                    res.add(new Object[] {strategy, explicitGrp, true});
+        int cntr = 0;
+        List<String> invokers = commandHandlers();
 
-                res.add(new Object[] {strategy, explicitGrp, false});
+        for (ReadRepairStrategy strategy : ReadRepairStrategy.values()) {
+            for (boolean explicitGrp : new boolean[]{false, true}) {
+                if (explicitGrp)
+                    res.add(new Object[]{invokers.get(cntr++ % invokers.size()), strategy, explicitGrp, true});
+
+                res.add(new Object[]{invokers.get(cntr++ % invokers.size()), strategy, explicitGrp, false});
             }
         }
 
@@ -111,19 +114,19 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     /**
      *
      */
-    @Parameterized.Parameter
+    @Parameterized.Parameter(1)
     public ReadRepairStrategy strategy;
 
     /**
      * True when cache defined via group.
      */
-    @Parameterized.Parameter(1)
+    @Parameterized.Parameter(2)
     public boolean explicitGrp;
 
     /**
      * True when cache consistency repair called by group name.
      */
-    @Parameterized.Parameter(2)
+    @Parameterized.Parameter(3)
     public boolean callByGrp;
 
     /**

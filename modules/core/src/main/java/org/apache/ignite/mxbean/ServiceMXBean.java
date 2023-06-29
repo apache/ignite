@@ -21,7 +21,11 @@ import org.apache.ignite.spi.systemview.view.ServiceView;
 
 /**
  * Service MXBean interface.
+ *
+ * @see org.apache.ignite.internal.management.api.CommandMBean
+ * @deprecated Use managements API beans, instead.
  */
+@Deprecated
 public interface ServiceMXBean {
     /**
      * @param name Service name.

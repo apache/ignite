@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
@@ -50,19 +49,18 @@ public class DiagnosticPagelocksCommand implements ComputeCommand<DiagnosticPage
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, DiagnosticPagelocksCommandArg arg) {
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, DiagnosticPagelocksCommandArg arg) {
         if (arg.all())
-            return nodes.keySet();
+            return nodes;
 
         if (F.isEmpty(arg.nodes()))
             return null;
 
         Set<String> argNodes = new HashSet<>(Arrays.asList(arg.nodes()));
 
-        return nodes.entrySet().stream()
-            .filter(entry -> argNodes.contains(entry.getKey().toString())
-                || argNodes.contains(String.valueOf(entry.getValue().consistentId())))
-            .map(Map.Entry::getKey)
+        return nodes.stream()
+            .filter(entry -> argNodes.contains(entry.nodeId().toString())
+                || argNodes.contains(String.valueOf(entry.consistentId())))
             .collect(Collectors.toList());
     }
 
