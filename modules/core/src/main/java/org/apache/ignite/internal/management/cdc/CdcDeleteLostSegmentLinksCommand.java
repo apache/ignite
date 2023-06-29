@@ -36,7 +36,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.servers;
 public class CdcDeleteLostSegmentLinksCommand implements ComputeCommand<CdcDeleteLostSegmentLinksCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Delete lost segment CDC links. For in-memory CDC, also reset the state to the last CDC disabled record.";
+        return "Delete lost segment CDC links. For in-memory CDC, also reset the state to the last CDC disabled record";
     }
 
     /** {@inheritDoc} */
