@@ -54,6 +54,7 @@ import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.HelpCommand;
 import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.baseline.BaselineAddCommand;
 import org.apache.ignite.internal.management.baseline.BaselineAddCommandArg;
 import org.apache.ignite.internal.management.baseline.BaselineCommand;
@@ -1245,6 +1246,20 @@ public class CommandHandlerParsingTest {
                         .collect(Collectors.toSet()) +
                     ". Parameter: " + cmd.argClass().getSimpleName() + "#" + fld.getName(),
                 fld.getType().getEnumConstants().length, descAnn.names().length);
+
+            Argument argAnn = fld.getAnnotation(Argument.class);
+            Positional posAnn = fld.getAnnotation(Positional.class);
+
+            if (posAnn == null) {
+                assertFalse("Please, set a description for the argument: " +
+                        cmd.argClass().getSimpleName() + "#" + fld.getName(),
+                    argAnn.description().isEmpty());
+            }
+            else {
+                assertTrue("Please, remove a description for the positional argument: " +
+                        cmd.argClass().getSimpleName() + "#" + fld.getName(),
+                    argAnn.description().isEmpty());
+            }
         };
 
         visitCommandParams(cmd.argClass(), fldCnsmr, fldCnsmr, (grp, flds) -> flds.forEach(fldCnsmr));

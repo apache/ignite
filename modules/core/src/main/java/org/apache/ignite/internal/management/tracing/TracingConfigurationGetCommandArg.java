@@ -32,7 +32,7 @@ public class TracingConfigurationGetCommandArg extends TracingConfigurationComma
     private static final long serialVersionUID = 0;
 
     /** */
-    @Argument
+    @Argument(description = "Tracing span scope")
     @EnumDescription(
         names = {
             "DISCOVERY",

@@ -867,13 +867,12 @@ public class CommandHandler {
                         );
                     };
 
-                    if (!fld.isAnnotationPresent(EnumDescription.class)) {
-                        logParam.accept(
-                            parameterExample(fld, false),
-                            fld.getAnnotation(Argument.class).description()
-                        );
-                    }
-                    else {
+                    logParam.accept(
+                        parameterExample(fld, false),
+                        fld.getAnnotation(Argument.class).description()
+                    );
+
+                    if (fld.isAnnotationPresent(EnumDescription.class)) {
                         EnumDescription enumDesc = fld.getAnnotation(EnumDescription.class);
 
                         String[] names = enumDesc.names();

@@ -70,7 +70,7 @@ public class TxCommandArg extends TxCommand.AbstractTxCommandArg {
     private Integer limit;
 
     /** */
-    @Argument(optional = true)
+    @Argument(optional = true, description = "Output order")
     @EnumDescription(
         names = {
             "DURATION",

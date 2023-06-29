@@ -56,7 +56,7 @@ public class CacheIdleVerifyCommandArg extends IgniteDataTransferObject {
     private String[] excludeCaches;
 
     /** */
-    @Argument(optional = true)
+    @Argument(optional = true, description = "Type of cache(s)")
     @EnumDescription(
         names = {
             "DEFAULT",
