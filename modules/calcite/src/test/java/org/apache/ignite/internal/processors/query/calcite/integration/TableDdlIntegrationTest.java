@@ -36,6 +36,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -880,6 +881,40 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
             assertEquals(2, row.size());
             assertEquals(i, row.get(0));
             assertEquals("test" + i, row.get(1));
+        }
+    }
+
+    /**
+     * Creates table with primary key and check inline size.
+     */
+    @Test
+    public void testPrimaryKeyInlineSize() {
+        checkPkInlineSize("create table my_table (id int primary key, val varchar)",
+            "MY_TABLE", 5);
+
+        checkPkInlineSize("create table my_table (id bigint, val varchar, primary key (id))",
+            "MY_TABLE", 9);
+
+        checkPkInlineSize("create table my_table (id int primary key, val varchar) WITH \"key_type=Integer\"",
+            "MY_TABLE", 5);
+
+        checkPkInlineSize("create table my_table (id1 int, id2 smallint, val varchar, primary key(id1, id2))",
+            "MY_TABLE", 5 + 3);
+    }
+
+    /** */
+    private void checkPkInlineSize(String ddl, String tableName, int expectedSize) {
+        sql(ddl);
+
+        try {
+            List<List<?>> res = sql("SELECT INLINE_SIZE FROM SYS.INDEXES WHERE \"TABLE_NAME\" = ? AND INDEX_NAME = ?",
+                tableName, QueryUtils.PRIMARY_KEY_INDEX);
+
+            assertEquals(1, res.size());
+            assertEquals(expectedSize, res.get(0).get(0));
+        }
+        finally {
+            sql("DROP TABLE " + tableName);
         }
     }
 
