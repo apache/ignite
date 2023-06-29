@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.wal.record.CdcDisabledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
@@ -113,6 +114,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_PAGE_REMOVE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_PAGE_REPLACE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DATA_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DISABLED;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CLUSTER_SNAPSHOT;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CONSISTENT_CUT;
@@ -193,6 +195,7 @@ public class RecordUtils {
         put(DATA_RECORD, RecordUtils::buildDataRecord);
         put(DATA_RECORD_V2, RecordUtils::buildDataRecord);
         put(CDC_DATA_RECORD, RecordUtils::buildDataRecord);
+        put(CDC_DISABLED, CdcDisabledRecord::new);
         put(CHECKPOINT_RECORD, RecordUtils::buildCheckpointRecord);
         put(HEADER_RECORD, buildUpsupportedWalRecord(HEADER_RECORD));
         put(INIT_NEW_PAGE_RECORD, RecordUtils::buildInitNewPageRecord);
