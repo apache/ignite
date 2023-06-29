@@ -326,30 +326,30 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
     /** Archive given segments links with possible gaps. */
     private void archiveSegmentLinks(List<Long> idxs) throws Exception {
-        for (long idx = 0; idx <= idxs.stream().mapToLong(v -> v).max().getAsLong(); idx++)
-            archiveSegment(idx, !idxs.contains(idx));
-    }
+        for (long idx = 0; idx <= idxs.stream().mapToLong(v -> v).max().getAsLong(); idx++) {
+            boolean skipCdcSegment = !idxs.contains(idx);
 
-    /** */
-    private void archiveSegment(long expIdx, boolean skipCdcSegment) throws Exception {
-        addData(srv1.cache(DEFAULT_CACHE_NAME), 0, KEYS_CNT);
+            addData(srv1.cache(DEFAULT_CACHE_NAME), 0, KEYS_CNT);
 
-        cdcDisabled.propagate(skipCdcSegment);
+            cdcDisabled.propagate(skipCdcSegment);
 
-        CountDownLatch latch = new CountDownLatch(G.allGrids().size());
+            CountDownLatch latch = new CountDownLatch(G.allGrids().size());
 
-        for (Ignite srv : G.allGrids()) {
-            srv.events().localListen(evt -> {
-                if (expIdx == ((WalSegmentArchivedEvent)evt).getAbsWalSegmentIdx())
-                    latch.countDown();
+            for (Ignite srv : G.allGrids()) {
+                long idx0 = idx;
 
-                return true;
-            }, EVT_WAL_SEGMENT_ARCHIVED);
+                srv.events().localListen(evt -> {
+                    if (idx0 == ((WalSegmentArchivedEvent)evt).getAbsWalSegmentIdx())
+                        latch.countDown();
+
+                    return true;
+                }, EVT_WAL_SEGMENT_ARCHIVED);
+            }
+
+            latch.await(2 * WAL_ARCHIVE_TIMEOUT, TimeUnit.MILLISECONDS);
+
+            cdcDisabled.propagate(false);
         }
-
-        latch.await(2 * WAL_ARCHIVE_TIMEOUT, TimeUnit.MILLISECONDS);
-
-        cdcDisabled.propagate(false);
     }
 
     /** */
