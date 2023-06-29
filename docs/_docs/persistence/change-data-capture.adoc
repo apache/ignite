@@ -165,11 +165,25 @@ control.sh|bat --cdc delete_lost_segment_links
 control.sh|bat --cdc delete_lost_segment_links --node-id node_id
 ----
 
-The command will remove all segment links before the last gap.
+The command will remove all segment links before the last gap. Also for in-memory CDC, the state will be reset to the last CDC disabled record.
 
 For example, CDC was turned off several times: `000000000000002.wal`, `000000000000003.wal`, `000000000000008.wal`, `0000000000000010.wal`, `0000000000000011.wal`
 Then, after the command is executed, the following segment links will be deleted: `000000000000002.wal`, `000000000000003.wal`, `000000000000008.wal`.
 The application will start from the `0000000000000010.wal` segment after being enabled.
+
+== Handling disabled in-memory CDC
+
+When in-memory CDC disabled, the special WAL record (CDC disabled record) will be written on data changes.
+
+WARNING: All changes are skipped when in-memory CDC is disabled.
+
+The CDC application will fail if meets this record while processing segments. Example of error:
+`Found the CDC disabled record. Some events are missed. Exiting! [state=WALPointer [idx=1, fileOff=29, len=21]]`
+
+It means that some data changes are skipped and administrator attention is required.
+
+You can reset the CDC application state to the last CDC disabled record and fix possible gaps
+using the `delete_lost_segment_links` link:#handling-skipped-segments[command].
 
 == Forcefully resend all cache data to CDC
 

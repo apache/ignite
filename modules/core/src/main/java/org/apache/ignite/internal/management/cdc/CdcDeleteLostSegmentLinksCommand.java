@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.pagemem.wal.record.CdcDisabledRecord;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cdc.VisorCdcDeleteLostSegmentsTask;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -29,13 +30,13 @@ import static org.apache.ignite.internal.management.api.CommandUtils.node;
 import static org.apache.ignite.internal.management.api.CommandUtils.servers;
 
 /**
- * Command to delete lost segment links.
+ * Command to delete lost segment links. For in-memory CDC, also resets the state to the last {@link CdcDisabledRecord}.
  */
 @IgniteExperimental
 public class CdcDeleteLostSegmentLinksCommand implements ComputeCommand<CdcDeleteLostSegmentLinksCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Delete lost segment CDC links";
+        return "Delete lost segment CDC links. For in-memory CDC, also reset the state to the last CDC disabled record.";
     }
 
     /** {@inheritDoc} */
@@ -64,9 +65,9 @@ public class CdcDeleteLostSegmentLinksCommand implements ComputeCommand<CdcDelet
     @Override public String confirmationPrompt(CdcDeleteLostSegmentLinksCommandArg arg) {
         return "Warning: The command will fix WAL segments gap in case CDC link creation was stopped by distributed " +
             "property or excess of maximum CDC directory size. Gap will be fixed by deletion of WAL segment links" +
-            "previous to the last gap." + U.nl() +
-            "All changes in deleted segment links will be lost!" + U.nl() +
+            "previous to the last gap. Also for in-memory CDC, the state will be reset to the last CDC disabled record." +
+            U.nl() + "All changes in deleted segment links will be lost!" + U.nl() +
             "Make sure you need to sync data before restarting the CDC application. You can synchronize caches " +
-            "using snapshot or other methods.";
+            "using the '--resend' command, snapshot or other methods.";
     }
 }

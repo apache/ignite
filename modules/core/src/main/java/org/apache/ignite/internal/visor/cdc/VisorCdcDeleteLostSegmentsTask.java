@@ -25,6 +25,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -55,7 +56,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 
 /**
- * Task to delete lost segment CDC links.
+ * Task to delete lost segment CDC links. For in-memory CDC, also resets the state to the last {@link CdcDisabledRecord}.
  */
 @GridInternal
 public class VisorCdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostSegmentLinksCommandArg, Void, Void> {
@@ -144,7 +145,7 @@ public class VisorCdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDelete
 
         /** @return {@code True} if lost segments were found and successfully deleted. */
         private boolean deleteLostSegments() {
-            Set<File> delete = new HashSet<>();
+            Set<File> delete = new TreeSet<>();
 
             AtomicLong lastSgmnt = new AtomicLong(-1);
 
@@ -197,6 +198,7 @@ public class VisorCdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDelete
                 IgniteWalIteratorFactory.IteratorParametersBuilder builder =
                     new IgniteWalIteratorFactory.IteratorParametersBuilder()
                         .log(log)
+                        .sharedContext(ignite.context().cache().context())
                         .filesOrDirs(segment.toFile())
                         .addFilter((type, ptr) -> type == CDC_DISABLED);
 
@@ -234,6 +236,8 @@ public class VisorCdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDelete
             CdcConsumerState state = new CdcConsumerState(log, stateDir);
 
             try {
+                Files.createDirectories(stateDir);
+
                 state.saveWal(new T2<>(ptr, 0));
             }
             catch (IOException e) {

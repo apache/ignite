@@ -839,7 +839,9 @@ public class CdcSelfTest extends AbstractCdcTest {
         waitForSize(1, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
 
         // Cdc application must fail due to skipped data.
-        assertThrowsAnyCause(log, cdcFut::get, IgniteException.class, "Found the CDC disabled record. Some events are missed.");
+        assertThrowsAnyCause(log, cdcFut::get, IgniteException.class,
+            persistenceEnabled ? "Found missed segments. Some events are missed."
+                : "Found the CDC disabled record. Some events are missed.");
 
         ign.compute().execute(VisorCdcDeleteLostSegmentsTask.class, new VisorTaskArgument<>(ign.localNode().id(), false));
 
