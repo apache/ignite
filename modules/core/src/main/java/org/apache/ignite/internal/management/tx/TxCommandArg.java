@@ -25,6 +25,7 @@ import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.CliConfirmArgument;
+import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
@@ -70,6 +71,18 @@ public class TxCommandArg extends TxCommand.AbstractTxCommandArg {
 
     /** */
     @Argument(optional = true)
+    @EnumDescription(
+        names = {
+            "DURATION",
+            "SIZE",
+            "START_TIME"
+        },
+        descriptions = {
+            "Sort by duration",
+            "Sort by size",
+            "Sort by start time"
+        }
+    )
     private VisorTxSortOrder order;
 
     /** */

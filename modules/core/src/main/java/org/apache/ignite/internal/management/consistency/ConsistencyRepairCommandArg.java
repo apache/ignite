@@ -23,6 +23,7 @@ import java.io.ObjectOutput;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
@@ -40,6 +41,22 @@ public class ConsistencyRepairCommandArg extends IgniteDataTransferObject {
 
     /** Strategy. */
     @Argument(description = "Repair strategy")
+    @EnumDescription(
+        names = {
+            "LWW",
+            "PRIMARY",
+            "RELATIVE_MAJORITY",
+            "REMOVE",
+            "CHECK_ONLY"
+        },
+        descriptions = {
+            "Last write (the newest entry) wins",
+            "Value from the primary node wins",
+            "The relative majority, any value found more times than any other wins",
+            "Inconsistent entries will be removed",
+            "Only check will be performed"
+        }
+    )
     ReadRepairStrategy strategy;
 
     /** */

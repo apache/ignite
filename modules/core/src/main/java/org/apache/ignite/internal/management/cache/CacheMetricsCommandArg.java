@@ -23,6 +23,7 @@ import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
+import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.metrics.CacheMetricsOperation;
@@ -36,6 +37,18 @@ public class CacheMetricsCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument
+    @EnumDescription(
+        names = {
+            "ENABLE",
+            "DISABLE",
+            "STATUS"
+        },
+        descriptions = {
+            "Enable metrics",
+            "Disable metrics",
+            "Status"
+        }
+    )
     private CacheMetricsOperation operation;
 
     /** */

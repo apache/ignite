@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationCommandArg;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.tracing.Scope;
@@ -32,6 +33,22 @@ public class TracingConfigurationGetAllCommandArg extends TracingConfigurationCo
 
     /** */
     @Argument(optional = true)
+    @EnumDescription(
+        names = {
+            "DISCOVERY",
+            "EXCHANGE",
+            "COMMUNICATION",
+            "TX",
+            "SQL"
+        },
+        descriptions = {
+            "Discovery scope",
+            "Exchange scope",
+            "Communication scope",
+            "Transactional scope",
+            "SQL scope"
+        }
+    )
     private Scope scope;
 
     /** {@inheritDoc} */

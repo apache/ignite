@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,6 +28,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -44,9 +46,12 @@ import org.apache.ignite.internal.management.ShutdownPolicyCommand;
 import org.apache.ignite.internal.management.ShutdownPolicyCommandArg;
 import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.management.WarmUpCommand;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.HelpCommand;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.baseline.BaselineAddCommand;
@@ -87,6 +92,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import static java.util.Arrays.asList;
+import static java.util.Arrays.stream;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
@@ -95,6 +101,8 @@ import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
 import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
+import static org.apache.ignite.internal.management.api.CommandUtils.executable;
+import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.util.CdcCommandTest.DELETE_LOST_SEGMENT_LINKS;
 import static org.apache.ignite.util.GridCommandHandlerIndexingCheckSizeTest.CACHE;
@@ -1204,6 +1212,42 @@ public class CommandHandlerParsingTest {
         }
 
         assertNotNull(parseArgs(asList("--warm-up", "--stop")));
+    }
+
+    /** Tests that enum {@link Argument} has enum constants description: {@link EnumDescription}. */
+    @Test
+    public void testEnumParameterDescription() {
+        new IgniteCommandRegistry().commands().forEachRemaining(e -> checkEnumDescription(e.getValue()));
+    }
+
+    /** */
+    private void checkEnumDescription(Command<?, ?> cmd) {
+        if (cmd instanceof CommandsRegistry)
+            ((CommandsRegistry<?, ?>)cmd).commands().forEachRemaining(e -> checkEnumDescription(e.getValue()));
+
+        if (!executable(cmd))
+            return;
+
+        Consumer<Field> fldCnsmr = fld -> {
+            if (!fld.getType().isEnum())
+                return;
+
+            EnumDescription descAnn = fld.getAnnotation(EnumDescription.class);
+
+            assertNotNull("Please, specify a description to the enum parameter using " +
+                "@" + EnumDescription.class.getSimpleName() + " annotation. " +
+                "Parameter: " + cmd.argClass().getSimpleName() + "#" + fld.getName(),
+                descAnn);
+
+            assertEquals("Please, specify a description to enum constants: " +
+                    stream(fld.getType().getEnumConstants())
+                        .filter(e -> stream(descAnn.names()).noneMatch(n -> n.equals(((Enum<?>)e).name())))
+                        .collect(Collectors.toSet()) +
+                    ". Parameter: " + cmd.argClass().getSimpleName() + "#" + fld.getName(),
+                fld.getType().getEnumConstants().length, descAnn.names().length);
+        };
+
+        visitCommandParams(cmd.argClass(), fldCnsmr, fldCnsmr, (grp, flds) -> flds.forEach(fldCnsmr));
     }
 
     /**

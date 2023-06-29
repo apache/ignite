@@ -25,9 +25,11 @@ import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
+
 import static java.lang.String.format;
 
 /** */
@@ -55,6 +57,24 @@ public class CacheIdleVerifyCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Argument(optional = true)
+    @EnumDescription(
+        names = {
+            "DEFAULT",
+            "SYSTEM",
+            "PERSISTENT",
+            "NOT_PERSISTENT",
+            "USER",
+            "ALL"
+        },
+        descriptions = {
+            "Default - user only, or all caches specified by name",
+            "System",
+            "Persistent",
+            "Not persistent",
+            "User",
+            "All"
+        }
+    )
     private CacheFilterEnum cacheFilter = CacheFilterEnum.DEFAULT;
 
     /**
