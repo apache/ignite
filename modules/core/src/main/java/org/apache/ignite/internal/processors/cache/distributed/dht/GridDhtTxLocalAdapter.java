@@ -44,8 +44,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.tracing.NoopSpan;
-import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridLeanSet;
@@ -85,10 +83,10 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         AtomicReferenceFieldUpdater.newUpdater(GridDhtTxLocalAdapter.class, IgniteInternalFuture.class, "lockFut");
 
     /** Near mappings. */
-    protected Map<UUID, GridDistributedTxMapping> nearMap = new ConcurrentHashMap<>();
+    protected final Map<UUID, GridDistributedTxMapping> nearMap = new ConcurrentHashMap<>();
 
     /** DHT mappings. */
-    protected Map<UUID, GridDistributedTxMapping> dhtMap = new ConcurrentHashMap<>();
+    protected final Map<UUID, GridDistributedTxMapping> dhtMap = new ConcurrentHashMap<>();
 
     /** Mapped flag. */
     protected volatile boolean mapped;
@@ -108,9 +106,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** Enlist or lock future what is currently in progress. */
     @GridToStringExclude
     protected volatile IgniteInternalFuture<?> lockFut;
-
-    /** Tracing span. */
-    private Span span = NoopSpan.INSTANCE;
 
     /**
      * @param xidVer Transaction version.
@@ -930,20 +925,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         }
 
         return prepFut;
-    }
-
-    /**
-     * @return Tracing span.
-     */
-    public Span span() {
-        return span;
-    }
-
-    /**
-     * @param span New tracing span.
-     */
-    public void span(Span span) {
-        this.span = span;
     }
 
     /** {@inheritDoc} */
