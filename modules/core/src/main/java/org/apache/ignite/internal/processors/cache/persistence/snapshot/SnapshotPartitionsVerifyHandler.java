@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CheckOperationStatus;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
@@ -100,7 +101,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** {@inheritDoc} */
-    @Override public Map<PartitionKeyV2, PartitionHashRecordV2> invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
+    @Override public Map<PartitionKeyV2, PartitionHashRecordV2> invoke(SnapshotHandlerContext opCtx) throws Exception {
         if (!opCtx.snapshotDirectory().exists())
             throw new IgniteCheckedException("Snapshot directory doesn't exists: " + opCtx.snapshotDirectory());;
 
@@ -170,7 +171,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         for (GridComponent comp : snpCtx)
             comp.start();
 
-        try {
+        try (CheckOperationStatus status = snpMgr.trackCheckOperation(meta, partFiles.size(), opCtx.requestId())) {
             U.doInParallel(
                 snpMgr.snapshotExecutorService(),
                 partFiles,
@@ -262,6 +263,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                         assert hash != null : "OWNING must have hash: " + key;
 
                         res.put(key, hash);
+
+                        status.processedPartitions().incrementAndGet();
                     }
                     catch (IOException e) {
                         throw new IgniteCheckedException(e);

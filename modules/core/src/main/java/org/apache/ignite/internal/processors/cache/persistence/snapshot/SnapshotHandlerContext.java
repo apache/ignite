@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,6 +45,9 @@ public class SnapshotHandlerContext {
     /** If {@code true} check snapshot integrity. */
     private final boolean check;
 
+    /** Request ID. */
+    private final UUID reqId;
+
     /**
      * @param metadata Snapshot metadata.
      * @param grps The names of the cache groups on which the operation is performed.
@@ -52,6 +56,7 @@ public class SnapshotHandlerContext {
      * @param snpDir The full path to the snapshot files.
      * @param streamerWrn {@code True} if concurrent streaming updates occurred during snapshot operation.
      * @param check If {@code true} check snapshot integrity.
+     * @param reqId Request ID.
      */
     public SnapshotHandlerContext(
         SnapshotMetadata metadata,
@@ -59,14 +64,15 @@ public class SnapshotHandlerContext {
         ClusterNode locNode,
         File snpDir,
         boolean streamerWrn,
-        boolean check
-    ) {
+        boolean check,
+        UUID reqId) {
         this.metadata = metadata;
         this.grps = grps;
         this.locNode = locNode;
         this.snpDir = snpDir;
         this.streamerWrn = streamerWrn;
         this.check = check;
+        this.reqId = reqId;
     }
 
     /**
@@ -108,5 +114,10 @@ public class SnapshotHandlerContext {
     /** @return If {@code true} check snapshot integrity. */
     public boolean check() {
         return check;
+    }
+
+    /** @return Request ID. */
+    public UUID requestId() {
+        return reqId;
     }
 }

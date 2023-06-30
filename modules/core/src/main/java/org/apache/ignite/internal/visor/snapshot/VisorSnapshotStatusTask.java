@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.visor.snapshot;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.api.NoArg;
@@ -49,12 +51,12 @@ import static org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask.
  * Task to get the status of the current snapshot operation in the cluster.
  */
 @GridInternal
-public class VisorSnapshotStatusTask extends VisorMultiNodeTask<NoArg, VisorSnapshotTaskResult, SnapshotStatus> {
+public class VisorSnapshotStatusTask extends VisorMultiNodeTask<NoArg, VisorSnapshotTaskResult, List<SnapshotStatus>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<NoArg, SnapshotStatus> job(NoArg arg) {
+    @Override protected VisorJob<NoArg, List<SnapshotStatus>> job(NoArg arg) {
         return new VisorSnapshotStatusJob(arg, debug);
     }
 
@@ -68,33 +70,35 @@ public class VisorSnapshotStatusTask extends VisorMultiNodeTask<NoArg, VisorSnap
         if (results.isEmpty())
             return new VisorSnapshotTaskResult(null, new IgniteException("Failed to get the snapshot status. Topology is empty."));
 
+        // Check for errors.
         IgniteException error = F.find(F.viewReadOnly(results, ComputeJobResult::getException,
             r -> r.getException() != null), null, F.notNull());
 
         if (error != null)
             return new VisorSnapshotTaskResult(null, new IgniteException("Failed to get the snapshot status.", error));
 
-        Collection<SnapshotStatus> res = F.viewReadOnly(results, ComputeJobResult::getData, r -> r.getData() != null);
+        Collection<List<SnapshotStatus>> jobsRes = F.viewReadOnly(results, ComputeJobResult::getData);
 
-        // There is no snapshot operation.
-        if (res.isEmpty())
-            return new VisorSnapshotTaskResult(null, null);
-
-        SnapshotStatus s0 = F.first(res);
-
-        // Filter out differing requests due to concurrent updates on nodes.
-        res = F.view(res, s -> s.requestId.equals(s0.requestId));
+        // Group by request ID.
+        Map<String, List<SnapshotStatus>> groupedByReqId = F.flatCollections(jobsRes).stream()
+            .collect(Collectors.groupingBy(status -> status.requestId));
 
         // Merge nodes progress.
-        Map<UUID, T5<Long, Long, Long, Long, Long>> progress = new HashMap<>();
+        Collection<SnapshotStatus> ops = F.viewReadOnly(groupedByReqId, (opStatuses) -> {
+            SnapshotStatus s0 = F.first(opStatuses);
 
-        res.forEach(s -> progress.putAll(s.progress));
+            Map<UUID, T5<Long, Long, Long, Long, Long>> progress = new HashMap<>();
 
-        return new VisorSnapshotTaskResult(new SnapshotStatus(s0.op, s0.name, s0.incIdx, s0.requestId, s0.startTime, progress), null);
+            opStatuses.forEach(s -> progress.putAll(s.progress));
+
+            return new SnapshotStatus(s0.op, s0.name, s0.incIdx, s0.requestId, s0.startTime, progress);
+        }).values();
+
+        return new VisorSnapshotTaskResult(new ArrayList<>(ops), null);
     }
 
     /** */
-    private static class VisorSnapshotStatusJob extends VisorSnapshotJob<NoArg, SnapshotStatus> {
+    private static class VisorSnapshotStatusJob extends VisorSnapshotJob<NoArg, List<SnapshotStatus>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -107,12 +111,26 @@ public class VisorSnapshotStatusTask extends VisorMultiNodeTask<NoArg, VisorSnap
         }
 
         /** {@inheritDoc} */
-        @Override protected SnapshotStatus run(@Nullable NoArg arg) throws IgniteException {
+        @Override protected List<SnapshotStatus> run(@Nullable NoArg arg) throws IgniteException {
+            List<SnapshotStatus> res = new ArrayList<>();
+
             if (!CU.isPersistenceEnabled(ignite.context().config()))
-                return null;
+                return res;
 
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
+            // Snapshot check operations.
+            res.addAll(F.viewReadOnly(snpMgr.checkOperationsStatus(), status -> new SnapshotStatus(
+                SnapshotOperation.CHECK,
+                status.metadata().snapshotName(),
+                -1,
+                status.requestId().toString(),
+                status.startTime(),
+                F.asMap(ignite.localNode().id(),
+                    new T5<>(status.processedPartitions().longValue(), (long)status.totalPartitions(), -1L, -1L, -1L))
+            )));
+
+            // Snapshot create operation.
             SnapshotOperationRequest req = snpMgr.currentCreateRequest();
 
             if (req != null) {
@@ -129,27 +147,28 @@ public class VisorSnapshotStatusTask extends VisorMultiNodeTask<NoArg, VisorSnap
                         -1L, -1L, -1L);
                 }
 
-                return new SnapshotStatus(
+                res.add(new SnapshotStatus(
                     SnapshotOperation.CREATE,
                     req.snapshotName(),
                     req.incrementIndex(),
                     req.requestId().toString(),
                     req.startTime(),
                     F.asMap(ignite.localNode().id(), metrics)
-                );
+                ));
             }
 
+            // Snapshot restore operation.
             MetricRegistry mreg = ignite.context().metric().registry(SNAPSHOT_RESTORE_METRICS);
 
             long startTime = mreg.<LongMetric>findMetric("startTime").value();
 
             if (startTime > mreg.<LongMetric>findMetric("endTime").value()) {
-                return new SnapshotStatus(
+                res.add(new SnapshotStatus(
                     SnapshotOperation.RESTORE,
                     mreg.findMetric("snapshotName").getAsString(),
                     mreg.<IntMetric>findMetric("incrementIndex").value(),
                     mreg.findMetric("requestId").getAsString(),
-                    mreg.<LongMetric>findMetric("startTime").value(),
+                    startTime,
                     F.asMap(
                         ignite.localNode().id(),
                         new T5<>(
@@ -160,10 +179,10 @@ public class VisorSnapshotStatusTask extends VisorMultiNodeTask<NoArg, VisorSnap
                             mreg.<LongMetric>findMetric("processedWalEntries").value()
                         )
                     )
-                );
+                ));
             }
 
-            return null;
+            return res;
         }
     }
 
@@ -244,6 +263,9 @@ public class VisorSnapshotStatusTask extends VisorMultiNodeTask<NoArg, VisorSnap
         CREATE,
 
         /** Restore snapshot. */
-        RESTORE
+        RESTORE,
+
+        /** Check snapshot. */
+        CHECK
     }
 }

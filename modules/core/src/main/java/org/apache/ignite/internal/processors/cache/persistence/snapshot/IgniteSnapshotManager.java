@@ -59,6 +59,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
@@ -463,6 +464,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Value of {@link IgniteSystemProperties#IGNITE_SNAPSHOT_SEQUENTIAL_WRITE}. */
     private final boolean sequentialWrite =
         IgniteSystemProperties.getBoolean(IGNITE_SNAPSHOT_SEQUENTIAL_WRITE, DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE);
+
+    /** Status of snapshot check operations. */
+    private final List<CheckOperationStatus> checkOpsStatus = new CopyOnWriteArrayList<>();
 
     /**
      * @param ctx Kernal context.
@@ -1187,7 +1191,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 );
 
                 SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir,
-                    req.streamerWarning(), true);
+                    req.streamerWarning(), true, req.requestId());
 
                 req.meta(meta);
 
@@ -1833,6 +1837,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             "Collection of cache groups names cannot contain null elements.");
 
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
+        UUID reqId = UUID.randomUUID();
 
         GridKernalContext kctx0 = cctx.kernalContext();
 
@@ -1929,7 +1934,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 kctx0.task().execute(
                         cls,
-                        new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath, incIdx, check),
+                        new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath, incIdx, check, reqId),
                         options(new ArrayList<>(metas.keySet()))
                     ).listen(f1 -> {
                         if (f1.error() == null)
@@ -3095,6 +3100,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** @return Current incremental snapshot ID. */
     public @Nullable UUID incrementalSnapshotId() {
         return incSnpId;
+    }
+
+    /** @return Status of snapshot check operations. */
+    public List<CheckOperationStatus> checkOperationsStatus() {
+        return checkOpsStatus;
+    }
+
+    /** @return Snapshot check operation status tracker. */
+    public CheckOperationStatus trackCheckOperation(SnapshotMetadata meta, Integer totalParts, UUID reqId) {
+        CheckOperationStatus status = new CheckOperationStatus(meta, totalParts, reqId);
+
+        checkOpsStatus.add(status);
+
+        return status;
     }
 
     /** Snapshot operation handlers. */
@@ -4608,6 +4627,61 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 return new IgniteException("Snapshot has not been created", U.convertException(e));
             }
+        }
+    }
+
+    /** Snapshot check operation status. */
+    public class CheckOperationStatus implements AutoCloseable {
+        /** Snapshot metadata. */
+        private final SnapshotMetadata meta;
+
+        /** Operation request ID. */
+        private final UUID reqId;
+
+        /** Start time. */
+        private final long startTime = U.currentTimeMillis();
+
+        /** Processed partitions. */
+        private final AtomicInteger processedParts = new AtomicInteger();
+
+        /** Total partitions. */
+        private final Integer totalParts;
+
+        /** */
+        CheckOperationStatus(SnapshotMetadata meta, Integer totalParts, UUID reqId) {
+            this.meta = meta;
+            this.totalParts = totalParts;
+            this.reqId = reqId;
+        }
+
+        /** @return Snapshot metadata. */
+        public SnapshotMetadata metadata() {
+            return meta;
+        }
+
+        /** @return Operation request ID. */
+        public UUID requestId() {
+            return reqId;
+        }
+
+        /** @return Start time. */
+        public long startTime() {
+            return startTime;
+        }
+
+        /** @return Processed partitions. */
+        public AtomicInteger processedPartitions() {
+            return processedParts;
+        }
+
+        /** @return Total partitions. */
+        public Integer totalPartitions() {
+            return totalParts;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws Exception {
+            checkOpsStatus.remove(this);
         }
     }
 

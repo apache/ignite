@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -92,7 +93,9 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGroupsWithRestartsTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandler;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
@@ -117,6 +120,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskResult;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask.SnapshotOperation;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
@@ -158,6 +162,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.SNAPSHOT_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
@@ -3711,7 +3716,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         startGrid();
 
-        checkSnapshotStatus(false, false, false, null);
+        checkSnapshotStatus(null, false, null);
     }
 
     /** @throws Exception If fails. */
@@ -3730,7 +3735,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         createCacheAndPreload(srv, keysCnt);
 
-        checkSnapshotStatus(false, false, false, null);
+        checkSnapshotStatus(null, false, null);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
 
@@ -3741,13 +3746,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         spi.waitForBlocked();
 
-        checkSnapshotStatus(true, false, false, snapshotName);
+        checkSnapshotStatus(SnapshotOperation.CREATE, false, snapshotName);
 
         spi.stopBlock();
 
         fut.get(getTestTimeout());
 
-        checkSnapshotStatus(false, false, false, null);
+        checkSnapshotStatus(null, false, null);
 
         // Create incremental snapshot.
         spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
@@ -3756,13 +3761,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         spi.waitForBlocked();
 
-        checkSnapshotStatus(true, false, true, snapshotName);
+        checkSnapshotStatus(SnapshotOperation.CREATE, true, snapshotName);
 
         spi.stopBlock();
 
         fut.get(getTestTimeout());
 
-        checkSnapshotStatus(false, false, false, null);
+        checkSnapshotStatus(null, false, null);
 
         // Restore snapshot.
         srv.destroyCache(DEFAULT_CACHE_NAME);
@@ -3775,13 +3780,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         spi.waitForBlocked();
 
-        checkSnapshotStatus(false, true, false, snapshotName);
+        checkSnapshotStatus(SnapshotOperation.RESTORE, false, snapshotName);
 
         spi.stopBlock();
 
         fut.get(getTestTimeout());
 
-        checkSnapshotStatus(false, false, false, null);
+        checkSnapshotStatus(null, false, null);
 
         // Restore incremental snapshot.
         srv.destroyCache(DEFAULT_CACHE_NAME);
@@ -3794,29 +3799,61 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         spi.waitForBlocked();
 
-        checkSnapshotStatus(false, true, true, snapshotName);
+        checkSnapshotStatus(SnapshotOperation.RESTORE, true, snapshotName);
 
         spi.stopBlock();
 
         fut.get(getTestTimeout());
 
-        checkSnapshotStatus(false, false, false, null);
+        checkSnapshotStatus(null, false, null);
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testSnapshotCheckStatus() throws Exception {
+        IgniteEx srv = startGrids(2);
+
+        srv.cluster().state(ACTIVE);
+
+        AtomicBoolean slow = injectSlowFileIo();
+
+        createCacheAndPreload(srv, 100);
+
+        srv.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        IgniteInternalFuture<?> fut = srv.context().cache().context().snapshotMgr().checkSnapshot(SNAPSHOT_NAME, null);
+
+        slow.set(true);
+
+        checkSnapshotStatus(SnapshotOperation.CHECK, false, SNAPSHOT_NAME);
+
+        slow.set(false);
+
+        fut.get();
+
+        checkSnapshotStatus(null, false, SNAPSHOT_NAME);
     }
 
     /**
-     * @param isCreating {@code True} if create snapshot operation is in progress.
-     * @param isRestoring {@code True} if restore snapshot operation is in progress.
+     * @param op Snapshot operation type in progress.
      * @param isIncremental {@code True} if incremental snapshot operation.
      * @param expName Expected snapshot name.
      */
-    private void checkSnapshotStatus(boolean isCreating, boolean isRestoring, boolean isIncremental, String expName) throws Exception {
+    private void checkSnapshotStatus(SnapshotOperation op, boolean isIncremental, String expName) throws Exception {
         Collection<Ignite> srvs = F.view(G.allGrids(), n -> !n.cluster().localNode().isClient());
 
         assertTrue(waitForCondition(() -> srvs.stream().allMatch(
                 ignite -> {
                     IgniteSnapshotManager mgr = ((IgniteEx)ignite).context().cache().context().snapshotMgr();
 
-                    return isCreating == mgr.isSnapshotCreating() && isRestoring == mgr.isRestoring();
+                    if (SnapshotOperation.CREATE == op)
+                        return mgr.isSnapshotCreating();
+                    else if (SnapshotOperation.RESTORE == op)
+                        return mgr.isRestoring();
+                    else if (SnapshotOperation.CHECK == op)
+                        return !mgr.checkOperationsStatus().isEmpty();
+                    else
+                        return true;
                 }),
             getTestTimeout()));
 
@@ -3828,16 +3865,18 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(out, EXIT_CODE_OK, status);
 
-        if (!isCreating && !isRestoring) {
-            assertContains(log, out, "There is no create or restore snapshot operation in progress.");
+        if (op == null) {
+            assertContains(log, out, "There is no snapshot operation in progress.");
 
             return;
         }
 
-        if (isCreating)
+        if (op == SnapshotOperation.CREATE)
             assertContains(log, out, "Create snapshot operation is in progress.");
-        else
+        else if (op == SnapshotOperation.RESTORE)
             assertContains(log, out, "Restore snapshot operation is in progress.");
+        else if (op == SnapshotOperation.CHECK)
+            assertContains(log, out, "Check snapshot operation is in progress.");
 
         assertContains(log, out, "Incremental: " + isIncremental);
         assertContains(log, out, "Snapshot name: " + expName);
@@ -3846,6 +3885,36 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             assertContains(log, out, "Increment index: 1");
 
         srvs.forEach(srv -> assertContains(log, out, srv.cluster().localNode().id().toString()));
+    }
+
+    /** */
+    private AtomicBoolean injectSlowFileIo() {
+        AtomicBoolean slow = new AtomicBoolean();
+
+        for (Ignite srv : G.allGrids()) {
+            FilePageStoreManager pageStore = (FilePageStoreManager)((IgniteEx)srv).context().cache().context().pageStore();
+
+            FileIOFactory old = pageStore.getPageStoreFileIoFactory();
+
+            FileIOFactory testFactory = new FileIOFactory() {
+                @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+                    FileIO fileIo = old.create(file, modes);
+
+                    return new FileIODecorator(fileIo) {
+                        @Override public int readFully(ByteBuffer destBuf) throws IOException {
+                            if (slow.get())
+                                doSleep(300);
+
+                            return super.readFully(destBuf);
+                        }
+                    };
+                }
+            };
+
+            pageStore.setPageStoreFileIOFactories(testFactory, testFactory);
+        }
+
+        return slow;
     }
 
     /** @throws Exception If failed. */
