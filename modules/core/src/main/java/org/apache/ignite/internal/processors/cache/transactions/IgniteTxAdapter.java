@@ -256,7 +256,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected final String taskName;
 
     /** Store used flag. */
-    protected boolean storeEnabled = true;
+    private boolean storeEnabled = true;
 
     /** UUID to consistent id mapper. */
     protected final ConsistentIdMapper consistentIdMapper;
