@@ -1110,18 +1110,17 @@ public class ClusterCachesInfo {
         GridEncryptionManager encMgr = ctx.encryption();
 
         if (ccfg.isEncryptionEnabled()) {
-            IgniteCheckedException error = null;
-
             if (encMgr.isMasterKeyChangeInProgress())
-                error = new IgniteCheckedException("Cache start failed. Master key change is in progress.");
+                err = new IgniteCheckedException("Cache start failed. Master key change is in progress.");
             else if (encMgr.masterKeyDigest() != null &&
                 !Arrays.equals(encMgr.masterKeyDigest(), req.masterKeyDigest())) {
-                error = new IgniteCheckedException("Cache start failed. The request was initiated before " +
+                err = new IgniteCheckedException("Cache start failed. The request was initiated before " +
                     "the master key change and can't be processed.");
             }
 
-            if (error != null) {
-                U.warn(log, "Ignore cache start request during the master key change process.", error);
+            if (err != null) {
+                U.warn(log, "Ignore cache start request during the master key change process.", err);
+
                 if (!validateStartNewCache(err, persistedCfgs, res, req))
                     return false;
             }
