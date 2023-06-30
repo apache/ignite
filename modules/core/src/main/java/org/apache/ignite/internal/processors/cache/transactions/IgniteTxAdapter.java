@@ -172,7 +172,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected final GridCacheSharedContext<?, ?> cctx;
 
     /** Need return value. */
-    protected boolean needRetVal;
+    private boolean needRetVal;
 
     /** Isolation. */
     @GridToStringInclude
