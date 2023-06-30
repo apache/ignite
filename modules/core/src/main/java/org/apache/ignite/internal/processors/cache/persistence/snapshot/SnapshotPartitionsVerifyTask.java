@@ -52,7 +52,6 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
 
     /** {@inheritDoc} */
     @Override protected ComputeJob createJob(
-
         String name,
         String path,
         int incIdx,
