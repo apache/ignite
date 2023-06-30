@@ -96,7 +96,7 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg> {
 
         if (isCreating)
             s.a("Create snapshot operation is in progress.").nl();
-        else if(isRestoring)
+        else if (isRestoring)
             s.a("Restore snapshot operation is in progress.").nl();
         else
             s.a("Check snapshot operation is in progress.").nl();
