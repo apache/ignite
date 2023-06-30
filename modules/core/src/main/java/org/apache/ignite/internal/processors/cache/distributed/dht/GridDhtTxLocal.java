@@ -549,8 +549,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     public IgniteInternalFuture<IgniteInternalTx> rollbackDhtLocalAsync() {
         final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, false);
 
-        rollbackFuture(fut);
-
         cctx.mvcc().addFuture(fut, fut.futureId());
 
         GridDhtTxPrepareFuture prepFut = this.prepFut;
