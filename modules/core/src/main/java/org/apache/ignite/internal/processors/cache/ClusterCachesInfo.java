@@ -1122,13 +1122,8 @@ public class ClusterCachesInfo {
 
             if (error != null) {
                 U.warn(log, "Ignore cache start request during the master key change process.", error);
-
-                if (persistedCfgs)
-                    res.errs.add(error);
-                else
-                    ctx.cache().completeCacheStartFuture(req, false, error);
-
-                return false;
+                if (!validateStartNewCache(err, persistedCfgs, res, req))
+                    return false;
             }
         }
 
