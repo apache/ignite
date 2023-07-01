@@ -3853,7 +3853,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                     else if (SnapshotOperation.CHECK == op)
                         return !mgr.checkOperationsStatus().isEmpty();
                     else
-                        return true;
+                        return !mgr.isSnapshotCreating() && !mgr.isRestoring() && mgr.checkOperationsStatus().isEmpty();
                 }),
             getTestTimeout()));
 

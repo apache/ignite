@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.api.NoArg;
@@ -34,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T5;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -43,6 +43,7 @@ import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.stream.Collectors.groupingBy;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 import static org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask.SnapshotStatus;
@@ -79,12 +80,13 @@ public class VisorSnapshotStatusTask extends VisorMultiNodeTask<NoArg, VisorSnap
 
         Collection<List<SnapshotStatus>> jobsRes = F.viewReadOnly(results, ComputeJobResult::getData);
 
-        // Group by request ID.
-        Map<String, List<SnapshotStatus>> groupedByReqId = F.flatCollections(jobsRes).stream()
-            .collect(Collectors.groupingBy(status -> status.requestId));
+        // Group by request ID and operation type. There are can be several operations in parallel for one request.
+        // For example, when snapshot create operation is in progress, some nodes may check snapshot before finishing.
+        Collection<List<SnapshotStatus>> grouped = F.flatCollections(jobsRes).stream().collect(
+            groupingBy(status -> new T2<>(status.requestId, status.op))).values();
 
         // Merge nodes progress.
-        Collection<SnapshotStatus> ops = F.viewReadOnly(groupedByReqId, (opStatuses) -> {
+        Collection<SnapshotStatus> ops = F.viewReadOnly(grouped, (opStatuses) -> {
             SnapshotStatus s0 = F.first(opStatuses);
 
             Map<UUID, T5<Long, Long, Long, Long, Long>> progress = new HashMap<>();
@@ -92,7 +94,7 @@ public class VisorSnapshotStatusTask extends VisorMultiNodeTask<NoArg, VisorSnap
             opStatuses.forEach(s -> progress.putAll(s.progress));
 
             return new SnapshotStatus(s0.op, s0.name, s0.incIdx, s0.requestId, s0.startTime, progress);
-        }).values();
+        });
 
         return new VisorSnapshotTaskResult(new ArrayList<>(ops), null);
     }
