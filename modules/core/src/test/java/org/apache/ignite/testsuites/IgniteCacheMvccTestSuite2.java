@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheAndNodeStop
 import org.apache.ignite.internal.processors.cache.IgniteNearClientCacheCloseTest;
 import org.apache.ignite.internal.processors.cache.IgniteOnePhaseCommitInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteOnePhaseCommitNearReadersTest;
-import org.apache.ignite.internal.processors.cache.MemoryPolicyConfigValidationTest;
 import org.apache.ignite.internal.processors.cache.NoPresentCacheInterceptorOnClientTest;
 import org.apache.ignite.internal.processors.cache.NonAffinityCoordinatorDynamicStartStopTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLoadingConcurrentGridStartSelfTest;
@@ -100,7 +99,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.NearCacheMul
 import org.apache.ignite.internal.processors.cache.distributed.near.NearCacheSyncUpdateTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.NoneRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedJobExecutionTest;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicyInitializationTest;
+
 import org.apache.ignite.internal.processors.continuous.IgniteContinuousQueryMetadataUpdateTest;
 import org.apache.ignite.internal.processors.continuous.IgniteNoCustomEventsOnNodeStart;
 import org.apache.ignite.testframework.junits.DynamicSuite;
@@ -141,6 +140,7 @@ public class IgniteCacheMvccTestSuite2 {
         ignoredTests.add(GridCachePartitionedMultiThreadedPutGetSelfTest.class); // On-heap test.
 
         // Atomic cache tests.
+       
         ignoredTests.add(GridCacheAtomicNearMultiNodeSelfTest.class);
         ignoredTests.add(GridCacheAtomicNearReadersSelfTest.class);
         ignoredTests.add(GridCachePartitionedAtomicGetAndTransformStoreSelfTest.class);
@@ -183,8 +183,7 @@ public class IgniteCacheMvccTestSuite2 {
         ignoredTests.add(GridCacheNearJobExecutionSelfTest.class);
 
         ignoredTests.add(CacheConfigurationLeakTest.class);
-        ignoredTests.add(MemoryPolicyConfigValidationTest.class);
-        ignoredTests.add(MemoryPolicyInitializationTest.class);
+
         ignoredTests.add(CacheGroupLocalConfigurationSelfTest.class);
 
         ignoredTests.add(CachePartitionStateTest.class);
@@ -204,6 +203,7 @@ public class IgniteCacheMvccTestSuite2 {
         ignoredTests.add(GridCacheColocatedDebugTest.class);
         ignoredTests.add(GridCacheDhtEvictionNearReadersSelfTest.class);
         ignoredTests.add(GridCacheDhtPreloadMessageCountTest.class);
+       
         ignoredTests.add(NearCacheMultithreadedUpdateTest.class);
         ignoredTests.add(GridCachePartitionedEvictionSelfTest.class);
         ignoredTests.add(GridCachePartitionedNearDisabledMetricsSelfTest.class);

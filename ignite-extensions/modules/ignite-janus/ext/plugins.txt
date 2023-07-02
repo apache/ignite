@@ -1,0 +1,4 @@
+org.apache.tinkerpop.gremlin.console.jsr223.DriverGremlinPlugin
+org.apache.tinkerpop.gremlin.tinkergraph.jsr223.TinkerGraphGremlinPlugin
+org.apache.tinkerpop.gremlin.console.jsr223.UtilitiesGremlinPlugin
+org.janusgraph.graphdb.tinkerpop.plugin.JanusGraphGremlinPlugin

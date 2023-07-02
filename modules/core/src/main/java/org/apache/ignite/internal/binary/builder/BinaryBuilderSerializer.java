@@ -72,6 +72,9 @@ class BinaryBuilderSerializer {
         }
 
         if (val instanceof BinaryBuilderSerializationAware) {
+            if (writer.tryWriteAsHandle(val))
+                return;
+            
             ((BinaryBuilderSerializationAware)val).writeTo(writer, this);
 
             return;
@@ -144,6 +147,9 @@ class BinaryBuilderSerializer {
         if (forceCol || BinaryUtils.isSpecialCollection(val.getClass())) {
             Collection<?> c = (Collection<?>)val;
 
+            if (writer.tryWriteAsHandle(c))
+                return;
+            
             writer.writeByte(GridBinaryMarshaller.COL);
             writer.writeInt(c.size());
 
@@ -159,6 +165,9 @@ class BinaryBuilderSerializer {
 
         if (forceMap || BinaryUtils.isSpecialMap(val.getClass())) {
             Map<?, ?> map = (Map<?, ?>)val;
+
+            if (writer.tryWriteAsHandle(map))
+                return;
 
             writer.writeByte(GridBinaryMarshaller.MAP);
             writer.writeInt(map.size());

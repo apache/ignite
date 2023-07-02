@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
+
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.store.Data;
@@ -39,7 +40,8 @@ public abstract class H2Row implements Row, MvccVersionAware {
 
     /** {@inheritDoc} */
     @Override public int getVersion() {
-        throw new UnsupportedOperationException();
+    	return 0;
+        //throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -54,7 +56,8 @@ public abstract class H2Row implements Row, MvccVersionAware {
 
     /** {@inheritDoc} */
     @Override public int getMemory() {
-        throw new UnsupportedOperationException();
+    	return this.getColumnCount()*8;
+        //throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -79,6 +82,7 @@ public abstract class H2Row implements Row, MvccVersionAware {
 
     /** {@inheritDoc} */
     @Override public void setDeleted(boolean deleted) {
+    	if(deleted) //add@byron
         throw new UnsupportedOperationException();
     }
 
@@ -99,7 +103,8 @@ public abstract class H2Row implements Row, MvccVersionAware {
 
     /** {@inheritDoc} */
     @Override public boolean isDeleted() {
-        throw new UnsupportedOperationException();
+    	return false;
+        //throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -135,7 +140,7 @@ public abstract class H2Row implements Row, MvccVersionAware {
     }
 
     /**
-     * @return {@code True} for rows used for index search.
+     * @return {@code True} for rows used for index search (as opposed to rows stored in {@link H2Tree}.
      */
     public abstract boolean indexSearchRow();
 }

@@ -60,6 +60,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
@@ -84,7 +85,6 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.binary.BinaryEnumCache;
@@ -231,6 +231,8 @@ import static org.apache.ignite.internal.GridKernalState.STOPPING;
 import static org.apache.ignite.internal.IgniteComponentType.COMPRESSION;
 import static org.apache.ignite.internal.IgniteComponentType.QUERY_ENGINE;
 import static org.apache.ignite.internal.IgniteComponentType.SCHEDULE;
+import static org.apache.ignite.internal.IgniteComponentType.IGFS_HELPER;
+import static org.apache.ignite.internal.IgniteComponentType.IGFS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_DATE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
@@ -253,7 +255,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MEMORY_CONFIG;
+
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
@@ -366,7 +368,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
      * <p>
      * Value is {@code 30 sec}.
      */
-    public static final long DFLT_PERIODIC_STARVATION_CHECK_FREQ = 1000 * 30;
+    public static final long DFLT_PERIODIC_STARVATION_CHECK_FREQ = 1000 * 60;
 
     /** Object is used to force completion the previous reconnection attempt. See {@link ReconnectState} for details. */
     private static final Object STOP_RECONNECT = new Object();
@@ -971,6 +973,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             // Starts lifecycle aware components.
             U.startLifecycleAware(lifecycleAwares(cfg));
 
+            addHelper(IGFS_HELPER.create(F.isEmpty(cfg.getFileSystemConfiguration())));
+            
             startProcessor(new IgnitePluginProcessor(ctx, cfg, plugins));
 
             startProcessor(new FailureProcessor(ctx));
@@ -1094,6 +1098,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
                 startProcessor(createComponent(IgniteRestProcessor.class, ctx));
                 startProcessor(new DataStreamProcessor(ctx));
+                // add@byron
+                startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
                 startProcessor(new GridContinuousProcessor(ctx));
                 startProcessor(new DataStructuresProcessor(ctx));
                 startProcessor(createComponent(PlatformProcessor.class, ctx));
@@ -1727,16 +1733,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
      * @throws IgniteCheckedException If duplicated SPI name found.
      */
     private void addDataStorageConfigurationAttributes() throws IgniteCheckedException {
-        MemoryConfiguration memCfg = cfg.getMemoryConfiguration();
-
-        // Save legacy memory configuration if it's present.
-        if (memCfg != null) {
-            // Page size initialization is suspended, see IgniteCacheDatabaseSharedManager#checkPageSize.
-            // We should copy initialized value from new configuration.
-            memCfg.setPageSize(cfg.getDataStorageConfiguration().getPageSize());
-
-            add(ATTR_MEMORY_CONFIG, memCfg);
-        }
 
         // Save data storage configuration.
         add(ATTR_DATA_STORAGE_CONFIG, new JdkMarshaller().marshal(cfg.getDataStorageConfiguration()));
@@ -1788,6 +1784,14 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to start processor: " + proc, e);
         }
+    }
+    
+
+    /**
+     * @param helper Helper to attach to kernal context.
+     */
+    private void addHelper(Object helper) {
+        ctx.addHelper(helper);
     }
 
     /** */
@@ -2715,6 +2719,44 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             unguard();
         }
     }
+
+
+    /** {@inheritDoc} */
+    @Override public IgniteFileSystem fileSystem(String name) {
+        if (name == null)
+            throw new IllegalArgumentException("IGFS name cannot be null");
+
+        guard();
+
+        try {
+            checkClusterState();
+
+            IgniteFileSystem fs = ctx.igfs().igfs(name);
+
+            if (fs == null)
+                throw new IllegalArgumentException("IGFS is not configured: " + name);
+
+            return fs;
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<IgniteFileSystem> fileSystems() {
+        guard();
+
+        try {
+            checkClusterState();
+
+            return ctx.igfs().igfss();
+        }
+        finally {
+            unguard();
+        }
+    }
+
 
     /** {@inheritDoc} */
     @Override public <T extends IgnitePlugin> T plugin(String name) throws PluginNotFoundException {

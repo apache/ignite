@@ -1,0 +1,10 @@
+Apache Ignite Extensions Release Notes
+===========================
+
+Apache Ignite Spring Cache Module 1.0.0
+---------------------------------------
+
+* Added the ability to connect to the Ignite cluster through the Ignite thin client
+
+The following integration was migrated to the Apache Ignite Extensions repository:
+ - Ignite Spring Cache Extension

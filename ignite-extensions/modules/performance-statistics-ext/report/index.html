@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="theme-color" content="#563d7c">
+
+    <title>Ignite performance statistics report</title>
+
+    <!-- Bootstrap CSS. -->
+    <link rel="stylesheet" href="libs/bootstrap.min.css">
+
+    <!-- Bootstrap table. -->
+    <link rel="stylesheet" href="libs/bootstrap-table.min.css">
+
+    <!-- Bootstrap select. -->
+    <link rel="stylesheet" href="libs/bootstrap-select.min.css">
+
+    <!-- Font Awesome Free 5.13.0 -->
+    <link rel="stylesheet" href="libs/fontawesome/css/all.min.css">
+
+    <!-- Favicons. -->
+    <link rel="icon" href="images/favicon.png" sizes="32x32" type="image/png">
+
+    <link href="css/dashboard.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
+    <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#">Ignite performance statistics report</a>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <nav class="col-md-2 d-none d-md-block bg-light sidebar">
+            <div class="sidebar-sticky">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-toggle="tab" href="#clusterInfoTab" role="tab"
+                           aria-selected="true">Cluster info</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#cacheOperationsTab" role="tab"
+                           aria-selected="false">Cache operations</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#txOperationsTab" role="tab"
+                           aria-selected="false">Transactions</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#sqlStatisticsTab" role="tab"
+                           aria-selected="false">SQL queries</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#scanStatisticsTab" role="tab"
+                           aria-selected="false">Scan queries</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#computeStatisticsTab" role="tab"
+                           aria-selected="false">Tasks and jobs</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="clusterInfoTab" role="tabpanel">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">Cluster info</h1>
+                    </div>
+
+                    <h2 class="mt-4">Cluster nodes</h2>
+                    <table data-toggle="table" id="nodesTable"></table>
+                    <h2 class="mt-4">Started caches</h2>
+                    <table data-toggle="table" id="cachesTable"></table>
+                </div>
+                <div class="tab-pane fade" id="cacheOperationsTab" role="tabpanel">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">Cache operations statistics</h1>
+                    </div>
+
+                    <select id="searchCaches" class="selectpicker" data-live-search="true"></select>
+                    <select id="searchNodes" class="selectpicker" data-live-search="true"></select>
+
+                    <div id="operationsCharts"></div>
+                </div>
+                <div class="tab-pane fade" id="txOperationsTab" role="tabpanel">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">Transactions statistics</h1>
+                    </div>
+
+                    <select id="txSearchCaches" class="selectpicker" data-live-search="true"></select>
+                    <select id="txSearchNodes" class="selectpicker" data-live-search="true"></select>
+
+                    <div id="txCharts"></div>
+                </div>
+                <div class="tab-pane fade" id="sqlStatisticsTab" role="tabpanel">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">SQL query statistics</h1>
+                    </div>
+                    <h2 class="mt-4">Overall statistics</h2>
+                    <table data-toggle="table" id="sqlStatisticsTable"></table>
+                    <h2 class="mt-4">Top of slowest queries</h2>
+                    <table data-toggle="table" id="topSlowSqlTable"></table>
+                </div>
+                <div class="tab-pane fade" id="scanStatisticsTab" role="tabpanel">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">Scan query statistics</h1>
+                    </div>
+                    <h2 class="mt-4">Overall statistics</h2>
+                    <table data-toggle="table" id="scanStatisticsTable"></table>
+                    <h2 class="mt-4">Top of slowest queries</h2>
+                    <table data-toggle="table" id="topSlowScanTable"></table>
+                </div>
+                <div class="tab-pane fade" id="computeStatisticsTab" role="tabpanel">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">Tasks and jobs statistics</h1>
+                    </div>
+                    <h2 class="mt-4">Overall statistics</h2>
+                    <table data-toggle="table" id="computeStatisticsTable"></table>
+                    <h2 class="mt-4">Top of slowest tasks</h2>
+                    <table data-toggle="table" id="topSlowComputeTable"></table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Bootstrap JS, Popper.js, and jQuery. -->
+<script src="libs/jquery-3.3.1.min.js"></script>
+<script src="libs/popper.min.js"></script>
+<script src="libs/bootstrap.min.js"></script>
+
+<!-- Bootstrap table. -->
+<script src="libs/bootstrap-table.min.js"></script>
+
+<!-- Moment JS. -->
+<script src="libs/moment.min.js"></script>
+
+<!-- Feather Icons. -->
+<script src="libs/feather.min.js"></script>
+
+<!-- Chart JS. -->
+<script src="libs/Chart.min.js"></script>
+
+<!-- Bootstrap select. -->
+<script src="libs/bootstrap-select.min.js"></script>
+
+<!-- Report data. -->
+<script type="text/javascript" src="data/data.json.js"></script>
+
+<script type="text/javascript" src="js/utils.js"></script>
+<script type="text/javascript" src="js/clusterInfoTab.js"></script>
+<script type="text/javascript" src="js/operationsTab.js"></script>
+<script type="text/javascript" src="js/sqlTab.js"></script>
+<script type="text/javascript" src="js/scanTab.js"></script>
+<script type="text/javascript" src="js/txTab.js"></script>
+<script type="text/javascript" src="js/computeTab.js"></script>
+
+</body>
+</html>

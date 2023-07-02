@@ -1,0 +1,86 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Performance Statistics Extension
+
+== Overview
+
+Ignite provides link:monitoring-metrics/performance-statistics[a built-in tool for cluster profiling.]
+
+The extension provides utilities to link:#building-the-report[create the report] and
+link:#print-statistics[print statistics] from the collected files.
+
+== Building the Report
+
+Ignite provides a tool to generate the report from the performance statistics files.
+
+Follow these steps to build the performance report:
+
+1. Stop collecting statistics and place files from all nodes under an empty directory. For example:
++
+----
+    /path_to_files/
+        ├── node-162c7147-fef8-4ea2-bd25-8653c41fc7fa.prf
+        ├── node-7b8a7c5c-f3b7-46c3-90da-e66103c00001.prf
+        └── node-faedc6c9-3542-4610-ae10-4ff7e0600000.prf
+----
++
+2.  Run the script from the release package of the tool:
++
+[source,shell]
+----
+performance-statistics-tool/build-report.sh path_to_files
+----
++
+The performance report is created in the new directory under the performance statistics files:
+`path_to_files/report_yyyy-MM-dd_HH-mm-ss/`.
+Open `report_yyyy-MM-dd_HH-mm-ss/index.html` in the browser to see the report.
++
+For more details run the help command:
++
+[source,shell]
+----
+performance-statistics-tool/build-report.sh --help
+----
+
+== Print Statistics
+
+Ignite provides a tool to print statistics to a console or to a file in JSON format.
+
+Run the script from the release package of the tool to print statistics:
+
+[source,shell]
+----
+performance-statistics-tool/print-statistics.sh path_to_files
+----
+
+Note that `path_to_files` is a path to the performance statistics file or files directory.
+
+The script provides the ability to filter operations by operation's type, time, or cache. For more details run the
+help command:
+
+[source,shell]
+----
+performance-statistics-tool/print-statistics.sh --help
+----
+
+See the output example below:
+
+----
+    {"op":"CACHE_GET","nodeId":"955130d1-5218-4e46-87f6-62755e92e9b4","cacheId":-1809642915,"startTime":1616837094237,"duration":64992213}
+    {"op":"CACHE_PUT","nodeId":"955130d1-5218-4e46-87f6-62755e92e9b4","cacheId":-1809642915,"startTime":1616837094237,"duration":879869}
+    {"op":"CACHE_GET_AND_PUT","nodeId":"955130d1-5218-4e46-87f6-62755e92e9b4","cacheId":1328364293,"startTime":1616837094248,"duration":17186240}
+    {"op":"TX_COMMIT","nodeId":"955130d1-5218-4e46-87f6-62755e92e9b4","cacheIds":[-1809642915],"startTime":1616837094172,"duration":184887787}
+    {"op":"QUERY","nodeId":"955130d1-5218-4e46-87f6-62755e92e9b4","type":"SQL_FIELDS","text":"create table Person (id int, val varchar, primary key (id))","id":0,"startTime":1616837094143,"duration":258741595,"success":true}
+----

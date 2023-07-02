@@ -73,7 +73,7 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
     /** */
     private ANNClassificationModel() {
     }
-
+    
     /** */
     public LabeledVectorSet<LabeledVector> getCandidates() {
         return candidates;

@@ -80,6 +80,11 @@ public class IgnitePdsMvccTestSuite4 {
         ignoredTests.add(IgnitePdsDefragmentationRandomLruEvictionTest.class);
         ignoredTests.add(IgnitePdsDefragmentationEncryptionTest.class);
 
+        // Defragmentation.
+        ignoredTests.add(IgnitePdsDefragmentationTest.class);
+        ignoredTests.add(IgnitePdsDefragmentationRandomLruEvictionTest.class);
+        ignoredTests.add(IgnitePdsDefragmentationEncryptionTest.class);
+
         return IgnitePdsTestSuite4.suite(ignoredTests);
     }
 }

@@ -1,0 +1,198 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+#
+# This action will produce a zip-archive with all the stuff required for signing and
+# deploying an extension release candidate maven artifacts, extension sources and
+# binary zip-archive (if applicable). It will also create a rc-tag pointed to the last
+# commit in the release branch.
+#
+
+name: "Extension Prepare Release Candidate"
+
+on: workflow_dispatch
+
+env:
+  SERVER_URL: 'https://dist.apache.org/repos/dist/dev/ignite/ignite-extensions/'
+
+jobs:
+  prepare:
+    if: github.repository == 'apache/ignite-extensions'
+    runs-on: ubuntu-latest
+    name: Prepare RC for `${{ github.ref_name }}`
+    steps:
+      - name: Validate Extension Release Branch
+        id: check
+        run: | 
+          prefix='false'
+          [[ ${{ github.ref_name }} =~ ^release/ ]] && prefix='true'
+          echo "::set-output name=isReleaseBranch::${prefix}"
+
+      - name: Interrupt If not a Release Branch
+        if: ${{ steps.check.outputs.isReleaseBranch == 'false' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed("You should run this action from the release branch which has the 'release/' prefix: ${{ github.ref_name }} ")
+
+      - name: Setup Inputs
+        shell: bash
+        # see https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html
+        run: |
+          branch=${{ github.ref_name }}
+          ext=${branch#"release/"}
+          ext_ver=${ext##*-}
+          ext_name=${ext%-*}
+          ext_dir=modules/${ext_name#"ignite-"}
+          echo "Extension Version:     $ext_ver"
+          echo "Extension Module Name: $ext_name"
+          echo "Extension Directory:   $ext_dir"
+          echo "EXTENSION_VERSION=${ext_ver}" >> $GITHUB_ENV
+          echo "EXTENSION_NAME=${ext_name}" >> $GITHUB_ENV
+          echo "EXTENSION_DIR=${ext_dir}" >> $GITHUB_ENV
+          echo "EXTENSION_BRANCH=${{ github.ref_name }}" >> $GITHUB_ENV
+
+      - name: Checkout Release Branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Fetch Release Tags
+        run: |
+          git fetch --prune --unshallow --tags
+          echo $(git tag -l)
+          echo "GIT_HOME=$(pwd)" >> $GITHUB_ENV
+
+      - name: Set up Java
+        uses: actions/setup-java@v2
+        with:
+          java-version: 8
+          distribution: 'adopt'
+
+      - name: Extract POM Version and Compare With Branch Version
+        id: pom
+        shell: bash
+        run: |
+          mvn -pl ${{ env.EXTENSION_DIR }} help:evaluate -Dexpression=project.artifactId
+          ver=$(mvn -pl ${{ env.EXTENSION_DIR }} help:evaluate -Dexpression=project.version -q -DforceStdout)
+          pom_ver=$(echo ${ver} | sed -e 's/^[[:space:]]*//')
+          missmatch='true'
+          [ "$pom_ver" == "${{ env.EXTENSION_VERSION }}" ] && missmatch='false'
+          echo "Extension pom version: ${pom_ver}"
+          echo "::set-output name=versionMissmatch::${missmatch}"
+          echo "VERSION_POM=${pom_ver}" >> $GITHUB_ENV
+
+      - name: Compare Release Versions With Branch Version
+        if: ${{ steps.pom.outputs.versionMissmatch == 'true' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('Versions missmatch [branch=${{ env.EXTENSION_VERSION }}, pom=${{ env.VERSION_POM }}]')
+
+      # Get the RC tag reachable from the branch HEAD matching pattern.
+      - name: Extracting Release RC tag
+        shell: bash
+        run: |
+          tag_prefix=${{ env.EXTENSION_NAME }}-${{ env.EXTENSION_VERSION }}-rc
+          git describe --match "${tag_prefix}*" --abbrev=0 --tags HEAD || true
+          branch_tag=$(git describe --match "${tag_prefix}*" --abbrev=0 --tags HEAD || true)
+          rc_tag=$(echo ${branch_tag:-${tag_prefix}0})
+          rc_tag_id=$((${rc_tag#"${tag_prefix}"} + 1))
+          new_tag=${tag_prefix}${rc_tag_id}
+          echo "New Extension RC tag: ${new_tag}"
+          echo "EXTENSION_RC_TAG=${new_tag}" >> $GITHUB_ENV
+
+      - name: Prepare Release Properties
+        run: |
+          dist=${{ env.GIT_HOME }}/target/${{ env.EXTENSION_RC_TAG }}
+          mkdir -p ${dist} && cd "$_"
+          touch release.properties
+          echo EXTENSION_NAME=${{ env.EXTENSION_NAME}} >> release.properties
+          echo EXTENSION_VERSION=${{ env.EXTENSION_VERSION}} >> release.properties
+          echo EXTENSION_RC_TAG=${{ env.EXTENSION_RC_TAG}} >> release.properties
+          echo EXTENSION_DIR=${{ env.EXTENSION_DIR}} >> release.properties
+          echo EXTENSION_BRANCH=${{ env.EXTENSION_BRANCH}} >> release.properties
+          echo revision=$(git rev-list --max-count=1 HEAD 2>/dev/null || true) >> release.properties
+          cat release.properties
+          echo "EXTENSION_DIST=${dist}" >> $GITHUB_ENV
+
+      # The mvn must be started from the module root directory to collect assembly sources.
+      - name: Build Java and Prepare Packages
+        run: |
+          cd ${{ env.GIT_HOME }}/${{ env.EXTENSION_DIR }}
+          mvn deploy -am -DskipTests -Pextension-release -DuniqueVersion=false ${toLocalRepo} 
+          cd -
+        env:
+          toLocalRepo: '-D altDeploymentRepository=local::default::file:${{ env.EXTENSION_DIST }}/maven'
+
+      - name: Check there is no SNAPSHOT versions
+        run: mvn -f ${{ env.EXTENSION_DIR }} -am org.apache.maven.plugins:maven-enforcer-plugin:3.0.0-M3:enforce -Drules=requireReleaseVersion,requireReleaseDeps
+
+      - name: Copy Binary and Sources
+        run: |
+          svn_dir=${{ env.EXTENSION_DIST }}/svn/vote
+          mkdir -p ${svn_dir}
+          cd ${{ env.GIT_HOME }}/${{ env.EXTENSION_DIR }}
+          list=$(find . -regex '.*\.zip' -o -regex '.*\.zip\.sha512')
+          for file in $list; do cp -v ${file} ${svn_dir}; done
+          cd -
+
+      - name: Copy Release Scripts
+        run: |
+          cd ${{ env.GIT_HOME }}
+          cp -v ./scripts/vote* ${{ env.EXTENSION_DIST }}
+          cp -v ./scripts/settings.xml ${{ env.EXTENSION_DIST }}
+          chmod +x ${{ env.EXTENSION_DIST }}/*.sh
+
+      - name: Create RC tag `${{ env.EXTENSION_RC_TAG }}`
+        uses: actions/github-script@v5
+        with:
+          script: |
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'refs/tags/${{ env.EXTENSION_RC_TAG }}',
+              sha: context.sha
+            })
+
+      - name: Checkout Sources Into Distribution
+        uses: actions/checkout@v3
+        with:
+          path: ${{ env.EXTENSION_DIST }}/git
+          ref: ${{ github.ref_name }}
+
+      - name: Configure Git for Release
+        run: |
+          cd ${{ env.EXTENSION_DIST }}/git
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git fetch --prune --unshallow --tags
+
+      - name: Zip the Distribution
+        run: |
+          sudo apt-get -y install zip
+          cd ${{ env.EXTENSION_DIST }}/..
+          zip -r ${{ env.EXTENSION_RC_TAG }}.zip ${{ env.EXTENSION_RC_TAG }}/
+          cd -
+
+      - name: Upload Job Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.EXTENSION_RC_TAG }}
+          path: ${{ env.GIT_HOME }}/target/${{ env.EXTENSION_RC_TAG }}.zip

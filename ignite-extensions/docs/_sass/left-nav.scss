@@ -1,0 +1,109 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+.left-nav {
+    padding: 10px 20px;
+    width: 289px;
+    overflow-y: auto;
+/*    height: calc(100vh - var(--header-height)); */
+    font-family: 'Open Sans';
+    padding-top: var(--padding-top);
+
+
+    li {
+        list-style: none;
+    }    
+    a, button {
+        text-decoration: none;
+        color: #757575;
+        font-size: 16px;
+        display: inline-flex;
+        width: 100%;
+        margin: 2px 0;
+        padding: 0.25em 0.375em;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font: inherit;
+        text-align: left;
+
+        &.active, &:hover {
+            color: var(--link-color);
+        }
+    }
+
+	*:focus {
+	   	 outline: none;
+	}
+
+    .nav-group {
+        margin-left: 6px;
+        font-size: 14px;
+    }
+
+    nav {
+        border-left: 2px solid #dddddd;
+//        margin-top: 5px;
+        margin-bottom: 5px;
+
+        &.collapsed {
+            display: none;
+        }
+    }
+
+    nav > li > a, nav > li > button {
+        padding-left: 20px;
+        text-align: left;
+
+        &.active {
+            border-left: var(--orange-line-thickness) solid var(--active-color);
+            padding-left: calc(20px - var(--orange-line-thickness));
+        }
+    }
+
+    nav.sub_pages {
+        border: none;
+    }
+
+	nav.sub_pages a, nav.sub_pages button {
+        padding-left: 32px;
+
+        &.active {
+            padding-left: calc(32px - var(--orange-line-thickness));
+        }
+	}
+
+    .parent {
+        color: #393939;
+    }
+
+    .state-indicator {
+        margin-left: auto;
+        margin-top: 5px;
+        width: 6.2px;
+        height: 10px;
+        flex: 0 0 auto;
+        transition: transform 0.1s;
+        filter: invert(49%) sepia(4%) saturate(5%) hue-rotate(23deg) brightness(92%) contrast(90%);
+    }
+
+    button:hover .state-indicator,
+    button.current .state-indicator {
+        filter: invert(47%) sepia(61%) saturate(1950%) hue-rotate(345deg) brightness(100%) contrast(95%);
+    }
+
+    button.expanded .state-indicator {
+        transform: rotate(90deg);
+    }
+}

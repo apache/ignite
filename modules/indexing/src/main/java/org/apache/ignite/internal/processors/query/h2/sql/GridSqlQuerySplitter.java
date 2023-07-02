@@ -44,10 +44,13 @@ import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.QueryTable;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
+import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Query;
 import org.h2.table.Column;
@@ -1156,7 +1159,10 @@ public class GridSqlQuerySplitter {
             throw new CacheException("Too complex query to process.");
 
         final GridSqlSelect mapQry = parent.child(childIdx);
-
+        
+        // add@byron extractLuceneQuery(mapQry, params)
+        final IgniteBiTuple<GridSqlColumn, String> luceneQuery = extractor.extractLuceneQuery(mapQry,null);
+        // end
         final int visibleCols = mapQry.visibleColumns();
 
         List<GridSqlAst> rdcExps = new ArrayList<>(visibleCols);
@@ -1185,7 +1191,45 @@ public class GridSqlQuerySplitter {
 
         // Create reduce query AST. Use unique merge table for this split.
         GridSqlSelect rdcQry = new GridSqlSelect().from(mergeTable(splitId));
+        
+        // add@byron extractLuceneQuery(mapQry, params)
+        // prepare lucene sorting
+        final boolean luceneSearchFound =  luceneQuery.getKey() != null;
+        boolean luceneSortingRequired = false;
+        // sorting is required when lucene filter is present and has multiple partitions to search
+        // otherwise data will be returned from an UNIQUE node, so no need sort results on reduce query
+        if (luceneSearchFound && SplitterUtils.hasPartitionedTables(mapQry)){
+            // is a partitioned search and not derived partitions found on query or possible derived partitions != 1
+            PartitionResult derived =  extractor.extract(mapQry);
+            luceneSortingRequired = derived == null || derived.partitionsCount() != 1;
+        }
+        List<GridSqlAst> luceneSortColumns = null;
 
+        if (luceneSortingRequired){
+            luceneSortColumns = new ArrayList<>(1);
+            GridSqlColumn luceneColumn = luceneQuery.getKey();
+
+            GridH2Table tbl = (GridH2Table) luceneColumn.column().getTable();
+            Column scoreDocColumn = tbl.getColumn(PartitionExtractor.LUCENE_SCORE_DOC);
+            Set<GridSqlTable> tables = new HashSet<>();
+
+            DmlAstUtils.collectAllGridTablesInTarget((GridSqlElement) mapQry.from(), tables);
+
+            GridSqlTable tab = tables.iterator().next();
+
+            // scoreDocCol must belongs to same table as luceneColumn
+            GridSqlColumn scoreDocCol = new GridSqlColumn(scoreDocColumn, tab, luceneColumn.schema(), luceneColumn.tableAlias(), scoreDocColumn.getName());
+            scoreDocCol.resultType(GridSqlType.fromColumn(scoreDocColumn));
+
+            // adds column alias
+            GridSqlAlias alias = new GridSqlAlias(columnName( mapExps.size() ), scoreDocCol, true);
+            alias.resultType(GridSqlType.fromColumn(scoreDocColumn));
+
+            luceneSortColumns.add(alias);
+            mapExps.add(alias);
+        }
+        // end@
+        
         // -- SELECT
         mapQry.clearColumns();
 

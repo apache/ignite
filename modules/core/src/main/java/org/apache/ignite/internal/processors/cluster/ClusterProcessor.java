@@ -582,7 +582,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        if (notifyEnabled.get()) {
+        if (false && notifyEnabled.get()) {
             try {
                 verChecker = new GridUpdateNotifier(ctx.igniteInstanceName(), VER_STR, false);
 

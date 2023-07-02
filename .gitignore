@@ -1,3 +1,6 @@
+
+/modules/mongodb-relay/work/
+node_modules
 *.log
 /out/
 /work/
@@ -96,3 +99,4 @@ modules/ducktests/tests/certs/*
 modules/ducktests/tests/ignitetest.egg-info/**
 modules/ducktests/tests/build/**
 modules/ducktests/tests/dist/**
+

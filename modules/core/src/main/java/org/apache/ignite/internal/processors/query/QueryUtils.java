@@ -369,8 +369,9 @@ public class QueryUtils {
         Collection<QueryIndex> normalIdxs = new LinkedList<>();
 
         for (QueryIndex idx : entity.getIndexes()) {
-            QueryIndex normalIdx = new QueryIndex();
-
+        	//modify@byron
+            //-QueryIndex normalIdx = new QueryIndex();
+            QueryIndex normalIdx = idx.clone();
             normalIdx.setFields(idx.getFields());
             normalIdx.setIndexType(idx.getIndexType());
             normalIdx.setInlineSize(idx.getInlineSize());
@@ -850,7 +851,12 @@ public class QueryUtils {
                     field = alias;
 
                 d.addFieldToTextIndex(field);
-            }
+            }  
+            
+            //add@byron set extra index info.
+            QueryIndexDescriptorImpl qidx = (QueryIndexDescriptorImpl)d.textIndex();
+            qidx.setQueryIndex(idx);      
+            //end@
         }
         else if (idxTyp != null)
             throw new IllegalArgumentException("Unsupported index type [idx=" + idx.getName() +
@@ -1638,8 +1644,8 @@ public class QueryUtils {
             return true;
 
         String regex = SqlListenerUtils.translateSqlWildcardsToRegex(sqlPtrn);
-
-        return str.matches(regex);
+        //modify@byron ignore case
+        return str.matches("(?i)"+regex);
     }
 
     /**

@@ -307,6 +307,25 @@ public class GridRedisProtocolParser {
 
         return buf;
     }
+	
+	
+    /**
+     * Converts a resultant map response to an array.
+     *
+     * @param vals Map.
+     * @return Array response.
+     */
+    public static ByteBuffer toArray(Map<Object, Object> vals,List<String> params) {
+    	ArrayList<Object> values = new ArrayList<>(vals.size()*2);
+    	if(params!=null && params.size()>0) { //add@byron    		
+    		params.forEach((k)->values.add(vals.get(k)));    		
+    	} 
+    	else {    		
+        	vals.forEach((k,v)->{ values.add(k); values.add(v);});
+    	}
+        return toArray(values);
+    }
+	
 
     /**
      * Converts a resultant map response to an array.
@@ -364,16 +383,27 @@ public class GridRedisProtocolParser {
      */
     public static ByteBuffer toArray(Collection<Object> vals) {
         assert vals != null;
+        int capacity = 0;
+        ArrayList<ByteBuffer> res = new ArrayList<>();
+        for (Object val : vals) {
+            if (val != null) {
+                ByteBuffer b = toBulkString(val);
+                res.add(b);
+                capacity += b.limit();
+            }
+        }
+        
 
-        byte[] arrSize = String.valueOf(vals.size()).getBytes();
+        byte[] arrSize = String.valueOf(res.size()).getBytes();
 
-        ByteBuffer buf = ByteBuffer.allocateDirect(1024 * 1024);
+        ByteBuffer buf = ByteBuffer.allocateDirect(capacity + arrSize.length + 1 + CRLF.length);
         buf.put(ARRAY);
         buf.put(arrSize);
         buf.put(CRLF);
 
-        for (Object val : vals)
-            buf.put(toBulkString(val));
+        for (ByteBuffer val : res) {
+        	buf.put(val);
+        }
 
         buf.flip();
 

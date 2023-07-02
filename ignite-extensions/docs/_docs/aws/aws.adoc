@@ -1,0 +1,113 @@
+= Amazon S3 IP Finder
+
+Amazon S3-based discovery allows Ignite nodes to register their IP addresses on start-up in an Amazon S3 store.
+This way other nodes can try to connect to any of the IP addresses stored in S3 and initiate automatic node discovery.
+To use S3 based automatic node discovery, you need to configure the `TcpDiscoveryS3IpFinder` type of `ipFinder`.
+
+Here is an example of how to configure Amazon S3 based IP finder:
+
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+
+  <property name="discoverySpi">
+    <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+      <property name="ipFinder">
+        <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinder">
+          <property name="awsCredentials" ref="aws.creds"/>
+          <property name="bucketName" value="YOUR_BUCKET_NAME"/>
+        </bean>
+      </property>
+    </bean>
+  </property>
+</bean>
+
+<!-- AWS credentials. Provide your access key ID and secret access key. -->
+<bean id="aws.creds" class="com.amazonaws.auth.BasicAWSCredentials">
+<constructor-arg value="YOUR_ACCESS_KEY_ID" />
+<constructor-arg value="YOUR_SECRET_ACCESS_KEY" />
+</bean>
+----
+
+tab:Java[]
+[source,java]
+----
+TcpDiscoverySpi spi = new TcpDiscoverySpi();
+
+BasicAWSCredentials creds = new BasicAWSCredentials("yourAccessKey", "yourSecreteKey");
+
+TcpDiscoveryS3IpFinder ipFinder = new TcpDiscoveryS3IpFinder();
+ipFinder.setAwsCredentials(creds);
+ipFinder.setBucketName("yourBucketName");
+
+spi.setIpFinder(ipFinder);
+
+IgniteConfiguration cfg = new IgniteConfiguration();
+
+// Override default discovery SPI.
+cfg.setDiscoverySpi(spi);
+
+// Start a node.
+Ignition.start(cfg);
+----
+
+tab:C#/.NET[unsupported]
+tab:C++[unsupported]
+--
+
+You can also use *Instance Profile* for AWS credentials provider.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+
+  <property name="discoverySpi">
+    <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+      <property name="ipFinder">
+        <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinder">
+          <property name="awsCredentialsProvider" ref="aws.creds"/>
+          <property name="bucketName" value="YOUR_BUCKET_NAME"/>
+        </bean>
+      </property>
+    </bean>
+  </property>
+</bean>
+
+<!-- Instance Profile based credentials -->
+<bean id="aws.creds" class="com.amazonaws.auth.InstanceProfileCredentialsProvider">
+<constructor-arg value="false" />
+</bean>
+----
+
+tab:Java[]
+[source,java]
+----
+TcpDiscoverySpi spi = new TcpDiscoverySpi();
+
+AWSCredentialsProvider instanceProfileCreds = new InstanceProfileCredentialsProvider(false);
+
+TcpDiscoveryS3IpFinder ipFinder = new TcpDiscoveryS3IpFinder();
+ipFinder.setAwsCredentialsProvider(instanceProfileCreds);
+ipFinder.setBucketName("yourBucketName");
+
+spi.setIpFinder(ipFinder);
+
+IgniteConfiguration cfg = new IgniteConfiguration();
+
+// Override default discovery SPI.
+cfg.setDiscoverySpi(spi);
+
+// Start a node.
+Ignition.start(cfg);
+----
+tab:C#/.NET[unsupported]
+tab:C++[unsupported]
+--
+

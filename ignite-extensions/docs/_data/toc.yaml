@@ -1,0 +1,60 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+- title: Amazon S3 IP Finder
+  url: aws/aws
+- title: Apache Camel Streamer
+  url: camel/camel-streamer
+- title: Apache Flink Streamer
+  url: flink/flink-streamer
+- title: Apache Flume Sink
+  url: flume/flume-sink
+- title: Apache Ignite Azure Module
+  url: azure/azure
+- title: Apache Ignite GCE Module
+  url: gce/gce
+- title: Apache Ignite Pub/Sub Module
+  url: pub-sub/pub-sub
+- title: Apache Ignite and Spring Boot
+  url: spring/spring-boot
+- title: Apache Ignite and Spring Data
+  url: spring/spring-data
+- title: Apache Ignite and Spring Cache
+  url: spring/spring-caching
+- title: Apache Ignite and Spring Session
+  url: spring/spring-sessions
+- title: Apache Ignite and Spring Transactions
+  url: spring/spring-tx
+- title: Apache Kafka Streamer
+  url: kafka/kafka-streamer
+- title: Apache Storm Streamer
+  url: storm/storm-streamer
+- title: Change Data Capture Extension
+  url: cdc/change-data-capture-extensions
+- title: JMS Streamer
+  url: jms/jms-streamer
+- title: MQTT Streamer
+  url: mqtt/mqtt-streamer
+- title: Performance Statistics Extension
+  url: perf-statistics/performance-statistics
+- title: RocketMQ Streamer
+  url: rocketmq/rocketmq-streamer
+- title: Topology Validator
+  url: topology-validator/topology-validator
+- title: Twitter Streamer
+  url: twitter/twitter-streamer
+- title: ZeroMQ Streamer
+  url: zeromq/zeromq-streamer
+- title: ZooKeeper IP Finder
+  url: zookeeper/zookeeper-ip
