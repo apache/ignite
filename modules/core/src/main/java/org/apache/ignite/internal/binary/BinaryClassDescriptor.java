@@ -202,9 +202,8 @@ public class BinaryClassDescriptor {
 
         initialSerializer = serializer;
 
-        // If serializer is not defined at this point, then we have to use OptimizedMarshaller.
-        // modify@byron
-        useOptMarshaller = serializer == null || isGeometryClass(cls) || serializer instanceof BinaryReflectiveSerializer && Externalizable.class.isAssignableFrom(cls) && BinaryContext.BINARYLIZABLE_SYS_CLSS.contains(cls.getName());
+        // If serializer is not defined at this point, then we have to use OptimizedMarshaller.       
+        useOptMarshaller = serializer == null;
 
         // Reset reflective serializer so that we rely on existing reflection-based serialization.
         if (serializer instanceof BinaryReflectiveSerializer)
