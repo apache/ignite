@@ -81,8 +81,11 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.parseFile;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.specifications;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_NODE_START;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_NODE_STOP;
 
 /**
  *
@@ -275,7 +278,12 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            compute().execute(IgniteKillTask.class, false);
+            ctx.security().authorize(ADMIN_CLUSTER_NODE_STOP);
+
+            ctx.task().execute(IgniteKillTask.class, false, options().withProjection(nodes())).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -287,7 +295,12 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            ctx.grid().compute(forNodeIds(ids)).execute(IgniteKillTask.class, false);
+            ctx.security().authorize(ADMIN_CLUSTER_NODE_STOP);
+
+            ctx.task().execute(IgniteKillTask.class, false, options().withProjection(forNodeIds(ids).nodes())).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -299,7 +312,12 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            compute().execute(IgniteKillTask.class, true);
+            ctx.security().authorize(ADMIN_CLUSTER_NODE_STOP);
+
+            ctx.task().execute(IgniteKillTask.class, true, options().withProjection(nodes())).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -311,7 +329,12 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            ctx.grid().compute(forNodeIds(ids)).execute(IgniteKillTask.class, true);
+            ctx.security().authorize(ADMIN_CLUSTER_NODE_STOP);
+
+            ctx.task().execute(IgniteKillTask.class, true, options().withProjection(forNodeIds(ids).nodes())).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -373,10 +396,15 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState) throws IgniteException {
+        state(newState, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void state(ClusterState newState, boolean force) throws IgniteException {
         guard();
 
         try {
-            ctx.state().changeGlobalState(newState, true, serverNodes(), false).get();
+            ctx.state().changeGlobalState(newState, force, serverNodes(), false).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -424,7 +452,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /**
      * Sets baseline topology constructed from the cluster topology of the given version (the method succeeds only if
-     * the cluster topology has not changed). All client and daemon nodes will be filtered out of the resulting
+     * the cluster topology has not changed). All client nodes will be filtered out of the resulting
      * baseline.
      *
      * @param topVer Topology version to set.
@@ -557,7 +585,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
             Collection<BaselineNode> target = new ArrayList<>(top.size());
 
             for (ClusterNode node : top) {
-                if (!node.isClient() && !node.isDaemon())
+                if (!node.isClient())
                     target.add(node);
             }
 
@@ -731,7 +759,8 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
         if (!ctx.state().publicApiActiveState(true)) {
             throw new IgniteCheckedException(
-                "Can not change cluster tag on inactive cluster. To activate the cluster call Ignite.active(true)."
+                "Can not change cluster tag on inactive cluster. To activate the cluster call " +
+                    "Ignite.cluster().state(ClusterState.ACTIVE)."
             );
         }
 
@@ -868,6 +897,8 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
+            ctx.security().authorize(ADMIN_CLUSTER_NODE_START);
+
             IgniteSshHelper sshHelper = IgniteComponentType.SSH.create(false);
 
             Map<String, Collection<IgniteRemoteStartSpecification>> specsMap = specifications(hosts, dflts);
@@ -906,8 +937,10 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
                 if (neighbors != null) {
                     if (restart && !neighbors.isEmpty()) {
+                        ctx.security().authorize(ADMIN_CLUSTER_NODE_STOP);
+
                         try {
-                            ctx.grid().compute(forNodes(neighbors)).execute(IgniteKillTask.class, false);
+                            ctx.task().execute(IgniteKillTask.class, false, options(forNodes(neighbors).nodes())).get();
                         }
                         catch (ClusterGroupEmptyException ignored) {
                             // No-op, nothing to restart.

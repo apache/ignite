@@ -49,7 +49,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
-        <revision>2.14.0</revision>
+        <revision>2.16.999-SNAPSHOT</revision>
         <!-- Ignite version will be substituted with the flatten-maven-plugin and used as
             a version dependency for Ignite extensions. -->
         <ignite.version>${revision}</ignite.version>
@@ -71,7 +71,7 @@
         <asm.version>4.2</asm.version>
         <aspectj.bundle.version>1.8.13_1</aspectj.bundle.version>
         <aspectj.version>1.8.13</aspectj.version>
-        <netty.version>4.1.79.Final</netty.version>
+        <netty.version>4.1.89.Final</netty.version>
         <bouncycastle.version>1.69</bouncycastle.version>
         <commons.beanutils.bundle.version>1.9.2_1</commons.beanutils.bundle.version>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
@@ -90,11 +90,11 @@
         <guava14.version>14.0.1</guava14.version>
         <guava16.version>16.0.1</guava16.version>
         <h2.version>1.4.197</h2.version>
-        
+        <hadoop.version>2.9.1</hadoop.version>
         <hamcrest.version>2.2</hamcrest.version>
         <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.14</httpcore.version>
-        <jackson.version>2.12.7</jackson.version>
+        <jackson.version>2.14.0</jackson.version>
         <jaxb.api.version>2.1</jaxb.api.version>
         <jaxb.impl.version>2.1.14</jaxb.impl.version>
         <javassist.version>3.28.0-GA</javassist.version>
@@ -103,7 +103,7 @@
         <javax.cache.version>1.0.0</javax.cache.version>
         <jboss.rmi.version>1.0.6.Final</jboss.rmi.version>
         <jetbrains.annotations.version>16.0.3</jetbrains.annotations.version>
-        <jetty.version>9.4.43.v20210629</jetty.version>
+        <jetty.version>9.4.51.v20230217</jetty.version>
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
         <jna.version>4.5.2</jna.version>
@@ -115,9 +115,9 @@
         <jsonlib.version>2.4</jsonlib.version>
         <jtidy.version>r938</jtidy.version>
         <kafka.version>2.0.1</kafka.version>
-        <log4j2.version>2.17.1</log4j2.version>
+        <log4j2.version>2.20.0</log4j2.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
-        <lucene.version>8.8.2</lucene.version>
+        <lucene.version>8.11.2</lucene.version>
         <lz4.version>1.8.0</lz4.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
         <maven.checkstyle.plugin.version>3.1.1</maven.checkstyle.plugin.version>
@@ -130,14 +130,14 @@
         <netlibjava.version>1.1.2</netlibjava.version>
         <oro.bundle.version>2.0.8_6</oro.bundle.version>
         <paho.version>1.0.2</paho.version>
-        <postgres.connector.version>42.3.3</postgres.connector.version>
+        <postgres.connector.version>42.5.0</postgres.connector.version>
         <scala210.jline.version>2.10.7</scala210.jline.version>
         <scala210.library.version>2.10.7</scala210.library.version>
         <scala.library.version>2.11.12</scala.library.version>
         <scala.test.version>2.2.6</scala.test.version>
         <slf4j.version>1.7.33</slf4j.version>
         <slf4j16.version>1.6.4</slf4j16.version>
-        <snappy.version>1.1.7.2</snappy.version>
+        <snappy.version>1.1.8.4</snappy.version>
         <spring.version>5.2.22.RELEASE</spring.version>
         <storm.version>1.1.1</storm.version>
         <surefire.version>3.0.0-M4</surefire.version>
@@ -148,13 +148,16 @@
         <yardstick.version>0.8.3</yardstick.version>
         <zkclient.version>0.5</zkclient.version>
         <zookeeper.version>3.6.3</zookeeper.version>
-        <zstd.version>1.3.7-2</zstd.version>
+        <zstd.version>1.5.2-5</zstd.version>
         <opencensus.version>0.22.0</opencensus.version>
         <commons.lang3.version>3.9</commons.lang3.version>
         <ignite-kafka-ext.version>1.0.0</ignite-kafka-ext.version>
 
         <!-- Maven plugins versions -->
         <maven.javadoc.plugin.version>3.2.0</maven.javadoc.plugin.version>
+        <sonar.organization>apache</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.exclusions>**/generated/**/*</sonar.exclusions>
 
         <!-- OSGI Manifest generation default property values -->
         <osgi.import.package>*</osgi.import.package>
@@ -597,7 +600,7 @@
                 <executions>
                     <execution>
                         <id>copy-libs</id>
-                        <phase>test-compile</phase>
+                        <phase>package</phase>
                         <goals>
                             <goal>copy-dependencies</goal>
                         </goals>
@@ -777,9 +780,7 @@
                                         <exclude>**/NOTICE*</exclude>
                                         <exclude>**/LICENSE*</exclude>
                                         <exclude>**/MIGRATION_GUIDE*</exclude>
-                                        <exclude>src/main/java/org/apache/ignite/internal/util/offheap/unsafe/GridOffHeapSnapTreeMap.java</exclude><!--BSD license-->
                                         <exclude>src/main/java/org/apache/ignite/internal/util/nio/SelectedSelectionKeySet.java</exclude><!-- Apache 2.0 license -->
-                                        <exclude>src/main/java/org/apache/ignite/internal/util/snaptree/*.java</exclude><!--BSD license-->
                                         <exclude>src/main/java/org/apache/ignite/internal/processors/query/calcite/sql/generated/*.java</exclude><!--auto generated files-->
                                         <exclude>src/main/java/org/jsr166/*.java</exclude>
                                         <exclude>src/main/java/org/mindrot/*.java</exclude>
@@ -1022,8 +1023,12 @@
                                 --add-opens=java.base/java.io=ALL-UNNAMED
                                 --add-opens=java.base/java.nio=ALL-UNNAMED
                                 --add-opens=java.base/java.util=ALL-UNNAMED
+                                --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+                                --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
+                                --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
                                 --add-opens=java.base/java.lang=ALL-UNNAMED
                                 --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+                                --add-opens=java.base/java.math=ALL-UNNAMED
                                 --add-opens=java.sql/java.sql=ALL-UNNAMED
                             </argLine>
                         </configuration>

@@ -26,10 +26,10 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.client.balancer.GridClientRoundRobinBalancer;
 import org.apache.ignite.internal.client.impl.GridClientImpl;
-import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -78,11 +78,11 @@ public class ClientTcpSslAuthenticationSelfTest extends GridCommonAbstractTest {
         clientCfg.setSslClientAuth(checkClient);
         clientCfg.setSslClientAuth(checkClient);
 
-        GridSslBasicContextFactory factory = (GridSslBasicContextFactory)GridTestUtils.sslContextFactory();
+        SslContextFactory factory = (SslContextFactory)GridTestUtils.sslFactory();
 
         factory.setTrustManagers(srvTrustMgr);
 
-        clientCfg.setSslContextFactory(factory);
+        clientCfg.setSslFactory(factory);
 
         c.setConnectorConfiguration(clientCfg);
 
@@ -101,7 +101,7 @@ public class ClientTcpSslAuthenticationSelfTest extends GridCommonAbstractTest {
         cfg.setServers(Arrays.asList(U.getLocalHost().getHostAddress() + ":" + REST_TCP_PORT));
         cfg.setBalancer(new GridClientRoundRobinBalancer());
 
-        GridSslBasicContextFactory factory = (GridSslBasicContextFactory)GridTestUtils.sslContextFactory();
+        SslContextFactory factory = (SslContextFactory)GridTestUtils.sslFactory();
 
         factory.setTrustManagers(clientTrustMgr);
 

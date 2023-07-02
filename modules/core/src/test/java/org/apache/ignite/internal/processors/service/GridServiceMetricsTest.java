@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.google.common.collect.Iterables;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.service.inner.MyService;
@@ -34,7 +33,6 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
-import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -61,16 +59,6 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         super.afterTest();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        // JMX metrics exposition to see actual namings and placement of the metrics.
-        cfg.setMetricExporterSpi(new JmxMetricExporterSpi());
-
-        return cfg;
     }
 
     /** Checks service metrics are enabled / disabled properly. */

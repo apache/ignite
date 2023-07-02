@@ -26,16 +26,23 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.spi.systemview.view.SqlQueryView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.query.RunningQueryManager.SQL_QRY_VIEW;
+import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_QRY_VIEW;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 
 /**
  * System view security test.
  */
 public class SystemViewSecurityTest extends AbstractSecurityTest {
+    /** {@inheritDoc} */
+    @Override protected TestSecurityData[] securityData() {
+        return new TestSecurityData[] {new TestSecurityData("thin-client", ALL_PERMISSIONS)};
+    }
+
     /** @throws Exception If failed. */
     @Test
     public void testSqlQueryView() throws Exception {
@@ -44,7 +51,8 @@ public class SystemViewSecurityTest extends AbstractSecurityTest {
 
         ClientConfiguration cfg = new ClientConfiguration()
             .setAddresses(Config.SERVER)
-            .setUserName("thin-client");
+            .setUserName("thin-client")
+            .setUserPassword("");
 
         try (IgniteClient thinClient = Ignition.startClient(cfg)) {
             SqlFieldsQuery srvSql = new SqlFieldsQuery("SELECT * FROM (VALUES (1))");

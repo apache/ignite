@@ -25,6 +25,7 @@ import java.util.stream.StreamSupport;
 import com.google.common.collect.Sets;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -140,7 +141,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
         ignite = (IgniteEx)startGrid();
 
         if (persist())
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */

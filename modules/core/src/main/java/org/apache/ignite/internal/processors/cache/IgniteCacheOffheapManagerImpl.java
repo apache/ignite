@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
@@ -163,9 +164,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /** */
     protected IgniteLogger log;
 
-    /** Cache data store for <tt>LOCAL</tt> caches only. */
-    private CacheDataStore locCacheDataStore;
-
     /** */
     private PendingEntriesTree pendingEntries;
 
@@ -177,6 +175,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** */
     protected GridStripedLock partStoreLock = new GridStripedLock(Runtime.getRuntime().availableProcessors());
+
+    /** */
+    private final AtomicBoolean stopping = new AtomicBoolean();
 
     /** {@inheritDoc} */
     @Override public GridAtomicLong globalRemoveId() {
@@ -275,7 +276,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** {@inheritDoc} */
     @Override public void onKernalStop() {
-        busyLock.block();
+        if (stopping.compareAndSet(false, true)) // Avoid concurrent blocking by prepareToStop and onKernalStop.
+            busyLock.block();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareToStop() {
+        if (stopping.compareAndSet(false, true)) // Avoid concurrent blocking by prepareToStop and onKernalStop.
+            busyLock.block();
     }
 
     /**
@@ -358,7 +366,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         boolean primary,
         boolean backup,
         AffinityTopologyVersion topVer
-    ) throws IgniteCheckedException {
+    ) {
         long cnt = 0;
 
         Iterator<CacheDataStore> it = cacheData(primary, backup, topVer);
@@ -1600,6 +1608,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
+        @Override public long highestAppliedCounter() {
+            return pCntr.highestAppliedCounter();
+        }
+
+        /** {@inheritDoc} */
         @Override public long reservedCounter() {
             return pCntr.reserved();
         }
@@ -1669,11 +1682,21 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return oldLen == newLen;
         }
 
+        /** */
+        private IgniteCheckedException operationCancelledException() {
+            if (grp.isPreparedToStop()) {
+                return new IgniteCheckedException("Operation has been cancelled (cache group: " +
+                    grp.cacheOrGroupName() + " is stopping).");
+            }
+            else
+                return new NodeStoppingException("Operation has been cancelled (node is stopping).");
+        }
+
         /** {@inheritDoc} */
         @Override public void invoke(GridCacheContext cctx, KeyCacheObject key, OffheapInvokeClosure c)
             throws IgniteCheckedException {
             if (!busyLock.enterBusy())
-                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+                throw operationCancelledException();
 
             int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
@@ -1760,7 +1783,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         @Override public void insertRows(Collection<DataRowCacheAware> rows,
             IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
             if (!busyLock.enterBusy())
-                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+                throw operationCancelledException();
 
             try {
                 rowStore.addRows(F.view(rows, row -> row.value() != null), grp.statisticsHolderData());
@@ -1808,7 +1831,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             assert mvccVer != null || newMvccVer == null : newMvccVer;
 
             if (!busyLock.enterBusy())
-                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+                throw operationCancelledException();
 
             try {
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
@@ -1874,7 +1897,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             assert !F.isEmpty(hist);
 
             if (!busyLock.enterBusy())
-                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+                throw operationCancelledException();
 
             try {
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
@@ -1947,7 +1970,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             byte mvccTxState,
             byte newMvccTxState) throws IgniteCheckedException {
             if (!busyLock.enterBusy())
-                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+                throw operationCancelledException();
 
             try {
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
@@ -2003,7 +2026,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             assert primary || !needHistory;
 
             if (!busyLock.enterBusy())
-                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+                throw operationCancelledException();
 
             try {
                 int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
@@ -2213,7 +2236,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             assert primary || !needHistory;
 
             if (!busyLock.enterBusy())
-                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+                throw operationCancelledException();
 
             try {
                 int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
@@ -2280,7 +2303,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             assert mvccSnapshot != null;
 
             if (!busyLock.enterBusy())
-                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+                throw operationCancelledException();
 
             try {
                 int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
@@ -2330,7 +2353,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public void mvccRemoveAll(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
             if (!busyLock.enterBusy())
-                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+                throw operationCancelledException();
 
             try {
                 key.valueBytes(cctx.cacheObjectContext());
@@ -2391,7 +2414,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 return 0;
 
             if (!busyLock.enterBusy())
-                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+                throw operationCancelledException();
 
             try {
                 return cleanup0(cctx, cleanupRows);
@@ -2466,7 +2489,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             assert oldRow == null || oldRow.link() != 0L : oldRow;
 
             if (!busyLock.enterBusy())
-                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+                throw operationCancelledException();
 
             try {
                 int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
@@ -2523,7 +2546,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             MvccVersion mvccVer
         ) throws IgniteCheckedException {
             if (!busyLock.enterBusy())
-                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+                throw operationCancelledException();
 
             try {
                 int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
@@ -2671,7 +2694,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public void remove(GridCacheContext cctx, KeyCacheObject key, int partId) throws IgniteCheckedException {
             if (!busyLock.enterBusy())
-                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+                throw operationCancelledException();
 
             try {
                 int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;

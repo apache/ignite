@@ -178,7 +178,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         if (type == EVT_NODE_JOINED && node.isLocal())
             lastAffVer = null;
 
-        if ((state.transition() || !state.active()) &&
+        if ((state.transition() || !state.state().active()) &&
             !DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg))
             return;
 

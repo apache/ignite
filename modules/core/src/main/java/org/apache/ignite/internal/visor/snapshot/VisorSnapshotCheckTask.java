@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.snapshot;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.management.snapshot.SnapshotCheckCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -28,18 +29,18 @@ import org.apache.ignite.internal.visor.VisorJob;
  * @see IgniteSnapshotManager#checkSnapshot(String, String)
  */
 @GridInternal
-public class VisorSnapshotCheckTask extends VisorSnapshotOneNodeTask<VisorSnapshotCheckTaskArg,
+public class VisorSnapshotCheckTask extends VisorSnapshotOneNodeTask<SnapshotCheckCommandArg,
     SnapshotPartitionsVerifyTaskResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorSnapshotCheckTaskArg, SnapshotPartitionsVerifyTaskResult> job(VisorSnapshotCheckTaskArg arg) {
+    @Override protected VisorJob<SnapshotCheckCommandArg, SnapshotPartitionsVerifyTaskResult> job(SnapshotCheckCommandArg arg) {
         return new VisorSnapshotCheckJob(arg, debug);
     }
 
     /** */
-    private static class VisorSnapshotCheckJob extends VisorJob<VisorSnapshotCheckTaskArg,
+    private static class VisorSnapshotCheckJob extends VisorSnapshotJob<SnapshotCheckCommandArg,
         SnapshotPartitionsVerifyTaskResult> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
@@ -48,16 +49,15 @@ public class VisorSnapshotCheckTask extends VisorSnapshotOneNodeTask<VisorSnapsh
          * @param arg Snapshot check task argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotCheckJob(VisorSnapshotCheckTaskArg arg, boolean debug) {
+        protected VisorSnapshotCheckJob(SnapshotCheckCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected SnapshotPartitionsVerifyTaskResult run(VisorSnapshotCheckTaskArg arg) throws IgniteException {
+        @Override protected SnapshotPartitionsVerifyTaskResult run(SnapshotCheckCommandArg arg) throws IgniteException {
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
-            return new IgniteFutureImpl<>(snpMgr.checkSnapshot(arg.snapshotName(), arg.snapshotPath()))
-                .get();
+            return new IgniteFutureImpl<>(snpMgr.checkSnapshot(arg.snapshotName(), arg.src(), arg.increment())).get();
         }
     }
 }

@@ -118,7 +118,8 @@ public class CancelTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNotOriginatorNodeStop() throws Exception {
-        QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
+        CalciteQueryProcessor engine = (CalciteQueryProcessor)Commons.lookupComponent(
+            grid(0).context(), QueryEngine.class);
 
         List<FieldsQueryCursor<List<?>>> cursors =
             engine.query(null, "PUBLIC",
@@ -172,7 +173,8 @@ public class CancelTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        QueryEngine engine1 = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
+        CalciteQueryProcessor engine1 = (CalciteQueryProcessor)Commons.lookupComponent(
+            grid(1).context(), QueryEngine.class);
 
         Assert.assertTrue(GridTestUtils.waitForCondition(
             () -> engine1.runningQueries().isEmpty(), 10_000));

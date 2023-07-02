@@ -146,6 +146,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** Marshaller context implementation. */
     private MarshallerContextImpl marshallerCtx;
 
+    /** */
+    @Nullable private CompressionProcessor compressProc;
+
     /**
      * @param log Logger.
      * @param binaryMetadataFileStoreDir folder specifying location of metadata File Store.
@@ -157,6 +160,25 @@ public class StandaloneGridKernalContext implements GridKernalContext {
      */
     public StandaloneGridKernalContext(
         IgniteLogger log,
+        @Nullable File binaryMetadataFileStoreDir,
+        @Nullable File marshallerMappingFileStoreDir
+    ) throws IgniteCheckedException {
+        this(log, null, binaryMetadataFileStoreDir, marshallerMappingFileStoreDir);
+    }
+
+    /**
+     * @param log Logger.
+     * @param compressProc Compression processor.
+     * @param binaryMetadataFileStoreDir folder specifying location of metadata File Store.
+     * {@code null} means no specific folder is configured. <br>
+     *
+     * @param marshallerMappingFileStoreDir folder specifying location of marshaller mapping file store.
+     * {@code null} means no specific folder is configured.
+     * Providing {@code null} will disable unmarshall for non primitive objects, BinaryObjects will be provided <br>
+     */
+    public StandaloneGridKernalContext(
+        IgniteLogger log,
+        @Nullable CompressionProcessor compressProc,
         @Nullable File binaryMetadataFileStoreDir,
         @Nullable File marshallerMappingFileStoreDir
     ) throws IgniteCheckedException {
@@ -189,6 +211,8 @@ public class StandaloneGridKernalContext implements GridKernalContext {
             marshallerCtx.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
             marshallerCtx.onMarshallerProcessorStarted(this, null);
         }
+
+        this.compressProc = compressProc;
     }
 
     /**
@@ -446,7 +470,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerProcessor sqlListener() {
+    @Override public ClientListenerProcessor clientListener() {
         return null;
     }
 
@@ -555,11 +579,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDaemon() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridPerformanceSuggestions performance() {
         return null;
     }
@@ -661,7 +680,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public CompressionProcessor compress() {
-        return null;
+        return compressProc;
     }
 
     /** {@inheritDoc} */

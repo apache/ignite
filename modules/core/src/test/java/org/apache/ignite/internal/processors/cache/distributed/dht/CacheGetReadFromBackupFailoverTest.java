@@ -28,6 +28,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.AbstractFailureHandler;
@@ -140,7 +141,7 @@ public class CacheGetReadFromBackupFailoverTest extends GridCommonAbstractTest {
     public void testFailover() throws Exception {
         Ignite ignite = ignite(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 

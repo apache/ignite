@@ -49,6 +49,12 @@ public class JavaVersionCommandParserTest {
                     "Java HotSpot(TM) Server VM (build 25.311-b11, mixed mode)",
                 8
             },
+            new Object[] {
+                "openjdk version \"1.8.0_352\"\n" +
+                    "OpenJDK Runtime Environment (build 1.8.0_352-8u352-ga-1~22.04-b08)\n" +
+                    "OpenJDK 64-Bit Server VM (build 25.352-b08, mixed mode)",
+                8
+            },
             new Object[]{
                 "java version \"11.0.6\" 2020-01-14 LTS\n" +
                     "Java(TM) SE Runtime Environment 18.9 (build 11.0.6+8-LTS)\n" +

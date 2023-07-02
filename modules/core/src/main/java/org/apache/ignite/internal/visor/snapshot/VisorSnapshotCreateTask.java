@@ -19,6 +19,7 @@ package org.apache.ignite.internal.visor.snapshot;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
+import org.apache.ignite.internal.management.snapshot.SnapshotCreateCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -28,17 +29,17 @@ import org.apache.ignite.internal.visor.VisorJob;
  * @see IgniteSnapshot#createSnapshot(String)
  */
 @GridInternal
-public class VisorSnapshotCreateTask extends VisorSnapshotOneNodeTask<VisorSnapshotCreateTaskArg, String> {
+public class VisorSnapshotCreateTask extends VisorSnapshotOneNodeTask<SnapshotCreateCommandArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorSnapshotCreateTaskArg, String> job(VisorSnapshotCreateTaskArg arg) {
+    @Override protected VisorJob<SnapshotCreateCommandArg, String> job(SnapshotCreateCommandArg arg) {
         return new VisorSnapshotCreateJob(arg, debug);
     }
 
     /** */
-    private static class VisorSnapshotCreateJob extends VisorJob<VisorSnapshotCreateTaskArg, String> {
+    private static class VisorSnapshotCreateJob extends VisorSnapshotJob<SnapshotCreateCommandArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -46,14 +47,18 @@ public class VisorSnapshotCreateTask extends VisorSnapshotOneNodeTask<VisorSnaps
          * @param arg Snapshot create task argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotCreateJob(VisorSnapshotCreateTaskArg arg, boolean debug) {
+        protected VisorSnapshotCreateJob(SnapshotCreateCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(VisorSnapshotCreateTaskArg arg) throws IgniteException {
-            IgniteFutureImpl<Void> fut =
-                ignite.context().cache().context().snapshotMgr().createSnapshot(arg.snapshotName(), arg.snapshotPath());
+        @Override protected String run(SnapshotCreateCommandArg arg) throws IgniteException {
+            IgniteFutureImpl<Void> fut = ignite.context().cache().context().snapshotMgr().createSnapshot(
+                arg.snapshotName(),
+                arg.dest(),
+                arg.incremental(),
+                false
+            );
 
             IgniteSnapshotManager.ClusterSnapshotFuture snpFut =
                 fut.internalFuture() instanceof IgniteSnapshotManager.ClusterSnapshotFuture ?

@@ -78,6 +78,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxRemote;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotAwareMessage;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -107,6 +108,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
+import static org.apache.ignite.internal.processors.cache.GridCacheIoManager.COMMON_MESSAGE_HANDLER_ID;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
@@ -218,73 +220,142 @@ public class IgniteTxHandler {
         txPrepareMsgLog = ctx.logger(CU.TX_MSG_PREPARE_LOG_CATEGORY);
         txFinishMsgLog = ctx.logger(CU.TX_MSG_FINISH_LOG_CATEGORY);
 
-        ctx.io().addCacheHandler(0, GridNearTxPrepareRequest.class, new CI2<UUID, GridCacheMessage>() {
+        ctx.io().addCacheHandler(GridNearTxPrepareRequest.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                 processNearTxPrepareRequest(nodeId, (GridNearTxPrepareRequest)msg);
             }
         });
 
-        ctx.io().addCacheHandler(0, GridNearTxPrepareResponse.class, new CI2<UUID, GridCacheMessage>() {
+        ctx.io().addCacheHandler(GridNearTxPrepareResponse.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                 processNearTxPrepareResponse(nodeId, (GridNearTxPrepareResponse)msg);
             }
         });
 
-        ctx.io().addCacheHandler(0, GridNearTxFinishRequest.class, new CI2<UUID, GridCacheMessage>() {
+        ctx.io().addCacheHandler(GridNearTxFinishRequest.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                 processNearTxFinishRequest(nodeId, (GridNearTxFinishRequest)msg);
             }
         });
 
-        ctx.io().addCacheHandler(0, GridNearTxFinishResponse.class, new CI2<UUID, GridCacheMessage>() {
+        ctx.io().addCacheHandler(GridNearTxFinishResponse.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                 processNearTxFinishResponse(nodeId, (GridNearTxFinishResponse)msg);
             }
         });
 
-        ctx.io().addCacheHandler(0, GridDhtTxPrepareRequest.class, new CI2<UUID, GridCacheMessage>() {
+        ctx.io().addCacheHandler(GridDhtTxPrepareRequest.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                 processDhtTxPrepareRequest(nodeId, (GridDhtTxPrepareRequest)msg);
             }
         });
 
-        ctx.io().addCacheHandler(0, GridDhtTxPrepareResponse.class, new CI2<UUID, GridCacheMessage>() {
+        ctx.io().addCacheHandler(GridDhtTxPrepareResponse.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                 processDhtTxPrepareResponse(nodeId, (GridDhtTxPrepareResponse)msg);
             }
         });
 
-        ctx.io().addCacheHandler(0, GridDhtTxFinishRequest.class, new CI2<UUID, GridCacheMessage>() {
+        ctx.io().addCacheHandler(GridDhtTxFinishRequest.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                 processDhtTxFinishRequest(nodeId, (GridDhtTxFinishRequest)msg);
             }
         });
 
-        ctx.io().addCacheHandler(0, GridDhtTxOnePhaseCommitAckRequest.class, new CI2<UUID, GridCacheMessage>() {
+        ctx.io().addCacheHandler(GridDhtTxOnePhaseCommitAckRequest.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                 processDhtTxOnePhaseCommitAckRequest(nodeId, (GridDhtTxOnePhaseCommitAckRequest)msg);
             }
         });
 
-        ctx.io().addCacheHandler(0, GridDhtTxFinishResponse.class, new CI2<UUID, GridCacheMessage>() {
+        ctx.io().addCacheHandler(GridDhtTxFinishResponse.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                 processDhtTxFinishResponse(nodeId, (GridDhtTxFinishResponse)msg);
             }
         });
 
-        ctx.io().addCacheHandler(0, GridCacheTxRecoveryRequest.class,
-            new CI2<UUID, GridCacheTxRecoveryRequest>() {
-                @Override public void apply(UUID nodeId, GridCacheTxRecoveryRequest req) {
-                    processCheckPreparedTxRequest(nodeId, req);
-                }
-            });
+        ctx.io().addCacheHandler(GridCacheTxRecoveryRequest.class,
+            (CI2<UUID, GridCacheTxRecoveryRequest>)this::processCheckPreparedTxRequest);
 
-        ctx.io().addCacheHandler(0, GridCacheTxRecoveryResponse.class,
-            new CI2<UUID, GridCacheTxRecoveryResponse>() {
-                @Override public void apply(UUID nodeId, GridCacheTxRecoveryResponse res) {
-                    processCheckPreparedTxResponse(nodeId, res);
-                }
-            });
+        ctx.io().addCacheHandler(GridCacheTxRecoveryResponse.class,
+            (CI2<UUID, GridCacheTxRecoveryResponse>)this::processCheckPreparedTxResponse);
+
+        ctx.io().addCacheHandler(IncrementalSnapshotAwareMessage.class,
+            (CI2<UUID, IncrementalSnapshotAwareMessage>)this::processIncrementalSnapshotAwareMessage);
+    }
+
+    /** */
+    private void processIncrementalSnapshotAwareMessage(UUID nodeId, IncrementalSnapshotAwareMessage msg) {
+        // Skip if node has joined after incremental snapshot started.
+        if (ctx.localNode().order() <= msg.snapshotTopologyVersion()) {
+            ctx.snapshotMgr().handleIncrementalSnapshotId(msg.id(), msg.snapshotTopologyVersion());
+
+            setIncrementalSnapshotIdIfRequired(msg);
+        }
+
+        GridCacheMessage cacheMsg = msg.payload();
+
+        ctx.io()
+            .cacheHandler(COMMON_MESSAGE_HANDLER_ID, cacheMsg.getClass())
+            .apply(nodeId, cacheMsg);
+    }
+
+    /**
+     * Set received incremental snapshot ID to transaction if specified.
+     *
+     * @param msg Finish message signed with incremental snapshot ID.
+     */
+    private void setIncrementalSnapshotIdIfRequired(IncrementalSnapshotAwareMessage msg) {
+        if (msg.txInrementalSnapshotId() != null) {
+            IgniteInternalTx tx = findTransactionByMessage(msg.payload());
+
+            if (tx != null)
+                tx.incrementalSnapshotId(msg.txInrementalSnapshotId());
+        }
+    }
+
+    /**
+     * Finds transaction related to the specified message.
+     *
+     * @param msg Transaction message.
+     * @return Transaction, or {@code null} if not found.
+     */
+    private @Nullable IgniteInternalTx findTransactionByMessage(GridCacheMessage msg) {
+        if (msg instanceof GridNearTxFinishRequest) {
+            GridNearTxFinishRequest req = (GridNearTxFinishRequest)msg;
+
+            GridCacheVersion dhtVer = ctx.tm().mappedVersion(req.version());
+
+            if (dhtVer != null)
+                return ctx.tm().tx(dhtVer);
+        }
+        else if (msg instanceof GridDhtTxFinishRequest) {
+            GridDhtTxFinishRequest req = (GridDhtTxFinishRequest)msg;
+
+            return ctx.tm().tx(req.version());
+        }
+        else if (msg instanceof GridDhtTxPrepareResponse) {
+            GridDhtTxPrepareResponse res = (GridDhtTxPrepareResponse)msg;
+
+            GridDhtTxPrepareFuture fut =
+                (GridDhtTxPrepareFuture)ctx.mvcc().versionedFuture(res.version(), res.futureId());
+
+            if (fut != null)
+                return fut.tx();
+        }
+        else if (msg instanceof GridNearTxPrepareResponse) {
+            GridNearTxPrepareResponse res = (GridNearTxPrepareResponse)msg;
+
+            GridNearTxPrepareFutureAdapter fut =
+                (GridNearTxPrepareFutureAdapter)ctx.mvcc().versionedFuture(res.version(), res.futureId());
+
+            if (fut != null)
+                return fut.tx();
+        }
+
+        assert false : "Unexpected message is wrapped into IncrementalSnapshotAwareMessage: " + msg;
+
+        return null;
     }
 
     /**
@@ -1046,6 +1117,9 @@ public class IgniteTxHandler {
             tx.nearFinishMiniId(req.miniId());
             tx.storeEnabled(req.storeEnabled());
 
+            if (locTx != null)
+                tx.incrementalSnapshotId(locTx.incrementalSnapshotId());
+
             if (!tx.markFinalizing(USER_FINISH)) {
                 if (log.isDebugEnabled())
                     log.debug("Will not finish transaction (it is handled by another thread) [commit=" + req.commit() + ", tx=" + tx + ']');
@@ -1211,6 +1285,7 @@ public class IgniteTxHandler {
                     if (dhtTx != null) {
                         dhtTx.onePhaseCommit(true);
                         dhtTx.needReturnValue(req.needReturnValue());
+                        dhtTx.incrementalSnapshotId(ctx.snapshotMgr().incrementalSnapshotId());
 
                         finish(dhtTx, req);
                     }
@@ -1531,8 +1606,10 @@ public class IgniteTxHandler {
         GridDhtTxRemote dhtTx,
         GridNearTxRemote nearTx) {
         try {
+            IgniteTxAdapter tx = dhtTx != null ? dhtTx : nearTx;
+
             // Reply back to sender.
-            ctx.io().send(nodeId, res, req.policy());
+            ctx.tm().sendTransactionMessage(nodeId, res, tx, req.policy());
 
             if (txPrepareMsgLog.isDebugEnabled()) {
                 txPrepareMsgLog.debug("Sent dht prepare response [txId=" + req.nearXidVersion() +

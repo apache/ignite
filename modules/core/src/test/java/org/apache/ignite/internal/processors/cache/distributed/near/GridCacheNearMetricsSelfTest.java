@@ -78,9 +78,9 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
             g.cache(DEFAULT_CACHE_NAME).removeAll();
 
             assert g.cache(DEFAULT_CACHE_NAME).localSize() == 0;
-
-            g.cache(DEFAULT_CACHE_NAME).localMxBean().clear();
         }
+
+        grid(0).cache(DEFAULT_CACHE_NAME).clearStatistics();
     }
 
     /** {@inheritDoc} */

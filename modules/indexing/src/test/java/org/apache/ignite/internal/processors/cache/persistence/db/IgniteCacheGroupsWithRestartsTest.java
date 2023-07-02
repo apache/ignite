@@ -37,12 +37,14 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.cache.CacheFindGarbageCommandArg;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -50,14 +52,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceJobResult;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTask;
-import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -347,12 +347,14 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
         IgniteEx ignite,
         boolean deleteFoundGarbage
     ) {
-        VisorFindAndDeleteGarbageInPersistenceTaskArg group = new VisorFindAndDeleteGarbageInPersistenceTaskArg(
-            Collections.singleton(GROUP), deleteFoundGarbage, null);
+        CacheFindGarbageCommandArg arg0 = new CacheFindGarbageCommandArg();
+
+        arg0.groups(new String[] {GROUP});
+        arg0.delete(deleteFoundGarbage);
 
         UUID id = ignite.localNode().id();
 
-        VisorTaskArgument arg = new VisorTaskArgument(id, group, true);
+        VisorTaskArgument arg = new VisorTaskArgument(id, arg0, true);
 
         VisorFindAndDeleteGarbageInPersistenceTaskResult result =
             ignite.compute().execute(VisorFindAndDeleteGarbageInPersistenceTask.class, arg);
@@ -364,7 +366,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
      * @param ignite Ignite instance.
      */
     private void prepareCachesAndData(IgniteEx ignite) {
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         for (int j = 0; j < 3; j++) {
             for (int i = 0; i < 64 * 10; i++) {

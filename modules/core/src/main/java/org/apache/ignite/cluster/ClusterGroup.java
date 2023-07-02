@@ -205,22 +205,6 @@ public interface ClusterGroup {
     public ClusterGroup forHost(String host, String... hosts);
 
     /**
-     * Gets a cluster group consisting from the daemon nodes.
-     * <p>
-     * Daemon nodes are the usual grid nodes that participate in topology but not
-     * visible on the main APIs, i.e. they are not part of any cluster group. The only
-     * way to see daemon nodes is to use this method.
-     * <p>
-     * Daemon nodes are used primarily for management and monitoring functionality that
-     * is build on Ignite and needs to participate in the topology, but also needs to be
-     * excluded from the "normal" topology, so that it won't participate in the task execution
-     * or in-memory data grid storage.
-     *
-     * @return Cluster group consisting from the daemon nodes.
-     */
-    public ClusterGroup forDaemons();
-
-    /**
      * Creates a cluster group with one random node from the current cluster group.
      *
      * @return Cluster group containing one random node from the current cluster group.

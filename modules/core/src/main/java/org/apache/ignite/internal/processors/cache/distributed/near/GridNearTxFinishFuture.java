@@ -807,7 +807,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             add(fut); // Append new future.
 
             try {
-                cctx.io().send(n, req, tx.ioPolicy());
+                cctx.tm().sendTransactionMessage(n, req, tx, tx.ioPolicy());
 
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("Near finish fut, sent request [" +

@@ -61,6 +61,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 @WithSystemProperty(key = "calcite.debug", value = "false")
 public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     /** */
+    protected static final Object[] NULL_RESULT = new Object[] { null };
+
+    /** */
     protected static final String TABLE_NAME = "person";
 
     /** */
@@ -147,8 +150,8 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
      * @param cls Exception class.
      * @param msg Error message.
      */
-    protected void assertThrows(String sql, Class<? extends Exception> cls, String msg) {
-        assertThrowsAnyCause(log, () -> executeSql(sql), cls, msg);
+    protected void assertThrows(String sql, Class<? extends Exception> cls, String msg, Object... args) {
+        assertThrowsAnyCause(log, () -> executeSql(sql, args), cls, msg);
     }
 
     /** */
@@ -161,7 +164,11 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Employer> person = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
             .setName(TABLE_NAME)
             .setSqlSchema("PUBLIC")
-            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName(TABLE_NAME)))
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class)
+                .setTableName(TABLE_NAME)
+                .addQueryField("ID", Integer.class.getName(), null)
+                .setKeyFieldName("ID")
+            ))
             .setCacheMode(cacheMode)
             .setBackups(backups)
         );
@@ -254,8 +261,8 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp) {
-            return delegate.count(ectx, grp);
+        @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp, boolean notNull) {
+            return delegate.count(ectx, grp, notNull);
         }
 
         /** {@inheritDoc} */
@@ -266,6 +273,11 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
             @Nullable ImmutableBitSet requiredColumns
         ) {
             return delegate.firstOrLast(first, ectx, grp, requiredColumns);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isInlineScanPossible(@Nullable ImmutableBitSet requiredColumns) {
+            return delegate.isInlineScanPossible(requiredColumns);
         }
     }
 

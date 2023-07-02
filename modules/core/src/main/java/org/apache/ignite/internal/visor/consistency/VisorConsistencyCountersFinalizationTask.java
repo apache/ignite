@@ -19,25 +19,26 @@ package org.apache.ignite.internal.visor.consistency;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 /**
  *
  */
-public class VisorConsistencyCountersFinalizationTask extends VisorOneNodeTask<Void, String> {
+public class VisorConsistencyCountersFinalizationTask extends VisorOneNodeTask<NoArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<Void, String> job(Void arg) {
+    @Override protected VisorJob<NoArg, String> job(NoArg arg) {
         return new VisorConsistencyCountersFinalizationJob(arg, debug);
     }
 
     /**
      *
      */
-    private static class VisorConsistencyCountersFinalizationJob extends VisorJob<Void, String> {
+    private static class VisorConsistencyCountersFinalizationJob extends VisorJob<NoArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -45,12 +46,12 @@ public class VisorConsistencyCountersFinalizationTask extends VisorOneNodeTask<V
          * @param arg Arguments.
          * @param debug Debug.
          */
-        protected VisorConsistencyCountersFinalizationJob(Void arg, boolean debug) {
+        protected VisorConsistencyCountersFinalizationJob(NoArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(Void arg) throws IgniteException {
+        @Override protected String run(NoArg arg) throws IgniteException {
             try {
                 ignite.context().cache().finalizePartitionsCounters().get();
 

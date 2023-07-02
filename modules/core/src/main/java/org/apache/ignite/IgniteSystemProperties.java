@@ -186,15 +186,6 @@ public final class IgniteSystemProperties {
         type = Integer.class, defaults = "0")
     public static final String IGNITE_RESTART_CODE = "IGNITE_RESTART_CODE";
 
-    /**
-     * Presence of this system property with value {@code true} will make the grid
-     * node start as a daemon node. Node that this system property will override
-     * {@link org.apache.ignite.configuration.IgniteConfiguration#isDaemon()} configuration.
-     */
-    @SystemProperty("If true Ignite will start as a daemon node. Note that this system property " +
-        "will override IgniteConfiguration.isDaemon() configuration")
-    public static final String IGNITE_DAEMON = "IGNITE_DAEMON";
-
     /** Defines Ignite installation folder. */
     @SystemProperty(value = "Defines Ignite installation folder", type = String.class, defaults = "")
     public static final String IGNITE_HOME = "IGNITE_HOME";
@@ -2100,6 +2091,16 @@ public final class IgniteSystemProperties {
         "manner when possible. This generates extra disk space usage", defaults = "" + DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE)
     @IgniteExperimental
     public static final String IGNITE_SNAPSHOT_SEQUENTIAL_WRITE = "IGNITE_SNAPSHOT_SEQUENTIAL_WRITE";
+
+    /**
+     * Comma separated packages list to expose in configuration view.
+     * The default value is null.
+     * @see org.apache.ignite.internal.IgniteKernal#CFG_VIEW
+     * @see org.apache.ignite.spi.systemview.view.ConfigurationView
+     */
+    @SystemProperty(value = "Packages list to expose in configuration view")
+    @IgniteExperimental
+    public static final String IGNITE_CONFIGURATION_VIEW_PACKAGES = "IGNITE_CONFIGURATION_VIEW_PACKAGES";
 
     /**
      * Enforces singleton.

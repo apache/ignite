@@ -220,6 +220,49 @@ class ControlUtility:
         raise TimeoutError(f'Failed to wait for the snapshot operation to complete: '
                            f'snapshot_name={snapshot_name} in {timeout_sec} seconds.')
 
+    def start_performance_statistics(self):
+        """
+        Start performance statistics collecting in the cluster.
+        """
+        output = self.__performance_statistics_cmd("start")
+
+        assert "Started." in output
+
+        return output
+
+    def stop_performance_statistics(self):
+        """
+        Stop performance statistics collecting in the cluster.
+        """
+        output = self.__performance_statistics_cmd("stop")
+
+        assert "Stopped." in output
+
+        return output
+
+    def rotate_performance_statistics(self):
+        """
+        Rotate performance statistics collecting in the cluster.
+        """
+        output = self.__performance_statistics_cmd("rotate")
+
+        assert "Rotated." in output
+
+        return output
+
+    def is_performance_statistics_enabled(self):
+        """
+        Check status of performance statistics collecting in the cluster.
+        """
+        output = self.__performance_statistics_cmd("status")
+
+        assert "Enabled." in output or "Disabled." in output
+
+        return "Enabled." in output
+
+    def __performance_statistics_cmd(self, sub_command):
+        return self.__run(f"--performance-statistics {sub_command}")
+
     @staticmethod
     def __tx_command(**kwargs):
         tokens = ["--tx"]
@@ -322,9 +365,9 @@ class ControlUtility:
     def __parse_cluster_state(output):
         state_pattern = re.compile("Cluster state: (?P<cluster_state>[^\\s]+)")
         topology_pattern = re.compile("Current topology version: (?P<topology_version>\\d+)")
-        baseline_pattern = re.compile("Consistent(Id|ID)=(?P<consistent_id>[^\\s]+)"
-                                      "(,\\sA(ddress|DDRESS)=(?P<address>[^\\s]+))?"
-                                      ",\\sS(tate|TATE)=(?P<state>[^\\s]+)"
+        baseline_pattern = re.compile("Consistent(Id|ID)=(?P<consistent_id>[^\\s,]+)"
+                                      "(,\\sA(ddress|DDRESS)=(?P<address>[^\\s,]+))?"
+                                      ",\\sS(tate|TATE)=(?P<state>[^\\s,]+)"
                                       "(,\\sOrder=(?P<order>\\d+))?")
 
         match = state_pattern.search(output)

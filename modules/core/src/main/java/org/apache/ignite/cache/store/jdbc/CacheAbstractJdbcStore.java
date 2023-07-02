@@ -18,6 +18,8 @@
 package org.apache.ignite.cache.store.jdbc;
 
 import java.sql.BatchUpdateException;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -1389,7 +1391,32 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                     }
                 }
 
-                stmt.setObject(idx, fieldVal);
+                switch (field.getDatabaseFieldType()) {
+                    case Types.CLOB:
+                        if (fieldVal instanceof String) {
+                            Clob clob = stmt.getConnection().createClob();
+                            clob.setString(1, (String)fieldVal);
+                            stmt.setClob(idx, clob);
+                        }
+                        else {
+                            throw new CacheException("Failed to set statement parameter name: " + field.getDatabaseFieldName() +
+                                ", only String is allowed for CLOB field.");
+                        }
+                        break;
+                    case Types.BLOB:
+                        if (fieldVal instanceof byte[]) {
+                            Blob blob = stmt.getConnection().createBlob();
+                            blob.setBytes(1, (byte[])fieldVal);
+                            stmt.setBlob(idx, blob);
+                        }
+                        else {
+                            throw new CacheException("Failed to set statement parameter name: " + field.getDatabaseFieldName() +
+                                ", only byte[] is allowed for BLOB field.");
+                        }
+                        break;
+                    default:
+                        stmt.setObject(idx, fieldVal);
+                }
             }
             else
                 stmt.setNull(idx, field.getDatabaseFieldType());

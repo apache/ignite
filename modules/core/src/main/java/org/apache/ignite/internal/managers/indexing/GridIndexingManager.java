@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.SkipDaemon;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -32,7 +31,6 @@ import org.apache.ignite.spi.indexing.IndexingSpi;
 /**
  * Manages cache indexing.
  */
-@SkipDaemon
 public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -56,9 +54,6 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
-        if (ctx.config().isDaemon())
-            return;
-
         busyLock.block();
     }
 
@@ -66,9 +61,6 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
-            return;
-
         stopSpi();
 
         if (log.isDebugEnabled())

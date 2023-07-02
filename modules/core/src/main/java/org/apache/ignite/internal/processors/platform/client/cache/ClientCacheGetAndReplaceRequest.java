@@ -37,7 +37,7 @@ public class ClientCacheGetAndReplaceRequest extends ClientCacheKeyValueRequest 
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public ClientResponse process(ClientConnectionContext ctx) {
+    @Override public ClientResponse process0(ClientConnectionContext ctx) {
         Object res = cache(ctx).getAndReplace(key(), val());
 
         return new ClientObjectResponse(requestId(), res);

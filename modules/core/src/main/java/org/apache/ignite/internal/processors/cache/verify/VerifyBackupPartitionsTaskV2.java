@@ -44,6 +44,7 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommandArg;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -55,7 +56,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -79,7 +79,7 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
  * concurrently updated.
  */
 @GridInternal
-public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVerifyTaskArg, IdleVerifyResultV2> {
+public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVerifyCommandArg, IdleVerifyResultV2> {
     /** First version of Ignite that is capable of executing Idle Verify V2. */
     public static final IgniteProductVersion V2_SINCE_VER = IgniteProductVersion.fromString("2.5.3");
 
@@ -93,7 +93,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
     /** {@inheritDoc} */
     @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
-        VisorIdleVerifyTaskArg arg
+        CacheIdleVerifyCommandArg arg
     ) throws IgniteException {
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
 
@@ -179,7 +179,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         private IgniteLogger log;
 
         /** Idle verify arguments. */
-        private VisorIdleVerifyTaskArg arg;
+        private CacheIdleVerifyCommandArg arg;
 
         /** Counter of processed partitions. */
         private final AtomicInteger completionCntr = new AtomicInteger(0);
@@ -187,7 +187,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         /**
          * @param arg Argument.
          */
-        public VerifyBackupPartitionsJobV2(VisorIdleVerifyTaskArg arg) {
+        public VerifyBackupPartitionsJobV2(CacheIdleVerifyCommandArg arg) {
             this.arg = arg;
         }
 
@@ -423,7 +423,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
             CacheConfiguration cc = desc.cacheConfiguration();
 
-            switch (arg.cacheFilterEnum()) {
+            switch (arg.cacheFilter()) {
                 case DEFAULT:
                     return desc.cacheType().userCache() || !F.isEmpty(arg.caches());
 
@@ -443,7 +443,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                     return true;
 
                 default:
-                    throw new IgniteException("Illegal cache filter: " + arg.cacheFilterEnum());
+                    throw new IgniteException("Illegal cache filter: " + arg.cacheFilter());
             }
         }
 

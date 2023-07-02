@@ -21,7 +21,6 @@ import java.net.Socket;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.ssl.SslContextFactory;
@@ -114,9 +113,6 @@ public class ConnectorConfiguration {
     private boolean sslClientAuth;
 
     /** SSL context factory for rest binary server. */
-    private GridSslContextFactory sslCtxFactory;
-
-    /** SSL context factory for rest binary server. */
     private Factory<SSLContext> sslFactory;
 
     /** Port range */
@@ -159,7 +155,6 @@ public class ConnectorConfiguration {
         sndBufSize = cfg.getSendBufferSize();
         sndQueueLimit = cfg.getSendQueueLimit();
         sslClientAuth = cfg.isSslClientAuth();
-        sslCtxFactory = cfg.getSslContextFactory();
         sslEnabled = cfg.isSslEnabled();
         sslFactory = cfg.getSslFactory();
         idleQryCurTimeout = cfg.getIdleQueryCursorTimeout();
@@ -440,7 +435,7 @@ public class ConnectorConfiguration {
     /**
      * Whether secure socket layer should be enabled on binary rest server.
      * <p>
-     * Note that if this flag is set to {@code true}, an instance of {@link GridSslContextFactory}
+     * Note that if this flag is set to {@code true}, an instance of the ssl factory
      * should be provided, otherwise binary rest protocol will fail to start.
      *
      * @return {@code True} if SSL should be enabled.
@@ -452,7 +447,7 @@ public class ConnectorConfiguration {
     /**
      * Sets whether Secure Socket Layer should be enabled for REST TCP binary protocol.
      * <p/>
-     * Note that if this flag is set to {@code true}, then a valid instance of {@link GridSslContextFactory}
+     * Note that if this flag is set to {@code true}, then a valid instance of the ssl factory
      * should be provided in {@link IgniteConfiguration}. Otherwise, TCP binary protocol will fail to start.
      *
      * @param sslEnabled {@code True} if SSL should be enabled.
@@ -482,34 +477,6 @@ public class ConnectorConfiguration {
      */
     public ConnectorConfiguration setSslClientAuth(boolean sslClientAuth) {
         this.sslClientAuth = sslClientAuth;
-
-        return this;
-    }
-
-    /**
-     * Gets context factory that will be used for creating a secure socket layer of rest binary server.
-     *
-     * @return SslContextFactory instance.
-     * @see GridSslContextFactory
-     * @deprecated Use {@link #getSslFactory()} instead.
-     */
-    @Deprecated
-    public GridSslContextFactory getSslContextFactory() {
-        return sslCtxFactory;
-    }
-
-    /**
-     * Sets instance of {@link GridSslContextFactory} that will be used to create an instance of {@code SSLContext}
-     * for Secure Socket Layer on TCP binary protocol. This factory will only be used if
-     * {@link #setSslEnabled(boolean)} is set to {@code true}.
-     *
-     * @param sslCtxFactory Instance of {@link GridSslContextFactory}
-     * @deprecated Use {@link #setSslFactory(Factory)} instead.
-     * @return {@code this} for chaining.
-     */
-    @Deprecated
-    public ConnectorConfiguration setSslContextFactory(GridSslContextFactory sslCtxFactory) {
-        this.sslCtxFactory = sslCtxFactory;
 
         return this;
     }

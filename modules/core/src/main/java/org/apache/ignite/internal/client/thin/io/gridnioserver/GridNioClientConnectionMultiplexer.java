@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.net.ssl.SSLContext;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -65,6 +64,9 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
     /** */
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
+    /** */
+    private final int connTimeout;
+
     /**
      * Constructor.
      *
@@ -86,6 +88,8 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
         }
         else
             filters = new GridNioFilter[] {codecFilter};
+
+        connTimeout = cfg.getTimeout();
 
         try {
             srv = GridNioServer.<ByteBuffer>builder()
@@ -143,7 +147,7 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
 
         try {
             SocketChannel ch = SocketChannel.open();
-            ch.socket().connect(new InetSocketAddress(addr.getHostName(), addr.getPort()), Integer.MAX_VALUE);
+            ch.socket().connect(new InetSocketAddress(addr.getHostName(), addr.getPort()), connTimeout);
 
             Map<Integer, Object> meta = new HashMap<>();
             GridNioFuture<?> sslHandshakeFut = null;
@@ -155,6 +159,9 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
             }
 
             GridNioFuture<GridNioSession> sesFut = srv.createSession(ch, meta, false, null);
+
+            if (sesFut.error() != null)
+                sesFut.get();
 
             if (sslHandshakeFut != null)
                 sslHandshakeFut.get();

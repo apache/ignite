@@ -513,7 +513,7 @@ public class ZookeeperDiscoveryImpl {
                     rtState.evtsData.topVer,
                     locNode,
                     rtState.top.topologySnapshot(),
-                    Collections.emptyMap(),
+                    Collections.emptyNavigableMap(),
                     null,
                     null
                 )
@@ -586,7 +586,7 @@ public class ZookeeperDiscoveryImpl {
                 rtState.evtsData != null ? rtState.evtsData.topVer : 1L,
                 locNode,
                 nodes,
-                Collections.emptyMap(),
+                Collections.emptyNavigableMap(),
                 null,
                 null
             )
@@ -2367,7 +2367,7 @@ public class ZookeeperDiscoveryImpl {
                     1L,
                     locNode,
                     topSnapshot,
-                    Collections.emptyMap(),
+                    Collections.emptyNavigableMap(),
                     null,
                     null
                 )
@@ -3075,7 +3075,7 @@ public class ZookeeperDiscoveryImpl {
                     joinedEvtData.topVer,
                     locNode,
                     topSnapshot,
-                    Collections.emptyMap(),
+                    Collections.emptyNavigableMap(),
                     null,
                     null
                 )
@@ -3088,7 +3088,7 @@ public class ZookeeperDiscoveryImpl {
                         joinedEvtData.topVer,
                         locNode,
                         topSnapshot,
-                        Collections.emptyMap(),
+                        Collections.emptyNavigableMap(),
                         null,
                         null
                     )
@@ -3547,7 +3547,7 @@ public class ZookeeperDiscoveryImpl {
                 evtData.topologyVersion(),
                 sndNode,
                 topSnapshot,
-                Collections.emptyMap(),
+                Collections.emptyNavigableMap(),
                 msg,
                 null
             )
@@ -3577,7 +3577,7 @@ public class ZookeeperDiscoveryImpl {
                 joinedEvtData.topVer,
                 joinedNode,
                 topSnapshot,
-                Collections.emptyMap(),
+                Collections.emptyNavigableMap(),
                 null,
                 null
             )
@@ -3627,7 +3627,7 @@ public class ZookeeperDiscoveryImpl {
                 topVer,
                 leftNode,
                 topSnapshot,
-                Collections.emptyMap(),
+                Collections.emptyNavigableMap(),
                 null,
                 null
             )
@@ -4667,7 +4667,7 @@ public class ZookeeperDiscoveryImpl {
             return null;
 
         return rtState0.top.nodesByOrder.values().stream()
-                .filter(n -> !n.isClient() && !n.isDaemon())
+                .filter(n -> !n.isClient())
                 .map(ZookeeperClusterNode::id)
                 .findFirst()
                 .orElse(null);

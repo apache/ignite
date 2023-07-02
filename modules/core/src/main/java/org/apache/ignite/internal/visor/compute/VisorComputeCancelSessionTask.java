@@ -20,6 +20,7 @@ package org.apache.ignite.internal.visor.compute;
 import java.util.List;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.ComputeMXBeanImpl;
+import org.apache.ignite.internal.management.kill.KillComputeCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -32,12 +33,12 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorComputeCancelSessionTask extends VisorOneNodeTask<VisorComputeCancelSessionTaskArg, Void> {
+public class VisorComputeCancelSessionTask extends VisorOneNodeTask<KillComputeCommandArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorComputeCancelSessionJob job(VisorComputeCancelSessionTaskArg arg) {
+    @Override protected VisorComputeCancelSessionJob job(KillComputeCommandArg arg) {
         return new VisorComputeCancelSessionJob(arg, debug);
     }
 
@@ -50,7 +51,7 @@ public class VisorComputeCancelSessionTask extends VisorOneNodeTask<VisorCompute
     /**
      * Job that cancel tasks.
      */
-    private static class VisorComputeCancelSessionJob extends VisorJob<VisorComputeCancelSessionTaskArg, Void> {
+    private static class VisorComputeCancelSessionJob extends VisorJob<KillComputeCommandArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -58,13 +59,13 @@ public class VisorComputeCancelSessionTask extends VisorOneNodeTask<VisorCompute
          * @param arg Map with task sessions IDs to cancel.
          * @param debug Debug flag.
          */
-        private VisorComputeCancelSessionJob(VisorComputeCancelSessionTaskArg arg, boolean debug) {
+        private VisorComputeCancelSessionJob(KillComputeCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(VisorComputeCancelSessionTaskArg arg) {
-            new ComputeMXBeanImpl(ignite.context()).cancel(arg.getSessionId());
+        @Override protected Void run(KillComputeCommandArg arg) {
+            new ComputeMXBeanImpl(ignite.context()).cancel(arg.sessionId());
 
             return null;
         }

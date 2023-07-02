@@ -195,7 +195,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             qry.includeMetadata(),
             qry.keepBinary(),
             qry.taskHash(),
-            cctx.startTopologyVersion(),
+            cctx.affinity().affinityTopologyVersion(),
             qry.mvccSnapshot(),
             // Force deployment anyway if scan query is used.
             cctx.deploymentEnabled() || deployFilterOrTransformer,
@@ -220,7 +220,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             false,
             qry.keepBinary(),
             qry.taskHash(),
-            cctx.startTopologyVersion(),
+            cctx.affinity().affinityTopologyVersion(),
             // Force deployment anyway if scan query is used.
             cctx.deploymentEnabled() || (qry.scanFilter() != null && cctx.gridDeploy().enabled()),
             qry.isDataPageScanEnabled());
@@ -236,7 +236,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         return new GridCacheQueryRequest(cctx.cacheId(),
             reqId,
             fieldsQry,
-            cctx.startTopologyVersion(),
+            cctx.affinity().affinityTopologyVersion(),
             cctx.deploymentEnabled());
     }
 
@@ -805,7 +805,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 writer.incrementState();
 
-            case 27:
+            case 26:
                 if (!writer.writeByteArray("idxQryDescBytes", idxQryDescBytes))
                     return false;
 
@@ -1006,7 +1006,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 reader.incrementState();
 
-            case 27:
+            case 26:
                 idxQryDescBytes = reader.readByteArray("idxQryDescBytes");
 
                 if (!reader.isLastRead())
@@ -1025,7 +1025,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 26;
+        return 27;
     }
 
     /** {@inheritDoc} */

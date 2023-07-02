@@ -68,7 +68,6 @@ import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static java.util.Objects.nonNull;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_RUNNER_THREAD_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -79,7 +78,7 @@ import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
  */
 public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     /** The size of value array to fit 3 pages. */
-    private static final int SIZE_FOR_FIT_3_PAGES = 12008;
+    private static final int SIZE_FOR_FIT_3_PAGES = PAGE_SIZE * 2 + PAGE_SIZE / 2;
 
     /** Listenning logger. */
     private ListeningTestLogger listenLog;
@@ -382,7 +381,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         fut.get();
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         Map<Integer, Value> iterated = new HashMap<>();
 
@@ -426,7 +425,9 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx ignite = startGridsWithCache(2,
             dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 1)), keys);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        ignite = grid(ignite.affinity(dfltCacheCfg.getName()).mapPartitionToNode(0));
+
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         int rows = 0;
 
@@ -462,21 +463,25 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteEx ignite = startGridsWithoutCache(2);
 
-        assertEquals(DFLT_PAGE_SIZE, ignite.configuration().getDataStorageConfiguration().getPageSize());
+        assertEquals(PAGE_SIZE, ignite.configuration().getDataStorageConfiguration().getPageSize());
 
         for (int i = 0; i < keys; i++)
             ignite.getOrCreateCache(ccfg).put(i, new Value(new byte[SIZE_FOR_FIT_3_PAGES]));
 
+        int part = 0;
+
+        ignite = grid(ignite.affinity(ccfg.getName()).mapPartitionToNode(part));
+
         forceCheckpoint();
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         int rows = 0;
 
         try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
             ignite.context().pdsFolderResolver().resolveFolders().folderName(),
             dfltCacheCfg.getName(),
-            0,
+            part,
             ignite.context().encryption())
         ) {
             CacheObjectContext coctx = ignite.cachex(dfltCacheCfg.getName()).context().cacheObjectContext();
@@ -541,7 +546,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         beforeCpEnter.await(testTimeout, TimeUnit.MILLISECONDS);
 
-        IgniteFuture<Void> snpFut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> snpFut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         // Wait until the snapshot task checkpoint listener is registered.
         assertTrue(GridTestUtils.waitForCondition(lsnr::check, testTimeout));
@@ -551,6 +556,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         // Make sure the snapshot has been taken.
         snpFut.get(testTimeout);
+
+        checkSnapshot(SNAPSHOT_NAME, null);
     }
 
     /** @throws Exception If fails. */
@@ -560,7 +567,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteEx ig = startGridWithCache(dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        ig.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        createAndCheckSnapshot(ig, SNAPSHOT_NAME, null, TIMEOUT);
 
         ThreadMXBean tMb = ManagementFactory.getThreadMXBean();
 

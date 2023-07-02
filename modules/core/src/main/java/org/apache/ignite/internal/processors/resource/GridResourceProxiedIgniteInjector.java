@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.resource;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 
@@ -36,8 +37,11 @@ public class GridResourceProxiedIgniteInjector extends GridResourceBasicInjector
 
     /** */
     private Ignite ignite(Object target) {
-        return isSystemType(((IgniteEx)getResource()).context(), target, false)
-            ? getResource() : igniteProxy(getResource());
+        GridKernalContext ctx = ((IgniteEx)getResource()).context();
+
+        return ctx.security().sandbox().enabled() && !isSystemType(ctx, target, false)
+            ? igniteProxy(getResource())
+            : getResource();
     }
 
     /** {@inheritDoc} */

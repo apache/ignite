@@ -312,10 +312,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         else {
             Collection<ClusterNode> all;
 
-            if (p instanceof DaemonFilter)
-                all = F.concat(false, ctx.discovery().daemonNodes(), ctx.discovery().allNodes());
-            else
-                all = ctx.discovery().allNodes();
+            all = ctx.discovery().allNodes();
 
             return p != null ? F.view(all, p) : all;
         }
@@ -462,7 +459,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                 nodeIds = U.newHashSet(ids.length + 1);
 
                 for (UUID id0 : ids) {
-                    if (contains(id))
+                    if (contains(id0))
                         nodeIds.add(id0);
                 }
 
@@ -565,19 +562,9 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
             return forPredicate(new OthersFilter(excludeIds));
     }
 
-    /**
-     * @throws IllegalStateException In case of daemon node.
-     */
-    private void checkDaemon() throws IllegalStateException {
-        if (ctx.isDaemon())
-            throw new IllegalStateException("Not applicable for the daemon node.");
-    }
-
     /** {@inheritDoc} */
     @Override public final ClusterGroup forCacheNodes(String cacheName) {
         CU.validateCacheName(cacheName);
-
-        checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, true, true, true));
     }
@@ -586,16 +573,12 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     @Override public final ClusterGroup forDataNodes(String cacheName) {
         CU.validateCacheName(cacheName);
 
-        checkDaemon();
-
         return forPredicate(new CachesFilter(cacheName, true, false, false));
     }
 
     /** {@inheritDoc} */
     @Override public final ClusterGroup forClientNodes(String cacheName) {
         CU.validateCacheName(cacheName);
-
-        checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, false, true, true));
     }
@@ -604,8 +587,6 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     @Override public ClusterGroup forCacheNodes(String cacheName, boolean affNodes, boolean nearNodes,
         boolean clientNodes) {
         CU.validateCacheName(cacheName);
-
-        checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, affNodes, nearNodes, clientNodes));
     }
@@ -632,11 +613,6 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         A.notNull(host, "host");
 
         return forPredicate(new HostsFilter(host, hosts));
-    }
-
-    /** {@inheritDoc} */
-    @Override public final ClusterGroup forDaemons() {
-        return forPredicate(new DaemonFilter());
     }
 
     /** {@inheritDoc} */
@@ -907,18 +883,6 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
             }
 
             return false;
-        }
-    }
-
-    /**
-     */
-    private static class DaemonFilter implements IgnitePredicate<ClusterNode> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(ClusterNode n) {
-            return n.isDaemon();
         }
     }
 

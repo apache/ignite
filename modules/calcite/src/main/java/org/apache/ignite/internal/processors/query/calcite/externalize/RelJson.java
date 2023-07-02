@@ -72,6 +72,7 @@ import org.apache.calcite.rex.RexVariable;
 import org.apache.calcite.rex.RexWindow;
 import org.apache.calcite.rex.RexWindowBound;
 import org.apache.calcite.rex.RexWindowBounds;
+import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.JoinConditionType;
 import org.apache.calcite.sql.JoinType;
 import org.apache.calcite.sql.SqlAggFunction;
@@ -531,6 +532,8 @@ class RelJson {
                     literal = toEnum(literal);
                 else if (type.getSqlTypeName().getFamily() == SqlTypeFamily.BINARY)
                     literal = toByteString(literal);
+                else if (type.getSqlTypeName().getFamily() == SqlTypeFamily.NUMERIC && literal instanceof Number)
+                    literal = SqlFunctions.toBigDecimal((Number)literal);
 
                 return rexBuilder.makeLiteral(literal, type, true);
             }

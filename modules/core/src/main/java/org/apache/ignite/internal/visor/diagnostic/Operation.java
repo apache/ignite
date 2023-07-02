@@ -22,7 +22,7 @@ package org.apache.ignite.internal.visor.diagnostic;
  */
 public enum Operation {
     /** Dump page locks to file operation. */
-    DUMP_FILE,
+    DUMP,
     /** Dump page locks to log. */
     DUMP_LOG
 }

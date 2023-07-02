@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -613,12 +614,12 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
                 IgniteEx crd = grid(nodes.get(0));
 
                 for (IgniteEx ig : grids())
-                    assertEquals((boolean)state, ig.active());
+                    assertEquals((boolean)state, ig.cluster().state().active());
 
                 if (!state) {
                     System.out.println(">>> Activate cluster");
 
-                    crd.active(true);
+                    crd.cluster().state(ClusterState.ACTIVE);
 
                     System.out.println(">>> Check after cluster activated");
 
@@ -627,7 +628,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
                 else {
                     System.out.println(">>> DeActivate cluster");
 
-                    crd.active(false);
+                    crd.cluster().state(ClusterState.INACTIVE);
 
                     System.out.println(">>> Check after cluster deActivated");
 
@@ -635,7 +636,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
                     System.out.println(">>> Activate cluster");
 
-                    crd.active(true);
+                    crd.cluster().state(ClusterState.ACTIVE);
                 }
 
                 AffinityTopologyVersion next0Ver = nextMinorVersion(crd);

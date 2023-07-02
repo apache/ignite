@@ -180,7 +180,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             return validator().validate(sqlNode);
         }
         catch (RuntimeException e) {
-            throw new ValidationException(e);
+            throw new ValidationException(e.getMessage(), e);
         }
     }
 

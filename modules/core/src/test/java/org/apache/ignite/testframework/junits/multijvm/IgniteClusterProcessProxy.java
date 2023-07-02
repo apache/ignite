@@ -298,11 +298,6 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forDaemons() {
-        throw new UnsupportedOperationException("Operation is not supported yet.");
-    }
-
-    /** {@inheritDoc} */
     @Override public ClusterGroup forRandom() {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
@@ -409,6 +404,11 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
 
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState) throws IgniteException {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void state(ClusterState newState, boolean force) throws IgniteException {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 

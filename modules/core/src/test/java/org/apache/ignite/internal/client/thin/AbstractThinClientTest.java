@@ -43,8 +43,8 @@ public abstract class AbstractThinClientTest extends GridCommonAbstractTest {
         log.setLevel(Level.ALL);
 
         return new ClientConfiguration()
-                .setPartitionAwarenessEnabled(false)
-                .setLogger(log);
+            .setPartitionAwarenessEnabled(isClientPartitionAwarenessEnabled())
+            .setLogger(log);
     }
 
     /**
@@ -61,7 +61,9 @@ public abstract class AbstractThinClientTest extends GridCommonAbstractTest {
             addrs[i] = clientHost(node) + ":" + clientPort(node);
         }
 
-        return getClientConfiguration().setAddresses(addrs);
+        return getClientConfiguration()
+                .setAddresses(addrs)
+                .setClusterDiscoveryEnabled(isClientEndpointsDiscoveryEnabled());
     }
 
     /**
@@ -144,5 +146,19 @@ public abstract class AbstractThinClientTest extends GridCommonAbstractTest {
     protected void dropAllThinClientConnections() {
         for (Ignite ignite : G.allGrids())
             dropAllThinClientConnections(ignite);
+    }
+
+    /**
+     * Toggles endpoints discovery feature on or off.
+     */
+    protected boolean isClientEndpointsDiscoveryEnabled() {
+        return true;
+    }
+
+    /**
+     * Toggles partition awareness feature on or off.
+     */
+    protected boolean isClientPartitionAwarenessEnabled() {
+        return true;
     }
 }

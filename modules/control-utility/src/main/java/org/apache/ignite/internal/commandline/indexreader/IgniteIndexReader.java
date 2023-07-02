@@ -18,10 +18,7 @@
 package org.apache.ignite.internal.commandline.indexreader;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -58,9 +55,10 @@ import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.ProgressPrinter;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.commandline.indexreader.ScanContext.PagesStatistic;
-import org.apache.ignite.internal.commandline.systemview.SystemViewCommand;
+import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
@@ -116,7 +114,6 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.util.GridUnsafe.allocateBuffer;
@@ -283,13 +280,13 @@ public class IgniteIndexReader implements AutoCloseable {
         for (int i = 0; i < partCnt; i++)
             partStores[i] = filePageStore(i, FLAG_DATA, storeFactory);
 
-        Arrays.stream(root.listFiles(f -> f.getName().endsWith(CACHE_DATA_FILENAME))).forEach(f -> {
-            try (ObjectInputStream stream = new ObjectInputStream(Files.newInputStream(f.toPath()))) {
-                StoredCacheData data = (StoredCacheData)stream.readObject();
+        Arrays.stream(FilePageStoreManager.cacheDataFiles(root)).forEach(f -> {
+            try {
+                StoredCacheData data = GridLocalConfigManager.readCacheData(f, null, null);
 
                 storedCacheData.put(CU.cacheId(data.config().getName()), data);
             }
-            catch (ClassNotFoundException | IOException e) {
+            catch (IgniteCheckedException e) {
                 log.warning("Can't read stored cache data. Inline for this cache will not be analyzed [f=" + f.getName() + ']', e);
             }
         });
@@ -976,7 +973,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 Arrays.asList("Total pages encountered during sequential scan:", ctx.stats.values().stream().mapToLong(a -> a.cnt).sum()),
                 Arrays.asList("Total errors occurred during sequential scan: ", ctx.errCnt)
             ),
-            log
+            log::info
         );
 
         if (idxFilter != null)
@@ -1026,7 +1023,7 @@ public class IgniteIndexReader implements AutoCloseable {
                     Arrays.asList(prefix, "Used bytes", "Entries count"),
                     Arrays.asList(STRING, NUMBER, NUMBER),
                     data,
-                    log
+                    log::info
                 );
             }
 
@@ -1078,7 +1075,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 Arrays.asList(prefix + "Total pages found in trees: ", stats.values().stream().mapToLong(a -> a.cnt).sum()),
                 Arrays.asList(prefix + "Total errors during trees traversal: ", totalErr)
             ),
-            log
+            log::info
         );
 
         log.info("");
@@ -1128,7 +1125,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 Arrays.asList(PAGE_LISTS_PREFIX + "Total index pages found in lists:", pageListsInfo.pagesCnt),
                 Arrays.asList(PAGE_LISTS_PREFIX + "Total errors during lists scan:", pageListsInfo.errCnt)
             ),
-            log
+            log::info
         );
 
         log.info("------------------");
@@ -1170,7 +1167,7 @@ public class IgniteIndexReader implements AutoCloseable {
             Arrays.asList(prefix + "Type", "Pages", "Free space (Kb)", "Free space (%)"),
             Arrays.asList(STRING, NUMBER, NUMBER, NUMBER),
             data,
-            log
+            log::info
         );
     }
 

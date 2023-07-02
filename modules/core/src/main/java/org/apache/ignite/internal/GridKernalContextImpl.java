@@ -35,7 +35,6 @@ import java.util.concurrent.ForkJoinPool;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureType;
@@ -197,7 +196,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private ClientListenerProcessor sqlListenerProc;
+    private ClientListenerProcessor clientListenerProc;
 
     /** */
     @GridToStringInclude
@@ -407,9 +406,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Recovery mode flag. Flag is set to {@code false} when discovery manager started. */
     private boolean recoveryMode = true;
 
-    /** */
-    private final boolean igniteDaemon = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DAEMON);
-
     /**
      * No-arg constructor is required by externalization.
      */
@@ -575,7 +571,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof GridQueryProcessor)
             qryProc = (GridQueryProcessor)comp;
         else if (comp instanceof ClientListenerProcessor)
-            sqlListenerProc = (ClientListenerProcessor)comp;
+            clientListenerProc = (ClientListenerProcessor)comp;
         else if (comp instanceof DataStructuresProcessor)
             dataStructuresProc = (DataStructuresProcessor)comp;
         else if (comp instanceof ClusterProcessor)
@@ -873,8 +869,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerProcessor sqlListener() {
-        return sqlListenerProc;
+    @Override public ClientListenerProcessor clientListener() {
+        return clientListenerProc;
     }
 
     /** {@inheritDoc} */
@@ -919,14 +915,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
         for (GridComponent comp : comps)
             comp.printMemoryStats();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isDaemon() {
-        ClusterNode locNode0 = localNode();
-
-        return locNode0 != null ? locNode0.isDaemon() :
-            (config().isDaemon() || igniteDaemon);
     }
 
     /** {@inheritDoc} */
@@ -1032,7 +1020,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public boolean clientNode() {
-        return cfg.isClientMode() || cfg.isDaemon();
+        return cfg.isClientMode();
     }
 
     /** {@inheritDoc} */

@@ -43,6 +43,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
+import org.apache.ignite.internal.processors.task.TaskExecutionOptions;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -259,7 +260,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
         ctx.gateway().readLock();
 
         try {
-            return addFuture(ctx.closure().callAsync(BALANCE, task, prj.nodes()));
+            return addFuture(ctx.closure().callAsync(BALANCE, task, options()));
         }
         finally {
             ctx.gateway().readUnlock();
@@ -275,14 +276,16 @@ public class GridExecutorService implements ExecutorService, Externalizable {
         ctx.gateway().readLock();
 
         try {
-            IgniteInternalFuture<T> fut = ctx.closure().runAsync(BALANCE, task, prj.nodes()).chain(
-                new CX1<IgniteInternalFuture<?>, T>() {
-                    @Override public T applyx(IgniteInternalFuture<?> fut) throws IgniteCheckedException {
-                        fut.get();
+            IgniteInternalFuture<T> fut = ctx.closure()
+                .runAsync(BALANCE, task, options())
+                .chain(
+                    new CX1<IgniteInternalFuture<?>, T>() {
+                        @Override public T applyx(IgniteInternalFuture<?> fut) throws IgniteCheckedException {
+                            fut.get();
 
-                        return res;
-                    }
-                });
+                            return res;
+                        }
+                    });
 
             return addFuture(fut);
         }
@@ -300,7 +303,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
         ctx.gateway().readLock();
 
         try {
-            return addFuture(ctx.closure().runAsync(BALANCE, task, prj.nodes()));
+            return addFuture(ctx.closure().runAsync(BALANCE, task, options()));
         }
         finally {
             ctx.gateway().readUnlock();
@@ -364,7 +367,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
             ctx.gateway().readLock();
 
             try {
-                fut = ctx.closure().callAsync(BALANCE, task, prj.nodes());
+                fut = ctx.closure().callAsync(BALANCE, task, options());
             }
             finally {
                 ctx.gateway().readUnlock();
@@ -497,7 +500,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
             ctx.gateway().readLock();
 
             try {
-                fut = ctx.closure().callAsync(BALANCE, cmd, prj.nodes());
+                fut = ctx.closure().callAsync(BALANCE, cmd, options());
             }
             finally {
                 ctx.gateway().readUnlock();
@@ -574,7 +577,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
         ctx.gateway().readLock();
 
         try {
-            addFuture(ctx.closure().runAsync(BALANCE, cmd, prj.nodes()));
+            addFuture(ctx.closure().runAsync(BALANCE, cmd, options()));
         }
         finally {
             ctx.gateway().readUnlock();
@@ -726,5 +729,10 @@ public class GridExecutorService implements ExecutorService, Externalizable {
                 throw new ExecutionException("Failed to get task result.", e);
             }
         }
+    }
+
+    /** @return Task execution options with node projection automatically set. */
+    private TaskExecutionOptions options() {
+        return TaskExecutionOptions.options(prj.nodes()).asPublicRequest();
     }
 }

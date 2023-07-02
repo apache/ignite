@@ -378,6 +378,9 @@ public abstract class IgniteUtils {
     /** Empty fields array. */
     public static final Field[] EMPTY_FIELDS = new Field[0];
 
+    /** */
+    public static final UUID[] EMPTY_UUIDS = new UUID[0];
+
     /** System line separator. */
     private static final String NL = System.getProperty("line.separator");
 
@@ -399,6 +402,12 @@ public abstract class IgniteUtils {
 
     /** Alphanumeric with underscore regexp pattern. */
     private static final Pattern ALPHANUMERIC_UNDERSCORE_PATTERN = Pattern.compile("^[a-zA-Z_0-9]+$");
+
+    /** Length of numbered file name. */
+    public static final int NUMBER_FILE_NAME_LENGTH = 16;
+
+    /** Ignite package. */
+    public static final String IGNITE_PKG = "org.apache.ignite.";
 
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
@@ -565,6 +574,9 @@ public abstract class IgniteUtils {
     /** MAC OS invalid argument socket error message. */
     public static final String MAC_INVALID_ARG_MSG = "On MAC OS you may have too many file descriptors open " +
         "(simple restart usually solves the issue)";
+
+    /** */
+    public static final String DELIM = "--------------------------------------------------------------------------------";
 
     /** Ignite Logging Directory. */
     public static final String IGNITE_LOG_DIR = System.getenv(IgniteSystemProperties.IGNITE_LOG_DIR);
@@ -1951,6 +1963,29 @@ public abstract class IgniteUtils {
 
             for (int i = 0; i < len; i++)
                 arr[i] = in.readObject();
+        }
+
+        return arr;
+    }
+
+    /**
+     * Reads typed array from input stream.
+     *
+     * @param in Input stream.
+     * @return Deserialized array.
+     * @throws IOException If failed.
+     * @throws ClassNotFoundException If class not found.
+     */
+    @Nullable public static <T> T[] readArray(ObjectInput in, Class<T> cls) throws IOException, ClassNotFoundException {
+        int len = in.readInt();
+
+        T[] arr = null;
+
+        if (len > 0) {
+            arr = (T[])Array.newInstance(cls, len);
+
+            for (int i = 0; i < len; i++)
+                arr[i] = (T)in.readObject();
         }
 
         return arr;
@@ -3364,6 +3399,50 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Generates file name from index.
+     *
+     * @param num Number to generate file name.
+     * @param ext Optional extension
+     * @return File name.
+     */
+    public static String fixedLengthNumberName(long num, @Nullable String ext) {
+        SB b = new SB();
+
+        String segmentStr = Long.toString(num);
+
+        for (int i = segmentStr.length(); i < NUMBER_FILE_NAME_LENGTH; i++)
+            b.a('0');
+
+        b.a(segmentStr);
+
+        if (ext != null)
+            b.a(ext);
+
+        return b.toString();
+    }
+
+    /**
+     * @param fileName File name.
+     * @return Number of this file.
+     */
+    public static long fixedLengthFileNumber(String fileName) {
+        return Long.parseLong(fileName.substring(0, NUMBER_FILE_NAME_LENGTH));
+    }
+
+    /**
+     * @param ext Optional extension.
+     * @return Pattern to match numbered file name with the specific extension.
+     */
+    public static Pattern fixedLengthNumberNamePattern(@Nullable String ext) {
+        String pattern = "\\d{" + NUMBER_FILE_NAME_LENGTH + "}";
+
+        if (ext != null)
+            pattern += ext.replaceAll("\\.", "\\\\\\.");
+
+        return Pattern.compile(pattern);
+    }
+
+    /**
      * Verifier always returns successful result for any host.
      */
     private static class DeploymentHostnameVerifier implements HostnameVerifier {
@@ -3735,7 +3814,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Deletes file or directory with all sub-directories and files.
+     * Deletes file or directory with all sub-directories and files. Not thread-safe.
      *
      * @param file File or directory to delete.
      * @return {@code true} if and only if the file or directory is successfully deleted,
@@ -3756,7 +3835,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Deletes file or directory with all sub-directories and files.
+     * Deletes file or directory with all sub-directories and files. Not thread-safe.
      *
      * @param path File or directory to delete.
      * @return {@code true} if and only if the file or directory is successfully deleted,
@@ -4974,6 +5053,26 @@ public abstract class IgniteUtils {
      */
     public static ObjectName makeMBeanName(@Nullable String igniteInstanceName, @Nullable String grp, String name)
         throws MalformedObjectNameException {
+        return makeMBeanName(igniteInstanceName, grp, Collections.emptyList(), name);
+    }
+
+    /**
+     * Constructs JMX object name with given properties.
+     * Map with ordered {@code groups} used for proper object name construction.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param grp Name of the group.
+     * @param grps Names of extended groups.
+     * @param name Name of mbean.
+     * @return JMX object name.
+     * @throws MalformedObjectNameException Thrown in case of any errors.
+     */
+    public static ObjectName makeMBeanName(
+        @Nullable String igniteInstanceName,
+        @Nullable String grp,
+        List<String> grps,
+        String name
+    ) throws MalformedObjectNameException {
         SB sb = new SB(JMX_DOMAIN + ':');
 
         appendClassLoaderHash(sb);
@@ -4985,6 +5084,9 @@ public abstract class IgniteUtils {
 
         if (grp != null)
             sb.a("group=").a(escapeObjectNameValue(grp)).a(',');
+
+        for (int i = 0; i < grps.size(); i++)
+            sb.a("group").a(i).a("=").a(grps.get(i)).a(',');
 
         sb.a("name=").a(escapeObjectNameValue(name));
 
@@ -6827,7 +6929,7 @@ public abstract class IgniteUtils {
     public static String compact(String s) {
         return s.replace("org.apache.ignite.internal.visor.", "o.a.i.i.v.").
             replace("org.apache.ignite.internal.", "o.a.i.i.").
-            replace("org.apache.ignite.", "o.a.i.");
+            replace(IGNITE_PKG, "o.a.i.");
     }
 
     /**
@@ -7449,8 +7551,7 @@ public abstract class IgniteUtils {
      * @return Short string representing the node.
      */
     public static String toShortString(ClusterNode n) {
-        return "ClusterNode [id=" + n.id() + ", order=" + n.order() + ", addr=" + n.addresses() +
-            ", daemon=" + n.isDaemon() + ']';
+        return "ClusterNode [id=" + n.id() + ", order=" + n.order() + ", addr=" + n.addresses() + ']';
     }
 
     /**
@@ -11663,7 +11764,7 @@ public abstract class IgniteUtils {
      * @return {@code true} if local node is coordinator.
      */
     public static boolean isLocalNodeCoordinator(GridDiscoveryManager discoMgr) {
-        if (discoMgr.localNode().isClient() || discoMgr.localNode().isDaemon())
+        if (discoMgr.localNode().isClient())
             return false;
 
         DiscoverySpi spi = discoMgr.getInjectedDiscoverySpi();
@@ -12403,7 +12504,7 @@ public abstract class IgniteUtils {
      * @return {@code true} if the REST processor is enabled, {@code false} the otherwise.
      */
     public static boolean isRestEnabled(IgniteConfiguration cfg) {
-        boolean isClientNode = cfg.isClientMode() || cfg.isDaemon();
+        boolean isClientNode = cfg.isClientMode();
 
         // By default, rest processor doesn't start on client nodes.
         return cfg.getConnectorConfiguration() != null &&
@@ -12446,5 +12547,29 @@ public abstract class IgniteUtils {
         catch (ClassNotFoundException e) {
             return true;
         }
+    }
+
+    /**
+     * Appends spaces to end of input string for extending to needed length.
+     *
+     * @param s Input string.
+     * @param targetLen Needed length.
+     * @return String with appended spaces on the end.
+     */
+    public static String extendToLen(String s, int targetLen) {
+        assert targetLen >= 0;
+        assert s.length() <= targetLen;
+
+        if (s.length() == targetLen)
+            return s;
+
+        SB sb = new SB(targetLen);
+
+        sb.a(s);
+
+        for (int i = 0; i < targetLen - s.length(); i++)
+            sb.a(" ");
+
+        return sb.toString();
     }
 }

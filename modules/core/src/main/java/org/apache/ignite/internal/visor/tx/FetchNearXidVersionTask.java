@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.management.tx.TxInfoCommandArg;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -36,12 +37,12 @@ import org.jetbrains.annotations.Nullable;
  * Retrieves unique transaction identifier (nearXid) from UUID/GridCacheVersion of xid/nearXid.
  */
 @GridInternal
-public class FetchNearXidVersionTask extends VisorMultiNodeTask<TxVerboseId, GridCacheVersion, GridCacheVersion> {
+public class FetchNearXidVersionTask extends VisorMultiNodeTask<TxInfoCommandArg, GridCacheVersion, GridCacheVersion> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<TxVerboseId, GridCacheVersion> job(TxVerboseId arg) {
+    @Override protected VisorJob<TxInfoCommandArg, GridCacheVersion> job(TxInfoCommandArg arg) {
         return new FetchNearXidVersionJob(arg, debug);
     }
 
@@ -58,7 +59,7 @@ public class FetchNearXidVersionTask extends VisorMultiNodeTask<TxVerboseId, Gri
     /**
      *
      */
-    private static class FetchNearXidVersionJob extends VisorJob<TxVerboseId, GridCacheVersion> {
+    private static class FetchNearXidVersionJob extends VisorJob<TxInfoCommandArg, GridCacheVersion> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -66,12 +67,12 @@ public class FetchNearXidVersionTask extends VisorMultiNodeTask<TxVerboseId, Gri
          * @param arg Argument.
          * @param debug Debug.
          */
-        public FetchNearXidVersionJob(TxVerboseId arg, boolean debug) {
+        public FetchNearXidVersionJob(TxInfoCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected GridCacheVersion run(@Nullable TxVerboseId arg) throws IgniteException {
+        @Override protected GridCacheVersion run(@Nullable TxInfoCommandArg arg) throws IgniteException {
             IgniteTxManager tm = ignite.context().cache().context().tm();
 
             Collection<IgniteInternalTx> transactions = tm.activeTransactions();
@@ -89,7 +90,7 @@ public class FetchNearXidVersionTask extends VisorMultiNodeTask<TxVerboseId, Gri
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<TxVerboseId> arg) {
+    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<TxInfoCommandArg> arg) {
         return ignite.cluster().nodes().stream()
             .map(ClusterNode::id)
             .collect(Collectors.toList());

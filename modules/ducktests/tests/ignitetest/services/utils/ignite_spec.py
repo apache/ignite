@@ -24,12 +24,13 @@ import os
 import subprocess
 from abc import ABCMeta, abstractmethod
 import re
+from itertools import chain
 
 from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate, \
     IgniteLoggerConfigTemplate, IgniteThinClientConfigTemplate
 from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
-from ignitetest.services.utils.path import get_home_dir, get_module_path, IgnitePathAware
+from ignitetest.services.utils.path import get_home_dir, IgnitePathAware
 from ignitetest.services.utils.ssl.ssl_params import is_ssl_enabled
 from ignitetest.services.utils.metrics.metrics import is_opencensus_metrics_enabled, configure_opencensus_metrics,\
     is_jmx_metrics_enabled, configure_jmx_metrics
@@ -97,7 +98,8 @@ class IgniteSpec(metaclass=ABCMeta):
         Return a set of default JVM options.
         """
         default_jvm_opts = create_jvm_settings(gc_dump_path=os.path.join(self.service.log_dir, "gc.log"),
-                                               oom_path=os.path.join(self.service.log_dir, "out_of_mem.hprof"))
+                                               oom_path=os.path.join(self.service.log_dir, "out_of_mem.hprof"),
+                                               vm_error_path=os.path.join(self.service.log_dir, "hs_err_pid%p.log"))
 
         default_jvm_opts = merge_jvm_settings(
             default_jvm_opts, ["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.service.persistent_root, "success_file"),
@@ -129,16 +131,14 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         :return: config that service will use to start on a node
         """
-        if self.service.config.service_type == IgniteServiceType.NONE:
-            return []
-
         config_templates = [(IgnitePathAware.IGNITE_LOG_CONFIG_NAME, IgniteLoggerConfigTemplate())]
 
         if self.service.config.service_type == IgniteServiceType.NODE:
             config_templates.append((IgnitePathAware.IGNITE_CONFIG_NAME,
                                      IgniteClientConfigTemplate() if self.service.config.client_mode
                                      else IgniteServerConfigTemplate()))
-        else:
+
+        if self.service.config.service_type == IgniteServiceType.THIN_CLIENT:
             config_templates.append((IgnitePathAware.IGNITE_THIN_CLIENT_CONFIG_NAME, IgniteThinClientConfigTemplate()))
 
         return config_templates
@@ -158,6 +158,8 @@ class IgniteSpec(metaclass=ABCMeta):
                     is_jmx_metrics_enabled(self.service)):
                 config = config._replace(ignite_instance_name=self._test_id)
 
+        config = config.prepare_ssl(self.service.globals, self.service.shared_root)
+
         return config
 
     @property
@@ -171,14 +173,31 @@ class IgniteSpec(metaclass=ABCMeta):
         product = product if product else self.service.product
         return get_home_dir(self.service.install_root, product)
 
-    def _module(self, name):
+    @staticmethod
+    def __get_module_libs(project_dir, module_name, is_dev):
         """
-        Get module path for current spec.
+        Get absolute paths to be added to classpath for the specified module.
         """
-        if name == "ducktests":
-            return get_module_path(self.__home(str(DEV_BRANCH)), name, DEV_BRANCH.is_dev)
+        if is_dev:
+            module_libs = [
+                os.path.join("modules", module_name, "target"),
+                os.path.join("modules", module_name, "target", "libs")
+            ]
+        else:
+            module_libs = [
+                os.path.join("libs", "optional", "ignite-%s" % module_name)
+            ]
 
-        return get_module_path(self.__home(), name, self.service.config.version.is_dev)
+        return [os.path.join(project_dir, module_path) for module_path in module_libs]
+
+    def _module_libs(self, module_name):
+        """
+        Get list of paths to be added to classpath for the passed module for current spec.
+        """
+        if module_name == "ducktests":
+            return self.__get_module_libs(self.__home(str(DEV_BRANCH)), module_name, is_dev=True)
+
+        return self.__get_module_libs(self.__home(), module_name, self.service.config.version.is_dev)
 
     @abstractmethod
     def command(self, node):
@@ -186,20 +205,27 @@ class IgniteSpec(metaclass=ABCMeta):
         :return: string that represents command to run service on a node
         """
 
-    def libs(self):
+    def modules(self):
         """
-        :return: libs set.
+        :return: modules set.
         """
-        libs = self.service.modules or []
+        modules = self.service.modules or []
 
-        libs.append("log4j2")
+        modules.append("log4j2")
+        modules.append("ducktests")
 
         if is_opencensus_metrics_enabled(self.service):
-            libs.append("opencensus")
+            modules.append("opencensus")
 
-        return [os.path.join(self.__home(str(DEV_BRANCH)), "modules", "ducktests", "target", "*"),
-                os.path.join(self.__home(str(DEV_BRANCH)), "modules", "ducktests", "target", "libs", "*"),
-                *list(map(lambda m: os.path.join(self._module(m), "*"), libs))]
+        return modules
+
+    def libs(self):
+        """
+        :return: list of paths for all modules to be added to classpath
+        """
+        flat_libs_list = chain(*[self._module_libs(module) for module in self.modules()])
+
+        return list(map(lambda lib: os.path.join(lib, "*"), flat_libs_list))
 
     def envs(self):
         """
@@ -319,20 +345,6 @@ class IgniteApplicationSpec(IgniteSpec):
     def config_file_path(self):
         return self.service.config_file if self.service.config.service_type == IgniteServiceType.NODE \
             else self.service.thin_client_config_file
-
-    def libs(self):
-        libs = super().libs()
-        libs.extend(self.__jackson())
-
-        return libs
-
-    def __jackson(self):
-        if not self.service.config.version.is_dev:
-            ducktests = self._module("ducktests")
-            return self.service.context.cluster.nodes[0].account.ssh_capture(
-                "find %s -type f -name '*.jar' | grep jackson | tr '\n' ':' " % ducktests)
-
-        return []
 
     def envs(self):
         return {**super().envs(), **{"MAIN_CLASS": self.service.main_java_class}}

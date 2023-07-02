@@ -24,6 +24,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -708,7 +709,7 @@ public interface Ignite extends AutoCloseable {
      * Checks Ignite grid is active or not active.
      *
      * @return {@code True} if grid is active. {@code False} If grid is not active.
-     * @deprecated Use {@link IgniteCluster#active()} instead.
+     * @deprecated Use {@link IgniteCluster#state()} instead.
      */
     @Deprecated
     public boolean active();
@@ -721,7 +722,7 @@ public interface Ignite extends AutoCloseable {
      *
      * @param active If {@code True} start activation process. If {@code False} start deactivation process.
      * @throws IgniteException If there is an already started transaction or lock in the same thread.
-     * @deprecated Use {@link IgniteCluster#active(boolean)} instead.
+     * @deprecated Use {@link IgniteCluster#state(ClusterState)} instead.
      */
     @Deprecated
     public void active(boolean active);

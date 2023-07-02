@@ -354,11 +354,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridQueryProcessor query();
 
     /**
-     * Gets SQL listener processor.
+     * Gets client listener processor.
      *
-     * @return SQL listener processor.
+     * @return Client listener processor.
      */
-    public ClientListenerProcessor sqlListener();
+    public ClientListenerProcessor clientListener();
 
     /**
      * @return Plugin processor.
@@ -509,13 +509,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * NOTE: This method is for testing and profiling purposes only.
      */
     public void printMemoryStats();
-
-    /**
-     * Checks whether this node is daemon.
-     *
-     * @return {@code True} if this node is daemon, {@code false} otherwise.
-     */
-    public boolean isDaemon();
 
     /**
      * @return Performance suggestions object.

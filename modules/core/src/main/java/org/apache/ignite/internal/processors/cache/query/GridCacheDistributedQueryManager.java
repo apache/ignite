@@ -54,6 +54,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
@@ -98,26 +99,27 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     };
 
     /** Event listener. */
-    private GridLocalEventListener lsnr;
+    private GridLocalEventListener lsnr = new GridLocalEventListener() {
+        /** {@inheritDoc} */
+        @Override public void onEvent(Event evt) {
+            DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
+
+            for (GridCacheDistributedQueryFuture fut : futs.values())
+                fut.onNodeLeft(discoEvt.eventNode().id());
+        }
+    };
 
     /** {@inheritDoc} */
-    @Override public void start0() throws IgniteCheckedException {
-        super.start0();
+    @Override public void onKernalStart0() throws IgniteCheckedException {
+        super.onKernalStart0();
 
-        cctx.io().addCacheHandler(cctx.cacheId(), GridCacheQueryRequest.class, new CI2<UUID, GridCacheQueryRequest>() {
-            @Override public void apply(UUID nodeId, GridCacheQueryRequest req) {
-                processQueryRequest(nodeId, req);
-            }
-        });
+        assert !cctx.isRecoveryMode() : "Registering message handlers in recovery mode [cacheName=" + cctx.name() + ']';
 
-        lsnr = new GridLocalEventListener() {
-            @Override public void onEvent(Event evt) {
-                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
-
-                for (GridCacheDistributedQueryFuture fut : futs.values())
-                    fut.onNodeLeft(discoEvt.eventNode().id());
-            }
-        };
+        cctx.io().addCacheHandler(
+            cctx.cacheId(),
+            cctx.startTopologyVersion(),
+            GridCacheQueryRequest.class,
+            (CI2<UUID, GridCacheQueryRequest>)this::processQueryRequest);
 
         cctx.events().addListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
@@ -550,9 +552,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         boolean performanceStatsEnabled = cctx.kernalContext().performanceStatistics().enabled();
 
-        long startTime = performanceStatsEnabled ? System.currentTimeMillis() : 0;
-        long startTimeNanos = performanceStatsEnabled ? System.nanoTime() : 0;
-
         GridCloseableIterator locIter0 = null;
 
         for (ClusterNode node : nodes) {
@@ -648,23 +647,13 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 if (fut != null)
                     fut.cancel();
 
-                if (performanceStatsEnabled) {
-                    cctx.kernalContext().performanceStatistics().query(
+                if (performanceStatsEnabled && (logicalReads > 0 || physicalReads > 0)) {
+                    cctx.kernalContext().performanceStatistics().queryReads(
                         SCAN,
-                        cctx.name(),
+                        cctx.localNodeId(),
                         ((GridCacheDistributedQueryFuture)fut).requestId(),
-                        startTime,
-                        System.nanoTime() - startTimeNanos,
-                        true);
-
-                    if (logicalReads > 0 || physicalReads > 0) {
-                        cctx.kernalContext().performanceStatistics().queryReads(
-                            SCAN,
-                            cctx.localNodeId(),
-                            ((GridCacheDistributedQueryFuture)fut).requestId(),
-                            logicalReads,
-                            physicalReads);
-                    }
+                        logicalReads,
+                        physicalReads);
                 }
             }
         };

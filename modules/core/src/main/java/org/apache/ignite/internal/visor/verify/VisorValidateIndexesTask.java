@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.verify;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,7 +30,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -43,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 @InterruptibleVisorTask
-public class VisorValidateIndexesTask extends VisorMultiNodeTask<VisorValidateIndexesTaskArg,
+public class VisorValidateIndexesTask extends VisorMultiNodeTask<CacheValidateIndexesCommandArg,
     VisorValidateIndexesTaskResult, VisorValidateIndexesJobResult> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -64,18 +67,18 @@ public class VisorValidateIndexesTask extends VisorMultiNodeTask<VisorValidateIn
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorValidateIndexesTaskArg, VisorValidateIndexesJobResult> job(VisorValidateIndexesTaskArg arg) {
+    @Override protected VisorJob<CacheValidateIndexesCommandArg, VisorValidateIndexesJobResult> job(CacheValidateIndexesCommandArg arg) {
         return new VisorValidateIndexesJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<VisorValidateIndexesTaskArg> arg) {
+    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<CacheValidateIndexesCommandArg> arg) {
         Collection<ClusterNode> srvNodes = ignite.cluster().forServers().nodes();
         Collection<UUID> ret = new ArrayList<>(srvNodes.size());
 
-        VisorValidateIndexesTaskArg taskArg = arg.getArgument();
+        CacheValidateIndexesCommandArg taskArg = arg.getArgument();
 
-        Set<UUID> nodeIds = taskArg.getNodes() != null ? new HashSet<>(taskArg.getNodes()) : null;
+        Set<UUID> nodeIds = taskArg.nodeIds() != null ? new HashSet<>(Arrays.asList(taskArg.nodeIds())) : null;
 
         if (nodeIds == null) {
             for (ClusterNode node : srvNodes)
@@ -94,7 +97,7 @@ public class VisorValidateIndexesTask extends VisorMultiNodeTask<VisorValidateIn
     /**
      *
      */
-    private static class VisorValidateIndexesJob extends VisorJob<VisorValidateIndexesTaskArg, VisorValidateIndexesJobResult> {
+    private static class VisorValidateIndexesJob extends VisorJob<CacheValidateIndexesCommandArg, VisorValidateIndexesJobResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -106,19 +109,21 @@ public class VisorValidateIndexesTask extends VisorMultiNodeTask<VisorValidateIn
          * @param arg Argument.
          * @param debug Debug.
          */
-        protected VisorValidateIndexesJob(@Nullable VisorValidateIndexesTaskArg arg, boolean debug) {
+        protected VisorValidateIndexesJob(@Nullable CacheValidateIndexesCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorValidateIndexesJobResult run(@Nullable VisorValidateIndexesTaskArg arg) throws IgniteException {
+        @Override protected VisorValidateIndexesJobResult run(CacheValidateIndexesCommandArg arg) throws IgniteException {
+            A.notNull(arg, "arg");
+
             try {
                 ValidateIndexesClosure clo = new ValidateIndexesClosure(
                     this::isCancelled,
-                    arg.getCaches(),
-                    arg.getCheckFirst(),
-                    arg.getCheckThrough(),
-                    arg.сheckCrc(),
+                    arg.caches() == null ? null : new HashSet<>(Arrays.asList(arg.caches())),
+                    arg.checkFirst(),
+                    arg.checkThrough(),
+                    arg.checkCrc(),
                     arg.checkSizes()
                 );
 

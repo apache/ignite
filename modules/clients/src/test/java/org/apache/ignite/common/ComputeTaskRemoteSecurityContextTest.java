@@ -191,11 +191,9 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractEventSecurityC
     public void testGridClient() throws Exception {
         Assume.assumeFalse(failWithTimeout);
 
-        String login = "grid_client";
-
         GridClientConfiguration cfg = new GridClientConfiguration()
             .setServers(singletonList("127.0.0.1:11211"))
-            .setSecurityCredentialsProvider(new SecurityCredentialsBasicProvider(new SecurityCredentials(login, "")));
+            .setSecurityCredentialsProvider(new SecurityCredentialsBasicProvider(new SecurityCredentials(GRID_CLIENT_LOGIN, "")));
 
         try (GridClient cli = GridClientFactory.start(cfg)) {
             GridClientNode taskReqRecipient = cli.compute().nodes().stream()
@@ -207,22 +205,20 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractEventSecurityC
             String taskName = mapAsync ? MapAsyncTestTask.class.getName() : TestTask.class.getName();
 
             if (async)
-                comp.executeAsync(taskName, login).get();
+                comp.executeAsync(taskName, GRID_CLIENT_LOGIN).get();
             else
-                comp.execute(taskName, login);
+                comp.execute(taskName, GRID_CLIENT_LOGIN);
 
-            checkTaskEvents("crd", login, REDUCER_SUCCEEDED_TASK_EVENTS, MAP_NODE_SUCCEEDED_TASK_EVENTS);
+            checkTaskEvents("crd", GRID_CLIENT_LOGIN, REDUCER_SUCCEEDED_TASK_EVENTS, MAP_NODE_SUCCEEDED_TASK_EVENTS);
         }
     }
 
     /** Tests task execution security context in case task was initiated from the {@link IgniteClient}. */
     @Test
     public void testIgniteClient() throws Exception {
-        String login = "thin_client";
-
         ClientConfiguration cfg = new ClientConfiguration()
-            .setAddresses(Config.SERVER)
-            .setUserName(login)
+            .setAddressesFinder(() -> new String[] {Config.SERVER})
+            .setUserName(THIN_CLIENT_LOGIN)
             .setUserPassword("");
 
         try (IgniteClient cli = Ignition.startClient(cfg)) {
@@ -237,11 +233,11 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractEventSecurityC
 
             try {
                 if (async)
-                    comp.executeAsync2(taskName, login).get();
+                    comp.executeAsync2(taskName, THIN_CLIENT_LOGIN).get();
                 else
-                    comp.execute(taskName, login);
+                    comp.execute(taskName, THIN_CLIENT_LOGIN);
 
-                checkTaskEvents("crd", login, REDUCER_SUCCEEDED_TASK_EVENTS, MAP_NODE_SUCCEEDED_TASK_EVENTS);
+                checkTaskEvents("crd", THIN_CLIENT_LOGIN, REDUCER_SUCCEEDED_TASK_EVENTS, MAP_NODE_SUCCEEDED_TASK_EVENTS);
             }
             catch (Throwable e) {
                 if (!failWithTimeout)
@@ -254,7 +250,7 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractEventSecurityC
                 assertNotNull(timeoutE);
                 assertTrue(X.hasCause(timeoutE, "Task timed out", ClientServerError.class));
 
-                checkTaskEvents("crd", login, REDUCER_FAILED_TASK_EVENTS, MAP_NODE_FAILED_TASK_EVENTS);
+                checkTaskEvents("crd", THIN_CLIENT_LOGIN, REDUCER_FAILED_TASK_EVENTS, MAP_NODE_FAILED_TASK_EVENTS);
             }
         }
     }
@@ -262,32 +258,30 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractEventSecurityC
     /** Tests task execution security context in case task was initiated from the REST client. */
     @Test
     public void testRestClient() throws Exception {
-        String login = "rest_client";
-
         String taskName = mapAsync ? MapAsyncTestTask.class.getName() : TestTask.class.getName();
 
         JsonNode resp = sendRestRequest(
             EXE,
             Arrays.asList(
                 "name=" + taskName,
-                "p1=" + login,
+                "p1=" + REST_CLIENT_LOGIN,
                 "async=" + async,
                 "timeout=" + (failWithTimeout ? TEST_TASK_TIMEOUT : 0)),
-            login);
+            REST_CLIENT_LOGIN);
 
         if (async) {
             String taskId = resp.get("response").get("id").textValue();
 
             U.sleep(2 * TEST_TASK_TIMEOUT);
 
-            resp = sendRestRequest(RESULT, singletonList("id=" + taskId), login);
+            resp = sendRestRequest(RESULT, singletonList("id=" + taskId), REST_CLIENT_LOGIN);
         }
 
         if (failWithTimeout) {
             assertEquals(1, resp.get("successStatus").intValue());
             assertTrue(resp.get("error").textValue().contains("Task timed out"));
 
-            checkTaskEvents("crd", login, REDUCER_FAILED_TASK_EVENTS, MAP_NODE_FAILED_TASK_EVENTS);
+            checkTaskEvents("crd", REST_CLIENT_LOGIN, REDUCER_FAILED_TASK_EVENTS, MAP_NODE_FAILED_TASK_EVENTS);
         }
         else {
             assertEquals(0, resp.get("successStatus").intValue());
@@ -298,7 +292,7 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractEventSecurityC
             assertTrue(taskRes.get("finished").asBoolean());
             assertNull(taskRes.get("error").textValue());
 
-            checkTaskEvents("crd", login, REDUCER_SUCCEEDED_TASK_EVENTS, MAP_NODE_SUCCEEDED_TASK_EVENTS);
+            checkTaskEvents("crd", REST_CLIENT_LOGIN, REDUCER_SUCCEEDED_TASK_EVENTS, MAP_NODE_SUCCEEDED_TASK_EVENTS);
         }
     }
 

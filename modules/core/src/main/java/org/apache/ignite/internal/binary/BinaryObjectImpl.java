@@ -38,6 +38,7 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectTransformerUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -48,6 +49,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
 
 /**
  * Binary object implementation.
@@ -62,9 +64,14 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     private BinaryContext ctx;
 
     /** */
+    @GridDirectTransient
     private byte[] arr;
 
+    /** Bytes to be stored or transferred instead of raw binary array. */
+    private byte[] valBytes;
+
     /** */
+    @GridDirectTransient
     private int start;
 
     /** */
@@ -94,9 +101,43 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         assert ctx != null;
         assert arr != null;
 
+        assert arr[start] != TRANSFORMED; // Raw array should never be transformed.
+
         this.ctx = ctx;
         this.arr = arr;
         this.start = start;
+    }
+
+    /**
+     * @param ctx Context.
+     * @param bytes Array/ValBytes.
+     */
+    public BinaryObjectImpl(BinaryContext ctx, byte[] bytes) {
+        assert ctx != null;
+        assert bytes != null;
+
+        this.ctx = ctx;
+
+        assert bytes[0] != TRANSFORMED; // Raw array should never be transformed.
+
+        arr = bytes;
+        valBytes = bytes;
+    }
+
+    /**
+     * @param ctx Context.
+     * @param valBytes Value bytes.
+     * @param coCtx Cache object context.
+     */
+    public BinaryObjectImpl(BinaryContext ctx, byte[] valBytes, CacheObjectContext coCtx) {
+        assert ctx != null;
+        assert valBytes != null;
+        assert coCtx != null;
+
+        this.ctx = ctx;
+        this.valBytes = valBytes;
+
+        arr = arrayFromValueBytes(coCtx);
     }
 
     /** {@inheritDoc} */
@@ -105,7 +146,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
             return this;
 
         BinaryObjectImpl cp = new BinaryObjectImpl(ctx, arr, start);
+
         cp.part = part;
+        cp.valBytes = arr; // Keys should never be transformed.
 
         return cp;
     }
@@ -117,7 +160,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public void partition(int part) {
+        assert part >= 0;
+
         this.part = part;
+
+        valBytes = arr;  // Keys should never be transformed.
     }
 
     /** {@inheritDoc} */
@@ -156,48 +203,45 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
-        if (detached())
-            return array();
-
-        int len = length();
-
-        byte[] arr0 = new byte[len];
-
-        U.arrayCopy(arr, start, arr0, 0, len);
-
-        return arr0;
+        return valBytes;
     }
 
     /** {@inheritDoc} */
     @Override public boolean putValue(ByteBuffer buf) throws IgniteCheckedException {
-        return putValue(buf, 0, CacheObjectAdapter.objectPutSize(length()));
+        return putValue(buf, 0, CacheObjectAdapter.objectPutSize(valBytes.length));
     }
 
     /** {@inheritDoc} */
     @Override public int putValue(long addr) throws IgniteCheckedException {
-        return CacheObjectAdapter.putValue(addr, cacheObjectType(), arr, start, length());
+        return CacheObjectAdapter.putValue(addr, cacheObjectType(), valBytes, 0, valBytes.length);
     }
 
     /** {@inheritDoc} */
     @Override public boolean putValue(final ByteBuffer buf, int off, int len) throws IgniteCheckedException {
-        return CacheObjectAdapter.putValue(cacheObjectType(), buf, off, len, arr, start);
+        return CacheObjectAdapter.putValue(cacheObjectType(), buf, off, len, valBytes, 0);
     }
 
     /** {@inheritDoc} */
     @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
-        return CacheObjectAdapter.objectPutSize(length());
+        return CacheObjectAdapter.objectPutSize(valBytes.length);
     }
 
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
-        if (detached())
-            return this;
+        BinaryObjectImpl res = detached() ? this : detach();
 
-        return (BinaryObjectImpl)detach();
+        res.prepareMarshal(ctx);
+
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        assert arr != null || valBytes != null;
+
+        if (arr == null)
+            arr = arrayFromValueBytes(ctx);
+
         CacheObjectBinaryProcessorImpl binaryProc = (CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects();
 
         this.ctx = binaryProc.binaryContext();
@@ -206,8 +250,27 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
-        // No-op.
+    @Override public void prepareMarshal(CacheObjectValueContext ctx) {
+        assert arr != null || valBytes != null;
+
+        if (valBytes == null)
+            valBytes = valueBytesFromArray(ctx);
+    }
+
+    /**
+     * @return Array.
+     */
+    private byte[] arrayFromValueBytes(CacheObjectValueContext ctx) {
+        return CacheObjectTransformerUtils.restoreIfNecessary(valBytes, ctx);
+    }
+
+    /**
+     * @return Value bytes.
+     */
+    private byte[] valueBytesFromArray(CacheObjectValueContext ctx) {
+        assert part == -1; // Keys should never be transformed.
+
+        return CacheObjectTransformerUtils.transformIfNecessary(arr, start, length(), ctx);
     }
 
     /** {@inheritDoc} */
@@ -737,10 +800,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("arr",
-                    arr,
-                    detachAllowed ? start : 0,
-                    detachAllowed ? length() : arr.length))
+                if (!writer.writeByteArray("valBytes", valBytes))
                     return false;
 
                 writer.incrementState();
@@ -750,13 +810,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                     return false;
 
                 writer.incrementState();
-
-            case 2:
-                if (!writer.writeInt("start", detachAllowed ? 0 : start))
-                    return false;
-
-                writer.incrementState();
-
         }
 
         return true;
@@ -771,7 +824,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
         switch (reader.state()) {
             case 0:
-                arr = reader.readByteArray("arr");
+                valBytes = reader.readByteArray("valBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -785,15 +838,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                     return false;
 
                 reader.incrementState();
-
-            case 2:
-                start = reader.readInt("start");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
         }
 
         return reader.afterMessageRead(BinaryObjectImpl.class);
@@ -806,7 +850,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 2;
     }
 
     /**

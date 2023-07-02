@@ -594,9 +594,7 @@ public class ValidationOnNodeJoinUtils {
         ClusterNode rmt,
         GridKernalContext ctx
     ) throws IgniteCheckedException {
-        ClusterNode locNode = ctx.discovery().localNode();
-
-        if (ctx.config().isClientMode() || locNode.isDaemon() || rmt.isClient() || rmt.isDaemon())
+        if (ctx.config().isClientMode() || rmt.isClient())
             return;
 
         Integer rebalanceThreadPoolSize = rmt.attribute(IgniteNodeAttributes.ATTR_REBALANCE_POOL_SIZE);
@@ -675,9 +673,7 @@ public class ValidationOnNodeJoinUtils {
      * @throws IgniteCheckedException If check failed.
      */
     private static void checkMemoryConfiguration(ClusterNode rmt, GridKernalContext ctx) throws IgniteCheckedException {
-        ClusterNode locNode = ctx.discovery().localNode();
-
-        if (ctx.config().isClientMode() || locNode.isDaemon() || rmt.isClient() || rmt.isDaemon())
+        if (ctx.config().isClientMode() || rmt.isClient())
             return;
 
         DataStorageConfiguration dsCfg = null;

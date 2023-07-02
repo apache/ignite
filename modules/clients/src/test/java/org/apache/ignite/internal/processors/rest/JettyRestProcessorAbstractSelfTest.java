@@ -40,6 +40,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.cache.Cache;
+import javax.cache.configuration.FactoryBuilder;
+import javax.cache.integration.CacheLoaderException;
+import javax.cache.integration.CacheWriterException;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -53,6 +57,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -108,6 +113,12 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     private static boolean memoryMetricsEnabled;
 
     /** */
+    protected static final String CASHE_STORE_ENABLED_CACHE_NAME = "cache-store-enabled-cache";
+
+    /** */
+    protected static volatile Map<String, String> thirdPartyStore;
+
+    /** */
     @Parameterized.Parameter
     public boolean useBinaryArrays;
 
@@ -123,6 +134,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         System.setProperty(IGNITE_MARSHALLER_BLACKLIST, path);
         System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(useBinaryArrays));
 
+        thirdPartyStore = new ConcurrentHashMap<>();
+
         super.beforeTestsStarted();
 
         initCache();
@@ -134,6 +147,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         System.clearProperty(IGNITE_USE_BINARY_ARRAYS);
 
         super.afterTestsStopped();
+
+        thirdPartyStore = null;
     }
 
     /** {@inheritDoc} */
@@ -143,6 +158,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         grid(0).cluster().state(ACTIVE);
 
         grid(0).cache(DEFAULT_CACHE_NAME).removeAll();
+        grid(0).cache(CASHE_STORE_ENABLED_CACHE_NAME).removeAll();
 
         if (memoryMetricsEnabled) {
             memoryMetricsEnabled = false;
@@ -270,10 +286,17 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         else
             assertTrue("Unexpected error: " + errNode.asText(), errNode.isNull());
 
-        assertEquals(STATUS_SUCCESS, node.get("successStatus").asInt());
+        if (errorExpected)
+            assertEquals(STATUS_FAILED, node.get("successStatus").asInt());
+        else
+            assertEquals(STATUS_SUCCESS, node.get("successStatus").asInt());
 
-        if (!canBeUnauthenticated)
-            assertNotSame(securityEnabled(), node.get("sessionToken").isNull());
+        if (!canBeUnauthenticated) {
+            if (errorExpected)
+                assertTrue(node.get("sessionToken").isNull());
+            else
+                assertNotSame(securityEnabled(), node.get("sessionToken").isNull());
+        }
 
         return node.get(errorExpected ? "error" : "response");
     }
@@ -317,6 +340,43 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         info("Get command result: " + ret);
 
         assertCacheOperation(ret, "getVal");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGetSkipStoreStore() throws Exception {
+        String key = "skipStoreTestKey";
+        String val = "skipStoreTestValue";
+
+        assertNull(
+                "The value should be empty before the test.",
+                grid(0).cache(CASHE_STORE_ENABLED_CACHE_NAME).get(key));
+
+        thirdPartyStore.put(key, val);
+
+        String skipStoreRet = content(
+                CASHE_STORE_ENABLED_CACHE_NAME,
+                GridRestCommand.CACHE_GET,
+                "key",
+                key,
+                "cacheFlags",
+                "1");
+
+        info("Get command result: " + skipStoreRet);
+
+        assertCacheOperation(skipStoreRet, null);
+
+        String ret = content(
+                CASHE_STORE_ENABLED_CACHE_NAME,
+                GridRestCommand.CACHE_GET,
+                "key",
+                key);
+
+        info("Get command result: " + ret);
+
+        assertCacheOperation(ret, val);
     }
 
     /**
@@ -1303,6 +1363,46 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      * @throws Exception If failed.
      */
     @Test
+    public void testPutSkipStore() throws Exception {
+        String key = "testPutSkipStoreKey";
+        String val1 = "testPutSkipStoreValue1";
+        String val2 = "testPutSkipStoreValue2";
+
+        String skipStoreRet = content(
+                CASHE_STORE_ENABLED_CACHE_NAME,
+                GridRestCommand.CACHE_PUT,
+                "key",
+                key,
+                "val",
+                val1,
+                "cacheFlags",
+                "1");
+
+        info("Put command result: " + skipStoreRet);
+
+        assertCacheOperation(skipStoreRet, true);
+
+        assertNull("Third party cache store should be skipped.", thirdPartyStore.get(key));
+
+        String ret = content(
+                CASHE_STORE_ENABLED_CACHE_NAME,
+                GridRestCommand.CACHE_PUT,
+                "key",
+                key,
+                "val",
+                val2);
+
+        info("Put command result: " + ret);
+
+        assertCacheOperation(ret, true);
+
+        assertEquals("Third party cache store should not be skipped.", val2, thirdPartyStore.get(key));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testPutWithExpiration() throws Exception {
         String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_PUT,
             "key", "putKey",
@@ -2052,7 +2152,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         startGrids(gridCount());
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         initCache();
     }
@@ -3531,6 +3631,21 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         cfg.setDataStorageConfiguration(dsCfg);
 
+        int sz = cfg.getCacheConfiguration().length;
+
+        CacheConfiguration[] cacheCfgs = Arrays.copyOf(cfg.getCacheConfiguration(), sz + 1);
+
+        CacheConfiguration<String, String> cacheCfg = new CacheConfiguration<>(CASHE_STORE_ENABLED_CACHE_NAME);
+        cacheCfg.setCopyOnRead(false)
+                .setCacheMode(CacheMode.REPLICATED)
+                .setReadThrough(true)
+                .setWriteThrough(true)
+                .setCacheStoreFactory(FactoryBuilder.factoryOf(JettyRestProcessorUnsignedSelfTest.TestStore.class));
+
+        cacheCfgs[sz] = cacheCfg;
+
+        cfg.setCacheConfiguration(cacheCfgs);
+
         return cfg;
     }
 
@@ -3575,7 +3690,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         JsonNode res = validateJsonResponse(ret);
 
         assertEquals(ret, exp, res.asBoolean());
-        assertEquals(ret, exp, grid(0).cluster().active());
+        assertEquals(ret, exp, grid(0).cluster().state().active());
     }
 
     /**
@@ -3620,5 +3735,23 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             assertTrue(res.asText().contains(DATA_LOST_ON_DEACTIVATION_WARNING));
 
         checkState(success ? newState : curState);
+    }
+
+    /** Test 3rd party cache store. */
+    public static class TestStore extends CacheStoreAdapter<String, String> {
+        /** {@inheritDoc} */
+        @Override public String load(String key) throws CacheLoaderException {
+            return thirdPartyStore.get(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry<? extends String, ? extends String> entry) throws CacheWriterException {
+            thirdPartyStore.put(entry.getKey(), entry.getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) throws CacheWriterException {
+            thirdPartyStore.remove(key);
+        }
     }
 }

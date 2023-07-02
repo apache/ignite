@@ -264,9 +264,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) {
-        if (ctx.config().isDaemon())
-            return;
-
         registerSystemViews();
 
         if (!active)

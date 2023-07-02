@@ -22,7 +22,11 @@ import org.apache.ignite.IgniteSnapshot;
 
 /**
  * Snapshot features MBean.
+ *
+ * @see org.apache.ignite.internal.management.api.CommandMBean
+ * @deprecated Use managements API beans, instead.
  */
+@Deprecated
 @MXBeanDescription("MBean that provides access for snapshot features.")
 public interface SnapshotMXBean {
     /**
@@ -38,6 +42,21 @@ public interface SnapshotMXBean {
             String snpName,
         @MXBeanParameter(name = "snpPath", description = "Optional snapshot directory path.")
             String snpPath
+    );
+
+    /**
+     * Create the cluster-wide incremental snapshot for the given full snapshot.
+     *
+     * @param fullSnapshot Full snapshot name to attach incremental snapshot to.
+     * @param fullSnapshotPath Full snapshot directory path.
+     * @see IgniteSnapshot#createSnapshot(String)
+     * @see IgniteSnapshot#createIncrementalSnapshot(String)
+     */
+    public void createIncrementalSnapshot(
+        @MXBeanParameter(name = "fullSnapshot", description = "Snapshot name.")
+            String fullSnapshot,
+        @MXBeanParameter(name = "fullSnapshotPath", description = "Optional snapshot directory path.")
+            String fullSnapshotPath
     );
 
     /**
@@ -74,6 +93,28 @@ public interface SnapshotMXBean {
             String path,
         @MXBeanParameter(name = "cacheGroupNames", description = "Optional comma-separated list of cache group names.")
             String cacheGroupNames
+    );
+
+    /**
+     * Restore cluster-wide snapshot and its increments. Snapshot is restored first and after that all increments
+     * are restored sequentially from the {@code 1} to the specified {@code incIdx}.
+     *
+     * @param name Snapshot name.
+     * @param path Snapshot directory path.
+     * @param cacheGroupNames Optional comma-separated list of cache group names.
+     * @param incIdx Incremental snapshot index.
+     * @see IgniteSnapshot#restoreSnapshot(String, Collection)
+     */
+    @MXBeanDescription("Restore cluster-wide snapshot and its increments.")
+    public void restoreSnapshot(
+        @MXBeanParameter(name = "snpName", description = "Snapshot name.")
+            String name,
+        @MXBeanParameter(name = "snpPath", description = "Optional snapshot directory path.")
+            String path,
+        @MXBeanParameter(name = "cacheGroupNames", description = "Optional comma-separated list of cache group names.")
+            String cacheGroupNames,
+        @MXBeanParameter(name = "incIdx", description = "Incremental snapshot index.")
+            int incIdx
     );
 
     /**

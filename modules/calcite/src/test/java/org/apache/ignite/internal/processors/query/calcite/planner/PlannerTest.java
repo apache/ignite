@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecuto
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
@@ -142,41 +143,15 @@ public class PlannerTest extends AbstractPlannerTest {
         publicSchema.addTable("DEVELOPER", developer);
         publicSchema.addTable("PROJECT", project);
 
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
         String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
             "FROM PUBLIC.Developer d JOIN (" +
             "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
             ") p " +
             "ON d.id = p.id0";
 
-        PlanningContext ctx = PlanningContext.builder()
-            .parentContext(BaseQueryContext.builder()
-                .logger(log)
-                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(schema)
-                    .build())
-                .build())
-            .query(sql)
-            .parameters(2)
-            .build();
+        IgniteRel phys = physicalPlan(sql, publicSchema);
 
-        assertNotNull(ctx);
-
-        IgniteRel phys = physicalPlan(ctx);
-
-        assertNotNull(phys);
-
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null, null);
-
-        assertNotNull(plan);
-
-        plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
-
-        assertNotNull(plan);
-
-        assertEquals(2, plan.fragments().size());
+        assertEquals(2, splitPlan(phys).fragments().size());
     }
 
     /**
@@ -249,9 +224,6 @@ public class PlannerTest extends AbstractPlannerTest {
         publicSchema.addTable("DEVELOPER", developer);
         publicSchema.addTable("PROJECT", project);
 
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
         String sql = "SELECT d.id, d.name, d.projectId, p.name0, p.ver0 " +
             "FROM PUBLIC.Developer d JOIN (" +
             "SELECT pp.id as id0, pp.name as name0, pp.ver as ver0 FROM PUBLIC.Project pp" +
@@ -259,7 +231,7 @@ public class PlannerTest extends AbstractPlannerTest {
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        List<Object[]> res = executeQuery(schema, sql, -10);
+        List<Object[]> res = executeQuery(publicSchema, sql, -10);
 
         assertFalse(res.isEmpty());
 
@@ -321,12 +293,9 @@ public class PlannerTest extends AbstractPlannerTest {
 
         publicSchema.addTable("TEST_TABLE", testTbl);
 
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
         String sql = "SELECT (ID0 + ID1) AS RES FROM PUBLIC.TEST_TABLE";
 
-        List<Object[]> res = executeQuery(schema, sql, -10);
+        List<Object[]> res = executeQuery(publicSchema, sql, -10);
 
         assertFalse(res.isEmpty());
 
@@ -337,7 +306,10 @@ public class PlannerTest extends AbstractPlannerTest {
     }
 
     /** */
-    private List<Object[]> executeQuery(SchemaPlus schema, String sql, Object... parameters) throws Exception {
+    private List<Object[]> executeQuery(IgniteSchema publicSchema, String sql, Object... parameters) throws Exception {
+        SchemaPlus schema = createRootSchema(false)
+            .add("PUBLIC", publicSchema);
+
         BaseQueryContext qctx = BaseQueryContext.builder()
             .logger(log)
             .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
@@ -353,13 +325,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         IgniteRel phys = physicalPlan(ctx);
 
-        assertNotNull(phys);
-
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null, null);
-
-        assertNotNull(plan);
-
-        plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
+        MultiStepPlan plan = splitPlan(phys);
 
         List<Fragment> fragments = plan.fragments();
         assertEquals(2, fragments.size());
@@ -401,6 +367,19 @@ public class PlannerTest extends AbstractPlannerTest {
             res.add(consumer.next());
 
         return res;
+    }
+
+    /** */
+    private MultiStepPlan splitPlan(IgniteRel phys) {
+        assertNotNull(phys);
+
+        MultiStepPlan plan = new MultiStepQueryPlan(null, new QueryTemplate(new Splitter().go(phys)), null, null);
+
+        assertNotNull(plan);
+
+        plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
+
+        return plan;
     }
 
     /**
@@ -460,6 +439,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 plan.remotes(fragment)),
             ArrayRowHandler.INSTANCE,
             NoOpMemoryTracker.INSTANCE,
+            NoOpIoTracker.INSTANCE,
             Commons.parametersMap(ctx.parameters()));
 
         return new LogicalRelImplementor<>(ectx, c -> r -> 0, mailboxRegistry, exchangeSvc,
@@ -508,9 +488,6 @@ public class PlannerTest extends AbstractPlannerTest {
         publicSchema.addTable("DEVELOPER", developer);
         publicSchema.addTable("PROJECT", project);
 
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
         String sql = "SELECT d.id, (d.id + 1) as id2, d.name, d.projectId, p.id0, p.ver0 " +
             "FROM PUBLIC.Developer d JOIN (" +
             "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
@@ -518,30 +495,9 @@ public class PlannerTest extends AbstractPlannerTest {
             "ON d.id = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        PlanningContext ctx = PlanningContext.builder()
-            .parentContext(BaseQueryContext.builder()
-                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(schema)
-                    .build())
-                .logger(log)
-                .build())
-            .query(sql)
-            .parameters(2)
-            .build();
+        IgniteRel phys = physicalPlan(sql, publicSchema);
 
-        IgniteRel phys = physicalPlan(ctx);
-
-        assertNotNull(phys);
-
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null, null);
-
-        assertNotNull(plan);
-
-        plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
-
-        assertNotNull(plan);
-
-        assertEquals(1, plan.fragments().size());
+        assertEquals(1, splitPlan(phys).fragments().size());
     }
 
     /**
@@ -591,9 +547,6 @@ public class PlannerTest extends AbstractPlannerTest {
         publicSchema.addTable("DEVELOPER", developer);
         publicSchema.addTable("PROJECT", project);
 
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
         String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
             "FROM PUBLIC.Developer d JOIN (" +
             "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
@@ -601,28 +554,9 @@ public class PlannerTest extends AbstractPlannerTest {
             "ON d.id = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        PlanningContext ctx = PlanningContext.builder()
-            .parentContext(BaseQueryContext.builder()
-                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(schema)
-                    .build())
-                .logger(log)
-                .build())
-            .query(sql)
-            .parameters(2)
-            .build();
+        IgniteRel phys = physicalPlan(sql, publicSchema);
 
-        IgniteRel phys = physicalPlan(ctx);
-
-        assertNotNull(phys);
-
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null, null);
-
-        assertNotNull(plan);
-
-        plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
-
-        assertEquals(3, plan.fragments().size());
+        assertEquals(3, splitPlan(phys).fragments().size());
     }
 
     /**
@@ -671,9 +605,6 @@ public class PlannerTest extends AbstractPlannerTest {
         publicSchema.addTable("DEVELOPER", developer);
         publicSchema.addTable("PROJECT", project);
 
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
         String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
             "FROM PUBLIC.Developer d JOIN (" +
             "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
@@ -681,30 +612,9 @@ public class PlannerTest extends AbstractPlannerTest {
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        PlanningContext ctx = PlanningContext.builder()
-            .parentContext(BaseQueryContext.builder()
-                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(schema)
-                    .build())
-                .logger(log)
-                .build())
-            .query(sql)
-            .parameters(2)
-            .build();
+        IgniteRel phys = physicalPlan(sql, publicSchema);
 
-        IgniteRel phys = physicalPlan(ctx);
-
-        assertNotNull(phys);
-
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null, null);
-
-        assertNotNull(plan);
-
-        plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
-
-        assertNotNull(plan);
-
-        assertEquals(3, plan.fragments().size());
+        assertEquals(3, splitPlan(phys).fragments().size());
     }
 
     /**
@@ -753,9 +663,6 @@ public class PlannerTest extends AbstractPlannerTest {
         publicSchema.addTable("DEVELOPER", developer);
         publicSchema.addTable("PROJECT", project);
 
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
         String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
             "FROM PUBLIC.Developer d JOIN (" +
             "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
@@ -763,28 +670,9 @@ public class PlannerTest extends AbstractPlannerTest {
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        PlanningContext ctx = PlanningContext.builder()
-            .parentContext(BaseQueryContext.builder()
-                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(schema)
-                    .build())
-                .logger(log)
-                .build())
-            .query(sql)
-            .parameters(2)
-            .build();
+        IgniteRel phys = physicalPlan(sql, publicSchema);
 
-        IgniteRel phys = physicalPlan(ctx);
-
-        assertNotNull(phys);
-
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null, null);
-
-        assertNotNull(plan);
-
-        plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
-
-        assertEquals(3, plan.fragments().size());
+        assertEquals(3, splitPlan(phys).fragments().size());
     }
 
     /**
@@ -829,9 +717,6 @@ public class PlannerTest extends AbstractPlannerTest {
         publicSchema.addTable("DEVELOPER", developer);
         publicSchema.addTable("PROJECT", project);
 
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
         String sql = "SELECT p.id0, d.id " +
             "FROM PUBLIC.Developer d JOIN (" +
             "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
@@ -839,30 +724,9 @@ public class PlannerTest extends AbstractPlannerTest {
             "ON d.projectId = p.ver0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        PlanningContext ctx = PlanningContext.builder()
-            .parentContext(BaseQueryContext.builder()
-                .logger(log)
-                .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(schema)
-                    .build())
-                .build())
-            .query(sql)
-            .parameters(2)
-            .build();
+        IgniteRel phys = physicalPlan(sql, publicSchema);
 
-        IgniteRel phys = physicalPlan(ctx);
-
-        assertNotNull(phys);
-
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null, null);
-
-        assertNotNull(plan);
-
-        plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
-
-        assertNotNull(plan);
-
-        assertEquals(2, plan.fragments().size());
+        assertEquals(2, splitPlan(phys).fragments().size());
     }
 
     /**
@@ -1119,6 +983,20 @@ public class PlannerTest extends AbstractPlannerTest {
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
         IgniteRel phys = physicalPlan("SELECT (DATE '2021-03-01' - DATE '2021-01-01') MONTHS", publicSchema);
+
+        checkSplitAndSerialization(phys, publicSchema);
+    }
+
+    /** */
+    @Test
+    public void testFloatSerialization() throws Exception {
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        IgniteRel phys = physicalPlan("SELECT " + Integer.MAX_VALUE + "::FLOAT, " +
+            Long.MAX_VALUE + "::FLOAT" +
+            "-17014118346046923173168730371588410572::FLOAT" +
+            "-17014118346046923173.168730371588410572::FLOAT",
+            publicSchema);
 
         checkSplitAndSerialization(phys, publicSchema);
     }

@@ -88,7 +88,7 @@ class ConsistencyTest(IgniteTest):
 
             ignites.exec_command(node, f"sed -i 's/{orig}/{fixed}/g' {cfg_file}")
 
-        ignites.start()
+        ignites.start(clean=False)
 
         control_utility = ControlUtility(ignites)
 

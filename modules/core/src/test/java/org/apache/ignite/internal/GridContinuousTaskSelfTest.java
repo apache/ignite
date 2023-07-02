@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -45,7 +44,9 @@ import org.apache.ignite.compute.ComputeTaskSessionAttributeListener;
 import org.apache.ignite.compute.ComputeTaskSessionFullSupport;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -203,15 +204,16 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         try {
             IgniteEx ign = startGrid(0);
 
-            ComputeTaskInternalFuture<String> fut = ign.context().closure().callAsync(GridClosureCallMode.BALANCE, new Callable<String>() {
-                /** */
-                @IgniteInstanceResource
-                private IgniteEx g;
+            IgniteFuture<String> fut = ign.compute(ign.cluster()).callAsync(
+                new IgniteCallable<String>() {
+                    @IgniteInstanceResource
+                    private IgniteEx g;
 
-                @Override public String call() throws Exception {
-                    return g.compute(g.cluster()).execute(NestedHoldccTask.class, null);
+                    @Override public String call() throws Exception {
+                        return g.compute(g.cluster()).execute(NestedHoldccTask.class, null);
+                    }
                 }
-            }, ign.cluster().nodes());
+            );
 
             assertEquals("DONE", fut.get(3000));
         }

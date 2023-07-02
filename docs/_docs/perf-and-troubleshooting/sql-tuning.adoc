@@ -78,12 +78,13 @@ with 100+ columns may perform worse than expected.
 
 == Lazy Loading
 
-By default, Ignite attempts to load the whole result set to memory and send it back to the query initiator (which is
-usually your application). This approach provides optimal performance for queries of small or medium result sets.
-However, if the result set is too big to fit in the available memory, it can lead to prolonged GC pauses and even `OutOfMemoryError` exceptions.
+By default, Ignite will set Lazy Loading enabled, this will minimize memory consumption at the cost of moderate performance degradation.
 
-To minimize memory consumption, at the cost of a moderate performance hit, you can load and process the result sets
-lazily by passing the `lazy` parameter to the JDBC and ODBC connection strings or use a similar method available for Java, .NET, and C++ APIs:
+Otherwise, Ignite attempts to load the whole result set to memory and send it back to the query initiator (which is usually your application). This approach provides optimal performance for queries of small or medium result sets, and minimizes the duration of internal database locks, thus increasing concurrency. 
+
+WARNING, if the result set is too big to fit in the available memory, it can lead to prolonged GC pauses and even `OutOfMemoryError` exceptions. This property is deprecated since Ignite 2.15.0.
+
+To change the default behavior: 
 
 [tabs]
 --
@@ -94,12 +95,12 @@ tab:Java[]
 SqlFieldsQuery query = new SqlFieldsQuery("SELECT * FROM Person WHERE id > 10");
 
 // Result set will be loaded lazily.
-query.setLazy(true);
+query.setLazy(false);
 ----
 tab:JDBC[]
 [source,sql]
 ----
-jdbc:ignite:thin://192.168.0.15?lazy=true
+jdbc:ignite:thin://192.168.0.15?lazy=false
 ----
 tab:C#/.NET[]
 [source,csharp]
@@ -107,7 +108,7 @@ tab:C#/.NET[]
 var query = new SqlFieldsQuery("SELECT * FROM Person WHERE id > 10")
 {
     // Result set will be loaded lazily.
-    Lazy = true
+    Lazy = false
 };
 ----
 tab:C++[]

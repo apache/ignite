@@ -137,7 +137,7 @@ public class PoolProcessor extends GridProcessorAdapter {
     public static final String THREAD_POOLS = "threadPools";
 
     /** Histogram buckets for the task execution time metric (in milliseconds). */
-    public static final long[] TASK_EXEC_TIME_HISTOGRAM_BUCKETS = new long[] {100, 1000, 10000, 30000, 60000};
+    public static final long[] TASK_EXEC_TIME_HISTOGRAM_BUCKETS = new long[] {10, 50, 100, 500, 1000};
 
     /** Executor service. */
     @GridToStringExclude

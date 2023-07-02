@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -240,7 +241,7 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
 
         IgniteEx crd = (IgniteEx)startGridsMultiThreaded(2);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, String> cache0 = crd.cache(DEFAULT_CACHE_NAME);
 
@@ -313,7 +314,7 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
     private void doTestPartitionLostWhileClearing(int cnt, int mode) throws Exception {
         IgniteEx crd = startGrids(cnt);
         crd.cluster().baselineAutoAdjustEnabled(false);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         int partId = -1;
         int idx0 = 0;
@@ -385,11 +386,11 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
 
             if (mode == 1) {
                 crd = startGrids(cnt);
-                crd.cluster().active(true);
+                crd.cluster().state(ClusterState.ACTIVE);
             }
             else if (mode == 2) {
                 crd = startGrid(idx1);
-                crd.cluster().active(true);
+                crd.cluster().state(ClusterState.ACTIVE);
 
                 startGrid(idx0);
             }

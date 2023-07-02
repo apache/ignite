@@ -23,13 +23,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.resources.LoggerResource;
 
 /**
  *
  */
-public class VisorConsistencyStatusTask extends AbstractConsistencyTask<Void, String> {
+public class VisorConsistencyStatusTask extends AbstractConsistencyTask<NoArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -40,7 +41,7 @@ public class VisorConsistencyStatusTask extends AbstractConsistencyTask<Void, St
     public static final ConcurrentHashMap<String, String> MAP = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<Void, String> job(Void arg) {
+    @Override protected VisorJob<NoArg, String> job(NoArg arg) {
         return new VisorConsistencyStatusJob(arg, debug);
     }
 
@@ -57,7 +58,7 @@ public class VisorConsistencyStatusTask extends AbstractConsistencyTask<Void, St
     /**
      *
      */
-    private static class VisorConsistencyStatusJob extends VisorJob<Void, String> {
+    private static class VisorConsistencyStatusJob extends VisorJob<NoArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -69,12 +70,12 @@ public class VisorConsistencyStatusTask extends AbstractConsistencyTask<Void, St
          * @param arg Arguments.
          * @param debug Debug.
          */
-        protected VisorConsistencyStatusJob(Void arg, boolean debug) {
+        protected VisorConsistencyStatusJob(NoArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(Void arg) throws IgniteException {
+        @Override protected String run(NoArg arg) throws IgniteException {
             if (MAP.isEmpty())
                 return null;
 
