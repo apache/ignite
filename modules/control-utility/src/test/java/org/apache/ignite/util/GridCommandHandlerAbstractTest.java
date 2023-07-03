@@ -63,6 +63,7 @@ import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.logger.java.JavaLoggerFileHandler;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.Nullable;
 
@@ -134,6 +135,9 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerF
 
     /** WAL compaction flag. */
     private boolean walCompaction;
+
+    /** Listening logger. */
+    protected ListeningTestLogger listeningLog;
 
     /**
      * Persistence setter.
@@ -300,6 +304,9 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerF
 
             dsCfg.setEncryptionConfiguration(encCfg);
         }
+
+        if (listeningLog != null)
+            cfg.setGridLogger(listeningLog);
 
         return cfg;
     }

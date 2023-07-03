@@ -124,12 +124,12 @@ public class VisorSnapshotStatusTask extends VisorMultiNodeTask<NoArg, VisorSnap
             // Snapshot check operations.
             res.addAll(F.viewReadOnly(snpMgr.checkOperationsStatus(), status -> new SnapshotStatus(
                 SnapshotOperation.CHECK,
-                status.metadata().snapshotName(),
-                -1,
+                status.snapshotName(),
+                status.incrementIndex(),
                 status.requestId().toString(),
                 status.startTime(),
                 F.asMap(ignite.localNode().id(),
-                    new T5<>((long)status.processedPartitions(), (long)status.totalPartitions(), -1L, -1L, -1L))
+                    new T5<>((long)status.processed(), (long)status.total(), -1L, -1L, -1L))
             )));
 
             // Snapshot create operation.

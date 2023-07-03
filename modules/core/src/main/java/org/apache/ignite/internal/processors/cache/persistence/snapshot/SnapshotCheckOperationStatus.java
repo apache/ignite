@@ -24,31 +24,29 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** Snapshot check operation status. */
 public abstract class SnapshotCheckOperationStatus implements AutoCloseable {
-    /** Snapshot metadata. */
-    private final SnapshotMetadata meta;
-
     /** Operation request ID. */
     private final UUID reqId;
+
+    /** Snapshot name. */
+    private final String snpName;
+
+    /** Incremental snapshot index. */
+    private final int incIdx;
 
     /** Start time. */
     private final long startTime = U.currentTimeMillis();
 
-    /** Processed partitions. */
-    private final AtomicInteger processedParts = new AtomicInteger();
+    /** Processed count. */
+    private final AtomicInteger processed = new AtomicInteger();
 
-    /** Total partitions. */
-    private final int totalParts;
+    /** Total count. */
+    private final AtomicInteger total = new AtomicInteger();
 
     /** */
-    SnapshotCheckOperationStatus(SnapshotMetadata meta, int totalParts, UUID reqId) {
-        this.meta = meta;
-        this.totalParts = totalParts;
+    SnapshotCheckOperationStatus(UUID reqId, String snpName, int incIdx) {
         this.reqId = reqId;
-    }
-
-    /** @return Snapshot metadata. */
-    public SnapshotMetadata metadata() {
-        return meta;
+        this.snpName = snpName;
+        this.incIdx = incIdx;
     }
 
     /** @return Operation request ID. */
@@ -56,24 +54,44 @@ public abstract class SnapshotCheckOperationStatus implements AutoCloseable {
         return reqId;
     }
 
+    /** @return Snapshot name. */
+    public String snapshotName() {
+        return snpName;
+    }
+
+    /** @return Incremental snapshot index. */
+    public int incrementIndex() {
+        return incIdx;
+    }
+
     /** @return Start time. */
     public long startTime() {
         return startTime;
     }
 
-    /** @return Processed partitions. */
-    public int processedPartitions() {
-        return processedParts.get();
+    /** @return Processed count. */
+    public int processed() {
+        return processed.get();
     }
 
-    /** @return Total partitions. */
-    public int totalPartitions() {
-        return totalParts;
+    /** @return Total count. */
+    public int total() {
+        return total.get();
+    }
+
+    /** Sets total count. */
+    public void total(int total) {
+        this.total.set(total);
+    }
+
+    /** Sets processed count. */
+    public void processed(int processed) {
+        this.processed.set(processed);
     }
 
     /** */
-    public void onPartitionProcessed() {
-        processedParts.incrementAndGet();
+    public void onProcessed() {
+        processed.incrementAndGet();
     }
 
     /** {@inheritDoc} */
@@ -86,11 +104,11 @@ public abstract class SnapshotCheckOperationStatus implements AutoCloseable {
 
         SnapshotCheckOperationStatus status = (SnapshotCheckOperationStatus)o;
 
-        return reqId.equals(status.reqId) && meta.equals(status.meta);
+        return reqId.equals(status.reqId);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(reqId, meta);
+        return Objects.hash(reqId);
     }
 }

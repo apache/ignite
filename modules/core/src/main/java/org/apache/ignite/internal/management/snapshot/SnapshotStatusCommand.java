@@ -123,11 +123,10 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg> {
             desc = new RestoreIncrementalSnapshotTaskProgressDesc();
         else if (isRestoring)
             desc = new RestoreFullSnapshotTaskProgressDesc();
-        else {
-            assert !isIncremental : "Not supported.";
-
+        else if (isIncremental)
+            desc = new CheckIncrementalSnapshotTaskProgressDesc();
+        else
             desc = new CheckFullSnapshotTaskProgressDesc();
-        }
 
         List<List<?>> rows = status.progress().entrySet().stream().sorted(Map.Entry.comparingByKey())
             .map(e -> desc.buildRow(e.getKey(), e.getValue()))
@@ -282,6 +281,27 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg> {
         /** */
         CheckFullSnapshotTaskProgressDesc() {
             super(F.asList("Node ID", "Processed, partitions", "Total, partitions", "Percent"));
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<?> buildRow(UUID nodeId, T5<Long, Long, Long, Long, Long> progress) {
+            long processed = progress.get1();
+            long total = progress.get2();
+
+            if (total <= 0)
+                return F.asList(nodeId, "unknown", "unknown", "unknown");
+
+            String percent = (int)(processed * 100 / total) + "%";
+
+            return F.asList(nodeId, processed, total, percent);
+        }
+    }
+
+    /** */
+    private static class CheckIncrementalSnapshotTaskProgressDesc extends SnapshotTaskProgressDesc {
+        /** */
+        CheckIncrementalSnapshotTaskProgressDesc() {
+            super(F.asList("Node ID", "Processed, WAL segments", "Total, WAL segments", "Percent"));
         }
 
         /** {@inheritDoc} */

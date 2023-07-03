@@ -134,6 +134,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
@@ -3811,23 +3812,58 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** @throws Exception If fails. */
     @Test
     public void testSnapshotCheckStatus() throws Exception {
+        walCompactionEnabled(true);
+        listeningLog = new ListeningTestLogger(log);
+
         IgniteEx srv = startGrids(2);
 
         srv.cluster().state(ACTIVE);
 
-        AtomicBoolean slow = injectSlowFileIo();
+        AtomicBoolean slowIo = injectSlowFileIo();
 
         createCacheAndPreload(srv, 100);
 
         srv.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        srv.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get();
 
-        slow.set(true);
+        // 1. Full snapshot check.
+        slowIo.set(true);
 
-        IgniteInternalFuture<?> fut = srv.context().cache().context().snapshotMgr().checkSnapshot(SNAPSHOT_NAME, null);
+        // TODO Remove runAsync when IGNITE-19907 is fixed.
+        IgniteInternalFuture<?> fut = runAsync(() -> srv.context().cache().context().snapshotMgr()
+            .checkSnapshot(SNAPSHOT_NAME, null).get());
 
         checkSnapshotStatus(SnapshotOperation.CHECK, false, SNAPSHOT_NAME);
 
-        slow.set(false);
+        slowIo.set(false);
+
+        fut.get();
+
+        checkSnapshotStatus(null, false, SNAPSHOT_NAME);
+
+        // 2. Incremental snapshot check.
+        CountDownLatch blockIncremental = new CountDownLatch(1);
+
+        listeningLog.registerListener(LogListener.matches(s -> {
+            if (s.contains("Verify incremental snapshot procedure finished")) {
+                try {
+                    blockIncremental.await();
+                }
+                catch (InterruptedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+
+            return false;
+        }).build());
+
+        // TODO Remove runAsync when IGNITE-19907 is fixed.
+        fut = runAsync(() -> srv.context().cache().context().snapshotMgr()
+            .checkSnapshot(SNAPSHOT_NAME, null, 1).get());
+
+        checkSnapshotStatus(SnapshotOperation.CHECK, true, SNAPSHOT_NAME);
+
+        blockIncremental.countDown();
 
         fut.get();
 

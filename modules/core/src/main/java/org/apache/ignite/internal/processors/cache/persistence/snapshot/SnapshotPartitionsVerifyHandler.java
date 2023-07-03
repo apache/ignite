@@ -170,7 +170,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         for (GridComponent comp : snpCtx)
             comp.start();
 
-        try (SnapshotCheckOperationStatus status = snpMgr.trackCheckOperation(meta, partFiles.size(), opCtx.requestId())) {
+        try (SnapshotCheckOperationStatus status = snpMgr.trackCheckOperation(opCtx.requestId(), meta.snapshotName(), -1)) {
+            status.total(partFiles.size());
+
             U.doInParallel(
                 snpMgr.snapshotExecutorService(),
                 partFiles,
@@ -263,7 +265,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
                         res.put(key, hash);
 
-                        status.onPartitionProcessed();
+                        status.onProcessed();
                     }
                     catch (IOException e) {
                         throw new IgniteCheckedException(e);

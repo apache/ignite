@@ -3107,8 +3107,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** @return Snapshot check operation status tracker. */
-    public SnapshotCheckOperationStatus trackCheckOperation(SnapshotMetadata meta, Integer totalParts, UUID reqId) {
-        SnapshotCheckOperationStatus status = new SnapshotCheckOperationStatus(meta, totalParts, reqId) {
+    public SnapshotCheckOperationStatus trackCheckOperation(UUID reqId, String snpName, int incIdx) {
+        SnapshotCheckOperationStatus status = new SnapshotCheckOperationStatus(reqId, snpName, incIdx) {
             @Override public void close() {
                 checkOpsStatus.remove(this);
             }
