@@ -30,16 +30,16 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.cache.PartitionKeyV2;
+import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
-import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
-import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2.reduce0;
+import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTaskV2.reduce0;
 
 /**
  * Task for checking snapshot partitions consistency the same way as {@link VerifyBackupPartitionsTaskV2} does.
@@ -60,7 +60,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
         Collection<String> groups,
         boolean check
     ) {
-        return new VisorVerifySnapshotPartitionsJob(name, path, constId, groups, check);
+        return new VerifySnapshotPartitionsJob(name, path, constId, groups, check);
     }
 
     /** {@inheritDoc} */
@@ -69,7 +69,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
     }
 
     /** Job that collects update counters of snapshot partitions on the node it executes. */
-    private static class VisorVerifySnapshotPartitionsJob extends ComputeJobAdapter {
+    private static class VerifySnapshotPartitionsJob extends ComputeJobAdapter {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -103,7 +103,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
          * @param snpPath Snapshot directory path.
          * @param check If {@code true} check snapshot before restore.
          */
-        public VisorVerifySnapshotPartitionsJob(
+        public VerifySnapshotPartitionsJob(
             String snpName,
             @Nullable String snpPath,
             String consId,
@@ -146,7 +146,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            VisorVerifySnapshotPartitionsJob job = (VisorVerifySnapshotPartitionsJob)o;
+            VerifySnapshotPartitionsJob job = (VerifySnapshotPartitionsJob)o;
 
             return snpName.equals(job.snpName) && consId.equals(job.consId) &&
                 Objects.equals(rqGrps, job.rqGrps) && Objects.equals(snpPath, job.snpPath) &&

@@ -24,7 +24,7 @@ import java.util.HashSet;
 import java.util.Map;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand;
-import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTaskResult;
+import org.apache.ignite.internal.management.tracing.TracingConfigurationTaskResult;
 import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
@@ -152,7 +152,7 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
         expTracingCfg.put(TX_LABEL_SPECIFIC_COORDINATES, SOME_LABEL_SPECIFIC_PARAMETERS);
         expTracingCfg.put(EXCHANGE_SCOPE_SPECIFIC_COORDINATES, SOME_SCOPE_SPECIFIC_PARAMETERS);
 
-        VisorTracingConfigurationTaskResult expRes = new VisorTracingConfigurationTaskResult();
+        TracingConfigurationTaskResult expRes = new TracingConfigurationTaskResult();
 
         expTracingCfg.forEach(expRes::add);
 
@@ -167,7 +167,7 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
     public void testGetAllWithScopeReturnsOnlySpecifiedScopeSpecificConfiguratoin() {
         assertEquals(EXIT_CODE_OK, execute(hnd, "--tracing-configuration", "get_all", "--scope", "TX"));
 
-        VisorTracingConfigurationTaskResult expRes = new VisorTracingConfigurationTaskResult();
+        TracingConfigurationTaskResult expRes = new TracingConfigurationTaskResult();
 
         expRes.add(TX_SCOPE_SPECIFIC_COORDINATES, SOME_SCOPE_SPECIFIC_PARAMETERS);
         expRes.add(TX_LABEL_SPECIFIC_COORDINATES, SOME_LABEL_SPECIFIC_PARAMETERS);
@@ -191,7 +191,7 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
         expTracingCfg.put(TX_LABEL_SPECIFIC_COORDINATES, SOME_LABEL_SPECIFIC_PARAMETERS);
         expTracingCfg.put(EXCHANGE_SCOPE_SPECIFIC_COORDINATES, SOME_SCOPE_SPECIFIC_PARAMETERS);
 
-        VisorTracingConfigurationTaskResult expRes = new VisorTracingConfigurationTaskResult();
+        TracingConfigurationTaskResult expRes = new TracingConfigurationTaskResult();
 
         expTracingCfg.forEach(expRes::add);
 
@@ -208,7 +208,7 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
         assertEquals(EXIT_CODE_OK, execute(hnd, "--tracing-configuration", "get", "--scope", "TX"));
 
         // Check command result.
-        VisorTracingConfigurationTaskResult expRes = new VisorTracingConfigurationTaskResult();
+        TracingConfigurationTaskResult expRes = new TracingConfigurationTaskResult();
 
         expRes.add(TX_SCOPE_SPECIFIC_COORDINATES, SOME_SCOPE_SPECIFIC_PARAMETERS);
 
@@ -226,7 +226,7 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
             "TX", "--label", "label"));
 
         // Check command result.
-        VisorTracingConfigurationTaskResult expRes = new VisorTracingConfigurationTaskResult();
+        TracingConfigurationTaskResult expRes = new TracingConfigurationTaskResult();
 
         expRes.add(TX_LABEL_SPECIFIC_COORDINATES, SOME_LABEL_SPECIFIC_PARAMETERS);
 
@@ -249,7 +249,7 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
             grid(0).tracingConfiguration().getAll(TX));
 
         // Check command result.
-        VisorTracingConfigurationTaskResult expRes = new VisorTracingConfigurationTaskResult();
+        TracingConfigurationTaskResult expRes = new TracingConfigurationTaskResult();
 
         expRes.add(TX_SCOPE_SPECIFIC_COORDINATES, TracingConfigurationManager.DEFAULT_TX_CONFIGURATION);
 
@@ -281,7 +281,7 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
         Map<TracingConfigurationCoordinates, TracingConfigurationParameters> expTracingCfg =
             new HashMap<>(DFLT_CONFIG_MAP);
 
-        VisorTracingConfigurationTaskResult expRes = new VisorTracingConfigurationTaskResult();
+        TracingConfigurationTaskResult expRes = new TracingConfigurationTaskResult();
 
         expTracingCfg.forEach(expRes::add);
 
@@ -298,7 +298,7 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
         assertEquals(EXIT_CODE_OK, execute(hnd, "--tracing-configuration", "reset", "--scope", "TX"));
 
         // Check command result.
-        VisorTracingConfigurationTaskResult expRes = new VisorTracingConfigurationTaskResult();
+        TracingConfigurationTaskResult expRes = new TracingConfigurationTaskResult();
 
         expRes.add(TX_SCOPE_SPECIFIC_COORDINATES, TracingConfigurationManager.DEFAULT_EXCHANGE_CONFIGURATION);
         expRes.add(TX_LABEL_SPECIFIC_COORDINATES, SOME_LABEL_SPECIFIC_PARAMETERS);
@@ -317,7 +317,7 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
             "--label", "label"));
 
         // Check command result.
-        VisorTracingConfigurationTaskResult expRes = new VisorTracingConfigurationTaskResult();
+        TracingConfigurationTaskResult expRes = new TracingConfigurationTaskResult();
 
         expRes.add(TX_SCOPE_SPECIFIC_COORDINATES, SOME_SCOPE_SPECIFIC_PARAMETERS);
 
@@ -336,7 +336,7 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
             "--sampling-rate", "0.123", "--included-scopes", "COMMUNICATION,EXCHANGE"));
 
         // Check command result.
-        VisorTracingConfigurationTaskResult expRes = new VisorTracingConfigurationTaskResult();
+        TracingConfigurationTaskResult expRes = new TracingConfigurationTaskResult();
 
         expRes.add(
             TX_SCOPE_SPECIFIC_COORDINATES,
@@ -361,7 +361,7 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
             "--label", "label", "--sampling-rate", "0.123", "--included-scopes", "COMMUNICATION,EXCHANGE"));
 
         // Check command result.
-        VisorTracingConfigurationTaskResult expRes = new VisorTracingConfigurationTaskResult();
+        TracingConfigurationTaskResult expRes = new TracingConfigurationTaskResult();
 
         expRes.add(
             TX_SCOPE_SPECIFIC_COORDINATES,
@@ -381,8 +381,8 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
      *
      * @param expRes Expected command result.
      */
-    private void verifyResult(VisorTracingConfigurationTaskResult expRes) {
-        VisorTracingConfigurationTaskResult gotRes = hnd.getLastOperationResult();
+    private void verifyResult(TracingConfigurationTaskResult expRes) {
+        TracingConfigurationTaskResult gotRes = hnd.getLastOperationResult();
 
         assertNotNull(gotRes);
 

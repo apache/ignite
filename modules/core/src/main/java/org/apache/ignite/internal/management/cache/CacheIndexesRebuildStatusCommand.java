@@ -25,8 +25,6 @@ import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.cache.index.IndexRebuildStatusInfoContainer;
-import org.apache.ignite.internal.visor.cache.index.IndexRebuildStatusTask;
 
 /** Index rebuild status. */
 public class CacheIndexesRebuildStatusCommand

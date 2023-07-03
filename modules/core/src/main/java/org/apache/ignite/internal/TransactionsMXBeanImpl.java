@@ -23,14 +23,14 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.tx.TxCommandArg;
+import org.apache.ignite.internal.management.tx.TxInfo;
+import org.apache.ignite.internal.management.tx.TxSortOrder;
+import org.apache.ignite.internal.management.tx.TxTask;
+import org.apache.ignite.internal.management.tx.TxTaskResult;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.tx.VisorTxInfo;
-import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
-import org.apache.ignite.internal.visor.tx.VisorTxTask;
-import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.mxbean.TransactionsMXBean;
 
 /**
@@ -56,10 +56,10 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
             if (consistentIds != null)
                 consIds = consistentIds.split(",");
 
-            VisorTxSortOrder sortOrder = null;
+            TxSortOrder sortOrder = null;
 
             if (order != null)
-                sortOrder = VisorTxSortOrder.valueOf(order.toUpperCase());
+                sortOrder = TxSortOrder.valueOf(order.toUpperCase());
 
             TxCommandArg arg = new TxCommandArg();
 
@@ -82,8 +82,8 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
             arg.label(lbRegex);
             arg.order(sortOrder);
 
-            Map<ClusterNode, VisorTxTaskResult> res = ctx.task().execute(
-                new VisorTxTask(),
+            Map<ClusterNode, TxTaskResult> res = ctx.task().execute(
+                new TxTask(),
                 new VisorTaskArgument<>(ctx.cluster().get().localNode().id(), arg, false)
             ).get();
 
@@ -92,7 +92,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
 
                 PrintWriter w = new PrintWriter(sw);
 
-                for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
+                for (Map.Entry<ClusterNode, TxTaskResult> entry : res.entrySet()) {
                     if (entry.getValue().getInfos().isEmpty())
                         continue;
 
@@ -100,7 +100,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
 
                     w.println(key.toString());
 
-                    for (VisorTxInfo info : entry.getValue().getInfos())
+                    for (TxInfo info : entry.getValue().getInfos())
                         w.println(info.toUserString());
                 }
 
@@ -111,7 +111,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
             else {
                 int cnt = 0;
 
-                for (VisorTxTaskResult result : res.values())
+                for (TxTaskResult result : res.values())
                     cnt += result.getInfos().size();
 
                 return Integer.toString(cnt);
@@ -134,7 +134,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
             arg.xid(xid);
 
             ctx.task().execute(
-                new VisorTxTask(),
+                new TxTask(),
                 new VisorTaskArgument<>(ctx.localNodeId(), arg, false)
             ).get();
         }

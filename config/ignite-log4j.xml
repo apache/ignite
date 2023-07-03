@@ -75,7 +75,7 @@
         <Logger name="org.springframework" level="WARN"/>
         <Logger name="org.eclipse.jetty" level="WARN"/>
 
-        <Logger name="org.apache.ignite.internal.visor.consistency" additivity="false" level="INFO">
+        <Logger name="org.apache.ignite.internal.management.consistency" additivity="false" level="INFO">
             <AppenderRef ref="CONSISTENCY"/>
         </Logger>
 

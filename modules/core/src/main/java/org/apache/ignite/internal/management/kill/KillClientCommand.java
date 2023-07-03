@@ -21,7 +21,6 @@ import java.util.Collection;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.client.VisorClientConnectionDropTask;
 
 /** */
 public class KillClientCommand implements ComputeCommand<KillClientCommandArg, Void> {
@@ -36,8 +35,8 @@ public class KillClientCommand implements ComputeCommand<KillClientCommandArg, V
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorClientConnectionDropTask> taskClass() {
-        return VisorClientConnectionDropTask.class;
+    @Override public Class<ClientConnectionDropTask> taskClass() {
+        return ClientConnectionDropTask.class;
     }
 
     /** {@inheritDoc} */

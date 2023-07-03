@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTask;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -45,8 +44,8 @@ public class SnapshotRestoreCommand extends AbstractSnapshotCommand<SnapshotRest
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorSnapshotRestoreTask> taskClass() {
-        return VisorSnapshotRestoreTask.class;
+    @Override public Class<SnapshotRestoreTask> taskClass() {
+        return SnapshotRestoreTask.class;
     }
 
     /** {@inheritDoc} */

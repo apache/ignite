@@ -25,14 +25,11 @@ import org.apache.ignite.internal.management.api.CliSubcommandsWithPrefix;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.tx.TxCommand.AbstractTxCommandArg;
-import org.apache.ignite.internal.visor.tx.VisorTxInfo;
-import org.apache.ignite.internal.visor.tx.VisorTxTask;
-import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 
 /** */
 @CliSubcommandsWithPrefix
-public class TxCommand extends CommandRegistryImpl<AbstractTxCommandArg, Map<ClusterNode, VisorTxTaskResult>>
-    implements ComputeCommand<AbstractTxCommandArg, Map<ClusterNode, VisorTxTaskResult>> {
+public class TxCommand extends CommandRegistryImpl<AbstractTxCommandArg, Map<ClusterNode, TxTaskResult>>
+    implements ComputeCommand<AbstractTxCommandArg, Map<ClusterNode, TxTaskResult>> {
     /** */
     public TxCommand() {
         super(new TxInfoCommand());
@@ -49,12 +46,12 @@ public class TxCommand extends CommandRegistryImpl<AbstractTxCommandArg, Map<Clu
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorTxTask> taskClass() {
-        return VisorTxTask.class;
+    @Override public Class<TxTask> taskClass() {
+        return TxTask.class;
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(AbstractTxCommandArg arg0, Map<ClusterNode, VisorTxTaskResult> res, Consumer<String> printer) {
+    @Override public void printResult(AbstractTxCommandArg arg0, Map<ClusterNode, TxTaskResult> res, Consumer<String> printer) {
         TxCommandArg arg = (TxCommandArg)arg0;
 
         if (res.isEmpty())
@@ -64,13 +61,13 @@ public class TxCommand extends CommandRegistryImpl<AbstractTxCommandArg, Map<Clu
         else
             printer.accept("Matching transactions:");
 
-        for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
+        for (Map.Entry<ClusterNode, TxTaskResult> entry : res.entrySet()) {
             if (entry.getValue().getInfos().isEmpty())
                 continue;
 
             printer.accept(nodeDescription(entry.getKey()));
 
-            for (VisorTxInfo info : entry.getValue().getInfos())
+            for (TxInfo info : entry.getValue().getInfos())
                 printer.accept(info.toUserString());
         }
     }

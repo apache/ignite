@@ -30,6 +30,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.management.cache.IndexRebuildStatusInfoContainer;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -37,7 +38,6 @@ import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToke
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.visor.cache.index.IndexRebuildStatusInfoContainer;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
