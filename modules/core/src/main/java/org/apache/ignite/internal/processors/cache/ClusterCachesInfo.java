@@ -1088,41 +1088,33 @@ public class ClusterCachesInfo {
             );
         }
 
-        if (!validateStartNewCache(err, persistedCfgs, res, req))
-            return false;
+        if (err == null)
+            err = QueryUtils.checkQueryEntityConflicts(req.startCacheConfiguration(), registeredCaches.values());
 
-        err = QueryUtils.checkQueryEntityConflicts(req.startCacheConfiguration(), registeredCaches.values());
+        if (err == null) {
+            String conflictErr = checkCacheConflict(req.startCacheConfiguration(), false);
 
-        if (!validateStartNewCache(err, persistedCfgs, res, req))
-            return false;
+            if (conflictErr != null) {
+                U.warn(log, "Ignore cache start request. " + conflictErr);
 
-        String conflictErr = checkCacheConflict(req.startCacheConfiguration(), false);
-
-        if (conflictErr != null) {
-            U.warn(log, "Ignore cache start request. " + conflictErr);
-
-            err = new IgniteCheckedException("Failed to start cache. " + conflictErr);
+                err = new IgniteCheckedException("Failed to start cache. " + conflictErr);
+            }
         }
 
-        if (!validateStartNewCache(err, persistedCfgs, res, req))
-            return false;
+        if (err == null) {
+            GridEncryptionManager encMgr = ctx.encryption();
 
-        GridEncryptionManager encMgr = ctx.encryption();
+            if (ccfg.isEncryptionEnabled()) {
+                if (encMgr.isMasterKeyChangeInProgress())
+                    err = new IgniteCheckedException("Cache start failed. Master key change is in progress.");
+                else if (encMgr.masterKeyDigest() != null &&
+                    !Arrays.equals(encMgr.masterKeyDigest(), req.masterKeyDigest())) {
+                    err = new IgniteCheckedException("Cache start failed. The request was initiated before " +
+                        "the master key change and can't be processed.");
+                }
 
-        if (ccfg.isEncryptionEnabled()) {
-            if (encMgr.isMasterKeyChangeInProgress())
-                err = new IgniteCheckedException("Cache start failed. Master key change is in progress.");
-            else if (encMgr.masterKeyDigest() != null &&
-                !Arrays.equals(encMgr.masterKeyDigest(), req.masterKeyDigest())) {
-                err = new IgniteCheckedException("Cache start failed. The request was initiated before " +
-                    "the master key change and can't be processed.");
-            }
-
-            if (err != null) {
-                U.warn(log, "Ignore cache start request during the master key change process.", err);
-
-                if (!validateStartNewCache(err, persistedCfgs, res, req))
-                    return false;
+                if (err != null)
+                    U.warn(log, "Ignore cache start request during the master key change process.", err);
             }
         }
 
@@ -1136,8 +1128,14 @@ public class ClusterCachesInfo {
             }
         }
 
-        if (!validateStartNewCache(err, persistedCfgs, res, req))
+        if (err != null) {
+            if (persistedCfgs)
+                res.errs.add(err);
+            else
+                ctx.cache().completeCacheStartFuture(req, false, err);
+
             return false;
+        }
 
         assert req.cacheType() != null : req;
         assert F.eq(ccfg.getName(), cacheName) : req;
