@@ -3704,7 +3704,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertTrue(ctxDisposed);
 
         assertEquals(EXIT_CODE_OK, execute("--snapshot", "status"));
-        assertContains(log, testOut.toString(), "There is no snapshot operation in progress.");
+        assertContains(log, testOut.toString(), "There is no create or restore snapshot operation in progress.");
 
         assertNull(ig.cache(DEFAULT_CACHE_NAME));
     }
@@ -3866,7 +3866,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(out, EXIT_CODE_OK, status);
 
         if (op == null) {
-            assertContains(log, out, "There is no snapshot operation in progress.");
+            assertContains(log, out, "There is no create or restore snapshot operation in progress.");
 
             return;
         }

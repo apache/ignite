@@ -129,7 +129,7 @@ public class VisorSnapshotStatusTask extends VisorMultiNodeTask<NoArg, VisorSnap
                 status.requestId().toString(),
                 status.startTime(),
                 F.asMap(ignite.localNode().id(),
-                    new T5<>(status.processedPartitions().longValue(), (long)status.totalPartitions(), -1L, -1L, -1L))
+                    new T5<>((long)status.processedPartitions(), (long)status.totalPartitions(), -1L, -1L, -1L))
             )));
 
             // Snapshot create operation.

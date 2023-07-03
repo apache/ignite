@@ -59,7 +59,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
@@ -466,7 +465,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         IgniteSystemProperties.getBoolean(IGNITE_SNAPSHOT_SEQUENTIAL_WRITE, DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE);
 
     /** Status of snapshot check operations. */
-    private final List<CheckOperationStatus> checkOpsStatus = new CopyOnWriteArrayList<>();
+    private final Set<SnapshotCheckOperationStatus> checkOpsStatus = ConcurrentHashMap.newKeySet();
 
     /**
      * @param ctx Kernal context.
@@ -3103,13 +3102,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** @return Status of snapshot check operations. */
-    public List<CheckOperationStatus> checkOperationsStatus() {
+    public Set<SnapshotCheckOperationStatus> checkOperationsStatus() {
         return checkOpsStatus;
     }
 
     /** @return Snapshot check operation status tracker. */
-    public CheckOperationStatus trackCheckOperation(SnapshotMetadata meta, Integer totalParts, UUID reqId) {
-        CheckOperationStatus status = new CheckOperationStatus(meta, totalParts, reqId);
+    public SnapshotCheckOperationStatus trackCheckOperation(SnapshotMetadata meta, Integer totalParts, UUID reqId) {
+        SnapshotCheckOperationStatus status = new SnapshotCheckOperationStatus(meta, totalParts, reqId) {
+            @Override public void close() {
+                checkOpsStatus.remove(this);
+            }
+        };
 
         checkOpsStatus.add(status);
 
@@ -4627,61 +4630,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 return new IgniteException("Snapshot has not been created", U.convertException(e));
             }
-        }
-    }
-
-    /** Snapshot check operation status. */
-    public class CheckOperationStatus implements AutoCloseable {
-        /** Snapshot metadata. */
-        private final SnapshotMetadata meta;
-
-        /** Operation request ID. */
-        private final UUID reqId;
-
-        /** Start time. */
-        private final long startTime = U.currentTimeMillis();
-
-        /** Processed partitions. */
-        private final AtomicInteger processedParts = new AtomicInteger();
-
-        /** Total partitions. */
-        private final Integer totalParts;
-
-        /** */
-        CheckOperationStatus(SnapshotMetadata meta, Integer totalParts, UUID reqId) {
-            this.meta = meta;
-            this.totalParts = totalParts;
-            this.reqId = reqId;
-        }
-
-        /** @return Snapshot metadata. */
-        public SnapshotMetadata metadata() {
-            return meta;
-        }
-
-        /** @return Operation request ID. */
-        public UUID requestId() {
-            return reqId;
-        }
-
-        /** @return Start time. */
-        public long startTime() {
-            return startTime;
-        }
-
-        /** @return Processed partitions. */
-        public AtomicInteger processedPartitions() {
-            return processedParts;
-        }
-
-        /** @return Total partitions. */
-        public Integer totalPartitions() {
-            return totalParts;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() throws Exception {
-            checkOpsStatus.remove(this);
         }
     }
 

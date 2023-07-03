@@ -73,7 +73,7 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg> {
         List<SnapshotStatus> ops = (List<SnapshotStatus>)res;
 
         if (F.isEmpty(ops)) {
-            printer.accept("There is no snapshot operation in progress.");
+            printer.accept("There is no create or restore snapshot operation in progress.");
 
             return;
         }
