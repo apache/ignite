@@ -3821,9 +3821,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         srv.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
-        IgniteInternalFuture<?> fut = srv.context().cache().context().snapshotMgr().checkSnapshot(SNAPSHOT_NAME, null);
-
         slow.set(true);
+
+        IgniteInternalFuture<?> fut = srv.context().cache().context().snapshotMgr().checkSnapshot(SNAPSHOT_NAME, null);
 
         checkSnapshotStatus(SnapshotOperation.CHECK, false, SNAPSHOT_NAME);
 
