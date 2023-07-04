@@ -30,7 +30,6 @@ import org.apache.ignite.internal.management.api.PreparableCommand;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.cache.VisorCacheStopTask;
 import org.jetbrains.annotations.Nullable;
 
 /** Destroy caches. */
@@ -97,6 +96,6 @@ public class CacheDestroyCommand
 
     /** {@inheritDoc} */
     @Override public Class taskClass() {
-        return VisorCacheStopTask.class;
+        return CacheStopTask.class;
     }
 }

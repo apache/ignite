@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.SystemViewCommand;
+import org.apache.ignite.internal.management.SystemViewTask;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
@@ -42,6 +43,9 @@ import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.NUMBER;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
+import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.NUMBER;
+import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.STRING;
+
 /** */
 public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg> {
     /** {@inheritDoc} */
@@ -55,12 +59,12 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg> {
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorSnapshotStatusTask> taskClass() {
-        return VisorSnapshotStatusTask.class;
+    @Override public Class<SnapshotStatusTask> taskClass() {
+        return SnapshotStatusTask.class;
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(NoArg arg, VisorSnapshotTaskResult res0, Consumer<String> printer) {
+    @Override public void printResult(NoArg arg, SnapshotTaskResult res0, Consumer<String> printer) {
         Object res;
 
         try {
@@ -86,8 +90,8 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg> {
 
     /** */
     private String operationStatus(SnapshotStatus status) {
-        boolean isCreating = status.operation() == VisorSnapshotStatusTask.SnapshotOperation.CREATE;
-        boolean isRestoring = status.operation() == VisorSnapshotStatusTask.SnapshotOperation.RESTORE;
+        boolean isCreating = status.operation() == SnapshotStatusTask.SnapshotOperation.CREATE;
+        boolean isRestoring = status.operation() == SnapshotStatusTask.SnapshotOperation.RESTORE;
         boolean isIncremental = status.incrementIndex() > 0;
 
         assert isCreating || isRestoring || status.operation() == VisorSnapshotStatusTask.SnapshotOperation.CHECK;
@@ -153,8 +157,8 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg> {
         }
 
         /** @return Progress table columns types. */
-        List<VisorSystemViewTask.SimpleType> types() {
-            List<VisorSystemViewTask.SimpleType> types = new ArrayList<>();
+        List<SystemViewTask.SimpleType> types() {
+            List<SystemViewTask.SimpleType> types = new ArrayList<>();
 
             types.add(STRING);
 

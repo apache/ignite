@@ -20,8 +20,6 @@ package org.apache.ignite.internal.management.snapshot;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCheckTask;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
 
 /** */
 public class SnapshotCheckCommand extends AbstractSnapshotCommand<SnapshotCheckCommandArg> {
@@ -36,12 +34,12 @@ public class SnapshotCheckCommand extends AbstractSnapshotCommand<SnapshotCheckC
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorSnapshotCheckTask> taskClass() {
-        return VisorSnapshotCheckTask.class;
+    @Override public Class<SnapshotCheckTask> taskClass() {
+        return SnapshotCheckTask.class;
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(SnapshotCheckCommandArg arg, VisorSnapshotTaskResult res0, Consumer<String> printer) {
+    @Override public void printResult(SnapshotCheckCommandArg arg, SnapshotTaskResult res0, Consumer<String> printer) {
         try {
             ((SnapshotPartitionsVerifyTaskResult)res0.result()).print(printer);
         }

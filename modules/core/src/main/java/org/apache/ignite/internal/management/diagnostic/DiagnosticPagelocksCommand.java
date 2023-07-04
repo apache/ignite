@@ -28,11 +28,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksResult;
-import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksTask;
 
 /** */
-public class DiagnosticPagelocksCommand implements ComputeCommand<DiagnosticPagelocksCommandArg, Map<ClusterNode, VisorPageLocksResult>> {
+public class DiagnosticPagelocksCommand implements ComputeCommand<DiagnosticPagelocksCommandArg, Map<ClusterNode, PageLocksResult>> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "View pages locks state information on the node or nodes";
@@ -44,8 +42,8 @@ public class DiagnosticPagelocksCommand implements ComputeCommand<DiagnosticPage
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorPageLocksTask> taskClass() {
-        return VisorPageLocksTask.class;
+    @Override public Class<PageLocksTask> taskClass() {
+        return PageLocksTask.class;
     }
 
     /** {@inheritDoc} */
@@ -67,7 +65,7 @@ public class DiagnosticPagelocksCommand implements ComputeCommand<DiagnosticPage
     /** {@inheritDoc} */
     @Override public void printResult(
         DiagnosticPagelocksCommandArg arg,
-        Map<ClusterNode, VisorPageLocksResult> res,
+        Map<ClusterNode, PageLocksResult> res,
         Consumer<String> printer
     ) {
         res.forEach((n, res0) -> printer.accept(n.id() + " (" + n.consistentId() + ") " + res0.result()));

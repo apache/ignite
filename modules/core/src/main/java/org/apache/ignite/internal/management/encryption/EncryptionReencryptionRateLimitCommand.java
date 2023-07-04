@@ -24,15 +24,13 @@ import java.util.function.Consumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.encryption.VisorCacheGroupEncryptionTaskResult;
-import org.apache.ignite.internal.visor.encryption.VisorReencryptionRateTask;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 
 /** */
 public class EncryptionReencryptionRateLimitCommand
-    implements ComputeCommand<EncryptionReencryptionRateLimitCommandArg, VisorCacheGroupEncryptionTaskResult<Double>> {
+    implements ComputeCommand<EncryptionReencryptionRateLimitCommandArg, CacheGroupEncryptionTaskResult<Double>> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "View/change re-encryption rate limit";
@@ -44,8 +42,8 @@ public class EncryptionReencryptionRateLimitCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorReencryptionRateTask> taskClass() {
-        return VisorReencryptionRateTask.class;
+    @Override public Class<ReencryptionRateTask> taskClass() {
+        return ReencryptionRateTask.class;
     }
 
     /** {@inheritDoc} */
@@ -56,7 +54,7 @@ public class EncryptionReencryptionRateLimitCommand
     /** {@inheritDoc} */
     @Override public void printResult(
         EncryptionReencryptionRateLimitCommandArg arg,
-        VisorCacheGroupEncryptionTaskResult<Double> res,
+        CacheGroupEncryptionTaskResult<Double> res,
         Consumer<String> printer
     ) {
         Map<UUID, IgniteException> exceptions = res.exceptions();
