@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -227,10 +226,7 @@ public class RecordV1Serializer implements RecordSerializer {
 
     /** {@inheritDoc} */
     @Override public WALRecord readRecord(ByteBufferBackedDataInput in0, WALPointer expPtr) throws IOException, IgniteCheckedException {
-        if (in0 instanceof FileInput)
-            return readWithCrc((FileInput)in0, expPtr, recordIO);
-        else
-            return readWithoutCrcCheck(in0, expPtr, recordIO);
+        return readWithCrc(in0, expPtr, recordIO);
     }
 
     /** {@inheritDoc} */
@@ -355,44 +351,6 @@ public class RecordV1Serializer implements RecordSerializer {
     }
 
     /**
-     * Reads record from input {@code in}.
-     * @param in ByteBufferBackedDataInput.
-     * @param expPtr Expected WAL pointer for record. Used to validate actual position against expected from the file.
-     * @param reader Record reader I/O interface.
-     * @return WAL record.
-     * @throws IgniteCheckedException If it's unable to read record.
-     */
-    static WALRecord readWithoutCrcCheck(
-        ByteBufferBackedDataInput in,
-        WALPointer expPtr,
-        RecordIO reader
-    ) throws IgniteCheckedException {
-        long startPos = -1;
-
-        long size = -1;
-
-        try {
-            startPos = in.buffer().position();
-
-            WALRecord res = reader.readWithHeaders(in, expPtr);
-
-            assert res != null;
-
-            size = in.buffer().position() - startPos + CRC_SIZE;
-
-            res.size((int)size);
-
-            // CRC.
-            in.readInt();
-
-            return res;
-        }
-        catch (Exception e) {
-            throw new IgniteCheckedException("Failed to read WAL record at position: " + startPos + ", size: " + size, e);
-        }
-    }
-
-    /**
      * Reads record from file {@code in0} and validates CRC of record.
      *
      * @param in0 File input.
@@ -403,13 +361,13 @@ public class RecordV1Serializer implements RecordSerializer {
      * @throws IgniteCheckedException If it's unable to read record.
      */
     static WALRecord readWithCrc(
-        FileInput in0,
+        ByteBufferBackedDataInput in0,
         WALPointer expPtr,
         RecordIO reader
     ) throws EOFException, IgniteCheckedException {
         long startPos = -1;
 
-        try (SimpleFileInput.Crc32CheckingFileInput in = in0.startRead(skipCrc)) {
+        try (ByteBufferBackedDataInput.CrcCheckingDataInput in = in0.startRead(skipCrc)) {
             startPos = in0.position();
 
             WALRecord res = reader.readWithHeaders(in, expPtr);
@@ -427,7 +385,8 @@ public class RecordV1Serializer implements RecordSerializer {
             long size = -1;
 
             try {
-                size = in0.io().size();
+                if (in0 instanceof FileInput)
+                    size = ((FileInput)in0).io().size();
             }
             catch (IOException ignore) {
                 // It just for information. Fail calculate file size.

@@ -49,6 +49,16 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
     }
 
     /** {@inheritDoc} */
+    @Override public int position() {
+        return buf.position();
+    }
+
+    /** {@inheritDoc} */
+    @Override public CrcCheckingDataInput startRead(boolean skipCheck) {
+        return new CrcCheckingDataInput(this, skipCheck);
+    }
+
+    /** {@inheritDoc} */
     @Override public void readFully(@NotNull byte[] b) throws IOException {
         ensure(b.length);
 

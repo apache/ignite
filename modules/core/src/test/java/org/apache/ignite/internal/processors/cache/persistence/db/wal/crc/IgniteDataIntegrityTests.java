@@ -25,10 +25,10 @@ import java.nio.ByteOrder;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInput;
 import org.junit.After;
 import org.junit.Before;
@@ -209,7 +209,7 @@ public class IgniteDataIntegrityTests {
         fileInput.io().position(0);
 
         for (int i = 0; i < 1024 / 16; i++) {
-            try (FileInput.Crc32CheckingFileInput in = fileInput.startRead(false)) {
+            try (ByteBufferBackedDataInput.CrcCheckingDataInput in = fileInput.startRead(false)) {
                 in.readInt();
                 in.readInt();
                 in.readInt();

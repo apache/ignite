@@ -133,8 +133,8 @@ public class SimpleFileInput implements FileInput {
     /**
      * @return Position in the stream.
      */
-    @Override public long position() {
-        return pos - buf.remaining();
+    @Override public int position() {
+        return (int)(pos - buf.remaining());
     }
 
     /**
@@ -267,7 +267,7 @@ public class SimpleFileInput implements FileInput {
      * @param skipCheck If CRC check should be skipped.
      * @return autoclosable fileInput, after its closing crc will be calculated and compared with saved one
      */
-    @Override public Crc32CheckingFileInput startRead(boolean skipCheck) {
-        return new Crc32CheckingFileInput(this, skipCheck);
+    @Override public CrcCheckingDataInput startRead(boolean skipCheck) {
+        return new CrcCheckingDataInput(this, skipCheck);
     }
 }

@@ -54,12 +54,6 @@ import org.apache.ignite.testframework.wal.record.UnsupportedWalRecord;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_FORWARD_PAGE_SPLIT;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_META_PAGE_INIT_ROOT_V3;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_PAGE_INNER_REPLACE;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_PAGE_MERGE;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PARTITION_META_PAGE_DELTA_RECORD_V4;
-
 /**
  *
  */

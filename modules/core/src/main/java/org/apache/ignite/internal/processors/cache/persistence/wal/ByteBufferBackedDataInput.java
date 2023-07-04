@@ -20,6 +20,9 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 import java.io.DataInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * ByteBuffer backed data input
@@ -36,4 +39,230 @@ public interface ByteBufferBackedDataInput extends DataInput {
      * @throws IOException If failed.
      */
     public void ensure(int requested) throws IOException;
+
+    /**
+     * @return Position in the stream.
+     */
+    int position();
+
+    /**
+     * @param skipCheck If CRC check should be skipped.
+     * @return autoclosable fileInput, after its closing crc32 will be calculated and compared with saved one
+     */
+    CrcCheckingDataInput startRead(boolean skipCheck);
+
+    /**
+     * Checking of CRC32.
+     */
+    public class CrcCheckingDataInput implements ByteBufferBackedDataInput, AutoCloseable {
+        /** */
+        private final FastCrc crc = new FastCrc();
+
+        /** Last calc position. */
+        private int lastCalcPosition;
+
+        /** Skip crc check. */
+        private boolean skipCheck;
+
+        /** */
+        private ByteBufferBackedDataInput delegate;
+
+        /**
+         */
+        public CrcCheckingDataInput(ByteBufferBackedDataInput delegate, boolean skipCheck) {
+            this.delegate = delegate;
+            this.lastCalcPosition = position();
+            this.skipCheck = skipCheck;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int position() {
+            return delegate.buffer().position();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void ensure(int requested) throws IOException {
+            int available = buffer().remaining();
+
+            if (available >= requested)
+                return;
+
+            updateCrc();
+
+            delegate.ensure(requested);
+
+            lastCalcPosition = 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public CrcCheckingDataInput startRead(boolean skipCheck) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws Exception {
+            updateCrc();
+
+            int val = crc.getValue();
+
+            int writtenCrc = this.readInt();
+
+            if ((val ^ writtenCrc) != 0 && !skipCheck) {
+                // If it is a last message we will skip it (EOF will be thrown).
+                ensure(5);
+
+                throw new IgniteDataIntegrityViolationException(
+                    "val: " + val + " writtenCrc: " + writtenCrc
+                );
+            }
+        }
+
+        /**
+         *
+         */
+        private void updateCrc() {
+            if (skipCheck)
+                return;
+
+            int oldPos = buffer().position();
+
+            buffer().position(lastCalcPosition);
+
+            crc.update(delegate.buffer(), oldPos - lastCalcPosition);
+
+            lastCalcPosition = oldPos;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int skipBytes(int n) throws IOException {
+            ensure(n);
+
+            int skipped = Math.min(buffer().remaining(), n);
+
+            buffer().position(buffer().position() + skipped);
+
+            return skipped;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void readFully(@NotNull byte[] b) throws IOException {
+            ensure(b.length);
+
+            buffer().get(b);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void readFully(@NotNull byte[] b, int off, int len) throws IOException {
+            ensure(len);
+
+            buffer().get(b, off, len);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public boolean readBoolean() throws IOException {
+            return readByte() == 1;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public byte readByte() throws IOException {
+            ensure(1);
+
+            return buffer().get();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public int readUnsignedByte() throws IOException {
+            return readByte() & 0xFF;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public short readShort() throws IOException {
+            ensure(2);
+
+            return buffer().getShort();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public int readUnsignedShort() throws IOException {
+            return readShort() & 0xFFFF;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public char readChar() throws IOException {
+            ensure(2);
+
+            return buffer().getChar();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public int readInt() throws IOException {
+            ensure(4);
+
+            return buffer().getInt();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public long readLong() throws IOException {
+            ensure(8);
+
+            return buffer().getLong();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public float readFloat() throws IOException {
+            ensure(4);
+
+            return buffer().getFloat();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public double readDouble() throws IOException {
+            ensure(8);
+
+            return buffer().getDouble();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public String readLine() throws IOException {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public String readUTF() throws IOException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public ByteBuffer buffer() {
+            return delegate.buffer();
+        }
+    }
 }
