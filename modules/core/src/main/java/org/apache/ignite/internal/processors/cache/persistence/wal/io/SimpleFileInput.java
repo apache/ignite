@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
-import org.apache.ignite.internal.processors.cache.persistence.wal.Crc32CheckingDataInput;
 import org.jetbrains.annotations.NotNull;
 
 /**
