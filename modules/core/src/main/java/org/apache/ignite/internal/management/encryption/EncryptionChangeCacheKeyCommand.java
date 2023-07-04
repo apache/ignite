@@ -19,7 +19,6 @@ package org.apache.ignite.internal.management.encryption;
 
 import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.encryption.VisorChangeCacheGroupKeyTask;
 
 /** */
 public class EncryptionChangeCacheKeyCommand implements ComputeCommand<EncryptionCacheGroupArg, Void> {
@@ -34,8 +33,8 @@ public class EncryptionChangeCacheKeyCommand implements ComputeCommand<Encryptio
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorChangeCacheGroupKeyTask> taskClass() {
-        return VisorChangeCacheGroupKeyTask.class;
+    @Override public Class<ChangeCacheGroupKeyTask> taskClass() {
+        return ChangeCacheGroupKeyTask.class;
     }
 
     /** {@inheritDoc} */

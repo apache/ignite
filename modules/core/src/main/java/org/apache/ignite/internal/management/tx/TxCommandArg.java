@@ -28,7 +28,6 @@ import org.apache.ignite.internal.management.api.CliConfirmArgument;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 
 /** */
 @CliConfirmArgument
@@ -83,7 +82,7 @@ public class TxCommandArg extends TxCommand.AbstractTxCommandArg {
             "Sort by start time"
         }
     )
-    private VisorTxSortOrder order;
+    private TxSortOrder order;
 
     /** */
     @Argument(optional = true)
@@ -113,7 +112,7 @@ public class TxCommandArg extends TxCommand.AbstractTxCommandArg {
         clients = in.readBoolean();
         nodes = U.readArray(in, String.class);
         limit = (Integer)in.readObject();
-        order = U.readEnum(in, VisorTxSortOrder.class);
+        order = U.readEnum(in, TxSortOrder.class);
         kill = in.readBoolean();
     }
 
@@ -214,12 +213,12 @@ public class TxCommandArg extends TxCommand.AbstractTxCommandArg {
     }
 
     /** */
-    public VisorTxSortOrder order() {
+    public TxSortOrder order() {
         return order;
     }
 
     /** */
-    public void order(VisorTxSortOrder order) {
+    public void order(TxSortOrder order) {
         this.order = order;
     }
 

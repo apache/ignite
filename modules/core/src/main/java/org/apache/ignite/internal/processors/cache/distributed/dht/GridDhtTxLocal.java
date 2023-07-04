@@ -68,13 +68,13 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
  */
 public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMappedVersion {
     /** */
-    private UUID nearNodeId;
+    private final UUID nearNodeId;
 
     /** Near future ID. */
     private IgniteUuid nearFutId;
 
     /** Near future ID. */
-    private int nearMiniId;
+    private final int nearMiniId;
 
     /** Near future ID. */
     private IgniteUuid nearFinFutId;
@@ -83,7 +83,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     private int nearFinMiniId;
 
     /** Near XID. */
-    private GridCacheVersion nearXidVer;
+    private final GridCacheVersion nearXidVer;
 
     /** Future updater. */
     private static final AtomicReferenceFieldUpdater<GridDhtTxLocal, GridDhtTxPrepareFuture> PREP_FUT_UPD =
@@ -94,7 +94,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     private volatile GridDhtTxPrepareFuture prepFut;
 
     /** Transaction label. */
-    private @Nullable String lb;
+    private final @Nullable String lb;
 
     /**
      * @param nearNodeId Near node ID that initiated transaction.
@@ -245,13 +245,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     }
 
     /**
-     * @return Near future ID.
-     */
-    public IgniteUuid nearFinishFutureId() {
-        return nearFinFutId;
-    }
-
-    /**
      * @param nearFinFutId Near future ID.
      */
     public void nearFinishFutureId(IgniteUuid nearFinFutId) {
@@ -289,8 +282,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     }
 
     /** {@inheritDoc} */
-    @Override protected void updateExplicitVersion(IgniteTxEntry txEntry, GridCacheEntryEx entry)
-        throws GridCacheEntryRemovedException {
+    @Override protected void updateExplicitVersion(IgniteTxEntry txEntry, GridCacheEntryEx entry) {
         // DHT local transactions don't have explicit locks.
         // No-op.
     }
@@ -556,8 +548,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
      */
     public IgniteInternalFuture<IgniteInternalTx> rollbackDhtLocalAsync() {
         final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, false);
-
-        rollbackFuture(fut);
 
         cctx.mvcc().addFuture(fut, fut.futureId());
 

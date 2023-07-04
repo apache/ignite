@@ -76,13 +76,13 @@ import org.apache.ignite.internal.management.property.PropertyCommand;
 import org.apache.ignite.internal.management.snapshot.SnapshotCommand;
 import org.apache.ignite.internal.management.tx.TxCommand;
 import org.apache.ignite.internal.management.tx.TxCommandArg;
+import org.apache.ignite.internal.management.tx.TxSortOrder;
 import org.apache.ignite.internal.management.wal.WalCommand;
 import org.apache.ignite.internal.management.wal.WalDeleteCommandArg;
 import org.apache.ignite.internal.management.wal.WalPrintCommand;
 import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommandArg;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.SystemPropertiesRule;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -628,7 +628,7 @@ public class CommandHandlerParsingTest {
         assertEquals(Long.valueOf(120 * 1000L), arg.minDuration());
         assertEquals(Integer.valueOf(10), arg.minSize());
         assertEquals(Integer.valueOf(100), arg.limit());
-        assertEquals(VisorTxSortOrder.SIZE, arg.order());
+        assertEquals(TxSortOrder.SIZE, arg.order());
         assertTrue(arg.servers());
         assertFalse(arg.clients());
 
@@ -640,7 +640,7 @@ public class CommandHandlerParsingTest {
         assertEquals(Long.valueOf(130 * 1000L), arg.minDuration());
         assertEquals(Integer.valueOf(1), arg.minSize());
         assertEquals(Integer.valueOf(60), arg.limit());
-        assertEquals(VisorTxSortOrder.DURATION, arg.order());
+        assertEquals(TxSortOrder.DURATION, arg.order());
         assertFalse(arg.servers());
         assertTrue(arg.clients());
 

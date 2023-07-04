@@ -20,7 +20,6 @@ package org.apache.ignite.internal.management.performancestatistics;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand.PerformanceStatisticsStartCommandArg;
-import org.apache.ignite.internal.visor.performancestatistics.VisorPerformanceStatisticsTask;
 
 /** */
 public class PerformanceStatisticsStartCommand implements ComputeCommand<IgniteDataTransferObject, String> {
@@ -35,7 +34,7 @@ public class PerformanceStatisticsStartCommand implements ComputeCommand<IgniteD
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorPerformanceStatisticsTask> taskClass() {
-        return VisorPerformanceStatisticsTask.class;
+    @Override public Class<PerformanceStatisticsTask> taskClass() {
+        return PerformanceStatisticsTask.class;
     }
 }

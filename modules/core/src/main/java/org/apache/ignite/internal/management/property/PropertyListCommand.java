@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.management.property;
 
 import java.util.function.Consumer;
-import org.apache.ignite.internal.commandline.property.tasks.PropertiesListResult;
-import org.apache.ignite.internal.commandline.property.tasks.PropertiesListTask;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 

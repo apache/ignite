@@ -21,12 +21,10 @@ import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand.DefragmentationCancelCommandArg;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand.DefragmentationStatusCommandArg;
-import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTask;
-import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTaskResult;
 
 /** */
 public class DefragmentationCancelCommand
-    implements ComputeCommand<DefragmentationStatusCommandArg, VisorDefragmentationTaskResult> {
+    implements ComputeCommand<DefragmentationStatusCommandArg, DefragmentationTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Cancel scheduled or active PDS defragmentation on underlying node";
@@ -38,14 +36,14 @@ public class DefragmentationCancelCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorDefragmentationTask> taskClass() {
-        return VisorDefragmentationTask.class;
+    @Override public Class<DefragmentationTask> taskClass() {
+        return DefragmentationTask.class;
     }
 
     /** {@inheritDoc} */
     @Override public void printResult(
         DefragmentationStatusCommandArg arg,
-        VisorDefragmentationTaskResult res,
+        DefragmentationTaskResult res,
         Consumer<String> printer
     ) {
         printer.accept(res.getMessage());

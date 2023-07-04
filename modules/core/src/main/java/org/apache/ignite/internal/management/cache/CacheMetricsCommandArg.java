@@ -26,7 +26,6 @@ import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.cache.metrics.CacheMetricsOperation;
 
 /** */
 @ArgumentGroup(value = {"caches", "allCaches"}, onlyOneOf = true, optional = false)
