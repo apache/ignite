@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  * Iterator over WAL segments. This abstract class provides most functionality for reading records in log. Subclasses
  * are to override segment switching functionality
  */
-public abstract class AbstractWalRecordsIterator extends WalRecordsIteratorAdaptor {
+public abstract class AbstractFileWalRecordsIterator extends WalRecordsIteratorAdaptor {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -91,7 +91,7 @@ public abstract class AbstractWalRecordsIterator extends WalRecordsIteratorAdapt
      * @param initialReadBufferSize buffer for reading records size.
      * @param segmentFileInputFactory Factory to provide I/O interfaces for read primitives with files.
      */
-    protected AbstractWalRecordsIterator(
+    protected AbstractFileWalRecordsIterator(
         @NotNull final IgniteLogger log,
         @NotNull final GridCacheSharedContext sharedCtx,
         @NotNull final RecordSerializerFactory serializerFactory,
@@ -142,11 +142,12 @@ public abstract class AbstractWalRecordsIterator extends WalRecordsIteratorAdapt
 
                     return;
                 }
+                else {
+                    currWalSegment = advanceSegment(currWalSegment);
 
-                currWalSegment = advanceSegment(currWalSegment);
-
-                if (currWalSegment == null)
-                    return;
+                    if (currWalSegment == null)
+                        return;
+                }
             }
             catch (WalSegmentTailReachedException e) {
                 IgniteCheckedException e0 = validateTailReachedException(e, currWalSegment);

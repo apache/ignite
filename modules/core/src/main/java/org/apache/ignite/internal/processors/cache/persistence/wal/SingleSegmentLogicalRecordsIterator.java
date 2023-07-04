@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
  * Iterates over logical records of one WAL segment from archive. Used for WAL archive compression.
  * Doesn't deserialize actual record data, returns {@link MarshalledRecord} instances instead.
  */
-public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsIterator {
+public class SingleSegmentLogicalRecordsIterator extends AbstractFileWalRecordsIterator {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 

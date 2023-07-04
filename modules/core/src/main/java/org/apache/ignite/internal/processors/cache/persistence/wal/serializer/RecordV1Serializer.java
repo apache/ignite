@@ -367,7 +367,7 @@ public class RecordV1Serializer implements RecordSerializer {
     ) throws EOFException, IgniteCheckedException {
         long startPos = -1;
 
-        try (ByteBufferBackedDataInput.CrcCheckingDataInput in = in0.startRead(skipCrc)) {
+        try (ByteBufferBackedDataInput.Crc32CheckingDataInput in = in0.startRead(skipCrc)) {
             startPos = in0.position();
 
             WALRecord res = reader.readWithHeaders(in, expPtr);

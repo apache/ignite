@@ -54,8 +54,8 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
     }
 
     /** {@inheritDoc} */
-    @Override public CrcCheckingDataInput startRead(boolean skipCheck) {
-        return new CrcCheckingDataInput(this, skipCheck);
+    @Override public Crc32CheckingDataInput startRead(boolean skipCheck) {
+        return new Crc32CheckingDataInput(this, skipCheck);
     }
 
     /** {@inheritDoc} */

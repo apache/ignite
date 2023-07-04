@@ -43,18 +43,18 @@ public interface ByteBufferBackedDataInput extends DataInput {
     /**
      * @return Position in the stream.
      */
-    int position();
+    public int position();
 
     /**
      * @param skipCheck If CRC check should be skipped.
      * @return autoclosable fileInput, after its closing crc32 will be calculated and compared with saved one
      */
-    CrcCheckingDataInput startRead(boolean skipCheck);
+    public Crc32CheckingDataInput startRead(boolean skipCheck);
 
     /**
      * Checking of CRC32.
      */
-    public class CrcCheckingDataInput implements ByteBufferBackedDataInput, AutoCloseable {
+    public class Crc32CheckingDataInput implements ByteBufferBackedDataInput, AutoCloseable {
         /** */
         private final FastCrc crc = new FastCrc();
 
@@ -69,7 +69,7 @@ public interface ByteBufferBackedDataInput extends DataInput {
 
         /**
          */
-        public CrcCheckingDataInput(ByteBufferBackedDataInput delegate, boolean skipCheck) {
+        public Crc32CheckingDataInput(ByteBufferBackedDataInput delegate, boolean skipCheck) {
             this.delegate = delegate;
             this.lastCalcPosition = position();
             this.skipCheck = skipCheck;
@@ -95,7 +95,7 @@ public interface ByteBufferBackedDataInput extends DataInput {
         }
 
         /** {@inheritDoc} */
-        @Override public CrcCheckingDataInput startRead(boolean skipCheck) {
+        @Override public Crc32CheckingDataInput startRead(boolean skipCheck) {
             return null;
         }
 

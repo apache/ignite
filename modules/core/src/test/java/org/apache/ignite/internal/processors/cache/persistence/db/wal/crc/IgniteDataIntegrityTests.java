@@ -209,7 +209,7 @@ public class IgniteDataIntegrityTests {
         fileInput.io().position(0);
 
         for (int i = 0; i < 1024 / 16; i++) {
-            try (ByteBufferBackedDataInput.CrcCheckingDataInput in = fileInput.startRead(false)) {
+            try (ByteBufferBackedDataInput.Crc32CheckingDataInput in = fileInput.startRead(false)) {
                 in.readInt();
                 in.readInt();
                 in.readInt();

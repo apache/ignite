@@ -67,6 +67,9 @@ public class ByteBufferWalIterator extends WalRecordsIteratorAdaptor {
 
     /** */
     private IgniteBiTuple<WALPointer, WALRecord> advanceRecord() throws IgniteCheckedException {
+        if (!buf.hasRemaining())
+            return null;
+
         IgniteBiTuple<WALPointer, WALRecord> result;
 
         WALPointer actualFilePtr = new WALPointer(-1, buf.position(), 0);
@@ -81,7 +84,7 @@ public class ByteBufferWalIterator extends WalRecordsIteratorAdaptor {
             throw new IgniteCheckedException(e);
         }
 
-        return buf.hasRemaining() ? result : null;
+        return result;
     }
 
     /** {@inheritDoc} */
