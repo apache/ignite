@@ -52,7 +52,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.S
  * Task to get the status of the current snapshot operation in the cluster.
  */
 @GridInternal
-public class */ extends VisorMultiNodeTask<NoArg, VisorSnapshotTaskResult, List<SnapshotStatus>> {
+public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotTaskResult, List<SnapshotStatus>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -100,7 +100,7 @@ public class */ extends VisorMultiNodeTask<NoArg, VisorSnapshotTaskResult, List<
     }
 
     /** */
-    private static class SnapshotStatusJob extends VisorSnapshotJob<NoArg, List<SnapshotStatus>> {
+    private static class SnapshotStatusJob extends SnapshotJob<NoArg, List<SnapshotStatus>> {
         /** */
         private static final long serialVersionUID = 0L;
 

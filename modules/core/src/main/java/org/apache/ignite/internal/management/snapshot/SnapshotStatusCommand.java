@@ -30,18 +30,12 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.management.SystemViewTask;
 import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.internal.management.snapshot.SnapshotStatusTask.SnapshotStatus;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T5;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask.SnapshotStatus;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
-import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
-
-import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.NUMBER;
-import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
 import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.NUMBER;
 import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.STRING;
@@ -94,7 +88,7 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg> {
         boolean isRestoring = status.operation() == SnapshotStatusTask.SnapshotOperation.RESTORE;
         boolean isIncremental = status.incrementIndex() > 0;
 
-        assert isCreating || isRestoring || status.operation() == VisorSnapshotStatusTask.SnapshotOperation.CHECK;
+        assert isCreating || isRestoring || status.operation() == SnapshotStatusTask.SnapshotOperation.CHECK;
 
         GridStringBuilder s = new GridStringBuilder();
 
