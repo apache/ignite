@@ -31,18 +31,18 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 
 /** Byte Buffer WAL Iterator */
-public class ByteBufferWalIterator extends WalRecordsIteratorAdaptor {
+public class ByteBufferWalIterator extends AbstractWalRecordsIteratorApdator {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final transient ByteBuffer buf;
+    private final ByteBuffer buf;
 
     /** */
-    private final transient RecordSerializer serializer;
+    private final RecordSerializer serializer;
 
     /** */
-    private final transient ByteBufferBackedDataInputImpl dataInput;
+    private final ByteBufferBackedDataInputImpl dataInput;
 
     /** */
     public ByteBufferWalIterator(

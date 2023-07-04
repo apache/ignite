@@ -28,7 +28,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Iterator over WAL segments. This abstract class provides most functionality for reading records.
  */
-public abstract class WalRecordsIteratorAdaptor
+public abstract class AbstractWalRecordsIteratorApdator
     extends GridCloseableIteratorAdapter<IgniteBiTuple<WALPointer, WALRecord>> implements WALIterator {
     /** */
     private static final long serialVersionUID = 0L;
@@ -53,7 +53,7 @@ public abstract class WalRecordsIteratorAdaptor
     /**
      * @param log Logger.
      */
-    protected WalRecordsIteratorAdaptor(@NotNull final IgniteLogger log) {
+    protected AbstractWalRecordsIteratorApdator(@NotNull final IgniteLogger log) {
         this.log = log;
     }
 
