@@ -54,7 +54,8 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 
 /**
- * Task to delete lost segment CDC links. For in-memory CDC, also resets the state to the last {@link CdcDisabledRecord}.
+ * Task to delete lost segment CDC links. For in-memory mode state will be reset to the first record written
+ * after CDC enable again.
  */
 @GridInternal
 public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostSegmentLinksCommandArg, Void, Void> {
