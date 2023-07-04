@@ -182,7 +182,7 @@ The CDC application will fail if meets this record while processing segments. Ex
 
 It means that some data changes are skipped and administrator attention is required.
 
-You can reset the CDC application state to the last CDC disabled record and fix possible gaps
+You can reset the CDC application state to the first record written after CDC enable again and fix possible gaps
 using the `delete_lost_segment_links` link:#handling-skipped-segments[command].
 
 == Forcefully resend all cache data to CDC
