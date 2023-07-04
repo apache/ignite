@@ -47,9 +47,6 @@ public abstract class AbstractWalRecordsIteratorApdator
     /** Logger */
     @NotNull protected final IgniteLogger log;
 
-    /** Position of last read valid record. */
-    private WALPointer lastRead;
-
     /**
      * @param log Logger.
      */

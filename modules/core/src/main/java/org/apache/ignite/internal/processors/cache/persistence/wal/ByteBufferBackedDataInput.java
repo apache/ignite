@@ -41,7 +41,7 @@ public abstract class ByteBufferBackedDataInput implements DataInput {
     /**
      * @return Position in the stream.
      */
-    public int position() {
+    public long position() {
         return buffer().position();
     }
 
@@ -171,4 +171,9 @@ public abstract class ByteBufferBackedDataInput implements DataInput {
     @Override public String readUTF() throws IOException {
         throw new UnsupportedOperationException();
     }
+
+    /**
+     * Size.
+     */
+    public abstract long size() throws IOException;
 }

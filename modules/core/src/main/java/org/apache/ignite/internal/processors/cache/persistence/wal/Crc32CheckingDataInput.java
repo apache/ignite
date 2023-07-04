@@ -51,7 +51,7 @@ public class Crc32CheckingDataInput extends ByteBufferBackedDataInput implements
      */
     public Crc32CheckingDataInput(ByteBufferBackedDataInput delegate, boolean skipCheck) {
         this.delegate = delegate;
-        this.lastCalcPosition = position();
+        this.lastCalcPosition = buffer().position();
         this.skipCheck = skipCheck;
     }
 
@@ -112,5 +112,12 @@ public class Crc32CheckingDataInput extends ByteBufferBackedDataInput implements
      */
     @Override public ByteBuffer buffer() {
         return delegate.buffer();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public long size() throws IOException {
+        return delegate.size();
     }
 }

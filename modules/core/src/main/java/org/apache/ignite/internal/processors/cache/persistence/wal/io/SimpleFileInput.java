@@ -133,8 +133,8 @@ public class SimpleFileInput extends FileInput {
     /**
      * @return Position in the stream.
      */
-    @Override public int position() {
-        return (int)(pos - buf.remaining());
+    @Override public long position() {
+        return pos - buf.remaining();
     }
 
     /**

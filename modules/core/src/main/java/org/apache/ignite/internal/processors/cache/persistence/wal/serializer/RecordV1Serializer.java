@@ -386,8 +386,7 @@ public class RecordV1Serializer implements RecordSerializer {
             long size = -1;
 
             try {
-                if (in0 instanceof FileInput)
-                    size = ((FileInput)in0).io().size();
+                size = in0.size();
             }
             catch (IOException ignore) {
                 // It just for information. Fail calculate file size.

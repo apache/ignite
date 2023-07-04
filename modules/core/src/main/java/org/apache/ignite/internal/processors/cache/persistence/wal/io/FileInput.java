@@ -36,4 +36,9 @@ public abstract class FileInput extends ByteBufferBackedDataInput {
      * @param pos Position in bytes from file begin.
      */
     public abstract void seek(long pos) throws IOException;
+
+    /** {@inheritDoc} */
+    @Override public long size() throws IOException {
+        return io().size();
+    }
 }

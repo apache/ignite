@@ -46,4 +46,9 @@ public class ByteBufferBackedDataInputImpl extends ByteBufferBackedDataInput {
         if (buffer().remaining() < requested)
             throw new IOException("Requested size is greater than buffer: " + requested);
     }
+
+    /** {@inheritDoc} */
+    @Override public long size() throws IOException {
+        return buffer().limit();
+    }
 }
