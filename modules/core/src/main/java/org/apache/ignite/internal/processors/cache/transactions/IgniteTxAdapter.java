@@ -138,19 +138,19 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** Transaction ID. */
     @GridToStringInclude
-    protected GridCacheVersion xidVer;
+    protected final GridCacheVersion xidVer;
 
     /** Entries write version. */
     @GridToStringInclude
-    protected GridCacheVersion writeVer;
+    private GridCacheVersion writeVer;
 
     /** Implicit flag. */
     @GridToStringInclude
-    protected boolean implicit;
+    protected final boolean implicit;
 
     /** Local flag. */
     @GridToStringInclude
-    protected boolean loc;
+    private final boolean loc;
 
     /** Thread ID. */
     @GridToStringInclude
@@ -158,37 +158,37 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** Transaction start time. */
     @GridToStringInclude
-    protected long startTime = U.currentTimeMillis();
+    protected final long startTime = U.currentTimeMillis();
 
     /** Transaction start time in nanoseconds to measure duration. */
-    protected long startTimeNanos;
+    private final long startTimeNanos;
 
     /** Node ID. */
     @GridToStringInclude
-    protected UUID nodeId;
+    protected final UUID nodeId;
 
     /** Cache registry. */
     @GridToStringExclude
-    protected GridCacheSharedContext<?, ?> cctx;
+    protected final GridCacheSharedContext<?, ?> cctx;
 
     /** Need return value. */
-    protected boolean needRetVal;
+    private boolean needRetVal;
 
     /** Isolation. */
     @GridToStringInclude
-    protected TransactionIsolation isolation = READ_COMMITTED;
+    protected final TransactionIsolation isolation;
 
     /** Concurrency. */
     @GridToStringInclude
-    protected TransactionConcurrency concurrency = PESSIMISTIC;
+    protected final TransactionConcurrency concurrency;
 
     /** Transaction timeout. */
     @GridToStringInclude
-    protected long timeout;
+    private long timeout;
 
     /** Deployment class loader id which will be used for deserialization of entries on a distributed task. */
     @GridToStringExclude
-    protected IgniteUuid deploymentLdrId;
+    protected final IgniteUuid deploymentLdrId;
 
     /** Invalidate flag. */
     protected volatile boolean invalidate;
@@ -197,13 +197,13 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     private boolean sysInvalidate;
 
     /** Internal flag. */
-    protected boolean internal;
+    private boolean internal;
 
     /** System transaction flag. */
-    private boolean sys;
+    private final boolean sys;
 
     /** IO policy. */
-    private byte plc;
+    private final byte plc;
 
     /** One phase commit flag. */
     protected boolean onePhaseCommit;
@@ -233,7 +233,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     private volatile boolean timedOut;
 
     /** */
-    protected int txSize;
+    protected final int txSize;
 
     /** */
     @GridToStringExclude
@@ -247,19 +247,19 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected Map<UUID, Collection<UUID>> txNodes;
 
     /** Subject ID initiated this transaction. */
-    protected UUID subjId;
+    private final UUID subjId;
 
     /** Task name hash code. */
-    protected int taskNameHash;
+    private final int taskNameHash;
 
     /** Task name. */
     protected final String taskName;
 
     /** Store used flag. */
-    protected boolean storeEnabled = true;
+    private boolean storeEnabled = true;
 
     /** UUID to consistent id mapper. */
-    protected ConsistentIdMapper consistentIdMapper;
+    protected final ConsistentIdMapper consistentIdMapper;
 
     /** Mvcc tx update snapshot. */
     @GridToStringInclude
@@ -268,22 +268,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** Incremental snapshot ID. */
     private @Nullable UUID incSnpId;
 
-    /** {@inheritDoc} */
-    @Override public UUID incrementalSnapshotId() {
-        return incSnpId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void incrementalSnapshotId(UUID id) {
-        incSnpId = id;
-    }
-
     /** {@code True} if tx should skip adding itself to completed version map on finish. */
     private boolean skipCompletedVers;
-
-    /** Rollback finish future. */
-    @GridToStringExclude
-    private volatile IgniteInternalFuture rollbackFut;
 
     /** */
     @SuppressWarnings("unused")
@@ -352,20 +338,18 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
 
         boolean needTaskName = cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ) ||
-                cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_PUT) ||
-                cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_REMOVED);
+            cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_PUT) ||
+            cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_REMOVED);
 
         taskName = needTaskName ? cctx.kernalContext().task().resolveTaskName(taskNameHash) : null;
 
-        if (cctx.kernalContext().performanceStatistics().enabled())
-            startTimeNanos = System.nanoTime();
+        startTimeNanos = cctx.kernalContext().performanceStatistics().enabled() ? System.nanoTime() : -1;
     }
 
     /**
      * @param cctx Cache registry.
      * @param nodeId Node ID.
      * @param xidVer Transaction ID.
-     * @param startVer Start version mark.
      * @param threadId Thread ID.
      * @param sys System transaction flag.
      * @param plc IO policy.
@@ -378,7 +362,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         GridCacheSharedContext<?, ?> cctx,
         UUID nodeId,
         GridCacheVersion xidVer,
-        GridCacheVersion startVer,
         long threadId,
         boolean sys,
         byte plc,
@@ -401,6 +384,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         this.txSize = txSize;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+        this.deploymentLdrId = null;
 
         implicit = false;
         loc = false;
@@ -416,8 +400,17 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         taskName = needTaskName ? cctx.kernalContext().task().resolveTaskName(taskNameHash) : null;
 
-        if (cctx.kernalContext().performanceStatistics().enabled())
-            startTimeNanos = System.nanoTime();
+        startTimeNanos = cctx.kernalContext().performanceStatistics().enabled() ? System.nanoTime() : -1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID incrementalSnapshotId() {
+        return incSnpId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void incrementalSnapshotId(UUID id) {
+        incSnpId = id;
     }
 
     /**
@@ -705,7 +698,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** {@inheritDoc} */
     @Override public Map<Integer, Set<Integer>> invalidPartitions() {
-        return invalidParts == null ? Collections.<Integer, Set<Integer>>emptyMap() : invalidParts;
+        return invalidParts == null ? Collections.emptyMap() : invalidParts;
     }
 
     /** {@inheritDoc} */
@@ -755,20 +748,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      */
     public void needReturnValue(boolean needRetVal) {
         this.needRetVal = needRetVal;
-    }
-
-    /**
-     * @return Rollback future.
-     */
-    public IgniteInternalFuture rollbackFuture() {
-        return rollbackFut;
-    }
-
-    /**
-     * @param fut Rollback future.
-     */
-    public void rollbackFuture(IgniteInternalFuture fut) {
-        rollbackFut = fut;
     }
 
     /**
@@ -1152,16 +1131,20 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                     break;
                 }
+
+                case SUSPENDED:
                 case PREPARING: {
                     valid = prev == ACTIVE;
 
                     break;
                 }
+
                 case PREPARED: {
                     valid = prev == PREPARING;
 
                     break;
                 }
+
                 case COMMITTING: {
                     valid = prev == PREPARED;
 
@@ -1204,12 +1187,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 case ROLLING_BACK: {
                     valid = prev == ACTIVE || prev == MARKED_ROLLBACK || prev == PREPARING ||
                         prev == PREPARED || prev == SUSPENDED || (prev == COMMITTING && local() && !dht());
-
-                    break;
-                }
-
-                case SUSPENDED: {
-                    valid = prev == ACTIVE;
 
                     break;
                 }
@@ -1918,8 +1895,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             if (log.isDebugEnabled())
                 log.debug("Evicting dht-local entry from near cache [entry=" + cached + ", tx=" + this + ']');
 
-            if (cached != null && cached.markObsolete(xidVer))
-                return true;
+            return cached.markObsolete(xidVer);
         }
 
         return false;
@@ -2028,7 +2004,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     private static class TxFinishFuture extends GridFutureAdapter<IgniteInternalTx> {
         /** */
         @GridToStringInclude
-        private IgniteTxAdapter tx;
+        private final IgniteTxAdapter tx;
 
         /** */
         private volatile long completionTime;

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.management.cdc;
 
 import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.cdc.VisorCdcCacheDataResendTask;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
@@ -40,8 +39,8 @@ public class CdcResendCommand implements ComputeCommand<CdcResendCommandArg, Voi
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorCdcCacheDataResendTask> taskClass() {
-        return VisorCdcCacheDataResendTask.class;
+    @Override public Class<CdcCacheDataResendTask> taskClass() {
+        return CdcCacheDataResendTask.class;
     }
 
     /** {@inheritDoc} */

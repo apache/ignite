@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.management.baseline;
 
-import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
+import org.apache.ignite.internal.management.baseline.BaselineCommand.BaselineTaskArg;
 
 /** */
 public class BaselineAutoAdjustCommand extends AbstractBaselineCommand {
@@ -27,7 +27,7 @@ public class BaselineAutoAdjustCommand extends AbstractBaselineCommand {
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt(VisorBaselineTaskArg arg) {
+    @Override public String confirmationPrompt(BaselineTaskArg arg) {
         return "Warning: the command will perform changes in baseline.";
     }
 

@@ -74,6 +74,8 @@ import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.cache.CacheClearCommand;
 import org.apache.ignite.internal.management.cache.CacheCommand;
 import org.apache.ignite.internal.management.cache.CacheDestroyCommand;
+import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
+import org.apache.ignite.internal.management.tx.TxTaskResult;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -87,7 +89,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
@@ -1166,8 +1167,8 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      * @return Build matcher for dump file name.
      */
     @NotNull private Matcher dumpFileNameMatcher() {
-        Pattern fileNamePattern = Pattern.compile(".*VisorIdleVerifyDumpTask successfully written output to '(.*)'");
-
+        Pattern fileNamePattern = Pattern.compile(".*" + IdleVerifyDumpTask.class.getSimpleName()
+            + " successfully written output to '(.*)'");
         return fileNamePattern.matcher(testOut.toString());
     }
 
@@ -1774,7 +1775,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      * @param validateClo Validate clo.
      * @param args Args.
      */
-    private void validate(TestCommandHandler h, IgniteInClosure<Map<ClusterNode, VisorTxTaskResult>> validateClo,
+    private void validate(TestCommandHandler h, IgniteInClosure<Map<ClusterNode, TxTaskResult>> validateClo,
                           String... args) {
         assertEquals(EXIT_CODE_OK, execute(h, args));
 

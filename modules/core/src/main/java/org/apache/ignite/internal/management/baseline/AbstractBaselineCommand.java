@@ -30,13 +30,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
+import org.apache.ignite.internal.management.baseline.BaselineCommand.BaselineTaskArg;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineAutoAdjustSettings;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineNode;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
 import org.apache.ignite.internal.visor.util.VisorTaskUtils;
 
 import static java.lang.Boolean.TRUE;
@@ -44,26 +40,26 @@ import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDE
 import static org.apache.ignite.internal.management.api.CommandUtils.coordinatorOrNull;
 
 /** */
-public abstract class AbstractBaselineCommand implements ComputeCommand<VisorBaselineTaskArg, VisorBaselineTaskResult> {
+public abstract class AbstractBaselineCommand implements ComputeCommand<BaselineTaskArg, BaselineTaskResult> {
     /** {@inheritDoc} */
-    @Override public Class<VisorBaselineTask> taskClass() {
-        return VisorBaselineTask.class;
+    @Override public Class<BaselineTask> taskClass() {
+        return BaselineTask.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, VisorBaselineTaskArg arg) {
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, BaselineTaskArg arg) {
         return coordinatorOrNull(nodes);
     }
 
     /** {@inheritDoc} */
     @Override public void printResult(
-        VisorBaselineTaskArg arg,
-        VisorBaselineTaskResult res,
+        BaselineTaskArg arg,
+        BaselineTaskResult res,
         Consumer<String> printer
     ) {
         printer.accept("Cluster state: " + (res.isActive() ? "active" : "inactive"));
         printer.accept("Current topology version: " + res.getTopologyVersion());
-        VisorBaselineAutoAdjustSettings autoAdjustSettings = res.getAutoAdjustSettings();
+        BaselineAutoAdjustSettings autoAdjustSettings = res.getAutoAdjustSettings();
 
         if (autoAdjustSettings != null) {
             printer.accept("Baseline auto adjustment " + (TRUE.equals(autoAdjustSettings.getEnabled()) ? "enabled" : "disabled")
@@ -82,12 +78,12 @@ public abstract class AbstractBaselineCommand implements ComputeCommand<VisorBas
 
         printer.accept("");
 
-        Map<String, VisorBaselineNode> baseline = res.getBaseline();
+        Map<String, BaselineNode> baseline = res.getBaseline();
 
-        Map<String, VisorBaselineNode> srvs = res.getServers();
+        Map<String, BaselineNode> srvs = res.getServers();
 
-        // if task runs on a node with VisorBaselineNode of old version (V1) we'll get order=null for all nodes.
-        Function<VisorBaselineNode, String> extractFormattedAddrs = node -> {
+        // if task runs on a node with BaselineNode of old version (V1) we'll get order=null for all nodes.
+        Function<BaselineNode, String> extractFormattedAddrs = node -> {
             Stream<String> sortedByIpHosts =
                 Optional.ofNullable(node)
                     .map(addrs -> node.getAddrs())
@@ -116,7 +112,7 @@ public abstract class AbstractBaselineCommand implements ComputeCommand<VisorBas
         String crdStr = srvs.values().stream()
             // check for not null
             .filter(node -> node.getOrder() != null)
-            .min(Comparator.comparing(VisorBaselineNode::getOrder))
+            .min(Comparator.comparing(BaselineNode::getOrder))
             // format
             .map(crd -> " (Coordinator: ConsistentId=" + crd.getConsistentId() + extractFormattedAddrs.apply(crd) +
                 ", Order=" + crd.getOrder() + ")")
@@ -130,8 +126,8 @@ public abstract class AbstractBaselineCommand implements ComputeCommand<VisorBas
         else {
             printer.accept("Baseline nodes:");
 
-            for (VisorBaselineNode node : baseline.values()) {
-                VisorBaselineNode srvNode = srvs.get(node.getConsistentId());
+            for (BaselineNode node : baseline.values()) {
+                BaselineNode srvNode = srvs.get(node.getConsistentId());
 
                 String state = ", State=" + (srvNode != null ? "ONLINE" : "OFFLINE");
 
@@ -146,9 +142,9 @@ public abstract class AbstractBaselineCommand implements ComputeCommand<VisorBas
 
             printer.accept("");
 
-            List<VisorBaselineNode> others = new ArrayList<>();
+            List<BaselineNode> others = new ArrayList<>();
 
-            for (VisorBaselineNode node : srvs.values()) {
+            for (BaselineNode node : srvs.values()) {
                 if (!baseline.containsKey(node.getConsistentId()))
                     others.add(node);
             }
@@ -158,7 +154,7 @@ public abstract class AbstractBaselineCommand implements ComputeCommand<VisorBas
             else {
                 printer.accept("Other nodes:");
 
-                for (VisorBaselineNode node : others)
+                for (BaselineNode node : others)
                     printer.accept(DOUBLE_INDENT + "ConsistentId=" + node.getConsistentId() + ", Order=" + node.getOrder());
 
                 printer.accept("Number of other nodes: " + others.size());

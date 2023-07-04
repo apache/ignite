@@ -48,6 +48,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.management.cdc.CdcDeleteLostSegmentsTask;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -66,7 +67,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.cdc.VisorCdcDeleteLostSegmentsTask;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -904,7 +904,7 @@ public class CdcSelfTest extends AbstractCdcTest {
         assertThrows(log, () -> fut.get(getTestTimeout()), IgniteCheckedException.class,
             "Found missed segments. Some events are missed.");
 
-        ign.compute().execute(VisorCdcDeleteLostSegmentsTask.class, new VisorTaskArgument<>(ign.localNode().id(), false));
+        ign.compute().execute(CdcDeleteLostSegmentsTask.class, new VisorTaskArgument<>(ign.localNode().id(), false));
 
         cnsmr.data.clear();
 

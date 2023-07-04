@@ -32,30 +32,17 @@ import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.LocalCommand;
-import org.apache.ignite.internal.processors.cache.verify.CacheInfo;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.visor.cache.VisorCacheAffinityConfiguration;
-import org.apache.ignite.internal.visor.cache.VisorCacheConfiguration;
-import org.apache.ignite.internal.visor.cache.VisorCacheConfigurationCollectorTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheConfigurationCollectorTaskArg;
-import org.apache.ignite.internal.visor.cache.VisorCacheEvictionConfiguration;
-import org.apache.ignite.internal.visor.cache.VisorCacheNearConfiguration;
-import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceConfiguration;
-import org.apache.ignite.internal.visor.cache.VisorCacheStoreConfiguration;
-import org.apache.ignite.internal.visor.query.VisorQueryConfiguration;
-import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
-import org.apache.ignite.internal.visor.verify.VisorViewCacheTask;
-import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskResult;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.management.api.CommandUtils.nodes;
-import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
-import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
-import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
+import static org.apache.ignite.internal.management.cache.ViewCacheCmd.CACHES;
+import static org.apache.ignite.internal.management.cache.ViewCacheCmd.GROUPS;
+import static org.apache.ignite.internal.management.cache.ViewCacheCmd.SEQ;
 
 /** Prints info regarding caches, groups or sequences. */
-public class CacheListCommand implements LocalCommand<CacheListCommandArg, VisorViewCacheTaskResult> {
+public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewCacheTaskResult> {
     /** */
     Function<CacheListCommandArg, Predicate<GridClientNode>> FILTER = arg -> node ->
         node.connectable() && (arg.nodeId() == null || Objects.equals(node.nodeId(), arg.nodeId()));
@@ -72,13 +59,13 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
     }
 
     /** {@inheritDoc} */
-    @Override public VisorViewCacheTaskResult execute(
+    @Override public ViewCacheTaskResult execute(
         @Nullable GridClient cli,
         @Nullable Ignite ignite,
         CacheListCommandArg arg,
         Consumer<String> printer
     ) throws GridClientException {
-        VisorViewCacheCmd cmd = arg.groups()
+        ViewCacheCmd cmd = arg.groups()
             ? GROUPS
             : (arg.seq() ? SEQ : CACHES);
 
@@ -90,7 +77,7 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
         if (!node.isPresent())
             throw new IllegalArgumentException("Node not found: id=" + arg.nodeId());
 
-        VisorViewCacheTaskResult res = CommandUtils.execute(cli, ignite, VisorViewCacheTask.class, arg, singletonList(node.get()));
+        ViewCacheTaskResult res = CommandUtils.execute(cli, ignite, ViewCacheTask.class, arg, singletonList(node.get()));
 
         if (arg.config() && cmd == CACHES)
             cachesConfig(cli, ignite, arg, res, printer);
@@ -109,19 +96,19 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
         GridClient cli,
         Ignite ignite,
         CacheListCommandArg arg,
-        VisorViewCacheTaskResult viewRes,
+        ViewCacheTaskResult viewRes,
         Consumer<String> printer
     ) throws GridClientException {
-        Collection<GridClientNode> nodes = CommandUtils.nodes(cli, ignite)
+        Collection<GridClientNode> nodes = nodes(cli, ignite)
             .stream()
             .filter(FILTER.apply(arg))
             .collect(Collectors.toSet());
 
-        Map<String, VisorCacheConfiguration> res = CommandUtils.execute(
+        Map<String, CacheConfiguration> res = CommandUtils.execute(
             cli,
             ignite,
-            VisorCacheConfigurationCollectorTask.class,
-            new VisorCacheConfigurationCollectorTaskArg(arg.regex()),
+            CacheConfigurationCollectorTask.class,
+            new CacheConfigurationCollectorTaskArg(arg.regex()),
             nodes
         );
 
@@ -137,7 +124,7 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
      * @param infos Caches info.
      * @param cmd Command.
      */
-    private void printCacheInfos(Collection<CacheInfo> infos, VisorViewCacheCmd cmd, Consumer<String> printer) {
+    private void printCacheInfos(Collection<CacheInfo> infos, ViewCacheCmd cmd, Consumer<String> printer) {
         for (CacheInfo info : infos) {
             Map<String, Object> map = info.toMap(cmd);
 
@@ -162,13 +149,13 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
      * @param cacheToMapped Map cache name to mapped.
      */
     private void printCachesConfig(
-        Map<String, VisorCacheConfiguration> caches,
+        Map<String, CacheConfiguration> caches,
         OutputFormat outputFormat,
         Map<String, Integer> cacheToMapped,
         Consumer<String> printer
     ) {
 
-        for (Map.Entry<String, VisorCacheConfiguration> entry : caches.entrySet()) {
+        for (Map.Entry<String, CacheConfiguration> entry : caches.entrySet()) {
             String cacheName = entry.getKey();
 
             switch (outputFormat) {
@@ -197,20 +184,20 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
     }
 
     /**
-     * Maps VisorCacheConfiguration to key-value pairs.
+     * Maps CacheConfiguration to key-value pairs.
      *
      * @param cfg Visor cache configuration.
      * @return map of key-value pairs.
      */
-    private static Map<String, Object> mapToPairs(VisorCacheConfiguration cfg) {
+    private static Map<String, Object> mapToPairs(CacheConfiguration cfg) {
         Map<String, Object> params = new LinkedHashMap<>();
 
-        VisorCacheAffinityConfiguration affinityCfg = cfg.getAffinityConfiguration();
-        VisorCacheNearConfiguration nearCfg = cfg.getNearConfiguration();
-        VisorCacheRebalanceConfiguration rebalanceCfg = cfg.getRebalanceConfiguration();
-        VisorCacheEvictionConfiguration evictCfg = cfg.getEvictionConfiguration();
-        VisorCacheStoreConfiguration storeCfg = cfg.getStoreConfiguration();
-        VisorQueryConfiguration qryCfg = cfg.getQueryConfiguration();
+        CacheAffinityConfiguration affinityCfg = cfg.getAffinityConfiguration();
+        CacheNearConfiguration nearCfg = cfg.getNearConfiguration();
+        CacheRebalanceConfiguration rebalanceCfg = cfg.getRebalanceConfiguration();
+        CacheEvictionConfiguration evictCfg = cfg.getEvictionConfiguration();
+        CacheStoreConfiguration storeCfg = cfg.getStoreConfiguration();
+        QueryConfiguration qryCfg = cfg.getQueryConfiguration();
 
         params.put("Name", cfg.getName());
         params.put("Group", cfg.getGroupName());
@@ -303,7 +290,7 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
      * @param cfg Visor cache configuration for invocation.
      * @return String representation without class name in begin of string.
      */
-    private String toString(VisorCacheConfiguration cfg) {
+    private String toString(CacheConfiguration cfg) {
         return cfg.toString().substring(cfg.getClass().getSimpleName().length() + 1);
     }
 

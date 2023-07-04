@@ -21,7 +21,6 @@ import java.util.Collection;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.NoArg;
-import org.apache.ignite.internal.visor.consistency.VisorConsistencyCancelTask;
 
 /** */
 public class KillConsistencyCommand implements ComputeCommand<NoArg, Void> {
@@ -36,8 +35,8 @@ public class KillConsistencyCommand implements ComputeCommand<NoArg, Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorConsistencyCancelTask> taskClass() {
-        return VisorConsistencyCancelTask.class;
+    @Override public Class<ConsistencyCancelTask> taskClass() {
+        return ConsistencyCancelTask.class;
     }
 
     /** {@inheritDoc} */
