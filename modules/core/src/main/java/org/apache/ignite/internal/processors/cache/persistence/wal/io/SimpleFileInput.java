@@ -23,13 +23,14 @@ import java.nio.ByteBuffer;
 
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
+import org.apache.ignite.internal.processors.cache.persistence.wal.Crc32CheckingDataInput;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * File input, backed by byte buffer file input.
  * This class allows to read data by chunks from file and then read primitives
  */
-public class SimpleFileInput implements FileInput {
+public class SimpleFileInput extends FileInput {
     /**
      * Buffer for reading blocks of data into.
      * <b>Note:</b> biggest block requested from this input can't be longer than buffer capacity
@@ -261,13 +262,5 @@ public class SimpleFileInput implements FileInput {
     /** {@inheritDoc} */
     @Override public String readUTF() throws IOException {
         throw new UnsupportedOperationException();
-    }
-
-    /**
-     * @param skipCheck If CRC check should be skipped.
-     * @return autoclosable fileInput, after its closing crc will be calculated and compared with saved one
-     */
-    @Override public Crc32CheckingDataInput startRead(boolean skipCheck) {
-        return new Crc32CheckingDataInput(this, skipCheck);
     }
 }
