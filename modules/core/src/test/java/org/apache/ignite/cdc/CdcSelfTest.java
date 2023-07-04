@@ -843,7 +843,7 @@ public class CdcSelfTest extends AbstractCdcTest {
             persistenceEnabled ? "Found missed segments. Some events are missed."
                 : "Found the CDC disabled record. Some events are missed.");
 
-        ign.compute().execute(VisorCdcDeleteLostSegmentsTask.class, new VisorTaskArgument<>(ign.localNode().id(), false));
+        ign.compute().execute(CdcDeleteLostSegmentsTask.class, new VisorTaskArgument<>(ign.localNode().id(), false));
 
         cdcFut = runAsync(createCdc(cnsmr, getConfiguration(ign.name())));
         cnsmr.data.clear();
