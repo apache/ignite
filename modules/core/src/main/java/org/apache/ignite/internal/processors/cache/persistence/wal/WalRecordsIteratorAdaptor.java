@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
-import java.util.Optional;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -72,8 +71,6 @@ public abstract class WalRecordsIteratorAdaptor
             curException = e;
         }
 
-        lastRead = ret == null ? null : ret.get1();
-
         return ret;
     }
 
@@ -93,9 +90,4 @@ public abstract class WalRecordsIteratorAdaptor
      * @throws IgniteCheckedException If failed.
      */
     protected abstract void advance() throws IgniteCheckedException;
-
-    /** {@inheritDoc} */
-    @Override public Optional<WALPointer> lastRead() {
-        return Optional.ofNullable(lastRead);
-    }
 }

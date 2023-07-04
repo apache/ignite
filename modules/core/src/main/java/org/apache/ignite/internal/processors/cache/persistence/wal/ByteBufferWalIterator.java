@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Optional;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -90,4 +91,8 @@ public class ByteBufferWalIterator extends WalRecordsIteratorAdaptor {
         while (curRec != null && curRec.get2().type() == null);
     }
 
+    /** {@inheritDoc} */
+    @Override public Optional<WALPointer> lastRead() {
+        throw new UnsupportedOperationException();
+    }
 }
