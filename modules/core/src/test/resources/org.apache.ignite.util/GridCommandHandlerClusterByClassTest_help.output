@@ -383,7 +383,7 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
     control.(sh|bat) --consistency finalize
 
   [EXPERIMENTAL]
-  Delete lost segment CDC links. For in-memory CDC, also reset the state to the last CDC disabled record:
+  Delete lost segment CDC links. For in-memory mode state will be reset to the first record written after CDC enable again:
     control.(sh|bat) --cdc delete_lost_segment_links [--node-id node_id] [--yes]
 
     Parameters:
