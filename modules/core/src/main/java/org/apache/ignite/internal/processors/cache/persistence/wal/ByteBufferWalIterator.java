@@ -35,7 +35,7 @@ public class ByteBufferWalIterator extends WalRecordsIteratorAdaptor {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final transient ByteBuffer buffer;
+    private final transient ByteBuffer buf;
 
     /** */
     private final transient RecordSerializer serializer;
@@ -47,10 +47,10 @@ public class ByteBufferWalIterator extends WalRecordsIteratorAdaptor {
     public ByteBufferWalIterator(
         @NotNull IgniteLogger log,
         GridCacheSharedContext<?, ?> cctx,
-        ByteBuffer byteBuffer) throws IgniteCheckedException {
+        ByteBuffer byteBuf) throws IgniteCheckedException {
         super(log);
 
-        buffer = byteBuffer;
+        buf = byteBuf;
 
         RecordSerializerFactory rsf = new RecordSerializerFactoryImpl(cctx,
             (t, p) -> t.purpose() == WALRecord.RecordPurpose.LOGICAL).skipPositionCheck(true);
@@ -59,16 +59,16 @@ public class ByteBufferWalIterator extends WalRecordsIteratorAdaptor {
 
         dataInput = new ByteBufferBackedDataInputImpl();
 
-        dataInput.buffer(buffer);
+        dataInput.buffer(buf);
 
         advance();
     }
 
     /** */
     private IgniteBiTuple<WALPointer, WALRecord> advanceRecord() throws IgniteCheckedException {
-        IgniteBiTuple<WALPointer, WALRecord> result = null;
+        IgniteBiTuple<WALPointer, WALRecord> result;
 
-        WALPointer actualFilePtr = new WALPointer(-1, buffer.position(), 0);
+        WALPointer actualFilePtr = new WALPointer(-1, buf.position(), 0);
         try {
             WALRecord rec = serializer.readRecord(dataInput, actualFilePtr);
 
@@ -80,23 +80,14 @@ public class ByteBufferWalIterator extends WalRecordsIteratorAdaptor {
             throw new IgniteCheckedException(e);
         }
 
-        return buffer.hasRemaining() ? result : null;
+        return buf.hasRemaining() ? result : null;
     }
 
     /** {@inheritDoc} */
     @Override protected void advance() throws IgniteCheckedException {
-        if (curRec != null)
-            lastRead(curRec.get1());
-
-        while (true) {
+        do
             curRec = advanceRecord();
-
-            if (curRec == null || curRec.get2().type() != null) {
-                return;
-            }
-
-            lastRead(curRec.get1());
-        }
+        while (curRec != null && curRec.get2().type() == null);
     }
 
 }

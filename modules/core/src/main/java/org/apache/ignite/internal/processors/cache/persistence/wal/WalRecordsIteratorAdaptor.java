@@ -72,6 +72,8 @@ public abstract class WalRecordsIteratorAdaptor
             curException = e;
         }
 
+        lastRead = ret == null ? null : ret.get1();
+
         return ret;
     }
 
@@ -95,10 +97,5 @@ public abstract class WalRecordsIteratorAdaptor
     /** {@inheritDoc} */
     @Override public Optional<WALPointer> lastRead() {
         return Optional.ofNullable(lastRead);
-    }
-
-    /** */
-    protected void lastRead(WALPointer lastRead) {
-        this.lastRead = lastRead;
     }
 }

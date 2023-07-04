@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.Re
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.wal.record.RecordUtils;
+import org.apache.ignite.testframework.wal.record.UnsupportedWalRecord;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
@@ -63,9 +64,8 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
  *
  */
 public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
-
     /** Cache name. */
-    private static final String CACHE_NAME = "cache";
+    private static final String CACHE_NAME = GridCommonAbstractTest.DEFAULT_CACHE_NAME;
 
     /** */
     private IgniteEx ig;
@@ -109,13 +109,13 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void writeRecord(IgniteWriteAheadLogManager wal, RecordSerializer serializer, ByteBuffer byteBuffer,
+    private void writeRecord(ByteBuffer byteBuf,
         WALRecord walRecord) throws IgniteCheckedException {
 
-        // make sure walpointer is set.
+        // Make sure walpointer is set.
         wal.log(walRecord);
 
-        serializer.writeRecord(walRecord, byteBuffer);
+        serializer.writeRecord(walRecord, byteBuf);
     }
 
     /** */
@@ -150,20 +150,14 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void test() throws Exception {
-        List<WALRecord.RecordType> skipTypes = Arrays.asList(
-            BTREE_PAGE_INNER_REPLACE,
-            BTREE_FORWARD_PAGE_SPLIT,
-            BTREE_PAGE_MERGE,
-            BTREE_META_PAGE_INIT_ROOT_V3,
-            PARTITION_META_PAGE_DELTA_RECORD_V4
-        );
-
-        ByteBuffer byteBuffer = ByteBuffer.allocate(1024 * 1024).order(ByteOrder.nativeOrder());
+    public void testReadFiltered() throws Exception {
+        ByteBuffer byteBuf = ByteBuffer.allocate(1024 * 1024).order(ByteOrder.nativeOrder());
 
         List<WALRecord> physicalRecords = Arrays.stream(WALRecord.RecordType.values())
-            .filter(t -> t.purpose() == WALRecord.RecordPurpose.PHYSICAL && !skipTypes.contains(t))
+            .filter(t -> t.purpose() == WALRecord.RecordPurpose.PHYSICAL)
             .map(RecordUtils::buildWalRecord)
+            .filter(Objects::nonNull)
+            .filter(r -> !(r instanceof UnsupportedWalRecord))
             .collect(Collectors.toList());
 
         final int cnt = physicalRecords.size();
@@ -171,32 +165,32 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
         List<DataEntry> entries = generateEntries(cctx, cnt);
 
         for (int i = 0; i < entries.size(); i++) {
-            writeRecord(wal, serializer, byteBuffer, new DataRecord(entries.get(i)));
+            writeRecord(byteBuf, new DataRecord(entries.get(i)));
 
-            writeRecord(wal, serializer, byteBuffer, physicalRecords.get(i));
+            writeRecord(byteBuf, physicalRecords.get(i));
         }
 
-        byteBuffer.flip();
+        byteBuf.flip();
 
-        WALIterator walIterator = new ByteBufferWalIterator(log, sharedCtx, byteBuffer);
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf);
 
-        Iterator<DataEntry> dataEntriesIterator = entries.iterator();
+        Iterator<DataEntry> dataEntriesIter = entries.iterator();
 
-        while (walIterator.hasNext()) {
-            assertTrue(dataEntriesIterator.hasNext());
+        while (walIter.hasNext()) {
+            assertTrue(dataEntriesIter.hasNext());
 
-            WALRecord record = walIterator.next().get2();
+            WALRecord record = walIter.next().get2();
 
             assertTrue(record instanceof DataRecord);
 
-            DataEntry dataEntry = dataEntriesIterator.next();
+            DataEntry dataEntry = dataEntriesIter.next();
 
             assertTrue(dataEntriesEqual(
                 ((DataRecord)record).get(0),
                 dataEntry));
         }
 
-        assertFalse(dataEntriesIterator.hasNext());
+        assertFalse(dataEntriesIter.hasNext());
     }
 
     /** */
@@ -224,35 +218,35 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testBrokenTail() throws Exception {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(1024 * 1024).order(ByteOrder.nativeOrder());
+        ByteBuffer byteBuf = ByteBuffer.allocate(1024 * 1024).order(ByteOrder.nativeOrder());
 
         List<DataEntry> entries = generateEntries(cctx, 3);
 
         for (int i = 0; i < 2; i++)
-            writeRecord(wal, serializer, byteBuffer, new DataRecord(entries.get(i)));
+            writeRecord(byteBuf, new DataRecord(entries.get(i)));
 
-        int position1 = byteBuffer.position();
+        int position1 = byteBuf.position();
 
-        writeRecord(wal, serializer, byteBuffer, new DataRecord(entries.get(2)));
+        writeRecord(byteBuf, new DataRecord(entries.get(2)));
 
-        int position2 = byteBuffer.position();
+        int position2 = byteBuf.position();
 
-        byteBuffer.flip();
+        byteBuf.flip();
 
-        byteBuffer.limit((position1 + position2) >> 1);
+        byteBuf.limit((position1 + position2) >> 1);
 
-        WALIterator walIterator = new ByteBufferWalIterator(log, sharedCtx, byteBuffer);
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf);
 
-        assertTrue(walIterator.hasNext());
+        assertTrue(walIter.hasNext());
 
-        walIterator.next();
+        walIter.next();
 
-        assertTrue(walIterator.hasNext());
+        assertTrue(walIter.hasNext());
 
-        walIterator.next();
+        walIter.next();
 
         try {
-            walIterator.hasNext();
+            walIter.hasNext();
 
             fail("hasNext() expected to fail");
         }

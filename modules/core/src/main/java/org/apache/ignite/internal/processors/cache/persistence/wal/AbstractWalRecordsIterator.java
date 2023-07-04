@@ -122,19 +122,13 @@ public abstract class AbstractWalRecordsIterator extends WalRecordsIteratorAdapt
      * @throws IgniteCheckedException If failed.
      */
     @Override protected void advance() throws IgniteCheckedException {
-        if (curRec != null)
-            lastRead(curRec.get1());
-
         while (true) {
             try {
                 curRec = advanceRecord(currWalSegment);
 
                 if (curRec != null) {
-                    if (curRec.get2().type() == null) {
-                        lastRead(curRec.get1());
-
+                    if (curRec.get2().type() == null)
                         continue; // Record was skipped by filter of current serializer, should read next record.
-                    }
 
                     return;
                 }
