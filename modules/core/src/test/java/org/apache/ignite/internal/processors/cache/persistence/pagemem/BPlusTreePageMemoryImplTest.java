@@ -114,6 +114,7 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
             (fullPageId, byteBuf, tag) -> {
                 assert false : "No page replacement should happen during the test";
             },
+            true,
             () -> true,
             new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx),
             PageMemoryImpl.ThrottlingPolicy.DISABLED,

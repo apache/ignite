@@ -234,6 +234,9 @@ public class PageMemoryImpl implements PageMemoryEx {
      */
     @Nullable private final DelayedPageReplacementTracker delayedPageReplacementTracker;
 
+    /** Obsolete feature. Flag keeped for compatibility with existing PDS. */
+    private final boolean trackable;
+
     /** Pages write throttle. */
     private PagesWriteThrottlePolicy writeThrottle;
 
@@ -268,6 +271,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @param pmPageMgr Page store manager.
      * @param pageSize Page size.
      * @param flushDirtyPage write callback invoked when a dirty page is removed for replacement.
+     * @param trackable Obsolete flag. Keeped for compatibility with existing PDS.
      * @param stateChecker Checkpoint lock state provider. Used to ensure lock is held by thread, which modify pages.
      * @param dataRegionMetrics Memory metrics to track dirty pages count and page replace rate.
      * @param throttlingPlc Write throttle enabled and its type. Null equal to none.
@@ -280,6 +284,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         PageReadWriteManager pmPageMgr,
         int pageSize,
         PageStoreWriter flushDirtyPage,
+        boolean trackable,
         CheckpointLockStateChecker stateChecker,
         DataRegionMetricsImpl dataRegionMetrics,
         @Nullable ThrottlingPolicy throttlingPlc,
@@ -299,6 +304,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             getBoolean(IGNITE_DELAYED_REPLACED_PAGE_WRITE, DFLT_DELAYED_REPLACED_PAGE_WRITE)
                 ? new DelayedPageReplacementTracker(pageSize, flushDirtyPage, log, sizes.length - 1) :
                 null;
+        this.trackable = trackable;
         this.stateChecker = stateChecker;
         this.throttlingPlc = throttlingPlc != null ? throttlingPlc : ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY;
         this.cpProgressProvider = cpProgressProvider;
@@ -547,7 +553,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         seg.writeLock().lock();
 
-        boolean isTrackingPage =
+        boolean isTrackingPage = trackable &&
             PageIdUtils.pageIndex(trackingIO.trackingPageFor(pageId, realPageSize(grpId))) == PageIdUtils.pageIndex(pageId);
 
         if (isTrackingPage && PageIdUtils.flag(pageId) == PageIdAllocator.FLAG_AUX)

@@ -373,7 +373,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         mgr.addDataRegion(
             dscfg,
-            createTxLogRegion(dscfg));
+            createTxLogRegion(dscfg),
+            CU.isPersistenceEnabled(ctx.config()));
     }
 
     /** {@inheritDoc} */

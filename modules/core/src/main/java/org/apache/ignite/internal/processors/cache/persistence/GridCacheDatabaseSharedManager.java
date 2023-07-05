@@ -469,7 +469,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override protected void initDataRegions0(DataStorageConfiguration memCfg) throws IgniteCheckedException {
         super.initDataRegions0(memCfg);
 
-        addDataRegion(memCfg, createMetastoreDataRegionConfig(memCfg));
+        addDataRegion(memCfg, createMetastoreDataRegionConfig(memCfg), false);
 
         List<DataRegionMetrics> regionMetrics = dataRegionMap.values().stream()
             .map(DataRegion::metrics)
@@ -653,6 +653,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             addDataRegion(
                 memCfg,
                 createDefragmentationDataRegionConfig(totalDefrRegionSize - mappingRegionSize),
+                true,
                 new DefragmentationPageReadWriteManager(cctx.kernalContext(), "defrgPartitionsStore")
             )
         );
@@ -661,6 +662,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             addDataRegion(
                 memCfg,
                 createDefragmentationMappingRegionConfig(mappingRegionSize),
+                true,
                 new DefragmentationPageReadWriteManager(cctx.kernalContext(), "defrgLinkMappingStore")
             )
         );
@@ -832,8 +834,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public DataRegion addDataRegion(DataStorageConfiguration dataStorageCfg, DataRegionConfiguration dataRegionCfg,
-        PageReadWriteManager pmPageMgr) throws IgniteCheckedException {
-        DataRegion region = super.addDataRegion(dataStorageCfg, dataRegionCfg, pmPageMgr);
+        boolean trackable, PageReadWriteManager pmPageMgr) throws IgniteCheckedException {
+        DataRegion region = super.addDataRegion(dataStorageCfg, dataRegionCfg, trackable, pmPageMgr);
 
         checkpointedDataRegions.add(region);
 
@@ -1180,10 +1182,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         DataStorageConfiguration memCfg,
         DataRegionConfiguration plcCfg,
         DataRegionMetricsImpl memMetrics,
+        final boolean trackable,
         PageReadWriteManager pmPageMgr
     ) {
         if (!plcCfg.isPersistenceEnabled())
-            return super.createPageMemory(memProvider, memCfg, plcCfg, memMetrics, pmPageMgr);
+            return super.createPageMemory(memProvider, memCfg, plcCfg, memMetrics, trackable, pmPageMgr);
 
         memMetrics.persistenceEnabled(true);
 
@@ -1219,6 +1222,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 getCheckpointer().currentProgress().updateEvictedPages(1);
             },
+            trackable,
             this,
             memMetrics,
             resolveThrottlingPolicy(),

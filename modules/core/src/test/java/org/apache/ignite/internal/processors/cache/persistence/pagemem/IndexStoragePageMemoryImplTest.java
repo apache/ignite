@@ -125,6 +125,7 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
             (fullPageId, byteBuf, tag) -> {
                 assert false : "No page replacement (rotation with disk) should happen during the test";
             },
+            true,
             () -> true,
             new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx),
             PageMemoryImpl.ThrottlingPolicy.DISABLED,
