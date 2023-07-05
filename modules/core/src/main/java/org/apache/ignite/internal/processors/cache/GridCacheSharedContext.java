@@ -756,13 +756,6 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * @return Snapshot manager.
-     */
-    public IgniteCacheSnapshotManager snapshot() {
-        return snpMgr;
-    }
-
-    /**
      * @return Page store manager. {@code Null} if persistence is not enabled.
      */
     @Nullable public IgnitePageStoreManager pageStore() {

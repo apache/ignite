@@ -128,7 +128,6 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -326,9 +325,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** This is the earliest WAL pointer that was reserved during preloading. */
     private final AtomicReference<WALPointer> reservedForPreloading = new AtomicReference<>();
-
-    /** Snapshot manager. */
-    private IgniteCacheSnapshotManager snapshotMgr;
 
     /**
      * MetaStorage instance. Value {@code null} means storage not initialized yet.
@@ -531,8 +527,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        snapshotMgr = cctx.snapshot();
-
         IgnitePageStoreManager store = cctx.pageStore();
 
         assert store instanceof FilePageStoreManager : "Invalid page store manager was created: " + store;
@@ -570,7 +564,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 this::cacheGroupContexts,
                 this::getPageMemoryForCacheGroup,
                 resolveThrottlingPolicy(),
-                snapshotMgr,
                 dataStorageMetricsImpl(),
                 kernalCtx.longJvmPauseDetector(),
                 kernalCtx.failure(),
@@ -816,7 +809,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             () -> regions,
             this::getPageMemoryForCacheGroup,
             resolveThrottlingPolicy(),
-            snapshotMgr,
             dataStorageMetricsImpl(),
             kernalCtx.longJvmPauseDetector(),
             kernalCtx.failure(),
@@ -918,8 +910,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (log.isDebugEnabled())
             log.debug("Activate database manager [id=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
-
-        snapshotMgr = cctx.snapshot();
 
         checkpointManager.init();
 
@@ -1245,9 +1235,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             (fullId, pageBuf, tag) -> {
                 memMetrics.onPageWritten();
 
-                // We can write only page from disk into snapshot.
-                snapshotMgr.beforePageWrite(fullId);
-
                 // Write page to disk.
                 pmPageMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag, true);
 
@@ -1567,8 +1554,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             if (!gctx.persistenceEnabled())
                 continue;
-
-            snapshotMgr.onCacheGroupStop(gctx, destroy);
 
             PageMemoryEx pageMem = (PageMemoryEx)dataRegion.pageMemory();
 
