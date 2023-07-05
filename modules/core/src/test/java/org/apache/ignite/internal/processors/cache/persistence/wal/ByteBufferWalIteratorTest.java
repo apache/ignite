@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -73,11 +74,16 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
     /** */
     private RecordSerializer serializer;
 
+    /** */
+    private int idx;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
         cleanPersistenceDir();
+
+        idx = new Random().nextInt();
 
         ig = startGrid(0);
 
@@ -106,7 +112,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
         WALRecord walRecord) throws IgniteCheckedException {
         log.info("Writing " + walRecord.type());
 
-        int segment = -1;
+        int segment = idx;
 
         int fileOff = byteBuf.position();
 
@@ -166,7 +172,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         byteBuf.flip();
 
-        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf);
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, idx);
 
         Iterator<DataEntry> dataEntriesIter = entries.iterator();
 
@@ -206,7 +212,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         byteBuf.flip();
 
-        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf);
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, idx);
 
         Iterator<WALRecord> recordsIter = records.iterator();
 
@@ -268,7 +274,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         byteBuf.flip();
 
-        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf,
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, idx,
             (t, p) -> t.purpose() == WALRecord.RecordPurpose.LOGICAL);
 
         Iterator<DataEntry> dataEntriesIter = entries.iterator();
@@ -332,7 +338,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         byteBuf.limit((position1 + position2) >> 1);
 
-        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf);
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, idx);
 
         assertTrue(walIter.hasNext());
 

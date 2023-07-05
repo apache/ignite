@@ -40,6 +40,9 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorApdator {
     private final ByteBuffer buf;
 
     /** */
+    private final int idx;
+
+    /** */
     private final RecordSerializer serializer;
 
     /** */
@@ -49,8 +52,9 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorApdator {
     public ByteBufferWalIterator(
         @NotNull IgniteLogger log,
         @NotNull GridCacheSharedContext<?, ?> cctx,
-        @NotNull ByteBuffer byteBuf) throws IgniteCheckedException {
-        this(log, cctx, byteBuf, null);
+        @NotNull ByteBuffer byteBuf,
+        int segmentIdx) throws IgniteCheckedException {
+        this(log, cctx, byteBuf, segmentIdx, null);
     }
 
     /** */
@@ -58,10 +62,13 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorApdator {
         @NotNull IgniteLogger log,
         @NotNull GridCacheSharedContext<?, ?> cctx,
         @NotNull ByteBuffer byteBuf,
+        int segmentIdx,
         IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter) throws IgniteCheckedException {
         super(log);
 
         buf = byteBuf;
+
+        idx = segmentIdx;
 
         RecordSerializerFactory rsf = new RecordSerializerFactoryImpl(cctx, readTypeFilter);
 
@@ -81,7 +88,7 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorApdator {
 
         IgniteBiTuple<WALPointer, WALRecord> result;
 
-        WALPointer actualFilePtr = new WALPointer(-1, buf.position(), 0);
+        WALPointer actualFilePtr = new WALPointer(idx, buf.position(), 0);
         try {
             WALRecord rec = serializer.readRecord(dataInput, actualFilePtr);
 
