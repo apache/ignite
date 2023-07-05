@@ -2386,7 +2386,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          */
         private static void snapshotWarning(GridCacheContext<?, ?> cctx) {
             if (cctx.group().persistenceEnabled())
-                cctx.kernalContext().cache().context().snapshot().streamerWarning();
+                cctx.kernalContext().cache().context().snapshotMgr().streamerWarning();
         }
     }
 

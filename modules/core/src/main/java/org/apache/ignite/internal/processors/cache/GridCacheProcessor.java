@@ -4331,7 +4331,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Node validation result if there was an issue with the joining node, {@code null} otherwise.
      */
     private IgniteNodeValidationResult validateRestoringCaches(ClusterNode node) {
-        if (ctx.cache().context().snapshot().isRestoring()) {
+        if (ctx.cache().context().snapshotMgr().isRestoring()) {
             String msg = "Joining node during caches restore is not allowed [joiningNodeId=" + node.id() + ']';
 
             return new IgniteNodeValidationResult(node.id(), msg);

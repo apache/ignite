@@ -159,7 +159,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<SnapshotFutureTaskRe
 
     /** Delta writer factory. */
     private final C3<PageStore, File, Integer, PageStoreSerialWriter> deltaWriterFactory =
-        cctx.snapshot().sequentialWrite() ? IndexedPageStoreSerialWriter::new : PageStoreSerialWriter::new;
+        cctx.snapshotMgr().sequentialWrite() ? IndexedPageStoreSerialWriter::new : PageStoreSerialWriter::new;
 
     /**
      * @param cctx Shared context.

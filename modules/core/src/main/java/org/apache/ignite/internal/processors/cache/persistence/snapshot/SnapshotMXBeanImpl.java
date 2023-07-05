@@ -46,7 +46,7 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
      * @param ctx Kernal context.
      */
     public SnapshotMXBeanImpl(GridKernalContext ctx) {
-        mgr = ctx.cache().context().snapshot();
+        mgr = ctx.cache().context().snapshotMgr();
         metricMgr = ctx.metric();
     }
 

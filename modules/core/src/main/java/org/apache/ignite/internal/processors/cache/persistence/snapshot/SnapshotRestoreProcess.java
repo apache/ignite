@@ -268,7 +268,7 @@ public class SnapshotRestoreProcess {
         int incIdx,
         boolean check
     ) {
-        IgniteSnapshotManager snpMgr = ctx.cache().context().snapshot();
+        IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
         ClusterSnapshotFuture fut0;
 
         try {
@@ -660,7 +660,7 @@ public class SnapshotRestoreProcess {
             lastOpCtx = opCtx0;
 
             DiscoveryDataClusterState state = ctx.state().clusterState();
-            IgniteSnapshotManager snpMgr = ctx.cache().context().snapshot();
+            IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
 
             if (state.state() != ClusterState.ACTIVE || state.transition())
                 throw new IgniteCheckedException(OP_REJECT_MSG + "The cluster should be active.");
@@ -777,7 +777,7 @@ public class SnapshotRestoreProcess {
         // Metastorage can be restored only manually by directly copying files.
         boolean skipCompressCheck = false;
         for (SnapshotMetadata meta : metas) {
-            for (File snpCacheDir : cctx.snapshot().snapshotCacheDirectories(req.snapshotName(), req.snapshotPath(), meta.folderName(),
+            for (File snpCacheDir : cctx.snapshotMgr().snapshotCacheDirectories(req.snapshotName(), req.snapshotPath(), meta.folderName(),
                 name -> !METASTORAGE_CACHE_NAME.equals(name))) {
                 String grpName = FilePageStoreManager.cacheGroupName(snpCacheDir);
 
@@ -970,7 +970,7 @@ public class SnapshotRestoreProcess {
 
             AbstractSnapshotVerificationTask.checkMissedMetadata(allMetas);
 
-            IgniteSnapshotManager snpMgr = ctx.cache().context().snapshot();
+            IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
 
             synchronized (this) {
                 opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
@@ -992,7 +992,7 @@ public class SnapshotRestoreProcess {
                             SnapshotMetadata meta = F.first(opCtx0.metasPerNode.get(opCtx0.opNodeId));
 
                             File dir = opCtx0.incIdx > 0 ?
-                                ctx.cache().context().snapshot()
+                                ctx.cache().context().snapshotMgr()
                                     .incrementalSnapshotLocalDir(opCtx0.snpName, opCtx0.snpPath, opCtx0.incIdx)
                                 : snpDir;
 
@@ -1130,7 +1130,7 @@ public class SnapshotRestoreProcess {
                             ", grpParts=" + partitionsMapToString(m.getValue(), cacheGrpNames) + "]");
                     }
 
-                    ctx.cache().context().snapshot()
+                    ctx.cache().context().snapshotMgr()
                         .requestRemoteSnapshotFiles(m.getKey(),
                             opCtx0.reqId,
                             opCtx0.snpName,
@@ -1585,7 +1585,7 @@ public class SnapshotRestoreProcess {
                     .map(cacheId -> CU.cacheOrGroupName(ctx.cache().cacheDescriptor(cacheId).cacheConfiguration()))
                     .collect(Collectors.toSet());
 
-                ctx.cache().context().snapshot()
+                ctx.cache().context().snapshotMgr()
                     .warnAtomicCachesInIncrementalSnapshot(opCtx0.snpName, opCtx0.incIdx, cacheGrps);
             }
 
@@ -1675,7 +1675,7 @@ public class SnapshotRestoreProcess {
         }
 
         try {
-            ctx.cache().context().snapshot().snapshotExecutorService().execute(() -> {
+            ctx.cache().context().snapshotMgr().snapshotExecutorService().execute(() -> {
                 if (log.isInfoEnabled()) {
                     log.info("Removing restored cache directories [reqId=" + reqId +
                         ", snapshot=" + opCtx0.snpName + ", dirs=" + opCtx0.dirs + ']');
@@ -1760,7 +1760,7 @@ public class SnapshotRestoreProcess {
         Path partFile = Paths.get(targetDir.getAbsolutePath(), FilePageStoreManager.getPartitionFileName(partFut.partId));
         int grpId = groupIdFromTmpDir(targetDir);
 
-        IgniteSnapshotManager snapMgr = ctx.cache().context().snapshot();
+        IgniteSnapshotManager snapMgr = ctx.cache().context().snapshotMgr();
 
         CompletableFuture<Path> copyPartFut = CompletableFuture.supplyAsync(() -> {
             if (opCtx.stopChecker.getAsBoolean())

@@ -622,7 +622,7 @@ public class ClusterCachesInfo {
 
             assert restartIds.size() <= 1 : batch.requests();
 
-            Collection<UUID> nodes = ctx.cache().context().snapshot().cacheStartRequiredAliveNodes(F.first(restartIds));
+            Collection<UUID> nodes = ctx.cache().context().snapshotMgr().cacheStartRequiredAliveNodes(F.first(restartIds));
 
             for (UUID nodeId : nodes) {
                 ClusterNode node = ctx.discovery().node(nodeId);
@@ -872,7 +872,7 @@ public class ClusterCachesInfo {
         AffinityTopologyVersion topVer,
         boolean checkForAlreadyDeleted
     ) {
-        if (ctx.cache().context().snapshot().isSnapshotCreating()) {
+        if (ctx.cache().context().snapshotMgr().isSnapshotCreating()) {
             IgniteCheckedException err = new IgniteCheckedException(SNP_IN_PROGRESS_ERR_MSG);
 
             U.warn(log, err);
@@ -1119,7 +1119,7 @@ public class ClusterCachesInfo {
         }
 
         if (err == null && req.restartId() == null) {
-            IgniteSnapshotManager snpMgr = ctx.cache().context().snapshot();
+            IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
 
             if (snpMgr.isRestoring(ccfg)) {
                 err = new IgniteCheckedException("Cache start failed. A cache or group with the same name is " +

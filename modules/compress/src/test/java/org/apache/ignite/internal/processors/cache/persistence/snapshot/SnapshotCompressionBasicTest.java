@@ -331,7 +331,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
         for (String snpName : Arrays.asList(SNAPSHOT_WITH_HOLES, SNAPSHOT_WITHOUT_HOLES)) {
             snp(ignite).createSnapshot(snpName, null, false, onlyPrimary).get(TIMEOUT);
 
-            IdleVerifyResultV2 res = ignite.context().cache().context().snapshot().checkSnapshot(snpName, null)
+            IdleVerifyResultV2 res = ignite.context().cache().context().snapshotMgr().checkSnapshot(snpName, null)
                 .get().idleVerifyResult();
 
             StringBuilder b = new StringBuilder();

@@ -148,7 +148,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
      */
     private void changeMetadataRequestIdOnDisk(UUID newReqId) throws Exception {
         for (Ignite grid : G.allGrids()) {
-            IgniteSnapshotManager snpMgr = ((IgniteEx)grid).context().cache().context().snapshot();
+            IgniteSnapshotManager snpMgr = ((IgniteEx)grid).context().cache().context().snapshotMgr();
             String constId = grid.cluster().localNode().consistentId().toString();
             File snpDir = snpMgr.snapshotLocalDir(SNAPSHOT_NAME);
 
@@ -392,7 +392,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
         try {
             IgniteEx ignite = startGridsWithCache(1, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshot();
+            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
             createAndCheckSnapshot(ignite, snpName, snpDir.getAbsolutePath(), TIMEOUT);
 

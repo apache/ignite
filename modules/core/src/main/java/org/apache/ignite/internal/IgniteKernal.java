@@ -2868,7 +2868,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public IgniteSnapshot snapshot() {
-        return ctx.cache().context().snapshot();
+        return ctx.cache().context().snapshotMgr();
     }
 
     /** {@inheritDoc} */

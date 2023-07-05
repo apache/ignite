@@ -194,7 +194,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
 
         AtomicBoolean failFlag = new AtomicBoolean();
 
-        ignite.context().cache().context().snapshot().ioFactory((file, modes) -> {
+        ignite.context().cache().context().snapshotMgr().ioFactory((file, modes) -> {
             FileIO delegate = ioFactory.create(file, modes);
 
             if (file.getPath().endsWith(failingFilePath)) {

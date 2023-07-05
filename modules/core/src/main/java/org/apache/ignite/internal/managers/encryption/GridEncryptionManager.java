@@ -1528,8 +1528,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 "The previous change was not completed."));
         }
 
-        if (ctx.cache().context().snapshot().isSnapshotCreating()
-            || ctx.cache().context().snapshot().isRestoring()) {
+        if (ctx.cache().context().snapshotMgr().isSnapshotCreating()
+            || ctx.cache().context().snapshotMgr().isRestoring()) {
             return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. Snapshot operation " +
                 "is in progress."));
         }

@@ -155,7 +155,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
             ignite.destroyCache(DEFAULT_CACHE_NAME);
             awaitPartitionMapExchange();
 
-            ignite.context().cache().context().snapshot().restoreSnapshot(SNAPSHOT_NAME, snpDir.getAbsolutePath(), null)
+            ignite.context().cache().context().snapshotMgr().restoreSnapshot(SNAPSHOT_NAME, snpDir.getAbsolutePath(), null)
                 .get();
 
             IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
@@ -674,7 +674,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         String failingFilePath = Paths.get(CACHE_DIR_PREFIX + DEFAULT_CACHE_NAME,
             PART_FILE_PREFIX + (dfltCacheCfg.getAffinity().partitions() / 2) + FILE_SUFFIX).toString();
 
-        grid(2).context().cache().context().snapshot().ioFactory(
+        grid(2).context().cache().context().snapshotMgr().ioFactory(
             new CustomFileIOFactory(new RandomAccessFileIOFactory(),
                 file -> {
                     if (file.getPath().endsWith(failingFilePath)) {

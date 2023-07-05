@@ -89,7 +89,7 @@ public class SnapshotMetadataVerificationTask
 
         /** {@inheritDoc} */
         @Override public List<SnapshotMetadata> execute() throws IgniteException {
-            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshot();
+            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
             List<SnapshotMetadata> snpMeta = snpMgr.readSnapshotMetadatas(arg.snapshotName(), arg.snapshotPath());
 
@@ -112,7 +112,7 @@ public class SnapshotMetadataVerificationTask
         /** Checks that all incremental snapshots are present, contain correct metafile and WAL segments. */
         public void checkIncrementalSnapshots(SnapshotMetadata fullMeta, SnapshotMetadataVerificationTaskArg arg) {
             try {
-                IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshot();
+                IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
                 // Incremental snapshot must contain ClusterSnapshotRecord.
                 long startSeg = fullMeta.snapshotRecordPointer().index();

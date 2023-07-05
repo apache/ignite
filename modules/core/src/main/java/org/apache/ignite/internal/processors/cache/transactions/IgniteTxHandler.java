@@ -288,7 +288,7 @@ public class IgniteTxHandler {
     private void processIncrementalSnapshotAwareMessage(UUID nodeId, IncrementalSnapshotAwareMessage msg) {
         // Skip if node has joined after incremental snapshot started.
         if (ctx.localNode().order() <= msg.snapshotTopologyVersion()) {
-            ctx.snapshot().handleIncrementalSnapshotId(msg.id(), msg.snapshotTopologyVersion());
+            ctx.snapshotMgr().handleIncrementalSnapshotId(msg.id(), msg.snapshotTopologyVersion());
 
             setIncrementalSnapshotIdIfRequired(msg);
         }
@@ -1285,7 +1285,7 @@ public class IgniteTxHandler {
                     if (dhtTx != null) {
                         dhtTx.onePhaseCommit(true);
                         dhtTx.needReturnValue(req.needReturnValue());
-                        dhtTx.incrementalSnapshotId(ctx.snapshot().incrementalSnapshotId());
+                        dhtTx.incrementalSnapshotId(ctx.snapshotMgr().incrementalSnapshotId());
 
                         finish(dhtTx, req);
                     }

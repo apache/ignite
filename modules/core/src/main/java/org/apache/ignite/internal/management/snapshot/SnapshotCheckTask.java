@@ -54,7 +54,7 @@ public class SnapshotCheckTask extends SnapshotOneNodeTask<SnapshotCheckCommandA
 
         /** {@inheritDoc} */
         @Override protected SnapshotPartitionsVerifyTaskResult run(SnapshotCheckCommandArg arg) throws IgniteException {
-            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshot();
+            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
             return new IgniteFutureImpl<>(snpMgr.checkSnapshot(arg.snapshotName(), arg.src(), arg.increment())).get();
         }

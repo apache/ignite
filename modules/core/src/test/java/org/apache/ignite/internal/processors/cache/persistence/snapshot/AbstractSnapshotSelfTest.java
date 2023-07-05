@@ -315,7 +315,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             assertNull("nodeId=" + kctx.localNodeId() + ", cache=" + cacheName, desc);
 
             boolean success = GridTestUtils.waitForCondition(
-                () -> !kctx.cache().context().snapshot().isRestoring(),
+                () -> !kctx.cache().context().snapshotMgr().isRestoring(),
                 TIMEOUT);
 
             assertTrue("The process has not finished on the node " + kctx.localNodeId(), success);
@@ -715,7 +715,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @return Snapshot manager related to given ignite instance.
      */
     public static IgniteSnapshotManager snp(IgniteEx ignite) {
-        return ignite.context().cache().context().snapshot();
+        return ignite.context().cache().context().snapshotMgr();
     }
 
     /**
@@ -823,7 +823,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         boolean withMetaStorage,
         SnapshotSender snpSndr
     ) throws IgniteCheckedException {
-        AbstractSnapshotFutureTask<?> task = cctx.snapshot().registerSnapshotTask(snpName, cctx.localNodeId(), null,
+        AbstractSnapshotFutureTask<?> task = cctx.snapshotMgr().registerSnapshotTask(snpName, cctx.localNodeId(), null,
             parts, withMetaStorage, snpSndr);
 
         if (!(task instanceof SnapshotFutureTask))

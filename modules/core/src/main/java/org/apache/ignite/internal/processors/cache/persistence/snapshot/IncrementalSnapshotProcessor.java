@@ -96,7 +96,7 @@ abstract class IncrementalSnapshotProcessor {
         Consumer<DataEntry> dataEntryHnd,
         @Nullable Consumer<TxRecord> txHnd
     ) throws IgniteCheckedException, IOException {
-        IncrementalSnapshotMetadata meta = cctx.snapshot()
+        IncrementalSnapshotMetadata meta = cctx.snapshotMgr()
             .readIncrementalSnapshotMetadata(snpName, snpPath, incIdx);
 
         File[] segments = walSegments(meta.folderName());
@@ -158,7 +158,7 @@ abstract class IncrementalSnapshotProcessor {
             }
 
             UUID prevIncSnpId = incIdx > 1
-                ? cctx.snapshot().readIncrementalSnapshotMetadata(snpName, snpPath, incIdx - 1).requestId()
+                ? cctx.snapshotMgr().readIncrementalSnapshotMetadata(snpName, snpPath, incIdx - 1).requestId()
                 : null;
 
             IgnitePredicate<GridCacheVersion> txVerFilter = prevIncSnpId != null
@@ -225,7 +225,7 @@ abstract class IncrementalSnapshotProcessor {
         File[] segments = null;
 
         for (int i = 1; i <= incIdx; i++) {
-            File incSnpDir = cctx.snapshot().incrementalSnapshotLocalDir(snpName, snpPath, i);
+            File incSnpDir = cctx.snapshotMgr().incrementalSnapshotLocalDir(snpName, snpPath, i);
 
             if (!incSnpDir.exists())
                 throw new IgniteCheckedException("Incremental snapshot doesn't exists [dir=" + incSnpDir + ']');

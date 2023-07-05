@@ -691,7 +691,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         assertTrue(
             "Snapshot directory must be empty",
-            grid2.context().cache().context().snapshot().localSnapshotNames(null).isEmpty()
+            grid2.context().cache().context().snapshotMgr().localSnapshotNames(null).isEmpty()
         );
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
@@ -797,7 +797,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             GridKernalContext kctx = grid(idx).context();
 
             assertThrowsAnyCause(log,
-                () -> kctx.cache().context().snapshot()
+                () -> kctx.cache().context().snapshotMgr()
                     .createSnapshot(SNAPSHOT_NAME, invalidPath, false, onlyPrimary)
                     .get(TIMEOUT),
                 IgniteCheckedException.class,
@@ -811,7 +811,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         // Check on coordinator.
         check.accept(0);
 
-        waitForCondition(() -> !grid(1).context().cache().context().snapshot().isSnapshotCreating(), TIMEOUT);
+        waitForCondition(() -> !grid(1).context().cache().context().snapshotMgr().isSnapshotCreating(), TIMEOUT);
 
         // Check on non-coordinator.
         check.accept(1);

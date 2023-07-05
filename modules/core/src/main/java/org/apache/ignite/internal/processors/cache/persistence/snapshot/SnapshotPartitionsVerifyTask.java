@@ -127,8 +127,8 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
             }
 
             try {
-                File snpDir = cctx.snapshot().snapshotLocalDir(snpName, snpPath);
-                SnapshotMetadata meta = cctx.snapshot().readSnapshotMetadata(snpDir, consId);
+                File snpDir = cctx.snapshotMgr().snapshotLocalDir(snpName, snpPath);
+                SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(snpDir, consId);
 
                 return new SnapshotPartitionsVerifyHandler(cctx)
                     .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false, check));
