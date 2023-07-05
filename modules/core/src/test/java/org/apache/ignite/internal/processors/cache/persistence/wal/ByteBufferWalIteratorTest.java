@@ -110,7 +110,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
     /** */
     private void writeRecord(ByteBuffer byteBuf,
         WALRecord walRecord) throws IgniteCheckedException {
-        log.info ("Writing " + walRecord.type());
+        log.info("Writing " + walRecord.type());
 
         // Make sure walpointer is set.
         wal.log(walRecord);
@@ -222,6 +222,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
         assertFalse(recordsIter.hasNext());
     }
 
+    /** */
     private boolean recordsEqual(WALRecord x, WALRecord y) {
         if (x == y)
             return true;
