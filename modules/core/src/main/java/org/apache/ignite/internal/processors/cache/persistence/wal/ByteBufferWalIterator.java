@@ -63,7 +63,7 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorApdator {
 
         buf = byteBuf;
 
-        RecordSerializerFactory rsf = new RecordSerializerFactoryImpl(cctx, readTypeFilter).skipPositionCheck(true);
+        RecordSerializerFactory rsf = new RecordSerializerFactoryImpl(cctx, readTypeFilter);
 
         serializer = rsf.createSerializer(RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
 

@@ -34,7 +34,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -72,9 +71,6 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
     private GridCacheContext<Object, Object> cctx;
 
     /** */
-    private IgniteWriteAheadLogManager wal;
-
-    /** */
     private RecordSerializer serializer;
 
     /** {@inheritDoc} */
@@ -90,8 +86,6 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
         sharedCtx = ig.context().cache().context();
 
         cctx = sharedCtx.cache().cache(CACHE_NAME).context();
-
-        wal = sharedCtx.wal();
 
         RecordSerializerFactory serializerFactory = new RecordSerializerFactoryImpl(sharedCtx);
 
@@ -112,8 +106,17 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
         WALRecord walRecord) throws IgniteCheckedException {
         log.info("Writing " + walRecord.type());
 
-        // Make sure walpointer is set.
-        wal.log(walRecord);
+        int segment = -1;
+
+        int fileOff = byteBuf.position();
+
+        int size = serializer.size(walRecord);
+
+        walRecord.size(size);
+
+        WALPointer walPointer = new WALPointer(segment, fileOff, size);
+
+        walRecord.position(walPointer);
 
         serializer.writeRecord(walRecord, byteBuf);
     }
@@ -214,9 +217,12 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
             WALRecord expectedRec = recordsIter.next();
 
-            assertTrue("Records of type " + expectedRec.type() + " are different", recordsEqual(
-                expectedRec,
-                actualRec));
+            assertTrue("Records of type " + expectedRec.type() + " are different:\n" +
+                    "\tExpected:\t" + expectedRec + "\n" +
+                    "\tActual  :\t" + actualRec,
+                recordsEqual(
+                    expectedRec,
+                    actualRec));
         }
 
         assertFalse(recordsIter.hasNext());
