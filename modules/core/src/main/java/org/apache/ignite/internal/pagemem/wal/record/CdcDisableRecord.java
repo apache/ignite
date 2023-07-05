@@ -20,9 +20,9 @@ package org.apache.ignite.internal.pagemem.wal.record;
 /**
  * The record to notify the CDC application about skipped data records while the CDC was disabled.
  */
-public class CdcDisabledRecord extends WALRecord {
+public class CdcDisableRecord extends WALRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.CDC_DISABLED;
+        return RecordType.CDC_DISABLE;
     }
 }

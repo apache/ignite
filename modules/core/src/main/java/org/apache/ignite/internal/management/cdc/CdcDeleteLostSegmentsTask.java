@@ -36,7 +36,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.cdc.CdcConsumerState;
 import org.apache.ignite.internal.cdc.CdcFileLockHolder;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.record.CdcDisabledRecord;
+import org.apache.ignite.internal.pagemem.wal.record.CdcDisableRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
@@ -50,7 +50,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.cdc.CdcConsumerState.WAL_STATE_FILE_NAME;
 import static org.apache.ignite.internal.cdc.CdcMain.STATE_DIR;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DISABLED;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DISABLE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 
 /**
@@ -180,7 +180,7 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
             return true;
         }
 
-        /** @return WAL pointer to the last {@link CdcDisabledRecord}. */
+        /** @return WAL pointer to the last {@link CdcDisableRecord}. */
         private WALPointer findLastCdcDisabledRecord() {
             if (!wal.inMemoryCdc())
                 return null;
@@ -199,7 +199,7 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
                         .log(log)
                         .sharedContext(ignite.context().cache().context())
                         .filesOrDirs(segment.toFile())
-                        .addFilter((type, ptr) -> type == CDC_DISABLED);
+                        .addFilter((type, ptr) -> type == CDC_DISABLE);
 
                 if (ignite.configuration().getDataStorageConfiguration().getPageSize() != 0)
                     builder.pageSize(ignite.configuration().getDataStorageConfiguration().getPageSize());
@@ -214,7 +214,7 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
             });
 
             if (log.isInfoEnabled() && lastRec.get() != null)
-                log.info("Found CDC disabled record [ptr=" + lastRec.get() + ']');
+                log.info("Found CDC disable record [ptr=" + lastRec.get() + ']');
 
             return lastRec.get();
         }

@@ -28,6 +28,8 @@ import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.TypeMapping;
+import org.apache.ignite.internal.management.cdc.CdcCommand;
+import org.apache.ignite.internal.management.cdc.CdcDeleteLostSegmentLinksCommand;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -44,6 +46,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 
+import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
@@ -303,8 +306,10 @@ public class WalRecordsConsumer<K, V> {
 
             curRec = walIter.next();
 
-            if (curRec.get2().type() == WALRecord.RecordType.CDC_DISABLED) {
-                throw new IgniteException("Found the CDC disabled record. Some events are missed. Exiting! " +
+            if (curRec.get2().type() == WALRecord.RecordType.CDC_DISABLE) {
+                throw new IgniteException("CDC disabled on node. Please, check node log. To continue CDC, please, " +
+                    "use 'control.sh(bat) " + toFormattedCommandName(CdcCommand.class) + ' ' +
+                    toFormattedCommandName(CdcDeleteLostSegmentLinksCommand.class) + "' command. Exiting! " +
                     "[state=" + curRec.get1() + ']');
             }
 

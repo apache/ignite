@@ -47,7 +47,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -73,7 +72,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.record.CdcDisabledRecord;
+import org.apache.ignite.internal.pagemem.wal.record.CdcDisableRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
@@ -423,9 +422,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** CDC disabled flag. */
     private final DistributedBooleanProperty cdcDisabled = detachedBooleanProperty(CDC_DISABLED);
 
-    /** */
-    private final AtomicBoolean cdcDisabledRecLogged = new AtomicBoolean();
-
     /**
      * Constructor.
      *
@@ -521,14 +517,19 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                                     name, oldVal, newVal));
                             }
 
-                            if (newVal != null && newVal)
+                            if (newVal != null && newVal) {
                                 log.warning("CDC was disabled.");
 
-                            if (oldVal != null && oldVal && !newVal) {
-                                if (log.isInfoEnabled())
-                                    log.info("CDC was enabled.");
+                                if (inMemoryCdc) {
+                                    try {
+                                        log(new CdcDisableRecord());
+                                    }
+                                    catch (IgniteCheckedException e) {
+                                        U.error(log, "Unable to log CDC disable record: " + e.getMessage(), e);
 
-                                cdcDisabledRecLogged.set(false);
+                                        cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
+                                    }
+                                }
                             }
                         });
 
@@ -1835,15 +1836,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** @return {@code True} if log record should be skipped when CDC is disabled. */
-    private boolean skipIfCdcDisabled(WALRecord rec) throws IgniteCheckedException {
-        if (!inMemoryCdc || rec instanceof CdcDisabledRecord || !cdcDisabled.getOrDefault(false))
+    private boolean skipIfCdcDisabled(WALRecord rec) {
+        if (!inMemoryCdc || rec instanceof CdcDisableRecord || !cdcDisabled.getOrDefault(false))
             return false;
 
         LT.warn(log, "Logging CDC data records to WAL skipped. The '" + CDC_DISABLED +
             "' distributed property is 'true'.");
-
-        if (cdcDisabledRecLogged.compareAndSet(false, true))
-            log(new CdcDisabledRecord());
 
         return true;
     }

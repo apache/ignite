@@ -37,7 +37,7 @@ import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
-import org.apache.ignite.internal.pagemem.wal.record.CdcDisabledRecord;
+import org.apache.ignite.internal.pagemem.wal.record.CdcDisableRecord;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -542,7 +542,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return 4 + 8 + 1;
 
             case SWITCH_SEGMENT_RECORD:
-            case CDC_DISABLED:
+            case CDC_DISABLE:
                 return 0;
 
             case TX_RECORD:
@@ -1325,8 +1325,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
-            case CDC_DISABLED:
-                res = new CdcDisabledRecord();
+            case CDC_DISABLE:
+                res = new CdcDisableRecord();
 
                 break;
 
@@ -1919,7 +1919,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case SWITCH_SEGMENT_RECORD:
-            case CDC_DISABLED:
+            case CDC_DISABLE:
                 break;
 
             case MASTER_KEY_CHANGE_RECORD_V2:

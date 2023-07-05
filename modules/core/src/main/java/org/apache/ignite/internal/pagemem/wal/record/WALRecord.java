@@ -293,8 +293,8 @@ public abstract class WALRecord {
         /** CDC data record. */
         CDC_DATA_RECORD(78, CUSTOM),
 
-        /** CDC disabled record. */
-        CDC_DISABLED(79, CUSTOM);
+        /** CDC disable record. */
+        CDC_DISABLE(79, CUSTOM);
 
         /** Index for serialization. Should be consistent throughout all versions. */
         private final int idx;

@@ -50,6 +50,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cdc.WalRecordsConsumer.DataEntryIterator;
+import org.apache.ignite.internal.management.cdc.CdcCommand;
+import org.apache.ignite.internal.management.cdc.CdcDeleteLostSegmentLinksCommand;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
@@ -78,8 +80,9 @@ import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgnitionEx.initializeDefaultMBeanServer;
 import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
+import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DATA_RECORD;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DISABLED;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DISABLE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.segmentIndex;
@@ -450,8 +453,12 @@ public class CdcMain implements Runnable {
                             long nextSgmnt = segmentIndex(p);
 
                             if (lastSgmnt.get() != -1 && nextSgmnt - lastSgmnt.get() != 1) {
-                                throw new IgniteException("Found missed segments. Some events are missed. Exiting! " +
-                                    "[lastSegment=" + lastSgmnt.get() + ", nextSegment=" + nextSgmnt + ']');
+                                throw new IgniteException("Found missed segments. Please, check node log. " +
+                                    "To continue CDC, please, use 'control.sh(bat) " +
+                                    toFormattedCommandName(CdcCommand.class) + ' ' +
+                                    toFormattedCommandName(CdcDeleteLostSegmentLinksCommand.class) +
+                                    "' command. Exiting! [lastSegment=" + lastSgmnt.get() +
+                                    ", nextSegment=" + nextSgmnt + ']');
                             }
 
                             lastSgmnt.set(nextSgmnt);
@@ -487,7 +494,7 @@ public class CdcMain implements Runnable {
                 .marshallerMappingFileStoreDir(marshaller)
                 .keepBinary(cdcCfg.isKeepBinary())
                 .filesOrDirs(segment.toFile())
-                .addFilter((type, ptr) -> type == DATA_RECORD_V2 || type == CDC_DATA_RECORD || type == CDC_DISABLED);
+                .addFilter((type, ptr) -> type == DATA_RECORD_V2 || type == CDC_DATA_RECORD || type == CDC_DISABLE);
 
         if (igniteCfg.getDataStorageConfiguration().getPageSize() != 0)
             builder.pageSize(igniteCfg.getDataStorageConfiguration().getPageSize());
