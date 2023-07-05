@@ -62,6 +62,7 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
@@ -546,6 +547,12 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         seg.writeLock().lock();
 
+        boolean isTrackingPage =
+            PageIdUtils.pageIndex(trackingIO.trackingPageFor(pageId, realPageSize(grpId))) == PageIdUtils.pageIndex(pageId);
+
+        if (isTrackingPage && PageIdUtils.flag(pageId) == PageIdAllocator.FLAG_AUX)
+            pageId = PageIdUtils.pageId(PageIdUtils.partId(pageId), PageIdAllocator.FLAG_DATA, PageIdUtils.pageIndex(pageId));
+
         FullPageId fullId = new FullPageId(pageId, grpId);
 
         try {
@@ -594,6 +601,34 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             setDirty(fullId, absPtr, true, true);
 
+            if (isTrackingPage) {
+                long pageAddr = absPtr + PAGE_OVERHEAD;
+
+                // We are inside segment write lock, so no other thread can pin this tracking page yet.
+                // We can modify page buffer directly.
+                if (PageIO.getType(pageAddr) == 0) {
+                    PageMetrics metrics = dataRegionMetrics.cacheGrpPageMetrics(grpId);
+
+                    trackingIO.initNewPage(pageAddr, pageId, realPageSize(grpId), metrics);
+
+                    if (!ctx.wal().disabled(fullId.groupId(), fullId.pageId())) {
+                        if (!ctx.wal().isAlwaysWriteFullPages())
+                            ctx.wal().log(
+                                new InitNewPageRecord(
+                                    grpId,
+                                    pageId,
+                                    trackingIO.getType(),
+                                    trackingIO.getVersion(), pageId
+                                )
+                            );
+                        else {
+                            ctx.wal().log(new PageSnapshot(fullId, absPtr + PAGE_OVERHEAD, pageSize(),
+                                realPageSize(fullId.groupId())));
+                        }
+                    }
+                }
+            }
+
             seg.pageReplacementPolicy.onMiss(relPtr);
 
             seg.loadedPages.put(grpId, PageIdUtils.effectivePageId(pageId), relPtr, seg.partGeneration(grpId, partId));
@@ -624,7 +659,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         if (delayedPageReplacementTracker != null)
             delayedPageReplacementTracker.delayedPageWrite().finishReplacement();
 
-        return pageId;
+        //we have allocated 'tracking' page, we need to allocate regular one
+        return isTrackingPage ? allocatePage(grpId, partId, flags) : pageId;
     }
 
     /**
