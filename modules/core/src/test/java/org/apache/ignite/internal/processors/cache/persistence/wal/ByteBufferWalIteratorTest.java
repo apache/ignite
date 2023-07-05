@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -355,6 +356,27 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
         }
         catch (IgniteException e) {
             assertTrue(X.hasCause(e, IOException.class));
+        }
+    }
+
+    /** */
+    @Test
+    public void testEmptyBuffer() throws Exception {
+        ByteBuffer byteBuf = ByteBuffer.allocate(1024 * 1024).order(ByteOrder.nativeOrder());
+
+        byteBuf.flip();
+
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, idx);
+
+        assertFalse(walIter.hasNext());
+
+        try {
+            walIter.next();
+
+            fail("next() expected to fail");
+        }
+        catch (NoSuchElementException e) {
+            // This is expected.
         }
     }
 }
