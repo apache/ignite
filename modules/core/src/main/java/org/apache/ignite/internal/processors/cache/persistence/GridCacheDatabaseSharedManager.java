@@ -66,7 +66,6 @@ import org.apache.ignite.internal.managers.systemview.walker.MetastorageViewWalk
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
-import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -145,7 +144,6 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -471,7 +469,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override protected void initDataRegions0(DataStorageConfiguration memCfg) throws IgniteCheckedException {
         super.initDataRegions0(memCfg);
 
-        addDataRegion(memCfg, createMetastoreDataRegionConfig(memCfg), false);
+        addDataRegion(memCfg, createMetastoreDataRegionConfig(memCfg));
 
         List<DataRegionMetrics> regionMetrics = dataRegionMap.values().stream()
             .map(DataRegion::metrics)
@@ -655,7 +653,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             addDataRegion(
                 memCfg,
                 createDefragmentationDataRegionConfig(totalDefrRegionSize - mappingRegionSize),
-                true,
                 new DefragmentationPageReadWriteManager(cctx.kernalContext(), "defrgPartitionsStore")
             )
         );
@@ -664,7 +661,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             addDataRegion(
                 memCfg,
                 createDefragmentationMappingRegionConfig(mappingRegionSize),
-                true,
                 new DefragmentationPageReadWriteManager(cctx.kernalContext(), "defrgLinkMappingStore")
             )
         );
@@ -836,8 +832,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public DataRegion addDataRegion(DataStorageConfiguration dataStorageCfg, DataRegionConfiguration dataRegionCfg,
-        boolean trackable, PageReadWriteManager pmPageMgr) throws IgniteCheckedException {
-        DataRegion region = super.addDataRegion(dataStorageCfg, dataRegionCfg, trackable, pmPageMgr);
+        PageReadWriteManager pmPageMgr) throws IgniteCheckedException {
+        DataRegion region = super.addDataRegion(dataStorageCfg, dataRegionCfg, pmPageMgr);
 
         checkpointedDataRegions.add(region);
 
@@ -1184,11 +1180,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         DataStorageConfiguration memCfg,
         DataRegionConfiguration plcCfg,
         DataRegionMetricsImpl memMetrics,
-        final boolean trackable,
         PageReadWriteManager pmPageMgr
     ) {
         if (!plcCfg.isPersistenceEnabled())
-            return super.createPageMemory(memProvider, memCfg, plcCfg, memMetrics, trackable, pmPageMgr);
+            return super.createPageMemory(memProvider, memCfg, plcCfg, memMetrics, pmPageMgr);
 
         memMetrics.persistenceEnabled(true);
 
@@ -1204,22 +1199,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             chpBufSize = cacheSize;
         }
-
-        GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker;
-
-        if (trackable)
-            changeTracker = new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
-                @Override public void applyx(
-                    Long page,
-                    FullPageId fullId,
-                    PageMemoryEx pageMem
-                ) throws IgniteCheckedException {
-                    if (trackable)
-                        snapshotMgr.onChangeTrackerPage(page, fullId, pageMem);
-                }
-            };
-        else
-            changeTracker = null;
 
         PageMemoryImpl pageMem = new PageMemoryImpl(
             wrapMetricsPersistentMemoryProvider(memProvider, memMetrics),
@@ -1240,7 +1219,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 getCheckpointer().currentProgress().updateEvictedPages(1);
             },
-            changeTracker,
             this,
             memMetrics,
             resolveThrottlingPolicy(),

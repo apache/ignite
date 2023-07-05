@@ -322,13 +322,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         if (dataRegionCfgs != null) {
             for (DataRegionConfiguration dataRegionCfg : dataRegionCfgs)
-                addDataRegion(memCfg, dataRegionCfg, dataRegionCfg.isPersistenceEnabled());
+                addDataRegion(memCfg, dataRegionCfg);
         }
 
         addDataRegion(
             memCfg,
-            memCfg.getDefaultDataRegionConfiguration(),
-            memCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled()
+            memCfg.getDefaultDataRegionConfiguration()
         );
 
         addDataRegion(
@@ -337,8 +336,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 memCfg.getSystemDataRegionConfiguration().getInitialSize(),
                 memCfg.getSystemDataRegionConfiguration().getMaxSize(),
                 persistenceEnabled
-            ),
-            persistenceEnabled
+            )
         );
 
         addDataRegion(
@@ -346,8 +344,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             createVolatileDataRegion(
                 memCfg.getSystemDataRegionConfiguration().getInitialSize(),
                 memCfg.getSystemDataRegionConfiguration().getMaxSize()
-            ),
-            false
+            )
         );
 
         for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
@@ -369,10 +366,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public DataRegion addDataRegion(
         DataStorageConfiguration dataStorageCfg,
-        DataRegionConfiguration dataRegionCfg,
-        boolean trackable
+        DataRegionConfiguration dataRegionCfg
     ) throws IgniteCheckedException {
-        return addDataRegion(dataStorageCfg, dataRegionCfg, trackable, cctx.pageStore());
+        return addDataRegion(dataStorageCfg, dataRegionCfg, cctx.pageStore());
     }
 
     /**
@@ -384,7 +380,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     protected DataRegion addDataRegion(
         DataStorageConfiguration dataStorageCfg,
         DataRegionConfiguration dataRegionCfg,
-        boolean trackable,
         PageReadWriteManager pmPageMgr
     ) throws IgniteCheckedException {
         String dataRegionName = dataRegionCfg.getName();
@@ -399,7 +394,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             cctx.kernalContext(),
             dataRegionMetricsProvider(dataRegionCfg));
 
-        DataRegion region = initMemory(dataStorageCfg, dataRegionCfg, memMetrics, trackable, pmPageMgr);
+        DataRegion region = initMemory(dataStorageCfg, dataRegionCfg, memMetrics, pmPageMgr);
 
         dataRegionMap.put(dataRegionName, region);
 
@@ -1262,14 +1257,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         DataStorageConfiguration memCfg,
         DataRegionConfiguration plcCfg,
         DataRegionMetricsImpl memMetrics,
-        boolean trackable,
         PageReadWriteManager pmPageMgr
     ) throws IgniteCheckedException {
         if (plcCfg.getMemoryAllocator() == null)
             plcCfg.setMemoryAllocator(memCfg.getMemoryAllocator());
 
         PageMemory pageMem = createPageMemory(createOrReuseMemoryProvider(plcCfg), memCfg, plcCfg, memMetrics,
-            trackable, pmPageMgr);
+            pmPageMgr);
 
         return new DataRegion(pageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, pageMem));
     }
@@ -1376,7 +1370,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         DataStorageConfiguration memCfg,
         DataRegionConfiguration memPlcCfg,
         DataRegionMetricsImpl memMetrics,
-        boolean trackable,
         PageReadWriteManager pmPageMgr
     ) {
         memMetrics.persistenceEnabled(false);
