@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 
@@ -47,14 +48,22 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorApdator {
     /** */
     public ByteBufferWalIterator(
         @NotNull IgniteLogger log,
-        GridCacheSharedContext<?, ?> cctx,
-        ByteBuffer byteBuf) throws IgniteCheckedException {
+        @NotNull GridCacheSharedContext<?, ?> cctx,
+        @NotNull ByteBuffer byteBuf) throws IgniteCheckedException {
+        this(log, cctx, byteBuf, null);
+    }
+
+    /** */
+    public ByteBufferWalIterator(
+        @NotNull IgniteLogger log,
+        @NotNull GridCacheSharedContext<?, ?> cctx,
+        @NotNull ByteBuffer byteBuf,
+        IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter) throws IgniteCheckedException {
         super(log);
 
         buf = byteBuf;
 
-        RecordSerializerFactory rsf = new RecordSerializerFactoryImpl(cctx,
-            (t, p) -> t.purpose() == WALRecord.RecordPurpose.LOGICAL).skipPositionCheck(true);
+        RecordSerializerFactory rsf = new RecordSerializerFactoryImpl(cctx, readTypeFilter).skipPositionCheck(true);
 
         serializer = rsf.createSerializer(RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
 

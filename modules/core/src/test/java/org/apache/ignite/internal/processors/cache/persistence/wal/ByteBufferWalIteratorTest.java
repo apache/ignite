@@ -38,6 +38,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.TimeStampRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -80,6 +81,8 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        cleanPersistenceDir();
+
         ig = startGrid(0);
 
         ig.cluster().state(ClusterState.ACTIVE);
@@ -100,11 +103,14 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         super.afterTest();
+
+        cleanPersistenceDir();
     }
 
     /** */
     private void writeRecord(ByteBuffer byteBuf,
         WALRecord walRecord) throws IgniteCheckedException {
+        log.info ("Writing " + walRecord.type());
 
         // Make sure walpointer is set.
         wal.log(walRecord);
@@ -144,6 +150,95 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testDataRecordsRead() throws Exception {
+        ByteBuffer byteBuf = ByteBuffer.allocate(1024 * 1024).order(ByteOrder.nativeOrder());
+
+        final int cnt = 10;
+
+        List<DataEntry> entries = generateEntries(cctx, cnt);
+
+        for (int i = 0; i < entries.size(); i++) {
+            writeRecord(byteBuf, new DataRecord(entries.get(i)));
+        }
+
+        byteBuf.flip();
+
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf);
+
+        Iterator<DataEntry> dataEntriesIter = entries.iterator();
+
+        while (walIter.hasNext()) {
+            assertTrue(dataEntriesIter.hasNext());
+
+            WALRecord record = walIter.next().get2();
+
+            assertTrue(record instanceof DataRecord);
+
+            DataEntry dataEntry = dataEntriesIter.next();
+
+            assertTrue(dataEntriesEqual(
+                ((DataRecord)record).get(0),
+                dataEntry));
+        }
+
+        assertFalse(dataEntriesIter.hasNext());
+    }
+
+    /** */
+    @Test
+    public void testWalRecordsRead() throws Exception {
+        ByteBuffer byteBuf = ByteBuffer.allocate(1024 * 1024).order(ByteOrder.nativeOrder());
+
+        List<WALRecord> records = Arrays.stream(WALRecord.RecordType.values())
+            .filter(t -> t.purpose() != WALRecord.RecordPurpose.INTERNAL)
+            .map(RecordUtils::buildWalRecord)
+            .filter(Objects::nonNull)
+            .filter(r -> !(r instanceof UnsupportedWalRecord))
+            .collect(Collectors.toList());
+
+        final int cnt = records.size();
+
+        for (WALRecord record : records)
+            writeRecord(byteBuf, record);
+
+        byteBuf.flip();
+
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf);
+
+        Iterator<WALRecord> recordsIter = records.iterator();
+
+        while (walIter.hasNext()) {
+            assertTrue(recordsIter.hasNext());
+
+            WALRecord actualRec = walIter.next().get2();
+
+            WALRecord expectedRec = recordsIter.next();
+
+            assertTrue("Records of type " + expectedRec.type() + " are different", recordsEqual(
+                expectedRec,
+                actualRec));
+        }
+
+        assertFalse(recordsIter.hasNext());
+    }
+
+    private boolean recordsEqual(WALRecord x, WALRecord y) {
+        if (x == y)
+            return true;
+
+        if (x == null || y == null)
+            return false;
+
+        log.info("Comparing " + x.type() + " and " + y.type());
+
+        return Objects.equals(x.type(), y.type())
+            && Objects.equals(x.position(), y.position())
+            && x.size() == y.size()
+            && (x instanceof TimeStampRecord ? ((TimeStampRecord)x).timestamp() == ((TimeStampRecord)y).timestamp() : true);
+    }
+
+    /** */
+    @Test
     public void testReadFiltered() throws Exception {
         ByteBuffer byteBuf = ByteBuffer.allocate(1024 * 1024).order(ByteOrder.nativeOrder());
 
@@ -166,7 +261,8 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         byteBuf.flip();
 
-        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf);
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf,
+            (t, p) -> t.purpose() == WALRecord.RecordPurpose.LOGICAL);
 
         Iterator<DataEntry> dataEntriesIter = entries.iterator();
 
