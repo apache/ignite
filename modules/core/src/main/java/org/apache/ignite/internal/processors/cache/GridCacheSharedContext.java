@@ -127,7 +127,7 @@ public class GridCacheSharedContext<K, V> {
     @Nullable private IgnitePageStoreManager pageStoreMgr;
 
     /** Snapshot manager for persistence caches. See {@link IgniteSnapshot}. */
-    private IgniteSnapshotManager snpMgr;
+    private IgniteSnapshotManager snapshotMgr;
 
     /** Affinity manager. */
     private CacheAffinitySharedManager affMgr;
@@ -224,7 +224,7 @@ public class GridCacheSharedContext<K, V> {
         @Nullable IgniteWriteAheadLogManager walMgr,
         WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
-        IgniteSnapshotManager snpMgr,
+        IgniteSnapshotManager snapshotMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
         CacheAffinitySharedManager<K, V> affMgr,
@@ -251,7 +251,7 @@ public class GridCacheSharedContext<K, V> {
             walMgr,
             walStateMgr,
             dbMgr,
-            snpMgr,
+            snapshotMgr,
             depMgr,
             exchMgr,
             affMgr,
@@ -294,7 +294,7 @@ public class GridCacheSharedContext<K, V> {
 
         stateAwareMgrs.add(dbMgr);
 
-        stateAwareMgrs.add(snpMgr);
+        stateAwareMgrs.add(snapshotMgr);
 
         for (PluginProvider prv : kernalCtx.plugins().allProviders())
             if (prv instanceof IgniteChangeGlobalStateSupport)
@@ -431,7 +431,7 @@ public class GridCacheSharedContext<K, V> {
             cdcWalMgr,
             walStateMgr,
             dbMgr,
-            snpMgr,
+            snapshotMgr,
             new GridCacheDeploymentManager<K, V>(),
             new GridCachePartitionExchangeManager<K, V>(),
             affMgr,
@@ -482,7 +482,7 @@ public class GridCacheSharedContext<K, V> {
         IgniteWriteAheadLogManager cdcWalMgr,
         WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
-        IgniteSnapshotManager snpMgr,
+        IgniteSnapshotManager snapshotMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
         CacheAffinitySharedManager affMgr,
@@ -506,7 +506,7 @@ public class GridCacheSharedContext<K, V> {
         this.cdcWalMgr = walMgr == null ? add(mgrs, cdcWalMgr) : cdcWalMgr;
         this.walStateMgr = add(mgrs, walStateMgr);
         this.dbMgr = add(mgrs, dbMgr);
-        this.snpMgr = add(mgrs, snpMgr);
+        this.snapshotMgr = add(mgrs, snapshotMgr);
         this.jtaMgr = add(mgrs, jtaMgr);
         this.depMgr = add(mgrs, depMgr);
         this.exchMgr = add(mgrs, exchMgr);
@@ -754,7 +754,7 @@ public class GridCacheSharedContext<K, V> {
      * @return Page storage snapshot manager.
      */
     public IgniteSnapshotManager snapshotMgr() {
-        return snpMgr;
+        return snapshotMgr;
     }
 
     /**

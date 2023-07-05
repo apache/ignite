@@ -3063,10 +3063,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         WalStateManager walStateMgr = new WalStateManager(ctx);
 
-        IgniteSnapshotManager snpMgr = ctx.plugins().createComponent(IgniteSnapshotManager.class);
+        IgniteSnapshotManager snapshotMgr = ctx.plugins().createComponent(IgniteSnapshotManager.class);
 
-        if (snpMgr == null)
-            snpMgr = new IgniteSnapshotManager(ctx);
+        if (snapshotMgr == null)
+            snapshotMgr = new IgniteSnapshotManager(ctx);
 
         CacheObjectTransformerManager transMgr = ctx.plugins().createComponent(CacheObjectTransformerManager.class);
 
@@ -3092,7 +3092,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             walMgr,
             walStateMgr,
             dbMgr,
-            snpMgr,
+            snapshotMgr,
             depMgr,
             exchMgr,
             topMgr,

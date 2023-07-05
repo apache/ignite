@@ -1119,9 +1119,9 @@ public class ClusterCachesInfo {
         }
 
         if (err == null && req.restartId() == null) {
-            IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
+            IgniteSnapshotManager snapshotMgr = ctx.cache().context().snapshotMgr();
 
-            if (snpMgr.isRestoring(ccfg)) {
+            if (snapshotMgr.isRestoring(ccfg)) {
                 err = new IgniteCheckedException("Cache start failed. A cache or group with the same name is " +
                     "currently being restored from a snapshot [cache=" + cacheName +
                     (ccfg.getGroupName() == null ? "" : ", group=" + ccfg.getGroupName()) + ']');
