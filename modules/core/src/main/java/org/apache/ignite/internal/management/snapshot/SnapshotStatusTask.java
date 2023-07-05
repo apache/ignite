@@ -111,7 +111,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotTaskRe
             if (!CU.isPersistenceEnabled(ignite.context().config()))
                 return null;
 
-            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
+            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshot();
 
             SnapshotOperationRequest req = snpMgr.currentCreateRequest();
 

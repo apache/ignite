@@ -44,7 +44,7 @@ public class IgniteClusterSnapshotCheckWithIndexesTest extends AbstractSnapshotS
 
         snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(TIMEOUT);
 
-        IdleVerifyResultV2 res = ignite.context().cache().context().snapshotMgr()
+        IdleVerifyResultV2 res = ignite.context().cache().context().snapshot()
             .checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
@@ -62,7 +62,7 @@ public class IgniteClusterSnapshotCheckWithIndexesTest extends AbstractSnapshotS
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME, null, TIMEOUT);
 
-        IdleVerifyResultV2 res = ignite.context().cache().context().snapshotMgr()
+        IdleVerifyResultV2 res = ignite.context().cache().context().snapshot()
             .checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
@@ -89,7 +89,7 @@ public class IgniteClusterSnapshotCheckWithIndexesTest extends AbstractSnapshotS
 
         createAndCheckSnapshot(grid(0), SNAPSHOT_NAME, null, TIMEOUT);
 
-        IdleVerifyResultV2 res = grid(0).context().cache().context().snapshotMgr()
+        IdleVerifyResultV2 res = grid(0).context().cache().context().snapshot()
             .checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();

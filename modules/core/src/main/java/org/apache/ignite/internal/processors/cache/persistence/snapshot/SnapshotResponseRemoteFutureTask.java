@@ -75,7 +75,7 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
             return false;
 
         try {
-            List<SnapshotMetadata> metas = cctx.snapshotMgr().readSnapshotMetadatas(snpName, snpPath);
+            List<SnapshotMetadata> metas = cctx.snapshot().readSnapshotMetadatas(snpName, snpPath);
 
             Function<GroupPartitionId, SnapshotMetadata> findMeta = pair -> {
                 for (SnapshotMetadata meta : metas) {
@@ -108,7 +108,7 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
 
             snpSndr.init(partsToSend.size());
 
-            File snpDir = cctx.snapshotMgr().snapshotLocalDir(snpName, snpPath);
+            File snpDir = cctx.snapshot().snapshotLocalDir(snpName, snpPath);
 
             CompletableFuture.runAsync(() -> partsToSend.forEach((gp, meta) -> {
                 if (err.get() != null)

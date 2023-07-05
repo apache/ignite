@@ -52,7 +52,7 @@ public class SnapshotCreateTask extends SnapshotOneNodeTask<SnapshotCreateComman
 
         /** {@inheritDoc} */
         @Override protected String run(SnapshotCreateCommandArg arg) throws IgniteException {
-            IgniteFutureImpl<Void> fut = ignite.context().cache().context().snapshotMgr().createSnapshot(
+            IgniteFutureImpl<Void> fut = ignite.context().cache().context().snapshot().createSnapshot(
                 arg.snapshotName(),
                 arg.dest(),
                 arg.incremental(),

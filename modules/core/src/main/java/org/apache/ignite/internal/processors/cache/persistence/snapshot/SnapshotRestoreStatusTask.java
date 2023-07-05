@@ -57,7 +57,7 @@ class SnapshotRestoreStatusTask extends ComputeTaskAdapter<String, Boolean> {
                 private transient IgniteEx ignite;
 
                 @Override public Boolean execute() throws IgniteException {
-                    return ignite.context().cache().context().snapshotMgr().isRestoring(snpName);
+                    return ignite.context().cache().context().snapshot().isRestoring(snpName);
                 }
             }, node);
         }

@@ -87,7 +87,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         String snapshotName = F.first(F.first(metas.values())).snapshotName();
 
         try {
-            ignite.context().cache().context().snapshotMgr().handlers().completeAll(
+            ignite.context().cache().context().snapshot().handlers().completeAll(
                 SnapshotHandlerType.RESTORE, snapshotName, clusterResults, execNodes, wrns -> {});
         }
         catch (Exception e) {
@@ -151,7 +151,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         /** {@inheritDoc} */
         @Override public Map<String, SnapshotHandlerResult<Object>> execute() {
             try {
-                IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
+                IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshot();
                 File snpDir = snpMgr.snapshotLocalDir(snpName, snpPath);
                 SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpDir, consistentId);
 

@@ -58,7 +58,7 @@ public class SnapshotRestoreTask extends SnapshotOneNodeTask<SnapshotRestoreComm
 
         /** {@inheritDoc} */
         @Override protected String run(SnapshotRestoreCommandArg arg) throws IgniteException {
-            IgniteFutureImpl<Void> fut = ignite.context().cache().context().snapshotMgr().restoreSnapshot(
+            IgniteFutureImpl<Void> fut = ignite.context().cache().context().snapshot().restoreSnapshot(
                 arg.snapshotName(),
                 arg.src(),
                 arg.groups() == null ? null : Arrays.asList(arg.groups()),
@@ -125,7 +125,7 @@ public class SnapshotRestoreTask extends SnapshotOneNodeTask<SnapshotRestoreComm
 
         /** {@inheritDoc} */
         @Override protected String run(SnapshotRestoreCommandArg arg) throws IgniteException {
-            boolean state = ignite.context().cache().context().snapshotMgr().restoreStatus(arg.snapshotName()).get();
+            boolean state = ignite.context().cache().context().snapshot().restoreStatus(arg.snapshotName()).get();
 
             return "Snapshot cache group restore operation is " + (state ? "" : "NOT ") +
                 "running [snapshot=" + arg.snapshotName() + ']';

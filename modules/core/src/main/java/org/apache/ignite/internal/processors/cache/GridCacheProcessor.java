@@ -3063,10 +3063,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         WalStateManager walStateMgr = new WalStateManager(ctx);
 
-        IgniteSnapshotManager snapshotMgr = ctx.plugins().createComponent(IgniteSnapshotManager.class);
+        IgniteSnapshotManager snpMgr = ctx.plugins().createComponent(IgniteSnapshotManager.class);
 
-        if (snapshotMgr == null)
-            snapshotMgr = new IgniteSnapshotManager(ctx);
+        if (snpMgr == null)
+            snpMgr = new IgniteSnapshotManager(ctx);
 
         CacheObjectTransformerManager transMgr = ctx.plugins().createComponent(CacheObjectTransformerManager.class);
 
@@ -3092,7 +3092,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             walMgr,
             walStateMgr,
             dbMgr,
-            snapshotMgr,
+            snpMgr,
             depMgr,
             exchMgr,
             topMgr,
@@ -4331,7 +4331,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Node validation result if there was an issue with the joining node, {@code null} otherwise.
      */
     private IgniteNodeValidationResult validateRestoringCaches(ClusterNode node) {
-        if (ctx.cache().context().snapshotMgr().isRestoring()) {
+        if (ctx.cache().context().snapshot().isRestoring()) {
             String msg = "Joining node during caches restore is not allowed [joiningNodeId=" + node.id() + ']';
 
             return new IgniteNodeValidationResult(node.id(), msg);

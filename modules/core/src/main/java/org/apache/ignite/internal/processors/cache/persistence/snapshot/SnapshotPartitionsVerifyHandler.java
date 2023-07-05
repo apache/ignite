@@ -158,7 +158,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
             .order(ByteOrder.nativeOrder()));
 
-        IgniteSnapshotManager snpMgr = cctx.snapshotMgr();
+        IgniteSnapshotManager snpMgr = cctx.snapshot();
 
         GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(cctx.kernalContext().compress(),
             opCtx.snapshotDirectory(), meta.folderName());

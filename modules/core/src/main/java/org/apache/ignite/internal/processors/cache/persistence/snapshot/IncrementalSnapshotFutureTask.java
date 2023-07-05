@@ -123,7 +123,7 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
     /** {@inheritDoc} */
     @Override public boolean start() {
         try {
-            File incSnpDir = cctx.snapshotMgr().incrementalSnapshotLocalDir(snpName, snpPath, incIdx);
+            File incSnpDir = cctx.snapshot().incrementalSnapshotLocalDir(snpName, snpPath, incIdx);
 
             if (!incSnpDir.mkdirs() && !incSnpDir.exists()) {
                 onDone(new IgniteException("Can't create snapshot directory [dir=" + incSnpDir.getAbsolutePath() + ']'));

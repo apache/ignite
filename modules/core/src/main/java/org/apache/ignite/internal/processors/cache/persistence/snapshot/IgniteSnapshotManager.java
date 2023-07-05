@@ -4545,7 +4545,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (incremental)
                 ignite.snapshot().createIncrementalSnapshot(snpName).get();
             else
-                ignite.context().cache().context().snapshotMgr().createSnapshot(snpName, null, false, onlyPrimary).get();
+                ignite.context().cache().context().snapshot().createSnapshot(snpName, null, false, onlyPrimary).get();
 
             return null;
         }
@@ -4579,12 +4579,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** {@inheritDoc} */
         @Override public Boolean call() throws Exception {
             if (reqId != null)
-                return ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotOperations(reqId);
+                return ignite.context().cache().context().snapshot().cancelLocalSnapshotOperations(reqId);
             else {
-                if (ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotTask(snpName))
+                if (ignite.context().cache().context().snapshot().cancelLocalSnapshotTask(snpName))
                     return true;
 
-                return ignite.context().cache().context().snapshotMgr().cancelLocalRestoreTask(snpName).get();
+                return ignite.context().cache().context().snapshot().cancelLocalRestoreTask(snpName).get();
             }
         }
     }

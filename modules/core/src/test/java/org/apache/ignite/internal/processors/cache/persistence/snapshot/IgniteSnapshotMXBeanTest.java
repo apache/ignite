@@ -308,7 +308,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
     private void checkSnapshotStatus(boolean isCreating, boolean isRestoring, boolean isIncremental, String expName) throws Exception {
         assertTrue(waitForCondition(() -> G.allGrids().stream().allMatch(
                 ignite -> {
-                    IgniteSnapshotManager mgr = ((IgniteEx)ignite).context().cache().context().snapshotMgr();
+                    IgniteSnapshotManager mgr = ((IgniteEx)ignite).context().cache().context().snapshot();
 
                     return isCreating == mgr.isSnapshotCreating() && isRestoring == mgr.isRestoring();
                 }),

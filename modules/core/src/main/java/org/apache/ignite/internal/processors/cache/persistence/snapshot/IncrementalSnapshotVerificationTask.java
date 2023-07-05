@@ -401,7 +401,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
 
         /** Checks that current baseline topology matches baseline topology of the snapshot. */
         private void checkBaseline(BaselineTopology blt) throws IgniteCheckedException, IOException {
-            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
+            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshot();
 
             File snpDir = snpMgr.snapshotLocalDir(snpName, snpPath);
             SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpDir, ignite.localNode().consistentId().toString());
@@ -414,7 +414,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
 
         /** @return Collection of snapshotted transactional caches, key is a cache ID. */
         private Map<Integer, StoredCacheData> readTxCachesData() throws IgniteCheckedException, IOException {
-            File snpDir = ignite.context().cache().context().snapshotMgr().snapshotLocalDir(snpName, snpPath);
+            File snpDir = ignite.context().cache().context().snapshot().snapshotLocalDir(snpName, snpPath);
 
             String folderName = ignite.context().pdsFolderResolver().resolveFolders().folderName();
 

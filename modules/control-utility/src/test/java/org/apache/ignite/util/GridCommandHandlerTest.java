@@ -3654,7 +3654,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         awaitPartitionMapExchange();
 
         CountDownLatch ioStartLatch = new CountDownLatch(1);
-        IgniteSnapshotManager snpMgr = ig.context().cache().context().snapshotMgr();
+        IgniteSnapshotManager snpMgr = ig.context().cache().context().snapshot();
 
         // Replace the IO factory in the snapshot manager so we have enough time to test the status command.
         snpMgr.ioFactory(new SlowDownFileIoFactory(snpMgr.ioFactory(), getTestTimeout() / locPartsCnt, ioStartLatch));
@@ -3695,7 +3695,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Make sure the context disappeared at node 1.
         boolean ctxDisposed =
-            waitForCondition(() -> !grid(1).context().cache().context().snapshotMgr().isRestoring(), getTestTimeout());
+            waitForCondition(() -> !grid(1).context().cache().context().snapshot().isRestoring(), getTestTimeout());
 
         assertTrue(ctxDisposed);
 
@@ -3815,7 +3815,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertTrue(waitForCondition(() -> srvs.stream().allMatch(
                 ignite -> {
-                    IgniteSnapshotManager mgr = ((IgniteEx)ignite).context().cache().context().snapshotMgr();
+                    IgniteSnapshotManager mgr = ((IgniteEx)ignite).context().cache().context().snapshot();
 
                     return isCreating == mgr.isSnapshotCreating() && isRestoring == mgr.isRestoring();
                 }),

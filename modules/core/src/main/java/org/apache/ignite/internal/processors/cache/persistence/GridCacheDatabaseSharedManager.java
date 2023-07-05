@@ -1513,7 +1513,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             .map(t -> t.get1().groupId())
             .collect(toList());
 
-        cctx.snapshotMgr().onCacheGroupsStopped(stoppedGrpIds);
+        cctx.snapshot().onCacheGroupsStopped(stoppedGrpIds);
 
         initiallyLocWalDisabledGrps.removeAll(stoppedGrpIds);
         initiallyGlobalWalDisabledGrps.removeAll(stoppedGrpIds);
@@ -3117,7 +3117,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (lastCpTs != 0)
                 metaStorage.write(checkpointInapplicableCpAndGroupIdToKey(lastCpTs, grpId), true);
 
-            cctx.snapshotMgr().disableIncrementalSnapshotsCreation(metaStorage, grpId);
+            cctx.snapshot().disableIncrementalSnapshotsCreation(metaStorage, grpId);
         }
         catch (IgniteCheckedException e) {
             log.error("Failed to mark last checkpoint as inapplicable for WAL rebalance for group: " + grpId, e);
