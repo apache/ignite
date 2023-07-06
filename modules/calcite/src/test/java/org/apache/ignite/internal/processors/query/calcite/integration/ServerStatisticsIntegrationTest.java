@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -413,6 +414,20 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTes
             assertQuerySrv(fieldSql + " <= 100").matches(QueryChecker.containsResultRowCount(allRowCnt)).check();
             assertQuerySrv(fieldSql + " < 100").matches(QueryChecker.containsResultRowCount(allRowCnt)).check();
         }
+    }
+
+    /**
+     * Check planning with large table size.
+     */
+    @Test
+    public void testSizeIntOverflow() {
+        createAndPopulateTable();
+
+        F.first(grid(0).context().cache().cache(TABLE_NAME).context().offheap().cacheDataStores())
+            .updateSize(CU.cacheId(TABLE_NAME), 1L + Integer.MAX_VALUE);
+
+        assertQuery(grid(0), "select * from person")
+            .matches(QueryChecker.containsTableScan("PUBLIC", "PERSON")).check();
     }
 
     /**

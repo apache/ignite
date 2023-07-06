@@ -34,11 +34,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.EntryProcessorResourceInjectorProxy;
@@ -543,7 +540,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         checkValid();
 
-        Collection<IgniteTxEntry> commitEntries = (near() || cctx.snapshot().needTxReadLogging()) ? allEntries() : writeEntries();
+        Collection<IgniteTxEntry> commitEntries = near() ? allEntries() : writeEntries();
 
         boolean empty = F.isEmpty(commitEntries) && !queryEnlisted();
 
@@ -816,22 +813,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         updateNearEntrySafely(cacheCtx, txEntry.key(), GridCacheEntryEx::innerReload);
                                 }
                                 else if (op == READ) {
-                                    CacheGroupContext grp = cacheCtx.group();
-
-                                    if (grp.logDataRecords() && cctx.snapshot().needTxReadLogging()) {
-                                        ptr = grp.wal().log(new DataRecord(new DataEntry(
-                                            cacheCtx.cacheId(),
-                                            txEntry.key(),
-                                            val,
-                                            op,
-                                            nearXidVersion(),
-                                            writeVersion(),
-                                            0,
-                                            txEntry.key().partition(),
-                                            txEntry.updateCounter(),
-                                            DataEntry.flags(CU.txOnPrimary(this)))));
-                                    }
-
                                     ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
                                     if (expiry != null) {

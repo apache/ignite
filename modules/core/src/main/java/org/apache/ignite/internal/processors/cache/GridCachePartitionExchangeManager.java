@@ -1343,16 +1343,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param grps Cache groups for partitions refresh.
      */
     public void refreshPartitions(@NotNull Collection<CacheGroupContext> grps) {
-        // TODO https://issues.apache.org/jira/browse/IGNITE-6857
-        if (cctx.snapshot().snapshotOperationInProgress()) {
-            if (log.isDebugEnabled())
-                log.debug("Schedule resend parititions due to snapshot in progress");
-
-            scheduleResendPartitions();
-
-            return;
-        }
-
         if (grps.isEmpty()) {
             if (log.isDebugEnabled())
                 log.debug("Skip partitions refresh, there are no cache groups for partition refresh.");
@@ -3460,11 +3450,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 forcedRebFut = ((ForceRebalanceExchangeTask)task).forcedRebalanceFuture();
 
                             for (CacheGroupContext grp : assignsSet.descendingSet()) {
-                                boolean disableRebalance = cctx.snapshot().partitionsAreFrozen(grp);
-
-                                if (disableRebalance)
-                                    continue;
-
                                 RebalanceFuture cur = grp.preloader().prepare(exchId,
                                     exchFut,
                                     cnt,
