@@ -100,7 +100,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** {@inheritDoc} */
-    @Override public Map<PartitionKeyV2, PartitionHashRecordV2> invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
+    @Override public Map<PartitionKeyV2, PartitionHashRecordV2> invoke(SnapshotHandlerContext opCtx) throws Exception {
         if (!opCtx.snapshotDirectory().exists())
             throw new IgniteCheckedException("Snapshot directory doesn't exists: " + opCtx.snapshotDirectory());;
 
@@ -170,7 +170,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         for (GridComponent comp : snpCtx)
             comp.start();
 
-        try {
+        try (SnapshotCheckOperationStatus status = snpMgr.trackCheckOperation(opCtx.requestId(), meta.snapshotName(), -1)) {
+            status.total(partFiles.size());
+
             U.doInParallel(
                 snpMgr.snapshotExecutorService(),
                 partFiles,
@@ -262,6 +264,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                         assert hash != null : "OWNING must have hash: " + key;
 
                         res.put(key, hash);
+
+                        status.onProcessed();
                     }
                     catch (IOException e) {
                         throw new IgniteCheckedException(e);

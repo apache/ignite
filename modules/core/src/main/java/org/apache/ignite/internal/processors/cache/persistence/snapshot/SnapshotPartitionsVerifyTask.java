@@ -18,12 +18,11 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.apache.ignite.IgniteCheckedException;
+import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJob;
@@ -58,9 +57,10 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
         int incIdx,
         String constId,
         Collection<String> groups,
-        boolean check
+        boolean check,
+        UUID reqId
     ) {
-        return new VerifySnapshotPartitionsJob(name, path, constId, groups, check);
+        return new VerifySnapshotPartitionsJob(name, path, constId, groups, check, reqId);
     }
 
     /** {@inheritDoc} */
@@ -96,25 +96,31 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
         /** If {@code true} check snapshot before restore. */
         private final boolean check;
 
+        /** Request ID. */
+        private final UUID reqId;
+
         /**
          * @param snpName Snapshot name to validate.
          * @param consId Consistent snapshot metadata file name.
          * @param rqGrps Set of cache groups to be checked in the snapshot or {@code empty} to check everything.
          * @param snpPath Snapshot directory path.
          * @param check If {@code true} check snapshot before restore.
+         * @param reqId Request ID.
          */
         public VerifySnapshotPartitionsJob(
             String snpName,
             @Nullable String snpPath,
             String consId,
             Collection<String> rqGrps,
-            boolean check
+            boolean check,
+            UUID reqId
         ) {
             this.snpName = snpName;
             this.consId = consId;
             this.rqGrps = rqGrps;
             this.snpPath = snpPath;
             this.check = check;
+            this.reqId = reqId;
         }
 
         /** {@inheritDoc} */
@@ -131,9 +137,9 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
                 SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(snpDir, consId);
 
                 return new SnapshotPartitionsVerifyHandler(cctx)
-                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false, check));
+                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false, check, reqId));
             }
-            catch (IgniteCheckedException | IOException e) {
+            catch (Exception e) {
                 throw new IgniteException(e);
             }
         }

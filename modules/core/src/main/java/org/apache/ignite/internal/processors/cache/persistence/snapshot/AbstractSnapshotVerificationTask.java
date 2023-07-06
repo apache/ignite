@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -88,7 +89,8 @@ public abstract class AbstractSnapshotVerificationTask extends
                         arg.incrementIndex(),
                         meta.consistentId(),
                         arg.cacheGroupNames(),
-                        arg.check()
+                        arg.check(),
+                        arg.requestId()
                     ),
                     e.getKey()
                 );
@@ -137,6 +139,7 @@ public abstract class AbstractSnapshotVerificationTask extends
      * @param constId Snapshot metadata file name.
      * @param groups Cache groups to be restored from the snapshot. May be empty if all cache groups are being restored.
      * @param check If {@code true} check snapshot before restore.
+     * @param reqId Request ID.
      * @return Compute job.
      */
     protected abstract ComputeJob createJob(
@@ -145,6 +148,7 @@ public abstract class AbstractSnapshotVerificationTask extends
         int incIdx,
         String constId,
         Collection<String> groups,
-        boolean check
+        boolean check,
+        UUID reqId
     );
 }

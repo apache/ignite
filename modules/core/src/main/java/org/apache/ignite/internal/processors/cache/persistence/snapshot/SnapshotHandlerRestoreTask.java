@@ -55,9 +55,10 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         int incIdx,
         String constId,
         Collection<String> groups,
-        boolean check
+        boolean check,
+        UUID reqId
     ) {
-        return new SnapshotHandlerRestoreJob(name, path, constId, groups, check);
+        return new SnapshotHandlerRestoreJob(name, path, constId, groups, check, reqId);
     }
 
     /** {@inheritDoc} */
@@ -112,6 +113,9 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         @LoggerResource
         private IgniteLogger log;
 
+        /** Request ID. */
+        private final UUID reqId;
+
         /** Snapshot name. */
         private final String snpName;
 
@@ -133,19 +137,22 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
          * @param consistentId String representation of the consistent node ID.
          * @param grps Cache group names.
          * @param check If {@code true} check snapshot before restore.
+         * @param reqId Request ID.
          */
         public SnapshotHandlerRestoreJob(
             String snpName,
             @Nullable String snpPath,
             String consistentId,
             Collection<String> grps,
-            boolean check
+            boolean check,
+            UUID reqId
         ) {
             this.snpName = snpName;
             this.snpPath = snpPath;
             this.consistentId = consistentId;
             this.grps = grps;
             this.check = check;
+            this.reqId = reqId;
         }
 
         /** {@inheritDoc} */
@@ -156,7 +163,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
                 SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpDir, consistentId);
 
                 return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE,
-                    new SnapshotHandlerContext(meta, grps, ignite.localNode(), snpDir, false, check));
+                    new SnapshotHandlerContext(meta, grps, ignite.localNode(), snpDir, false, check, reqId));
             }
             catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);

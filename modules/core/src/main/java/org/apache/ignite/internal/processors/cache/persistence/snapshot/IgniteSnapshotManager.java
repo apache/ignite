@@ -464,6 +464,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private final boolean sequentialWrite =
         IgniteSystemProperties.getBoolean(IGNITE_SNAPSHOT_SEQUENTIAL_WRITE, DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE);
 
+    /** Status of snapshot check operations. */
+    private final Set<SnapshotCheckOperationStatus> checkOpsStatus = ConcurrentHashMap.newKeySet();
+
     /**
      * @param ctx Kernal context.
      */
@@ -1187,7 +1190,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 );
 
                 SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir,
-                    req.streamerWarning(), true);
+                    req.streamerWarning(), true, req.requestId());
 
                 req.meta(meta);
 
@@ -1833,6 +1836,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             "Collection of cache groups names cannot contain null elements.");
 
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
+        UUID reqId = UUID.randomUUID();
 
         GridKernalContext kctx0 = cctx.kernalContext();
 
@@ -1929,7 +1933,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 kctx0.task().execute(
                         cls,
-                        new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath, incIdx, check),
+                        new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath, incIdx, check, reqId),
                         options(new ArrayList<>(metas.keySet()))
                     ).listen(f1 -> {
                         if (f1.error() == null)
@@ -3095,6 +3099,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** @return Current incremental snapshot ID. */
     public @Nullable UUID incrementalSnapshotId() {
         return incSnpId;
+    }
+
+    /** @return Status of snapshot check operations. */
+    public Set<SnapshotCheckOperationStatus> checkOperationsStatus() {
+        return checkOpsStatus;
+    }
+
+    /** @return Snapshot check operation status tracker. */
+    public SnapshotCheckOperationStatus trackCheckOperation(UUID reqId, String snpName, int incIdx) {
+        SnapshotCheckOperationStatus status = new SnapshotCheckOperationStatus(reqId, snpName, incIdx) {
+            @Override public void close() {
+                checkOpsStatus.remove(this);
+            }
+        };
+
+        checkOpsStatus.add(status);
+
+        return status;
     }
 
     /** Snapshot operation handlers. */

@@ -517,7 +517,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 ))),
                 null,
                 0,
-                true
+                true,
+                UUID.randomUUID()
             )
         ).idleVerifyResult();
 

@@ -22,6 +22,7 @@ import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -50,6 +51,9 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     /** Incremental snapshot index. */
     private int incIdx;
 
+    /** Request ID. */
+    private UUID reqId;
+
     /** Default constructor. */
     public SnapshotPartitionsVerifyTaskArg() {
         // No-op.
@@ -61,19 +65,22 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
      * @param snpPath Snapshot directory path.
      * @param incIdx Incremental snapshot index.
      * @param check If {@code true} check snapshot integrity.
+     * @param reqId Request ID.
      */
     public SnapshotPartitionsVerifyTaskArg(
         Collection<String> grpNames,
         Map<ClusterNode, List<SnapshotMetadata>> clusterMetas,
         @Nullable String snpPath,
         int incIdx,
-        boolean check
+        boolean check,
+        UUID reqId
     ) {
         this.grpNames = grpNames;
         this.clusterMetas = clusterMetas;
         this.snpPath = snpPath;
         this.incIdx = incIdx;
         this.check = check;
+        this.reqId = reqId;
     }
 
     /**
@@ -109,6 +116,11 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
         return check;
     }
 
+    /** @return Request ID. */
+    public UUID requestId() {
+        return reqId;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, grpNames);
@@ -116,6 +128,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
         U.writeString(out, snpPath);
         out.writeBoolean(check);
         out.writeInt(incIdx);
+        U.writeUuid(out, reqId);
     }
 
     /** {@inheritDoc} */
@@ -125,6 +138,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
         snpPath = U.readString(in);
         check = in.readBoolean();
         incIdx = in.readInt();
+        reqId = U.readUuid(in);
     }
 
     /** {@inheritDoc} */
