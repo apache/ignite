@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -123,9 +122,6 @@ public class GridCacheSharedContext<K, V> {
 
     /** Database manager. */
     private IgniteCacheDatabaseSharedManager dbMgr;
-
-    /** Snapshot manager. */
-    private IgniteCacheSnapshotManager snpMgr;
 
     /** Page store manager. {@code Null} if persistence is not enabled. */
     @Nullable private IgnitePageStoreManager pageStoreMgr;
@@ -209,7 +205,6 @@ public class GridCacheSharedContext<K, V> {
      * @param walStateMgr WAL state manager.
      * @param depMgr Deployment manager.
      * @param dbMgr Database manager.
-     * @param snpMgr Snapshot manager.
      * @param exchMgr Exchange manager.
      * @param affMgr Affinity manager.
      * @param ioMgr IO manager.
@@ -230,7 +225,6 @@ public class GridCacheSharedContext<K, V> {
         WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
         IgniteSnapshotManager snapshotMgr,
-        IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
         CacheAffinitySharedManager<K, V> affMgr,
@@ -258,7 +252,6 @@ public class GridCacheSharedContext<K, V> {
             walStateMgr,
             dbMgr,
             snapshotMgr,
-            snpMgr,
             depMgr,
             exchMgr,
             affMgr,
@@ -300,8 +293,6 @@ public class GridCacheSharedContext<K, V> {
             stateAwareMgrs.add(walMgr);
 
         stateAwareMgrs.add(dbMgr);
-
-        stateAwareMgrs.add(snpMgr);
 
         stateAwareMgrs.add(snapshotMgr);
 
@@ -441,7 +432,6 @@ public class GridCacheSharedContext<K, V> {
             walStateMgr,
             dbMgr,
             snapshotMgr,
-            snpMgr,
             new GridCacheDeploymentManager<K, V>(),
             new GridCachePartitionExchangeManager<K, V>(),
             affMgr,
@@ -493,7 +483,6 @@ public class GridCacheSharedContext<K, V> {
         WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
         IgniteSnapshotManager snapshotMgr,
-        IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
         CacheAffinitySharedManager affMgr,
@@ -518,7 +507,6 @@ public class GridCacheSharedContext<K, V> {
         this.walStateMgr = add(mgrs, walStateMgr);
         this.dbMgr = add(mgrs, dbMgr);
         this.snapshotMgr = add(mgrs, snapshotMgr);
-        this.snpMgr = add(mgrs, snpMgr);
         this.jtaMgr = add(mgrs, jtaMgr);
         this.depMgr = add(mgrs, depMgr);
         this.exchMgr = add(mgrs, exchMgr);
@@ -753,13 +741,6 @@ public class GridCacheSharedContext<K, V> {
      */
     public IgniteCacheDatabaseSharedManager database() {
         return dbMgr;
-    }
-
-    /**
-     * @return Snapshot manager.
-     */
-    public IgniteCacheSnapshotManager snapshot() {
-        return snpMgr;
     }
 
     /**

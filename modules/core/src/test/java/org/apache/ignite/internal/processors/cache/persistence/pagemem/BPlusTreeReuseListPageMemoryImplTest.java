@@ -26,7 +26,6 @@ import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
-import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
@@ -38,7 +37,6 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
-import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
@@ -98,7 +96,6 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
             null,
             null,
             null,
-            null,
             null
         );
 
@@ -116,10 +113,7 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
             (fullPageId, byteBuf, tag) -> {
                 assert false : "No page replacement (rotation with disk) should happen during the test";
             },
-            new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
-                @Override public void applyx(Long page, FullPageId fullPageId, PageMemoryEx pageMem) {
-                }
-            },
+            true,
             () -> true,
             new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx),
             PageMemoryImpl.ThrottlingPolicy.DISABLED,

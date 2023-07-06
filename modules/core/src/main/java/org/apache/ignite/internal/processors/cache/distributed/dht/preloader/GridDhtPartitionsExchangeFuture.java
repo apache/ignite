@@ -1080,17 +1080,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     assert false;
             }
 
-            if (cctx.localNode().isClient()) {
-                cctx.exchange().exchangerBlockingSectionBegin();
-
-                try {
-                    tryToPerformLocalSnapshotOperation();
-                }
-                finally {
-                    cctx.exchange().exchangerBlockingSectionEnd();
-                }
-            }
-
             for (PartitionsExchangeAware comp : cctx.exchange().exchangeAwareComponents())
                 comp.onInitAfterTopologyLock(this);
 
@@ -1808,30 +1797,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Try to start local snapshot operation if it is needed by discovery event
-     */
-    private void tryToPerformLocalSnapshotOperation() {
-        try {
-            long start = System.nanoTime();
-
-            IgniteInternalFuture fut = cctx.snapshot().tryStartLocalSnapshotOperation(firstDiscoEvt, exchId.topologyVersion());
-
-            if (fut != null) {
-                fut.get();
-
-                long end = System.nanoTime();
-
-                if (log.isInfoEnabled())
-                    log.info("Snapshot initialization completed [topVer=" + exchangeId().topologyVersion() +
-                        ", time=" + U.nanosToMillis(end - start) + "ms]");
-            }
-        }
-        catch (IgniteException | IgniteCheckedException e) {
-            U.error(log, "Error while starting snapshot operation", e);
-        }
-    }
-
-    /**
      * Change WAL mode if needed.
      */
     private void changeWalModeIfNeeded() {
@@ -2514,9 +2479,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 grpValidRes = m;
             }
-
-            if (!cctx.localNode().isClient())
-                tryToPerformLocalSnapshotOperation();
 
             if (err == null)
                 cctx.coordinators().onExchangeDone(events().discoveryCache());
