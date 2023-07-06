@@ -26,9 +26,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDat
  * Checking of CRC32.
  */
 public class Crc32CheckingDataInput extends ByteBufferBackedDataInput implements AutoCloseable {
-    /**
-     *
-     */
+    /** */
     private final FastCrc crc = new FastCrc();
 
     /**
@@ -41,14 +39,10 @@ public class Crc32CheckingDataInput extends ByteBufferBackedDataInput implements
      */
     private boolean skipCheck;
 
-    /**
-     *
-     */
+    /** */
     private ByteBufferBackedDataInput delegate;
 
-    /**
-     *
-     */
+    /** */
     public Crc32CheckingDataInput(ByteBufferBackedDataInput delegate, boolean skipCheck) {
         this.delegate = delegate;
         this.lastCalcPosition = buffer().position();
@@ -91,9 +85,7 @@ public class Crc32CheckingDataInput extends ByteBufferBackedDataInput implements
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private void updateCrc() {
         if (skipCheck)
             return;

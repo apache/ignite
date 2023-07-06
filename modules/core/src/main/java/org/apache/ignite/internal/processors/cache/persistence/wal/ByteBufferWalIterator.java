@@ -32,7 +32,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 
 /** Byte Buffer WAL Iterator */
-public class ByteBufferWalIterator extends AbstractWalRecordsIteratorApdator {
+public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -63,7 +63,8 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorApdator {
         @NotNull GridCacheSharedContext<?, ?> cctx,
         @NotNull ByteBuffer byteBuf,
         int segmentIdx,
-        IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter) throws IgniteCheckedException {
+        IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter)
+        throws IgniteCheckedException {
         super(log);
 
         buf = byteBuf;

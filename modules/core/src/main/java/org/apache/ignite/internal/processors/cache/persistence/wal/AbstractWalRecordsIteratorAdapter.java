@@ -23,12 +23,11 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Iterator over WAL segments. This abstract class provides most functionality for reading records.
  */
-public abstract class AbstractWalRecordsIteratorApdator
+public abstract class AbstractWalRecordsIteratorAdapter
     extends GridCloseableIteratorAdapter<IgniteBiTuple<WALPointer, WALRecord>> implements WALIterator {
     /** */
     private static final long serialVersionUID = 0L;
@@ -45,12 +44,12 @@ public abstract class AbstractWalRecordsIteratorApdator
     private IgniteCheckedException curException;
 
     /** Logger */
-    @NotNull protected final IgniteLogger log;
+    protected final IgniteLogger log;
 
     /**
      * @param log Logger.
      */
-    protected AbstractWalRecordsIteratorApdator(@NotNull final IgniteLogger log) {
+    protected AbstractWalRecordsIteratorAdapter(final IgniteLogger log) {
         this.log = log;
     }
 

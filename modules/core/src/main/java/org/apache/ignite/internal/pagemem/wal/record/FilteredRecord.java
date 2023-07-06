@@ -20,8 +20,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractFileW
 
 /**
  * Special type of WAL record. Shouldn't be stored in file.
- * Returned by deserializer if next record is not matched by filter. Automatically handled by
- * {@link AbstractFileWalRecordsIterator}.
+ * Returned by deserializer if next record is not matched by filter.
  */
 public class FilteredRecord extends WALRecord {
     /** Instance. */

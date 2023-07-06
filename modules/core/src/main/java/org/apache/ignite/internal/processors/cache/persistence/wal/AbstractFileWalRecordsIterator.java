@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  * Iterator over WAL segments. This abstract class provides most functionality for reading records in log. Subclasses
  * are to override segment switching functionality
  */
-public abstract class AbstractFileWalRecordsIterator extends AbstractWalRecordsIteratorApdator {
+public abstract class AbstractFileWalRecordsIterator extends AbstractWalRecordsIteratorAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
