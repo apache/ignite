@@ -59,7 +59,6 @@ import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -78,6 +77,7 @@ import static org.apache.ignite.testframework.GridTestUtils.stopThreads;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.util.GridCommandHandlerClusterByClassTest.CACHES;
 import static org.apache.ignite.util.SystemViewCommandTest.NODE_ID;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * CDC command tests.
@@ -241,41 +241,36 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
     /** */
     @Test
     public void testDeleteLostSegmentLinks() throws Exception {
-        checkDeleteLostSegmentLinks(F.asList(0L, 2L), F.asList(2L), true);
+        assumeTrue(persistenceEnabled);
+
+        archiveAndCheckDeleteLostSegmentLinks(F.asList(0L, 2L), F.asList(2L), true);
     }
 
     /** */
     @Test
     public void testDeleteLostSegmentLinksOneNode() throws Exception {
-        checkDeleteLostSegmentLinks(F.asList(0L, 2L), F.asList(2L), false);
+        assumeTrue(persistenceEnabled);
+
+        archiveAndCheckDeleteLostSegmentLinks(F.asList(0L, 2L), F.asList(2L), false);
     }
 
     /** */
     @Test
     public void testDeleteLostSegmentLinksMultipleGaps() throws Exception {
-        checkDeleteLostSegmentLinks(F.asList(0L, 3L, 5L), F.asList(5L), true);
+        assumeTrue(persistenceEnabled);
+
+        archiveAndCheckDeleteLostSegmentLinks(F.asList(0L, 3L, 5L), F.asList(5L), true);
     }
 
     /** */
     @Test
-    public void testDeleteLostSegmentLinksCdcDisabledRecord() throws Exception {
-        Assume.assumeFalse(persistenceEnabled);
-
-        checkCdcDisabledRecord();
+    public void testDeleteLostSegmentLinksNoGaps() throws Exception {
+        archiveAndCheckDeleteLostSegmentLinks(F.asList(0L, 1L), F.asList(0L, 1L), true);
     }
 
     /** */
     @Test
-    public void testDeleteLostSegmentLinksCdcDisabledRecordAfterSkippedSegment() throws Exception {
-        Assume.assumeFalse(persistenceEnabled);
-
-        archiveSegmentLinks(F.asList(0L, 2L));
-
-        checkCdcDisabledRecord();
-    }
-
-    /** */
-    private void checkCdcDisabledRecord() throws Exception {
+    public void testDeleteLostSegmentLinksCdcDisable() throws Exception {
         addData(srv1.cache(DEFAULT_CACHE_NAME), 0, KEYS_CNT);
 
         cdcDisabled.propagate(true);
@@ -288,19 +283,22 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         U.sleep(2 * WAL_ARCHIVE_TIMEOUT);
 
-        executeCommand(EXIT_CODE_OK, CDC, DELETE_LOST_SEGMENT_LINKS);
-
-        UserCdcConsumer cnsmr0 = runCdc(srv0);
-        UserCdcConsumer cnsmr1 = runCdc(srv1);
-
-        waitForSize(cnsmr0, srv0.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY));
-        waitForSize(cnsmr1, srv1.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY));
+        checkDeleteLostSegmentLinks(F.asList(0L, 1L), F.asList(1L), true);
     }
 
     /** */
-    private void checkDeleteLostSegmentLinks(List<Long> expBefore, List<Long> expAfter, boolean allNodes) throws Exception {
+    private void archiveAndCheckDeleteLostSegmentLinks(
+        List<Long> expBefore,
+        List<Long> expAfter,
+        boolean allNodes
+    ) throws Exception {
         archiveSegmentLinks(expBefore);
 
+        checkDeleteLostSegmentLinks(expBefore, expAfter, allNodes);
+    }
+
+    /** */
+    private void checkDeleteLostSegmentLinks(List<Long> expBefore, List<Long> expAfter, boolean allNodes) {
         checkLinks(srv0, expBefore);
         checkLinks(srv1, expBefore);
 
@@ -320,19 +318,13 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         File[] links = wal0.walCdcDirectory().listFiles(WAL_SEGMENT_FILE_FILTER);
 
         assertEquals(expLinks.size(), links.length);
-        Arrays.stream(links).map(File::toPath).map(FileWriteAheadLogManager::segmentIndex)
-            .allMatch(expLinks::contains);
+        assertTrue(Arrays.stream(links).map(File::toPath).map(FileWriteAheadLogManager::segmentIndex)
+            .allMatch(expLinks::contains));
     }
 
     /** Archive given segments links with possible gaps. */
     private void archiveSegmentLinks(List<Long> idxs) throws Exception {
         for (long idx = 0; idx <= idxs.stream().mapToLong(v -> v).max().getAsLong(); idx++) {
-            boolean skipCdcSegment = !idxs.contains(idx);
-
-            addData(srv1.cache(DEFAULT_CACHE_NAME), 0, KEYS_CNT);
-
-            cdcDisabled.propagate(skipCdcSegment);
-
             CountDownLatch latch = new CountDownLatch(G.allGrids().size());
 
             for (Ignite srv : G.allGrids()) {
@@ -346,9 +338,14 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
                 }, EVT_WAL_SEGMENT_ARCHIVED);
             }
 
-            latch.await(2 * WAL_ARCHIVE_TIMEOUT, TimeUnit.MILLISECONDS);
+            addData(srv1.cache(DEFAULT_CACHE_NAME), 0, KEYS_CNT);
 
-            cdcDisabled.propagate(false);
+            boolean skipNext = !idxs.contains(idx + 1) && idx < idxs.get(idxs.size() - 1);
+
+            if (!skipNext || !idxs.contains(idx))
+                latch.await(2 * WAL_ARCHIVE_TIMEOUT, TimeUnit.MILLISECONDS);
+
+            cdcDisabled.propagate(skipNext);
         }
     }
 
@@ -439,7 +436,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
     /** */
     @Test
     public void testResendCancelOnRebalanceInProgress() throws Exception {
-        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
+        assumeTrue(commandHandler.equals(CLI_CMD_HND));
 
         injectTestSystemOut();
 

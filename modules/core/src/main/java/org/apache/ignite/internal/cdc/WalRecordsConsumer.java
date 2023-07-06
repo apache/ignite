@@ -28,8 +28,6 @@ import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.TypeMapping;
-import org.apache.ignite.internal.management.cdc.CdcCommand;
-import org.apache.ignite.internal.management.cdc.CdcDeleteLostSegmentLinksCommand;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -46,7 +44,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 
-import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
@@ -243,8 +240,6 @@ public class WalRecordsConsumer<K, V> {
         /** @param walIter WAL iterator. */
         DataEntryIterator(WALIterator walIter) {
             this.walIter = walIter;
-
-            advance();
         }
 
         /** @return Current state. */
@@ -268,6 +263,9 @@ public class WalRecordsConsumer<K, V> {
 
         /** {@inheritDoc} */
         @Override public boolean hasNext() {
+            if (next == null)
+                advance();
+
             return next != null;
         }
 
@@ -279,8 +277,6 @@ public class WalRecordsConsumer<K, V> {
             DataEntry e = next;
 
             next = null;
-
-            advance();
 
             return e;
         }
@@ -307,9 +303,8 @@ public class WalRecordsConsumer<K, V> {
             curRec = walIter.next();
 
             if (curRec.get2().type() == WALRecord.RecordType.CDC_DISABLE) {
-                throw new IgniteException("CDC disabled on node. Please, check node log. To continue CDC, please, " +
-                    "use 'control.sh(bat) " + toFormattedCommandName(CdcCommand.class) + ' ' +
-                    toFormattedCommandName(CdcDeleteLostSegmentLinksCommand.class) + "' command. Exiting! " +
+                throw new IgniteException("CDC disabled on node. Please, check node log. Exiting! " +
+                    "To continue CDC, please, use the command: control.sh|bat --cdc delete_lost_segment_links " +
                     "[state=" + curRec.get1() + ']');
             }
 

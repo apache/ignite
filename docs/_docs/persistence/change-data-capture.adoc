@@ -142,19 +142,30 @@ IMPORTANT: `ignite-cdc.sh` implements the fail-fast approach. It just fails in c
  5. Infinitely wait for the newly available segment and process it.
  6. Stop the consumer in case of a failure or a received stop signal.
 
-== Handling skipped segments
+== Disabling CDC
 
-The CDC can be disabled manually or by configured directory maximum size threshold. In this case a hard link creation will be skipped.
+The CDC can be disabled manually or by configured directory maximum size threshold.
 
-WARNING: All changes in skipped segments will be lost!
+WARNING: All changes while CDC is disabled will be lost!
 
-So when enabled there will be gap between segments: `0000000000000002.wal`, `0000000000000010.wal`, `0000000000000011.wal`, for example.
-In this case `ignite-cdc.sh` will fail with the something like "Found missed segments. Some events are missed. Exiting! [lastSegment=2, nextSegment=10]".
+When CDC disabled manually, the special WAL record (CDC disable record) will be written to the end of
+current segment with rollover afterwards. Hard link creation will be skipped for next segments until CDC is enabled.
+For in-memory CDC no changes will be flushed to the WAL.
+
+The CDC application will fail if meets this record while processing segments. Example of error:
+`CDC disabled on node. Please, check node log. Exiting!`
+
+When configured directory maximum size is exceeded, hard link creation will be skipped for this node.
+Once space in the directory is available again, hard link creation will be continued.
+So, there will be gap between segments: `0000000000000002.wal`, `0000000000000010.wal`, `0000000000000011.wal`, for example.
+In this case `ignite-cdc.sh` will fail with something like "Found missed segments. Please, check node log. Exiting! [lastSegment=2, nextSegment=10]".
+
+These errors mean that data changes are lost and administrator attention is required.
 
 NOTE: Make sure you need to sync data before restarting the CDC application. You can synchronize caches using
 link:#forcefully-resend-all-cache-data-to-cdc[resend command], snapshot or other methods.
 
-To fix this error you can run the following link:tools/control-script[Control Script] command:
+To fix these errors you can run the following link:tools/control-script[Control Script] command:
 
 [source,shell]
 ----
@@ -165,25 +176,11 @@ control.sh|bat --cdc delete_lost_segment_links
 control.sh|bat --cdc delete_lost_segment_links --node-id node_id
 ----
 
-The command will remove all segment links before the last gap. For in-memory mode state will be reset to the first record written after CDC enable again.
+The command will remove all segment links before the CDC is disabled or the last gap.
 
 For example, CDC was turned off several times: `000000000000002.wal`, `000000000000003.wal`, `000000000000008.wal`, `0000000000000010.wal`, `0000000000000011.wal`
 Then, after the command is executed, the following segment links will be deleted: `000000000000002.wal`, `000000000000003.wal`, `000000000000008.wal`.
 The application will start from the `0000000000000010.wal` segment after being enabled.
-
-== Handling disabled in-memory CDC
-
-When in-memory CDC disabled, the special WAL record (CDC disable record) will be written on data changes.
-
-WARNING: All changes are skipped when in-memory CDC is disabled.
-
-The CDC application will fail if meets this record while processing segments. Example of error:
-`Found the CDC disable record. Some events are missed. Exiting! [state=WALPointer [idx=1, fileOff=29, len=21]]`
-
-It means that some data changes are skipped and administrator attention is required.
-
-You can reset the CDC application state to the first record written after CDC enable again and fix possible gaps
-using the `delete_lost_segment_links` link:#handling-skipped-segments[command].
 
 == Forcefully resend all cache data to CDC
 

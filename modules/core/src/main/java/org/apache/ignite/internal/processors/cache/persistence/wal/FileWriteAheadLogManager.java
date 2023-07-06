@@ -55,6 +55,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -422,6 +423,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** CDC disabled flag. */
     private final DistributedBooleanProperty cdcDisabled = detachedBooleanProperty(CDC_DISABLED);
 
+    /** The segment index to which the CDC link should be created when CDC is disabled. */
+    private volatile long lastCdcDisableSgmnt = Long.MAX_VALUE;
+
     /**
      * Constructor.
      *
@@ -520,16 +524,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             if (newVal != null && newVal) {
                                 log.warning("CDC was disabled.");
 
-                                if (inMemoryCdc) {
-                                    try {
-                                        log(new CdcDisableRecord());
-                                    }
-                                    catch (IgniteCheckedException e) {
-                                        U.error(log, "Unable to log CDC disable record: " + e.getMessage(), e);
+                                logCdcDisableRecord();
+                            }
 
-                                        cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
-                                    }
-                                }
+                            if (oldVal != null && oldVal && !newVal) {
+                                if (log.isInfoEnabled())
+                                    log.info("CDC was enabled.");
+
+                                lastCdcDisableSgmnt = Long.MAX_VALUE;
                             }
                         });
 
@@ -1846,6 +1848,26 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         return true;
     }
 
+    /** */
+    private void logCdcDisableRecord() {
+        cctx.database().checkpointReadLock();
+
+        try {
+            WALPointer ptr = log(new CdcDisableRecord(), RolloverType.CURRENT_SEGMENT);
+
+            if (ptr == null)
+                throw new IgniteException("CDC disable record was not logged.");
+
+            lastCdcDisableSgmnt = ptr.index();
+        }
+        catch (Exception e) {
+            U.error(log, "Unable to log CDC disable record: " + e.getMessage(), e);
+        }
+        finally {
+            cctx.database().checkpointReadUnlock();
+        }
+    }
+
     /**
      * File archiver operates on absolute segment indexes. For any given absolute segment index N we can calculate the
      * work WAL segment: S(N) = N % dsCfg.walSegments. When a work segment is finished, it is given to the archiver. If
@@ -2178,7 +2200,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 
                 if (walCdcDir != null) {
-                    if (!cdcDisabled.getOrDefault(false)) {
+                    if (absIdx <= lastCdcDisableSgmnt) {
                         if (checkCdcWalDirectorySize(dstFile.length()))
                             Files.createLink(walCdcDir.toPath().resolve(dstFile.getName()), dstFile.toPath());
                         else {
