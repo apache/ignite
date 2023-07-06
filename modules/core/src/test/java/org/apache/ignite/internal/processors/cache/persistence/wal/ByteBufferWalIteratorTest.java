@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -24,9 +26,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Random;
+import java.util.TreeMap;
+import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -36,25 +41,34 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
+import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TimeStampRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.wal.record.RecordUtils;
 import org.apache.ignite.testframework.wal.record.UnsupportedWalRecord;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
 
 /**
  *
@@ -78,6 +92,9 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
     /** */
     private int idx;
 
+    /** */
+    private @Nullable IgniteInternalCache<Object, Object> cache;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -92,7 +109,9 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         sharedCtx = ig.context().cache().context();
 
-        cctx = sharedCtx.cache().cache(CACHE_NAME).context();
+        cache = sharedCtx.cache().cache(CACHE_NAME);
+
+        cctx = cache.context();
 
         RecordSerializerFactory serializerFactory = new RecordSerializerFactoryImpl(sharedCtx);
 
@@ -200,7 +219,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
         ByteBuffer byteBuf = ByteBuffer.allocate(1024 * 1024).order(ByteOrder.nativeOrder());
 
         List<WALRecord> records = Arrays.stream(WALRecord.RecordType.values())
-            .filter(t -> t.purpose() != WALRecord.RecordPurpose.INTERNAL)
+            .filter(t -> t != WALRecord.RecordType.SWITCH_SEGMENT_RECORD)
             .map(RecordUtils::buildWalRecord)
             .filter(Objects::nonNull)
             .filter(r -> !(r instanceof UnsupportedWalRecord))
@@ -377,6 +396,139 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
         }
         catch (NoSuchElementException e) {
             // This is expected.
+        }
+    }
+
+    /** */
+    @Test
+    public void testWalSegmentReadFromDisk() throws Exception {
+        FileDescriptor[] archiveFiles = generateWalFiles(20, 10_000);
+
+        for (int i = 0; i < archiveFiles.length; i++)
+            checkIteratorFromDisk(archiveFiles[i]);
+    }
+
+    /** */
+    private void checkIteratorFromDisk(FileDescriptor fd) throws IOException, IgniteCheckedException {
+        log.info("Checking " + fd.file());
+
+        ByteBuffer byteBuf = loadFile(fd);
+
+        byteBuf.order(ByteOrder.nativeOrder());
+
+        log.info("Bytes count " + byteBuf.limit());
+
+        byteBuf.position(byteBuf.position() + HEADER_RECORD_SIZE);
+
+        int p0 = byteBuf.position();
+
+        ByteBufferWalIterator walIterator = new ByteBufferWalIterator(log, sharedCtx, byteBuf, (int)fd.getIdx());
+
+        Map<WALRecord.RecordType, Integer> counts = new TreeMap<>();
+
+        while (walIterator.hasNext()) {
+            int p1 = byteBuf.position();
+
+            IgniteBiTuple<WALPointer, WALRecord> next = walIterator.next();
+
+            if (log.isDebugEnabled())
+                log.debug("Got " + next.get2().type() + " at " + next.get1());
+
+            assertEquals("WalPointer offset check failed", p0, next.get1().fileOffset());
+
+            assertEquals("WalPointer length check failed", p1 - p0, next.get1().length());
+
+            p0 = p1;
+
+            counts.merge(next.get2().type(), 1, (x, y) -> x + y);
+
+            assertTrue(next != null);
+        }
+
+        assertFalse("ByteBuffer has some unprocessed bytes", byteBuf.hasRemaining());
+
+        printStats(fd, counts);
+    }
+
+    /** */
+    private void printStats(FileDescriptor fd, Map<WALRecord.RecordType, Integer> counts) {
+        ArrayList<WALRecord.RecordType> types = new ArrayList<>(counts.keySet());
+
+        types.sort((x, y) -> -counts.get(x).compareTo(counts.get(y)));
+
+        int len = types.stream().map(x -> x.toString().length()).max(Integer::compare).get();
+
+        char[] spaces = new char[len];
+
+        Arrays.fill(spaces, ' ');
+
+        StringBuilder sb = new StringBuilder("Statistics:");
+
+        types.forEach(x -> sb.append("\n\t")
+            .append(x)
+            .append(spaces, 0, len - x.toString().length())
+            .append("\t")
+            .append(counts.get(x)));
+
+        log.info(sb.toString());
+    }
+
+    /** */
+    @NotNull private ByteBuffer loadFile(FileDescriptor fd) throws IOException {
+        File file = fd.file();
+
+        int size = (int)file.length();
+
+        FileInputStream fileInputStream = new FileInputStream(file);
+
+        final byte[] bytes = new byte[size];
+
+        int length = fileInputStream.read(bytes);
+
+        assertTrue(length == size);
+
+        ByteBuffer byteBuf = ByteBuffer.wrap(bytes);
+
+        return byteBuf;
+    }
+
+    /** */
+    private FileDescriptor[] generateWalFiles(int files, int size) throws IgniteCheckedException {
+        Random random = new Random();
+
+        IgniteCacheDatabaseSharedManager sharedMgr = ig.context().cache().context().database();
+
+        IgniteWriteAheadLogManager walMgr = ig.context().cache().context().wal();
+
+        for (int fileNo = 0; fileNo < files; fileNo++) {
+            for (int i = 0; i < size; i++) {
+                switch (random.nextInt(2)) {
+                    case 0:
+                        cache.put(random.nextInt(100), "Cache value " + random.nextInt());
+                        break;
+                    case 1:
+                        cache.remove(random.nextInt(100));
+                        break;
+                }
+            }
+
+            sharedMgr.checkpointReadLock();
+
+            try {
+                walMgr.log(new SnapshotRecord(fileNo, false), RolloverType.NEXT_SEGMENT);
+            }
+            finally {
+                sharedMgr.checkpointReadUnlock();
+            }
+        }
+
+        while (true) {
+            FileDescriptor[] archiveFiles = ((FileWriteAheadLogManager)walMgr).walArchiveFiles();
+
+            if (archiveFiles.length >= files)
+                return archiveFiles;
+
+            LockSupport.parkNanos(10_000_000);
         }
     }
 }

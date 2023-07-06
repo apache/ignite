@@ -89,12 +89,16 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorApdator {
         IgniteBiTuple<WALPointer, WALRecord> result;
 
         WALPointer actualFilePtr = new WALPointer(idx, buf.position(), 0);
+
         try {
             WALRecord rec = serializer.readRecord(dataInput, actualFilePtr);
 
             actualFilePtr.length(rec.size());
 
             result = new IgniteBiTuple<>(actualFilePtr, rec);
+        }
+        catch (SegmentEofException e) {
+            return null;
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
