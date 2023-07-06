@@ -31,10 +31,8 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
     /**
      * @param buf New buffer.
      */
-    public ByteBufferBackedDataInput buffer(ByteBuffer buf) {
+    public ByteBufferBackedDataInputImpl(ByteBuffer buf) {
         this.buf = buf;
-
-        return this;
     }
 
     /** {@inheritDoc} */
@@ -44,7 +42,7 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
 
     /** {@inheritDoc} */
     @Override public void ensure(int requested) throws IOException {
-        if (buffer().remaining() < requested)
+        if (buf.remaining() < requested)
             throw new IOException("Requested size is greater than buffer: " + requested);
     }
 
@@ -52,14 +50,14 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
     @Override public void readFully(@NotNull byte[] b) throws IOException {
         ensure(b.length);
 
-        buffer().get(b);
+        buf.get(b);
     }
 
     /** {@inheritDoc} */
     @Override public void readFully(@NotNull byte[] b, int off, int len) throws IOException {
         ensure(b.length);
 
-        buffer().get(b, off, len);
+        buf.get(b, off, len);
     }
 
     /**
@@ -68,7 +66,7 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
     @Override public int skipBytes(int n) throws IOException {
         ensure(n);
 
-        buffer().position(buffer().position() + n);
+        buf.position(buf.position() + n);
 
         return n;
     }
@@ -86,7 +84,7 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
     @Override public byte readByte() throws IOException {
         ensure(1);
 
-        return buffer().get();
+        return buf.get();
     }
 
     /**
@@ -102,7 +100,7 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
     @Override public short readShort() throws IOException {
         ensure(2);
 
-        return buffer().getShort();
+        return buf.getShort();
     }
 
     /**
@@ -118,7 +116,7 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
     @Override public char readChar() throws IOException {
         ensure(2);
 
-        return buffer().getChar();
+        return buf.getChar();
     }
 
     /**
@@ -127,7 +125,7 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
     @Override public int readInt() throws IOException {
         ensure(4);
 
-        return buffer().getInt();
+        return buf.getInt();
     }
 
     /**
@@ -136,7 +134,7 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
     @Override public long readLong() throws IOException {
         ensure(8);
 
-        return buffer().getLong();
+        return buf.getLong();
     }
 
     /**
@@ -145,7 +143,7 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
     @Override public float readFloat() throws IOException {
         ensure(4);
 
-        return buffer().getFloat();
+        return buf.getFloat();
     }
 
     /**
@@ -154,7 +152,7 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
     @Override public double readDouble() throws IOException {
         ensure(8);
 
-        return buffer().getDouble();
+        return buf.getDouble();
     }
 
     /**
@@ -175,13 +173,13 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
      * {@inheritDoc}
      */
     @Override public long position() {
-        return buffer().position();
+        return buf.position();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override public long size() throws IOException {
-        return buffer().limit();
+        return buf.limit();
     }
 }

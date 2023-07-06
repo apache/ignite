@@ -76,9 +76,7 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
 
         serializer = rsf.createSerializer(ver);
 
-        dataInput = new ByteBufferBackedDataInputImpl();
-
-        dataInput.buffer(buf);
+        dataInput = new ByteBufferBackedDataInputImpl(buf);
 
         advance();
     }

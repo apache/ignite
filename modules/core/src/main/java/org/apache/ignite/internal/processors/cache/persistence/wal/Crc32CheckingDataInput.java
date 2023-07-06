@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 
@@ -44,6 +43,7 @@ public class Crc32CheckingDataInput extends ByteBufferBackedDataInputImpl implem
 
     /** */
     public Crc32CheckingDataInput(ByteBufferBackedDataInput delegate, boolean skipCheck) {
+        super(delegate.buffer());
         this.delegate = delegate;
         this.lastCalcPosition = buffer().position();
         this.skipCheck = skipCheck;
@@ -97,12 +97,5 @@ public class Crc32CheckingDataInput extends ByteBufferBackedDataInputImpl implem
         crc.update(delegate.buffer(), oldPos - lastCalcPosition);
 
         lastCalcPosition = oldPos;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public ByteBuffer buffer() {
-        return delegate.buffer();
     }
 }
