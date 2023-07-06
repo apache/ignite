@@ -18,18 +18,15 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.cache.index.ScheduleIndexRebuildTask;
-import org.apache.ignite.internal.visor.cache.index.ScheduleIndexRebuildTaskRes;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
+import static org.apache.ignite.internal.management.api.CommandUtils.nodeOrAll;
 
 /** Index rebuild via the maintenance mode. */
 public class CacheScheduleIndexesRebuildCommand
@@ -51,13 +48,8 @@ public class CacheScheduleIndexesRebuildCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(
-        Map<UUID, GridClientNode> nodes,
-        CacheScheduleIndexesRebuildCommandArg arg
-    ) {
-        return arg.nodeId() != null
-            ? Collections.singleton(arg.nodeId())
-            : nodes.keySet();
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, CacheScheduleIndexesRebuildCommandArg arg) {
+        return nodeOrAll(arg.nodeId(), nodes);
     }
 
     /** {@inheritDoc} */

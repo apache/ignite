@@ -50,7 +50,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommand;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
@@ -65,8 +64,8 @@ import org.apache.ignite.logger.java.JavaLoggerFileHandler;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+
 import static java.lang.String.join;
 import static java.lang.System.lineSeparator;
 import static java.nio.file.Files.delete;
@@ -81,7 +80,7 @@ import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
-import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
+import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
 
 /**
  * Common abstract class for testing {@link CommandHandler}.
@@ -90,7 +89,7 @@ import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPar
  * {@link GridCommandHandlerClusterByClassAbstractTest}
  */
 @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
-public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
+public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerFactoryAbstractTest {
     /** */
     protected static final String CLIENT_NODE_NAME_PREFIX = "client";
 
@@ -347,7 +346,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
      * @return Result of execution
      */
     protected int execute(List<String> args) {
-        return execute(new CommandHandler(createTestLogger()), args);
+        return execute(newCommandHandler(createTestLogger()), args);
     }
 
     /**
@@ -357,14 +356,14 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
      * @param args Arguments.
      * @return Result of execution
      */
-    protected int execute(CommandHandler hnd, String... args) {
+    protected int execute(TestCommandHandler hnd, String... args) {
         return execute(hnd, new ArrayList<>(asList(args)));
     }
 
     /**
      * Before command executed {@link #testOut} reset.
      */
-    protected int execute(CommandHandler hnd, List<String> args) {
+    protected int execute(TestCommandHandler hnd, List<String> args) {
         if (!F.isEmpty(args) && !"--help".equalsIgnoreCase(args.get(0)))
             addExtraArguments(args);
 
@@ -374,7 +373,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         lastOperationResult = hnd.getLastOperationResult();
 
         // Flush all Logger handlers to make log data available to test.
-        U.<IgniteLoggerEx>field(hnd, "logger").flush();
+        hnd.flushLogger();
 
         return exitCode;
     }

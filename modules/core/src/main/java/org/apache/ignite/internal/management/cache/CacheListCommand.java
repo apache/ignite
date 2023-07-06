@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -27,31 +26,23 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.LocalCommand;
-import org.apache.ignite.internal.processors.cache.verify.CacheInfo;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.cache.VisorCacheAffinityConfiguration;
-import org.apache.ignite.internal.visor.cache.VisorCacheConfiguration;
-import org.apache.ignite.internal.visor.cache.VisorCacheConfigurationCollectorTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheConfigurationCollectorTaskArg;
-import org.apache.ignite.internal.visor.cache.VisorCacheEvictionConfiguration;
-import org.apache.ignite.internal.visor.cache.VisorCacheNearConfiguration;
-import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceConfiguration;
-import org.apache.ignite.internal.visor.cache.VisorCacheStoreConfiguration;
-import org.apache.ignite.internal.visor.query.VisorQueryConfiguration;
-import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
-import org.apache.ignite.internal.visor.verify.VisorViewCacheTask;
-import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskResult;
-import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
-import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
-import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
+import org.jetbrains.annotations.Nullable;
+
+import static java.util.Collections.singletonList;
+import static org.apache.ignite.internal.management.api.CommandUtils.nodes;
+import static org.apache.ignite.internal.management.cache.ViewCacheCmd.CACHES;
+import static org.apache.ignite.internal.management.cache.ViewCacheCmd.GROUPS;
+import static org.apache.ignite.internal.management.cache.ViewCacheCmd.SEQ;
 
 /** Prints info regarding caches, groups or sequences. */
-public class CacheListCommand implements LocalCommand<CacheListCommandArg, VisorViewCacheTaskResult> {
+public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewCacheTaskResult> {
     /** */
     Function<CacheListCommandArg, Predicate<GridClientNode>> FILTER = arg -> node ->
         node.connectable() && (arg.nodeId() == null || Objects.equals(node.nodeId(), arg.nodeId()));
@@ -68,16 +59,17 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
     }
 
     /** {@inheritDoc} */
-    @Override public VisorViewCacheTaskResult execute(
-        GridClient cli,
+    @Override public ViewCacheTaskResult execute(
+        @Nullable GridClient cli,
+        @Nullable Ignite ignite,
         CacheListCommandArg arg,
         Consumer<String> printer
-    ) throws Exception {
-        VisorViewCacheCmd cmd = arg.groups()
+    ) throws GridClientException {
+        ViewCacheCmd cmd = arg.groups()
             ? GROUPS
             : (arg.seq() ? SEQ : CACHES);
 
-        Optional<GridClientNode> node = cli.compute().nodes()
+        Optional<GridClientNode> node = nodes(cli, ignite)
             .stream()
             .filter(FILTER.apply(arg))
             .findFirst();
@@ -85,13 +77,10 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
         if (!node.isPresent())
             throw new IllegalArgumentException("Node not found: id=" + arg.nodeId());
 
-        VisorViewCacheTaskResult res = cli.compute().projection(node.get()).execute(
-            VisorViewCacheTask.class.getName(),
-            new VisorTaskArgument<>(Collections.singleton(node.get().nodeId()), arg, false)
-        );
+        ViewCacheTaskResult res = CommandUtils.execute(cli, ignite, ViewCacheTask.class, arg, singletonList(node.get()));
 
         if (arg.config() && cmd == CACHES)
-            cachesConfig(cli, arg, res, printer);
+            cachesConfig(cli, ignite, arg, res, printer);
         else
             printCacheInfos(res.cacheInfos(), cmd, printer);
 
@@ -105,22 +94,22 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
      */
     private void cachesConfig(
         GridClient cli,
+        Ignite ignite,
         CacheListCommandArg arg,
-        VisorViewCacheTaskResult viewRes,
+        ViewCacheTaskResult viewRes,
         Consumer<String> printer
     ) throws GridClientException {
-        Collection<GridClientNode> nodes = cli.compute().nodes()
+        Collection<GridClientNode> nodes = nodes(cli, ignite)
             .stream()
             .filter(FILTER.apply(arg))
             .collect(Collectors.toSet());
 
-        Map<String, VisorCacheConfiguration> res = cli.compute().projection(nodes).execute(
-            VisorCacheConfigurationCollectorTask.class.getName(),
-            new VisorTaskArgument<>(
-                nodes.stream().map(GridClientNode::nodeId).collect(Collectors.toSet()),
-                new VisorCacheConfigurationCollectorTaskArg(arg.regex()),
-                false
-            )
+        Map<String, CacheConfiguration> res = CommandUtils.execute(
+            cli,
+            ignite,
+            CacheConfigurationCollectorTask.class,
+            new CacheConfigurationCollectorTaskArg(arg.regex()),
+            nodes
         );
 
         Map<String, Integer> cacheToMapped =
@@ -135,7 +124,7 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
      * @param infos Caches info.
      * @param cmd Command.
      */
-    private void printCacheInfos(Collection<CacheInfo> infos, VisorViewCacheCmd cmd, Consumer<String> printer) {
+    private void printCacheInfos(Collection<CacheInfo> infos, ViewCacheCmd cmd, Consumer<String> printer) {
         for (CacheInfo info : infos) {
             Map<String, Object> map = info.toMap(cmd);
 
@@ -160,13 +149,13 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
      * @param cacheToMapped Map cache name to mapped.
      */
     private void printCachesConfig(
-        Map<String, VisorCacheConfiguration> caches,
+        Map<String, CacheConfiguration> caches,
         OutputFormat outputFormat,
         Map<String, Integer> cacheToMapped,
         Consumer<String> printer
     ) {
 
-        for (Map.Entry<String, VisorCacheConfiguration> entry : caches.entrySet()) {
+        for (Map.Entry<String, CacheConfiguration> entry : caches.entrySet()) {
             String cacheName = entry.getKey();
 
             switch (outputFormat) {
@@ -175,10 +164,10 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
 
                     params.put("Mapped", cacheToMapped.get(cacheName));
 
-                    printer.accept(String.format("[cache = '%s']%n", cacheName));
+                    printer.accept(String.format("[cache = '%s']", cacheName));
 
                     for (Map.Entry<String, Object> innerEntry : params.entrySet())
-                        printer.accept(String.format("%s: %s%n", innerEntry.getKey(), innerEntry.getValue()));
+                        printer.accept(String.format("%s: %s", innerEntry.getKey(), innerEntry.getValue()));
 
                     printer.accept("");
 
@@ -187,7 +176,7 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
                 default:
                     int mapped = cacheToMapped.get(cacheName);
 
-                    printer.accept(String.format("%s: %s %s=%s%n", entry.getKey(), toString(entry.getValue()), "mapped", mapped));
+                    printer.accept(String.format("%s: %s %s=%s", entry.getKey(), toString(entry.getValue()), "mapped", mapped));
 
                     break;
             }
@@ -195,20 +184,20 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
     }
 
     /**
-     * Maps VisorCacheConfiguration to key-value pairs.
+     * Maps CacheConfiguration to key-value pairs.
      *
      * @param cfg Visor cache configuration.
      * @return map of key-value pairs.
      */
-    private static Map<String, Object> mapToPairs(VisorCacheConfiguration cfg) {
+    private static Map<String, Object> mapToPairs(CacheConfiguration cfg) {
         Map<String, Object> params = new LinkedHashMap<>();
 
-        VisorCacheAffinityConfiguration affinityCfg = cfg.getAffinityConfiguration();
-        VisorCacheNearConfiguration nearCfg = cfg.getNearConfiguration();
-        VisorCacheRebalanceConfiguration rebalanceCfg = cfg.getRebalanceConfiguration();
-        VisorCacheEvictionConfiguration evictCfg = cfg.getEvictionConfiguration();
-        VisorCacheStoreConfiguration storeCfg = cfg.getStoreConfiguration();
-        VisorQueryConfiguration qryCfg = cfg.getQueryConfiguration();
+        CacheAffinityConfiguration affinityCfg = cfg.getAffinityConfiguration();
+        CacheNearConfiguration nearCfg = cfg.getNearConfiguration();
+        CacheRebalanceConfiguration rebalanceCfg = cfg.getRebalanceConfiguration();
+        CacheEvictionConfiguration evictCfg = cfg.getEvictionConfiguration();
+        CacheStoreConfiguration storeCfg = cfg.getStoreConfiguration();
+        QueryConfiguration qryCfg = cfg.getQueryConfiguration();
 
         params.put("Name", cfg.getName());
         params.put("Group", cfg.getGroupName());
@@ -301,7 +290,7 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
      * @param cfg Visor cache configuration for invocation.
      * @return String representation without class name in begin of string.
      */
-    private String toString(VisorCacheConfiguration cfg) {
+    private String toString(CacheConfiguration cfg) {
         return cfg.toString().substring(cfg.getClass().getSimpleName().length() + 1);
     }
 

@@ -22,7 +22,11 @@ import org.apache.ignite.IgniteEncryption;
 
 /**
  * Encryption features MBean.
+ *
+ * @see org.apache.ignite.internal.management.api.CommandMBean
+ * @deprecated Use managements API beans, instead.
  */
+@Deprecated
 @MXBeanDescription("MBean that provides access to encryption features.")
 public interface EncryptionMXBean {
     /**

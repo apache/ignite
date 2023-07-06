@@ -18,21 +18,17 @@
 package org.apache.ignite.internal.management.consistency;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.NoArg;
-import org.apache.ignite.internal.visor.consistency.VisorConsistencyStatusTask;
-import org.apache.ignite.internal.visor.consistency.VisorConsistencyTaskResult;
 import org.apache.ignite.lang.IgniteExperimental;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.servers;
 
 /** */
 @IgniteExperimental
-public class ConsistencyStatusCommand implements ComputeCommand<NoArg, VisorConsistencyTaskResult> {
+public class ConsistencyStatusCommand implements ComputeCommand<NoArg, ConsistencyTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Cache consistency check/repair operations status";
@@ -44,17 +40,17 @@ public class ConsistencyStatusCommand implements ComputeCommand<NoArg, VisorCons
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorConsistencyStatusTask> taskClass() {
-        return VisorConsistencyStatusTask.class;
+    @Override public Class<ConsistencyStatusTask> taskClass() {
+        return ConsistencyStatusTask.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, NoArg arg) {
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, NoArg arg) {
         return servers(nodes);
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(NoArg arg, VisorConsistencyTaskResult res, Consumer<String> printer) {
+    @Override public void printResult(NoArg arg, ConsistencyTaskResult res, Consumer<String> printer) {
         if (res.cancelled())
             printer.accept("Operation execution cancelled.\n\n");
 

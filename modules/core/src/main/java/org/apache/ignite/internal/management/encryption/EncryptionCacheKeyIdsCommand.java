@@ -20,8 +20,7 @@ package org.apache.ignite.internal.management.encryption;
 import java.util.List;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.encryption.VisorCacheGroupEncryptionTaskResult;
-import org.apache.ignite.internal.visor.encryption.VisorEncryptionKeyIdsTask;
+
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 
 /** */
@@ -37,14 +36,14 @@ public class EncryptionCacheKeyIdsCommand extends CacheGroupEncryptionCommand<Li
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorEncryptionKeyIdsTask> taskClass() {
-        return VisorEncryptionKeyIdsTask.class;
+    @Override public Class<EncryptionKeyIdsTask> taskClass() {
+        return EncryptionKeyIdsTask.class;
     }
 
     /** {@inheritDoc} */
     @Override public void printResult(
         EncryptionCacheGroupArg arg,
-        VisorCacheGroupEncryptionTaskResult<List<Integer>> res,
+        CacheGroupEncryptionTaskResult<List<Integer>> res,
         Consumer<String> printer
     ) {
         printer.accept("Encryption key identifiers for cache: " + arg.cacheGroupName());

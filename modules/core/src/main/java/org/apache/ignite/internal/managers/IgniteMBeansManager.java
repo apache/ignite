@@ -18,10 +18,13 @@
 package org.apache.ignite.internal.managers;
 
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 import javax.management.JMException;
 import javax.management.ObjectName;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.ClusterLocalNodeMetricsMXBeanImpl;
 import org.apache.ignite.internal.ClusterMetricsMXBeanImpl;
@@ -33,6 +36,9 @@ import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.TransactionMetricsMxBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
+import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.CommandMBean;
+import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.managers.encryption.EncryptionMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationMXBeanImpl;
@@ -63,6 +69,9 @@ import org.apache.ignite.mxbean.TransactionMetricsMxBean;
 import org.apache.ignite.mxbean.TransactionsMXBean;
 import org.apache.ignite.mxbean.WarmUpMXBean;
 import org.apache.ignite.mxbean.WorkersControlMXBean;
+
+import static org.apache.ignite.internal.management.api.CommandUtils.executable;
+import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
 
 /**
  * Class that registers and unregisters MBeans for kernal.
@@ -175,6 +184,8 @@ public class IgniteMBeansManager {
         PerformanceStatisticsMBeanImpl performanceStatMbean = new PerformanceStatisticsMBeanImpl(ctx);
         registerMBean("PerformanceStatistics", performanceStatMbean.getClass().getSimpleName(), performanceStatMbean,
             PerformanceStatisticsMBean.class);
+
+        registerManagementBeans();
     }
 
     /**
@@ -220,6 +231,43 @@ public class IgniteMBeansManager {
         }
         catch (JMException e) {
             throw new IgniteCheckedException("Failed to register MBean " + name, e);
+        }
+    }
+
+    /** Registers all management API beans. */
+    private void registerManagementBeans() {
+        ctx.grid().commandsRegistry().commands().forEachRemaining(cmd -> register(cmd.getKey(), new LinkedList<>(), cmd.getValue()));
+    }
+
+    /** Recursively register management commands. */
+    public void register(String name, List<String> parents, Command<?, ?> cmd) {
+        if (cmd instanceof CommandsRegistry) {
+            parents.add(name);
+
+            ((CommandsRegistry<?, ?>)cmd).commands()
+                .forEachRemaining(cmd0 -> register(cmd0.getKey(), parents, cmd0.getValue()));
+
+            parents.remove(parents.size() - 1);
+
+            if (!executable(cmd))
+                return;
+        }
+
+        try {
+            ObjectName objName = U.registerMBean(
+                ctx.config().getMBeanServer(),
+                makeMBeanName(ctx.config().getIgniteInstanceName(), "management", parents, name),
+                new CommandMBean<>(ctx.grid(), cmd),
+                CommandMBean.class
+            );
+
+            mBeanNames.add(objName);
+
+            if (log.isDebugEnabled())
+                log.debug("Registered MBean: " + objName);
+        }
+        catch (JMException e) {
+            throw new IgniteException("Failed to register MBean " + cmd.getClass().getSimpleName(), e);
         }
     }
 

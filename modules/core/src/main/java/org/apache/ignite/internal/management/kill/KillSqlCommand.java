@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.management.kill;
 
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTask;
 
 /** */
 public class KillSqlCommand implements ComputeCommand<KillSqlCommandArg, Void> {
@@ -33,7 +32,7 @@ public class KillSqlCommand implements ComputeCommand<KillSqlCommandArg, Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorQueryCancelOnInitiatorTask> taskClass() {
-        return VisorQueryCancelOnInitiatorTask.class;
+    @Override public Class<QueryCancelOnInitiatorTask> taskClass() {
+        return QueryCancelOnInitiatorTask.class;
     }
 }

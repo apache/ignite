@@ -403,6 +403,11 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     }
 
     /** {@inheritDoc} */
+    @Override public void state(ClusterState newState, boolean force) throws IgniteException {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
     @Override public ShutdownPolicy shutdownPolicy() {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }

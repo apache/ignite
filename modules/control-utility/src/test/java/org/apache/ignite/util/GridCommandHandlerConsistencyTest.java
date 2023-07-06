@@ -31,6 +31,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.consistency.ConsistencyStatusTask;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -41,7 +42,6 @@ import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.consistency.VisorConsistencyStatusTask;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
@@ -52,7 +52,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
-import static org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND;
+import static org.apache.ignite.internal.management.consistency.ConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.LogListener.matches;
 
@@ -92,16 +92,19 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** */
-    @Parameterized.Parameters(name = "strategy={0}, explicitGrp={1}, callByGrp={2}")
+    @Parameterized.Parameters(name = "cmdHnd={0}, strategy={1}, explicitGrp={2}, callByGrp={3}")
     public static Iterable<Object[]> data() {
         List<Object[]> res = new ArrayList<>();
 
-        for (ReadRepairStrategy strategy : ReadRepairStrategy.values()) {
-            for (boolean explicitGrp : new boolean[] {false, true}) {
-                if (explicitGrp)
-                    res.add(new Object[] {strategy, explicitGrp, true});
+        int cntr = 0;
+        List<String> invokers = commandHandlers();
 
-                res.add(new Object[] {strategy, explicitGrp, false});
+        for (ReadRepairStrategy strategy : ReadRepairStrategy.values()) {
+            for (boolean explicitGrp : new boolean[]{false, true}) {
+                if (explicitGrp)
+                    res.add(new Object[]{invokers.get(cntr++ % invokers.size()), strategy, explicitGrp, true});
+
+                res.add(new Object[]{invokers.get(cntr++ % invokers.size()), strategy, explicitGrp, false});
             }
         }
 
@@ -111,19 +114,19 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     /**
      *
      */
-    @Parameterized.Parameter
+    @Parameterized.Parameter(1)
     public ReadRepairStrategy strategy;
 
     /**
      * True when cache defined via group.
      */
-    @Parameterized.Parameter(1)
+    @Parameterized.Parameter(2)
     public boolean explicitGrp;
 
     /**
      * True when cache consistency repair called by group name.
      */
-    @Parameterized.Parameter(2)
+    @Parameterized.Parameter(3)
     public boolean callByGrp;
 
     /**
@@ -309,7 +312,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
                     PARTITIONS_ARG, String.valueOf(i),
                     STRATEGY, strategy.toString()));
 
-            assertTrue(VisorConsistencyStatusTask.MAP.isEmpty());
+            assertTrue(ConsistencyStatusTask.MAP.isEmpty());
 
             assertContains(log, testOut.toString(), "Cache (or cache group) not found");
         }
@@ -332,7 +335,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
                     IntStream.range(from, i).mapToObj(Integer::toString).collect(Collectors.joining(",")),
                 STRATEGY, strategy.toString()));
 
-            assertTrue(VisorConsistencyStatusTask.MAP.isEmpty());
+            assertTrue(ConsistencyStatusTask.MAP.isEmpty());
 
             assertContains(log, testOut.toString(), CONSISTENCY_VIOLATIONS_FOUND);
             assertContains(log, testOut.toString(), "[found=1, repaired=" + repairsPerEntry.toString());

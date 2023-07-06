@@ -21,24 +21,20 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationCommandArg;
-import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTask;
-import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTaskResult;
 import org.apache.ignite.lang.IgniteExperimental;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.coordinatorOrNull;
 
 /** */
 @IgniteExperimental
-public class TracingConfigurationCommand extends CommandRegistryImpl<TracingConfigurationCommandArg, VisorTracingConfigurationTaskResult>
-    implements ComputeCommand<TracingConfigurationCommandArg, VisorTracingConfigurationTaskResult> {
+public class TracingConfigurationCommand extends CommandRegistryImpl<TracingConfigurationCommandArg, TracingConfigurationTaskResult>
+    implements ComputeCommand<TracingConfigurationCommandArg, TracingConfigurationTaskResult> {
     /** */
     public TracingConfigurationCommand() {
         super(
@@ -61,19 +57,19 @@ public class TracingConfigurationCommand extends CommandRegistryImpl<TracingConf
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorTracingConfigurationTask> taskClass() {
-        return VisorTracingConfigurationTask.class;
+    @Override public Class<TracingConfigurationTask> taskClass() {
+        return TracingConfigurationTask.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, TracingConfigurationCommandArg arg) {
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, TracingConfigurationCommandArg arg) {
         return coordinatorOrNull(nodes);
     }
 
     /** {@inheritDoc} */
     @Override public void printResult(
         TracingConfigurationCommandArg arg,
-        VisorTracingConfigurationTaskResult res,
+        TracingConfigurationTaskResult res,
         Consumer<String> printer
     ) {
         res.print(printer);

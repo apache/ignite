@@ -18,19 +18,13 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.processors.cache.verify.ContentionInfo;
-import org.apache.ignite.internal.visor.verify.VisorContentionTask;
-import org.apache.ignite.internal.visor.verify.VisorContentionTaskResult;
 
 /** Prints info about contended keys (the keys concurrently locked from multiple transactions). */
-public class CacheContentionCommand implements ComputeCommand<CacheContentionCommandArg, VisorContentionTaskResult> {
+public class CacheContentionCommand implements ComputeCommand<CacheContentionCommandArg, ContentionTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Show the keys that are point of contention for multiple transactions";
@@ -42,17 +36,17 @@ public class CacheContentionCommand implements ComputeCommand<CacheContentionCom
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorContentionTask> taskClass() {
-        return VisorContentionTask.class;
+    @Override public Class<ContentionTask> taskClass() {
+        return ContentionTask.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, CacheContentionCommandArg arg) {
-        return arg.nodeId() == null ? nodes.keySet() : Collections.singleton(arg.nodeId());
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, CacheContentionCommandArg arg) {
+        return CommandUtils.nodeOrAll(arg.nodeId(), nodes);
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(CacheContentionCommandArg arg, VisorContentionTaskResult res, Consumer<String> printer) {
+    @Override public void printResult(CacheContentionCommandArg arg, ContentionTaskResult res, Consumer<String> printer) {
         CommandUtils.printErrors(res.exceptions(), "Contention check failed on nodes:", printer);
 
         for (ContentionInfo info : res.getInfos())

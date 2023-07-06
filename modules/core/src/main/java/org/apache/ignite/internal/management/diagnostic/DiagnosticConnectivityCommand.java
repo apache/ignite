@@ -23,20 +23,17 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.diagnostic.availability.VisorConnectivityResult;
-import org.apache.ignite.internal.visor.diagnostic.availability.VisorConnectivityTask;
 
 import static org.apache.ignite.internal.util.IgniteUtils.EMPTY_UUIDS;
 
 /** */
 public class DiagnosticConnectivityCommand
-    implements ComputeCommand<DiagnosticConnectivityCommandArg, Map<ClusterNode, VisorConnectivityResult>> {
+    implements ComputeCommand<DiagnosticConnectivityCommandArg, Map<ClusterNode, ConnectivityResult>> {
     /**
      * Header of output table.
      */
@@ -71,14 +68,14 @@ public class DiagnosticConnectivityCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorConnectivityTask> taskClass() {
-        return VisorConnectivityTask.class;
+    @Override public Class<ConnectivityTask> taskClass() {
+        return ConnectivityTask.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, DiagnosticConnectivityCommandArg arg) {
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, DiagnosticConnectivityCommandArg arg) {
         // Task runs on default node but maps to all nodes in cluster.
-        arg.nodes(nodes.keySet().toArray(EMPTY_UUIDS));
+        arg.nodes(nodes.stream().map(GridClientNode::nodeId).collect(Collectors.toList()).toArray(EMPTY_UUIDS));
 
         return null;
     }
@@ -86,7 +83,7 @@ public class DiagnosticConnectivityCommand
     /** {@inheritDoc} */
     @Override public void printResult(
         DiagnosticConnectivityCommandArg arg,
-        Map<ClusterNode, VisorConnectivityResult> res,
+        Map<ClusterNode, ConnectivityResult> res,
         Consumer<String> printer
     ) {
         final boolean[] hasFailed = {false};
@@ -95,14 +92,14 @@ public class DiagnosticConnectivityCommand
 
         table.add(TABLE_HEADER);
 
-        for (Map.Entry<ClusterNode, VisorConnectivityResult> entry : res.entrySet()) {
+        for (Map.Entry<ClusterNode, ConnectivityResult> entry : res.entrySet()) {
             ClusterNode key = entry.getKey();
 
             String id = key.id().toString();
             String consId = key.consistentId().toString();
             String isClient = key.isClient() ? NODE_TYPE_CLIENT : NODE_TYPE_SERVER;
 
-            VisorConnectivityResult value = entry.getValue();
+            ConnectivityResult value = entry.getValue();
 
             Map<ClusterNode, Boolean> statuses = value.getNodeIds();
 

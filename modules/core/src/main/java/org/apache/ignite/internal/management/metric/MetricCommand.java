@@ -21,19 +21,17 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CliSubcommandsWithPrefix;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.metric.VisorMetricTask;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.management.SystemViewCommand.printTable;
+import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.STRING;
 import static org.apache.ignite.internal.management.api.CommandUtils.nodeOrNull;
-import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
 /** Command for printing metric values. */
 @CliSubcommandsWithPrefix
@@ -58,13 +56,13 @@ public class MetricCommand extends CommandRegistryImpl<MetricCommandArg, Map<Str
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorMetricTask> taskClass() {
-        return VisorMetricTask.class;
+    @Override public Class<MetricTask> taskClass() {
+        return MetricTask.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, MetricCommandArg arg) {
-        return nodeOrNull(arg.nodeId());
+    @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, MetricCommandArg arg) {
+        return nodeOrNull(arg.nodeId(), nodes);
     }
 
     /** {@inheritDoc} */

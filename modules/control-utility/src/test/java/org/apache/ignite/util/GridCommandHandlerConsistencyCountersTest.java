@@ -71,9 +71,9 @@ import static org.apache.ignite.cache.ReadRepairStrategy.PRIMARY;
 import static org.apache.ignite.cache.ReadRepairStrategy.RELATIVE_MAJORITY;
 import static org.apache.ignite.cache.ReadRepairStrategy.REMOVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.management.consistency.ConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND;
+import static org.apache.ignite.internal.management.consistency.ConsistencyRepairTask.NOTHING_FOUND;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.DFLT_WAL_MARGIN_FOR_ATOMIC_CACHE_HISTORICAL_REBALANCE;
-import static org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND;
-import static org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask.NOTHING_FOUND;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.LogListener.matches;
@@ -97,12 +97,23 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
     public static Iterable<Object[]> data() {
         List<Object[]> res = new ArrayList<>();
 
+        int cntr = 0;
+        List<String> invokers = commandHandlers();
+
         for (ReadRepairStrategy strategy : ReadRepairStrategy.values()) {
             for (boolean reuse : new boolean[] {false, true}) {
                 for (boolean historical : new boolean[] {false, true}) {
                     for (CacheAtomicityMode atomicityMode : new CacheAtomicityMode[] {ATOMIC, TRANSACTIONAL}) {
-                        for (boolean walRestore: new boolean[] {false, true})
-                            res.add(new Object[] {strategy, reuse, historical, atomicityMode, walRestore});
+                        for (boolean walRestore: new boolean[] {false, true}) {
+                            res.add(new Object[]{
+                                invokers.get(cntr++ % invokers.size()),
+                                strategy,
+                                reuse,
+                                historical,
+                                atomicityMode,
+                                walRestore
+                            });
+                        }
                     }
                 }
             }
@@ -114,31 +125,31 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
     /**
      * ReadRepair strategy
      */
-    @Parameterized.Parameter
+    @Parameterized.Parameter(1)
     public ReadRepairStrategy strategy;
 
     /**
      * When true, updates will reuse already existing keys.
      */
-    @Parameterized.Parameter(1)
+    @Parameterized.Parameter(2)
     public boolean reuseKeys;
 
     /**
      * When true, historical rebalance will be used instead of full.
      */
-    @Parameterized.Parameter(2)
+    @Parameterized.Parameter(3)
     public boolean historical;
 
     /**
      * Cache atomicity mode
      */
-    @Parameterized.Parameter(3)
+    @Parameterized.Parameter(4)
     public CacheAtomicityMode atomicityMode;
 
     /**
      * Ignite nodes use WAL for restoring logical updates at restart after the crash.
      */
-    @Parameterized.Parameter(4)
+    @Parameterized.Parameter(5)
     public boolean walRestore;
 
     /** Listening logger. */

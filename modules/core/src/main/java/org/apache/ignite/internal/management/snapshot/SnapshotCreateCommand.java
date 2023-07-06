@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTask;
-
 /** */
 public class SnapshotCreateCommand extends AbstractSnapshotCommand<SnapshotCreateCommandArg> {
     /** {@inheritDoc} */
@@ -32,7 +30,7 @@ public class SnapshotCreateCommand extends AbstractSnapshotCommand<SnapshotCreat
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorSnapshotCreateTask> taskClass() {
-        return VisorSnapshotCreateTask.class;
+    @Override public Class<SnapshotCreateTask> taskClass() {
+        return SnapshotCreateTask.class;
     }
 }

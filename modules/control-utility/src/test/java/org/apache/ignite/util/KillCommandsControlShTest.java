@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.ReadRepairStrategy;
@@ -30,15 +31,17 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.management.consistency.ConsistencyRepairTask;
+import org.apache.ignite.internal.management.consistency.ConsistencyStatusTask;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask;
-import org.apache.ignite.internal.visor.consistency.VisorConsistencyStatusTask;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.systemview.view.ComputeJobView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
@@ -77,6 +80,14 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
     /** */
     private static List<IgniteEx> srvs;
 
+    /** */
+    private Consumer<T3<UUID, String, Long>> killScan = args -> {
+        int res = execute("--kill", "scan", args.get1().toString(), args.get2(), args.get3().toString());
+
+        assertEquals(EXIT_CODE_OK, res);
+    };
+
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -109,11 +120,7 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
     /** @throws Exception If failed. */
     @Test
     public void testCancelScanQuery() throws Exception {
-        doTestScanQueryCancel(client, srvs, args -> {
-            int res = execute("--kill", "scan", args.get1().toString(), args.get2(), args.get3().toString());
-
-            assertEquals(EXIT_CODE_OK, res);
-        });
+        doTestScanQueryCancel(client, srvs, killScan);
     }
 
     /** @throws Exception If failed. */
@@ -163,7 +170,7 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
             int res = execute("--kill", "continuous", nodeId.toString(), routineId.toString());
 
             assertEquals(EXIT_CODE_OK, res);
-        });
+        }, killScan);
     }
 
     /** @throws Exception If failed. */
@@ -280,6 +287,8 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
      *
      */
     private void testCancelConsistencyTask(boolean parallel) throws InterruptedException {
+        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
+
         String consistencyCacheName = "consistencyCache";
 
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>();
@@ -301,7 +310,7 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
 
         Thread th = new Thread(() -> {
             IgnitePredicate<ComputeJobView> repairJobFilter =
-                job -> job.taskClassName().equals(VisorConsistencyRepairTask.class.getName());
+                job -> job.taskClassName().equals(ConsistencyRepairTask.class.getName());
 
             boolean foundOnce = false;
 
@@ -327,7 +336,7 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
             assertEquals(EXIT_CODE_OK, res);
 
             assertContains(log, testOut.toString(), "Status: 128/" + entries);
-            assertNotContains(log, testOut.toString(), VisorConsistencyStatusTask.NOTHING_FOUND);
+            assertNotContains(log, testOut.toString(), ConsistencyStatusTask.NOTHING_FOUND);
 
             testOut.reset();
 
@@ -395,7 +404,7 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
 
         assertContains(log, testOut.toString(), "Operation execution cancelled.");
         assertContains(log, testOut.toString(), "Consistency task was interrupted.");
-        assertNotContains(log, testOut.toString(), VisorConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND);
+        assertNotContains(log, testOut.toString(), ConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND);
 
         thLatch.await();
 
@@ -412,7 +421,7 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
 
         assertEquals(EXIT_CODE_OK, res);
 
-        assertContains(log, testOut.toString(), VisorConsistencyStatusTask.NOTHING_FOUND);
+        assertContains(log, testOut.toString(), ConsistencyStatusTask.NOTHING_FOUND);
         assertNotContains(log, testOut.toString(), "Status");
     }
 }
