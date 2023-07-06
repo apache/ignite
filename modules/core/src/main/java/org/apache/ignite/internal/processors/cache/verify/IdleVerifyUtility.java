@@ -31,10 +31,13 @@ import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -281,7 +284,11 @@ public class IdleVerifyUtility {
                 state == GridDhtPartitionState.MOVING ?
                     PartitionHashRecordV2.MOVING_PARTITION_SIZE : 0,
                 state == GridDhtPartitionState.MOVING ?
-                    PartitionHashRecordV2.PartitionState.MOVING : PartitionHashRecordV2.PartitionState.LOST);
+                    PartitionHashRecordV2.PartitionState.MOVING : PartitionHashRecordV2.PartitionState.LOST,
+                0,
+                0,
+                0,
+                0);
         }
 
         if (state != GridDhtPartitionState.OWNING)
@@ -289,6 +296,10 @@ public class IdleVerifyUtility {
 
         int partHash = 0;
         int partVerHash = 0;
+        int compactFooterEntries = 0;
+        int noCompactFooterEntries = 0;
+        int binaryObjectKeys = 0;
+        int regularTypeKeys = 0;
 
         while (it.hasNextX()) {
             CacheDataRow row = it.nextX();
@@ -298,10 +309,35 @@ public class IdleVerifyUtility {
 
             // Object context is not required since the valueBytes have been read directly from page.
             partHash += Arrays.hashCode(row.value().valueBytes(null));
+
+            if (row.key().cacheObjectType() == CacheObject.TYPE_BINARY) {
+                binaryObjectKeys++;
+
+                assert row.key() instanceof BinaryObjectEx;
+
+                if (((BinaryObjectEx)row.key()).isFlagSet(BinaryUtils.FLAG_COMPACT_FOOTER))
+                    compactFooterEntries++;
+                else
+                    noCompactFooterEntries++;
+            }
+            else
+                regularTypeKeys++;
         }
 
-        return new PartitionHashRecordV2(partKey, isPrimary, consId, partHash, partVerHash, updCntr,
-            partSize, PartitionHashRecordV2.PartitionState.OWNING);
+        return new PartitionHashRecordV2(
+            partKey,
+            isPrimary,
+            consId,
+            partHash,
+            partVerHash,
+            updCntr,
+            partSize,
+            PartitionHashRecordV2.PartitionState.OWNING,
+            compactFooterEntries,
+            noCompactFooterEntries,
+            binaryObjectKeys,
+            regularTypeKeys
+        );
     }
 
     /**

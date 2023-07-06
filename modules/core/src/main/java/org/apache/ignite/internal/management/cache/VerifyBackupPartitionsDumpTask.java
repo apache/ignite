@@ -240,13 +240,32 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<CacheIdle
         if (!F.isEmpty(partitions)) {
             writer.write("Cluster partitions:\n");
 
+            long compactFooterEntries = 0;
+            long noCompactFooterEntries = 0;
+            long binaryObjectKeys = 0;
+            long regularTypeKeys = 0;
+
             for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : partitions.entrySet()) {
                 writer.write("Partition: " + entry.getKey() + "\n");
 
                 writer.write("Partition instances: " + entry.getValue() + "\n");
+
+                if (!entry.getValue().isEmpty()) {
+                    PartitionHashRecordV2 rec = entry.getValue().get(0);
+
+                    compactFooterEntries += rec.compactFooterEntries();
+                    noCompactFooterEntries += rec.noCompactFooterEntries();
+                    binaryObjectKeys += rec.binaryObjectKeys();
+                    regularTypeKeys += rec.regularTypeKeys();
+                }
             }
 
             writer.write("\n\n-----------------------------------\n\n");
+
+            writer.write("Entries info [compactFooterEntries = " + compactFooterEntries +
+                ", noCompactFooterEntries = " + noCompactFooterEntries +
+                ", binaryObjectKeys = " + binaryObjectKeys +
+                ", regularTypeKeys = " + regularTypeKeys + "]\n\n");
 
             conflictRes.print(writer::write, true);
         }

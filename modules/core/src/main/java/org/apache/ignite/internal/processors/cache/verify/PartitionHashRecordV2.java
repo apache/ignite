@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Objects;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -69,6 +71,33 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
     private PartitionState partitionState;
 
     /**
+     * Count of entries with compact footer.
+     *
+     * @see BinaryConfiguration#isCompactFooter()
+     */
+    @GridToStringExclude
+    private int compactFooterEntries;
+
+    /**
+     * Count of entries without compact footer.
+     *
+     * @see BinaryConfiguration#isCompactFooter()
+     */
+    @GridToStringExclude
+    private int noCompactFooterEntries;
+
+    /**
+     * Count of entries with binary object key.
+     * @see GridBinaryMarshaller#BINARY_OBJ
+     */
+    @GridToStringExclude
+    private int binaryObjectKeys;
+
+    /** Count of entries with type that directly supported by {@link GridBinaryMarshaller}. */
+    @GridToStringExclude
+    private int regularTypeKeys;
+
+    /**
      * @param partKey Partition key.
      * @param isPrimary Is primary.
      * @param consistentId Consistent id.
@@ -86,7 +115,11 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         int partVerHash,
         Object updateCntr,
         long size,
-        PartitionState partitionState
+        PartitionState partitionState,
+        int compactFooterEntries,
+        int noCompactFooterEntries,
+        int binaryObjectKeys,
+        int regularyTypeKeys
     ) {
         this.partKey = partKey;
         this.isPrimary = isPrimary;
@@ -96,6 +129,10 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         this.updateCntr = updateCntr;
         this.size = size;
         this.partitionState = partitionState;
+        this.compactFooterEntries = compactFooterEntries;
+        this.noCompactFooterEntries = noCompactFooterEntries;
+        this.binaryObjectKeys = binaryObjectKeys;
+        this.regularTypeKeys = regularyTypeKeys;
     }
 
     /**
@@ -160,6 +197,26 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         return partitionState;
     }
 
+    /** */
+    public int compactFooterEntries() {
+        return compactFooterEntries;
+    }
+
+    /** */
+    public int noCompactFooterEntries() {
+        return noCompactFooterEntries;
+    }
+
+    /** */
+    public int binaryObjectKeys() {
+        return binaryObjectKeys;
+    }
+
+    /** */
+    public int regularTypeKeys() {
+        return regularTypeKeys;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeObject(partKey);
@@ -170,6 +227,10 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         out.writeObject(updateCntr);
         out.writeLong(size);
         U.writeEnum(out, partitionState);
+        out.writeInt(compactFooterEntries);
+        out.writeInt(noCompactFooterEntries);
+        out.writeInt(binaryObjectKeys);
+        out.writeInt(regularTypeKeys);
     }
 
     /** {@inheritDoc} */
@@ -182,16 +243,11 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         partVerHash = in.readInt();
         updateCntr = in.readObject();
         size = in.readLong();
-
-        if (protoVer >= V2)
-            partitionState = PartitionState.fromOrdinal(in.readByte());
-        else
-            partitionState = size == MOVING_PARTITION_SIZE ? PartitionState.MOVING : PartitionState.OWNING;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V2;
+        partitionState = PartitionState.fromOrdinal(in.readByte());
+        compactFooterEntries = in.readInt();
+        noCompactFooterEntries = in.readInt();
+        binaryObjectKeys = in.readInt();
+        regularTypeKeys = in.readInt();
     }
 
     /** {@inheritDoc} */
@@ -213,12 +269,15 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
 
         return partHash == v2.partHash && partVerHash == v2.partVerHash && Objects.equals(updateCntr, v2.updateCntr) &&
             size == v2.size && partKey.equals(v2.partKey) && consistentId.equals(v2.consistentId) &&
-            partitionState == v2.partitionState;
+            partitionState == v2.partitionState &&
+            compactFooterEntries == v2.compactFooterEntries && noCompactFooterEntries == v2.noCompactFooterEntries &&
+            binaryObjectKeys == v2.binaryObjectKeys && regularTypeKeys == v2.regularTypeKeys;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(partKey, consistentId, partHash, partVerHash, updateCntr, size, partitionState);
+        return Objects.hash(partKey, consistentId, partHash, partVerHash, updateCntr, size, partitionState,
+            compactFooterEntries, noCompactFooterEntries, binaryObjectKeys, regularTypeKeys);
     }
 
     /** **/

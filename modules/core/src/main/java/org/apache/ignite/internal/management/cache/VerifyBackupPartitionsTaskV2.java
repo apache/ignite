@@ -58,11 +58,11 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import static java.util.Collections.emptyMap;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
@@ -81,9 +81,6 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
  */
 @GridInternal
 public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVerifyCommandArg, IdleVerifyResultV2> {
-    /** First version of Ignite that is capable of executing Idle Verify V2. */
-    public static final IgniteProductVersion V2_SINCE_VER = IgniteProductVersion.fromString("2.5.3");
-
     /** Injected logger. */
     @LoggerResource
     private IgniteLogger log;
@@ -180,7 +177,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
         private IgniteLogger log;
 
         /** Idle verify arguments. */
-        private CacheIdleVerifyCommandArg arg;
+        private final CacheIdleVerifyCommandArg arg;
 
         /** Counter of processed partitions. */
         private final AtomicInteger completionCntr = new AtomicInteger(0);
@@ -261,7 +258,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
         /**
          * Class that processes cache filtering chain.
          */
-        private class CachesFiltering {
+        private static class CachesFiltering {
             /**
              * Initially all cache descriptors are included.
              */
@@ -385,7 +382,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
          * @return boolean result
          */
         private boolean doesGrpMatchFilter(CacheGroupContext grp) {
-            for (GridCacheContext cacheCtx : grp.caches()) {
+            for (GridCacheContext<?, ?> cacheCtx : grp.caches()) {
                 DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(cacheCtx.name());
 
                 if (isCacheMatchFilter(desc))
@@ -408,7 +405,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
                 if (grp.name() != null && pattern.matcher(grp.name()).matches())
                     return true;
 
-                for (GridCacheContext cacheCtx : grp.caches())
+                for (GridCacheContext<?, ?> cacheCtx : grp.caches())
                     if (cacheCtx.name() != null && pattern.matcher(cacheCtx.name()).matches())
                         return true;
             }
@@ -422,7 +419,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<CacheIdleVe
         private boolean isCacheMatchFilter(DynamicCacheDescriptor desc) {
             DataStorageConfiguration dsCfg = ignite.context().config().getDataStorageConfiguration();
 
-            CacheConfiguration cc = desc.cacheConfiguration();
+            CacheConfiguration<?, ?> cc = desc.cacheConfiguration();
 
             switch (arg.cacheFilter()) {
                 case DEFAULT:

@@ -378,7 +378,12 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                             e.getValue().verHash,
                             null,
                             0,
-                            null)
+                            null,
+                            0,
+                            0,
+                            0,
+                            0
+                        )
                     ));
 
                 if (log.isInfoEnabled()) {

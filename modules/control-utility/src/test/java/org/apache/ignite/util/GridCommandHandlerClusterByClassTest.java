@@ -723,6 +723,8 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             assertContains(log, dumpWithZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=0]");
             assertContains(log, dumpWithZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
             assertContains(log, dumpWithZeros, "no conflicts have been found");
+            assertContains(log, dumpWithZeros, "Entries info [compactFooterEntries = 0, noCompactFooterEntries = 0, " +
+                "binaryObjectKeys = 0, regularTypeKeys = 20]");
 
             assertSort(parts, dumpWithZeros);
         }
@@ -741,6 +743,8 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             assertNotContains(log, dumpWithoutZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
 
             assertContains(log, dumpWithoutZeros, "no conflicts have been found");
+            assertContains(log, dumpWithoutZeros, "Entries info [compactFooterEntries = 0, noCompactFooterEntries = 0, " +
+                "binaryObjectKeys = 0, regularTypeKeys = 20]");
 
             assertSort(keysCount, dumpWithoutZeros);
         }
