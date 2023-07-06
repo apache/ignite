@@ -84,7 +84,6 @@ import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.future.CountDownFuture;
-import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -235,11 +234,8 @@ public class PageMemoryImpl implements PageMemoryEx {
      */
     @Nullable private final DelayedPageReplacementTracker delayedPageReplacementTracker;
 
-    /**
-     * Callback invoked to track changes in pages.
-     * {@code Null} if page tracking functionality is disabled
-     * */
-    @Nullable private final GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker;
+    /** Obsolete feature. Flag keeped for compatibility with existing PDS. */
+    private final boolean trackable;
 
     /** Pages write throttle. */
     private PagesWriteThrottlePolicy writeThrottle;
@@ -275,7 +271,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @param pmPageMgr Page store manager.
      * @param pageSize Page size.
      * @param flushDirtyPage write callback invoked when a dirty page is removed for replacement.
-     * @param changeTracker Callback invoked to track changes in pages.
+     * @param trackable Obsolete flag. Keeped for compatibility with existing PDS.
      * @param stateChecker Checkpoint lock state provider. Used to ensure lock is held by thread, which modify pages.
      * @param dataRegionMetrics Memory metrics to track dirty pages count and page replace rate.
      * @param throttlingPlc Write throttle enabled and its type. Null equal to none.
@@ -288,7 +284,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         PageReadWriteManager pmPageMgr,
         int pageSize,
         PageStoreWriter flushDirtyPage,
-        @Nullable GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker,
+        boolean trackable,
         CheckpointLockStateChecker stateChecker,
         DataRegionMetricsImpl dataRegionMetrics,
         @Nullable ThrottlingPolicy throttlingPlc,
@@ -308,7 +304,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             getBoolean(IGNITE_DELAYED_REPLACED_PAGE_WRITE, DFLT_DELAYED_REPLACED_PAGE_WRITE)
                 ? new DelayedPageReplacementTracker(pageSize, flushDirtyPage, log, sizes.length - 1) :
                 null;
-        this.changeTracker = changeTracker;
+        this.trackable = trackable;
         this.stateChecker = stateChecker;
         this.throttlingPlc = throttlingPlc != null ? throttlingPlc : ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY;
         this.cpProgressProvider = cpProgressProvider;
@@ -557,7 +553,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         seg.writeLock().lock();
 
-        boolean isTrackingPage = changeTracker != null &&
+        boolean isTrackingPage = trackable &&
             PageIdUtils.pageIndex(trackingIO.trackingPageFor(pageId, realPageSize(grpId))) == PageIdUtils.pageIndex(pageId);
 
         if (isTrackingPage && PageIdUtils.flag(pageId) == PageIdAllocator.FLAG_AUX)
@@ -1719,10 +1715,6 @@ public class PageMemoryImpl implements PageMemoryEx {
         boolean wasDirty = isDirty(page);
 
         try {
-            //if page is for restore, we shouldn't mark it as changed
-            if (!restore && markDirty && !wasDirty && changeTracker != null)
-                changeTracker.apply(page, fullId, this);
-
             boolean pageWalRec = markDirty && walPlc != FALSE && (walPlc == TRUE || !wasDirty);
 
             assert PageIO.getCrc(page + PAGE_OVERHEAD) == 0; //TODO GG-11480
