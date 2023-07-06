@@ -716,40 +716,38 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         Matcher fileNameMatcher = dumpFileNameMatcher();
 
-        if (fileNameMatcher.find()) {
-            String dumpWithZeros = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+        assertTrue(fileNameMatcher.find());
 
-            assertContains(log, dumpWithZeros, "The check procedure has finished, found " + parts + " partitions");
-            assertContains(log, dumpWithZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=0]");
-            assertContains(log, dumpWithZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
-            assertContains(log, dumpWithZeros, "no conflicts have been found");
-            assertContains(log, dumpWithZeros, "Entries info [compactFooterEntries = 0, noCompactFooterEntries = 0, " +
-                "binaryObjectKeys = 0, regularTypeKeys = 20]");
+        String dumpWithZeros = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertSort(parts, dumpWithZeros);
-        }
+        assertContains(log, dumpWithZeros, "The check procedure has finished, found " + parts + " partitions");
+        assertContains(log, dumpWithZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=0]");
+        assertContains(log, dumpWithZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
+        assertContains(log, dumpWithZeros, "no conflicts have been found");
+        assertContains(log, dumpWithZeros, "Entries info [compactFooterEntries = 0, noCompactFooterEntries = 0, " +
+            "binaryObjectKeys = 0, regularTypeKeys = 20]");
+
+        assertSort(parts, dumpWithZeros);
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--skip-zeros", DEFAULT_CACHE_NAME));
 
         fileNameMatcher = dumpFileNameMatcher();
 
-        if (fileNameMatcher.find()) {
-            String dumpWithoutZeros = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+        assertTrue(fileNameMatcher.find());
 
-            assertContains(log, dumpWithoutZeros, "The check procedure has finished, found " + keysCount + " partitions");
-            assertContains(log, dumpWithoutZeros, (parts - keysCount) + " partitions was skipped");
-            assertContains(log, dumpWithoutZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=");
+        String dumpWithoutZeros = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertNotContains(log, dumpWithoutZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
+        assertContains(log, dumpWithoutZeros, "The check procedure has finished, found " + keysCount + " partitions");
+        assertContains(log, dumpWithoutZeros, (parts - keysCount) + " partitions was skipped");
+        assertContains(log, dumpWithoutZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=");
 
-            assertContains(log, dumpWithoutZeros, "no conflicts have been found");
-            assertContains(log, dumpWithoutZeros, "Entries info [compactFooterEntries = 0, noCompactFooterEntries = 0, " +
-                "binaryObjectKeys = 0, regularTypeKeys = 20]");
+        assertNotContains(log, dumpWithoutZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
 
-            assertSort(keysCount, dumpWithoutZeros);
-        }
-        else
-            fail("Should be found both files");
+        assertContains(log, dumpWithoutZeros, "no conflicts have been found");
+        assertContains(log, dumpWithoutZeros, "Entries info [compactFooterEntries = 0, noCompactFooterEntries = 0, " +
+            "binaryObjectKeys = 0, regularTypeKeys = 20]");
+
+        assertSort(keysCount, dumpWithoutZeros);
     }
 
     /**
