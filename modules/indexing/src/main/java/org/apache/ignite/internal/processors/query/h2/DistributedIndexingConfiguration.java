@@ -30,8 +30,8 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
+import org.apache.ignite.internal.processors.query.DistributedSqlConfiguration;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.internal.A;
 
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.makeUpdateListener;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.setDefaultValue;
@@ -39,11 +39,7 @@ import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.s
 /**
  * Distributed configuration of the indexing module.
  */
-public class DistributedSqlConfiguration {
-    /** Property update message. */
-    private static final String PROPERTY_UPDATE_MESSAGE =
-        "SQL parameter '%s' was changed from '%s' to '%s'";
-
+public class DistributedIndexingConfiguration extends DistributedSqlConfiguration {
     /** Default disabled SQL functions. */
     public static final HashSet<String> DFLT_DISABLED_FUNCS = (HashSet<String>)Arrays.stream(new String[] {
         "FILE_READ",
@@ -58,19 +54,10 @@ public class DistributedSqlConfiguration {
         "CANCEL_SESSION"
     }).collect(Collectors.toSet());
 
-    /** Default value of the query timeout. */
-    public static final int DFLT_QRY_TIMEOUT = 0;
-
     /** Disabled SQL functions. */
     private final SimpleDistributedProperty<HashSet<String>> disabledSqlFuncs = new SimpleDistributedProperty<>(
         "sql.disabledFunctions",
         SimpleDistributedProperty::parseStringSet
-    );
-
-    /** Query timeout. */
-    private final SimpleDistributedProperty<Integer> dfltQueryTimeout = new SimpleDistributedProperty<>(
-        "sql.defaultQueryTimeout",
-        SimpleDistributedProperty::parseNonNegativeInteger
     );
 
     /**
@@ -84,19 +71,19 @@ public class DistributedSqlConfiguration {
      * @param ctx Kernal context
      * @param log Logger.
      */
-    public DistributedSqlConfiguration(
+    public DistributedIndexingConfiguration(
         GridKernalContext ctx,
         IgniteLogger log
     ) {
+        super(ctx, log);
+
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(
             new DistributedConfigurationLifecycleListener() {
                 @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
                     disabledSqlFuncs.addListener(makeUpdateListener(PROPERTY_UPDATE_MESSAGE, log));
-                    dfltQueryTimeout.addListener(makeUpdateListener(PROPERTY_UPDATE_MESSAGE, log));
 
-                    dispatcher.registerProperties(disabledSqlFuncs);
-                    dispatcher.registerProperties(dfltQueryTimeout);
-                    dispatcher.registerProperties(disableCreateLuceneIndexForStringValueType);
+                    dispatcher.registerProperty(disabledSqlFuncs);
+                    dispatcher.registerProperty(disableCreateLuceneIndexForStringValueType);
                 }
 
                 @Override public void onReadyToWrite() {
@@ -104,11 +91,6 @@ public class DistributedSqlConfiguration {
                         setDefaultValue(
                             disabledSqlFuncs,
                             DFLT_DISABLED_FUNCS,
-                            log);
-
-                        setDefaultValue(
-                            dfltQueryTimeout,
-                            (int)ctx.config().getSqlConfiguration().getDefaultQueryTimeout(),
                             log);
 
                         setDefaultValue(
@@ -122,7 +104,6 @@ public class DistributedSqlConfiguration {
 
                         // Set properties to default.
                         disabledSqlFuncs.localUpdate(null);
-                        dfltQueryTimeout.localUpdate((int)ctx.config().getSqlConfiguration().getDefaultQueryTimeout());
                         disableCreateLuceneIndexForStringValueType.localUpdate(false);
                     }
                 }
@@ -151,31 +132,6 @@ public class DistributedSqlConfiguration {
     /** */
     public void listenDisabledFunctions(DistributePropertyListener<HashSet<String>> lsnr) {
         disabledSqlFuncs.addListener(lsnr);
-    }
-
-    /**
-     * @return Disabled SQL functions.
-     */
-    public int defaultQueryTimeout() {
-        Integer t = dfltQueryTimeout.get();
-
-        return t != null ? t : DFLT_QRY_TIMEOUT;
-    }
-
-    /**
-     * @param timeout Default query timeout.
-     * @throws IgniteCheckedException if failed.
-     */
-    public GridFutureAdapter<?> defaultQueryTimeout(int timeout) throws IgniteCheckedException {
-        A.ensure(timeout >= 0,
-            "default query timeout value must not be negative.");
-
-        return dfltQueryTimeout.propagateAsync(timeout);
-    }
-
-    /** */
-    public void listenDefaultQueryTimeout(DistributePropertyListener<Integer> lsnr) {
-        dfltQueryTimeout.addListener(lsnr);
     }
 
     /** */

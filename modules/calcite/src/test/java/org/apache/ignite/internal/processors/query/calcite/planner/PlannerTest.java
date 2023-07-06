@@ -440,6 +440,7 @@ public class PlannerTest extends AbstractPlannerTest {
             ArrayRowHandler.INSTANCE,
             NoOpMemoryTracker.INSTANCE,
             NoOpIoTracker.INSTANCE,
+            0,
             Commons.parametersMap(ctx.parameters()));
 
         return new LogicalRelImplementor<>(ectx, c -> r -> 0, mailboxRegistry, exchangeSvc,

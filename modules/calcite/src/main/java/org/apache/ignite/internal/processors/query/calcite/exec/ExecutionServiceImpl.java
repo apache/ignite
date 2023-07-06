@@ -579,6 +579,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(localNodeId());
         }
 
+        long timeout = qry.remainingTime();
+
+        if (timeout == 0) {
+            throw new IgniteSQLException("The query was cancelled due to timeout", IgniteQueryErrorCode.QUERY_CANCELED,
+                new QueryCancelledException());
+        }
+
         FragmentDescription fragmentDesc = new FragmentDescription(
             fragment.fragmentId(),
             plan.mapping(fragment),
@@ -596,6 +603,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             handler,
             qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
             createIoTracker(locNodeId, qry.localQueryId()),
+            timeout,
             Commons.parametersMap(qry.parameters()));
 
         Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
@@ -634,7 +642,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                             fragmentDesc,
                             fragmentsPerNode.get(nodeId).intValue(),
                             qry.parameters(),
-                            parametersMarshalled
+                            parametersMarshalled,
+                            timeout
                         );
 
                         messageService().send(nodeId, req);
@@ -777,6 +786,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 handler,
                 qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
                 createIoTracker(nodeId, msg.originatingQryId()),
+                msg.timeout(),
                 Commons.parametersMap(msg.parameters())
             );
 

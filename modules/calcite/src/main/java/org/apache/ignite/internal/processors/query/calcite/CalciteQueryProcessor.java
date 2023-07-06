@@ -221,6 +221,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final CalciteQueryEngineConfiguration cfg;
 
     /** */
+    private final DistributedCalciteConfiguration distrCfg;
+
+    /** */
     private volatile boolean started;
 
     /**
@@ -253,6 +256,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 .findAny()
                 .orElse(new CalciteQueryEngineConfiguration());
         }
+
+        distrCfg = new DistributedCalciteConfiguration(ctx, log);
     }
 
     /**
@@ -548,6 +553,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     ) {
         SqlFieldsQuery fldsQry = qryCtx != null ? qryCtx.unwrap(SqlFieldsQuery.class) : null;
 
+        long timeout = fldsQry != null ? fldsQry.getTimeout() : 0;
+
+        if (timeout <= 0)
+            timeout = distrCfg.defaultQueryTimeout();
+
         RootQuery<Object[]> qry = new RootQuery<>(
             sql,
             schemaHolder.schema(schema),
@@ -557,7 +567,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             exchangeSvc,
             (q, ex) -> qryReg.unregister(q.id(), ex),
             log,
-            queryPlannerTimeout
+            queryPlannerTimeout,
+            timeout
         );
 
         if (qrys != null)
@@ -664,5 +675,10 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     public CalciteQueryEngineConfiguration config() {
         return cfg;
+    }
+
+    /** */
+    public DistributedCalciteConfiguration distributedConfiguration() {
+        return distrCfg;
     }
 }

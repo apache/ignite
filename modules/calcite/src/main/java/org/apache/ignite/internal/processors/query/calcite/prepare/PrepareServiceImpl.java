@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
 
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.runtime.CalciteContextException;
@@ -30,6 +31,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.ValidationException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -104,6 +106,16 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
         }
         catch (ValidationException | CalciteContextException e) {
             throw new IgniteSQLException("Failed to validate query. " + e.getMessage(), IgniteQueryErrorCode.PARSING, e);
+        }
+        catch (RelOptPlanner.CannotPlanException e) {
+            // In most cases this exception is thrown if there is not enough time to produce any working plan
+            // (due to planning timeout).
+            IgniteSQLException ex = new IgniteSQLException("Failed to plan query",
+                IgniteQueryErrorCode.QUERY_CANCELED, new QueryCancelledException());
+
+            ex.addSuppressed(e);
+
+            throw ex;
         }
     }
 

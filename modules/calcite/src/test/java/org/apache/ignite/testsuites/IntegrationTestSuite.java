@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.StdSqlOpe
 import org.apache.ignite.internal.processors.query.calcite.integration.SystemViewsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDmlIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.TimeoutIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcCrossEngineTest;
@@ -121,6 +122,7 @@ import org.junit.runners.Suite;
     LocalDateTimeSupportTest.class,
     DynamicParametersIntegrationTest.class,
     ExpiredEntriesIntegrationTest.class,
+    TimeoutIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }
