@@ -30,12 +30,12 @@ public interface FileInput extends ByteBufferBackedDataInput {
     /**
      * File I/O.
      */
-    public abstract FileIO io();
+    FileIO io();
 
     /**
      * @param pos Position in bytes from file begin.
      */
-    public abstract void seek(long pos) throws IOException;
+    void seek(long pos) throws IOException;
 
     /** {@inheritDoc} */
     @Override public default long size() throws IOException {

@@ -65,6 +65,17 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
     /**
      * {@inheritDoc}
      */
+    @Override public int skipBytes(int n) throws IOException {
+        ensure(n);
+
+        buffer().position(buffer().position() + n);
+
+        return n;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override public boolean readBoolean() throws IOException {
         return readByte() == 1;
     }
@@ -165,17 +176,6 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
      */
     @Override public long position() {
         return buffer().position();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public int skipBytes(int n) throws IOException {
-        ensure(n);
-
-        buffer().position(buffer().position() + n);
-
-        return n;
     }
 
     /**
