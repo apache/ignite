@@ -192,7 +192,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         byteBuf.flip();
 
-        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, idx);
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, idx, RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
 
         Iterator<DataEntry> dataEntriesIter = entries.iterator();
 
@@ -232,7 +232,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         byteBuf.flip();
 
-        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, idx);
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, idx, RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
 
         Iterator<WALRecord> recordsIter = records.iterator();
 
@@ -295,6 +295,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
         byteBuf.flip();
 
         WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, idx,
+            RecordSerializerFactory.LATEST_SERIALIZER_VERSION,
             (t, p) -> t.purpose() == WALRecord.RecordPurpose.LOGICAL);
 
         Iterator<DataEntry> dataEntriesIter = entries.iterator();
@@ -358,7 +359,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         byteBuf.limit((position1 + position2) >> 1);
 
-        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, idx);
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, idx, RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
 
         assertTrue(walIter.hasNext());
 
@@ -385,7 +386,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         byteBuf.flip();
 
-        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, idx);
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, idx, RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
 
         assertFalse(walIter.hasNext());
 
@@ -422,7 +423,8 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         int p0 = byteBuf.position();
 
-        ByteBufferWalIterator walIterator = new ByteBufferWalIterator(log, sharedCtx, byteBuf, (int)fd.getIdx());
+        ByteBufferWalIterator walIterator = new ByteBufferWalIterator(log, sharedCtx, byteBuf, (int)fd.getIdx(),
+            RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
 
         Map<WALRecord.RecordType, Integer> counts = new TreeMap<>();
 

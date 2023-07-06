@@ -53,8 +53,8 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
         @NotNull IgniteLogger log,
         @NotNull GridCacheSharedContext<?, ?> cctx,
         @NotNull ByteBuffer byteBuf,
-        int segmentIdx) throws IgniteCheckedException {
-        this(log, cctx, byteBuf, segmentIdx, null);
+        int segmentIdx, int serVersion) throws IgniteCheckedException {
+        this(log, cctx, byteBuf, segmentIdx, serVersion, null);
     }
 
     /** */
@@ -63,6 +63,7 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
         @NotNull GridCacheSharedContext<?, ?> cctx,
         @NotNull ByteBuffer byteBuf,
         int segmentIdx,
+        int serVersion,
         IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter)
         throws IgniteCheckedException {
         super(log);
@@ -73,7 +74,7 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
 
         RecordSerializerFactory rsf = new RecordSerializerFactoryImpl(cctx, readTypeFilter);
 
-        serializer = rsf.createSerializer(RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
+        serializer = rsf.createSerializer(serVersion);
 
         dataInput = new ByteBufferBackedDataInputImpl();
 

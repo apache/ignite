@@ -20,160 +20,30 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 import java.io.DataInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * ByteBuffer backed data input
  */
-public abstract class ByteBufferBackedDataInput implements DataInput {
+public interface ByteBufferBackedDataInput extends DataInput {
     /**
      * @return ByteBuffer hold by data input
      */
-    public abstract ByteBuffer buffer();
+    public ByteBuffer buffer();
 
     /**
      * ensure that requested count of byte is available in data input and will try to load data if not
      * @param requested Requested number of bytes.
      * @throws IOException If failed.
      */
-    public abstract void ensure(int requested) throws IOException;
+    public void ensure(int requested) throws IOException;
 
     /**
      * @return Position in the stream.
      */
-    public long position() {
-        return buffer().position();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public int skipBytes(int n) throws IOException {
-        ensure(n);
-
-        buffer().position(buffer().position() + n);
-
-        return n;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public void readFully(@NotNull byte[] b) throws IOException {
-        ensure(b.length);
-
-        buffer().get(b);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public void readFully(@NotNull byte[] b, int off, int len) throws IOException {
-        ensure(len);
-
-        buffer().get(b, off, len);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public boolean readBoolean() throws IOException {
-        return readByte() == 1;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public byte readByte() throws IOException {
-        ensure(1);
-
-        return buffer().get();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public int readUnsignedByte() throws IOException {
-        return readByte() & 0xFF;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public short readShort() throws IOException {
-        ensure(2);
-
-        return buffer().getShort();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public int readUnsignedShort() throws IOException {
-        return readShort() & 0xFFFF;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public char readChar() throws IOException {
-        ensure(2);
-
-        return buffer().getChar();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public int readInt() throws IOException {
-        ensure(4);
-
-        return buffer().getInt();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public long readLong() throws IOException {
-        ensure(8);
-
-        return buffer().getLong();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public float readFloat() throws IOException {
-        ensure(4);
-
-        return buffer().getFloat();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public double readDouble() throws IOException {
-        ensure(8);
-
-        return buffer().getDouble();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public String readLine() throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public String readUTF() throws IOException {
-        throw new UnsupportedOperationException();
-    }
+    public long position();
 
     /**
      * Size.
      */
-    public abstract long size() throws IOException;
+    public long size() throws IOException;
 }

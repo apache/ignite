@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDat
 /**
  * Checking of CRC32.
  */
-public class Crc32CheckingDataInput extends ByteBufferBackedDataInput implements AutoCloseable {
+public class Crc32CheckingDataInput extends ByteBufferBackedDataInputImpl implements AutoCloseable {
     /** */
     private final FastCrc crc = new FastCrc();
 
@@ -104,12 +104,5 @@ public class Crc32CheckingDataInput extends ByteBufferBackedDataInput implements
      */
     @Override public ByteBuffer buffer() {
         return delegate.buffer();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public long size() throws IOException {
-        return delegate.size();
     }
 }

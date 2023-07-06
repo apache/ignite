@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBac
  * File input, backed by byte buffer file input.
  * This class allows to read data by chunks from file and then read primitives.
  */
-public abstract class FileInput extends ByteBufferBackedDataInput {
+public interface FileInput extends ByteBufferBackedDataInput {
     /**
      * File I/O.
      */
@@ -38,7 +38,7 @@ public abstract class FileInput extends ByteBufferBackedDataInput {
     public abstract void seek(long pos) throws IOException;
 
     /** {@inheritDoc} */
-    @Override public long size() throws IOException {
+    @Override public default long size() throws IOException {
         return io().size();
     }
 }

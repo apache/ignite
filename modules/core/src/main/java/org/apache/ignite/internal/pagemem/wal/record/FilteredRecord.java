@@ -16,8 +16,6 @@
 */
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractFileWalRecordsIterator;
-
 /**
  * Special type of WAL record. Shouldn't be stored in file.
  * Returned by deserializer if next record is not matched by filter.
