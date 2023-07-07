@@ -115,22 +115,20 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
             try {
                 lock.tryLock(1);
 
-                Long lostSgmnt = findLastLostSegement();
+                Long lastSegBeforeSkip = findLastSegmentBeforeSkip();
 
-                if (lostSgmnt != null)
-                    deleteAll(lostSgmnt);
+                if (lastSegBeforeSkip != null)
+                    deleteAllUntil(lastSegBeforeSkip);
 
-                Long cdcDisableSgmnt = findLastCdcDisableSegment();
+                Long cdcDisableSgmnt = findLastSegmentWithCdcDisabledRecord();
 
                 if (cdcDisableSgmnt != null)
-                    deleteAll(cdcDisableSgmnt);
+                    deleteAllUntil(cdcDisableSgmnt);
 
-                if (lostSgmnt != null || cdcDisableSgmnt != null)
-                    resetWalState();
-                else {
-                    if (log.isInfoEnabled())
-                        log.info("Lost segment CDC links or CDC disable record were not found.");
-                }
+                if (lastSegBeforeSkip != null || cdcDisableSgmnt != null)
+                    deleteCdcWalState();
+                else if (log.isInfoEnabled())
+                    log.info("Lost segment CDC links or CDC disable record were not found.");
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to delete lost segment CDC links. " +
@@ -145,7 +143,7 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
         }
 
         /** @return The index of the segment previous to the last gap or {@code null} if no gaps were found. */
-        private Long findLastLostSegement() {
+        private Long findLastSegmentBeforeSkip() {
             AtomicReference<Long> lastLostSgmnt = new AtomicReference<>();
             AtomicLong lastSgmnt = new AtomicLong(-1);
 
@@ -171,7 +169,7 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
         }
 
         /** @return The index of the segment that contains the last {@link CdcDisableRecord}. */
-        private Long findLastCdcDisableSegment() {
+        private Long findLastSegmentWithCdcDisabledRecord() {
             AtomicReference<Long> lastRec = new AtomicReference<>();
 
             consumeCdcSegments(segment -> {
@@ -208,7 +206,7 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
         }
 
         /** */
-        private void resetWalState() {
+        private void deleteCdcWalState() {
             Path stateDir = walCdcDir.toPath().resolve(STATE_DIR);
 
             File state = stateDir.resolve(WAL_STATE_FILE_NAME).toFile();
@@ -217,11 +215,11 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
                 throw new IgniteException("Failed to delete wal state file [file=" + state.getAbsolutePath() + ']');
 
             if (log.isInfoEnabled())
-                log.info("The CDC application WAL state has been reset.");
+                log.info("The CDC application WAL state has been deleted.");
         }
 
         /** Delete all segments with an absolute index less than or equal to the given one. */
-        private void deleteAll(long lastIdx) {
+        private void deleteAllUntil(long lastIdx) {
             consumeCdcSegments(segment -> {
                 if (FileWriteAheadLogManager.segmentIndex(segment) > lastIdx)
                     return;
