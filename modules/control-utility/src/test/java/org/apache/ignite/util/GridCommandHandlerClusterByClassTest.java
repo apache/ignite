@@ -706,7 +706,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         int keysCount = 20; //less than parts number for ability to check skipZeros flag.
 
-        IgniteCache<?, ?> cache = createCacheAndPreload(ignite, keysCount);
+        createCacheAndPreload(ignite, keysCount);
 
         int parts = ignite.affinity(DEFAULT_CACHE_NAME).partitions();
 
@@ -761,7 +761,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertSort(keysCount, dumpWithoutZeros);
 
         for (int i = 0; i < keysCount / 2; i++)
-            ((IgniteCache<TestClass, Integer>)cache).put(new TestClass(i, String.valueOf(i)), i);
+            ignite.cache(DEFAULT_CACHE_NAME).put(new TestClass(i, String.valueOf(i)), i);
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", DEFAULT_CACHE_NAME));
 
@@ -790,7 +790,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         }
 
         for (int i = 0; i < keysCount; i++)
-            ((IgniteCache<String, Integer>)cache).put(String.valueOf(i), i);
+            ignite.cache(DEFAULT_CACHE_NAME).put(String.valueOf(i), i);
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", DEFAULT_CACHE_NAME));
 
