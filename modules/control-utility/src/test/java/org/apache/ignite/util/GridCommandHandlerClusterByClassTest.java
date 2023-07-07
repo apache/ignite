@@ -763,13 +763,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertTrue(fileNameMatcher.find());
 
-        assertCompactFooterStatistics(
-            keysCount / 2,
-            0,
-            keysCount / 2,
-            keysCount,
-            new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))))
-        );
+        String report = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+        assertCompactFooterStatistics(keysCount / 2, 0, keysCount / 2, keysCount, report);
 
         ClientConfiguration cliCfg = new ClientConfiguration()
             .setAddresses("127.0.0.1:10800")
@@ -792,13 +788,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertTrue(fileNameMatcher.find());
 
-        assertCompactFooterStatistics(
-            keysCount / 2,
-            keysCount * 2,
-            keysCount / 2 + keysCount * 2,
-            keysCount * 2,
-            new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))))
-        );
+        report = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+        assertCompactFooterStatistics(keysCount / 2, keysCount * 2, keysCount / 2 + keysCount * 2, keysCount * 2, report);
     }
 
     /** */
