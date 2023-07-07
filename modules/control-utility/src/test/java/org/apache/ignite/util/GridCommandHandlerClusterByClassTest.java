@@ -728,11 +728,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             assertContains(log, dumpWithZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=0]");
             assertContains(log, dumpWithZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
             assertContains(log, dumpWithZeros, "no conflicts have been found");
-            assertContains(log, dumpWithZeros, "Entries info [" +
-                "compactFooterEntries = 0, " +
-                "noCompactFooterEntries = 0, " +
-                "binaryObjectKeys = 0, " +
-                "regularTypeKeys = " + keysCount + "]");
+            assertCompactFooterStatistics(0, 0, 0, keysCount, dumpWithZeros);
 
             assertSort(parts, dumpWithZeros);
         }
@@ -751,11 +747,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             assertNotContains(log, dumpWithoutZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
 
             assertContains(log, dumpWithoutZeros, "no conflicts have been found");
-            assertContains(log, dumpWithoutZeros, "Entries info [" +
-                "compactFooterEntries = 0, " +
-                "noCompactFooterEntries = 0, " +
-                "binaryObjectKeys = 0, " +
-                "regularTypeKeys = " + keysCount + "]");
+            assertCompactFooterStatistics(0, 0, 0, keysCount, dumpWithoutZeros);
 
             assertSort(keysCount, dumpWithoutZeros);
         }
@@ -771,13 +763,13 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertTrue(fileNameMatcher.find());
 
-        String report = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
-
-        assertContains(log, report, "Entries info [" +
-            "compactFooterEntries = " + (keysCount / 2) + ", " +
-            "noCompactFooterEntries = 0" + ", " +
-            "binaryObjectKeys = " + (keysCount / 2) + ", " +
-            "regularTypeKeys = " + keysCount + "]");
+        assertCompactFooterStatistics(
+            keysCount / 2,
+            0,
+            keysCount / 2,
+            keysCount,
+            new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))))
+        );
 
         ClientConfiguration cliCfg = new ClientConfiguration()
             .setAddresses("127.0.0.1:10800")
@@ -800,13 +792,28 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertTrue(fileNameMatcher.find());
 
-        report = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+        assertCompactFooterStatistics(
+            keysCount / 2,
+            keysCount * 2,
+            keysCount / 2 + keysCount * 2,
+            keysCount * 2,
+            new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))))
+        );
+    }
 
-        assertContains(log, report, "Entries info [" +
-            "compactFooterEntries = " + (keysCount / 2) + ", " +
-            "noCompactFooterEntries = " + (keysCount * 2) + ", " +
-            "binaryObjectKeys = " + (keysCount / 2 + keysCount * 2) + ", " +
-            "regularTypeKeys = " + keysCount * 2 + "]");
+    /** */
+    private static void assertCompactFooterStatistics(
+        long compactFooterEntries,
+        long noCompactFooterEntries,
+        long binaryObjectKeys,
+        long regularTypeKeys,
+        String report
+    ) {
+        assertContains(log, report, "CompactFooter statistic [" +
+            "compactFooterEntries=" + compactFooterEntries + ", " +
+            "noCompactFooterEntries=" + noCompactFooterEntries + ", " +
+            "binaryObjectKeys=" + binaryObjectKeys + ", " +
+            "regularTypeKeys=" + regularTypeKeys + "]");
     }
 
     /**

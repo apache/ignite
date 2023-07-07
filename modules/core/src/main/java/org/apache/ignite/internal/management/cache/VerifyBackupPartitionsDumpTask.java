@@ -262,10 +262,10 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<CacheIdle
 
             writer.write("\n\n-----------------------------------\n\n");
 
-            writer.write("Entries info [compactFooterEntries = " + compactFooterEntries +
-                ", noCompactFooterEntries = " + noCompactFooterEntries +
-                ", binaryObjectKeys = " + binaryObjectKeys +
-                ", regularTypeKeys = " + regularTypeKeys + "]\n\n");
+            writer.write("CompactFooter statistic [compactFooterEntries=" + compactFooterEntries +
+                ", noCompactFooterEntries=" + noCompactFooterEntries +
+                ", binaryObjectKeys=" + binaryObjectKeys +
+                ", regularTypeKeys=" + regularTypeKeys + "]\n\n");
 
             conflictRes.print(writer::write, true);
         }
