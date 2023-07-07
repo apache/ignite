@@ -106,6 +106,10 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
      * @param updateCntr Update counter.
      * @param size Size.
      * @param partitionState Partition state.
+     * @param compactFooterEntries Count of entries with compact footer.
+     * @param noCompactFooterEntries Count of entries without compact footer.
+     * @param binaryObjectKeys Count of {@link org.apache.ignite.binary.BinaryObject} keys.
+     * @param regularyTypeKeys Count of type supported by Ignite out of the box (numbers, strings, etc).
      */
     public PartitionHashRecordV2(
         PartitionKeyV2 partKey,
@@ -243,11 +247,21 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         partVerHash = in.readInt();
         updateCntr = in.readObject();
         size = in.readLong();
-        partitionState = PartitionState.fromOrdinal(in.readByte());
+
+        if (protoVer >= V2)
+            partitionState = PartitionState.fromOrdinal(in.readByte());
+        else
+            partitionState = size == MOVING_PARTITION_SIZE ? PartitionState.MOVING : PartitionState.OWNING;
+
         compactFooterEntries = in.readInt();
         noCompactFooterEntries = in.readInt();
         binaryObjectKeys = in.readInt();
         regularTypeKeys = in.readInt();
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
     }
 
     /** {@inheritDoc} */
