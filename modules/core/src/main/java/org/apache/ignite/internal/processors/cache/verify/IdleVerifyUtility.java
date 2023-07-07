@@ -32,12 +32,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -52,9 +50,11 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.binary.BinaryUtils.FLAG_COMPACT_FOOTER;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_AUX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
+import static org.apache.ignite.internal.processors.cache.CacheObject.TYPE_BINARY;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 
 /**
@@ -310,12 +310,10 @@ public class IdleVerifyUtility {
             // Object context is not required since the valueBytes have been read directly from page.
             partHash += Arrays.hashCode(row.value().valueBytes(null));
 
-            if (row.key().cacheObjectType() == CacheObject.TYPE_BINARY) {
+            if (row.key().cacheObjectType() == TYPE_BINARY) {
                 binaryObjectKeys++;
 
-                assert row.key() instanceof BinaryObjectEx;
-
-                if (((BinaryObjectEx)row.key()).isFlagSet(BinaryUtils.FLAG_COMPACT_FOOTER))
+                if (((BinaryObjectEx)row.key()).isFlagSet(FLAG_COMPACT_FOOTER))
                     compactFooterEntries++;
                 else
                     noCompactFooterEntries++;
