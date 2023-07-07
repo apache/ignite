@@ -296,10 +296,10 @@ public class IdleVerifyUtility {
 
         int partHash = 0;
         int partVerHash = 0;
-        int cfEntries = 0;
-        int noCfEntries = 0;
-        int binKeys = 0;
-        int regKeys = 0;
+        int cf = 0;
+        int noCf = 0;
+        int binary = 0;
+        int regular = 0;
 
         while (it.hasNextX()) {
             CacheDataRow row = it.nextX();
@@ -311,15 +311,15 @@ public class IdleVerifyUtility {
             partHash += Arrays.hashCode(row.value().valueBytes(null));
 
             if (row.key().cacheObjectType() == TYPE_BINARY) {
-                binKeys++;
+                binary++;
 
                 if (((BinaryObjectEx)row.key()).isFlagSet(FLAG_COMPACT_FOOTER))
-                    cfEntries++;
+                    cf++;
                 else
-                    noCfEntries++;
+                    noCf++;
             }
             else
-                regKeys++;
+                regular++;
         }
 
         return new PartitionHashRecordV2(
@@ -331,10 +331,10 @@ public class IdleVerifyUtility {
             updCntr,
             partSize,
             PartitionHashRecordV2.PartitionState.OWNING,
-            cfEntries,
-            noCfEntries,
-            binKeys,
-            regKeys
+            cf,
+            noCf,
+            binary,
+            regular
         );
     }
 

@@ -76,7 +76,7 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
      * @see BinaryConfiguration#isCompactFooter()
      */
     @GridToStringExclude
-    private int cfEntries;
+    private int cfKeys;
 
     /**
      * Count of entries without compact footer.
@@ -84,7 +84,7 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
      * @see BinaryConfiguration#isCompactFooter()
      */
     @GridToStringExclude
-    private int noCfEntries;
+    private int noCfKeys;
 
     /**
      * Count of entries with binary object key.
@@ -106,8 +106,8 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
      * @param updateCntr Update counter.
      * @param size Size.
      * @param partitionState Partition state.
-     * @param cfEntries Count of entries with compact footer.
-     * @param noCfEntries Count of entries without compact footer.
+     * @param cfKeys Count of entries with compact footer.
+     * @param noCfKeys Count of entries without compact footer.
      * @param binKeys Count of {@link org.apache.ignite.binary.BinaryObject} keys.
      * @param regKeys Count of type supported by Ignite out of the box (numbers, strings, etc).
      */
@@ -120,8 +120,8 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         Object updateCntr,
         long size,
         PartitionState partitionState,
-        int cfEntries,
-        int noCfEntries,
+        int cfKeys,
+        int noCfKeys,
         int binKeys,
         int regKeys
     ) {
@@ -133,8 +133,8 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         this.updateCntr = updateCntr;
         this.size = size;
         this.partitionState = partitionState;
-        this.cfEntries = cfEntries;
-        this.noCfEntries = noCfEntries;
+        this.cfKeys = cfKeys;
+        this.noCfKeys = noCfKeys;
         this.binKeys = binKeys;
         this.regKeys = regKeys;
     }
@@ -202,13 +202,13 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
     }
 
     /** */
-    public int compactFooterEntries() {
-        return cfEntries;
+    public int compactFooterKeys() {
+        return cfKeys;
     }
 
     /** */
-    public int noCompactFooterEntries() {
-        return noCfEntries;
+    public int noCompactFooterKeys() {
+        return noCfKeys;
     }
 
     /** */
@@ -231,8 +231,8 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         out.writeObject(updateCntr);
         out.writeLong(size);
         U.writeEnum(out, partitionState);
-        out.writeInt(cfEntries);
-        out.writeInt(noCfEntries);
+        out.writeInt(cfKeys);
+        out.writeInt(noCfKeys);
         out.writeInt(binKeys);
         out.writeInt(regKeys);
     }
@@ -253,8 +253,8 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         else
             partitionState = size == MOVING_PARTITION_SIZE ? PartitionState.MOVING : PartitionState.OWNING;
 
-        cfEntries = in.readInt();
-        noCfEntries = in.readInt();
+        cfKeys = in.readInt();
+        noCfKeys = in.readInt();
         binKeys = in.readInt();
         regKeys = in.readInt();
     }
@@ -284,14 +284,14 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         return partHash == v2.partHash && partVerHash == v2.partVerHash && Objects.equals(updateCntr, v2.updateCntr) &&
             size == v2.size && partKey.equals(v2.partKey) && consistentId.equals(v2.consistentId) &&
             partitionState == v2.partitionState &&
-            cfEntries == v2.cfEntries && noCfEntries == v2.noCfEntries &&
+            cfKeys == v2.cfKeys && noCfKeys == v2.noCfKeys &&
             binKeys == v2.binKeys && regKeys == v2.regKeys;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(partKey, consistentId, partHash, partVerHash, updateCntr, size, partitionState,
-            cfEntries, noCfEntries, binKeys, regKeys);
+            cfKeys, noCfKeys, binKeys, regKeys);
     }
 
     /** **/

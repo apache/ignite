@@ -240,10 +240,10 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<CacheIdle
         if (!F.isEmpty(partitions)) {
             writer.write("Cluster partitions:\n");
 
-            long cfEntries = 0;
-            long noCfEntries = 0;
-            long binKeys = 0;
-            long regKeys = 0;
+            long cf = 0;
+            long noCf = 0;
+            long binary = 0;
+            long regular = 0;
 
             for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : partitions.entrySet()) {
                 writer.write("Partition: " + entry.getKey() + "\n");
@@ -253,19 +253,19 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<CacheIdle
                 if (!entry.getValue().isEmpty()) {
                     PartitionHashRecordV2 rec = entry.getValue().get(0);
 
-                    cfEntries += rec.compactFooterEntries();
-                    noCfEntries += rec.noCompactFooterEntries();
-                    binKeys += rec.binaryKeys();
-                    regKeys += rec.regularKeys();
+                    cf += rec.compactFooterKeys();
+                    noCf += rec.noCompactFooterKeys();
+                    binary += rec.binaryKeys();
+                    regular += rec.regularKeys();
                 }
             }
 
             writer.write("\n\n-----------------------------------\n\n");
 
-            writer.write("CompactFooter statistic [compactFooterEntries=" + cfEntries +
-                ", noCompactFooterEntries=" + noCfEntries +
-                ", binaryKeys=" + binKeys +
-                ", regularKeys=" + regKeys + "]\n\n");
+            writer.write("CompactFooter statistic for keys [compactFooter=" + cf +
+                ", noCompactFooter=" + noCf +
+                ", binary=" + binary +
+                ", regular=" + regular + "]\n\n");
 
             conflictRes.print(writer::write, true);
         }
