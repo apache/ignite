@@ -68,8 +68,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
-
 /**
  *
  */
@@ -419,8 +417,6 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         log.info("Bytes count " + byteBuf.limit());
 
-        byteBuf.position(byteBuf.position() + HEADER_RECORD_SIZE);
-
         int p0 = byteBuf.position();
 
         ByteBufferWalIterator walIterator = new ByteBufferWalIterator(log, sharedCtx, byteBuf, (int)fd.getIdx(),
@@ -439,6 +435,10 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
             assertEquals("WalPointer offset check failed", p0, next.get1().fileOffset());
 
             assertEquals("WalPointer length check failed", p1 - p0, next.get1().length());
+
+            assertEquals("WalPointers comparison failed", next.get1(), next.get2().position());
+
+            assertEquals("WalPointers length comparison failed", next.get1().length(), next.get2().position().length());
 
             p0 = p1;
 
