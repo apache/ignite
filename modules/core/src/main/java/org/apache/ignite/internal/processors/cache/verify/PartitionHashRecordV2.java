@@ -71,29 +71,27 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
     private PartitionState partitionState;
 
     /**
-     * Count of entries with compact footer.
-     *
+     * Count of keys with compact footer.
      * @see BinaryConfiguration#isCompactFooter()
      */
     @GridToStringExclude
     private int cfKeys;
 
     /**
-     * Count of entries without compact footer.
-     *
+     * Count of keys without compact footer.
      * @see BinaryConfiguration#isCompactFooter()
      */
     @GridToStringExclude
     private int noCfKeys;
 
     /**
-     * Count of entries with binary object key.
+     * Count of {@link org.apache.ignite.binary.BinaryObject} keys.
      * @see GridBinaryMarshaller#BINARY_OBJ
      */
     @GridToStringExclude
     private int binKeys;
 
-    /** Count of entries with type that directly supported by {@link GridBinaryMarshaller}. */
+    /** Count of type supported by Ignite out of the box (numbers, strings, etc). */
     @GridToStringExclude
     private int regKeys;
 
@@ -106,8 +104,8 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
      * @param updateCntr Update counter.
      * @param size Size.
      * @param partitionState Partition state.
-     * @param cfKeys Count of entries with compact footer.
-     * @param noCfKeys Count of entries without compact footer.
+     * @param cfKeys Count of keys with compact footer.
+     * @param noCfKeys Count of keys without compact footer.
      * @param binKeys Count of {@link org.apache.ignite.binary.BinaryObject} keys.
      * @param regKeys Count of type supported by Ignite out of the box (numbers, strings, etc).
      */
