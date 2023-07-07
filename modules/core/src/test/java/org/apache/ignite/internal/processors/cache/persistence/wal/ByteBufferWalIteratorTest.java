@@ -33,6 +33,7 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
@@ -190,7 +191,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         byteBuf.flip();
 
-        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, idx, RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
 
         Iterator<DataEntry> dataEntriesIter = entries.iterator();
 
@@ -230,7 +231,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         byteBuf.flip();
 
-        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, idx, RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
 
         Iterator<WALRecord> recordsIter = records.iterator();
 
@@ -292,7 +293,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         byteBuf.flip();
 
-        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, idx,
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf,
             RecordSerializerFactory.LATEST_SERIALIZER_VERSION,
             (t, p) -> t.purpose() == WALRecord.RecordPurpose.LOGICAL);
 
@@ -357,7 +358,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         byteBuf.limit((position1 + position2) >> 1);
 
-        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, idx, RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
 
         assertTrue(walIter.hasNext());
 
@@ -384,7 +385,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         byteBuf.flip();
 
-        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, idx, RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
 
         assertFalse(walIter.hasNext());
 
@@ -413,13 +414,18 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         ByteBuffer byteBuf = loadFile(fd);
 
-        byteBuf.order(ByteOrder.nativeOrder());
+        checkByteBuffer(byteBuf);
+    }
 
+    /** */
+    private void checkByteBuffer(ByteBuffer byteBuf) throws IgniteCheckedException {
         log.info("Bytes count " + byteBuf.limit());
 
         int p0 = byteBuf.position();
 
-        ByteBufferWalIterator walIterator = new ByteBufferWalIterator(log, sharedCtx, byteBuf, (int)fd.getIdx(),
+        int shift = -1;
+
+        ByteBufferWalIterator walIterator = new ByteBufferWalIterator(log, sharedCtx, byteBuf,
             RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
 
         Map<WALRecord.RecordType, Integer> counts = new TreeMap<>();
@@ -432,7 +438,10 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
             if (log.isDebugEnabled())
                 log.debug("Got " + next.get2().type() + " at " + next.get1());
 
-            assertEquals("WalPointer offset check failed", p0, next.get1().fileOffset());
+            if (shift >= 0)
+                assertEquals("WalPointer offset check failed", p0 + shift, next.get1().fileOffset());
+            else
+                shift = next.get1().fileOffset() - p0;
 
             assertEquals("WalPointer length check failed", p1 - p0, next.get1().length());
 
@@ -449,11 +458,16 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         assertFalse("ByteBuffer has some unprocessed bytes", byteBuf.hasRemaining());
 
-        printStats(fd, counts);
+        printStats(counts);
     }
 
     /** */
-    private void printStats(FileDescriptor fd, Map<WALRecord.RecordType, Integer> counts) {
+    private void printStats(Map<WALRecord.RecordType, Integer> counts) {
+        if (counts.isEmpty()) {
+            log.info("No record");
+            return;
+        }
+
         ArrayList<WALRecord.RecordType> types = new ArrayList<>(counts.keySet());
 
         types.sort((x, y) -> -counts.get(x).compareTo(counts.get(y)));
@@ -490,6 +504,8 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
         assertTrue(length == size);
 
         ByteBuffer byteBuf = ByteBuffer.wrap(bytes);
+
+        byteBuf.order(ByteOrder.nativeOrder());
 
         return byteBuf;
     }
@@ -532,5 +548,81 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
             LockSupport.parkNanos(10_000_000);
         }
+    }
+
+    /** */
+    @Test
+    public void testPartialWalSegmentReadFromDisk() throws Exception {
+        FileDescriptor[] archiveFiles = generateWalFiles(1, 100);
+
+        for (int i = 0; i < archiveFiles.length; i++)
+            checkPartialIteratorFromDisk(archiveFiles[i]);
+    }
+
+    /** */
+    private void checkPartialIteratorFromDisk(FileDescriptor fd) throws IOException, IgniteCheckedException {
+        log.info("Checking " + fd.file());
+
+        ByteBuffer byteBuf = loadFile(fd);
+
+        log.info("Bytes count " + byteBuf.limit());
+
+        List<Integer> positions = new ArrayList<>();
+
+        positions.add(byteBuf.position());
+
+        ByteBufferWalIterator walIterator = new ByteBufferWalIterator(log, sharedCtx, byteBuf,
+            RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
+
+        positions.add(byteBuf.position());
+
+        positions.addAll(
+            StreamSupport.stream(walIterator.spliterator(), false)
+                .map(x -> byteBuf.position())
+                .collect(Collectors.toList()));
+
+        Random random = new Random();
+
+        int size = positions.size();
+
+        assertTrue("Size shouild be at least 10 for this test", size >= 10);
+
+        int n1 = (int)((0.1 + 0.4 * random.nextDouble()) * size);
+
+        int n2 = (int)((0.5 + 0.4 * random.nextDouble()) * size);
+
+        // With header.
+        checkByteBufferPart(byteBuf, positions, 0, n1);
+
+        // Middle part.
+        checkByteBufferPart(byteBuf, positions, n1, n2);
+
+        // Empty buffer.
+        checkByteBufferPart(byteBuf, positions, n2, n2);
+
+        // With tail.
+        checkByteBufferPart(byteBuf, positions, n2, size - 1);
+    }
+
+    /** */
+    private void checkByteBufferPart(ByteBuffer byteBuf, List<Integer> positions, int fromRec, int toRec)
+        throws IgniteCheckedException {
+        int fromPos = positions.get(fromRec);
+
+        int toPos = positions.get(toRec);
+
+        log.info(("Checking ByteBuffer from " + fromRec + "(" + fromPos + ") to " + toRec + "(" + toPos + ")"));
+
+        int len = toPos - fromPos;
+
+        byteBuf.position(fromPos).limit(toPos);
+
+        byte[] array = byteBuf.array();
+
+        byteBuf = ByteBuffer.allocate(len).order(ByteOrder.nativeOrder());
+
+        System.arraycopy(array, fromPos, byteBuf.array(), 0, len);
+
+        checkByteBuffer(byteBuf);
     }
 }
