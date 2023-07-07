@@ -794,18 +794,12 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
-    private static void assertCompactFooterStatistics(
-        long compactFooterEntries,
-        long noCompactFooterEntries,
-        long binaryObjectKeys,
-        long regularTypeKeys,
-        String report
-    ) {
+    private static void assertCompactFooterStatistics(long cfEntries, long noCfEntries, long binObjKeys, long regKeys, String report) {
         assertContains(log, report, "CompactFooter statistic [" +
-            "compactFooterEntries=" + compactFooterEntries + ", " +
-            "noCompactFooterEntries=" + noCompactFooterEntries + ", " +
-            "binaryObjectKeys=" + binaryObjectKeys + ", " +
-            "regularTypeKeys=" + regularTypeKeys + "]");
+            "compactFooterEntries=" + cfEntries + ", " +
+            "noCompactFooterEntries=" + noCfEntries + ", " +
+            "binaryKeys=" + binObjKeys + ", " +
+            "regularKeys=" + regKeys + "]");
     }
 
     /**
