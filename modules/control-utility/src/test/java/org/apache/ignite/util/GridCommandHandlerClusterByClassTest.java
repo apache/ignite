@@ -59,7 +59,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
@@ -773,10 +772,8 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             .setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 
         try (IgniteClient cli = TcpIgniteClient.start(cliCfg)) {
-            ClientCache<TestClass, Integer> cliCache = cli.cache(DEFAULT_CACHE_NAME);
-
             for (int i = keysCount; i < keysCount * 3; i++)
-                cliCache.put(new TestClass(i, String.valueOf(i)), i);
+                cli.cache(DEFAULT_CACHE_NAME).put(new TestClass(i, String.valueOf(i)), i);
         }
 
         for (int i = 0; i < keysCount; i++)
