@@ -3401,11 +3401,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         return maxWalArchiveSize == UNLIMITED_WAL_ARCHIVE;
     }
 
-    /** @return {@code True} if WAL enabled only for CDC. */
-    public boolean inMemoryCdc() {
-        return inMemoryCdc;
-    }
-
     /**
      * Removing files from {@link #walArchiveDir}.
      *
