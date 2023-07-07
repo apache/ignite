@@ -414,16 +414,16 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         ByteBuffer byteBuf = loadFile(fd);
 
-        checkByteBuffer(byteBuf);
+        checkByteBuffer(byteBuf, false);
     }
 
     /** */
-    private void checkByteBuffer(ByteBuffer byteBuf) throws IgniteCheckedException {
+    private void checkByteBuffer(ByteBuffer byteBuf, boolean adaptTest) throws IgniteCheckedException {
         log.info("Bytes count " + byteBuf.limit());
 
         int p0 = byteBuf.position();
 
-        int shift = -1;
+        int shift = adaptTest ? -1 : 0;
 
         ByteBufferWalIterator walIterator = new ByteBufferWalIterator(log, sharedCtx, byteBuf,
             RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
@@ -623,6 +623,6 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         System.arraycopy(array, fromPos, byteBuf.array(), 0, len);
 
-        checkByteBuffer(byteBuf);
+        checkByteBuffer(byteBuf, true);
     }
 }
