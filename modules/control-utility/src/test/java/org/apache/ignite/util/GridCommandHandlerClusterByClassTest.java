@@ -728,7 +728,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             assertContains(log, dumpWithZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=0]");
             assertContains(log, dumpWithZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
             assertContains(log, dumpWithZeros, "no conflicts have been found");
-            assertCompactFooterStatistics(0, 0, 0, keysCount, dumpWithZeros);
+            assertCompactFooterStat(dumpWithZeros, 0, 0, 0, keysCount);
 
             assertSort(parts, dumpWithZeros);
         }
@@ -747,7 +747,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             assertNotContains(log, dumpWithoutZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
 
             assertContains(log, dumpWithoutZeros, "no conflicts have been found");
-            assertCompactFooterStatistics(0, 0, 0, keysCount, dumpWithoutZeros);
+            assertCompactFooterStat(dumpWithoutZeros, 0, 0, 0, keysCount);
 
             assertSort(keysCount, dumpWithoutZeros);
         }
@@ -765,7 +765,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         String report = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-        assertCompactFooterStatistics(keysCount / 2, 0, keysCount / 2, keysCount, report);
+        assertCompactFooterStat(report, keysCount / 2, 0, keysCount / 2, keysCount);
 
         ClientConfiguration cliCfg = new ClientConfiguration()
             .setAddresses("127.0.0.1:10800")
@@ -790,11 +790,11 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         report = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-        assertCompactFooterStatistics(keysCount / 2, keysCount * 2, keysCount / 2 + keysCount * 2, keysCount * 2, report);
+        assertCompactFooterStat(report, keysCount / 2, keysCount * 2, keysCount / 2 + keysCount * 2, keysCount * 2);
     }
 
     /** */
-    private static void assertCompactFooterStatistics(long cf, long noCf, long binary, long regular, String report) {
+    private static void assertCompactFooterStat(String report, long cf, long noCf, long binary, long regular) {
         assertContains(log, report, "CompactFooter statistic for keys [" +
             "compactFooter=" + cf + ", " +
             "noCompactFooter=" + noCf + ", " +
