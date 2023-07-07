@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -495,7 +496,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerF
      * @param partitions Partitions count.
      * @param filter Node filter.
      */
-    protected void createCacheAndPreload(
+    protected IgniteCache<?, ?> createCacheAndPreload(
         Ignite ignite,
         String cacheName,
         int countEntries,
@@ -512,12 +513,14 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerF
         if (filter != null)
             ccfg.setNodeFilter(filter);
 
-        ignite.createCache(ccfg);
+        IgniteCache<?, ?> cache = ignite.createCache(ccfg);
 
         try (IgniteDataStreamer<Object, Object> streamer = ignite.dataStreamer(cacheName)) {
             for (int i = 0; i < countEntries; i++)
                 streamer.addData(i, i);
         }
+
+        return cache;
     }
 
     /**
@@ -526,7 +529,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerF
      * @param ignite Ignite.
      * @param countEntries Count of entries.
      */
-    protected void createCacheAndPreload(Ignite ignite, int countEntries) {
-        createCacheAndPreload(ignite, DEFAULT_CACHE_NAME, countEntries, 32, null);
+    protected IgniteCache<?, ?> createCacheAndPreload(Ignite ignite, int countEntries) {
+        return createCacheAndPreload(ignite, DEFAULT_CACHE_NAME, countEntries, 32, null);
     }
 }
