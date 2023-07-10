@@ -65,7 +65,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.wal.record.RecordUtils;
 import org.apache.ignite.testframework.wal.record.UnsupportedWalRecord;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -317,7 +316,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @NotNull private List<DataEntry> generateEntries(GridCacheContext<Object, Object> cctx, int cnt) {
+    private List<DataEntry> generateEntries(GridCacheContext<Object, Object> cctx, int cnt) {
         List<DataEntry> entries = new ArrayList<>(cnt);
 
         for (int i = 0; i < cnt; i++) {
@@ -414,14 +413,14 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         ByteBuffer byteBuf = loadFile(fd);
 
-        checkByteBuffer(byteBuf, false);
+        checkByteBuffer(byteBuf, false, true);
     }
 
     /** */
-    private void checkByteBuffer(ByteBuffer byteBuf, boolean adaptTest) throws IgniteCheckedException {
+    private void checkByteBuffer(ByteBuffer byteBuf, boolean adaptTest, boolean hasHdr) throws IgniteCheckedException {
         log.info("Bytes count " + byteBuf.limit());
 
-        int p0 = byteBuf.position();
+        int p0 = hasHdr ? 29 : 0;
 
         int shift = adaptTest ? -1 : 0;
 
@@ -490,7 +489,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @NotNull private ByteBuffer loadFile(FileDescriptor fd) throws IOException {
+    private ByteBuffer loadFile(FileDescriptor fd) throws IOException {
         File file = fd.file();
 
         int size = (int)file.length();
@@ -592,20 +591,21 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
         int n2 = (int)((0.5 + 0.4 * random.nextDouble()) * size);
 
         // With header.
-        checkByteBufferPart(byteBuf, positions, 0, n1);
+        checkByteBufferPart(byteBuf, positions, 0, n1, true);
 
         // Middle part.
-        checkByteBufferPart(byteBuf, positions, n1, n2);
+        checkByteBufferPart(byteBuf, positions, n1, n2, false);
 
         // Empty buffer.
-        checkByteBufferPart(byteBuf, positions, n2, n2);
+        checkByteBufferPart(byteBuf, positions, n2, n2, false);
 
         // With tail.
-        checkByteBufferPart(byteBuf, positions, n2, size - 1);
+        checkByteBufferPart(byteBuf, positions, n2, size - 1, false);
     }
 
     /** */
-    private void checkByteBufferPart(ByteBuffer byteBuf, List<Integer> positions, int fromRec, int toRec)
+    private void checkByteBufferPart(ByteBuffer byteBuf, List<Integer> positions, int fromRec, int toRec,
+        boolean hasHdr)
         throws IgniteCheckedException {
         int fromPos = positions.get(fromRec);
 
@@ -623,6 +623,6 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         System.arraycopy(array, fromPos, byteBuf.array(), 0, len);
 
-        checkByteBuffer(byteBuf, true);
+        checkByteBuffer(byteBuf, true, hasHdr);
     }
 }
