@@ -33,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.HEADER_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
@@ -53,7 +52,7 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
     private final ByteBufferBackedDataInputImpl dataInput;
 
     /** */
-    private boolean headerChecked;
+    private boolean hdrChecked;
 
     /** */
     public ByteBufferWalIterator(
@@ -95,11 +94,11 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
         IgniteBiTuple<WALPointer, WALRecord> result;
 
         try {
-            if (!headerChecked) {
-                IgniteBiTuple<WALPointer, WALRecord> header = tryToReadHeader();
+            if (!hdrChecked) {
+                IgniteBiTuple<WALPointer, WALRecord> hdr = tryToReadHeader();
 
-                if (header != null)
-                    return header;
+                if (hdr != null)
+                    return hdr;
             }
             WALRecord rec = serializer.readRecord(dataInput, null);
 
@@ -117,7 +116,7 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
 
     /** */
     private IgniteBiTuple<WALPointer, WALRecord> tryToReadHeader() throws IgniteCheckedException, IOException {
-        headerChecked = true;
+        hdrChecked = true;
 
         int position = dataInput.buffer().position();
 
