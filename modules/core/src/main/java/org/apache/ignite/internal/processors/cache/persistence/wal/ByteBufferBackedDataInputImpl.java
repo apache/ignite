@@ -31,8 +31,10 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
     /**
      * @param buf New buffer.
      */
-    public ByteBufferBackedDataInputImpl(ByteBuffer buf) {
+    public ByteBufferBackedDataInput buffer(ByteBuffer buf) {
         this.buf = buf;
+
+        return this;
     }
 
     /** {@inheritDoc} */

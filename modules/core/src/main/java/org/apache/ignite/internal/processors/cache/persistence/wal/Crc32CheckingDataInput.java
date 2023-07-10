@@ -43,9 +43,12 @@ public class Crc32CheckingDataInput extends ByteBufferBackedDataInputImpl implem
 
     /** */
     public Crc32CheckingDataInput(ByteBufferBackedDataInput delegate, boolean skipCheck) {
-        super(delegate.buffer());
         this.delegate = delegate;
-        this.lastCalcPosition = buffer().position();
+
+        buffer(delegate.buffer());
+
+        lastCalcPosition = buffer().position();
+
         this.skipCheck = skipCheck;
     }
 

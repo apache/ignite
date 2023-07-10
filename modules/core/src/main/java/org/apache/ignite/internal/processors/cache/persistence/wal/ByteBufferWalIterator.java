@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Optional;
@@ -24,12 +25,18 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.HEADER_RECORD;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
 
 /** Byte Buffer WAL Iterator */
 public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
@@ -44,6 +51,9 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
 
     /** */
     private final ByteBufferBackedDataInputImpl dataInput;
+
+    /** */
+    private boolean headerChecked;
 
     /** */
     public ByteBufferWalIterator(
@@ -70,7 +80,9 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
 
         serializer = rsf.createSerializer(ver);
 
-        dataInput = new ByteBufferBackedDataInputImpl(buf);
+        dataInput = new ByteBufferBackedDataInputImpl();
+
+        dataInput.buffer(buf);
 
         advance();
     }
@@ -83,6 +95,12 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
         IgniteBiTuple<WALPointer, WALRecord> result;
 
         try {
+            if (!headerChecked) {
+                IgniteBiTuple<WALPointer, WALRecord> header = tryToReadHeader();
+
+                if (header != null)
+                    return header;
+            }
             WALRecord rec = serializer.readRecord(dataInput, null);
 
             result = new IgniteBiTuple<>(rec.position(), rec);
@@ -95,6 +113,47 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
         }
 
         return result;
+    }
+
+    /** */
+    private IgniteBiTuple<WALPointer, WALRecord> tryToReadHeader() throws IgniteCheckedException, IOException {
+        headerChecked = true;
+
+        int position = dataInput.buffer().position();
+
+        int type = dataInput.readUnsignedByte();
+
+        if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE)
+            throw new SegmentEofException("Reached logical end of the segment", null);
+
+        WALRecord.RecordType recType = WALRecord.RecordType.fromIndex(type - 1);
+
+        if (recType == HEADER_RECORD) {
+            long idx = dataInput.readLong();
+
+            int fileOff = dataInput.readInt();
+
+            WALPointer walPointer = new WALPointer(idx, fileOff, HEADER_RECORD_SIZE);
+
+            long magic = dataInput.readLong();
+
+            if (magic != HeaderRecord.REGULAR_MAGIC && magic != HeaderRecord.COMPACTED_MAGIC)
+                throw new EOFException("Magic is corrupted [actual=" + U.hexLong(magic) + ']');
+
+            int ver = dataInput.readInt();
+
+            HeaderRecord r = new HeaderRecord(ver);
+
+            r.position(walPointer);
+
+            // Read CRC.
+            dataInput.readInt();
+
+            return new IgniteBiTuple<>(walPointer, r);
+        }
+        else
+            dataInput.buffer().position(position);
+        return null;
     }
 
     /** {@inheritDoc} */

@@ -52,7 +52,7 @@ class DecryptionResult {
         @Nullable WALRecord.RecordType recordType,
         int grpId
     ) {
-        this.decryptedData = decryptedData == null ? null : new ByteBufferBackedDataInputImpl(decryptedData);
+        this.decryptedData = decryptedData == null ? null : new ByteBufferBackedDataInputImpl().buffer(decryptedData);
         this.recordType = recordType;
         this.grpId = grpId;
     }

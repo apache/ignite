@@ -38,12 +38,9 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD_V2;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.HEADER_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.SWITCH_SEGMENT_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.CRC_SIZE;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.REC_TYPE_SIZE;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readPosition;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readRecordType;
 
 /**
@@ -110,13 +107,7 @@ public class RecordV2Serializer implements RecordSerializer {
             if (recType == SWITCH_SEGMENT_RECORD)
                 throw new SegmentEofException("Reached end of segment", null);
 
-            WALPointer ptr;
-            if (recType == HEADER_RECORD) {
-                ptr = readPosition(in);
-                ptr.length(HEADER_RECORD_SIZE);
-            }
-            else
-                ptr = readPositionAndCheckPoint(in, expPtr, skipPositionCheck, recType);
+            WALPointer ptr = readPositionAndCheckPoint(in, expPtr, skipPositionCheck, recType);
 
             if (recType == null) {
                 throw new IOException("Unknown record type: " + recType +
