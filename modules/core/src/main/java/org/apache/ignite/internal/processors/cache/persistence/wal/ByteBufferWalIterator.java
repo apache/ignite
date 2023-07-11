@@ -55,10 +55,9 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
         GridCacheSharedContext<?, ?> cctx,
         ByteBuffer byteBuf,
         int ver,
-        int idx,
-        int pos
+        WALPointer walPointer
     ) throws IgniteCheckedException {
-        this(log, cctx, byteBuf, ver, idx, pos, null);
+        this(log, cctx, byteBuf, ver, walPointer, null);
     }
 
     /** */
@@ -67,8 +66,7 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
         GridCacheSharedContext<?, ?> cctx,
         ByteBuffer byteBuf,
         int ver,
-        int idx,
-        int pos,
+        WALPointer walPointer,
         IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter
     ) throws IgniteCheckedException {
         super(log);
@@ -81,7 +79,7 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
 
         dataInput.buffer(buf);
 
-        walPtr = new WALPointer(idx, pos, 0);
+        walPtr = walPointer;
 
         advance();
     }
@@ -95,7 +93,7 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
 
         try {
             if (curRec == null)
-                tryToReadHeader();
+                skipHeader();
 
             WALRecord rec = serializer.readRecord(dataInput, walPtr);
 
@@ -114,7 +112,7 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
     }
 
     /** */
-    private void tryToReadHeader() throws IOException {
+    private void skipHeader() throws IOException {
         int position = dataInput.buffer().position();
 
         int type = dataInput.readUnsignedByte();
