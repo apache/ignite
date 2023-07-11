@@ -25,10 +25,13 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDat
  * Checking of CRC32.
  */
 public class Crc32CheckingDataInput extends ByteBufferBackedDataInputImpl implements AutoCloseable {
+    /** */
+    private final FastCrc crc = new FastCrc();
+
     /**
      * Last calc position.
      */
-    private final int lastCalcPosition;
+    private int lastCalcPosition;
 
     /**
      * Skip crc check.
@@ -44,7 +47,7 @@ public class Crc32CheckingDataInput extends ByteBufferBackedDataInputImpl implem
 
         buffer(delegate.buffer());
 
-        lastCalcPosition = buffer().position();
+        this.lastCalcPosition = buffer().position();
 
         this.skipCheck = skipCheck;
     }
@@ -58,22 +61,18 @@ public class Crc32CheckingDataInput extends ByteBufferBackedDataInputImpl implem
         if (available >= requested)
             return;
 
+        updateCrc();
+
         delegate.ensure(requested);
+
+        lastCalcPosition = 0;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override public void close() throws Exception {
-        FastCrc crc = new FastCrc();
-
-        if (!skipCheck) {
-            int oldPos = buffer().position();
-
-            buffer().position(lastCalcPosition);
-
-            crc.update(delegate.buffer(), oldPos - lastCalcPosition);
-        }
+        updateCrc();
 
         int val = crc.getValue();
 
@@ -89,4 +88,17 @@ public class Crc32CheckingDataInput extends ByteBufferBackedDataInputImpl implem
         }
     }
 
+    /** */
+    private void updateCrc() {
+        if (skipCheck)
+            return;
+
+        int oldPos = buffer().position();
+
+        buffer().position(lastCalcPosition);
+
+        crc.update(delegate.buffer(), oldPos - lastCalcPosition);
+
+        lastCalcPosition = oldPos;
+    }
 }

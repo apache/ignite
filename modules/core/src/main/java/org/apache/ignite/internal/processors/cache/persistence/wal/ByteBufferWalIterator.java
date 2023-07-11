@@ -51,8 +51,8 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
         IgniteLogger log,
         GridCacheSharedContext<?, ?> cctx,
         ByteBuffer byteBuf,
-        int ver)
-        throws IgniteCheckedException {
+        int ver
+    ) throws IgniteCheckedException {
         this(log, cctx, byteBuf, ver, null);
     }
 
@@ -62,8 +62,8 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
         GridCacheSharedContext<?, ?> cctx,
         ByteBuffer byteBuf,
         int ver,
-        IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter)
-        throws IgniteCheckedException {
+        IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter
+    ) throws IgniteCheckedException {
         super(log);
 
         buf = byteBuf;
