@@ -190,7 +190,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         byteBuf.flip();
 
-        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, RecordSerializerFactory.LATEST_SERIALIZER_VERSION, idx, 0);
 
         Iterator<DataEntry> dataEntriesIter = entries.iterator();
 
@@ -230,7 +230,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         byteBuf.flip();
 
-        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, RecordSerializerFactory.LATEST_SERIALIZER_VERSION, idx, 0);
 
         Iterator<WALRecord> recordsIter = records.iterator();
 
@@ -293,7 +293,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
         byteBuf.flip();
 
         WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf,
-            RecordSerializerFactory.LATEST_SERIALIZER_VERSION,
+            RecordSerializerFactory.LATEST_SERIALIZER_VERSION, idx, 0,
             (t, p) -> t.purpose() == WALRecord.RecordPurpose.LOGICAL);
 
         Iterator<DataEntry> dataEntriesIter = entries.iterator();
@@ -357,7 +357,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         byteBuf.limit((position1 + position2) >> 1);
 
-        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, RecordSerializerFactory.LATEST_SERIALIZER_VERSION, idx, 0);
 
         assertTrue(walIter.hasNext());
 
@@ -384,7 +384,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         byteBuf.flip();
 
-        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
+        WALIterator walIter = new ByteBufferWalIterator(log, sharedCtx, byteBuf, RecordSerializerFactory.LATEST_SERIALIZER_VERSION, idx, 0);
 
         assertFalse(walIter.hasNext());
 
@@ -413,11 +413,11 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         ByteBuffer byteBuf = loadFile(fd);
 
-        checkByteBuffer(byteBuf, false, true);
+        checkByteBuffer(byteBuf, false, true, (int)fd.idx(), 0);
     }
 
     /** */
-    private void checkByteBuffer(ByteBuffer byteBuf, boolean adaptTest, boolean hasHdr) throws IgniteCheckedException {
+    private void checkByteBuffer(ByteBuffer byteBuf, boolean adaptTest, boolean hasHdr, int idx, int pos) throws IgniteCheckedException {
         log.info("Bytes count " + byteBuf.limit());
 
         int p0 = hasHdr ? 29 : 0;
@@ -425,7 +425,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
         int shift = adaptTest ? -1 : 0;
 
         ByteBufferWalIterator walIterator = new ByteBufferWalIterator(log, sharedCtx, byteBuf,
-            RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
+            RecordSerializerFactory.LATEST_SERIALIZER_VERSION, idx, pos);
 
         Map<WALRecord.RecordType, Integer> counts = new TreeMap<>();
 
@@ -571,7 +571,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
         positions.add(byteBuf.position());
 
         ByteBufferWalIterator walIterator = new ByteBufferWalIterator(log, sharedCtx, byteBuf,
-            RecordSerializerFactory.LATEST_SERIALIZER_VERSION);
+            RecordSerializerFactory.LATEST_SERIALIZER_VERSION, (int)fd.idx(), 0);
 
         positions.add(byteBuf.position());
 
@@ -591,21 +591,21 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
         int n2 = (int)((0.5 + 0.4 * random.nextDouble()) * size);
 
         // With header.
-        checkByteBufferPart(byteBuf, positions, 0, n1, true);
+        checkByteBufferPart(byteBuf, positions, 0, n1, true, (int)fd.idx());
 
         // Middle part.
-        checkByteBufferPart(byteBuf, positions, n1, n2, false);
+        checkByteBufferPart(byteBuf, positions, n1, n2, false, (int)fd.idx());
 
         // Empty buffer.
-        checkByteBufferPart(byteBuf, positions, n2, n2, false);
+        checkByteBufferPart(byteBuf, positions, n2, n2, false, (int)fd.idx());
 
         // With tail.
-        checkByteBufferPart(byteBuf, positions, n2, size - 1, false);
+        checkByteBufferPart(byteBuf, positions, n2, size - 1, false, (int)fd.idx());
     }
 
     /** */
     private void checkByteBufferPart(ByteBuffer byteBuf, List<Integer> positions, int fromRec, int toRec,
-        boolean hasHdr)
+        boolean hasHdr, int idx)
         throws IgniteCheckedException {
         int fromPos = positions.get(fromRec);
 
@@ -623,6 +623,14 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         System.arraycopy(array, fromPos, byteBuf.array(), 0, len);
 
-        checkByteBuffer(byteBuf, true, hasHdr);
+        int pos = 0;
+
+        if (byteBuf.limit() > 12) {
+            pos = byteBuf.position(9).getInt();
+
+            byteBuf.position(0);
+        }
+
+        checkByteBuffer(byteBuf, true, hasHdr, idx, pos);
     }
 }

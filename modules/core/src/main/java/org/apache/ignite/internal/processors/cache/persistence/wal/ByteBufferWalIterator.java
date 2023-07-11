@@ -47,13 +47,18 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
     private final ByteBufferBackedDataInputImpl dataInput;
 
     /** */
+    private WALPointer walPtr;
+
+    /** */
     public ByteBufferWalIterator(
         IgniteLogger log,
         GridCacheSharedContext<?, ?> cctx,
         ByteBuffer byteBuf,
-        int ver
+        int ver,
+        int idx,
+        int pos
     ) throws IgniteCheckedException {
-        this(log, cctx, byteBuf, ver, null);
+        this(log, cctx, byteBuf, ver, idx, pos, null);
     }
 
     /** */
@@ -62,6 +67,8 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
         GridCacheSharedContext<?, ?> cctx,
         ByteBuffer byteBuf,
         int ver,
+        int idx,
+        int pos,
         IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter
     ) throws IgniteCheckedException {
         super(log);
@@ -73,6 +80,8 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
         dataInput = new ByteBufferBackedDataInputImpl();
 
         dataInput.buffer(buf);
+
+        walPtr = new WALPointer(idx, pos, 0);
 
         advance();
     }
@@ -88,9 +97,11 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
             if (curRec == null)
                 tryToReadHeader();
 
-            WALRecord rec = serializer.readRecord(dataInput, null);
+            WALRecord rec = serializer.readRecord(dataInput, walPtr);
 
             result = new IgniteBiTuple<>(rec.position(), rec);
+
+            walPtr = new WALPointer(walPtr.index(), walPtr.fileOffset() + rec.size(), 0);
         }
         catch (SegmentEofException e) {
             return null;
@@ -110,8 +121,11 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
 
         WALRecord.RecordType recType = WALRecord.RecordType.fromIndex(type - 1);
 
-        if (recType == HEADER_RECORD)
+        if (recType == HEADER_RECORD) {
             dataInput.buffer().position(position + HEADER_RECORD_SIZE);
+
+            walPtr = new WALPointer(walPtr.index(), walPtr.fileOffset() + HEADER_RECORD_SIZE, 0);
+        }
         else
             dataInput.buffer().position(position);
     }

@@ -265,7 +265,7 @@ public class RecordV2Serializer implements RecordSerializer {
         int fileOff = in.readInt();
         int len = in.readInt();
 
-        if (expPtr != null && (!F.eq(idx, expPtr.index()) || (!skipPositionCheck && !F.eq(fileOff, expPtr.fileOffset()))))
+        if (!F.eq(idx, expPtr.index()) || (!skipPositionCheck && !F.eq(fileOff, expPtr.fileOffset())))
             throw new WalSegmentTailReachedException(
                 "WAL segment tail reached. [ " +
                     "Expected next state: {Index=" + expPtr.index() + ",Offset=" + expPtr.fileOffset() + "}, " +
