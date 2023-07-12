@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFun
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTrackerTest;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteCommunicationMessageSerializationTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlCustomParserTest;
+import org.apache.ignite.internal.processors.query.calcite.sql.SqlReservedWordsTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -40,6 +41,7 @@ import org.junit.runners.Suite;
     MemoryTrackerTest.class,
     QueryCheckerTest.class,
     SqlCustomParserTest.class,
+    SqlReservedWordsTest.class,
     IgniteSqlFunctionsTest.class,
     LogicalRelImplementorTest.class,
 
