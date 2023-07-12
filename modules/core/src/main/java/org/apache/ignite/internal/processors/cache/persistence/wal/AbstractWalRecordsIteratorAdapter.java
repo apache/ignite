@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;

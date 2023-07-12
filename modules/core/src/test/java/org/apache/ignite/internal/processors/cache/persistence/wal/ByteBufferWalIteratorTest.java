@@ -184,9 +184,8 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         List<DataEntry> entries = generateEntries(cctx, cnt);
 
-        for (int i = 0; i < entries.size(); i++) {
+        for (int i = 0; i < entries.size(); i++)
             writeRecord(byteBuf, new DataRecord(entries.get(i)));
-        }
 
         byteBuf.flip();
 

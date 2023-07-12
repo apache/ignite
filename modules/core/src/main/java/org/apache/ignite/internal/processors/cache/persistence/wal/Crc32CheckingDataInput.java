@@ -47,7 +47,7 @@ public class Crc32CheckingDataInput extends ByteBufferBackedDataInputImpl implem
 
         buffer(delegate.buffer());
 
-        this.lastCalcPosition = buffer().position();
+        lastCalcPosition = buffer().position();
 
         this.skipCheck = skipCheck;
     }
