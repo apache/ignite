@@ -630,7 +630,9 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
         int pos = 0;
 
         if (byteBuf.limit() > 12) {
-            pos = byteBuf.position(9).getInt();
+            byteBuf.position(9);
+
+            pos = byteBuf.getInt();
 
             byteBuf.position(0);
         }
