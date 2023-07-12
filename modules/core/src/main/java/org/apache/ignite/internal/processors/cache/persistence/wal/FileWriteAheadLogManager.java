@@ -527,7 +527,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     });
 
                 if (dsCfg.getMaxCdcBufferSize() > 0)
-                    cdcProc = new CdcProcessor(cctx, log, dsCfg.getMaxCdcBufferSize(), dsCfg.getCdcConsumer());
+                    cdcProc = new CdcProcessor(cctx, log);
             }
 
             serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVer);

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.cdc;
 
+import java.nio.ByteBuffer;
+
 /** Mock for Realtime CDC buffer consumer. */
 public interface CdcBufferConsumer {
     /**
@@ -24,7 +26,7 @@ public interface CdcBufferConsumer {
      *
      * @param data Raw data to consume.
      */
-    public void consume(byte[] data);
+    public void consume(ByteBuffer data);
 
     /** */
     public void close();

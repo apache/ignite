@@ -246,7 +246,7 @@ public class RealtimeCdcBufferTest extends GridCommonAbstractTest {
         }
 
         /** */
-        @Override public void consume(byte[] data) {
+        @Override public void consume(ByteBuffer data) {
             buf.put(data);
         }
 

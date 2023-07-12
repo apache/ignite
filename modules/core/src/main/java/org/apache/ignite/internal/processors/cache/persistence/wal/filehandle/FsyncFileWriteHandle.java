@@ -806,8 +806,13 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
                 throw se;
             }
 
-            if (cdcProc != null)
-                cdcProc.collect(buf, bufPos, buf.limit() - bufPos);
+            if (cdcProc != null) {
+                ByteBuffer cdcBuf = buf.duplicate();
+                cdcBuf.position(bufPos);
+                cdcBuf.limit(buf.limit());
+
+                cdcProc.collect(cdcBuf);
+            }
         }
         finally {
             writeComplete.signalAll();

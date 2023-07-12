@@ -387,8 +387,13 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
                             writeBuffer(seg.position(), seg.buffer());
 
-                            if (cdcProc != null)
-                                cdcProc.collect(seg.buffer(), bufPos, seg.buffer().limit() - bufPos);
+                            if (cdcProc != null) {
+                                ByteBuffer cdcBuf = seg.buffer().duplicate();
+                                cdcBuf.position(bufPos);
+                                cdcBuf.limit(seg.buffer().limit());
+
+                                cdcProc.collect(cdcBuf);
+                            }
                         }
                         catch (Throwable e) {
                             log.error("Exception in WAL writer thread:", e);

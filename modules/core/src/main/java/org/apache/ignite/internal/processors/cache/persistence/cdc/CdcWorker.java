@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.cdc;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -60,7 +61,7 @@ public class CdcWorker extends GridWorker {
         while (!isCancelled()) {
             updateHeartbeat();
 
-            byte[] data = cdcBuf.poll();
+            ByteBuffer data = cdcBuf.poll();
 
             if (data == null) {
                 LockSupport.parkNanos(cdcBufPollTimeout * 1_000_000);  // millis to nanos.
@@ -69,7 +70,7 @@ public class CdcWorker extends GridWorker {
             }
 
             if (log.isDebugEnabled())
-                log.debug("Poll a data bucket from CDC buffer [len=" + data.length + ']');
+                log.debug("Poll a data bucket from CDC buffer [len=" + (data.limit() - data.position()) + ']');
 
             // TODO: Consumer must not block this system thread.
             consumer.consume(data);

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.cdc;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,14 +59,20 @@ public class CdcBuffer {
      *
      * @param data Data to store in the buffer.
      */
-    public boolean offer(byte[] data) {
-        if (size.addAndGet(data.length) > maxSize) {
+    public boolean offer(ByteBuffer data) {
+        int bufSize = data.limit() - data.position();
+
+        if (size.addAndGet(bufSize) > maxSize) {
             overflowed = true;
 
             return false;
         }
 
-        LinkedNode newNode = new LinkedNode(data);
+        byte[] cp = new byte[bufSize];
+
+        data.get(cp, 0, bufSize);
+
+        LinkedNode newNode = new LinkedNode(ByteBuffer.wrap(cp));
         LinkedNode oldNode = producerNode;
 
         producerNode = newNode;
@@ -79,7 +86,7 @@ public class CdcBuffer {
      *
      * @return Polled data, or {@code null} if no data is available now.
      */
-    public byte[] poll() {
+    public ByteBuffer poll() {
         LinkedNode prev = consumerNode;
 
         LinkedNode next = prev.next;
@@ -107,7 +114,7 @@ public class CdcBuffer {
         if (!overflowed || consumerNode == null)
             return;
 
-        byte[] data;
+        ByteBuffer data;
 
         do {
             data = poll();
@@ -125,13 +132,13 @@ public class CdcBuffer {
      * @param next Node to consume.
      * @return Data to consume.
      */
-    private byte[] poll(LinkedNode prev, LinkedNode next) {
-        byte[] data = next.data;
+    private ByteBuffer poll(LinkedNode prev, LinkedNode next) {
+        ByteBuffer data = next.data;
 
         prev.next = null;
         consumerNode = next;
 
-        size.addAndGet(-data.length);
+        size.addAndGet(-(data.limit() - data.position()));
 
         return data;
     }
@@ -142,10 +149,10 @@ public class CdcBuffer {
         private volatile @Nullable LinkedNode next;
 
         /** */
-        private final byte[] data;
+        private final ByteBuffer data;
 
         /** */
-        LinkedNode(byte[] data) {
+        LinkedNode(ByteBuffer data) {
             this.data = data;
         }
 

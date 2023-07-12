@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.cdc;
 
-import java.util.Arrays;
+import java.nio.ByteBuffer;
 import java.util.concurrent.locks.LockSupport;
 import org.junit.Test;
 
@@ -47,7 +47,7 @@ public class RealtimeCdcBufferSelfTest {
         CdcBuffer buf = new CdcBuffer(10);
 
         for (int i = 0; i < 10; i++) {
-            byte[] data = buf.poll();
+            ByteBuffer data = buf.poll();
 
             assert data == null;
             assert buf.size() == 0;
@@ -63,9 +63,9 @@ public class RealtimeCdcBufferSelfTest {
             buf.offer(build());
 
         for (int i = 0; i < 10; i++) {
-            byte[] data = buf.poll();
+            ByteBuffer data = buf.poll();
 
-            assert Arrays.equals(build(), data);
+            assert build().equals(data);
             assert buf.size() == 10 - (i + 1);
         }
 
@@ -104,10 +104,10 @@ public class RealtimeCdcBufferSelfTest {
     }
 
     /** */
-    private byte[] build() {
+    private ByteBuffer build() {
         byte[] data = new byte[1];
         data[0] = 1;
 
-        return data;
+        return ByteBuffer.wrap(data);
     }
 }

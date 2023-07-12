@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.cdc;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -38,44 +39,31 @@ public class CdcProcessor {
     private boolean enabled = true;
 
     /** */
-    public CdcProcessor(GridCacheSharedContext<?, ?> cctx, IgniteLogger log, long maxCdcBufSize, CdcBufferConsumer consumer) {
+    public CdcProcessor(GridCacheSharedContext<?, ?> cctx, IgniteLogger log) {
         this.log = log;
 
-        cdcBuf = new CdcBuffer(maxCdcBufSize);
-        worker = new CdcWorker(cctx, log, cdcBuf, consumer);
+        DataStorageConfiguration dsCfg = cctx.gridConfig().getDataStorageConfiguration();
+
+        cdcBuf = new CdcBuffer(dsCfg.getMaxCdcBufferSize());
+        worker = new CdcWorker(cctx, log, cdcBuf, dsCfg.getCdcConsumer());
     }
 
     /**
      * @param dataBuf Buffer that contains data to collect.
-     * @param off Offset of the data to collect in the buffer.
-     * @param len Length of the data to collect.
      */
-    public void collect(ByteBuffer dataBuf, int off, int len) {
+    public void collect(ByteBuffer dataBuf) {
         if (!enabled)
             return;
 
-        int oldPos = dataBuf.position();
+        if (log.isDebugEnabled())
+            log.debug("Offerring a data bucket to the CDC buffer [len=" + (dataBuf.limit() - dataBuf.position()) + ']');
 
-        try {
-            byte[] data = new byte[len];
+        if (!cdcBuf.offer(dataBuf)) {
+            enabled = false;
 
-            dataBuf.position(off);
+            log.warning("CDC buffer has overflowed. Stop realtime mode of CDC.");
 
-            dataBuf.get(data, 0, len);
-
-            if (log.isDebugEnabled())
-                log.debug("Offerring a data bucket to the CDC buffer [len=" + len + ']');
-
-            if (!cdcBuf.offer(data)) {
-                enabled = false;
-
-                log.warning("CDC buffer has overflowed. Stop realtime mode of CDC.");
-
-                worker.cancel();
-            }
-        }
-        finally {
-            dataBuf.position(oldPos);
+            worker.cancel();
         }
     }
 

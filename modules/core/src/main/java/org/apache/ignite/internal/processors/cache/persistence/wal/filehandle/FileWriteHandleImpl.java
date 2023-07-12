@@ -418,8 +418,13 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
 
                         fsync((MappedByteBuffer)buf.buf, off, len);
 
-                        if (cdcProc != null)
-                            cdcProc.collect(buf.buf, off, len);
+                        if (cdcProc != null) {
+                            ByteBuffer cdcBuf = buf.buf.duplicate();
+                            cdcBuf.position(off);
+                            cdcBuf.limit(off + len);
+
+                            cdcProc.collect(cdcBuf);
+                        }
 
                         seg.release();
                     }
