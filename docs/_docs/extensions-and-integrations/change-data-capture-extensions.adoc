@@ -217,6 +217,8 @@ Conflict resolution field should contain user provided monotonically increasing 
 . If `conflictResolveField` if provided then field values comparison used to determine order.
 . Conflict resolution failed. Update will be ignored.
 
+IMPORTANT: The current implementation does not allow deleting data from the cache in the receiving cluster, they must be deleted in the parent cluster.
+
 === Configuration example
 Configuration is done via Ignite node plugin:
 
