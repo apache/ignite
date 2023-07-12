@@ -189,7 +189,6 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<SnapshotFutureTaskRe
         assert snpName != null : "Snapshot name cannot be empty or null.";
         assert snpSndr != null : "Snapshot sender which handles execution tasks must be not null.";
         assert snpSndr.executor() != null : "Executor service must be not null.";
-        assert cctx.pageStore() instanceof FilePageStoreManager : "Snapshot task can work only with physical files.";
         assert !parts.containsKey(MetaStorage.METASTORAGE_CACHE_ID) : "The withMetaStorage must be used instead.";
 
         this.withMetaStorage = withMetaStorage;
@@ -293,17 +292,23 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<SnapshotFutureTaskRe
                     log);
             }
 
-            startedFut.listen(f ->
-                ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(this)
-            );
+            if (cctx.database() instanceof GridCacheDatabaseSharedManager) {
+                startedFut.listen(f ->
+                    ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(this)
+                );
 
-            // Listener will be removed right after first execution.
-            ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(this);
+                // Listener will be removed right after first execution.
+                ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(this);
 
-            if (log.isInfoEnabled()) {
-                log.info("Snapshot operation is scheduled on local node and will be handled by the checkpoint " +
-                    "listener [sctx=" + this + ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
+                if (log.isInfoEnabled()) {
+                    log.info("Snapshot operation is scheduled on local node and will be handled by the checkpoint " +
+                        "listener [sctx=" + this + ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
+                }
             }
+            else {
+                // Call checkpoint listener methods directly.
+            }
+
         }
         catch (IgniteCheckedException e) {
             acceptException(e);
@@ -451,7 +456,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<SnapshotFutureTaskRe
     }
 
     /** {@inheritDoc} */
-    @Override public void onCheckpointBegin(Context ctx) {
+    @Override public void onCheckpointBegin(Context ignored) {
         if (stopping())
             return;
 

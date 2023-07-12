@@ -336,7 +336,7 @@ public class CachePartitionDefragmentationManager {
 
                     boolean encrypted = oldGrpCtx.config().isEncryptionEnabled();
 
-                    FileVersionCheckingFactory pageStoreFactory = filePageStoreMgr.getPageStoreFactory(grpId, encrypted);
+                    FileVersionCheckingFactory pageStoreFactory = filePageStoreMgr.pageStoreFactory(grpId, encrypted);
 
                     AtomicLong idxAllocationTracker = new GridAtomicLong();
 

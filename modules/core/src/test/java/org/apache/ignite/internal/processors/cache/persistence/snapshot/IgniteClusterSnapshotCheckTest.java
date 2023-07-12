@@ -64,7 +64,6 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
@@ -245,8 +244,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         int grpId = CU.cacheId(dfltCacheCfg.getName());
 
-        try (FilePageStore pageStore = (FilePageStore)((FilePageStoreManager)ignite.context().cache().context().pageStore())
-            .getPageStoreFactory(grpId, ignite.context().cache().isEncrypted(grpId))
+        try (FilePageStore pageStore = (FilePageStore)ignite.context().cache().context().pageStore()
+            .pageStoreFactory(grpId, ignite.context().cache().isEncrypted(grpId))
             .createPageStore(getTypeByPartId(PART_ID),
                 () -> part0,
                 val -> {
@@ -664,8 +663,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         int grpId = CU.cacheId(ccfg.getName());
 
-        try (FilePageStore pageStore = (FilePageStore)((FilePageStoreManager)ignite.context().cache().context().pageStore())
-            .getPageStoreFactory(grpId, ignite.context().cache().isEncrypted(grpId))
+        try (FilePageStore pageStore = (FilePageStore)ignite.context().cache().context().pageStore()
+            .pageStoreFactory(grpId, ignite.context().cache().isEncrypted(grpId))
             .createPageStore(getTypeByPartId(partId),
                 () -> part0,
                 val -> {
