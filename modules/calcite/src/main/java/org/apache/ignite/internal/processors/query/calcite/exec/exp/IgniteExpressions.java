@@ -52,18 +52,6 @@ public class IgniteExpressions {
         }
     }
 
-    /** Generate expression for method IgniteMath.negateExact() for integer subtypes. */
-    public static Expression negateExact(ExpressionType unaryType, Expression operand) {
-        assert unaryType == ExpressionType.Negate || unaryType == ExpressionType.NegateChecked;
-
-        Type opType = operand.getType();
-
-        if (opType == Integer.TYPE || opType == Long.TYPE || opType == Short.TYPE || opType == Byte.TYPE)
-            return Expressions.call(IgniteMath.class, "negateExact", operand);
-
-        return Expressions.makeUnary(unaryType, operand);
-    }
-
     /** Generate expression for method IgniteMath.addExact() for integer subtypes. */
     public static Expression addExact(Expression left, Expression right) {
         Type largerType = larger(left.getType(), right.getType());
@@ -133,6 +121,18 @@ public class IgniteExpressions {
             return Expressions.call(IgniteMath.class, "convertToByteExact", exp);
 
         return exp;
+    }
+
+    /** Generate expression for method IgniteMath.negateExact() for integer subtypes. */
+    private static Expression negateExact(ExpressionType unaryType, Expression operand) {
+        assert unaryType == ExpressionType.Negate || unaryType == ExpressionType.NegateChecked;
+
+        Type opType = operand.getType();
+
+        if (opType == Integer.TYPE || opType == Long.TYPE || opType == Short.TYPE || opType == Byte.TYPE)
+            return Expressions.call(IgniteMath.class, "negateExact", operand);
+
+        return Expressions.makeUnary(unaryType, operand);
     }
 
     /** Find larger in type hierarchy. */

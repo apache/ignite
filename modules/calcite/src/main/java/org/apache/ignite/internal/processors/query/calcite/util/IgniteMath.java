@@ -24,7 +24,6 @@ import static org.apache.calcite.sql.type.SqlTypeName.TINYINT;
 
 /** Math operations with overflow checking. */
 public class IgniteMath {
-
     /** Returns the sum of its arguments, throwing an exception if the result overflows an {@code long}. */
     public static long addExact(long x, long y) {
         long r = x + y;
@@ -150,12 +149,10 @@ public class IgniteMath {
         long r = x * y;
         long ax = Math.abs(x);
         long ay = Math.abs(y);
-        if (((ax | ay) >>> 31 != 0)) {
-            if (((y != 0) && (r / y != x)) ||
-                (x == Long.MIN_VALUE && y == -1)) {
+
+        if ((ax | ay) >>> 31 != 0 && ((y != 0 && r / y != x) || (x == Long.MIN_VALUE && y == -1)))
                 throw new ArithmeticException(BIGINT.getName() + " overflow");
-            }
-        }
+
         return r;
     }
 
