@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Optional;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
@@ -47,30 +46,26 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
     private final ByteBufferBackedDataInputImpl dataInput;
 
     /** */
-    private WALPointer walPtr;
+    private WALPointer expWalPtr;
 
     /** */
     public ByteBufferWalIterator(
-        IgniteLogger log,
         GridCacheSharedContext<?, ?> cctx,
         ByteBuffer byteBuf,
         int ver,
         WALPointer walPointer
     ) throws IgniteCheckedException {
-        this(log, cctx, byteBuf, ver, walPointer, null);
+        this(cctx, byteBuf, ver, walPointer, null);
     }
 
     /** */
     public ByteBufferWalIterator(
-        IgniteLogger log,
         GridCacheSharedContext<?, ?> cctx,
         ByteBuffer byteBuf,
         int ver,
-        WALPointer walPointer,
+        WALPointer expWalPtr,
         IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter
     ) throws IgniteCheckedException {
-        super(log);
-
         buf = byteBuf;
 
         serializer = new RecordSerializerFactoryImpl(cctx, readTypeFilter).createSerializer(ver);
@@ -79,7 +74,7 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
 
         dataInput.buffer(buf);
 
-        walPtr = walPointer;
+        this.expWalPtr = expWalPtr;
 
         advance();
     }
@@ -95,11 +90,11 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
             if (curRec == null)
                 skipHeader();
 
-            WALRecord rec = serializer.readRecord(dataInput, walPtr);
+            WALRecord rec = serializer.readRecord(dataInput, expWalPtr);
 
             result = new IgniteBiTuple<>(rec.position(), rec);
 
-            walPtr = new WALPointer(walPtr.index(), walPtr.fileOffset() + rec.size(), 0);
+            expWalPtr = new WALPointer(expWalPtr.index(), expWalPtr.fileOffset() + rec.size(), 0);
         }
         catch (SegmentEofException e) {
             return null;
@@ -122,7 +117,7 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
         if (recType == HEADER_RECORD) {
             dataInput.buffer().position(position + HEADER_RECORD_SIZE);
 
-            walPtr = new WALPointer(walPtr.index(), walPtr.fileOffset() + HEADER_RECORD_SIZE, 0);
+            expWalPtr = new WALPointer(expWalPtr.index(), expWalPtr.fileOffset() + HEADER_RECORD_SIZE, 0);
         }
         else
             dataInput.buffer().position(position);

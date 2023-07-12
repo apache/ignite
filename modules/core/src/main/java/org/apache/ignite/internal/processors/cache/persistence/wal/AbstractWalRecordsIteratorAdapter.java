@@ -41,22 +41,12 @@ public abstract class AbstractWalRecordsIteratorAdapter
     /**
      * The exception which can be thrown during reading next record. It holds until the next calling of next record.
      */
-    private IgniteCheckedException curException;
-
-    /** Logger */
-    protected final IgniteLogger log;
-
-    /**
-     * @param log Logger.
-     */
-    protected AbstractWalRecordsIteratorAdapter(final IgniteLogger log) {
-        this.log = log;
-    }
+    private IgniteCheckedException curErr;
 
     /** {@inheritDoc} */
     @Override protected IgniteBiTuple<WALPointer, WALRecord> onNext() throws IgniteCheckedException {
-        if (curException != null)
-            throw curException;
+        if (curErr != null)
+            throw curErr;
 
         IgniteBiTuple<WALPointer, WALRecord> ret = curRec;
 
@@ -64,7 +54,7 @@ public abstract class AbstractWalRecordsIteratorAdapter
             advance();
         }
         catch (IgniteCheckedException e) {
-            curException = e;
+            curErr = e;
         }
 
         return ret;
@@ -72,8 +62,8 @@ public abstract class AbstractWalRecordsIteratorAdapter
 
     /** {@inheritDoc} */
     @Override protected boolean onHasNext() throws IgniteCheckedException {
-        if (curException != null)
-            throw curException;
+        if (curErr != null)
+            throw curErr;
 
         return curRec != null;
     }

@@ -62,6 +62,9 @@ public abstract class AbstractFileWalRecordsIterator extends AbstractWalRecordsI
      */
     private AbstractReadFileHandle currWalSegment;
 
+    /** Logger */
+    @NotNull protected final IgniteLogger log;
+
     /**
      * Shared context for creating serializer of required version and grid name access. Also cacheObjects processor from
      * this context may be used to covert Data entry key and value from its binary representation into objects.
@@ -98,7 +101,7 @@ public abstract class AbstractFileWalRecordsIterator extends AbstractWalRecordsI
         @NotNull final FileIOFactory ioFactory,
         final int initialReadBufferSize,
         SegmentFileInputFactory segmentFileInputFactory) {
-        super(log);
+        this.log = log;
         this.sharedCtx = sharedCtx;
         this.serializerFactory = serializerFactory;
         this.ioFactory = ioFactory;
