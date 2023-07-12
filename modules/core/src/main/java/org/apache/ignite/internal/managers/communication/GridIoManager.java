@@ -2963,10 +2963,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     rcvCtx.rcv.close();
 
                     U.log(log, "File has been received " +
-                        "[transferred=" + rcvCtx.rcv.transferred() +
+                        "[name=" + rcvCtx.rcv.state().name() +
+                        ", transferred=" + rcvCtx.rcv.transferred() +
                         ", time=" + (double)((U.currentTimeMillis() - startTime) / 1000) + " sec" +
                         ", rmtId=" + rcvCtx.rmtNodeId +
-                        ", rmtAddr" + ch.getRemoteAddress() + ']');
+                        ", rmtAddr=" + ch.getRemoteAddress() + ']');
 
                     rcvCtx.rcv = null;
                 }
