@@ -43,6 +43,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.cdc.CdcProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -114,6 +115,9 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
     /** Buffer. */
     protected final SegmentedRingByteBuffer buf;
 
+    /** Cdc Buffer, {@code null} if CDC is disabled. */
+    private final @Nullable CdcProcessor cdcProc;
+
     /** */
     private final WALMode mode;
 
@@ -157,8 +161,8 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
      */
     FileWriteHandleImpl(
         GridCacheSharedContext cctx, SegmentIO fileIO, SegmentedRingByteBuffer rbuf, RecordSerializer serializer,
-        DataStorageMetricsImpl metrics, FileHandleManagerImpl.WALWriter writer, long pos, WALMode mode, boolean mmap,
-        boolean resume, long fsyncDelay, long maxWalSegmentSize) throws IOException {
+        DataStorageMetricsImpl metrics, FileHandleManagerImpl.WALWriter writer, CdcProcessor cdcProc,
+        long pos, WALMode mode, boolean mmap, boolean resume, long fsyncDelay, long maxWalSegmentSize) throws IOException {
         super(fileIO);
         assert serializer != null;
 
@@ -170,6 +174,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
         this.log = cctx.logger(FileWriteHandleImpl.class);
         this.cctx = cctx;
         this.walWriter = writer;
+        this.cdcProc = cdcProc;
         this.serializer = serializer;
         this.written = pos;
         this.lastFsyncPos = pos;
@@ -412,6 +417,14 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
                         int len = seg.buffer().limit() - off;
 
                         fsync((MappedByteBuffer)buf.buf, off, len);
+
+                        if (cdcProc != null) {
+                            ByteBuffer cdcBuf = buf.buf.duplicate();
+                            cdcBuf.position(off);
+                            cdcBuf.limit(off + len);
+
+                            cdcProc.collect(cdcBuf);
+                        }
 
                         seg.release();
                     }

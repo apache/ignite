@@ -23,7 +23,9 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.cdc.CdcProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Factory of {@link FileHandleManager}.
@@ -48,6 +50,7 @@ public class FileHandleManagerFactory {
      * @param metrics Data storage metrics.
      * @param mmap Using mmap.
      * @param serializer Serializer.
+     * @param cdcProc CDC processor.
      * @param currHandleSupplier Supplier of current handle.
      * @return One of implementation of {@link FileHandleManager}.
      */
@@ -56,6 +59,7 @@ public class FileHandleManagerFactory {
         DataStorageMetricsImpl metrics,
         boolean mmap,
         RecordSerializer serializer,
+        @Nullable CdcProcessor cdcProc,
         Supplier<FileWriteHandle> currHandleSupplier
     ) {
         if (dsConf.getWalMode() == WALMode.FSYNC && !walFsyncWithDedicatedWorker)
@@ -63,6 +67,7 @@ public class FileHandleManagerFactory {
                 cctx,
                 metrics,
                 serializer,
+                cdcProc,
                 currHandleSupplier,
                 dsConf.getWalMode(),
                 dsConf.getWalSegmentSize(),
@@ -75,6 +80,7 @@ public class FileHandleManagerFactory {
                 metrics,
                 mmap,
                 serializer,
+                cdcProc,
                 currHandleSupplier,
                 dsConf.getWalMode(),
                 dsConf.getWalBufferSize(),

@@ -38,6 +38,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.cdc.CdcProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
@@ -114,6 +115,9 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
     /** Persistence metrics tracker. */
     private final DataStorageMetricsImpl metrics;
 
+    /** */
+    private final @Nullable CdcProcessor cdcProc;
+
     /** Logger. */
     protected final IgniteLogger log;
 
@@ -152,7 +156,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
      */
     FsyncFileWriteHandle(
         GridCacheSharedContext cctx, SegmentIO fileIO,
-        DataStorageMetricsImpl metrics, RecordSerializer serializer, long pos,
+        DataStorageMetricsImpl metrics, RecordSerializer serializer, CdcProcessor cdcProc, long pos,
         WALMode mode, long maxSegmentSize, int size, long fsyncDelay) throws IOException {
         super(fileIO);
         assert serializer != null;
@@ -165,6 +169,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
         this.fsyncDelay = fsyncDelay;
         this.maxSegmentSize = maxSegmentSize;
         this.serializer = serializer;
+        this.cdcProc = cdcProc;
         this.written = pos;
         this.lastFsyncPos = pos;
 
@@ -780,6 +785,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
 
             // Do the write.
             int size = buf.remaining();
+            int bufPos = buf.position();
 
             assert size > 0 : size;
 
@@ -798,6 +804,14 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
                 cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, se));
 
                 throw se;
+            }
+
+            if (cdcProc != null) {
+                ByteBuffer cdcBuf = buf.duplicate();
+                cdcBuf.position(bufPos);
+                cdcBuf.limit(buf.limit());
+
+                cdcProc.collect(cdcBuf);
             }
         }
         finally {
