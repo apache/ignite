@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.UsedPages
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.UsedPagesMetricTestPersistence;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIOFreeSizeTest;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIOTest;
+import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferWalIteratorTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.CpTriggeredWalDeltaConsistencyTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ExplicitWalDeltaConsistencyTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManagerSelfTest;
@@ -123,6 +124,8 @@ public class IgnitePdsTestSuite5 {
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheDatabaseSharedManagerSelfTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, WalCompactionNotificationsTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, ByteBufferWalIteratorTest.class, ignoredTests);
 
         return suite;
     }
