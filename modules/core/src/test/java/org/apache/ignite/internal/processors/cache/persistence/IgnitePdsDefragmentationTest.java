@@ -184,24 +184,24 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
      * Tests basic derfragmentation.
      *
      * @throws Exception If failed.
-     * @see #doSimpleDefragmentation()
+     * @see #checkSuccessfulDefragmentation()
      */
     @Test
     public void testSuccessfulDefragmentation() throws Exception {
-        doSimpleDefragmentation();
+        checkSuccessfulDefragmentation();
     }
 
     /**
      * Tests basic derfragmentation with one thread.
      *
      * @throws Exception If failed.
-     * @see #doSimpleDefragmentation()
+     * @see #checkSuccessfulDefragmentation()
      */
     @Test
     public void testSuccessfulDefragmentationOneThread() throws Exception {
         defragPoolSize = 1;
 
-        doSimpleDefragmentation();
+        checkSuccessfulDefragmentation();
     }
 
     /**
@@ -218,7 +218,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    private void doSimpleDefragmentation() throws Exception {
+    private void checkSuccessfulDefragmentation() throws Exception {
         IgniteEx ig = startGrid(0);
 
         ig.cluster().state(ClusterState.ACTIVE);
