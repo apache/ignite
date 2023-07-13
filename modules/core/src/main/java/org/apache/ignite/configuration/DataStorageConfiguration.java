@@ -1339,7 +1339,8 @@ public class DataStorageConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setDefragmentationThreadPoolSize(int defragmentationThreadPoolSize) {
-        A.ensure(defragmentationThreadPoolSize > 1, "Defragmentation thread pool size must be greater or equal to 1.");
+        A.ensure(defragmentationThreadPoolSize > 0, "Defragmentation thread pool size must be greater or " +
+            "equal to 1.");
 
         this.defragmentationThreadPoolSize = defragmentationThreadPoolSize;
 
