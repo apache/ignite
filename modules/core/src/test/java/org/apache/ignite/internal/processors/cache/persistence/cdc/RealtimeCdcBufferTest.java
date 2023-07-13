@@ -23,7 +23,9 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -33,6 +35,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.F;
@@ -40,6 +43,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -69,6 +73,9 @@ public class RealtimeCdcBufferTest extends GridCommonAbstractTest {
     private int maxCdcBufSize;
 
     /** */
+    private AtomicInteger commitCnt;
+
+    /** */
     @Parameterized.Parameter()
     public WALMode walMode;
 
@@ -86,12 +93,14 @@ public class RealtimeCdcBufferTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
+        consumer = new ByteBufferCdcConsumer(maxCdcBufSize, commitCnt);
+
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setMaxCdcBufferSize(maxCdcBufSize)
             .setCdcConsumer(consumer)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setCdcEnabled(cdcEnabled)
-                .setPersistenceEnabled(true)
+                .setPersistenceEnabled(true)  // TODO: test for in-memory mode.
             )
             .setWalMode(walMode)
         );
@@ -117,15 +126,15 @@ public class RealtimeCdcBufferTest extends GridCommonAbstractTest {
 
         cdcEnabled = true;
 
-        consumer = new ByteBufferCdcConsumer(10 * (int)U.MB);
-
         stopLatch = null;
+        commitCnt = null;
+        consumer = null;
     }
 
     /** */
     @Test
     public void testCdcBufferOverflow() throws Exception {
-        maxCdcBufSize = (int)U.KB;
+        maxCdcBufSize = 100 * (int)U.KB;
 
         checkCdcBufferOverflow(10 * (int)U.KB, 100, true);
     }
@@ -136,6 +145,44 @@ public class RealtimeCdcBufferTest extends GridCommonAbstractTest {
         cdcEnabled = false;
 
         checkCdcBufferOverflow(10 * (int)U.KB, 100, false);
+    }
+
+    /** */
+    @Test
+    public void testCdcRecords() throws Exception {
+        maxCdcBufSize = 100 * (int)U.MB;
+        commitCnt = new AtomicInteger();
+
+        IgniteEx crd = startGrid(0);
+
+        crd.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Integer, Integer> cache = crd.cache(DEFAULT_CACHE_NAME);
+
+        // Await while cluster is fully activated.
+        cache.put(0, 0);
+
+        int expCommitCnt = 5;
+
+        commitCnt.set(expCommitCnt);
+
+        while (commitCnt.get() >= 0)
+            cache.put(0, 0);
+
+        forceCheckpoint(crd);
+
+        stopGrid(0);
+
+        try (WALIterator walIt = walIter(walSegments())) {
+            int cdcRecCnt = 0;
+
+            while (walIt.hasNext()) {
+                if (walIt.next().getValue().type() == WALRecord.RecordType.REALTIME_CDC_RECORD)
+                    cdcRecCnt++;
+            }
+
+            assertEquals(expCommitCnt, cdcRecCnt);
+        }
     }
 
     /** */
@@ -152,9 +199,7 @@ public class RealtimeCdcBufferTest extends GridCommonAbstractTest {
 
         U.awaitQuiet(stopLatch);
 
-        File walSegments = U.resolveWorkDirectory(
-            U.defaultWorkDirectory(),
-            DFLT_STORE_DIR + "/wal/" + CONSISTENT_ID, false);
+        File walSegments = walSegments();
 
         WALIterator it = walIter(walSegments);
 
@@ -219,6 +264,24 @@ public class RealtimeCdcBufferTest extends GridCommonAbstractTest {
         stopGrid(0);
 
         assertTrue(lsnr.check());
+
+        try (WALIterator walIt = walIter(walSegments())) {
+            int stopRecCnt = 0;
+
+            while (walIt.hasNext()) {
+                if (walIt.next().getValue().type() == WALRecord.RecordType.REALTIME_STOP_CDC_RECORD)
+                    stopRecCnt++;
+            }
+
+            assertEquals(shouldOverflow ? 1 : 0, stopRecCnt);
+        }
+    }
+
+    /** */
+    private File walSegments() throws IgniteCheckedException {
+        return U.resolveWorkDirectory(
+            U.defaultWorkDirectory(),
+            DFLT_STORE_DIR + "/wal/" + CONSISTENT_ID, false);
     }
 
     /** Get iterator over WAL. */
@@ -237,7 +300,12 @@ public class RealtimeCdcBufferTest extends GridCommonAbstractTest {
         private final ByteBuffer buf;
 
         /** */
-        ByteBufferCdcConsumer(int maxCdcBufSize) {
+        private final AtomicInteger commitCnt;
+
+        /** */
+        ByteBufferCdcConsumer(int maxCdcBufSize, @Nullable AtomicInteger commitCnt) {
+            this.commitCnt = commitCnt;
+
             buf = ByteBuffer.allocate(maxCdcBufSize);
 
             Arrays.fill(buf.array(), (byte)0);
@@ -245,9 +313,11 @@ public class RealtimeCdcBufferTest extends GridCommonAbstractTest {
             buf.position(0);
         }
 
-        /** */
-        @Override public void consume(ByteBuffer data) {
+        /** {@inheritDoc} */
+        @Override public boolean consume(ByteBuffer data) {
             buf.put(data);
+
+            return commitCnt != null && commitCnt.decrementAndGet() >= 0;
         }
 
         /** */
