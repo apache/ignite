@@ -37,9 +37,6 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final ByteBuffer buf;
-
-    /** */
     private final RecordSerializer serializer;
 
     /** */
@@ -66,13 +63,11 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
         WALPointer expWalPtr,
         IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter
     ) throws IgniteCheckedException {
-        buf = byteBuf;
-
         serializer = new RecordSerializerFactoryImpl(cctx, readTypeFilter).createSerializer(ver);
 
         dataInput = new ByteBufferBackedDataInputImpl();
 
-        dataInput.buffer(buf);
+        dataInput.buffer(byteBuf);
 
         this.expWalPtr = expWalPtr;
 
@@ -81,7 +76,7 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
 
     /** */
     private IgniteBiTuple<WALPointer, WALRecord> advanceRecord() throws IgniteCheckedException {
-        if (!buf.hasRemaining())
+        if (!dataInput.buffer().hasRemaining())
             return null;
 
         IgniteBiTuple<WALPointer, WALRecord> result;
