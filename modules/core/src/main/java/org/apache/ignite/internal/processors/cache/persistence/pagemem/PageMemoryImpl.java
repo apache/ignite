@@ -40,7 +40,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.PageReplacementMode;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.PageReplacementStartedEvent;
@@ -334,7 +333,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors()),
             new IgniteThreadFactory(ctx.igniteInstanceName(), "page-mem-op"));
 
-        DataRegionConfiguration memCfg = getDataRegionConfiguration();
+        DataRegionConfiguration memCfg = dataRegionMetrics.regionCfg();
 
         PageReplacementMode pageReplacementMode = memCfg == null ? DataRegionConfiguration.DFLT_PAGE_REPLACEMENT_MODE :
                 memCfg.getPageReplacementMode();
@@ -640,7 +639,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             seg.loadedPages.put(grpId, PageIdUtils.effectivePageId(pageId), relPtr, seg.partGeneration(grpId, partId));
         }
         catch (IgniteOutOfMemoryException oom) {
-            DataRegionConfiguration dataRegionCfg = getDataRegionConfiguration();
+            DataRegionConfiguration dataRegionCfg = dataRegionMetrics.regionCfg();
 
             IgniteOutOfMemoryException e = new IgniteOutOfMemoryException("Out of memory in data region [" +
                 "name=" + dataRegionCfg.getName() +
@@ -667,31 +666,6 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         //we have allocated 'tracking' page, we need to allocate regular one
         return isTrackingPage ? allocatePage(grpId, partId, flags) : pageId;
-    }
-
-    /**
-     * @return Data region configuration.
-     */
-    private DataRegionConfiguration getDataRegionConfiguration() {
-        DataStorageConfiguration memCfg = ctx.kernalContext().config().getDataStorageConfiguration();
-
-        assert memCfg != null;
-
-        String dataRegionName = dataRegionMetrics.getName();
-
-        if (memCfg.getDefaultDataRegionConfiguration().getName().equals(dataRegionName))
-            return memCfg.getDefaultDataRegionConfiguration();
-
-        DataRegionConfiguration[] dataRegions = memCfg.getDataRegionConfigurations();
-
-        if (dataRegions != null) {
-            for (DataRegionConfiguration reg : dataRegions) {
-                if (reg != null && reg.getName().equals(dataRegionName))
-                    return reg;
-            }
-        }
-
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -2354,7 +2328,7 @@ public class PageMemoryImpl implements PageMemoryEx {
          * @param reason Reason.
          */
         public IgniteOutOfMemoryException oomException(String reason) {
-            DataRegionConfiguration dataRegionCfg = getDataRegionConfiguration();
+            DataRegionConfiguration dataRegionCfg = dataRegionMetrics.regionCfg();
 
             return new IgniteOutOfMemoryException("Failed to find a page for eviction (" + reason + ") [" +
                 "segmentCapacity=" + loadedPages.capacity() +

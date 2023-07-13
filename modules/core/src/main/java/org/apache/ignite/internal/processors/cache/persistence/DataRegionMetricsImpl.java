@@ -385,6 +385,13 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     }
 
     /**
+     * @return Related Data region configuration.
+     */
+    public DataRegionConfiguration regionCfg() {
+        return dataRegionCfg;
+    }
+
+    /**
      * Calculates the number of bytes, occupied by data. Unlike {@link #getTotalUsedSize} it also takes into account the
      * empty space in non-empty pages.
      */
