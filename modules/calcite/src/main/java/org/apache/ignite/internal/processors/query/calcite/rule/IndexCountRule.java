@@ -30,8 +30,8 @@ import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.ignite.internal.processors.query.QueryProperties;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
@@ -103,8 +103,8 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
             return;
 
         RelDistribution distribution;
-        QueryProperties qryProps = call.getPlanner().getContext().unwrap(QueryProperties.class);
-        if (qryProps != null && qryProps.isLocal())
+        BaseQueryContext baseQryCtx = call.getPlanner().getContext().unwrap(BaseQueryContext.class);
+        if (baseQryCtx.isLocal())
             distribution = IgniteDistributions.single();
         else
             distribution = table.distribution();

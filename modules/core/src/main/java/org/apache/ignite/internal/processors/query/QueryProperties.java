@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.Objects;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -53,24 +52,5 @@ public final class QueryProperties {
     /** */
     public boolean isLocal() {
         return isLocal;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        QueryProperties that = (QueryProperties)o;
-
-        return keepBinary == that.keepBinary && isLocal == that.isLocal && Objects.equals(cacheName, that.cacheName);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(cacheName, keepBinary, isLocal);
     }
 }

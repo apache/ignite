@@ -433,7 +433,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                         AtomicBoolean miss = new AtomicBoolean();
 
                         plan = queryPlanCache().queryPlan(
-                                new CacheKey(schema.getName(), sql, qryCtx != null ? qryCtx.unwrap(QueryProperties.class) : qryCtx, params),
+                                new CacheKey(schema.getName(), sql, contextKey(qryCtx), params),
                                 () -> {
                                     miss.set(true);
 
@@ -473,8 +473,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         assert schema != null : "Schema not found: " + schemaName;
 
-        QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql,
-                qryCtx != null ? qryCtx.unwrap(QueryProperties.class) : null, params));
+        QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql, contextKey(qryCtx), params));
 
         if (plan != null) {
             parserMetrics.countCacheHit();
@@ -497,7 +496,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 if (qryList.size() == 1) {
                     plan0 = queryPlanCache().queryPlan(
                         // Use source SQL to avoid redundant parsing next time.
-                        new CacheKey(schema.getName(), sql, qryCtx != null ? qryCtx.unwrap(QueryProperties.class) : null, params),
+                        new CacheKey(schema.getName(), sql, contextKey(qryCtx), params),
                         () -> prepareSvc.prepareSingle(sqlNode, qry.planningContext())
                     );
                 }
@@ -526,6 +525,19 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 }
             ).toString();
         }
+    }
+
+    /** */
+    private Object contextKey(QueryContext qryCtx) {
+        if (qryCtx == null)
+            return null;
+
+        QueryProperties queryProps = qryCtx.unwrap(QueryProperties.class);
+
+        if (queryProps == null)
+            return null;
+
+        return queryProps.isLocal();
     }
 
     /** */

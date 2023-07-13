@@ -558,9 +558,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     ) {
         qry.mapping();
 
-        QueryProperties qryProps = qry.context().unwrap(QueryProperties.class);
-
-        MappingQueryContext mapCtx = Commons.mapContext(locNodeId, topologyVersion(), qryProps);
+        MappingQueryContext mapCtx = Commons.mapContext(locNodeId, topologyVersion(), qry.context().isLocal());
 
         plan.init(mappingSvc, mapCtx);
 
@@ -651,6 +649,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 }
             }
         }
+
+        QueryProperties qryProps = qry.context().unwrap(QueryProperties.class);
 
         Function<Object, Object> fieldConverter = (qryProps == null || qryProps.keepBinary()) ? null :
             o -> CacheObjectUtils.unwrapBinaryIfNeeded(objValCtx, o, false, true, null);

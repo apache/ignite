@@ -35,7 +35,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.Mappings;
-import org.apache.ignite.internal.processors.query.QueryProperties;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
@@ -72,8 +72,8 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                 }
 
                 RelDistribution distribution;
-                QueryProperties qryProps = planner.getContext().unwrap(QueryProperties.class);
-                if (qryProps != null && qryProps.isLocal())
+                BaseQueryContext baseQryCtx = planner.getContext().unwrap(BaseQueryContext.class);
+                if (baseQryCtx.isLocal())
                     distribution = IgniteDistributions.single();
                 else
                     distribution = table.distribution();
@@ -133,8 +133,8 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                 IgniteTable table = rel.getTable().unwrap(IgniteTable.class);
 
                 RelDistribution distribution;
-                QueryProperties qryProps = planner.getContext().unwrap(QueryProperties.class);
-                if (qryProps != null && qryProps.isLocal())
+                BaseQueryContext baseQryCtx = planner.getContext().unwrap(BaseQueryContext.class);
+                if (baseQryCtx.isLocal())
                     distribution = IgniteDistributions.single();
                 else
                     distribution = table.distribution();

@@ -58,7 +58,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
-import org.apache.ignite.internal.processors.query.QueryProperties;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
@@ -445,11 +444,11 @@ public final class Commons {
 
     /** */
     public static MappingQueryContext mapContext(UUID locNodeId, AffinityTopologyVersion topVer) {
-        return mapContext(locNodeId, topVer, null);
+        return mapContext(locNodeId, topVer, false);
     }
 
     /** */
-    public static MappingQueryContext mapContext(UUID locNodeId, AffinityTopologyVersion topVer, QueryProperties queryProperties) {
-        return new MappingQueryContext(locNodeId, topVer, queryProperties != null && queryProperties.isLocal());
+    public static MappingQueryContext mapContext(UUID locNodeId, AffinityTopologyVersion topVer, boolean isLocal) {
+        return new MappingQueryContext(locNodeId, topVer, isLocal);
     }
 }

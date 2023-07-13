@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -48,9 +49,6 @@ import org.jetbrains.annotations.NotNull;
 
 /** */
 public class ColocationGroup implements MarshalableMessage {
-    /** */
-    public static final long[] EMPTY_SOURCE_IDS = {};
-
     /** */
     private long[] sourceIds;
 
@@ -81,8 +79,16 @@ public class ColocationGroup implements MarshalableMessage {
     }
 
     /** */
-    public static ColocationGroup create(long[] sourceIds, List<UUID> nodeIds, List<List<UUID>> assignments) {
-        return new ColocationGroup(Arrays.copyOf(sourceIds, sourceIds.length), nodeIds, assignments);
+    public ColocationGroup local(UUID nodeId) {
+        List<List<UUID>> localAssignments = null;
+        if (assignments != null) {
+            localAssignments = assignments.stream()
+                    .map(l -> nodeId.equals(l.get(0)) ? l : Collections.<UUID>emptyList())
+                    .collect(Collectors.toList());
+        }
+
+        return new ColocationGroup(Arrays.copyOf(sourceIds, sourceIds.length), Collections.singletonList(nodeId),
+                localAssignments);
     }
 
     /** */
@@ -101,13 +107,6 @@ public class ColocationGroup implements MarshalableMessage {
      */
     public List<UUID> nodeIds() {
         return nodeIds == null ? Collections.emptyList() : nodeIds;
-    }
-
-    /**
-     * @return Array of source ids;
-     */
-    public long[] sourceIds() {
-        return sourceIds == null ? EMPTY_SOURCE_IDS : sourceIds;
     }
 
     /**

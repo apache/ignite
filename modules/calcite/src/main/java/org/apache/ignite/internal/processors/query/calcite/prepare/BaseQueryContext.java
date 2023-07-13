@@ -46,6 +46,7 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.QueryProperties;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteRexBuilder;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -156,13 +157,17 @@ public final class BaseQueryContext extends AbstractQueryContext {
     /** */
     private final GridQueryCancel qryCancel;
 
+    /** */
+    private final boolean isLocal;
+
     /**
      * Private constructor, used by a builder.
      */
     private BaseQueryContext(
         FrameworkConfig cfg,
         Context parentCtx,
-        IgniteLogger log
+        IgniteLogger log,
+        boolean isLocal
     ) {
         super(Contexts.chain(parentCtx, cfg.getContext()));
 
@@ -170,6 +175,8 @@ public final class BaseQueryContext extends AbstractQueryContext {
         this.cfg = Frameworks.newConfigBuilder(cfg).context(this).build();
 
         this.log = log;
+
+        this.isLocal = isLocal;
 
         qryCancel = unwrap(GridQueryCancel.class);
 
@@ -265,6 +272,11 @@ public final class BaseQueryContext extends AbstractQueryContext {
         return EMPTY_CONTEXT;
     }
 
+    /** */
+    public boolean isLocal() {
+        return isLocal;
+    }
+
     /**
      * Query context builder.
      */
@@ -318,7 +330,9 @@ public final class BaseQueryContext extends AbstractQueryContext {
          * @return Planner context.
          */
         public BaseQueryContext build() {
-            return new BaseQueryContext(frameworkCfg, parentCtx, log);
+            QueryProperties qryProps = parentCtx.unwrap(QueryProperties.class);
+
+            return new BaseQueryContext(frameworkCfg, parentCtx, log, qryProps != null && qryProps.isLocal());
         }
     }
 }

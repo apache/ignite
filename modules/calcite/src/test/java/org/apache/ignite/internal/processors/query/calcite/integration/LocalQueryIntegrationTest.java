@@ -120,6 +120,43 @@ public class LocalQueryIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
+    @Test
+    public void testInsertFromSelect() {
+        try {
+            sql("CREATE TABLE T3(ID INT PRIMARY KEY, IDX_VAL VARCHAR, VAL VARCHAR) WITH cache_name=t3_cache");
+
+            sql("INSERT INTO T3(ID, IDX_VAL, VAL) SELECT ID, IDX_VAL, VAL FROM T1 WHERE ID < ?", ENTRIES_COUNT);
+
+            assertEquals(grid(0).cache("T1_CACHE").localSizeLong(CachePeekMode.PRIMARY),
+                    client.cache("T3_CACHE").sizeLong(CachePeekMode.PRIMARY));
+        }
+        finally {
+            grid(0).cache("T3_CACHE").destroy();
+        }
+    }
+
+    /** */
+    @Test
+    public void testDelete() {
+        try {
+            sql("CREATE TABLE T3(ID INT PRIMARY KEY, IDX_VAL VARCHAR, VAL VARCHAR) WITH cache_name=t3_cache");
+
+            sql("INSERT INTO T3(ID, IDX_VAL, VAL) SELECT ID, IDX_VAL, VAL FROM DICT");
+
+            assertEquals(ENTRIES_COUNT, client.cache("T3_CACHE").sizeLong(CachePeekMode.PRIMARY));
+
+            long localSize = grid(0).cache("T3_CACHE").localSizeLong(CachePeekMode.PRIMARY);
+
+            sql("DELETE FROM T3 WHERE ID < ?", ENTRIES_COUNT);
+
+            assertEquals(ENTRIES_COUNT - localSize, client.cache("T3_CACHE").sizeLong(CachePeekMode.PRIMARY));
+        }
+        finally {
+            grid(0).cache("T3_CACHE").destroy();
+        }
+    }
+
+    /** */
     private void testJoin(String table1, String table2, String joinCol) {
         String sql = "select * from " + table1 + " join " + table2 +
                         " on " + table1 + "." + joinCol + "=" + table2 + "." + joinCol;
