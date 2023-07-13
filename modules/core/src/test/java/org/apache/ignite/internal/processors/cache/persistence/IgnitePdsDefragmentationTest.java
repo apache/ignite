@@ -62,14 +62,18 @@ import org.apache.ignite.internal.processors.cache.persistence.defragmentation.D
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DEFRAGMENTATION_THREAD_POOL_SIZE;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_MAX_SIZE;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentationCompletionMarkerFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedIndexFile;
@@ -87,13 +91,19 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     public static final int PARTS = 5;
 
     /** */
-    public static final int ADDED_KEYS_COUNT = 1500;
-
-    /** */
     protected static final String GRP_NAME = "group";
 
     /** Defragmentation pool size. If < 1, default value is used. */
     private int defragPoolSize;
+
+    /** */
+    private int walSegmentSize = 4 * 1024 * 1024;
+
+    /** */
+    private long maxWalArchieveSize = DFLT_WAL_ARCHIVE_MAX_SIZE;
+
+    /** */
+    private int addedKeysCnt = 1500;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -150,7 +160,9 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         cfg.setConsistentId(igniteInstanceName);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
-        dsCfg.setWalSegmentSize(4 * 1024 * 1024);
+
+        dsCfg.setWalSegmentSize(walSegmentSize);
+        dsCfg.setMaxWalArchiveSize(maxWalArchieveSize);
 
         dsCfg.setDefaultDataRegionConfiguration(
             new DataRegionConfiguration()
@@ -189,6 +201,47 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     @Test
     public void testSuccessfulDefragmentation() throws Exception {
         doSimpleDefragmentation();
+    }
+
+    /**
+     * Tests OOM exception in derfragmentation region.
+     *
+     * @throws Exception If failed.
+     * @see #doSimpleDefragmentation()
+     */
+    @Test
+    @WithSystemProperty(key = "IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE", value = "1")
+    public void testDefragmentationOom() throws Exception {
+        addedKeysCnt = 800_000;
+
+        defragPoolSize = 8;
+
+        walSegmentSize = 32 * 1024 * 1024;
+        maxWalArchieveSize = 3L * 1024L * 1024L * 1024L;
+
+        IgniteEx ig = startGrid(0);
+
+        ig.cluster().state(ClusterState.ACTIVE);
+
+        byte[] val = new byte[3700];
+
+        try (IgniteDataStreamer<Object, Object> ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int i = 0; i < addedKeysCnt; i++) {
+                new Random().nextBytes(val);
+
+                ds.addData(i, val);
+            }
+        }
+
+        forceCheckpoint(ig);
+
+        createMaintenanceRecord();
+
+        stopGrid(0);
+
+        startGrid(0);
+
+        waitForDefragmentation(0);
     }
 
     /**
@@ -624,9 +677,10 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
     /** */
     protected <T> void fillCache(Function<Integer, T> keyMapper, IgniteCache<T, Object> cache) {
+        byte[] val = new byte[8192];
+
         try (IgniteDataStreamer<T, Object> ds = grid(0).dataStreamer(cache.getName())) {
-            for (int i = 0; i < ADDED_KEYS_COUNT; i++) {
-                byte[] val = new byte[8192];
+            for (int i = 0; i < addedKeysCnt; i++) {
                 new Random().nextBytes(val);
 
                 ds.addData(keyMapper.apply(i), val);
@@ -634,16 +688,16 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         }
 
         try (IgniteDataStreamer<T, Object> ds = grid(0).dataStreamer(cache.getName())) {
-            ds.allowOverwrite(true);
+            ds.receiver(DataStreamerCacheUpdaters.batched());
 
-            for (int i = 0; i <= ADDED_KEYS_COUNT / 2; i++)
+            for (int i = 0; i <= addedKeysCnt / 2; i++)
                 ds.removeData(keyMapper.apply(i * 2));
         }
     }
 
     /** */
     public void validateCache(IgniteCache<Object, Object> cache) {
-        for (int k = 0; k < ADDED_KEYS_COUNT; k++) {
+        for (int k = 0; k < addedKeysCnt; k++) {
             Object val = cache.get(k);
 
             if (k % 2 == 0)
