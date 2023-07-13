@@ -36,4 +36,14 @@ public interface ByteBufferBackedDataInput extends DataInput {
      * @throws IOException If failed.
      */
     public void ensure(int requested) throws IOException;
+
+    /**
+     * @return Position in the stream.
+     */
+    public long position();
+
+    /**
+     * Size.
+     */
+    public long size() throws IOException;
 }

@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBac
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
@@ -245,7 +244,7 @@ public class RecordV2Serializer implements RecordSerializer {
     }
 
     /** {@inheritDoc} */
-    @Override public WALRecord readRecord(FileInput in, WALPointer expPtr) throws IOException, IgniteCheckedException {
+    @Override public WALRecord readRecord(ByteBufferBackedDataInput in, WALPointer expPtr) throws IOException, IgniteCheckedException {
         return RecordV1Serializer.readWithCrc(in, expPtr, recordIO);
     }
 

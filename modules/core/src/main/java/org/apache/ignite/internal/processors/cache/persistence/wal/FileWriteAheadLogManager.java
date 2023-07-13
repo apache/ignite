@@ -2857,7 +2857,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      *
      */
-    public static class ReadFileHandle extends AbstractFileHandle implements AbstractWalRecordsIterator.AbstractReadFileHandle {
+    public static class ReadFileHandle extends AbstractFileHandle implements AbstractFileWalRecordsIterator.AbstractReadFileHandle {
         /** Entry serializer. */
         RecordSerializer ser;
 
@@ -2923,7 +2923,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      * Iterator over WAL-log.
      */
-    private static class RecordsIterator extends AbstractWalRecordsIterator {
+    private static class RecordsIterator extends AbstractFileWalRecordsIterator {
         /** */
         private static final long serialVersionUID = 0L;
 

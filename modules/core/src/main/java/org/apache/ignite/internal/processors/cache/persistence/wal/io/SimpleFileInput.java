@@ -262,12 +262,4 @@ public class SimpleFileInput implements FileInput {
     @Override public String readUTF() throws IOException {
         throw new UnsupportedOperationException();
     }
-
-    /**
-     * @param skipCheck If CRC check should be skipped.
-     * @return autoclosable fileInput, after its closing crc will be calculated and compared with saved one
-     */
-    @Override public Crc32CheckingFileInput startRead(boolean skipCheck) {
-        return new Crc32CheckingFileInput(this, skipCheck);
-    }
 }

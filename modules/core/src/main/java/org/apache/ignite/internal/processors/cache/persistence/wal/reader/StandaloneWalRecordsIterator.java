@@ -40,7 +40,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
+import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractFileWalRecordsIterator;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.ReadFileHandle;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -70,7 +70,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  * WAL reader iterator, for creation in standalone WAL reader tool Operates over one directory, does not provide start
  * and end boundaries
  */
-class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
+class StandaloneWalRecordsIterator extends AbstractFileWalRecordsIterator {
     /** Record buffer size */
     public static final int DFLT_BUF_SIZE = 2 * 1024 * 1024;
 
