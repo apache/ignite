@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 
@@ -44,8 +45,6 @@ public class Crc32CheckingDataInput extends ByteBufferBackedDataInputImpl implem
     /** */
     public Crc32CheckingDataInput(ByteBufferBackedDataInput delegate, boolean skipCheck) {
         this.delegate = delegate;
-
-        buffer(delegate.buffer());
 
         lastCalcPosition = buffer().position();
 
@@ -100,5 +99,102 @@ public class Crc32CheckingDataInput extends ByteBufferBackedDataInputImpl implem
         crc.update(delegate.buffer(), oldPos - lastCalcPosition);
 
         lastCalcPosition = oldPos;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int skipBytes(int n) throws IOException {
+        ensure(n);
+
+        int skipped = Math.min(buffer().remaining(), n);
+
+        buffer().position(buffer().position() + skipped);
+
+        return skipped;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public void readFully(byte[] b) throws IOException {
+        ensure(b.length);
+
+        buffer().get(b);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public void readFully(byte[] b, int off, int len) throws IOException {
+        ensure(len);
+
+        buffer().get(b, off, len);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public byte readByte() throws IOException {
+        ensure(1);
+
+        return buffer().get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public short readShort() throws IOException {
+        ensure(2);
+
+        return buffer().getShort();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public char readChar() throws IOException {
+        ensure(2);
+
+        return buffer().getChar();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public int readInt() throws IOException {
+        ensure(4);
+
+        return buffer().getInt();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public long readLong() throws IOException {
+        ensure(8);
+
+        return buffer().getLong();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public float readFloat() throws IOException {
+        ensure(4);
+
+        return buffer().getFloat();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public double readDouble() throws IOException {
+        ensure(8);
+
+        return buffer().getDouble();
+    }
+
+    /** {@inheritDoc} */
+    @Override public ByteBuffer buffer() {
+        return delegate.buffer();
     }
 }
