@@ -24,13 +24,13 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Random;
-import java.util.TreeMap;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -223,8 +223,6 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
             .filter(r -> !(r instanceof UnsupportedWalRecord))
             .collect(Collectors.toList());
 
-        final int cnt = records.size();
-
         for (WALRecord record : records)
             writeRecord(byteBuf, record);
 
@@ -263,10 +261,10 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         log.info("Comparing " + x.type() + " and " + y.type());
 
-        return Objects.equals(x.type(), y.type())
+        return x.type() == y.type()
             && Objects.equals(x.position(), y.position())
             && x.size() == y.size()
-            && (x instanceof TimeStampRecord ? ((TimeStampRecord)x).timestamp() == ((TimeStampRecord)y).timestamp() : true);
+            && (!(x instanceof TimeStampRecord) || ((TimeStampRecord)x).timestamp() == ((TimeStampRecord)y).timestamp());
     }
 
     /** */
@@ -396,7 +394,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
             fail("next() expected to fail");
         }
-        catch (NoSuchElementException e) {
+        catch (NoSuchElementException ignored) {
             // This is expected.
         }
     }
@@ -427,15 +425,15 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         int shift = adaptTest ? -1 : 0;
 
-        ByteBufferWalIterator walIterator = new ByteBufferWalIterator(sharedCtx, byteBuf,
+        ByteBufferWalIterator walIter = new ByteBufferWalIterator(sharedCtx, byteBuf,
             RecordSerializerFactory.LATEST_SERIALIZER_VERSION, new WALPointer(idx, pos, 0));
 
-        Map<WALRecord.RecordType, Integer> counts = new TreeMap<>();
+        Map<WALRecord.RecordType, Integer> counts = new EnumMap<>(WALRecord.RecordType.class);
 
-        while (walIterator.hasNext()) {
+        while (walIter.hasNext()) {
             int p1 = byteBuf.position();
 
-            IgniteBiTuple<WALPointer, WALRecord> next = walIterator.next();
+            IgniteBiTuple<WALPointer, WALRecord> next = walIter.next();
 
             if (log.isDebugEnabled())
                 log.debug("Got " + next.get2().type() + " at " + next.get1());
@@ -453,7 +451,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
             p0 = p1;
 
-            counts.merge(next.get2().type(), 1, (x, y) -> x + y);
+            counts.merge(next.get2().type(), 1, Integer::sum);
 
             assertTrue(next != null);
         }
@@ -474,7 +472,7 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         types.sort((x, y) -> -counts.get(x).compareTo(counts.get(y)));
 
-        int len = types.stream().map(x -> x.toString().length()).max(Integer::compare).get();
+        int len = types.stream().map(x -> x.toString().length()).max(Integer::compare).orElse(0);
 
         char[] spaces = new char[len];
 
@@ -573,13 +571,13 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         positions.add(byteBuf.position());
 
-        ByteBufferWalIterator walIterator = new ByteBufferWalIterator(sharedCtx, byteBuf,
+        ByteBufferWalIterator walIter = new ByteBufferWalIterator(sharedCtx, byteBuf,
             RecordSerializerFactory.LATEST_SERIALIZER_VERSION, new WALPointer((int)fd.idx(), 0, 0));
 
         positions.add(byteBuf.position());
 
         positions.addAll(
-            StreamSupport.stream(walIterator.spliterator(), false)
+            StreamSupport.stream(walIter.spliterator(), false)
                 .map(x -> byteBuf.position())
                 .collect(Collectors.toList()));
 
@@ -620,11 +618,11 @@ public class ByteBufferWalIteratorTest extends GridCommonAbstractTest {
 
         byteBuf.position(fromPos).limit(toPos);
 
-        byte[] array = byteBuf.array();
+        byte[] arr = byteBuf.array();
 
         byteBuf = ByteBuffer.allocate(len).order(ByteOrder.nativeOrder());
 
-        System.arraycopy(array, fromPos, byteBuf.array(), 0, len);
+        System.arraycopy(arr, fromPos, byteBuf.array(), 0, len);
 
         int pos = 0;
 

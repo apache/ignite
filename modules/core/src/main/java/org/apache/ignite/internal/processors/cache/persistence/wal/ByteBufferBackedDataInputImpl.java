@@ -57,7 +57,7 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
 
     /** {@inheritDoc} */
     @Override public void readFully(@NotNull byte[] b, int off, int len) throws IOException {
-        ensure(b.length);
+        ensure(len);
 
         buf.get(b, off, len);
     }
