@@ -109,9 +109,18 @@ public class CdcBuffer {
         return size.get();
     }
 
-    /** Cleans the buffer if overflowed. Performs by the consumer thread. */
-    public void cleanIfOverflowed() {
-        if (!overflowed || consumerNode == null)
+    /**
+     * @return {@code True} if buffer is overflowed.
+     */
+    public boolean overflowed() {
+        return overflowed;
+    }
+
+    /**
+     * Cleans the buffer. Must be performed by the consumer thread.
+     */
+    public void clean() {
+        if (consumerNode == null)
             return;
 
         ByteBuffer data;
@@ -123,6 +132,7 @@ public class CdcBuffer {
 
         consumerNode = null;
         producerNode = null;
+        overflowed = false;
 
         size.set(0);
     }

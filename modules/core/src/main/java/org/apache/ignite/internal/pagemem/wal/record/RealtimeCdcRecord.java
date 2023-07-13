@@ -15,20 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.cdc;
+package org.apache.ignite.internal.pagemem.wal.record;
 
-import java.nio.ByteBuffer;
-
-/** Mock for Realtime CDC buffer consumer. */
-public interface CdcBufferConsumer {
-    /**
-     * Consumes raw WAL data.
-     *
-     * @param data Raw data to consume.
-     * @return {@code True} if current offset in WAL should be commited.
-     */
-    public boolean consume(ByteBuffer data);
-
-    /** */
-    public void close();
+/** */
+public class RealtimeCdcRecord extends WALRecord {
+    /** {@inheritDoc} */
+    @Override public RecordType type() {
+        return RecordType.REALTIME_CDC_RECORD;
+    }
 }

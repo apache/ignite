@@ -51,6 +51,8 @@ import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.PartitionClearingStartRecord;
+import org.apache.ignite.internal.pagemem.wal.record.RealtimeCdcRecord;
+import org.apache.ignite.internal.pagemem.wal.record.RealtimeCdcStopRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -541,6 +543,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return 4 + 8 + 1;
 
             case SWITCH_SEGMENT_RECORD:
+            case REALTIME_CDC_RECORD:
+            case REALTIME_STOP_CDC_RECORD:
                 return 0;
 
             case TX_RECORD:
@@ -1323,6 +1327,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case REALTIME_CDC_RECORD:
+                res = new RealtimeCdcRecord();
+
+                break;
+
+            case REALTIME_STOP_CDC_RECORD:
+                res = new RealtimeCdcStopRecord();
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + type);
         }
@@ -1912,6 +1926,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case SWITCH_SEGMENT_RECORD:
+            case REALTIME_CDC_RECORD:
+            case REALTIME_STOP_CDC_RECORD:
                 break;
 
             case MASTER_KEY_CHANGE_RECORD_V2:

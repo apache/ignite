@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.cdc;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -42,10 +41,8 @@ public class CdcProcessor {
     public CdcProcessor(GridCacheSharedContext<?, ?> cctx, IgniteLogger log) {
         this.log = log;
 
-        DataStorageConfiguration dsCfg = cctx.gridConfig().getDataStorageConfiguration();
-
-        cdcBuf = new CdcBuffer(dsCfg.getMaxCdcBufferSize());
-        worker = new CdcWorker(cctx, log, cdcBuf, dsCfg.getCdcConsumer());
+        cdcBuf = new CdcBuffer(cctx.gridConfig().getDataStorageConfiguration().getMaxCdcBufferSize());
+        worker = new CdcWorker(cctx, log, cdcBuf);
     }
 
     /**
@@ -62,8 +59,6 @@ public class CdcProcessor {
             enabled = false;
 
             log.warning("CDC buffer has overflowed. Stop realtime mode of CDC.");
-
-            worker.cancel();
         }
     }
 
