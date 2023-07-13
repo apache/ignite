@@ -315,7 +315,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      * Retrieves the {@link MetricRegistry} for this data region.
      */
     private MetricRegistry metricRegistry() {
-        String registryName = MetricUtils.metricName(DATAREGION_METRICS_PREFIX, dataRegionCfg.getName());
+        String registryName = MetricUtils.metricName(DATAREGION_METRICS_PREFIX, getName());
         return kernalCtx.metric().registry(registryName);
     }
 
