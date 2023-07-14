@@ -173,9 +173,9 @@ public class LocalQueryIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testCount() {
-        long cnt = (long)sql("SELECT COUNT(*) FROM T1").get(0).get(0);
+        Long cnt = (Long)sql("SELECT COUNT(*) FROM T1").get(0).get(0);
 
-        assertEquals(grid(0).cache("T1_CACHE").localSizeLong(CachePeekMode.PRIMARY), cnt);
+        assertEquals(grid(0).cache("T1_CACHE").localSizeLong(CachePeekMode.PRIMARY), cnt.longValue());
     }
 
     /** */
