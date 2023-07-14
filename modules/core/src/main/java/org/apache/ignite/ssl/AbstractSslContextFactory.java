@@ -30,7 +30,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * Represents abstract implementation of {@link Factory<SSLContext>} that caches the result of the first successful
+ * Represents abstract implementation of SSL Context Factory that caches the result of the first successful
  * attempt to create an {@link SSLContext} and always returns it as a result of further invocations of the
  * {@link SslContextFactory#create()}} method.
  */
