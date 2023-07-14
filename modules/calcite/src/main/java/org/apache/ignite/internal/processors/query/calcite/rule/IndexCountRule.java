@@ -106,13 +106,14 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
         BaseQueryContext baseQryCtx = call.getPlanner().getContext().unwrap(BaseQueryContext.class);
         if (baseQryCtx.isLocal())
             distribution = IgniteDistributions.single();
+        else if (table.distribution().getType() == RelDistribution.Type.HASH_DISTRIBUTED)
+            distribution = IgniteDistributions.random();
         else
             distribution = table.distribution();
 
         RelTraitSet idxTraits = aggr.getTraitSet()
             .replace(IgniteConvention.INSTANCE)
-            .replace(table.distribution().getType() == RelDistribution.Type.HASH_DISTRIBUTED ?
-                IgniteDistributions.random() : distribution)
+            .replace(distribution)
             .replace(RewindabilityTrait.REWINDABLE);
 
         IgniteIndexCount idxCnt = new IgniteIndexCount(

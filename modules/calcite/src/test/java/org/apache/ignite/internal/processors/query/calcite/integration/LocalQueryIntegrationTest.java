@@ -171,6 +171,14 @@ public class LocalQueryIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
+    @Test
+    public void testCount() {
+        long cnt = (long)sql("SELECT COUNT(*) FROM T1").get(0).get(0);
+
+        assertEquals(grid(0).cache("T1_CACHE").localSizeLong(CachePeekMode.PRIMARY), cnt);
+    }
+
+    /** */
     private void testJoin(String table1, String table2, String joinCol) {
         String sql = "select * from " + table1 + " join " + table2 +
                         " on " + table1 + "." + joinCol + "=" + table2 + "." + joinCol;
