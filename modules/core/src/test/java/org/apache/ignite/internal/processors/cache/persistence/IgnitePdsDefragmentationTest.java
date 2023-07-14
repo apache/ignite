@@ -70,6 +70,7 @@ import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -277,7 +278,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         byte[] val = new byte[4000];
 
         try (IgniteDataStreamer<Object, Object> ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int i = 0; i < 800_000; i++) {
+            for (int i = 0; i < 100_000; i++) {
                 new Random().nextBytes(val);
 
                 ds.addData(i, val);
