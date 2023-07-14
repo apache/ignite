@@ -21,11 +21,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.QueryContext;
-import org.apache.ignite.internal.processors.query.QueryProperties;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.junit.Test;
 
@@ -49,7 +49,7 @@ public class LocalQueryIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** {@inheritDoc} */
     @Override protected QueryContext queryContext() {
-        return QueryContext.of(new QueryProperties(null, false, true));
+        return QueryContext.of(new SqlFieldsQuery("").setLocal(true));
     }
 
     /** {@inheritDoc} */

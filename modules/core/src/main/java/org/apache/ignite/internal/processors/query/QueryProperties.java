@@ -30,13 +30,9 @@ public final class QueryProperties {
     private final boolean keepBinary;
 
     /** */
-    private final boolean isLocal;
-
-    /** */
-    public QueryProperties(@Nullable String cacheName, boolean keepBinary, boolean isLocal) {
+    public QueryProperties(@Nullable String cacheName, boolean keepBinary) {
         this.cacheName = cacheName;
         this.keepBinary = keepBinary;
-        this.isLocal = isLocal;
     }
 
     /** */
@@ -47,10 +43,5 @@ public final class QueryProperties {
     /** */
     public @Nullable String cacheName() {
         return cacheName;
-    }
-
-    /** */
-    public boolean isLocal() {
-        return isLocal;
     }
 }

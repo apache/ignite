@@ -121,9 +121,7 @@ public class FragmentMapping implements MarshalableMessage {
         if (colocationGroups.isEmpty())
             return create(nodeId).colocate(this);
 
-        assert colocationGroups.size() == 1;
-
-        return new FragmentMapping(colocationGroups.get(0).local(nodeId));
+        return new FragmentMapping(Commons.transform(colocationGroups, c -> c.local(nodeId)));
     }
 
     /** */
