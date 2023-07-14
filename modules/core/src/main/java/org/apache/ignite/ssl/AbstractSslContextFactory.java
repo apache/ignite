@@ -19,8 +19,6 @@ package org.apache.ignite.ssl;
 
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManager;
@@ -28,7 +26,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
@@ -180,31 +177,6 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @throws SSLException If Trust Managers could not be created.
      */
     protected abstract TrustManager[] createTrustManagers() throws SSLException;
-
-    /**
-     * Disabled trust manager, will skip all certificate checks.
-     */
-    protected static class DisabledX509TrustManager implements X509TrustManager {
-        /** Empty certificate array. */
-        private static final X509Certificate[] CERTS = new X509Certificate[0];
-
-        /** {@inheritDoc} */
-        @Override public void checkClientTrusted(X509Certificate[] x509Certificates, String s)
-            throws CertificateException {
-            // No-op, all clients are trusted.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void checkServerTrusted(X509Certificate[] x509Certificates, String s)
-            throws CertificateException {
-            // No-op, all servers are trusted.
-        }
-
-        /** {@inheritDoc} */
-        @Override public X509Certificate[] getAcceptedIssuers() {
-            return CERTS;
-        }
-    }
 
     /** {@inheritDoc} */
     @Override public SSLContext create() {
