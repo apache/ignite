@@ -51,6 +51,7 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.QueryEngineConfiguration;
 import org.apache.ignite.events.SqlQueryExecutionEvent;
@@ -473,7 +474,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         assert schema != null : "Schema not found: " + schemaName;
 
-        QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql, qryCtx, params));
+        QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql, contextKey(qryCtx), params));
 
         if (plan != null) {
             parserMetrics.countCacheHit();
@@ -532,9 +533,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         if (qryCtx == null)
             return null;
 
-        BaseQueryContext baseQryCtx = qryCtx.unwrap(BaseQueryContext.class);
+        SqlFieldsQuery sqlFieldsQry = qryCtx.unwrap(SqlFieldsQuery.class);
 
-        return baseQryCtx != null ? baseQryCtx.isLocal() : null;
+        return sqlFieldsQry != null ? sqlFieldsQry.isLocal() : null;
     }
 
     /** */
