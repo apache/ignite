@@ -45,7 +45,6 @@ import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteRexBuilder;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
@@ -297,6 +296,9 @@ public final class BaseQueryContext extends AbstractQueryContext {
         /** */
         private IgniteLogger log = new NullLogger();
 
+        /** */
+        private boolean isLocal = false;
+
         /**
          * @param frameworkCfg Framework config.
          * @return Builder for chaining.
@@ -325,14 +327,21 @@ public final class BaseQueryContext extends AbstractQueryContext {
         }
 
         /**
+         * @param isLocal Local execution flag.
+         * @return Builder for chaining.
+         */
+        public Builder local(boolean isLocal) {
+            this.isLocal = isLocal;
+            return this;
+        }
+
+        /**
          * Builds planner context.
          *
          * @return Planner context.
          */
         public BaseQueryContext build() {
-            SqlFieldsQuery qry = parentCtx.unwrap(SqlFieldsQuery.class);
-
-            return new BaseQueryContext(frameworkCfg, parentCtx, log, qry != null && qry.isLocal());
+            return new BaseQueryContext(frameworkCfg, parentCtx, log, isLocal);
         }
     }
 }
