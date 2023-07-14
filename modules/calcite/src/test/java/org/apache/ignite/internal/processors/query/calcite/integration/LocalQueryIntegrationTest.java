@@ -157,6 +157,20 @@ public class LocalQueryIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
+    @Test
+    public void testCreateTableAsSelect() {
+        try {
+            sql("CREATE TABLE T3(ID, IDX_VAL, VAL) WITH cache_name=t3_cache AS SELECT ID, IDX_VAL, VAL FROM T1");
+
+            assertEquals(grid(0).cache("T1_CACHE").localSizeLong(CachePeekMode.PRIMARY),
+                    client.cache("T3_CACHE").sizeLong(CachePeekMode.PRIMARY));
+        }
+        finally {
+            grid(0).cache("T3_CACHE").destroy();
+        }
+    }
+
+    /** */
     private void testJoin(String table1, String table2, String joinCol) {
         String sql = "select * from " + table1 + " join " + table2 +
                         " on " + table1 + "." + joinCol + "=" + table2 + "." + joinCol;

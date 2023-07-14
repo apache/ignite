@@ -528,7 +528,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         if (plan.command() instanceof CreateTableCommand
             && ((CreateTableCommand)plan.command()).insertStatement() != null) {
-            RootQuery<Row> insQry = qry.childQuery(schemaHolder.schema(qry.context().schemaName()));
+            RootQuery<Row> insQry = qry.childQuery(schemaHolder.schema(qry.context().schemaName()), qry.context().isLocal());
 
             qryReg.register(insQry);
 

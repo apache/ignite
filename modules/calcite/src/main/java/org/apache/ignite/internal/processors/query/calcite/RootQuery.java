@@ -150,9 +150,10 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
      *      CREATE TABLE MY_TABLE AS SELECT ... FROM ...;
      *
      * @param schema new schema.
+     * @param isLocal Local execution flag.
      */
-    public RootQuery<RowT> childQuery(SchemaPlus schema) {
-        return new RootQuery<>(sql, schema, params, QueryContext.of(cancel), false, exch, unregister, log, plannerTimeout);
+    public RootQuery<RowT> childQuery(SchemaPlus schema, boolean isLocal) {
+        return new RootQuery<>(sql, schema, params, QueryContext.of(cancel), isLocal, exch, unregister, log, plannerTimeout);
     }
 
     /** */
