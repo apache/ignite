@@ -72,7 +72,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
         dsCfg.setDefaultDataRegionConfiguration(
             new DataRegionConfiguration()
                 .setInitialSize(100L * 1024 * 1024)
-                .setMaxSize(1024L * 1024 * 1024)
+                .setMaxSize(100L * 1024 * 1024)
                 .setPersistenceEnabled(true)
         );
 
