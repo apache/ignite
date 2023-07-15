@@ -70,12 +70,12 @@ import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.DEFRAGMENTATION_MNTC_TASK_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentationCompletionMarkerFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedIndexFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartFile;
@@ -106,8 +106,6 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
-
-        stopAllGrids(true);
 
         cleanPersistenceDir();
     }
@@ -305,7 +303,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         byte[] val = new byte[4000];
 
         try (IgniteDataStreamer<Object, Object> ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int i = 0; i < 100_000; i++) {
+            for (int i = 0; i < 50_000; i++) {
                 new Random().nextBytes(val);
 
                 ds.addData(i, val);
@@ -317,12 +315,15 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         createMaintenanceRecord();
 
         stopGrid(0);
+        ig = startGrid(0);
 
-        startGrid(0);
+        log.info("Waiting for node failure...");
 
         GridTestUtils.waitForCondition(() -> failureCtx != null, getTestTimeout());
 
         assertTrue(failureCtx.error() instanceof IgniteOutOfMemoryException);
+
+        ig.context().maintenanceRegistry().unregisterMaintenanceTask(DEFRAGMENTATION_MNTC_TASK_NAME);
     }
 
     /** */
