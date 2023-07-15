@@ -100,6 +100,9 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     /** */
     private volatile FailureContext failureCtx;
 
+    /** Defragmentation pool size. If < 1, default value is used. */
+    private int defragPoolSize;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -163,9 +166,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         cfg.setConsistentId(igniteInstanceName);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
-
-        dsCfg.setWalSegmentSize(32 * 1024 * 1024);
-        dsCfg.setMaxWalArchiveSize(3L * 1024L * 1024L * 1024L);
+        dsCfg.setWalSegmentSize(4 * 1024 * 1024);
 
         dsCfg.setDefaultDataRegionConfiguration(
             new DataRegionConfiguration()
@@ -173,6 +174,9 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
                 .setMaxSize(100L * 1024 * 1024)
                 .setPersistenceEnabled(true)
         );
+
+        if (defragPoolSize > 0)
+            dsCfg.setDefragmentationThreadPoolSize(defragPoolSize);
 
         cfg.setDataStorageConfiguration(dsCfg);
 
@@ -193,6 +197,30 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests basic derfragmentation.
+     *
+     * @throws Exception If failed.
+     * @see #checkSuccessfulDefragmentation()
+     */
+    @Test
+    public void testSuccessfulDefragmentation() throws Exception {
+        checkSuccessfulDefragmentation();
+    }
+
+    /**
+     * Tests basic derfragmentation with one thread.
+     *
+     * @throws Exception If failed.
+     * @see #checkSuccessfulDefragmentation()
+     */
+    @Test
+    public void testSuccessfulDefragmentationOneThread() throws Exception {
+        defragPoolSize = 1;
+
+        checkSuccessfulDefragmentation();
+    }
+
+    /**
      * Basic test scenario. Does following steps:
      *  - Start node;
      *  - Fill cache;
@@ -206,8 +234,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Test
-    public void testSuccessfulDefragmentation() throws Exception {
+    private void checkSuccessfulDefragmentation() throws Exception {
         IgniteEx ig = startGrid(0);
 
         ig.cluster().state(ClusterState.ACTIVE);
