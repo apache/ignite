@@ -156,13 +156,17 @@ public final class BaseQueryContext extends AbstractQueryContext {
     /** */
     private final GridQueryCancel qryCancel;
 
+    /** */
+    private final boolean isLocal;
+
     /**
      * Private constructor, used by a builder.
      */
     private BaseQueryContext(
         FrameworkConfig cfg,
         Context parentCtx,
-        IgniteLogger log
+        IgniteLogger log,
+        boolean isLocal
     ) {
         super(Contexts.chain(parentCtx, cfg.getContext()));
 
@@ -170,6 +174,8 @@ public final class BaseQueryContext extends AbstractQueryContext {
         this.cfg = Frameworks.newConfigBuilder(cfg).context(this).build();
 
         this.log = log;
+
+        this.isLocal = isLocal;
 
         qryCancel = unwrap(GridQueryCancel.class);
 
@@ -265,6 +271,11 @@ public final class BaseQueryContext extends AbstractQueryContext {
         return EMPTY_CONTEXT;
     }
 
+    /** */
+    public boolean isLocal() {
+        return isLocal;
+    }
+
     /**
      * Query context builder.
      */
@@ -284,6 +295,9 @@ public final class BaseQueryContext extends AbstractQueryContext {
 
         /** */
         private IgniteLogger log = new NullLogger();
+
+        /** */
+        private boolean isLocal = false;
 
         /**
          * @param frameworkCfg Framework config.
@@ -313,12 +327,21 @@ public final class BaseQueryContext extends AbstractQueryContext {
         }
 
         /**
+         * @param isLocal Local execution flag.
+         * @return Builder for chaining.
+         */
+        public Builder local(boolean isLocal) {
+            this.isLocal = isLocal;
+            return this;
+        }
+
+        /**
          * Builds planner context.
          *
          * @return Planner context.
          */
         public BaseQueryContext build() {
-            return new BaseQueryContext(frameworkCfg, parentCtx, log);
+            return new BaseQueryContext(frameworkCfg, parentCtx, log, isLocal);
         }
     }
 }

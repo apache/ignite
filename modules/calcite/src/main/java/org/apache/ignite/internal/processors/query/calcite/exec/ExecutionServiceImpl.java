@@ -558,7 +558,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     ) {
         qry.mapping();
 
-        MappingQueryContext mapCtx = Commons.mapContext(locNodeId, topologyVersion());
+        MappingQueryContext mapCtx = Commons.mapContext(locNodeId, topologyVersion(), qry.context().isLocal());
+
         plan.init(mappingSvc, mapCtx);
 
         List<Fragment> fragments = plan.fragments();
