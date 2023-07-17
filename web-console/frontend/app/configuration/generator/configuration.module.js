@@ -26,7 +26,7 @@ import IgnitePlatformGenerator from './generator/PlatformGenerator';
 
 import IgniteSpringTransformer from './generator/SpringTransformer.service';
 import IgniteJavaTransformer from './generator/JavaTransformer.service';
-import SharpTransformer from './generator/SharpTransformer.service';
+
 import IgniteDockerGenerator from './generator/Docker.service';
 import IgniteMavenGenerator from './generator/Maven.service';
 import IgniteGeneratorProperties from './generator/Properties.service';
@@ -42,8 +42,7 @@ export default angular
     .service('IgniteConfigurationGenerator', function() { return IgniteConfigurationGenerator;})
     .service('IgnitePlatformGenerator', IgnitePlatformGenerator)
     .service('SpringTransformer', function() { return IgniteSpringTransformer;})
-    .service('JavaTransformer', function() { return IgniteJavaTransformer;})
-    .service('IgniteSharpTransformer', SharpTransformer)
+    .service('JavaTransformer', function() { return IgniteJavaTransformer;})    
     .service('IgniteEventGroups', IgniteEventGroups)
     .service('IgniteClusterDefaults', IgniteClusterDefaults)
     .service('IgniteClusterPlatformDefaults', IgniteClusterPlatformDefaults)
