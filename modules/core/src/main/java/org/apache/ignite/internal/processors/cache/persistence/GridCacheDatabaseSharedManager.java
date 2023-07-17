@@ -1179,57 +1179,58 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override protected PageMemory createPageMemory(
         DirectMemoryProvider memProvider,
-        DataStorageConfiguration memCfg,
-        DataRegionConfiguration plcCfg,
-        DataRegionMetricsImpl memMetrics,
+        DataStorageConfiguration dsCfg,
+        DataRegionConfiguration regCfg,
+        DataRegionMetricsImpl regMetrics,
         final boolean trackable,
-        PageReadWriteManager pmPageMgr
+        PageReadWriteManager pageMgr
     ) {
-        if (!plcCfg.isPersistenceEnabled())
-            return super.createPageMemory(memProvider, memCfg, plcCfg, memMetrics, trackable, pmPageMgr);
+        if (!regCfg.isPersistenceEnabled())
+            return super.createPageMemory(memProvider, dsCfg, regCfg, regMetrics, trackable, pageMgr);
 
-        memMetrics.persistenceEnabled(true);
+        regMetrics.persistenceEnabled(true);
 
-        long cacheSize = plcCfg.getMaxSize();
+        long cacheSize = regCfg.getMaxSize();
 
         // Checkpoint buffer size can not be greater than cache size, it does not make sense.
-        long chpBufSize = checkpointBufferSize(plcCfg);
+        long chpBufSize = checkpointBufferSize(regCfg);
 
         if (chpBufSize > cacheSize) {
             U.quietAndInfo(log,
                 "Configured checkpoint page buffer size is too big, setting to the max region size [size="
-                    + U.readableSize(cacheSize, false) + ",  memPlc=" + plcCfg.getName() + ']');
+                    + U.readableSize(cacheSize, false) + ",  memPlc=" + regCfg.getName() + ']');
 
             chpBufSize = cacheSize;
         }
 
         PageMemoryImpl pageMem = new PageMemoryImpl(
-            wrapMetricsPersistentMemoryProvider(memProvider, memMetrics),
+            wrapMetricsPersistentMemoryProvider(memProvider, regMetrics),
             calculateFragmentSizes(
-                plcCfg.getName(),
-                memCfg.getConcurrencyLevel(),
+                regCfg.getName(),
+                dsCfg.getConcurrencyLevel(),
                 cacheSize,
                 chpBufSize
             ),
             cctx,
-            pmPageMgr,
-            memCfg.getPageSize(),
+            pageMgr,
+            dsCfg.getPageSize(),
             (fullId, pageBuf, tag) -> {
-                memMetrics.onPageWritten();
+                regMetrics.onPageWritten();
 
                 // Write page to disk.
-                pmPageMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag, true);
+                pageMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag, true);
 
                 getCheckpointer().currentProgress().updateEvictedPages(1);
             },
             trackable,
             this,
-            memMetrics,
+            regMetrics,
+            regCfg,
             resolveThrottlingPolicy(),
             () -> getCheckpointer().currentProgress()
         );
 
-        memMetrics.pageMemory(pageMem);
+        regMetrics.pageMemory(pageMem);
 
         return pageMem;
     }
