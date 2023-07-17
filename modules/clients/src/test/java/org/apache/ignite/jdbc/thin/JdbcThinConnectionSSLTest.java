@@ -654,7 +654,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
 
                     return null;
                 }
-            }, SQLException.class, "Unsupported keystore algorithm: INVALID");
+            }, SQLException.class, "Unsupported key algorithm: INVALID");
         }
         finally {
             stopAllGrids();
