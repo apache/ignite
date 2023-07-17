@@ -14,33 +14,7 @@ panel-collapsible(ng-show='$ctrl.available("2.3.0")' ng-form=form )
                     model: connectionEnabled,
                     name: '"ClientConnectorEnabled"',
                     tip: 'Flag indicating whether to configure client connector configuration'
-                })
-            .pc-form-grid-col-60
-                +form-field__text({
-                    label: 'Host:',
-                    model: `${connectionModel}.host`,
-                    name: '"ClientConnectorHost"',
-                    disabled: `!(${connectionEnabled})`,
-                    placeholder: 'localhost'
-                })
-            .pc-form-grid-col-30
-                +form-field__number({
-                    label: 'Port:',
-                    model: `${connectionModel}.port`,
-                    name: '"ClientConnectorPort"',
-                    disabled: `!(${connectionEnabled})`,
-                    placeholder: '10800',
-                    min: '1025'
-                })
-            .pc-form-grid-col-30
-                +form-field__number({
-                    label: 'Port range:',
-                    model: `${connectionModel}.portRange`,
-                    name: '"ClientConnectorPortRange"',
-                    disabled: `!(${connectionEnabled})`,
-                    placeholder: '100',
-                    min: '0'
-                })
+                })            
             .pc-form-grid-col-30
                 +form-field__number({
                     label: 'Socket send buffer size:',
@@ -147,28 +121,5 @@ panel-collapsible(ng-show='$ctrl.available("2.3.0")' ng-form=form )
                           If not present <b>isUseIgniteSslContextFactory()</b> flag will be evaluated<br/>\
                           If set to <b>true</b> and <b>IgniteConfiguration#getSslContextFactory()</b> exists, then Ignite SSL context factory will be used to establish secure connection'
                 })
-            .pc-form-grid-col-60(ng-if-start='$ctrl.available("2.4.0")')
-                +form-field__checkbox({
-                    label: 'JDBC Enabled',
-                    model: `${connectionModel}.jdbcEnabled`,
-                    name: '"ClientConnectorJdbcEnabled"',
-                    disabled: `!${connectionEnabled}`,
-                    tip: 'Access through JDBC is enabled'
-                })
-            .pc-form-grid-col-60
-                +form-field__checkbox({
-                    label: 'ODBC Enabled',
-                    model: `${connectionModel}.odbcEnabled`,
-                    name: '"ClientConnectorOdbcEnabled"',
-                    disabled: `!${connectionEnabled}`,
-                    tip: 'Access through ODBC is enabled'
-                })
-            .pc-form-grid-col-60(ng-if-end)
-                +form-field__checkbox({
-                    label: 'Thin client enabled',
-                    model: `${connectionModel}.thinClientEnabled`,
-                    name: '"ClientConnectorThinCliEnabled"',
-                    disabled: `!${connectionEnabled}`,
-                    tip: 'Access through thin client is enabled'
-                })
+            
         

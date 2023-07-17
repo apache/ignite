@@ -181,7 +181,7 @@ public class IgnitionEx {
     private static final String GRACEFUL_SHUTDOWN_METASTORE_KEY =
         DistributedMetaStorageImpl.IGNITE_INTERNAL_KEY_PREFIX + "graceful.shutdown";
     
-    private static final boolean IGNITE_MBEANS_DISABLED = true;
+    
 
     /** Map of named Ignite instances. */
     private static final ConcurrentMap<Object, IgniteNamedInstance> grids = new ConcurrentHashMap<>();
@@ -2067,7 +2067,7 @@ public class IgnitionEx {
                 cfg.setEncryptionSpi(new NoopEncryptionSpi());
 
             if (F.isEmpty(cfg.getMetricExporterSpi())) {
-                cfg.setMetricExporterSpi(IGNITE_MBEANS_DISABLED
+                cfg.setMetricExporterSpi(U.IGNITE_MBEANS_DISABLED
                     ? new NoopMetricExporterSpi()
                     : new JmxMetricExporterSpi());
             }
@@ -2418,7 +2418,7 @@ public class IgnitionEx {
          * @throws IgniteCheckedException If registration failed.
          */
         private void registerFactoryMbean(MBeanServer srv) throws IgniteCheckedException {
-            if (IGNITE_MBEANS_DISABLED)
+            if (U.IGNITE_MBEANS_DISABLED)
                 return;
 
             assert srv != null;
@@ -2473,7 +2473,7 @@ public class IgnitionEx {
          * Unregister delegate Mbean instance for {@link Ignition}.
          */
         private void unregisterFactoryMBean() {
-            if (IGNITE_MBEANS_DISABLED)
+            if (U.IGNITE_MBEANS_DISABLED)
                 return;
 
             synchronized (mbeans) {
@@ -2603,7 +2603,7 @@ public class IgnitionEx {
 
     /** Initialize default mbean server. */
     public static void initializeDefaultMBeanServer(IgniteConfiguration myCfg) {
-        if (myCfg.getMBeanServer() == null && !IGNITE_MBEANS_DISABLED)
+        if (myCfg.getMBeanServer() == null && !U.IGNITE_MBEANS_DISABLED)
             myCfg.setMBeanServer(ManagementFactory.getPlatformMBeanServer());
     }
 

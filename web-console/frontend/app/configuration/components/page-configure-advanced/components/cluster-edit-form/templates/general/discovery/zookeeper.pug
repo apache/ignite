@@ -72,14 +72,7 @@ mixin discovery-zookeeper(modelAt = '$ctrl.clonedCluster')
             })
 
         .pc-form-grid__break
-
-        include ./zookeeper/retrypolicy/exponential-backoff
-        include ./zookeeper/retrypolicy/bounded-exponential-backoff
-        include ./zookeeper/retrypolicy/until-elapsed
-        include ./zookeeper/retrypolicy/n-times
-        include ./zookeeper/retrypolicy/one-time
-        include ./zookeeper/retrypolicy/forever
-        include ./zookeeper/retrypolicy/custom
+       
 
         .pc-form-grid-col-30
             -var model = `${modelAt}.discovery.ZooKeeper`

@@ -29,7 +29,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     +form-field__tooltip({ title: `User-defined attributes to add to node` })
 
                 +list-pair-edit({
-                    items: `${model}.attributes`,
+                    items: `${model}.jdbcProp`,
                     keyLbl: 'Attribute name', 
                     valLbl: 'Attribute value',
                     itemName: 'attribute',

@@ -11,7 +11,7 @@
    		<maven.compiler.target>1.8</maven.compiler.target>
    		<encoding>UTF-8</encoding>
 
-		<ignite.version>2.14.0</ignite.version>
+		<ignite.version>2.16.999-SNAPSHOT</ignite.version>
 		<janus.version>0.6.2</janus.version>
 		<lucene-solr.version>8.8.2</lucene-solr.version>
 	</properties>

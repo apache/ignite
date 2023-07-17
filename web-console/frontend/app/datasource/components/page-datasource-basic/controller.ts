@@ -150,12 +150,16 @@ export default class PageDatasourceBasicController {
                         message: `Failed to save datasource : ${error.data.message}.`
                     }
                 }))
-            );            
-            this.$scope.message = 'Save successful.'
-            if(redirect){
-                
-                return this.$uiRouter.stateService.go('/datasource');
-            } 
+            );   
+            stat.subscribe(
+                next => {
+                    this.$scope.message = 'Save successful.'
+                        if(redirect){                
+                            return this.$uiRouter.stateService.go('/datasource');
+                        } 
+                }
+            );     
+            
         }
         
     }

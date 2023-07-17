@@ -743,7 +743,6 @@ public final class IgniteSystemProperties {
      */
     @SystemProperty(value = "Size of buffer holding last exception", type = Integer.class,
         defaults = "" + DEFAULT_QUEUE_SIZE)
-
     public static final String IGNITE_EXCEPTION_REGISTRY_MAX_SIZE = "IGNITE_EXCEPTION_REGISTRY_MAX_SIZE";
 
     /**

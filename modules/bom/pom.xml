@@ -25,12 +25,12 @@
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent</artifactId>
-        <version>${revision}</version>
+        <version>2.16.999-SNAPSHOT</version>
         <relativePath>../../parent/pom.xml</relativePath>
     </parent>
     <artifactId>ignite-bom</artifactId>
     <packaging>pom</packaging>
-    <version>${revision}</version>
+    <version>2.16.999-SNAPSHOT</version>
 
     <url>https://ignite.apache.org</url>
 
@@ -39,170 +39,170 @@
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-core</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-clients</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-calcite</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-compress</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-compatibility</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-control-utility</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-dev-utils</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-direct-io</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-indexing</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-jta</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-kubernetes</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-slf4j</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-log4j2</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-ml</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-schedule</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-opencensus</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-rest-http</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-spring</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-sqlline</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-tools</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-urideploy</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-yardstick</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-web</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-zookeeper</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-clients</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
                 <type>test-jar</type>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-compatibility</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
                 <type>test-jar</type>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-compress</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
                 <type>test-jar</type>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-core</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
                 <type>test-jar</type>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-indexing</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
                 <type>test-jar</type>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-zookeeper</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
                 <type>test-jar</type>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-control-utility</artifactId>
-                <version>${revision}</version>
+                <version>2.16.999-SNAPSHOT</version>
                 <type>test-jar</type>
                 <scope>test</scope>
             </dependency>

@@ -83,8 +83,8 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     @Override public void start() throws IgniteCheckedException {
         IgniteConfiguration igniteCfg = ctx.config(); 
         
-        if (igniteCfg.isDaemon())
-            return;
+        //if (igniteCfg.isDaemon())
+        //    return;
 
         IgfsUtils.prepareCacheConfigurations(igniteCfg);
         
@@ -140,7 +140,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         // is daemon;
         // doesn't have configured IGFS;
         // doesn't have configured caches.
-        if (igniteCfg.isDaemon() || F.isEmpty(igniteCfg.getFileSystemConfiguration()) ||
+        if (F.isEmpty(igniteCfg.getFileSystemConfiguration()) ||
             F.isEmpty(igniteCfg.getCacheConfiguration()))
             return;
 
@@ -186,7 +186,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        if (!active || ctx.config().isDaemon())
+        if (!active)
             return;
 
         if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {

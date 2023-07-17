@@ -16,13 +16,13 @@
 declare function amisRequire(path: string): any
 
 export interface DatasourceDto {
-    id: string,
-    driverCls: string;
-   	jdbcUrl: string;	
-   	jndiName: string; // 数据库JNDI名称
-   	schemaName: string; // 默认的模式名称
-   	userName: string;
-   	password: string;
-   	jdbcProp: object;
+	id: string,
+	driverCls: string;
+	jdbcUrl: string;	
+	jndiName: string; // 数据库JNDI名称
+	schemaName: string; // 默认的模式名称
+	userName: string;
+	password: string;
+	jdbcProp: object;
 }
 

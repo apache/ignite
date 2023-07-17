@@ -43,10 +43,13 @@ export default class Datasource {
 
     constructor(private $http: ng.IHttpService) {}
     
-    getBlankDatasource() {
+    getBlankDatasource():DatasourceDto {
         return {
             jndiName: '',
-            jdbcUrl:  'jdbc:dbtype://[host]:[port]/[database]',
+            schemaName: '',
+            jdbcUrl:  'jdbc:postgresql://[host]:[port]/[database]',
+            driverCls: 'org.postgresql.Driver',
+            jdbcProp: {},
             id: uuidv4()
         }
      }
@@ -76,7 +79,21 @@ export default class Datasource {
 
     getDatasource(id: string){
         return this.$http.get(`/api/v1/datasource/${id}`).then((result) => {
-            return result.data;
+            const datasource = result.data 
+            if(datasource.jdbcProp==null){
+                datasource.jdbcProp = {}
+            }
+            datasource.attributes = []
+            for(let [name,value] of Object.entries(datasource.jdbcProp)){
+                if(name=='rebalanceBatchSize'){                   
+                    datasource.rebalanceBatchSize = value
+                }
+                else{
+                    datasource.attributes.append({name:name,value:value})
+                }
+            }
+            
+            return datasource;
         });
     }
     
@@ -92,7 +109,7 @@ export default class Datasource {
         return this.$http.put('/api/v1/datasource', datasource);
     }
     
-    saveAdvanced(datasource) {
+    saveAdvanced(datasource) {        
         return this.$http.put('/api/v1/datasource', datasource);
     }
 }

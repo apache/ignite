@@ -29,7 +29,6 @@ import org.apache.ignite.igfs.IgfsCorruptedFileException;
 import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
-import org.apache.ignite.igfs.IgfsInvalidHdfsVersionException;
 import org.apache.ignite.igfs.IgfsParentNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathAlreadyExistsException;
@@ -299,9 +298,7 @@ public class IgfsControlResponse extends IgfsMessage {
         else if (errCode == ERR_DIRECTORY_NOT_EMPTY)
             throw new IgfsDirectoryNotEmptyException(err);
         else if (errCode == ERR_PARENT_NOT_DIRECTORY)
-            throw new IgfsParentNotDirectoryException(err);
-        else if (errCode == ERR_INVALID_HDFS_VERSION)
-            throw new IgfsInvalidHdfsVersionException(err);
+            throw new IgfsParentNotDirectoryException(err);        
         else if (errCode == ERR_CORRUPTED_FILE)
             throw new IgfsCorruptedFileException(err);
         else if (errCode == ERR_IGFS_GENERIC)
@@ -371,8 +368,6 @@ public class IgfsControlResponse extends IgfsMessage {
             return ERR_DIRECTORY_NOT_EMPTY;
         else if (e.hasCause(IgfsParentNotDirectoryException.class))
             return ERR_PARENT_NOT_DIRECTORY;
-        else if (e.hasCause(IgfsInvalidHdfsVersionException.class))
-            return ERR_INVALID_HDFS_VERSION;
         else if (e.hasCause(IgfsCorruptedFileException.class))
             return ERR_CORRUPTED_FILE;
             // This check should be the last.

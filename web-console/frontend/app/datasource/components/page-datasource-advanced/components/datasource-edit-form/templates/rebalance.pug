@@ -20,10 +20,9 @@ include /app/configuration/mixins
 -var model = '$ctrl.clonedCluster'
 
 panel-collapsible(ng-show='$ctrl.available("2.5.0")' ng-form=form on-open=`ui.loadPanel('${form}')`)
-    panel-title Rebalance
+    panel-title Throttle
     panel-description
-        | Rebalance settings.
-        a.link-success(href="https://apacheignite.readme.io/docs/rebalancing" target="_blank") More info
+        | Throttle and Batch settings.       
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-30

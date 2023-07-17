@@ -4,12 +4,13 @@
         "target": "ES2017",
         "moduleResolution": "Node",
         "module": "esNext",
+        "lib": "es6,dom",
         "noEmit": true,
         "allowJs": true,
         "checkJs": true,
         "baseUrl": ".",
         "experimentalDecorators": true,
-        "emitDecoratorMetadata": true,
+        "emitDecoratorMetadata": true,       
         "resolveJsonModule": true,		
         "plugins": [
             {"name": "@angular/language-service"}

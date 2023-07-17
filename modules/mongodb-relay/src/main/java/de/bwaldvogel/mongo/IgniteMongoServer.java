@@ -5,7 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.bwaldvogel.mongo.backend.ignite.IgniteBackend;
-import io.netty.util.Signal;
+
 
 public class IgniteMongoServer extends MongoServer {
 

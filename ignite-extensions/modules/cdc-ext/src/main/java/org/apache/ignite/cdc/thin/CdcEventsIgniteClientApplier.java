@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
@@ -35,7 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
  * @see TcpClientCache#putAllConflict(Map)
  * @see TcpClientCache#removeAllConflict(Map)
  */
-public class CdcEventsIgniteClientApplier extends AbstractCdcEventsApplier<Object, T2<Object, GridCacheVersion>> {
+public class CdcEventsIgniteClientApplier extends AbstractCdcEventsApplier<Object, T3<Object, GridCacheVersion,Long>> {
     /** Client connected to the destination cluster. */
     private final IgniteClient client;
 
@@ -59,12 +60,12 @@ public class CdcEventsIgniteClientApplier extends AbstractCdcEventsApplier<Objec
     }
 
     /** {@inheritDoc} */
-    @Override protected T2<Object, GridCacheVersion> toValue(int cacheId, Object val, GridCacheVersion ver) {
-        return new T2<>(val, ver);
+    @Override protected T3<Object, GridCacheVersion,Long> toValue(int cacheId, Object val, GridCacheVersion ver) {
+        return new T3<>(val, ver,(long)cacheId);
     }
 
     /** {@inheritDoc} */
-    @Override protected void putAllConflict(int cacheId, Map<Object, T2<Object, GridCacheVersion>> drMap) {
+    @Override protected void putAllConflict(int cacheId, Map<Object, T3<Object, GridCacheVersion, Long>> drMap) {
         cache(cacheId).putAllConflict(drMap);
     }
 

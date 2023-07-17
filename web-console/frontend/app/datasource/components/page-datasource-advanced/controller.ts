@@ -39,7 +39,6 @@ export default class PageConfigureAdvancedDatasource {
             filter((v) => v),
             take(1)
         );
-
         
         this.originalCluster$ = clusterID$.pipe(
             distinctUntilChanged(),
@@ -56,7 +55,7 @@ export default class PageConfigureAdvancedDatasource {
         this.isBlocked$ = clusterID$;
     }
 
-    save(datasource) {        
+    save({datasource,redirect}) {        
         let stat = from(this.Datasource.saveAdvanced(datasource)).pipe(
             switchMap(({data}) => of(                   
                 {type: 'EDIT_TASK_FLOW', datasource: data},
@@ -68,6 +67,14 @@ export default class PageConfigureAdvancedDatasource {
                     message: `Failed to save datasource : ${error.data.message}.`
                 }
             }))
-        );    
+        );
+        stat.subscribe(
+            next => {                
+                if(redirect){
+                    return this.$uiRouter.stateService.go('/datasource');
+                }
+            }
+        );        
+        
     }
 }

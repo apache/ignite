@@ -97,7 +97,7 @@ export default function service(ErrorPopover) {
      * @param additionalClasses List of classes to check as builtin.
      * @returns {Boolean} 'true' if given class name is a java build-in type.
      */
-    function isJavaBuiltInClass(clsName, additionalClasses) {
+    function isJavaBuiltInClass(clsName, additionalClasses=null) {
         if (isEmptyString(clsName))
             return false;
 

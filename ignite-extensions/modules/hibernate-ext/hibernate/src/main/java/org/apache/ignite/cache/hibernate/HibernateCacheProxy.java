@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -545,15 +544,6 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
         return delegate.get().localMetrics();
     }
 
-    /** {@inheritDoc} */
-    @Override public CacheMetricsMXBean clusterMxBean() {
-        return delegate.get().clusterMxBean();
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheMetricsMXBean localMxBean() {
-        return delegate.get().localMxBean();
-    }
 
     /** {@inheritDoc} */
     @Override public long offHeapEntriesCount() {

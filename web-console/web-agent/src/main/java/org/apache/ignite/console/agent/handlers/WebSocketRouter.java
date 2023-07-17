@@ -68,8 +68,9 @@ import org.apache.ignite.console.websocket.TopologySnapshot;
 import org.apache.ignite.console.websocket.WebSocketRequest;
 import org.apache.ignite.console.websocket.WebSocketResponse;
 import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.commandline.CommandList;
-import org.apache.ignite.internal.commandline.CommonArgParser;
+import org.apache.ignite.internal.commandline.CommandsProvider;
+import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.typedef.F;
@@ -636,17 +637,22 @@ public class WebSocketRouter implements AutoCloseable {
         boolean experimentalEnabled = true;
         if(cmdName.equals("commandList")) {        	
         	List<JsonObject> results = new ArrayList<>(10);
-        	Arrays.stream(CommandList.values())
-            .filter(c -> experimentalEnabled || !c.command().experimental())
-            .forEach(c -> {
-            	c.command().printUsage(javaLogger);
-            	JsonObject cmd = new JsonObject();
-            	cmd.put("name", c.name());
-            	cmd.put("text", c.text());
-            	cmd.put("usage", outHandder.getOutput());
-            	cmd.put("experimental", c.command().experimental());
-            	results.add(cmd);
-            });
+        	Iterable<CommandsProvider> it = U.loadService(CommandsProvider.class);
+        	if (!F.isEmpty(it)) {
+                for (CommandsProvider provider : it) {                    
+
+                    provider.commands().forEach((Command c) -> {
+                    	NoArg help = new NoArg();
+                    	javaLogger.info(c.confirmationPrompt(help));
+                    	JsonObject cmd = new JsonObject();
+                    	cmd.put("name", c.toString());
+                    	cmd.put("text", c.description());
+                    	cmd.put("usage", outHandder.getOutput());
+                    	cmd.put("experimental", c.getClass());
+                    	results.add(cmd);
+                    });
+                }
+        	}           
         	
         	stat.put("result", results);
         	return stat;

@@ -60,15 +60,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                             <li>SERIALIZABLE - All transactions occur in a completely isolated fashion, as if all transactions in the system had executed serially, one after the other.</li>\
                         </ul>'
                 })
-            .pc-form-grid-col-60
-                +form-field__number({
-                    label: 'Default timeout:',
-                    model: `${model}.defaultTxTimeout`,
-                    name: '"defaultTxTimeout"',
-                    placeholder: '0',
-                    min: '0',
-                    tip: 'Default transaction timeout'
-                })
+            
             .pc-form-grid-col-30
                 +form-field__number({
                     label: 'Pessimistic log cleanup delay:',
@@ -86,15 +78,17 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     placeholder: '0',
                     min: '0',
                     tip: 'Size of pessimistic transactions log stored on node in order to recover transaction commit if originating node has left grid before it has sent all messages to transaction nodes'
-                })
-            .pc-form-grid-col-60
-                +form-field__java-class({
-                    label: 'Manager factory:',
-                    model: `${model}.txManagerFactory`,
-                    name: '"txManagerFactory"',
-                    tip: 'Class name of transaction manager factory for integration with JEE app servers'
-                })
-            .pc-form-grid-col-60(ng-if='$ctrl.available("2.5.0")')
+                })       
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Default timeout:',
+                    model: `${model}.defaultTxTimeout`,
+                    name: '"defaultTxTimeout"',
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Default transaction timeout'
+                })    
+            .pc-form-grid-col-30(ng-if='$ctrl.available("2.5.0")')
                 +form-field__number({
                     label: 'Partition map exchange timeout:',
                     model: `${model}.txTimeoutOnPartitionMapExchange`,
@@ -103,7 +97,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     min: '0',
                     tip: 'Transaction timeout for partition map synchronization in milliseconds'
                 })
-            .pc-form-grid-col-60(ng-if='$ctrl.available("2.8.0")')
+            .pc-form-grid-col-30(ng-if='$ctrl.available("2.8.0")')
                 +form-field__number({
                     label: 'Deadlock timeout:',
                     model: `${model}.deadlockTimeout`,

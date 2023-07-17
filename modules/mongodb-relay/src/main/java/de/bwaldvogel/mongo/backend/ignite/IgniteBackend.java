@@ -72,7 +72,7 @@ public class IgniteBackend extends AbstractMongoBackend {
     	}    	
     	try {
 	    	Ignite mvStore = Ignition.ignite(gridName);
-	        return new IgniteDatabase(databaseName, this, mvStore);
+	        return new IgniteDatabase(databaseName, this, mvStore, this.getCursorRegistry());
         
     	}
     	catch(Exception e) {

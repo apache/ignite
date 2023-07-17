@@ -91,7 +91,7 @@ public class JiebaTokenizerFactory extends TokenizerFactory
     		segMode = JiebaSegmenter.SegMode.INDEX;
     	}
     	/**
-    		segment.
+    		segment
                 .enableNameRecognize(enableNameRecognize)
                 .enableNumberQuantifierRecognize(enableNumberQuantifierRecognize)               
                 .enableTranslatedNameRecognize(enableTranslatedNameRecognize)

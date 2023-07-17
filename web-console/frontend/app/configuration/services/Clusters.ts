@@ -33,11 +33,6 @@ export default class Clusters {
     discoveries: Menu<DiscoveryKinds> = [
         {value: 'Vm', label: 'Static IPs'},
         {value: 'Multicast', label: 'Multicast'},
-        {value: 'S3', label: 'AWS S3'},
-        {value: 'Cloud', label: 'Apache jclouds'},
-        {value: 'GoogleStorage', label: 'Google cloud storage'},
-        {value: 'Jdbc', label: 'JDBC'},
-        {value: 'SharedFs', label: 'Shared filesystem'},
         {value: 'ZooKeeper', label: 'Apache ZooKeeper'},
         {value: 'Kubernetes', label: 'Kubernetes'}
     ];

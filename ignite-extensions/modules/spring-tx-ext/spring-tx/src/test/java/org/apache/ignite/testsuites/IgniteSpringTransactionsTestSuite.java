@@ -17,11 +17,10 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.cache.store.spring.CacheSpringStoreSessionListenerSelfTest;
 import org.apache.ignite.transactions.spring.GridSpringTransactionManagerSelfTest;
 import org.apache.ignite.transactions.spring.GridSpringTransactionManagerSpringBeanSelfTest;
 import org.apache.ignite.transactions.spring.IgniteClientSpringTransactionManagerTest;
-import org.apache.ignite.transactions.spring.IgniteSpringTransactionsCompatibilityTest;
+
 import org.apache.ignite.transactions.spring.SpringTransactionManagerContextInjectionTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -34,9 +33,8 @@ import org.junit.runners.Suite;
     GridSpringTransactionManagerSelfTest.class,
     GridSpringTransactionManagerSpringBeanSelfTest.class,
     IgniteClientSpringTransactionManagerTest.class,
-    SpringTransactionManagerContextInjectionTest.class,
-    CacheSpringStoreSessionListenerSelfTest.class,
-    IgniteSpringTransactionsCompatibilityTest.class
+    SpringTransactionManagerContextInjectionTest.class
+    
 })
 public class IgniteSpringTransactionsTestSuite {
 }

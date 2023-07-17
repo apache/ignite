@@ -19,7 +19,6 @@ import get from 'lodash/get';
 import isEqual from 'lodash/isEqual';
 import _ from 'lodash';
 import {tap} from 'rxjs/operators';
-import {ShortCache} from '../../../types';
 import {Menu} from 'app/types';
 
 import LegacyUtils from 'app/services/LegacyUtils.service';
@@ -48,7 +47,6 @@ export default class DatasourceEditFormController {
         this.supportedJdbcTypes = this.IgniteLegacyUtils.mkOptions(this.IgniteLegacyUtils.SUPPORTED_JDBC_TYPES);
 
         this.$scope.ui = this.IgniteFormUtils.formUI();
-        this.$scope.ui.loadedPanels = ['sql-connector'];
 
         this.formActions = [
             {text: 'Save', icon: 'checkmark', click: () => this.save()},
@@ -82,11 +80,23 @@ export default class DatasourceEditFormController {
             !isEqual(get(a, 'jndiName'), get(b, 'jndiName'));
     }
    
-    save(download) {
-        if (this.$scope.ui.inputForm.$invalid)
+    save(redirect=false) {
+        if (this.$scope.ui.inputForm.$invalid){
             return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
-
-        this.onSave(cloneDeep(this.clonedCluster));
+        }            
+        const datasource = cloneDeep(this.clonedCluster)    
+        if(datasource.jdbcProp==null){
+            datasource.jdbcProp = {}
+        }
+        for(let item in datasource.attributes){
+            datasource.jdbcProp[item.name] = item.value
+        }
+        if(datasource.rebalanceBatchSize){
+            datasource.jdbcProp['rebalanceBatchSize'] = datasource.rebalanceBatchSize
+            delete datasource.rebalanceBatchSize
+        }
+        delete datasource.attributes
+        this.onSave({$event: {datasource,redirect}});
     }
 
     reset = () => this.clonedCluster = cloneDeep(this.cluster);

@@ -19,6 +19,7 @@ package de.kp.works.ignite.gremlin;
  */
 
 import de.kp.works.ignite.IgniteAdmin;
+import de.kp.works.ignite.IgniteConf;
 import de.kp.works.ignite.IgniteConstants;
 import de.kp.works.ignite.ValueType;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -44,6 +45,11 @@ public final class IgniteGraphUtils {
         /* Check whether connection already exists */
         conn = connections.get(namespace);
         if (conn != null) return conn;
+        
+        String igniteCfg = config.getString("gremlin.graph.ignite.cfg");
+        if(igniteCfg!=null && !igniteCfg.isEmpty()) {
+        	IgniteConf.file = igniteCfg;
+        }  
 
         conn = new IgniteConnection(namespace);
 

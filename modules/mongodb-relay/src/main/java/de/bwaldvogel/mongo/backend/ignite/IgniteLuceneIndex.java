@@ -36,6 +36,7 @@ import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
@@ -176,7 +177,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 				return;
 			
 			IgniteBinaryCollection coll = (IgniteBinaryCollection) collection;
-			T2<String, String> t2 = IgniteBinaryCollection.typeNameAndKeyField(coll.dataMap, document);
+			T2<String, String> t2 = coll.typeNameAndKeyField(coll.dataMap, document);
 			typeName = t2.get1();
 			keyField = t2.get2();
 			key = document.getOrDefault(coll.idField, null);
@@ -208,8 +209,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 		for (int i = 0, last = idxdFields.length; i < last; i++) {
 			Object fieldVal = document.get(idxdFields[i]);
 			if (idxdTypes[i].tokenized()) {
-				row[i] = fieldVal;
-				
+				row[i] = new TextField(idxdFields[i],fieldVal.toString(),Store.NO);				
 			}
 			else if(fieldVal instanceof Number) {
 				Number obj = (Number) fieldVal;
@@ -231,9 +231,9 @@ public class IgniteLuceneIndex extends Index<Object> {
 				}
 			} 
 			else {
-				byte[] keyBytes = marshaller.marshal(ctx.grid().binary().toBinary(fieldVal), false);
-				BytesRef keyByteRef = new BytesRef(keyBytes);
-				row[i] = keyByteRef;
+				//byte[] keyBytes = marshaller.marshal(ctx.grid().binary().toBinary(fieldVal), false);
+				//BytesRef keyByteRef = new BytesRef(keyBytes);
+				row[i] = fieldVal;
 			}
 		}
 		byte[] keyBytes = marshaller.marshal(ctx.grid().binary().toBinary(key), false);
@@ -252,9 +252,8 @@ public class IgniteLuceneIndex extends Index<Object> {
 			doc.add(new StringField(FullTextLucene.FIELD_TABLE, typeName, Field.Store.YES));
 
 			// Next implies remove than add atomically operation.
-			long seq = indexAccess.writer.updateDocument(term, doc);
-			docCount = seq;
-
+			docCount = indexAccess.writer.updateDocument(term, doc);
+			
 			indexAccess.increment();
 
 		} catch (Exception e) {
@@ -290,7 +289,11 @@ public class IgniteLuceneIndex extends Index<Object> {
 	@Override
 	public boolean canHandle(Document query) {
 
-		if (!query.keySet().containsAll(keySet())) {
+		if (this.isTextIndex() && BsonRegularExpression.isTextSearchExpression(query)) {
+			return true;
+		}
+		
+		if (!CollectionUtils.containsAny(query.keySet(), keySet())) {
 			return false;
 		}
 
@@ -301,7 +304,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 		for (String key : keys()) {
 			Object queryValue = query.get(key);
 			if (queryValue instanceof Document) {
-				if (isCompoundIndex()) {
+				if (isCompoundIndex() && !this.isTextIndex()) {
 					// https://github.com/bwaldvogel/mongo-java-server/issues/80
 					// Not yet supported. Use some other index, or none:
 					return false;
@@ -315,7 +318,12 @@ public class IgniteLuceneIndex extends Index<Object> {
 				for (String queriedKeys : ((Document) queryValue).keySet()) {
 					if (isInQuery(queriedKeys)) {
 						// okay
-					} else if (queriedKeys.startsWith("$")) {
+					} 
+					else if (this.isTextIndex() && queriedKeys.startsWith("$search")) {
+						// not yet supported
+						return true;
+					}
+					else if (queriedKeys.startsWith("$")) {
 						// not yet supported
 						return false;
 					}
@@ -330,9 +338,15 @@ public class IgniteLuceneIndex extends Index<Object> {
 	@Override
 	public Iterable<Object> getPositions(Document query) {
 
-		KeyValue queriedKeys = getQueriedKeys(query);
-
+		final KeyValue queriedKeys = getQueriedKeys(query);
+		KeyValue searchKey = queriedKeys;
+		
+		int n = 0;
 		for (Object queriedKey : queriedKeys.iterator()) {
+			// fill $text value
+			if(queriedKey == null && this.isTextIndex() && query.containsKey("$text")) {
+				queriedKey = query.get("$text");
+			}
 			if (BsonRegularExpression.isRegularExpression(queriedKey)) {
 				if (isCompoundIndex()) {
 					throw new UnsupportedOperationException("Not yet implemented");
@@ -367,22 +381,27 @@ public class IgniteLuceneIndex extends Index<Object> {
 				}
 				return positions;
 			} else if (queriedKey instanceof Document) {
-				if (isCompoundIndex()) {
+				if (isCompoundIndex() && !this.isTextIndex()) {
 					throw new UnsupportedOperationException("Not yet implemented");
 				}
 				Document keyObj = (Document) queriedKey;
 				if (Utils.containsQueryExpression(keyObj)) {
 					String expression = CollectionUtils.getSingleElement(keyObj.keySet(),
 							() -> new UnsupportedOperationException("illegal query key: " + queriedKeys));
-
-					if (expression.startsWith("$")) {
+					
+					if (expression.equals("$search")) {
+						String input = (String)keyObj.get(expression);
+						searchKey.iterator()[n] = input;
+					}
+					else if (expression.startsWith("$")) {
 						return getPositionsForExpression(keyObj, expression);
 					}
 				}
 			}
+			n++;
 		}
 
-		List<Object> positions = getPosition(queriedKeys);
+		List<Object> positions = getPosition(searchKey);
 		if (positions == null) {
 			return Collections.emptyList();
 		}
@@ -391,14 +410,15 @@ public class IgniteLuceneIndex extends Index<Object> {
 
 	@Override
 	public long getCount() {
-		// TODO Auto-generated method stub
-		return docCount;
+		if(docCount>0) {
+			return docCount;
+		}
+		return indexAccess.writer.getDocStats().numDocs;
 	}
 
 	@Override
-	public long getDataSize() {
-		// TODO Auto-generated method stub
-		return docCount * 8;
+	public long getDataSize() {		
+		return indexAccess.writer.getFlushingBytes();		
 	}
 
 	@Override
@@ -421,8 +441,11 @@ public class IgniteLuceneIndex extends Index<Object> {
 
 	@Override
 	public void drop() {
-		// TODO Auto-generated method stub
-
+		String typeName = IgniteBinaryCollection.tableOfCache(cacheName);
+		Map<String, FieldType> fields = indexAccess.fields(typeName);
+		for (IndexKey ik : this.getKeys()) {
+			fields.remove(ik.getKey());
+		}
 	}
 
 	private Iterable<Object> getPositionsForExpression(Document keyObj, String operator) {
@@ -446,7 +469,8 @@ public class IgniteLuceneIndex extends Index<Object> {
 			}
 
 			return allKeys;
-		} else {
+		}
+		else {
 			throw new UnsupportedOperationException("unsupported query expression: " + operator);
 		}
 	}
@@ -478,14 +502,16 @@ public class IgniteLuceneIndex extends Index<Object> {
 			// also allows subclasses to control the analyzer used.
 			Analyzer analyzer = access.writer.getAnalyzer();
 			// Filter expired items.
-			Query filter = LongPoint.newRangeQuery(FullTextLucene.EXPIRATION_TIME_FIELD_NAME, U.currentTimeMillis(),
-					Long.MAX_VALUE);
+			Query filter = LongPoint.newRangeQuery(FullTextLucene.EXPIRATION_TIME_FIELD_NAME, U.currentTimeMillis(),Long.MAX_VALUE);
 
 			BooleanQuery.Builder query = new BooleanQuery.Builder();
 			int n = 0;
 			for (IndexKey key : this.getKeys()) {
 				Object obj = keyValue.get(n);
-				
+				if(obj == null) {
+					n++;
+					continue;
+				}
 				if(key.isText()) {
 					QueryParser parser = new QueryParser(key.getKey(), access.getQueryAnalyzer()); // 定义查询分析器
 					
@@ -493,9 +519,9 @@ public class IgniteLuceneIndex extends Index<Object> {
 					query.add(textQuery, BooleanClause.Occur.MUST);
 				}
 				else if(obj instanceof ObjectId || obj instanceof UUID) {									
-					 byte[] keyBytes = marshaller.marshal(ctx.grid().binary().toBinary(obj),false);
-		             BytesRef keyByteRef = new BytesRef(keyBytes);	
-		             Term term = new Term(key.getKey(), keyByteRef);
+					byte[] keyBytes = marshaller.marshal(ctx.grid().binary().toBinary(obj),false);
+		            BytesRef keyByteRef = new BytesRef(keyBytes);	
+		            Term term = new Term(key.getKey(), keyByteRef);
 					Query termQuery = new TermQuery(term);
 					query.add(termQuery, BooleanClause.Occur.MUST);
 		     	}
@@ -547,8 +573,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 				org.apache.lucene.document.Document doc = searcher.doc(sd.doc);
 				float score = sd.score;
 
-				Object k = ctx.cacheObjects().unmarshal(cache.context().cacheObjectContext(),
-						doc.getBinaryValue(KEY_FIELD_NAME).bytes, ldr);
+				Object k = ctx.cacheObjects().unmarshal(cache.context().cacheObjectContext(),doc.getBinaryValue(KEY_FIELD_NAME).bytes, ldr);
 
 				result.add(k);
 
@@ -617,8 +642,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 				org.apache.lucene.document.Document doc = searcher.doc(sd.doc);
 				float score = sd.score;
 
-				Object k = ctx.cacheObjects().unmarshal(cache.context().cacheObjectContext(),
-						doc.getBinaryValue(KEY_FIELD_NAME).bytes, ldr);
+				Object k = ctx.cacheObjects().unmarshal(cache.context().cacheObjectContext(),doc.getBinaryValue(KEY_FIELD_NAME).bytes, ldr);
 				String v = doc.get(field);
 
 				result.add(new IgniteBiTuple<KeyValue, Object>(KeyValue.valueOf(v), k));
@@ -642,14 +666,12 @@ public class IgniteLuceneIndex extends Index<Object> {
 	public void setFirstIndex(boolean isFirstIndex) {
 		this.isFirstIndex = isFirstIndex;
 	}
-
-	/**
-	 * @return Cache object context.
-	 */
-	private CacheObjectContext objectContext() {
-		if (ctx == null)
-			return null;
-
-		return ctx.cache().internalCache(cacheName).context().cacheObjectContext();
+	
+	public boolean isTextIndex() {
+		for(IndexKey ind: this.getKeys()) {
+			if(ind.isText()) return true;
+		}
+		return false;
 	}
+
 }

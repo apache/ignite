@@ -324,15 +324,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
         return g.tracingConfiguration();
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<MemoryMetrics> memoryMetrics() {
-        return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
-        return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
-    }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> cache(@Nullable String name) {

@@ -83,12 +83,7 @@ export default class ClusterEditFormController {
                 this.eventGroups = _.filter(this.IgniteEventGroups, ({value}) => value !== 'EVTS_SWAPSPACE');
 
                 _.forEach(this.eventGroups, (grp) => grp.events = _.filter(grp.events, (evt) => evt.indexOf('SWAP') < 0));
-            }
-            else {
-                this.eventGroups = this.IgniteEventGroups;
-
-                this.marshallerVariant.splice(0, 0, {value: 'OptimizedMarshaller', label: 'OptimizedMarshaller'});
-            }
+            }            
 
             this.eventTypes = [];
 
@@ -113,9 +108,7 @@ export default class ClusterEditFormController {
 
                     if (_.get(cluster, 'marshaller.kind') === 'OptimizedMarshaller')
                         cluster.marshaller.kind = null;
-                }
-                else if (cluster && !_.get(cluster, 'eventStorage.kind'))
-                    _.set(cluster, 'eventStorage.kind', 'Memory');
+                }                
             }
         };
 

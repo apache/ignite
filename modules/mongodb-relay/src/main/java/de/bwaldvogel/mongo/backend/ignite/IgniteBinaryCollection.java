@@ -55,10 +55,13 @@ import org.slf4j.LoggerFactory;
 import de.bwaldvogel.mongo.MongoDatabase;
 import de.bwaldvogel.mongo.backend.AbstractMongoCollection;
 import de.bwaldvogel.mongo.backend.Assert;
+import de.bwaldvogel.mongo.backend.CollectionOptions;
+import de.bwaldvogel.mongo.backend.CursorRegistry;
 import de.bwaldvogel.mongo.backend.DocumentComparator;
 import de.bwaldvogel.mongo.backend.DocumentWithPosition;
 import de.bwaldvogel.mongo.backend.Index;
 import de.bwaldvogel.mongo.backend.Missing;
+import de.bwaldvogel.mongo.backend.QueryResult;
 import de.bwaldvogel.mongo.backend.Utils;
 import de.bwaldvogel.mongo.backend.ignite.util.BinaryObjectMatch;
 import de.bwaldvogel.mongo.bson.Document;
@@ -70,16 +73,28 @@ import static de.bwaldvogel.mongo.backend.ignite.util.DocumentUtil.*;
 
 public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 
-	public final IgniteCache<Object, BinaryObject> dataMap;
+	public final IgniteCache<Object, BinaryObject> dataMap;	
+	public final String idField;	
 	public long dataSize = 0;
+	private IgniteDatabase database;
     
-    public IgniteBinaryCollection(IgniteDatabase database, String collectionName, String idField, IgniteCache<Object, BinaryObject> dataMap) {
-        super(database, collectionName, idField);
+    public IgniteBinaryCollection(IgniteDatabase database, String collectionName, CollectionOptions options,
+            CursorRegistry cursorRegistry, IgniteCache<Object, BinaryObject> dataMap) {
+        super(database, collectionName,options,cursorRegistry);
         this.dataMap = dataMap;
+        this.idField = options.getIdField();
+        this.database = database;
         dataSize = dataMap.metrics().getCacheSize();
     }
     
+
     @Override
+    public void addIndex(Index<Object> index) {
+    	if(index==null) return; //add@byron
+    	super.addIndex(index);
+    	indexChanged(index,"add");
+    }    
+   
     protected void indexChanged(Index<Object> index,String op) {
     	for (Index<Object> idx : this.getIndexes()) {
 			if (idx instanceof IgniteLuceneIndex) {
@@ -132,14 +147,14 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 
     @Override
     protected Document getDocument(Object position) {    	
-    	BinaryObject obj = dataMap.get(position);
+    	Object obj = dataMap.get(toBinaryKey(position));
     	if(obj==null) return null;
     	return binaryObjectToDocument(position,obj,idField);
     }
 
     @Override
     protected void removeDocument(Object position) {
-        boolean remove = dataMap.remove(position);
+        boolean remove = dataMap.remove(toBinaryKey(position));
         if (!remove) {
             throw new NoSuchElementException("No document with key " + position);
         }
@@ -155,10 +170,16 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     }
 
 
-
     @Override
-    protected Iterable<Document> matchDocuments(Document query, Document orderBy, int numberToSkip,
-            int numberToReturn) {
+	protected QueryResult matchDocuments(Document query, Document orderBy, int numberToSkip, int numberToReturn,
+			int batchSize, Document fieldSelector) {
+    	Iterable<Document> list = this.matchDocuments(query, orderBy, numberToSkip, numberToReturn);
+    	Stream<Document> documentStream = StreamSupport.stream(list.spliterator(), false);
+    	return matchDocumentsFromStream(documentStream, query, orderBy, numberToSkip, numberToReturn, batchSize, fieldSelector);
+		
+	}
+    
+    protected Iterable<Document> matchDocuments(Document query, Document orderBy, int numberToSkip, int numberToReturn) {
         List<Document> matchedDocuments = new ArrayList<>();
         
         IgniteBiPredicate<Object, BinaryObject> filter = new BinaryObjectMatch(query,this.idField);
@@ -168,24 +189,26 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 		QueryCursor<Cache.Entry<Object, BinaryObject>>  cursor = dataMap.query(scan);
 		//Iterator<Cache.Entry<Object, BinaryObject>> it = cursor.iterator();
 	    for (Cache.Entry<Object, BinaryObject> entry: cursor) {	 	    	
-	    	Document document = binaryObjectToDocument(entry.getKey(),entry.getValue(),this.idField);
-	    	
-	    	boolean rv = documentMatchesQuery(document, query);    		
-	    	if (rv) {	    		
-                matchedDocuments.add(document);
-            }
-	    	else {
-	    		//-Assert.isTrue(rv,()->"match not insitense!");
-	    	}
+	    	Document document = binaryObjectToDocument(entry.getKey(),entry.getValue(),this.idField);	    	
+	    	matchedDocuments.add(document);
 	    }
-
-	    sortDocumentsInMemory(matchedDocuments, orderBy);
-        return applySkipAndLimit(matchedDocuments, numberToSkip, numberToReturn);
+	    
+	    //-sortDocumentsInMemory(matchedDocuments, orderBy);
+	    return matchedDocuments;
     }
     
+    protected void sortDocumentsInMemory(List<Document> documents, Document orderBy) {
+        DocumentComparator documentComparator = deriveComparator(orderBy);
+        if (documentComparator != null) {
+            documents.sort(documentComparator);
+        } else if (isNaturalDescending(orderBy)) {
+            Collections.reverse(documents);
+        }
+    }
+
+    
     @Override
-    public void drop() {
-        log.debug("Dropping collection {}", getFullName());
+    public void drop() {       
         dataMap.destroy();
     }
 
@@ -223,7 +246,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 		return cacheName;
 	}
     
-    public static T2<String,String> typeNameAndKeyField(IgniteCache<Object,BinaryObject> dataMap,Document obj) {
+    public T2<String,String> typeNameAndKeyField(IgniteCache<Object,BinaryObject> dataMap,Document obj) {
     	String typeName = (String)obj.get("_class");
     	String shortName = typeName;
     	if(!StringUtil.isNullOrEmpty(typeName)) {
@@ -231,7 +254,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     		shortName = pos>0? typeName.substring(pos+1): typeName;
     	}    	
     	
-    	String keyField = "_id";
+    	String keyField = idField;
     	CacheConfiguration<Object,BinaryObject> cfg = dataMap.getConfiguration(CacheConfiguration.class);
     	if(!cfg.getQueryEntities().isEmpty()) {
     		Iterator<QueryEntity> qeit = cfg.getQueryEntities().iterator();
@@ -255,6 +278,8 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     	}    	
     	return new T2<>(typeName,keyField);
     }
+
+	
     
     
 }

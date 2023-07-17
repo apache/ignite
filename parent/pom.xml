@@ -42,7 +42,7 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite-parent</artifactId>
-    <version>${revision}</version>
+    <version>2.16.999-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -52,7 +52,7 @@
         <revision>2.16.999-SNAPSHOT</revision>
         <!-- Ignite version will be substituted with the flatten-maven-plugin and used as
             a version dependency for Ignite extensions. -->
-        <ignite.version>${revision}</ignite.version>
+        <ignite.version>2.16.999-SNAPSHOT</ignite.version>
         <ignite.edition>apache-ignite</ignite.edition>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -71,7 +71,7 @@
         <asm.version>4.2</asm.version>
         <aspectj.bundle.version>1.8.13_1</aspectj.bundle.version>
         <aspectj.version>1.8.13</aspectj.version>
-        <netty.version>4.1.89.Final</netty.version>
+        <netty.version>4.1.94.Final</netty.version>
         <bouncycastle.version>1.69</bouncycastle.version>
         <commons.beanutils.bundle.version>1.9.2_1</commons.beanutils.bundle.version>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>

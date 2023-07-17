@@ -20,12 +20,7 @@ include /app/configuration/mixins
 -var model = '$ctrl.clonedCluster'
 -var modelDiscoveryKind = model + '.discovery.kind'
 
-include ./general/discovery/cloud
-include ./general/discovery/google
-include ./general/discovery/jdbc
 include ./general/discovery/multicast
-include ./general/discovery/s3
-include ./general/discovery/shared
 include ./general/discovery/vm
 include ./general/discovery/zookeeper
 include ./general/discovery/kubernetes
@@ -75,22 +70,12 @@ panel-collapsible(opened=`::true` ng-form=form)
                         <ul>\
                             <li>Static IPs - IP Finder which works only with pre configured list of IP addresses specified</li>\
                             <li>Multicast - Multicast based IP finder</li>\
-                            <li>AWS S3 - AWS S3 based IP finder that automatically discover cluster nodes on Amazon EC2 cloud</li>\
-                            <li>Apache jclouds - Apache jclouds multi cloud toolkit based IP finder for cloud platforms with unstable IP addresses</li>\
-                            <li>Google cloud storage - Google Cloud Storage based IP finder that automatically discover cluster nodes on Google Compute Engine cluster</li>\
-                            <li>JDBC - JDBC based IP finder that use database to store node IP address</li>\
-                            <li>Shared filesystem - Shared filesystem based IP finder that use file to store node IP address</li>\
                             <li>Apache ZooKeeper - Apache ZooKeeper based IP finder when you use ZooKeeper to coordinate your distributed environment</li>\
                             <li>Kubernetes - IP finder for automatic lookup of Ignite nodes running in Kubernetes environment</li>\
                         </ul>'
                 })
-            .pc-form-group
-                +discovery-cloud()(ng-if=`${modelDiscoveryKind} === 'Cloud'`)
-                +discovery-google()(ng-if=`${modelDiscoveryKind} === 'GoogleStorage'`)
-                +discovery-jdbc()(ng-if=`${modelDiscoveryKind} === 'Jdbc'`)
-                +discovery-multicast()(ng-if=`${modelDiscoveryKind} === 'Multicast'`)
-                +discovery-s3()(ng-if=`${modelDiscoveryKind} === 'S3'`)
-                +discovery-shared()(ng-if=`${modelDiscoveryKind} === 'SharedFs'`)
+            .pc-form-group               
+                +discovery-multicast()(ng-if=`${modelDiscoveryKind} === 'Multicast'`)                
                 +discovery-vm()(ng-if=`${modelDiscoveryKind} === 'Vm'`)
                 +discovery-zookeeper()(ng-if=`${modelDiscoveryKind} === 'ZooKeeper'`)
                 +discovery-kubernetes()(ng-if=`${modelDiscoveryKind} === 'Kubernetes'`)

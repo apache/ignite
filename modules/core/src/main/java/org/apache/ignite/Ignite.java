@@ -737,20 +737,6 @@ public interface Ignite extends AutoCloseable {
      */
     public void resetLostPartitions(Collection<String> cacheNames);
 
-    /**
-     * @return Collection of {@link MemoryMetrics} snapshots.
-     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
-     */
-    @Deprecated
-    public Collection<MemoryMetrics> memoryMetrics();
-
-    /**
-     * @param dataRegionName Name of the data region.
-     * @return {@link MemoryMetrics} snapshot or {@code null} if no memory region is configured under specified name.
-     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
-     */
-    @Deprecated
-    @Nullable public MemoryMetrics memoryMetrics(String dataRegionName);
 
     /**
      * Returns a collection of {@link DataRegionMetrics} that reflects page memory usage on this Apache Ignite node

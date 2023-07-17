@@ -127,12 +127,7 @@ public class IgniteGraph implements Graph {
         	if(ValueUtils.defaultPropertyType==ValueUtils.PropertyType.STRING) {
         	    stringedPropertyType = true;
         	}
-        }
-        
-        String igniteCfg = config.getString("gremlin.graph.ignite.cfg");
-        if(igniteCfg!=null && !igniteCfg.isEmpty()) {
-        	IgniteConf.file = igniteCfg;
-        }        
+        }   
         
         /*
          * Create the Ignite caches that are used as the

@@ -25,7 +25,7 @@
 
         <scala.binary.version>2.11</scala.binary.version>
 
-        <ignite.version>2.14.0</ignite.version>        
+        <ignite.version>2.16.999-SNAPSHOT</ignite.version>        
 		<jackson.version>2.12.7</jackson.version>
         <kryo.version>5.1.1</kryo.version>
         <okhttp.version>3.14.4</okhttp.version>
