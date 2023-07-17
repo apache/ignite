@@ -315,7 +315,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      * Retrieves the {@link MetricRegistry} for this data region.
      */
     private MetricRegistry metricRegistry() {
-        String registryName = MetricUtils.metricName(DATAREGION_METRICS_PREFIX, getName());
+        String registryName = MetricUtils.metricName(DATAREGION_METRICS_PREFIX, dataRegionCfg.getName());
         return kernalCtx.metric().registry(registryName);
     }
 
@@ -382,13 +382,6 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         long freeSpaceInPages = dataRegionMetricsProvider.partiallyFilledPagesFreeSpace();
 
         return (float)(totalUsedSize - freeSpaceInPages) / totalUsedSize;
-    }
-
-    /**
-     * @return Related Data region configuration.
-     */
-    public DataRegionConfiguration regionCfg() {
-        return dataRegionCfg;
     }
 
     /**

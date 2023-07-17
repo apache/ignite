@@ -38,7 +38,6 @@ import java.util.stream.IntStream;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -52,20 +51,17 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.maintenance.MaintenanceFileStore;
-import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.store.PageStoreCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
@@ -73,9 +69,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.DEFRAGMENTATION_MNTC_TASK_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentationCompletionMarkerFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedIndexFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartFile;
@@ -97,15 +92,14 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     /** */
     protected static final String GRP_NAME = "group";
 
-    /** */
-    private volatile FailureContext failureCtx;
-
     /** Defragmentation pool size. If < 1, default value is used. */
     private int defragPoolSize;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        stopAllGrids(true);
 
         cleanPersistenceDir();
     }
@@ -121,15 +115,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new StopNodeFailureHandler() {
-            @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
-                boolean res = super.onFailure(ignite, failureCtx);
-
-                IgnitePdsDefragmentationTest.this.failureCtx = failureCtx;
-
-                return res;
-            }
-        };
+        return new StopNodeFailureHandler();
     }
 
     /** */
@@ -169,7 +155,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         dsCfg.setDefaultDataRegionConfiguration(
             new DataRegionConfiguration()
                 .setInitialSize(100L * 1024 * 1024)
-                .setMaxSize(100L * 1024 * 1024)
+                .setMaxSize(1024L * 1024 * 1024)
                 .setPersistenceEnabled(true)
         );
 
@@ -179,12 +165,12 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(dsCfg);
 
         CacheConfiguration<?, ?> cache1Cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setAtomicityMode(ATOMIC)
+            .setAtomicityMode(TRANSACTIONAL)
             .setGroupName(GRP_NAME)
             .setAffinity(new RendezvousAffinityFunction(false, PARTS));
 
         CacheConfiguration<?, ?> cache2Cfg = new CacheConfiguration<>(CACHE_2_NAME)
-            .setAtomicityMode(ATOMIC)
+            .setAtomicityMode(TRANSACTIONAL)
             .setGroupName(GRP_NAME)
             .setExpiryPolicyFactory(new PolicyFactory())
             .setAffinity(new RendezvousAffinityFunction(false, PARTS));
@@ -291,39 +277,6 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         validateCache(grid(0).cache(DEFAULT_CACHE_NAME));
 
         validateLeftovers(workDir);
-    }
-
-    /** */
-    @Test
-    public void testDefragmentationOom() throws Exception {
-        IgniteEx ig = startGrid(0);
-
-        ig.cluster().state(ClusterState.ACTIVE);
-
-        byte[] val = new byte[4000];
-
-        try (IgniteDataStreamer<Object, Object> ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int i = 0; i < 50_000; i++) {
-                new Random().nextBytes(val);
-
-                ds.addData(i, val);
-            }
-        }
-
-        forceCheckpoint(ig);
-
-        createMaintenanceRecord();
-
-        stopGrid(0);
-        ig = startGrid(0);
-
-        log.info("Waiting for node failure...");
-
-        GridTestUtils.waitForCondition(() -> failureCtx != null, getTestTimeout());
-
-        assertTrue(failureCtx.error() instanceof IgniteOutOfMemoryException);
-
-        ig.context().maintenanceRegistry().unregisterMaintenanceTask(DEFRAGMENTATION_MNTC_TASK_NAME);
     }
 
     /** */
@@ -671,10 +624,9 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
     /** */
     protected <T> void fillCache(Function<Integer, T> keyMapper, IgniteCache<T, Object> cache) {
-        byte[] val = new byte[8192];
-
         try (IgniteDataStreamer<T, Object> ds = grid(0).dataStreamer(cache.getName())) {
             for (int i = 0; i < ADDED_KEYS_COUNT; i++) {
+                byte[] val = new byte[8192];
                 new Random().nextBytes(val);
 
                 ds.addData(keyMapper.apply(i), val);
@@ -682,7 +634,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         }
 
         try (IgniteDataStreamer<T, Object> ds = grid(0).dataStreamer(cache.getName())) {
-            ds.receiver(DataStreamerCacheUpdaters.batched());
+            ds.allowOverwrite(true);
 
             for (int i = 0; i <= ADDED_KEYS_COUNT / 2; i++)
                 ds.removeData(keyMapper.apply(i * 2));

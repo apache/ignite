@@ -40,7 +40,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.PageReplacementMode;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.PageReplacementStartedEvent;
 import org.apache.ignite.failure.FailureContext;
@@ -257,6 +256,9 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** Memory metrics to track dirty pages count and page replace rate. */
     private final DataRegionMetricsImpl dataRegionMetrics;
+    
+    /** Data region configuration. */
+    private final DataRegionConfiguration dataRegionCfg;
 
     /**
      * {@code False} if memory was not started or already stopped and is not supposed for any usage.
@@ -273,6 +275,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @param trackable Obsolete flag. Keeped for compatibility with existing PDS.
      * @param stateChecker Checkpoint lock state provider. Used to ensure lock is held by thread, which modify pages.
      * @param dataRegionMetrics Memory metrics to track dirty pages count and page replace rate.
+     * @param dataRegionCfg Data region configuration.
      * @param throttlingPlc Write throttle enabled and its type. Null equal to none.
      * @param cpProgressProvider checkpoint progress, base for throttling. Null disables throttling.
      */
@@ -286,6 +289,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         boolean trackable,
         CheckpointLockStateChecker stateChecker,
         DataRegionMetricsImpl dataRegionMetrics,
+        DataRegionConfiguration dataRegionCfg,
         @Nullable ThrottlingPolicy throttlingPlc,
         IgniteOutClosure<CheckpointProgress> cpProgressProvider
     ) {
@@ -324,6 +328,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         rwLock = new OffheapReadWriteLock(128);
 
         this.dataRegionMetrics = dataRegionMetrics;
+        
+        this.dataRegionCfg = dataRegionCfg;
 
         asyncRunner = new ThreadPoolExecutor(
             0,
@@ -332,13 +338,8 @@ public class PageMemoryImpl implements PageMemoryEx {
             TimeUnit.SECONDS,
             new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors()),
             new IgniteThreadFactory(ctx.igniteInstanceName(), "page-mem-op"));
-
-        DataRegionConfiguration memCfg = dataRegionMetrics.regionCfg();
-
-        PageReplacementMode pageReplacementMode = memCfg == null ? DataRegionConfiguration.DFLT_PAGE_REPLACEMENT_MODE :
-                memCfg.getPageReplacementMode();
-
-        switch (pageReplacementMode) {
+        
+        switch (dataRegionCfg.getPageReplacementMode()) {
             case RANDOM_LRU:
                 pageReplacementPolicyFactory = new RandomLruPageReplacementPolicyFactory();
 
@@ -352,7 +353,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 break;
             default:
-                throw new IgniteException("Unexpected page replacement mode: " + pageReplacementMode);
+                throw new IgniteException("Unexpected page replacement mode: " + dataRegionCfg.getPageReplacementMode());
         }
     }
 
@@ -639,8 +640,6 @@ public class PageMemoryImpl implements PageMemoryEx {
             seg.loadedPages.put(grpId, PageIdUtils.effectivePageId(pageId), relPtr, seg.partGeneration(grpId, partId));
         }
         catch (IgniteOutOfMemoryException oom) {
-            DataRegionConfiguration dataRegionCfg = dataRegionMetrics.regionCfg();
-
             IgniteOutOfMemoryException e = new IgniteOutOfMemoryException("Out of memory in data region [" +
                 "name=" + dataRegionCfg.getName() +
                 ", initSize=" + U.readableSize(dataRegionCfg.getInitialSize(), false) +
@@ -2328,8 +2327,6 @@ public class PageMemoryImpl implements PageMemoryEx {
          * @param reason Reason.
          */
         public IgniteOutOfMemoryException oomException(String reason) {
-            DataRegionConfiguration dataRegionCfg = dataRegionMetrics.regionCfg();
-
             return new IgniteOutOfMemoryException("Failed to find a page for eviction (" + reason + ") [" +
                 "segmentCapacity=" + loadedPages.capacity() +
                 ", loaded=" + loadedPages.size() +
