@@ -105,6 +105,8 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
             }
         };
 
+        DataRegionConfiguration regCfg = new DataRegionConfiguration();
+
         PageMemory mem = new PageMemoryImpl(
             provider, sizes,
             sharedCtx,
@@ -115,7 +117,8 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
             },
             true,
             () -> true,
-            new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx),
+            new DataRegionMetricsImpl(regCfg, cctx),
+            regCfg,
             PageMemoryImpl.ThrottlingPolicy.DISABLED,
             clo
         );

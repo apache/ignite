@@ -117,6 +117,8 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
 
         IgniteOutClosure<CheckpointProgress> clo = () -> Mockito.mock(CheckpointProgressImpl.class);
 
+        DataRegionConfiguration regCfg = new DataRegionConfiguration();
+
         return new PageMemoryImpl(
             provider, sizes,
             sharedCtx,
@@ -127,7 +129,8 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
             },
             true,
             () -> true,
-            new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx),
+            new DataRegionMetricsImpl(regCfg, cctx),
+            regCfg,
             PageMemoryImpl.ThrottlingPolicy.DISABLED,
             clo
         );

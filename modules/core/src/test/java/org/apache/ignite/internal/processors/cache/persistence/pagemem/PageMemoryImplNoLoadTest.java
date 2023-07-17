@@ -106,6 +106,8 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
 
         IgniteOutClosure<CheckpointProgress> clo = () -> Mockito.mock(CheckpointProgressImpl.class);
 
+        DataRegionConfiguration regCfg = new DataRegionConfiguration();
+
         return new PageMemoryImpl(
             provider,
             sizes,
@@ -117,7 +119,8 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
             },
             true,
             () -> true,
-            new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx),
+            new DataRegionMetricsImpl(regCfg, cctx),
+            regCfg,
             PageMemoryImpl.ThrottlingPolicy.DISABLED,
             clo
         );
