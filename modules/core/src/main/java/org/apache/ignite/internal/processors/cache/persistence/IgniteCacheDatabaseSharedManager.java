@@ -1365,7 +1365,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * Creates PageMemory with given size and memory provider.
      *
      * @param memProvider Direct memory provider.
-     * @param dsCfg Data storage configuartion.
+     * @param dsCfg Data storage configuration.
      * @param regCfg Data region configuration.
      * @param regMetrics Data region metrics to collect memory usage metrics.
      * @param pageMgr Page read/write manager.
