@@ -62,6 +62,9 @@ public class CdcBuffer {
     public boolean offer(ByteBuffer data) {
         int bufSize = data.limit() - data.position();
 
+        if (bufSize == 0)
+            return true;
+
         if (size.addAndGet(bufSize) > maxSize) {
             overflowed = true;
 
@@ -72,7 +75,11 @@ public class CdcBuffer {
 
         data.get(cp, 0, bufSize);
 
-        LinkedNode newNode = new LinkedNode(ByteBuffer.wrap(cp));
+        ByteBuffer dataBuf = ByteBuffer
+            .wrap(cp)
+            .order(data.order());
+
+        LinkedNode newNode = new LinkedNode(dataBuf);
         LinkedNode oldNode = producerNode;
 
         producerNode = newNode;

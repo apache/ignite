@@ -422,6 +422,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
                             ByteBuffer cdcBuf = buf.buf.duplicate();
                             cdcBuf.position(off);
                             cdcBuf.limit(off + len);
+                            cdcBuf.order(buf.buf.order());
 
                             cdcProc.collect(cdcBuf);
                         }

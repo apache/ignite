@@ -822,6 +822,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         assert (isArchiverEnabled() && archiver != null) || (!isArchiverEnabled() && archiver == null) :
             "Trying to restore FileWriteHandle on deactivated write ahead log manager";
 
+        if (cdcProc != null)
+            cdcProc.enable(filePtr);
+
         fileHandleManager.resumeLogging();
 
         updateCurrentHandle(restoreWriteHandle(filePtr), null);

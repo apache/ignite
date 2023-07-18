@@ -22,54 +22,41 @@ import java.nio.ByteBuffer;
 import java.util.Optional;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.HEADER_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readPosition;
 
 /** Byte Buffer WAL Iterator */
 public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** WAL records serializer. */
     private final RecordSerializer serializer;
 
-    /** */
+    /** Buffer input wrapper. */
     private final ByteBufferBackedDataInputImpl dataInput;
 
-    /** */
-    private WALPointer expWalPtr;
+    /** Last read pointer. */
+    private @Nullable WALPointer lastReadPtr;
 
     /** */
     public ByteBufferWalIterator(
-        GridCacheSharedContext<?, ?> cctx,
         ByteBuffer byteBuf,
-        int ver,
-        WALPointer walPointer
+        RecordSerializer serializer,
+        @Nullable WALPointer lastWrittenPtr
     ) throws IgniteCheckedException {
-        this(cctx, byteBuf, ver, walPointer, null);
-    }
+        this.serializer = serializer;
 
-    /** */
-    public ByteBufferWalIterator(
-        GridCacheSharedContext<?, ?> cctx,
-        ByteBuffer byteBuf,
-        int ver,
-        WALPointer expWalPtr,
-        IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter
-    ) throws IgniteCheckedException {
-        serializer = new RecordSerializerFactoryImpl(cctx, readTypeFilter).createSerializer(ver);
+        lastReadPtr = lastWrittenPtr;
 
         dataInput = new ByteBufferBackedDataInputImpl();
 
         dataInput.buffer(byteBuf);
-
-        this.expWalPtr = expWalPtr;
 
         advance();
     }
@@ -85,11 +72,16 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
             if (curRec == null)
                 skipHeader();
 
-            WALRecord rec = serializer.readRecord(dataInput, expWalPtr);
+            WALPointer nextPtr = new WALPointer(lastReadPtr.index(), lastReadPtr.fileOffset() + lastReadPtr.length(), 0);
 
-            result = new IgniteBiTuple<>(rec.position(), rec);
+            WALRecord rec = serializer.readRecord(dataInput, nextPtr);
 
-            expWalPtr = new WALPointer(expWalPtr.index(), expWalPtr.fileOffset() + rec.size(), 0);
+            // TODO: concurrency between FileredRecord#size in different WAL consumers? compaction thread vs cdc thread?
+            nextPtr.length(rec.size());
+
+            result = new IgniteBiTuple<>(nextPtr, rec);
+
+            lastReadPtr = nextPtr;
         }
         catch (SegmentEofException e) {
             return null;
@@ -110,9 +102,11 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
         WALRecord.RecordType recType = WALRecord.RecordType.fromIndex(type - 1);
 
         if (recType == HEADER_RECORD) {
+            long segIdx = readPosition(dataInput).index();
+
             dataInput.buffer().position(position + HEADER_RECORD_SIZE);
 
-            expWalPtr = new WALPointer(expWalPtr.index(), expWalPtr.fileOffset() + HEADER_RECORD_SIZE, 0);
+            lastReadPtr = new WALPointer(segIdx, 0, HEADER_RECORD_SIZE);
         }
         else
             dataInput.buffer().position(position);
@@ -127,6 +121,6 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
 
     /** {@inheritDoc} */
     @Override public Optional<WALPointer> lastRead() {
-        throw new UnsupportedOperationException();
+        return Optional.of(lastReadPtr);
     }
 }

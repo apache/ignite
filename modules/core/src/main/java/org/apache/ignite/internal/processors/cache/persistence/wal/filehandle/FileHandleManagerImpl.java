@@ -387,10 +387,12 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
                             writeBuffer(seg.position(), seg.buffer());
 
+                            // TODO: do not duplicate if processor disabled.
                             if (cdcProc != null) {
                                 ByteBuffer cdcBuf = seg.buffer().duplicate();
                                 cdcBuf.position(bufPos);
                                 cdcBuf.limit(seg.buffer().limit());
+                                cdcBuf.order(seg.buffer().order());
 
                                 cdcProc.collect(cdcBuf);
                             }
