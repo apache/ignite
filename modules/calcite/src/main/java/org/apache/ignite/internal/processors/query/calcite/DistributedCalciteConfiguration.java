@@ -15,31 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query;
+package org.apache.ignite.internal.processors.query.calcite;
 
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.DistributedSqlConfiguration;
 
-/**
- * The exception is thrown if a query was cancelled or timed out while executing.
- */
-public class QueryCancelledException extends IgniteCheckedException {
+/** Distributed Calcite-engine configuration. */
+public class DistributedCalciteConfiguration extends DistributedSqlConfiguration {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Error message. */
-    public static final String ERR_MSG = "The query was cancelled while executing.";
-
-    /**
-     * Default constructor.
-     */
-    public QueryCancelledException() {
-        super(ERR_MSG);
-    }
-
-    /**
-     * @param msg Error message.
-     */
-    public QueryCancelledException(String msg) {
-        super(msg);
+    public DistributedCalciteConfiguration(GridKernalContext ctx, IgniteLogger log) {
+        super(ctx, log);
     }
 }

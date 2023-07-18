@@ -132,6 +132,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             ArrayRowHandler.INSTANCE,
             NoOpMemoryTracker.INSTANCE,
             NoOpIoTracker.INSTANCE,
+            0,
             null
         ) {
             @Override public ColocationGroup group(long srcId) {

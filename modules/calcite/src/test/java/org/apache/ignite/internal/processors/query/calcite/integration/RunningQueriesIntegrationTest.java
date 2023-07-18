@@ -30,17 +30,18 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.query.DistributedSqlConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
@@ -52,6 +53,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableImpl
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.systemview.view.SqlQueryView;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -281,7 +283,7 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
 
     /** */
     @Test
-    public void testLongPlanningTimeout() {
+    public void testLongPlanningTimeout() throws IgniteCheckedException {
         Stream.of("T1", "T2").forEach(tblName -> {
             sql(String.format("CREATE TABLE %s(A INT, B INT)", tblName));
 
@@ -310,7 +312,23 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
             assertFalse(res.get().isEmpty());
         }
         catch (Exception e) {
-            assertTrue("Unexpected exception: " + e, e instanceof RelOptPlanner.CannotPlanException);
+            assertTrue("Unexpected exception: " + e, X.cause(e, QueryCancelledException.class) != null);
+        }
+
+        DistributedSqlConfiguration distrCfg = queryProcessor(client).distributedConfiguration();
+
+        try {
+            distrCfg.defaultQueryTimeout((int)PLANNER_TIMEOUT / 3).get();
+
+            GridTestUtils.assertTimeout(PLANNER_TIMEOUT, TimeUnit.MILLISECONDS, () -> {
+                sql(longJoinQry + " AND 1=1"); // Modify SQL to skip cached plan.
+            });
+        }
+        catch (Exception e) {
+            assertTrue("Unexpected exception: " + e, X.cause(e, QueryCancelledException.class) != null);
+        }
+        finally {
+            distrCfg.defaultQueryTimeout(DistributedSqlConfiguration.DFLT_QRY_TIMEOUT).get();
         }
     }
 
