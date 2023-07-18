@@ -160,6 +160,9 @@ public class TimeoutIntegrationTest extends AbstractBasicIntegrationTest {
 
             String qry = "SELECT * FROM person";
 
+            // Build plan and mapping to reduce execution time by qryExecutor.
+            sql(node, qry);
+
             // Check query works when timeout is set, but not reached.
             qryExecutor.apply(qry);
 
