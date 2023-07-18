@@ -113,7 +113,6 @@ import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.systemview.walker.SnapshotViewWalker;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
@@ -133,6 +132,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
@@ -415,7 +415,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private volatile FileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
     /** File store manager to create page store for restore. */
-    private volatile IgnitePageStoreManager storeMgr;
+    private volatile FilePageStoreManager storeMgr;
 
     /** File store manager to create page store for restore. */
     private volatile GridLocalConfigManager locCfgMgr;
@@ -524,13 +524,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (ctx.clientNode())
             return;
 
-        storeMgr = cctx.pageStore();
+        if (!CU.isPersistenceEnabled(ctx.config()))
+            return;
+
+        assert cctx.pageStore() instanceof FilePageStoreManager;
+
+        storeMgr = (FilePageStoreManager)cctx.pageStore();
         locCfgMgr = cctx.cache().configManager();
 
         pdsSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
 
         locSnpDir = resolveSnapshotWorkDirectory(ctx.config());
-        tmpWorkDir = U.resolveWorkDirectory(pdsSettings.persistentStoreNodePath().getAbsolutePath(), DFLT_SNAPSHOT_TMP_DIR, true);
+        tmpWorkDir = U.resolveWorkDirectory(storeMgr.workDir().getAbsolutePath(), DFLT_SNAPSHOT_TMP_DIR, true);
 
         U.ensureDirectory(locSnpDir, "snapshot work directory", log);
         U.ensureDirectory(tmpWorkDir, "temp directory for snapshot creation", log);
@@ -1146,7 +1151,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 withMetaStorage,
                 locSndrFactory.apply(req.snapshotName(), req.snapshotPath()));
 
-            if (withMetaStorage && task0 instanceof SnapshotFutureTask && CU.isPersistenceEnabled(cctx.gridConfig())) {
+            if (withMetaStorage && task0 instanceof SnapshotFutureTask) {
                 ((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage())
                     .suspend(((SnapshotFutureTask)task0).started());
             }
@@ -2156,6 +2161,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     ));
             }
 
+            if (!CU.isPersistenceEnabled(cctx.gridConfig())) {
+                throw new IgniteException("Create snapshot request has been rejected. " +
+                    "Snapshots on an in-memory clusters are not allowed.");
+            }
+
             ClusterSnapshotFuture snpFut0;
             int incIdx = -1;
 
@@ -2528,7 +2538,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public GridCloseableIterator<CacheDataRow> partitionRowIterator(GridKernalContext ctx,
         String grpName,
         int partId,
-        PageStore pageStore
+        FilePageStore pageStore
     ) throws IgniteCheckedException {
         CacheObjectContext coctx = new CacheObjectContext(ctx, grpName, null, false,
             false, false, false, false);
@@ -2583,7 +2593,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         int grpId = CU.cacheId(grpName);
 
-        PageStore pageStore = storeMgr.pageStoreFactory(grpId,
+        FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId,
             encrKeyProvider == null || encrKeyProvider.getActiveKey(grpId) == null ? null : encrKeyProvider).
             createPageStore(getTypeByPartId(partId),
                 snpPart::toPath,
@@ -3872,9 +3882,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 task.partsLeft.compareAndSet(-1, partsCnt);
 
-                File cacheDir = FilePageStoreManager.cacheWorkDir(pdsSettings.persistentStoreNodePath(), cacheDirName);
+                File cacheDir = FilePageStoreManager.cacheWorkDir(storeMgr.workDir(), cacheDirName);
 
-                File tmpCacheDir = U.resolveWorkDirectory(pdsSettings.persistentStoreNodePath().getAbsolutePath(),
+                File tmpCacheDir = U.resolveWorkDirectory(storeMgr.workDir().getAbsolutePath(),
                     formatTmpDirName(cacheDir).getName(), false);
 
                 return Paths.get(tmpCacheDir.getAbsolutePath(), getPartitionFileName(partId)).toString();
@@ -4171,7 +4181,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 IgniteSnapshotManager.this.ioFactory;
 
             try (DeltaIterator deltaIter = deltaIterFactory.create(delta, ioFactory);
-                 PageStore pageStore = storeMgr.pageStoreFactory(pair.getGroupId(), encrypted)
+                 FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(pair.getGroupId(), encrypted)
                      .createPageStore(getTypeByPartId(pair.getPartitionId()), snpPart::toPath, v -> {})
             ) {
                 pageStore.beginRecover();

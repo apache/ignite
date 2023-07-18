@@ -1809,7 +1809,7 @@ public class SnapshotRestoreProcess {
     /** */
     private void punchHole(int grpId, int partId, File partFile) throws Exception {
         FilePageStoreManager storeMgr = (FilePageStoreManager)ctx.cache().context().pageStore();
-        FileVersionCheckingFactory factory = storeMgr.pageStoreFactory(grpId, null);
+        FileVersionCheckingFactory factory = storeMgr.getPageStoreFactory(grpId, null);
 
         try (FilePageStore pageStore = (FilePageStore)factory.createPageStore(getTypeByPartId(partId), partFile, val -> {})) {
             pageStore.init();

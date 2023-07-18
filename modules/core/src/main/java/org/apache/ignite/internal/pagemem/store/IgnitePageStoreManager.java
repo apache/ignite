@@ -17,17 +17,14 @@
 
 package org.apache.ignite.internal.pagemem.store;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
@@ -211,23 +208,4 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param cleanFiles {@code True} to delete all persisted files related to particular store.
      */
     public void cleanupPageStoreIfMatch(Predicate<Integer> cacheGrpPred, boolean cleanFiles);
-
-    /**
-     * @return Store work dir. Includes consistent-id based folder
-     */
-    public File workDir();
-
-    /**
-     * @param grpId Cache group id.
-     * @param encrypted {@code true} if cache group encryption enabled.
-     * @return Factory to create page stores.
-     */
-    public FileVersionCheckingFactory pageStoreFactory(int grpId, boolean encrypted);
-
-    /**
-     * @param grpId Cache group id.
-     * @param encrKeyProvider Encryption keys provider for encrypted IO. If {@code null}, no encryption is used.
-     * @return Factory to create page stores with certain encryption keys provider.
-     */
-    public FileVersionCheckingFactory pageStoreFactory(int grpId, EncryptionCacheKeyProvider encrKeyProvider);
 }

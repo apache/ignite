@@ -602,13 +602,21 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         );
     }
 
-    /** {@inheritDoc} */
-    @Override public FileVersionCheckingFactory pageStoreFactory(int grpId, boolean encrypted) {
-        return pageStoreFactory(grpId, encrypted ? cctx.kernalContext().encryption() : null);
+    /**
+     * @param grpId Cache group id.
+     * @param encrypted {@code true} if cache group encryption enabled.
+     * @return Factory to create page stores.
+     */
+    public FileVersionCheckingFactory getPageStoreFactory(int grpId, boolean encrypted) {
+        return getPageStoreFactory(grpId, encrypted ? cctx.kernalContext().encryption() : null);
     }
 
-    /** {@inheritDoc} */
-    @Override public FileVersionCheckingFactory pageStoreFactory(int grpId, EncryptionCacheKeyProvider encrKeyProvider) {
+    /**
+     * @param grpId Cache group id.
+     * @param encrKeyProvider Encryption keys provider for encrypted IO. If {@code null}, no encryption is used.
+     * @return Factory to create page stores with certain encryption keys provider.
+     */
+    public FileVersionCheckingFactory getPageStoreFactory(int grpId, EncryptionCacheKeyProvider encrKeyProvider) {
         FileIOFactory pageStoreFileIoFactory = this.pageStoreFileIoFactory;
         FileIOFactory pageStoreV1FileIoFactory = this.pageStoreV1FileIoFactory;
 
@@ -707,7 +715,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             if (dirExisted && !idxFile.exists())
                 grpsWithoutIdx.add(grpId);
 
-            FileVersionCheckingFactory pageStoreFactory = pageStoreFactory(grpId, encrypted);
+            FileVersionCheckingFactory pageStoreFactory = getPageStoreFactory(grpId, encrypted);
 
             PageStore idxStore =
                 pageStoreFactory.createPageStore(
@@ -964,8 +972,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return pageCnt;
     }
 
-    /** {@inheritDoc} */
-    @Override public File workDir() {
+    /**
+     * @return Store work dir. Includes consistent-id based folder
+     */
+    public File workDir() {
         return storeWorkDir;
     }
 

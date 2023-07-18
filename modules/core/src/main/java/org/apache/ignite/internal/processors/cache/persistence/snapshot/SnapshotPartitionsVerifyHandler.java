@@ -180,7 +180,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                     int partId = partId(part.getName());
 
                     try (FilePageStore pageStore =
-                             (FilePageStore)storeMgr.pageStoreFactory(grpId, snpEncrKeyProvider.getActiveKey(grpId) != null ?
+                             (FilePageStore)storeMgr.getPageStoreFactory(grpId, snpEncrKeyProvider.getActiveKey(grpId) != null ?
                                  snpEncrKeyProvider : null).createPageStore(getTypeByPartId(partId), part::toPath, val -> {})
                     ) {
                         pageStore.init();

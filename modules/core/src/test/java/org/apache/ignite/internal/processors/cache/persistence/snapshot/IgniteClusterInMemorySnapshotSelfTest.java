@@ -19,16 +19,30 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+
 /** */
 public class IgniteClusterInMemorySnapshotSelfTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
+    }
+
     /** */
     @Test
     public void testInMemorySnapshot() throws Exception {
         try (IgniteEx ignite = startGrid(0)) {
+            ignite.cluster().state(ACTIVE);
+
             IgniteCache<Integer, Integer> cache = ignite.createCache(DEFAULT_CACHE_NAME);
 
             IntStream.range(0, 100).forEach(i -> cache.put(i, i));
