@@ -1,18 +1,4 @@
-/*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
- *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
 
 import get from 'lodash/get';
 import find from 'lodash/find';
@@ -31,6 +17,7 @@ export default class Clusters {
     static $inject = ['$http'];    
 
     discoveries: Menu<DiscoveryKinds> = [
+        {value: 'Isolated', label: 'Isolated Nodes'},
         {value: 'Vm', label: 'Static IPs'},
         {value: 'Multicast', label: 'Multicast'},
         {value: 'ZooKeeper', label: 'Apache ZooKeeper'},
@@ -70,13 +57,7 @@ export default class Clusters {
         validRatio: 5,
         default: 0
     };
-    sharedMemoryPort = {
-        default: 48100,
-        min: -1,
-        max: 65535,
-        invalidValues: [0]
-    };
-
+    
     /**
      * Cluster-related configuration stuff
      */
@@ -144,14 +125,7 @@ export default class Clusters {
                     name: 'default'
                 },
                 dataRegionConfigurations: []
-            },
-            memoryConfiguration: {
-                pageSize: null,
-                memoryPolicies: [{
-                    name: 'default',
-                    maxSize: null
-                }]
-            },
+            },            
             serviceConfigurations: [],
             executorConfiguration: [],
             sqlConnectorConfiguration: {
@@ -168,16 +142,13 @@ export default class Clusters {
             discovery: {
                 kind: 'Multicast',
                 Vm: {addresses: ['127.0.0.1:47500..47510']},
-                Multicast: {addresses: ['127.0.0.1:47500..47510']},
-                Jdbc: {initSchema: true},
-                Cloud: {regions: [], zones: []}
+                Multicast: {addresses: ['127.0.0.1:47500..47510']}                
             },
             binaryConfiguration: {typeConfigurations: [], compactFooter: true},
             communication: {tcpNoDelay: true},
             connector: {noDelay: true},
             collision: {kind: 'Noop', JobStealing: {stealingEnabled: true}, PriorityQueue: {starvationPreventionEnabled: true}},
             failoverSpi: [],
-            logger: {Log4j: { mode: 'Default'}},
             caches: [],
             models: [],
             checkpointSpi: [],
@@ -270,61 +241,6 @@ export default class Clusters {
         }));
     }
 
-    memoryPolicy = {
-        name: {
-            default: 'default',
-            invalidValues: ['sysMemPlc']
-        },
-        initialSize: {
-            default: 268435456,
-            min: 10485760
-        },
-        maxSize: {
-            default: '0.8 * totalMemoryAvailable',
-            min: (memoryPolicy) => {
-                return memoryPolicy.initialSize || this.memoryPolicy.initialSize.default;
-            }
-        },
-        customValidators: {
-            defaultMemoryPolicyExists: (name, items = []) => {
-                const def = this.memoryPolicy.name.default;
-                const normalizedName = (name || def);
-
-                if (normalizedName === def)
-                    return true;
-
-                return items.some((policy) => (policy.name || def) === normalizedName);
-            },
-            uniqueMemoryPolicyName: (a, items = []) => {
-                const def = this.memoryPolicy.name.default;
-                return !items.some((b) => b.id !== a.id && (a.name || def) === (b.name || def));
-            }
-        },
-        emptyPagesPoolSize: {
-            default: 100,
-            min: 11,
-            max: (cluster, memoryPolicy) => {
-                if (!memoryPolicy || !memoryPolicy.maxSize)
-                    return;
-
-                const perThreadLimit = 10; // Took from Ignite
-                const maxSize = memoryPolicy.maxSize;
-                const pageSize = cluster.memoryConfiguration.pageSize || this.memoryConfiguration.pageSize.default;
-                const maxPoolSize = Math.floor(maxSize / pageSize / perThreadLimit);
-
-                return maxPoolSize;
-            }
-        }
-    };
-
-    getDefaultClusterMemoryPolicy(cluster) {
-        const def = this.memoryPolicy.name.default;
-        const normalizedName = get(cluster, 'memoryConfiguration.defaultMemoryPolicyName') || def;
-        return get(cluster, 'memoryConfiguration.memoryPolicies', []).find((p) => {
-            return (p.name || def) === normalizedName;
-        });
-    }
-
     makeBlankCheckpointSPI() {
         return {
             FS: {
@@ -375,47 +291,7 @@ export default class Clusters {
         {value: 'WeightedRandom', label: 'Random'},
         {value: 'Custom', label: 'Custom'}
     ];
-
-    makeBlankMemoryPolicy() {
-        return {id: uuidv4()};
-    }
-
-    addMemoryPolicy(cluster) {
-        const memoryPolicies = get(cluster, 'memoryConfiguration.memoryPolicies');
-
-        if (!memoryPolicies)
-            return;
-
-        return memoryPolicies.push(Object.assign(this.makeBlankMemoryPolicy(), {
-            // Blank name for default policy if there are not other policies
-            name: memoryPolicies.length ? uniqueName('New memory policy', memoryPolicies) : ''
-        }));
-    }
-
-    // For versions 2.1-2.2, use dataStorageConfiguration since 2.3
-    memoryConfiguration = {
-        pageSize: {
-            default: 1024 * 2,
-            values: [
-                {value: null, label: 'Default (2kb)'},
-                {value: 1024 * 1, label: '1 kb'},
-                {value: 1024 * 2, label: '2 kb'},
-                {value: 1024 * 4, label: '4 kb'},
-                {value: 1024 * 8, label: '8 kb'},
-                {value: 1024 * 16, label: '16 kb'}
-            ]
-        },
-        systemCacheInitialSize: {
-            default: 41943040,
-            min: 10485760
-        },
-        systemCacheMaxSize: {
-            default: 104857600,
-            min: (cluster) => {
-                return get(cluster, 'memoryConfiguration.systemCacheInitialSize') || this.memoryConfiguration.systemCacheInitialSize.default;
-            }
-        }
-    };
+    
 
     // Added in 2.3
     dataStorageConfiguration = {
@@ -482,7 +358,7 @@ export default class Clusters {
     };
 
     systemThreadPoolSize = {
-        default: 'max(8, availableProcessors) * 2',
+        default: 'max(16, availableProcessors)',
         min: 2
     };
 

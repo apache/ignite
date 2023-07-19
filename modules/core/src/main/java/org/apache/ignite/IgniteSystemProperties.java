@@ -726,8 +726,8 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code false}
      */
-    @SystemProperty("Disable MBeans registration. This may be helpful if MBeans are not allowed " +
-        "e.g. for security reasons")
+    @SystemProperty(value = "Disable MBeans registration. This may be helpful if MBeans are not allowed " +
+        "e.g. for security reasons", defaults= "true")
     public static final String IGNITE_MBEANS_DISABLED = "IGNITE_MBEANS_DISABLED";
 
     /**

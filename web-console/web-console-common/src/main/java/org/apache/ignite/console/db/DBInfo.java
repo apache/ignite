@@ -18,6 +18,7 @@ public class DBInfo {
 	private UUID accId; // 用户ID	
 	public String driverJar; // jar路径
 	public String driverCls;
+	private String db; // 数据库类型
 	public String jdbcUrl;
 	public String jndiName;
 	public String schemaName; // 默认的模式名称
@@ -52,6 +53,14 @@ public class DBInfo {
 	}
 	
 	
+	public String getDb() {
+		return db;
+	}
+
+	public void setDb(String db) {
+		this.db = db;
+	}
+
 	public boolean isTablesOnly() {
 		return tablesOnly;
 	}
@@ -173,6 +182,9 @@ public class DBInfo {
 		
 		if (args.containsKey("schema"))	
 			schemaName = args.get("schema").toString();
+		
+		if (args.containsKey("schemaName"))	
+			schemaName = args.get("schemaName").toString();
 		
 		if (args.containsKey("userName"))	
 			userName = args.get("userName").toString();

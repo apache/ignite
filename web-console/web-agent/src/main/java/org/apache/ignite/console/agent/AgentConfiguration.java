@@ -45,6 +45,8 @@ public class AgentConfiguration {
 
     /** Default Ignite node HTTP URI. */
     private static final String DFLT_NODE_URI = "http://localhost:8080";
+    
+    public static String DFLT_ZOOKEEPER_URI = "127.0.0.1:2181";
 
     /** */
     @Parameter(names = {"-t", "--tokens"},
@@ -74,8 +76,14 @@ public class AgentConfiguration {
     @Parameter(names = {"-np", "--node-password"},
         description = "Password that will be used to connect to secured cluster")
     private String nodePwd;
+    
+    /** zookeeper connect string */
+    @Parameter(names = {"-zk", "--zookeeper-uri"},
+        description = "Password that will be used to connect to secured cluster")
+    private String zookeeper = DFLT_ZOOKEEPER_URI;
 
-    /** URI for connect to Ignite demo node REST server */
+   
+	/** URI for connect to Ignite demo node REST server */
     private String demoNodeUri;
 
     /** */
@@ -473,6 +481,16 @@ public class AgentConfiguration {
         return cipherSuites;
     }
 
+    public String zookeeper() {
+		return zookeeper;
+	}
+
+	public void zookeeper(String zookeeper) {
+		this.zookeeper = zookeeper;
+		DFLT_ZOOKEEPER_URI = zookeeper;
+	}
+
+	
     /**
      * @param cipherSuites SSL cipher suites.
      * @return {@code this} for chaining.
@@ -525,6 +543,10 @@ public class AgentConfiguration {
 
         if (val != null)
             nodePassword(val);
+        
+        val = props.getProperty("zookeeper-uri");
+        if (val != null)
+        	zookeeper(val);
 
         val = props.getProperty("driver-folder");
 

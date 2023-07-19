@@ -1,18 +1,4 @@
-/*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
- *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
 
 import saver from 'file-saver';
 import _ from 'lodash';
@@ -473,7 +459,7 @@ export default function service(ErrorPopover) {
 
             return res;
         },
-        autoCacheStoreConfiguration(cache, domains) {
+        autoCacheStoreConfiguration(cache, domains, jndiName, dialect) {
             const cacheStoreFactory = isDefined(cache.cacheStoreFactory) &&
                 isDefined(cache.cacheStoreFactory.kind);
 
@@ -484,8 +470,8 @@ export default function service(ErrorPopover) {
                     cacheStoreFactory: {
                         kind: 'CacheJdbcPojoStoreFactory',
                         CacheJdbcPojoStoreFactory: {
-                            dataSourceBean: toJavaName('ds', cache.name),
-                            dialect: 'Generic'
+                            dataSourceBean: jndiName,
+                            dialect: dialect
                         },
                         CacheJdbcBlobStoreFactory: {connectVia: 'DataSource'}
                     },

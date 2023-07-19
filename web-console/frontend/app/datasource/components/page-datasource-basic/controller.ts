@@ -1,18 +1,4 @@
-/*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
- *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
 
 import {forkJoin, merge, from, of} from 'rxjs';
 import {map, tap, pluck, take, filter, catchError, distinctUntilChanged, switchMap, publishReplay, refCount} from 'rxjs/operators';
@@ -38,7 +24,7 @@ export default class PageDatasourceBasicController {
     static $inject = [
         'Confirm', '$uiRouter', 'ConfigureState', 'Datasource',  '$element', 'IgniteFormUtils', 'AgentManager', '$scope'
     ];
-
+    
     constructor(
         private Confirm: Confirm,
         private $uiRouter: UIRouter,
@@ -49,11 +35,10 @@ export default class PageDatasourceBasicController {
         private AgentManager: AgentManager,      
         private $scope: ng.IScope
     ) {}
-
     
     
     $onDestroy() {        
-        if (this.onBeforeTransition) this.onBeforeTransition();
+        // if (this.onBeforeTransition) this.onBeforeTransition();
         this.$element = null;
     }
 
@@ -62,12 +47,13 @@ export default class PageDatasourceBasicController {
     }
 
     $onInit() {
-        //this.onBeforeTransition = this.$uiRouter.transitionService.onBefore({}, (t) => this._uiCanExit(t));
+        const $scope = this.$scope;
+        // this.onBeforeTransition = this.$uiRouter.transitionService.onBefore({}, (t) => this._uiCanExit(t));
         this.available = (v) =>{ return true; }
         
         let drivers = [];
         for(let engine of dbPresets){
-            let option = {"label": engine.db, "value": engine.jdbcDriverClass}
+            let option = {"label": engine.db, "value": engine.driverCls}
             drivers.push(option);
         }
         this.drivers = drivers;
@@ -95,12 +81,13 @@ export default class PageDatasourceBasicController {
         
         this.originalCluster$.subscribe((c) =>{
             this.clonedCluster = cloneDeep(c);
+            $scope.selectedPreset = this.clonedCluster
         })
        
-       this.formActionsMenu = [
+        this.formActionsMenu = [
            {
                text: 'Save',
-               click: () => this.save(),
+               click: () => this.save(true),
                icon: 'checkmark'
            },
            {
@@ -108,8 +95,83 @@ export default class PageDatasourceBasicController {
                click: () => this.confirmAndDelete(),
                icon: 'download'
            }
-       ];
+        ];
+
+        $scope.selectedPreset = {
+            db: 'Generic',            
+            driverCls: '',
+            jdbcUrl: 'jdbc:[database]',
+            user: 'sa',
+            password: ''            
+        };
+
+        this._loadPresets();
+
+        $scope.$watch('selectedPreset.driverCls', (idx) => {
+            const val = $scope.selectedPreset.driverCls;
+
+            if (val && !(this.clonedCluster.jndiName)) {
+                const foundPreset = this._findPreset(val);
+                const selectedPreset = $scope.selectedPreset;
+                selectedPreset.db = foundPreset.db;
+                selectedPreset.jdbcUrl = foundPreset.jdbcUrl;
+                selectedPreset.user = foundPreset.user;                
+            }
+        }, true);
        
+    }
+
+    _loadPresets() {
+        try {
+            const _dbPresets = dbPresets
+            const restoredPresets = JSON.parse(localStorage.dbPresets);
+
+            _.forEach(restoredPresets, (restoredPreset) => {
+                const preset = _.find(_dbPresets, {driverCls: restoredPreset.driverCls});
+
+                if (preset) {
+                    preset.jdbcUrl = restoredPreset.jdbcUrl;
+                    preset.user = restoredPreset.user;
+                }
+            });
+        }
+        catch (ignored) {
+            // No-op.
+        }
+    }    
+
+    _savePreset(preset) {
+        try {
+            const _dbPresets = dbPresets
+            const oldPreset = _.find(_dbPresets, {driverCls: preset.driverCls});
+
+            if (oldPreset){          
+                oldPreset.jdbcUrl = preset.jdbcUrl;
+                oldPreset.user = preset.user;
+            }                
+            else{
+                _dbPresets.push(preset);
+            }
+                
+
+            localStorage.dbPresets = JSON.stringify(_dbPresets);
+        }
+        catch (err) {
+            this.$scope.message = err.toString();
+        }
+    }
+
+    _findPreset(selectedJdbcCls) {
+        const _dbPresets = dbPresets
+        let result = _.find(_dbPresets, function(preset) {
+            return preset.driverCls === selectedJdbcCls;
+        });
+
+        if (!result){
+            result = {db: 'Generic', jdbcUrl: 'jdbc:[database]', user: 'admin'};        
+            result.driverCls = selectedJdbcCls;
+        }            
+        return result;
     }
     
     pingDatasource() {
@@ -139,6 +201,9 @@ export default class PageDatasourceBasicController {
             return this.IgniteFormUtils.triggerValidation(this.form, this.$scope);
         let datasource = this.clonedCluster
         if(datasource) {
+            this._savePreset(datasource);
+            const foundPreset = this._findPreset(datasource.driverCls);
+            datasource.db = foundPreset.db
             let stat = from(this.Datasource.saveBasic(datasource)).pipe(
                 switchMap(({data}) => of(                   
                     {type: 'EDIT_DATASOURCE', datasource: data},
@@ -152,13 +217,13 @@ export default class PageDatasourceBasicController {
                 }))
             );   
             stat.subscribe(
-                next => {
+                (next) => {
                     this.$scope.message = 'Save successful.'
-                        if(redirect){                
-                            return this.$uiRouter.stateService.go('/datasource');
-                        } 
+                    if(redirect){                
+                        return this.$uiRouter.stateService.go('base.datasource.overview');
+                    }
                 }
-            );     
+            );  
             
         }
         
@@ -194,8 +259,5 @@ export default class PageDatasourceBasicController {
         return this.Confirm.confirm('Are you sure you want to delete current datasource?')
             .then(() => this.delete(this.clonedCluster))
             .catch(() => {});
-    }
-    
-    
-    
+    }    
 }

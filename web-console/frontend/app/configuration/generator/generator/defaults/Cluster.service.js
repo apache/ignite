@@ -1,18 +1,4 @@
-/*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
- *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
 
 const DFLT_CLUSTER = {
     localHost: '0.0.0.0',
@@ -129,8 +115,7 @@ const DFLT_CLUSTER = {
     },
     communication: {
         localPort: 47100,
-        localPortRange: 100,
-        sharedMemoryPort: 48100,
+        localPortRange: 100,        
         directBuffer: false,
         directSendBuffer: false,
         idleConnectionTimeout: 30000,
@@ -183,19 +168,7 @@ const DFLT_CLUSTER = {
         }
     },
     failureDetectionTimeout: 10000,
-    clientFailureDetectionTimeout: 30000,
-    logger: {
-        Log4j: {
-            level: {
-                clsName: 'org.apache.log4j.Level'
-            }
-        },
-        Log4j2: {
-            level: {
-                clsName: 'org.apache.logging.log4j.Level'
-            }
-        }
-    },
+    clientFailureDetectionTimeout: 30000,    
     marshalLocalJobs: false,
     marshallerCacheKeepAliveTime: 10000,
     metricsHistorySize: 10000,
@@ -310,25 +283,6 @@ const DFLT_CLUSTER = {
         WeightedRandom: {
             nodeWeight: 10,
             useWeights: false
-        }
-    },
-    memoryConfiguration: {
-        systemCacheInitialSize: 41943040,
-        systemCacheMaxSize: 104857600,
-        pageSize: 2048,
-        defaultMemoryPolicyName: 'default',
-        memoryPolicies: {
-            name: 'default',
-            initialSize: 268435456,
-            pageEvictionMode: {
-                clsName: 'org.apache.ignite.configuration.DataPageEvictionMode',
-                value: 'DISABLED'
-            },
-            evictionThreshold: 0.9,
-            emptyPagesPoolSize: 100,
-            metricsEnabled: false,
-            subIntervals: 5,
-            rateTimeInterval: 60000
         }
     },
     dataStorageConfiguration: {

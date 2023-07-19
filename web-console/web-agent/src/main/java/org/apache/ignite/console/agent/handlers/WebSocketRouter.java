@@ -27,8 +27,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
@@ -69,8 +72,10 @@ import org.apache.ignite.console.websocket.WebSocketRequest;
 import org.apache.ignite.console.websocket.WebSocketResponse;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.CommandsProvider;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.internal.management.cache.CacheCommand;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.typedef.F;
@@ -165,7 +170,9 @@ public class WebSocketRouter implements AutoCloseable {
     /** Connector pool. */
     private ExecutorService connectorPool = Executors.newSingleThreadExecutor(r -> new Thread(r, "Connect thread"));
 
-    GridJettyObjectMapper objectMapper = new GridJettyObjectMapper();
+    public GridJettyObjectMapper objectMapper = new GridJettyObjectMapper();
+    
+    private IgniteCommandRegistry cmdReg= new IgniteCommandRegistry();
     
     /**
      * @param cfg Configuration.
@@ -631,28 +638,28 @@ public class WebSocketRouter implements AutoCloseable {
         Logger logger = Logger.getLogger(CommandHandler.class.getName() + "Log");
         logger.addHandler(outHandder);
         JavaLogger javaLogger = new JavaLogger(logger);
-        
         CommandHandler hnd = new CommandHandler(javaLogger);
         hnd.console = null;
         boolean experimentalEnabled = true;
         if(cmdName.equals("commandList")) {        	
         	List<JsonObject> results = new ArrayList<>(10);
-        	Iterable<CommandsProvider> it = U.loadService(CommandsProvider.class);
-        	if (!F.isEmpty(it)) {
-                for (CommandsProvider provider : it) {                    
-
-                    provider.commands().forEach((Command c) -> {
-                    	NoArg help = new NoArg();
-                    	javaLogger.info(c.confirmationPrompt(help));
-                    	JsonObject cmd = new JsonObject();
-                    	cmd.put("name", c.toString());
-                    	cmd.put("text", c.description());
-                    	cmd.put("usage", outHandder.getOutput());
-                    	cmd.put("experimental", c.getClass());
-                    	results.add(cmd);
-                    });
-                }
-        	}           
+        	Iterator<Entry<String, Command<?, ?>>> it = cmdReg.commands();
+        	while (it.hasNext()) {                    
+        		Entry<String, Command<?, ?>> pair = it.next();
+        		Command<?, ?> c = pair.getValue();
+        		try{
+	        		hnd.printUsage(javaLogger,c);
+	            	JsonObject cmd = new JsonObject();
+	            	cmd.put("name", pair.getKey());
+	            	cmd.put("text", c.description());
+	            	cmd.put("usage", outHandder.getOutput());
+	            	cmd.put("experimental", c.getClass().getSimpleName());
+	            	results.add(cmd);
+        		}
+        		catch(Exception e) {
+        			
+        		}
+            }           
         	
         	stat.put("result", results);
         	return stat;

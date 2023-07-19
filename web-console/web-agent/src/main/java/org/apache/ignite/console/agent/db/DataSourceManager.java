@@ -41,6 +41,7 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
 public class DataSourceManager {
+	
 	private static Map<String,Object> POOL = new ConcurrentHashMap<>();
 	private static InitialContext initialContext;
 	private static HttpClient serverClient;
@@ -60,6 +61,7 @@ public class DataSourceManager {
 		}
 		datasourceGetUrl = serverUri+"/api/v1/datasource";
 		datasourceCreateUrl = serverUri+"/api/v1/datasource";
+		
 		try {
 			initialContext = new InitialContext() {		    
 
@@ -216,27 +218,5 @@ public class DataSourceManager {
 		return null;
 	}
 	
-	
-	private static DataSource createdsHiaHosBase()  {    	
-        
-        JndiObjectFactoryBean factoryBean = new JndiObjectFactoryBean();
-        factoryBean.setJndiName("dsPostgreSQL_HiaHosBase");
-        //factoryBean.setProxyInterface(DataSource.class);
-        //factoryBean.afterPropertiesSet();
-        //DataSource dataSource = (DataSource)factoryBean.getObject();
-        
-        DataSource dataSource;
-		try {
-			
-			dataSource = factoryBean.getJndiTemplate().lookup("java:jdbc/dsPostgreSQL_HiaHosBase", DataSource.class);
-			return dataSource;
-		
-		} catch (NamingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-        
-		return null;
-    }
 
 }

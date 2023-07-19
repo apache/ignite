@@ -11,7 +11,8 @@ import lombok.Data;
  */
 @Data
 public class DBInfoDto extends AbstractDto {
-	private UUID accId; // 用户ID	
+	private UUID accId; // 用户ID
+	private String db; // 数据库类型
 	private String driverCls;
 	private String jdbcUrl;	
 	private String jndiName; // 数据库唯一标识名称

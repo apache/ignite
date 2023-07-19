@@ -115,18 +115,7 @@
             <artifactId>log4j-web</artifactId>
         </dependency>
 
-        <!-- Use 2.8 Log4j because in this version the shutdownTimeout parameter was added for Configuration -->
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-           
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-api</artifactId>           
-        </dependency>
-
+        
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
@@ -163,12 +152,7 @@
             <artifactId>ignite-core</artifactId>
             <version>${web-console.ignite.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-log4j2</artifactId>
-            <version>${web-console.ignite.version}</version>
-        </dependency>
+        
 
         <dependency>
             <groupId>org.apache.ignite</groupId>

@@ -11,21 +11,16 @@
         .pc-form-grid-col-30
             +form-field__dropdown({
                 label: 'Database Driver:',
-                model: `${model}.driverCls`,
+                model: `selectedPreset.driverCls`,
                 name: '"driverCls"',
                 placeholder: '- select db type -',
-                options: '$ctrl.drivers',
-                tip: 'Cache transaction concurrency to use when one is not explicitly specified\
-                  <ul>\
-                      <li>OPTIMISTIC - All cache operations are not distributed to other nodes until commit is called</li>\
-                      <li>PESSIMISTIC - A lock is acquired on all cache operations with exception of read operations in READ_COMMITTED mode</li>\
-                  </ul>'
+                options: '$ctrl.drivers',                
             })
             
         .pc-form-grid-col-30
             +form-field__text({
                 label: 'JDBC URL:',
-                model: `${model}.jdbcUrl`,
+                model: `selectedPreset.jdbcUrl`,
                 name: '"jdbcUrl"',                    
                 placeholder: 'jdbc:dbtype://[host]:[port]/[database]'
             })

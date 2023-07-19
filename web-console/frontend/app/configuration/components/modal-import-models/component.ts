@@ -1,18 +1,4 @@
-/*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
- *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
 
 import templateUrl from './template.tpl.pug';
 import './style.scss';
@@ -21,8 +7,8 @@ import _ from 'lodash';
 import find from 'lodash/fp/find';
 import get from 'lodash/fp/get';
 import naturalCompare from 'natural-compare-lite';
-import {combineLatest, EMPTY, from, merge, of, race, timer} from 'rxjs';
-import {distinctUntilChanged, exhaustMap, filter, map, pluck, switchMap, take, tap} from 'rxjs/operators';
+import {Subject,combineLatest, EMPTY, from, merge, of, race, timer} from 'rxjs';
+import {distinctUntilChanged, exhaustMap, filter, map, pluck, switchMap, take, tap, catchError} from 'rxjs/operators';
 import {uniqueName} from 'app/utils/uniqueName';
 import {defaultNames} from '../../defaultNames';
 import {DemoService} from 'app/modules/demo/Demo.module';
@@ -31,6 +17,10 @@ import uuidv4 from 'uuid/v4';
 // eslint-disable-next-line
 import {UIRouter} from '@uirouter/angularjs'
 import {default as IgniteConfirmBatch} from 'app/services/ConfirmBatch.service';
+import {Confirm as IgniteConfirm} from 'app/services/Confirm.service';
+import {default as IgniteFocus} from 'app/services/Focus.service';
+import IgniteMessages from 'app/services/Messages.service';
+import IgniteLoading from 'app/modules/loading/loading.service';
 import {default as ConfigSelectors} from '../../store/selectors';
 import {default as ConfigEffects} from '../../store/effects';
 import {default as ConfigureState} from '../../services/ConfigureState';
@@ -38,9 +28,14 @@ import {default as ConfigureState} from '../../services/ConfigureState';
 import {default as AgentManager} from 'app/modules/agent/AgentModal.service'
 import {default as SqlTypes} from 'app/services/SqlTypes.service';
 import {default as JavaTypes} from 'app/services/JavaTypes.service';
+import IgniteLegacyUtils from 'app/services/LegacyUtils.service';
+import Version from 'app/services/Version.service';
+import IgniteFormUtils from 'app/services/FormUtils.service';
+
 // eslint-disable-next-line
 import {default as ActivitiesData} from 'app/core/activities/Activities.data';
 import {UserService} from 'app/modules/user/User.service';
+import Datasource from 'app/datasource/services/Datasource';
 
 function _mapCaches(caches = []) {
     return caches.map((cache) => {
@@ -96,7 +91,8 @@ export class ModalImportModels {
     /** @type {ng.ICompiledExpression} */
     onHide;
 
-    static $inject = ['$uiRouter', 'ConfigSelectors', 'ConfigEffects', 'ConfigureState', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteFocus', 'SqlTypes', 'JavaTypes', 'IgniteMessages', '$scope', 'Demo', 'AgentManager', 'IgniteActivitiesData', 'IgniteLoading', 'IgniteFormUtils', 'IgniteLegacyUtils', 'IgniteVersion', 'User'];
+    static $inject = ['$uiRouter','Datasource', 'ConfigSelectors', 'ConfigEffects', 'ConfigureState', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteFocus', 'SqlTypes', 'JavaTypes', 'IgniteMessages', 
+    '$scope', 'Demo', 'AgentManager', 'IgniteActivitiesData', 'IgniteLoading', 'IgniteFormUtils', 'IgniteLegacyUtils', 'IgniteVersion', 'User'];
 
     /**
      * @param {UIRouter} $uiRouter
@@ -110,18 +106,28 @@ export class ModalImportModels {
      * @param {AgentManager} agentMgr
      * @param {ActivitiesData} ActivitiesData
      */
-    constructor($uiRouter, ConfigSelectors, ConfigEffects, ConfigureState, Confirm, ConfirmBatch, Focus, SqlTypes, JavaTypes, Messages, $scope, private Demo: DemoService, agentMgr, ActivitiesData, Loading, FormUtils, LegacyUtils, IgniteVersion, private User: UserService) {
-        this.$uiRouter = $uiRouter;
-        this.ConfirmBatch = ConfirmBatch;
-        this.ConfigSelectors = ConfigSelectors;
-        this.ConfigEffects = ConfigEffects;
-        this.ConfigureState = ConfigureState;
-        this.$scope = $scope;
-        this.agentMgr = agentMgr;
-        this.JavaTypes = JavaTypes;
-        this.SqlTypes = SqlTypes;
-        this.ActivitiesData = ActivitiesData;
-        Object.assign(this, {Confirm, Focus, Messages, Loading, FormUtils, LegacyUtils, IgniteVersion});
+    constructor(
+        private $uiRouter:UIRouter, 
+        private Datasource:Datasource, 
+        private ConfigSelectors:ConfigSelectors, 
+        private ConfigEffects:ConfigEffects, 
+        private ConfigureState:ConfigureState, 
+        private Confirm:IgniteConfirm, 
+        private ConfirmBatch:IgniteConfirmBatch, 
+        private Focus:ReturnType<typeof IgniteFocus>,
+        private SqlTypes:SqlTypes, 
+        private JavaTypes:JavaTypes, 
+        private Messages:ReturnType<typeof IgniteMessages>, 
+        private $scope:ng.IScope, 
+        private Demo: DemoService, 
+        private agentMgr:AgentManager, 
+        private ActivitiesData:ActivitiesData, 
+        private Loading:ReturnType<typeof IgniteLoading>, 
+        private FormUtils:ReturnType<typeof IgniteFormUtils>, 
+        private LegacyUtils:ReturnType<typeof IgniteLegacyUtils>, 
+        private IgniteVersion:Version, 
+        private User: UserService) {        
+        
     }
 
     loadData() {
@@ -210,6 +216,17 @@ export class ModalImportModels {
         return result;
     }
 
+    onDatasourceSelectionChange(selected) {
+        this.$scope.$applyAsync(() => {
+            this.$scope.selectedPreset = selected[0]
+            this.$scope.selectedPreset.jdbcDriverClass = selected[0].driverCls
+            if(this.$scope.ui.selectedJdbcDriverJar>=0)
+                this.$scope.selectedPreset.jdbcDriverJar = this.$scope.jdbcDriverJars[this.$scope.ui.selectedJdbcDriverJar].label
+            
+            this.selectedDatasourcesIDs = selected.map((i) => i.id);
+        });
+    }
+
     onTableSelectionChange(selected) {
         this.$scope.$applyAsync(() => {
             this.$scope.importDomain.tablesToUse = selected;
@@ -257,14 +274,15 @@ export class ModalImportModels {
     }
 
     $onDestroy() {
-        this.subscribers$.unsubscribe();
+        this.subscribers$.unsubscribe();        
         if (this.onCacheSelectSubcription) this.onCacheSelectSubcription.unsubscribe();
         if (this.saveSubscription) this.saveSubscription.unsubscribe();
+        
     }
 
     async $onInit() {
         // Restores old behavior
-        const {Confirm, ConfirmBatch, Focus, SqlTypes, JavaTypes, Messages, $scope, Demo, agentMgr, ActivitiesData, Loading, FormUtils, LegacyUtils} = this;
+        const {Confirm, Datasource, ConfirmBatch, Focus, SqlTypes, JavaTypes, Messages, $scope, Demo, agentMgr, ActivitiesData, Loading, FormUtils, LegacyUtils} = this;
 
         /**
          * Convert some name to valid java package name.
@@ -328,77 +346,37 @@ export class ModalImportModels {
             'It may be a result of import tables from database without primary keys<br/>' +
             'Key field for such key types should be configured manually';
 
-        $scope.indexType = LegacyUtils.mkOptions(['SORTED', 'FULLTEXT', 'GEOSPATIAL']);
+        $scope.indexType = LegacyUtils.mkOptions(['SORTED', 'FULLTEXT', 'VECTORTEXT', 'GEOSPATIAL']);
 
         $scope.importActions = [{
             label: 'Create new cache by template',
             shortLabel: 'Create',
             value: IMPORT_DM_NEW_CACHE
         }];
-
-
-        const _dbPresets = [
-            {
-                db: 'Oracle',
-                jdbcDriverClass: 'oracle.jdbc.OracleDriver',
-                jdbcUrl: 'jdbc:oracle:thin:@[host]:[port]:[database]',
-                user: 'system',
-                samples: true
-            },
-            {
-                db: 'DB2',
-                jdbcDriverClass: 'com.ibm.db2.jcc.DB2Driver',
-                jdbcUrl: 'jdbc:db2://[host]:[port]/[database]',
-                user: 'db2admin'
-            },
-            {
-                db: 'SQLServer',
-                jdbcDriverClass: 'com.microsoft.sqlserver.jdbc.SQLServerDriver',
-                jdbcUrl: 'jdbc:sqlserver://[host]:[port][;databaseName=database]'
-            },
-            {
-                db: 'PostgreSQL',
-                jdbcDriverClass: 'org.postgresql.Driver',
-                jdbcUrl: 'jdbc:postgresql://[host]:[port]/[database]',
-                user: 'sa'
-            },
-            {
-                db: 'MySQL',
-                jdbcDriverClass: 'com.mysql.jdbc.Driver',
-                jdbcUrl: 'jdbc:mysql://[host]:[port]/[database]',
-                user: 'root'
-            },
-            {
-                db: 'MySQL',
-                jdbcDriverClass: 'com.mysql.cj.jdbc.Driver',
-                jdbcUrl: 'jdbc:mysql://[host]:[port]/[database]',
-                user: 'root'
-            },
-            {
-                db: 'MySQL',
-                jdbcDriverClass: 'org.mariadb.jdbc.Driver',
-                jdbcUrl: 'jdbc:mariadb://[host]:[port]/[database]',
-                user: 'root'
-            },
-            {
-                db: 'H2',
-                jdbcDriverClass: 'org.h2.Driver',
-                jdbcUrl: 'jdbc:h2:tcp://[host]/[database]',
-                user: 'sa'
-            },
-            {
-                db: 'Hive',
-                jdbcDriverClass: 'org.apache.hive.jdbc.HiveDriver',
-                jdbcUrl: 'jdbc:hive2://[host]:[port]/[database]',
-                user: 'hiveuser'
-            }
-        ];
+        
+        this.dataSourceList$ = from(Datasource.getDatasourceList()).pipe(            
+            switchMap(({data}) => of(
+                data
+            )),            
+            catchError((error) => of({
+                type: `DATASOURCE_ERR`,
+                error: {
+                    message: `Failed to load datasoure:  ${error.data.message}`
+                },
+                action: {}
+            }))           
+        ).subscribe((data)=> {
+            $scope.dataSourceList = data //.map((data)=> { return { id:data.id, jndiName:data.jndiName, jdbcUrl:data.jdbcUrl, schemaName:data.schemaName }; })
+        }); 
+        
+        this.selectedDatasourcesIDs = [];
 
         $scope.selectedPreset = {
             db: 'Generic',
             jdbcDriverJar: '',
             jdbcDriverClass: '',
-            jdbcUrl: 'jdbc:[database]',
+            jdbcUrl: null,
+            jndiName: null,
             user: 'sa',
             password: '',
             tablesOnly: true,
@@ -414,57 +392,7 @@ export class ModalImportModels {
             tablesOnly: true,
             importSamples: false
         };
-
-        function _loadPresets() {
-            try {
-                const restoredPresets = JSON.parse(localStorage.dbPresets);
-
-                _.forEach(restoredPresets, (restoredPreset) => {
-                    const preset = _.find(_dbPresets, {jdbcDriverClass: restoredPreset.jdbcDriverClass});
-
-                    if (preset) {
-                        preset.jdbcUrl = restoredPreset.jdbcUrl;
-                        preset.user = restoredPreset.user;
-                    }
-                });
-            }
-            catch (ignored) {
-                // No-op.
-            }
-        }
-
-        _loadPresets();
-
-        function _savePreset(preset) {
-            try {
-                const oldPreset = _.find(_dbPresets, {jdbcDriverClass: preset.jdbcDriverClass});
-
-                if (oldPreset)
-                    _.assign(oldPreset, preset);
-                else
-                    _dbPresets.push(preset);
-
-                localStorage.dbPresets = JSON.stringify(_dbPresets);
-            }
-            catch (err) {
-                Messages.showError(err);
-            }
-        }
-
-        function _findPreset(selectedJdbcJar) {
-            let result = _.find(_dbPresets, function(preset) {
-                return preset.jdbcDriverClass === selectedJdbcJar.jdbcDriverClass;
-            });
-
-            if (!result)
-                result = {db: 'Generic', jdbcUrl: 'jdbc:[database]', user: 'admin'};
-
-            result.jdbcDriverJar = selectedJdbcJar.jdbcDriverJar;
-            result.jdbcDriverClass = selectedJdbcJar.jdbcDriverClass;
-            result.jdbcDriverImplementationVersion = selectedJdbcJar.jdbcDriverImplementationVersion;
-
-            return result;
-        }
+        
 
         function isValidJavaIdentifier(s) {
             return JavaTypes.validIdentifier(s) && !JavaTypes.isKeyword(s) && JavaTypes.nonBuiltInClass(s) &&
@@ -536,7 +464,7 @@ export class ModalImportModels {
 
                     const preset = $scope.selectedPreset;
 
-                    _savePreset(preset);
+                    //_savePreset(preset);
 
                     return agentMgr.schemas(preset);
                 })
@@ -825,7 +753,7 @@ export class ModalImportModels {
                         const catalog = $scope.importDomain.catalog;
 
                         const dsFactoryBean = {
-                            dataSourceBean: 'ds' + dialect + '_' + catalog,
+                            dataSourceBean: $scope.selectedPreset.jndiName,
                             dialect,
                             implementationVersion: $scope.selectedPreset.jdbcDriverImplementationVersion
                         };
@@ -855,7 +783,7 @@ export class ModalImportModels {
                         const cache = _.find($scope.caches, {value: cacheId}).cache;
 
                         // TODO: move elsewhere, make sure it still works
-                        const change = LegacyUtils.autoCacheStoreConfiguration(cache, [newDomain]);
+                        const change = LegacyUtils.autoCacheStoreConfiguration(cache, [newDomain], $scope.selectedPreset.jndiName,$scope.selectedPreset.db);
 
                         if (change)
                             batchAction.cacheStoreChanges = [{cacheId, change}];
@@ -1102,23 +1030,7 @@ export class ModalImportModels {
             this.domainData$
         ).subscribe();
 
-        $scope.$watch('ui.selectedJdbcDriverJar', (idx) => {
-            const val = _.get($scope.drivers, idx);
-
-            if (val && !$scope.importDomain.demo) {
-                const foundPreset = _findPreset(val);
-
-                const selectedPreset = $scope.selectedPreset;
-
-                selectedPreset.db = foundPreset.db;
-                selectedPreset.jdbcDriverJar = foundPreset.jdbcDriverJar;
-                selectedPreset.jdbcDriverClass = foundPreset.jdbcDriverClass;
-                selectedPreset.jdbcDriverImplementationVersion = foundPreset.jdbcDriverImplementationVersion;
-                selectedPreset.jdbcUrl = foundPreset.jdbcUrl;
-                selectedPreset.user = foundPreset.user;
-                selectedPreset.samples = !!foundPreset.samples;
-            }
-        }, true);
+        
     }
 
     _fillCommonCachesOrTemplates(item) {
@@ -1143,6 +1055,47 @@ export class ModalImportModels {
                 item.cacheOrTemplate = item.cachesOrTemplates[0].value;
         };
     }
+
+    datasourcesColumnDefs = [
+        {
+            name: 'id',
+            displayName: 'Id',
+            field: 'id',
+            enableHiding: true,            
+            visible: false,
+            enableFiltering: false,          
+            minWidth: 40
+        },
+        {
+            name: 'jndiName',
+            displayName: 'JNDI Name',
+            field: 'jndiName',
+            enableHiding: false,
+            sort: {direction: 'asc', priority: 0},            
+            visible: true,
+            sortingAlgorithm: naturalCompare,
+            enableFiltering: false,
+            minWidth: 100
+        },
+        {
+            name: 'jdbcUrl',
+            displayName: 'JDBC URL',
+            field: 'jdbcUrl',
+            enableHiding: false,            
+            visible: true,
+            enableFiltering: false,      
+            minWidth: 400
+        },
+        {
+            name: 'schemaName',
+            displayName: 'Schema Name',
+            field: 'schemaName',
+            enableHiding: false,            
+            visible: true,
+            enableFiltering: false,         
+            minWidth: 100
+        }
+    ];
 
     schemasColumnDefs = [
         {

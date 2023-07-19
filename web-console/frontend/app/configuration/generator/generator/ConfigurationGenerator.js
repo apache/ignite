@@ -1,18 +1,4 @@
-/*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
- *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
 
 import DFLT_DIALECTS from 'app/data/dialects.json';
 
@@ -32,7 +18,7 @@ import {nonNil, nonEmpty} from 'app/utils/lodashMixins';
 
 const clusterDflts = new IgniteClusterDefaults();
 const cacheDflts = new IgniteCacheDefaults();
-const javaTypes = new JavaTypes(clusterDflts, cacheDflts);
+const javaTypes = new JavaTypes();
 const versionService = new VersionService();
 
 // Pom dependency information.
@@ -95,9 +81,8 @@ export default class IgniteConfigurationGenerator {
         this.clusterEncryption(cluster.encryptionSpi, available, cfg);
         this.clusterEvents(cluster, available, cfg);
         this.clusterFailover(cluster, available, cfg);
-        this.clusterHadoop(cluster.hadoopConfiguration, cfg);
-        this.clusterLoadBalancing(cluster, cfg);
-        this.clusterLogger(cluster.logger, cfg);
+
+        this.clusterLoadBalancing(cluster, cfg);        
         this.clusterMarshaller(cluster, available, cfg);
        
 
@@ -216,11 +201,15 @@ export default class IgniteConfigurationGenerator {
         if (isNil(cluster.discovery))
             return cfg;
 
-        const discovery = IgniteConfigurationGenerator.discoveryConfigurationBean(cluster.discovery);
+        let discovery = IgniteConfigurationGenerator.discoveryConfigurationBean(cluster.discovery);
 
-        let ipFinder;
+        let ipFinder = null;
 
         switch (discovery.valueOf('kind')) {
+            case 'Isolated':
+                discovery = new Bean('org.apache.ignite.spi.discovery.isolated.IsolatedDiscoverySpi', 'discovery', discovery, clusterDflts.discovery);
+                
+                break;
             case 'Vm':
                 ipFinder = new Bean('org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder',
                     'ipFinder', cluster.discovery.Vm, clusterDflts.discovery.Vm);
@@ -239,61 +228,8 @@ export default class IgniteConfigurationGenerator {
                     .stringProperty('localAddress')
                     .collectionProperty('addrs', 'addresses', cluster.discovery.Multicast.addresses);
 
-                break;
-            case 'S3':
-                ipFinder = new Bean('org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinder',
-                    'ipFinder', cluster.discovery.S3, clusterDflts.discovery.S3);
-
-                ipFinder.stringProperty('bucketName');
-
-                if (available('2.4.0')) {
-                    ipFinder.stringProperty('bucketEndpoint')
-                        .stringProperty('SSEAlgorithm');
-                }
-
-                break;
-            case 'Cloud':
-                ipFinder = new Bean('org.apache.ignite.spi.discovery.tcp.ipfinder.cloud.TcpDiscoveryCloudIpFinder',
-                    'ipFinder', cluster.discovery.Cloud, clusterDflts.discovery.Cloud);
-
-                ipFinder.stringProperty('credential')
-                    .pathProperty('credentialPath')
-                    .stringProperty('identity')
-                    .stringProperty('provider')
-                    .collectionProperty('regions', 'regions', cluster.discovery.Cloud.regions)
-                    .collectionProperty('zones', 'zones', cluster.discovery.Cloud.zones);
-
-                break;
-            case 'GoogleStorage':
-                ipFinder = new Bean('org.apache.ignite.spi.discovery.tcp.ipfinder.gce.TcpDiscoveryGoogleStorageIpFinder',
-                    'ipFinder', cluster.discovery.GoogleStorage, clusterDflts.discovery.GoogleStorage);
-
-                ipFinder.stringProperty('projectName')
-                    .stringProperty('bucketName')
-                    .pathProperty('serviceAccountP12FilePath')
-                    .stringProperty('serviceAccountId');
-
-                break;
-            case 'Jdbc':
-                ipFinder = new Bean('org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinder',
-                    'ipFinder', cluster.discovery.Jdbc, clusterDflts.discovery.Jdbc);
-
-                ipFinder.intProperty('initSchema');
-
-                if (ipFinder.includes('dataSourceBean', 'dialect')) {
-                    const id = ipFinder.valueOf('dataSourceBean');
-
-                    ipFinder.dataSource(id, 'dataSource', this.dataSourceBean(id, ipFinder.valueOf('dialect'), available));
-                }
-
-                break;
-            case 'SharedFs':
-                ipFinder = new Bean('org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder',
-                    'ipFinder', cluster.discovery.SharedFs, clusterDflts.discovery.SharedFs);
-
-                ipFinder.pathProperty('path');
-
-                break;
+                break;             
+          
             case 'ZooKeeper':
                 const src = cluster.discovery.ZooKeeper;
                 const dflt = clusterDflts.discovery.ZooKeeper;
@@ -917,8 +853,7 @@ export default class IgniteConfigurationGenerator {
         commSpi.emptyBeanProperty('listener')
             .stringProperty('localAddress')
             .intProperty('localPort')
-            .intProperty('localPortRange')
-            .intProperty('sharedMemoryPort')
+            .intProperty('localPortRange')            
             .intProperty('directBuffer')
             .intProperty('directSendBuffer')
             .longProperty('idleConnectionTimeout')
@@ -1163,41 +1098,12 @@ export default class IgniteConfigurationGenerator {
 
     // Generate events group.
     static clusterEvents(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
-        const eventStorage = cluster.eventStorage;
+        const eventStorage = cluster.eventStorage;        
 
-        let eventStorageBean = null;
+        if (nonEmpty(cluster.includeEventTypes)) {
+            const eventGrps = _.filter(this.eventGrps, ({value}) => _.includes(cluster.includeEventTypes, value));
 
-        switch (_.get(eventStorage, 'kind')) {
-            case 'Memory':
-                eventStorageBean = new Bean('org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi', 'eventStorage', eventStorage.Memory, clusterDflts.eventStorage.Memory);
-
-                eventStorageBean.longProperty('expireAgeMs')
-                    .longProperty('expireCount')
-                    .emptyBeanProperty('filter');
-
-                break;
-
-            case 'Custom':
-                const className = _.get(eventStorage, 'Custom.className');
-
-                if (className)
-                    eventStorageBean = new EmptyBean(className);
-
-                break;
-
-            default:
-                // No-op.
-        }
-
-        if (eventStorageBean) {
-            if (!eventStorageBean.isEmpty() || !available(['1.0.0', '2.0.0']))
-                cfg.beanProperty('eventStorageSpi', eventStorageBean);
-
-            if (nonEmpty(cluster.includeEventTypes)) {
-                const eventGrps = _.filter(this.eventGrps, ({value}) => _.includes(cluster.includeEventTypes, value));
-
-                cfg.eventTypes('evts', 'includeEventTypes', this.filterEvents(eventGrps, available));
-            }
+            cfg.eventTypes('evts', 'includeEventTypes', this.filterEvents(eventGrps, available));
         }
 
         cfg.mapProperty('localEventListeners', _.map(cluster.localEventListeners,
@@ -1326,51 +1232,6 @@ export default class IgniteConfigurationGenerator {
         return cfg;
     }
 
-    // Generate failover group.
-    static clusterHadoop(hadoop, cfg = this.igniteConfigurationBean()) {
-        const hadoopBean = new Bean('org.apache.ignite.configuration.HadoopConfiguration', 'hadoop', hadoop, clusterDflts.hadoopConfiguration);
-
-        let plannerBean;
-
-        switch (_.get(hadoop, 'mapReducePlanner.kind')) {
-            case 'Weighted':
-                plannerBean = new Bean('org.apache.ignite.hadoop.mapreduce.IgniteHadoopWeightedMapReducePlanner', 'planner',
-                    _.get(hadoop, 'mapReducePlanner.Weighted'), clusterDflts.hadoopConfiguration.mapReducePlanner.Weighted);
-
-                plannerBean.intProperty('localMapperWeight')
-                    .intProperty('remoteMapperWeight')
-                    .intProperty('localReducerWeight')
-                    .intProperty('remoteReducerWeight')
-                    .intProperty('preferLocalReducerThresholdWeight');
-
-                break;
-
-            case 'Custom':
-                const clsName = _.get(hadoop, 'mapReducePlanner.Custom.className');
-
-                if (clsName)
-                    plannerBean = new EmptyBean(clsName);
-
-                break;
-
-            default:
-                // No-op.
-        }
-
-        if (plannerBean)
-            hadoopBean.beanProperty('mapReducePlanner', plannerBean);
-
-        hadoopBean.longProperty('finishedJobInfoTtl')
-            .intProperty('maxParallelTasks')
-            .intProperty('maxTaskQueueSize')
-            .arrayProperty('nativeLibraryNames', 'nativeLibraryNames', _.get(hadoop, 'nativeLibraryNames'));
-
-        if (!hadoopBean.isEmpty())
-            cfg.beanProperty('hadoopConfiguration', hadoopBean);
-
-        return cfg;
-    }
-
     // Generate load balancing configuration group.
     static clusterLoadBalancing(cluster, cfg = this.igniteConfigurationBean(cluster)) {
         const spis = [];
@@ -1458,113 +1319,6 @@ export default class IgniteConfigurationGenerator {
 
         if (spis.length)
             cfg.varArgProperty('loadBalancingSpi', 'loadBalancingSpi', spis, 'org.apache.ignite.spi.loadbalancing.LoadBalancingSpi');
-
-        return cfg;
-    }
-
-    // Generate logger group.
-    static clusterLogger(logger, cfg = this.igniteConfigurationBean()) {
-        let loggerBean;
-
-        switch (_.get(logger, 'kind')) {
-            case 'Log4j':
-                if (logger.Log4j && (logger.Log4j.mode === 'Default' || logger.Log4j.mode === 'Path' && nonEmpty(logger.Log4j.path))) {
-                    loggerBean = new Bean('org.apache.ignite.logger.log4j.Log4JLogger',
-                        'logger', logger.Log4j, clusterDflts.logger.Log4j);
-
-                    if (loggerBean.valueOf('mode') === 'Path')
-                        loggerBean.pathConstructorArgument('path');
-
-                    loggerBean.enumProperty('level');
-                }
-
-                break;
-            case 'Log4j2':
-                if (logger.Log4j2 && nonEmpty(logger.Log4j2.path)) {
-                    loggerBean = new Bean('org.apache.ignite.logger.log4j2.Log4J2Logger',
-                        'logger', logger.Log4j2, clusterDflts.logger.Log4j2);
-
-                    loggerBean.pathConstructorArgument('path')
-                        .enumProperty('level');
-                }
-
-                break;
-            case 'Null':
-                loggerBean = new EmptyBean('org.apache.ignite.logger.NullLogger');
-
-                break;
-            case 'Java':
-                loggerBean = new EmptyBean('org.apache.ignite.logger.java.JavaLogger');
-
-                break;
-            case 'JCL':
-                loggerBean = new EmptyBean('org.apache.ignite.logger.jcl.JclLogger');
-
-                break;
-            case 'SLF4J':
-                loggerBean = new EmptyBean('org.apache.ignite.logger.slf4j.Slf4jLogger');
-
-                break;
-            case 'Custom':
-                if (logger.Custom && nonEmpty(logger.Custom.class))
-                    loggerBean = new EmptyBean(logger.Custom.class);
-
-                break;
-            default:
-                return cfg;
-        }
-
-        if (loggerBean)
-            cfg.beanProperty('gridLogger', loggerBean);
-
-        return cfg;
-    }
-
-    // Generate memory configuration.
-    static clusterMemory(memoryConfiguration, available, cfg = this.igniteConfigurationBean()) {
-        const memoryBean = new Bean('org.apache.ignite.configuration.MemoryConfiguration', 'memoryConfiguration', memoryConfiguration, clusterDflts.memoryConfiguration);
-
-        memoryBean.intProperty('pageSize')
-            .intProperty('concurrencyLevel')
-            .longProperty('systemCacheInitialSize')
-            .longProperty('systemCacheMaxSize')
-            .stringProperty('defaultMemoryPolicyName');
-
-        if (memoryBean.valueOf('defaultMemoryPolicyName') === 'default')
-            memoryBean.longProperty('defaultMemoryPolicySize');
-
-        const policies = [];
-
-        _.forEach(_.get(memoryConfiguration, 'memoryPolicies'), (plc) => {
-            const plcBean = new Bean('org.apache.ignite.configuration.MemoryPolicyConfiguration', 'policy', plc, clusterDflts.memoryConfiguration.memoryPolicies);
-
-            plcBean.stringProperty('name')
-                .longProperty('initialSize')
-                .longProperty('maxSize')
-                .stringProperty('swapFilePath')
-                .enumProperty('pageEvictionMode')
-                .doubleProperty('evictionThreshold')
-                .intProperty('emptyPagesPoolSize')
-                .boolProperty('metricsEnabled');
-
-            if (available('2.1.0')) {
-                plcBean.intProperty('subIntervals')
-                    .longProperty('rateTimeInterval');
-            }
-
-            if (plcBean.isEmpty())
-                return;
-
-            policies.push(plcBean);
-        });
-
-        if (!_.isEmpty(policies))
-            memoryBean.varArgProperty('memoryPolicies', 'memoryPolicies', policies, 'org.apache.ignite.configuration.MemoryPolicyConfiguration');
-
-        if (memoryBean.isEmpty())
-            return cfg;
-
-        cfg.beanProperty('memoryConfiguration', memoryBean);
 
         return cfg;
     }

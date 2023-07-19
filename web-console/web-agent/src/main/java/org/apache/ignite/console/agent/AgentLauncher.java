@@ -28,6 +28,9 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 
 import org.apache.ignite.console.agent.handlers.WebSocketRouter;
+import org.apache.ignite.internal.util.nodestart.IgniteRemoteStartSpecification;
+import org.apache.ignite.internal.util.nodestart.IgniteSshHelper;
+import org.apache.ignite.internal.util.nodestart.StartNodeCallable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +39,7 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 /**
  * Ignite Web Console Agent launcher.
  */
-public class AgentLauncher {
+public class AgentLauncher implements IgniteSshHelper {
     /** */
     private static final Logger log = LoggerFactory.getLogger(AgentLauncher.class);
 
@@ -183,6 +186,13 @@ public class AgentLauncher {
 
         return cfg;
     }
+     
+     /** {@inheritDoc} */
+     @Override 
+     public StartNodeCallable nodeStartCallable(IgniteRemoteStartSpecification spec, int timeout) {     	
+    	// use agent server
+  		return new AgentClusterLauncher(spec,timeout);
+     }
 
     /**
      * @param args Args.

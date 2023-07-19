@@ -1,18 +1,4 @@
-/*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
- *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
 
 import get from 'lodash/get';
 import omit from 'lodash/fp/omit';
@@ -20,7 +6,7 @@ import uuidv4 from 'uuid/v4';
 import {of, empty, combineLatest, forkJoin, pipe, from} from 'rxjs';
 import {filter, pluck, map, switchMap, take, distinctUntilChanged, exhaustMap} from 'rxjs/operators';
 import {uniqueName} from 'app/utils/uniqueName';
-import {DatasourceDto} from '../types';
+import {DatasourceDto} from 'app/configuration/types';
 import {Menu} from 'app/types';
 
 const selectValues = map((v) => v && [...v.value.values()]);
@@ -89,7 +75,7 @@ export default class Datasource {
                     datasource.rebalanceBatchSize = value
                 }
                 else{
-                    datasource.attributes.append({name:name,value:value})
+                    datasource.attributes.push({name:name,value:value})
                 }
             }
             

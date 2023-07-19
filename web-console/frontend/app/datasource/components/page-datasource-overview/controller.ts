@@ -3,12 +3,12 @@ import {map,switchMap, distinctUntilChanged, catchError} from 'rxjs/operators';
 import naturalCompare from 'natural-compare-lite';
 
 import {UIRouter} from '@uirouter/angularjs';
-import {ShortCluster} from '../../types';
+import {DatasourceDto} from 'app/configuration/types';
+import ConfigureState from 'app/configuration/services/ConfigureState';
 import Datasource from 'app/datasource/services/Datasource';
 import AgentManager from 'app/modules/agent/AgentManager.service';
 import {IColumnDefOf} from 'ui-grid';
 import {dbPresets} from 'app/datasource/dbPresets';
-//-import crudPage from './crud-list.json';
 
 const cellTemplate = (state) => `
     <div class="ui-grid-cell-contents">
@@ -36,8 +36,8 @@ export default class PageDatasourceOverviewController {
         private Datasource: Datasource    
     ) {}
 
-    shortClusters$: Observable<Array<ShortCluster>>;    
-    selectedRows$: Subject<Array<ShortCluster>>;
+    shortClusters$: Observable<Array<DatasourceDto>>;    
+    selectedRows$: Subject<Array<DatasourceDto>>;
     selectedRowsIDs$: Observable<Array<string>>;
     
     
@@ -50,7 +50,7 @@ export default class PageDatasourceOverviewController {
             enableFiltering: true,
             sort: {direction: 'asc'},
             sortingAlgorithm: naturalCompare,            
-            width: 180
+            width: 150
         },
         {
             name: 'jdbcUrl',
@@ -61,24 +61,30 @@ export default class PageDatasourceOverviewController {
             },
             sort: {direction: 'asc'},
             sortingAlgorithm: naturalCompare,
-            minWidth: 350
+            minWidth: 400
         },
         {
             name: 'driverCls',
             displayName: 'driverClass',
             field: 'driverCls',
             cellClass: 'ui-grid-number-cell',            
-            enableFiltering: false,
-            type: 'number',
+            enableFiltering: false,           
             width: 180
+        },
+        {
+            name: 'db',
+            displayName: 'DB type',
+            field: 'db',
+            cellClass: 'ui-grid-number-cell',            
+            enableFiltering: false,           
+            width: 75
         },
         {
             name: 'schemaName',
             displayName: 'Schema',
             field: 'schemaName',
             cellClass: 'ui-grid-number-cell',            
-            enableFiltering: false,
-            type: 'number',
+            enableFiltering: false,            
             width: 150
         },
         {
@@ -121,24 +127,7 @@ export default class PageDatasourceOverviewController {
       }
     }
 
-    $onInit() {
-        
-        /**
-        
-        this.amis = amisRequire('amis/embed');
-        let drivers = [];
-        for(let engine of dbPresets){
-            let option = {"label": engine.db, "value": engine.jdbcDriverClass}
-            drivers.push(option);
-        }
-        
-        let amisJSON = crudPage;
-        amisJSON.data = {};
-        amisJSON.data.drivers = drivers
-        let amisScoped = this.amis.embed('#amis_root', amisJSON);
-        */
-       
-       
+    $onInit() { 
        
         this.dataSourceList$ = from(this.Datasource.getDatasourceList()).pipe(            
             switchMap(({data}) => of(
@@ -151,7 +140,9 @@ export default class PageDatasourceOverviewController {
                 },
                 action: {}
             }))           
-        );
+        ).subscribe((data)=> {
+            this.dataSourceList = data
+        }); 
         
         this.selectedRows$ = new Subject();
         

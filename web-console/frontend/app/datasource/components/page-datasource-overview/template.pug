@@ -1,17 +1,4 @@
-//-
-    Copyright 2019 GridGain Systems, Inc. and Contributors.
 
-    Licensed under the GridGain Community Edition License (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-        https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
 
 header.header-with-selector
     div
@@ -29,7 +16,7 @@ header.header-with-selector
     pc-items-table(
         table-title='::"Choose Data Source"'
         column-defs='$ctrl.datasourceColumnDefs'
-        items='$ctrl.dataSourceList$|async:this'
+        items='$ctrl.dataSourceList'
         on-action='$ctrl.onDatasourceAction($event)'
         max-rows-to-show='10'
         one-way-selection='::true'
@@ -37,9 +24,11 @@ header.header-with-selector
         on-selection-change='$ctrl.selectedRows$.next($event)'
         actions-menu='$ctrl.actions$|async:this'
     )
-        footer-slot(ng-hide='($ctrl.dataSourceList$|async:this).length' style='font-style: italic')
+        footer-slot(ng-hide='$ctrl.dataSourceList.length' style='font-style: italic')
             | You have no datasource configurations.
             a.link-success(ui-sref='base.datasource.edit.basic({clusterID: "new"})') Create one?
+    span 
+        | {{ message }}
 
 .pco-relative-root
     div(id='amis_root')    

@@ -57,14 +57,7 @@
                 <!-- Web Console must survive power loss. -->
                 <property name="walMode" value="FSYNC"/>
             </bean>
-        </property>
-
-        <!-- Logging configuration. -->
-        <property name="gridLogger">
-            <bean class="org.apache.ignite.logger.log4j2.Log4J2Logger">
-                <constructor-arg type="java.lang.String" value="log4j2.xml"/>
-            </bean>
-        </property>
+        </property>       
 
         <property name="failureHandler">
             <bean class="org.apache.ignite.failure.NoOpFailureHandler"/>

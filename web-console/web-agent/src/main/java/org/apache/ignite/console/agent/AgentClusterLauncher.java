@@ -38,8 +38,15 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cluster.ClusterNode;
+
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
+
+import org.apache.ignite.internal.cluster.ClusterStartNodeResultImpl;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
+
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -54,7 +61,8 @@ import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.console.utils.Utils;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
-
+import org.apache.ignite.internal.util.nodestart.IgniteRemoteStartSpecification;
+import org.apache.ignite.internal.util.nodestart.StartNodeCallable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -63,6 +71,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.isolated.IsolatedDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,7 +94,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_PO
  *
  * Cache will be created and populated with data to query.
  */
-public class AgentClusterLauncher {
+public class AgentClusterLauncher implements StartNodeCallable{
     /** */
     private static final Logger log = LoggerFactory.getLogger(AgentClusterLauncher.class);
 
@@ -103,6 +112,34 @@ public class AgentClusterLauncher {
     /** */
     private static CountDownLatch initLatch = new CountDownLatch(1);
     
+    /** Specification. */
+    private final IgniteRemoteStartSpecification spec;
+    /** Connection timeout. */
+    private final int timeout;
+    
+    
+    /**
+     * Required by Externalizable.
+     */
+    public AgentClusterLauncher() {
+        spec = null;
+        timeout = 0;        
+    }	
+    
+    /**
+     * Constructor.
+     *
+     * @param spec Specification.
+     * @param timeout Connection timeout.
+     */
+    public AgentClusterLauncher(IgniteRemoteStartSpecification spec, int timeout) {
+        assert spec != null;
+
+        this.spec = spec;
+
+        this.timeout = timeout;
+    }
+    
 
     /**
      * Configure node.
@@ -118,7 +155,11 @@ public class AgentClusterLauncher {
         cfg.setGridLogger(new Slf4jLogger());
         cfg.setLocalHost("127.0.0.1");
         cfg.setEventStorageSpi(new MemoryEventStorageSpi());
-        cfg.setConsistentId(cfg.getIgniteInstanceName());
+        
+        if(cfg.getConsistentId()==null) {
+        	cfg.setConsistentId(cfg.getIgniteInstanceName());
+        }
+        
 
         File workDir = new File(U.workDirectory(null, null), "launcher-work");
 
@@ -135,19 +176,13 @@ public class AgentClusterLauncher {
 
         System.setProperty(IGNITE_JETTY_PORT, String.valueOf(basePort + 10 + gridIdx));
 
-        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
-
-        int discoPort = basePort + 20;
-
-        ipFinder.setAddresses(Collections.singletonList("127.0.0.1:" + discoPort  + ".." + (discoPort + 10)));
-
+        
         // Configure discovery SPI.
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setLocalPort(discoPort);
-        discoSpi.setIpFinder(ipFinder);
+        ZookeeperDiscoverySpi discoSpi = new ZookeeperDiscoverySpi();
+        discoSpi.setZkConnectionString(AgentConfiguration.DFLT_ZOOKEEPER_URI);       
 
         cfg.setDiscoverySpi(discoSpi);
+        
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
@@ -445,5 +480,12 @@ public class AgentClusterLauncher {
         
     }  
    
+    @Override
+	public ClusterStartNodeResult call() throws Exception {
+		// start node by agent
+    	// 给其他agent发送启动消息
+		ClusterStartNodeResult result = new ClusterStartNodeResultImpl(spec.host(),false,"not implement!");
+		return result;
+	}
 
 }

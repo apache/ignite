@@ -1,17 +1,4 @@
-//-
-    Copyright 2019 GridGain Systems, Inc. and Contributors.
 
-    Licensed under the GridGain Community Edition License (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-        https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
 
 include /app/helpers/jade/mixins
 include /app/configuration/mixins
@@ -107,20 +94,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     placeholder: '100',
                     min: '1',
                     tip: 'Local port range for local host ports'
-                })
-            .pc-form-grid-col-30
-                +form-field__number({
-                    label: 'Shared memory port:',
-                    model: `${communication}.sharedMemoryPort`,
-                    name: '"sharedMemoryPort"',
-                    placeholder: '{{ ::$ctrl.Clusters.sharedMemoryPort.default }}',
-                    min: '{{ ::$ctrl.Clusters.sharedMemoryPort.min }}',
-                    max: '{{ ::$ctrl.Clusters.sharedMemoryPort.max }}',
-                    tip: `Local port to accept shared memory connections<br/>If set to <b>-1</b> shared memory communication will be disabled`
-                })(
-                    pc-not-in-collection='::$ctrl.Clusters.sharedMemoryPort.invalidValues'
-                )
-                    +form-field__error({ error: 'notInCollection', message: 'Shared memory port should be more than "{{ ::$ctrl.Clusters.sharedMemoryPort.invalidValues[0] }}" or equal to "{{ ::$ctrl.Clusters.sharedMemoryPort.min }}"' })
+                })            
             .pc-form-grid-col-30
                 +form-field__number({
                     label: 'Idle connection timeout:',

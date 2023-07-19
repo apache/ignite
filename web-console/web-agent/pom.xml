@@ -95,7 +95,7 @@
         
          <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-spring</artifactId>
+            <artifactId>ignite-zookeeper</artifactId>
             <version>${web-console.ignite.version}</version>
         </dependency>
         

@@ -237,8 +237,8 @@ public class DatabaseHandler{
 
         List<String> schemas = (List)args.get("schemas");
 
-        if (!args.containsKey("tablesOnly"))
-            throw new IllegalArgumentException("Missing tablesOnly in arguments: " + args);
+        if (schemas.size()==0)
+            throw new IllegalArgumentException("Missing select schemas in arguments: " + args);
 
         boolean tblsOnly = args.getBoolean("tablesOnly", false);
 
