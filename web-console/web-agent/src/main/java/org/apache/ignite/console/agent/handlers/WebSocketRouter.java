@@ -649,11 +649,18 @@ public class WebSocketRouter implements AutoCloseable {
         		Command<?, ?> c = pair.getValue();
         		try{
 	        		hnd.printUsage(javaLogger,c);
+	        		javaLogger.flush();
+	        		String usage = outHandder.getOutput();
+	        		String desc = c.description();
+	        		int pos = 0;
+	        		if((pos=usage.indexOf("<br/>"))>0) {
+	        			usage = usage.substring(pos+5).strip();
+	        		}
 	            	JsonObject cmd = new JsonObject();
 	            	cmd.put("name", pair.getKey());
-	            	cmd.put("text", c.description());
-	            	cmd.put("usage", outHandder.getOutput());
-	            	cmd.put("experimental", c.getClass().getSimpleName());
+	            	cmd.put("text", desc);
+	            	cmd.put("usage", usage);
+	            	cmd.put("experimental", c.argClass().getSimpleName());
 	            	results.add(cmd);
         		}
         		catch(Exception e) {
@@ -666,6 +673,7 @@ public class WebSocketRouter implements AutoCloseable {
         }
         int code = hnd.execute(argsList);
         stat.put("code",code);
+        javaLogger.flush();
         if(code==CommandHandler.EXIT_CODE_OK) {
         	stat.put("result", hnd.getLastOperationResult());
         	stat.put("message", outHandder.getOutput());

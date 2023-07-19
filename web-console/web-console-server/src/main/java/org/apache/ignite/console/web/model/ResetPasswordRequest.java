@@ -16,7 +16,7 @@
 
 package org.apache.ignite.console.web.model;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import javax.validation.constraints.NotNull;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.hibernate.validator.constraints.NotEmpty;
@@ -26,19 +26,19 @@ import org.hibernate.validator.constraints.NotEmpty;
  */
 public class ResetPasswordRequest {
     /** Email. */
-    @ApiModelProperty(value = "User email.", required = true)
+    @Schema(title = "User email.", required = true)
     @NotNull
     @NotEmpty
     private String email;
 
     /** Password. */
-    @ApiModelProperty(value = "User password.", required = true)
+    @Schema(title = "User password.", required = true)
     @NotNull
     @NotEmpty
     private String pwd;
 
     /** Reset password token. */
-    @ApiModelProperty(value = "Reset password token.", required = true)
+    @Schema(title = "Reset password token.", required = true)
     @NotNull
     @NotEmpty
     private String tok;

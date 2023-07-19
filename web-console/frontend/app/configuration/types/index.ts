@@ -1,7 +1,7 @@
 
 
 // Cache
-export type CacheModes = 'PARTITIONED' | 'REPLICATED' | 'LOCAL';
+export type CacheModes = 'PARTITIONED' | 'REPLICATED' ;
 export type AtomicityModes = 'ATOMIC' | 'TRANSACTIONAL' | 'TRANSACTIONAL_SNAPSHOT';
 
 export interface ShortCache {
@@ -35,7 +35,7 @@ export interface Alias {
     field: string,
     alias: string
 }
-export type IndexTypes = 'SORTED' | 'FULLTEXT' | 'GEOSPATIAL';
+export type IndexTypes = 'SORTED' | 'FULLTEXT' | 'VECTORTEXT' | 'GEOSPATIAL';
 export interface IndexField {
     id: string,
     name?: string,
@@ -128,13 +128,14 @@ export interface ShortCluster {
 
 export interface DatasourceDto {
 	id: string,
-	driverCls: string;
-	jdbcUrl: string;	
-	jndiName: string; // 数据库JNDI名称
-	schemaName: string; // 默认的模式名称
-	userName: string;
-	password: string;
-	jdbcProp: object;
+    db: string,
+	driverCls: string,
+	jdbcUrl: string,	
+	jndiName: string, // 数据库JNDI名称
+	schemaName: string, // 默认的模式名称
+	userName: string,
+	password: string,
+	jdbcProp: object
 }
 
 export type ClusterLike = Cluster | ShortCluster;

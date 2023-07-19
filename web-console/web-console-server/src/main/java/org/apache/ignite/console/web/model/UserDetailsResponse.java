@@ -17,7 +17,7 @@
 package org.apache.ignite.console.web.model;
 
 import java.util.UUID;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import javax.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.NotEmpty;
 
@@ -26,7 +26,7 @@ import org.hibernate.validator.constraints.NotEmpty;
  */
 public class UserDetailsResponse extends UserResponse {
     /** ID */
-    @ApiModelProperty(value = "User ID.")
+    @Schema(title = "User ID.")
     @NotNull
     @NotEmpty
     private UUID id;

@@ -35,6 +35,7 @@ export default class Datasource {
             schemaName: '',
             jdbcUrl:  'jdbc:postgresql://[host]:[port]/[database]',
             driverCls: 'org.postgresql.Driver',
+            db: 'Generic',
             jdbcProp: {},
             id: uuidv4()
         }
@@ -91,11 +92,11 @@ export default class Datasource {
         return this.$http.delete(`/api/v1/datasource/${id}`);
     }
     
-    saveBasic(datasource) {
+    saveBasic(datasource:DatasourceDto) {
         return this.$http.put('/api/v1/datasource', datasource);
     }
     
-    saveAdvanced(datasource) {        
+    saveAdvanced(datasource:DatasourceDto) {        
         return this.$http.put('/api/v1/datasource', datasource);
     }
 }

@@ -2,11 +2,12 @@ package org.apache.ignite.console.web.security;
 
 import javax.servlet.FilterConfig;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.services.AccountsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
-import com.google.common.base.Strings;
+
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.Authentication;
@@ -35,7 +36,7 @@ public class AuthenticationTokenFilter implements Filter{
             throws IOException, ServletException{
         if (servletRequest instanceof HttpServletRequest){
             String token = ((HttpServletRequest) servletRequest).getHeader("TOKEN");
-            if (!Strings.isNullOrEmpty(token)){
+            if (!StringUtils.isEmpty(token)){
             	Account account = accountsService.getAccountByToken(token);
             	if(account!=null) {
             		TokenAuthentication authentication = new TokenAuthentication(token,account);

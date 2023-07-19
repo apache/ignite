@@ -12,7 +12,7 @@
 
         & > header {
             height: auto;
-            padding: 22px 20px;
+            padding: 14px 20px;
 
             background-color: initial;
             font-size: 16px;
@@ -40,7 +40,7 @@
 
         & > .panel-heading {
             height: auto;
-            padding: 22px 20px;
+            padding: 14px 20px;
 
             background-color: initial;
             border-bottom: 1px solid $table-border-color;
@@ -65,7 +65,7 @@
         & > header.header-with-selector {
             margin: 0;
             padding: 14px 20px;
-            min-height: 65px;
+            height: 50px;
 
             border-bottom: 1px solid #ddd;
 

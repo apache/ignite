@@ -2,7 +2,7 @@ package org.apache.ignite.console.web.controller;
 
 import java.util.Collection;
 import java.util.UUID;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.Synchronized;
 
 import org.apache.ignite.console.dto.Account;
@@ -42,7 +42,7 @@ public class TaskFlowController {
      * @param acc Account.
      * @param flowId Notebook ID.
      */
-    @ApiOperation(value = "get user's taskflow.")
+    @Operation(summary = "get user's taskflow.")
     @GetMapping(path = "/{taskflowId}")
     public ResponseEntity<TaskFlow> get(
         @AuthenticationPrincipal Account acc,
@@ -57,7 +57,7 @@ public class TaskFlowController {
      * @param acc Account.
      * @return Collection of taskFlows.
      */
-    @ApiOperation(value = "Get user's grouped taskFlows.")
+    @Operation(summary = "Get user's grouped taskFlows.")
     @GetMapping(path = "/group/{groupId}")
     public ResponseEntity<Collection<TaskFlow>> list(@AuthenticationPrincipal Account acc,
     		@PathVariable("groupId") String groupId,String action, String target, String source) {
@@ -67,7 +67,7 @@ public class TaskFlowController {
     /**
      * @param acc Account.
      */
-    @ApiOperation(value = "Save user's flow.")
+    @Operation(summary = "Save user's flow.")
     @PutMapping(consumes = APPLICATION_JSON_VALUE)
     public synchronized ResponseEntity<?> save(@AuthenticationPrincipal Account acc, @RequestBody TaskFlow flow) {
     	if(flow.getTarget()==null || flow.getSource()==null) {
@@ -102,7 +102,7 @@ public class TaskFlowController {
     /**
      * @param acc Account.
      */
-    @ApiOperation(value = "Save user's flow. must have flow id")
+    @Operation(summary = "Save user's flow. must have flow id")
     @PutMapping(value="/advance", consumes = APPLICATION_JSON_VALUE)
     public ResponseEntity<?> saveAdvance(@AuthenticationPrincipal Account acc, @RequestBody TaskFlow flow) {
         if(flow.getId()==null) {
@@ -120,7 +120,7 @@ public class TaskFlowController {
      * @param acc Account.
      * @param flowId Notebook ID.
      */
-    @ApiOperation(value = "Delete user's grouped flow.")
+    @Operation(summary = "Delete user's grouped flow.")
     @DeleteMapping(path = "/group/{groupId}")
     public ResponseEntity<Void> delete(
         @AuthenticationPrincipal Account acc,
@@ -135,7 +135,7 @@ public class TaskFlowController {
      * @param acc Account.
      * @param flowId Notebook ID.
      */
-    @ApiOperation(value = "Delete user's flow.")
+    @Operation(summary = "Delete user's flow.")
     @DeleteMapping(path = "/{flowId}")
     public ResponseEntity<Void> delete(
         @AuthenticationPrincipal Account acc,

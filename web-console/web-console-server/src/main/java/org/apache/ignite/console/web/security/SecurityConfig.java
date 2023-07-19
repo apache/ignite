@@ -43,7 +43,8 @@ import org.springframework.security.web.authentication.logout.HttpStatusReturnin
 import org.springframework.security.web.authentication.switchuser.SwitchUserFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-import org.springframework.session.ExpiringSession;
+
+import org.springframework.session.MapSession;
 import org.springframework.session.Session;
 import org.springframework.session.SessionRepository;
 import org.springframework.session.config.annotation.web.http.EnableSpringHttpSession;
@@ -198,7 +199,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
      * @param ignite Ignite.
      */
     @Bean
-    public SessionRepository<ExpiringSession> sessionRepository(@Autowired Ignite ignite) {
+    public SessionRepository<MapSession> sessionRepository(@Autowired Ignite ignite) {
         return new IgniteSessionRepository(ignite)
             .setDefaultMaxInactiveInterval(MAX_INACTIVE_INTERVAL_SECONDS);
     }

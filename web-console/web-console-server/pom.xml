@@ -22,7 +22,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-   <parent>
+    <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-web-console</artifactId>
         <version>2.16.999-SNAPSHOT</version>
@@ -44,13 +44,15 @@
                 <scope>import</scope>
             </dependency>
 
-            <dependency>
-                <groupId>org.springframework.session</groupId>
-                <artifactId>spring-session-bom</artifactId>
-                <version>Bean-SR3</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
+            <!-- https://mvnrepository.com/artifact/org.springframework.session/spring-session-bom -->
+			<dependency>
+			    <groupId>org.springframework.session</groupId>
+			    <artifactId>spring-session-bom</artifactId>
+			    <version>2021.2.2</version>
+			    <type>pom</type>
+			    <scope>import</scope>
+			</dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -90,13 +92,13 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
-        <dependency>
-            <groupId>org.springframework.session</groupId>
-            <artifactId>spring-session</artifactId>
-            <version>1.3.5.RELEASE</version>
-        </dependency>
        
+        
+        <!-- https://mvnrepository.com/artifact/org.springframework.session/spring-session-core -->
+		<dependency>
+		    <groupId>org.springframework.session</groupId>
+		    <artifactId>spring-session-core</artifactId>		    
+		</dependency>
 
         <!-- Use Jetty instead -->
         <dependency>
@@ -129,21 +131,14 @@
         </dependency>
  
         <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger2</artifactId>
-            <version>${swagger2.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger-ui</artifactId>
-            <version>${swagger2.version}</version>
-        </dependency> 
-
+	      <groupId>org.springdoc</groupId>
+	      <artifactId>springdoc-openapi-ui</artifactId>
+	      <version>1.7.0</version>
+	    </dependency>
+	   
         <dependency>
             <groupId>org.mongodb</groupId>
-            <artifactId>mongodb-driver-sync</artifactId>
-            <version>3.11.2</version>
+            <artifactId>mongodb-driver-sync</artifactId>           
         </dependency>
 
         <!-- GridGain dependencies -->
@@ -165,6 +160,20 @@
             <artifactId>ignite-web-console-mail</artifactId>
             <version>${project.version}</version>
         </dependency>
+        
+        
+        <!-- https://mvnrepository.com/artifact/jakarta.validation/jakarta.validation-api -->
+		<dependency>
+		    <groupId>jakarta.validation</groupId>
+		    <artifactId>jakarta.validation-api</artifactId>
+		    <version>2.0.2</version>
+		</dependency>
+
+		<dependency>
+		    <groupId>org.hibernate.validator</groupId>
+		    <artifactId>hibernate-validator</artifactId>		    
+		</dependency>
+        
 
         <!-- Test dependencies -->
         <dependency>

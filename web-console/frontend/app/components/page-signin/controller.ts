@@ -72,7 +72,7 @@ export default class PageSignIn implements ng.IPostLink {
             .catch((err) => {
                 this.IgniteMessages.showError(null, err.data);
 
-                this.setServerError(_.get(err, 'data.message', err.data));
+                this.setServerError(_.get(err, 'data.message', err.data.error));
 
                 this.IgniteFormUtils.triggerValidation(this.form);
 

@@ -61,11 +61,11 @@ export default class ClusterControlController {
         },
         {
             name: 'text',
-            displayName: 'Cmd Text',
+            displayName: 'Description',
             field: 'text',
             enableHiding: false,
             sortingAlgorithm: naturalCompare,
-            width: 200
+            width: 250
         },
         {
             name: 'usage',
@@ -193,17 +193,18 @@ export default class ClusterControlController {
                 if(data.result){
                     let serviceList = data.result;
                     let serviceMap = {};
-                    data.result.forEach((val) => {
-                       let key = val['name']
+                    serviceList.forEach((val) => {
+                       let key:string = val['name']
                        val['id'] = key;
+                       val['input'] = '--' + key.toLowerCase()
                        serviceMap[key] = val;                                          
                     });    
                     this.serviceMap = serviceMap;
                     resolve(serviceList);
-                }  
-               else if(data.message){
-                   this.message = data.message;                   
-               }        
+                }
+                else if(data.message){
+                    this.message = data.message;                   
+                }        
             })   
            .catch((e) => {
                 //this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);    

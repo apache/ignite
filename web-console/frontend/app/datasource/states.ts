@@ -15,8 +15,7 @@ function registerStates($stateProvider) {
         permission: 'configuration',
         url: '/datasource',
         onEnter: ['ConfigureState', (ConfigureState) => ConfigureState.dispatchAction({type: 'PRELOAD_STATE', state: {}})],
-        resolve: {
-           
+        resolve: {           
         },
         resolvePolicy: {
             async: 'NOWAIT'
@@ -35,8 +34,7 @@ function registerStates($stateProvider) {
         url: `/{clusterID}`,
         permission: 'configuration',
         component: 'pageDatasource',
-        resolve: {
-           
+        resolve: {           
         },
         data: {
             errorState: 'base.datasource.overview'
@@ -73,8 +71,6 @@ function registerStates($stateProvider) {
             title: 'Advanced Configuration'
         }
     })
-    
-    ;
 }
 
 registerStates.$inject = ['$stateProvider'];

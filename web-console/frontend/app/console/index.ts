@@ -3,10 +3,7 @@ import angular from 'angular';
 import uiValidate from 'angular-ui-validate';
 import {UIRouterRx} from '@uirouter/rx';
 import {UIRouter} from '@uirouter/angularjs';
-
 import {withLatestFrom, tap, filter, scan} from 'rxjs/operators';
-
-
 
 import ConfigureState from '../configuration/services/ConfigureState';
 import PageConfigure from '../configuration/services/PageConfigure';

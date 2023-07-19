@@ -1,12 +1,7 @@
 
-
 import {forkJoin, merge, from, of} from 'rxjs';
 import {map, tap, pluck, take, filter, catchError, distinctUntilChanged, switchMap, publishReplay, refCount} from 'rxjs/operators';
 import cloneDeep from 'lodash/cloneDeep';
-import get from 'lodash/get';
-import naturalCompare from 'natural-compare-lite';
-
-
 
 import {Confirm} from 'app/services/Confirm.service';
 
@@ -38,7 +33,7 @@ export default class PageDatasourceBasicController {
     
     
     $onDestroy() {        
-        // if (this.onBeforeTransition) this.onBeforeTransition();
+        if (this.onBeforeTransition) this.onBeforeTransition();
         this.$element = null;
     }
 
@@ -48,7 +43,7 @@ export default class PageDatasourceBasicController {
 
     $onInit() {
         const $scope = this.$scope;
-        // this.onBeforeTransition = this.$uiRouter.transitionService.onBefore({}, (t) => this._uiCanExit(t));
+        this.onBeforeTransition = this.$uiRouter.transitionService.onBefore({}, (t) => this._uiCanExit(t));
         this.available = (v) =>{ return true; }
         
         let drivers = [];
@@ -94,6 +89,11 @@ export default class PageDatasourceBasicController {
                text: 'Delete',
                click: () => this.confirmAndDelete(),
                icon: 'download'
+           },
+           {
+               text: 'Disconnect',
+               click: () => this.confirmAndDisconnect(),
+               icon: 'eyeClosed'
            }
         ];
 
@@ -119,6 +119,18 @@ export default class PageDatasourceBasicController {
             }
         }, true);
        
+    }
+
+    
+    _uiCanExit($transition$) {
+        const options = $transition$.options();
+
+        if (options.custom.justIDUpdate || options.redirectedFrom)
+            return true;
+
+        $transition$.onSuccess({}, () => this.reset());
+
+        return true;
     }
 
     _loadPresets() {
@@ -151,8 +163,7 @@ export default class PageDatasourceBasicController {
             }                
             else{
                 _dbPresets.push(preset);
-            }
-                
+            }               
 
             localStorage.dbPresets = JSON.stringify(_dbPresets);
         }
@@ -220,7 +231,9 @@ export default class PageDatasourceBasicController {
                 (next) => {
                     this.$scope.message = 'Save successful.'
                     if(redirect){                
-                        return this.$uiRouter.stateService.go('base.datasource.overview');
+                        setTimeout(() => {
+                            this.$uiRouter.stateService.go('base.datasource.overview');
+                        },100)
                     }
                 }
             );  

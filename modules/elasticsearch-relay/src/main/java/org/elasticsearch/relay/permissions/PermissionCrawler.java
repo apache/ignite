@@ -131,8 +131,7 @@ public class PermissionCrawler implements IPermCrawler, Runnable {
 				time = System.currentTimeMillis() - time;
 				fLogger.log(Level.INFO, "finished crawl in " + time + "ms");
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				fLogger.log(Level.WARNING,e.getMessage());				
 			}
 		}
 	}

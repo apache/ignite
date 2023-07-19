@@ -78,15 +78,16 @@ export default class ServiceCallFormController {
     
     callCommandForGrid(serviceName:string,params) {
         let args = this.onCall({$event:{name: serviceName,args: params}});
-        let clusterId = args['id'];        
+        let clusterId = args['id'];  
+        this.$scope.message = ''
         this.AgentManager.callClusterCommand({id: clusterId},serviceName,params).then((data) => {  
-            this.$scope.status = data.status; 
+            this.$scope.status = data.status;
+            if(data.message){
+                this.$scope.message = data.message;
+            } 
             if(data.result){
                 return data.result;
-            }    
-            else if(data.message){
-                this.$scope.message = data.message;
-            }  
+            }
             return {}
         })   
        .catch((e) => {
@@ -94,13 +95,16 @@ export default class ServiceCallFormController {
         });
     }
 
-    reset = (forReal) => forReal ? this.clonedService = cloneDeep(this.service) : void 0;
+    reset = (forReal) => {
+        this.$scope.message = ''
+        forReal ? this.clonedService = cloneDeep(this.service) : void 0;
+    }
 
     confirmAndCall() {
         if (this.$scope.ui.inputForm && this.$scope.ui.inputForm.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
         return this.IgniteConfirm.confirm('Are you sure you want to call command ' + this.service.name + ' for current grid?')
-        .then(() => { this.callCommandForGrid(this.service.id,[this.clonedService.text]); } );
+            .then(() => { this.callCommandForGrid(this.service.id,[this.clonedService.input]); } );
     }
 
     clearImplementationVersion(storeFactory) {

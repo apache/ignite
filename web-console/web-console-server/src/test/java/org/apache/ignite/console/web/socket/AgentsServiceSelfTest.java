@@ -42,7 +42,7 @@ import static org.apache.ignite.console.websocket.WebSocketEvents.AGENT_HANDSHAK
 import static org.apache.ignite.console.websocket.WebSocketEvents.AGENT_STATUS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Matchers.anySetOf;
+import static org.mockito.Mockito.anySet;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -73,7 +73,7 @@ public class AgentsServiceSelfTest {
 
         Set<String> toks = Collections.singleton(acc.getToken());
 
-        when(accRepo.getAllByTokens(anySetOf(String.class))).thenReturn(Collections.singleton(acc));
+        when(accRepo.getAllByTokens(anySet())).thenReturn(Collections.singleton(acc));
 
         AgentHandshakeRequest payload = new AgentHandshakeRequest(CURRENT_VER, toks);
 

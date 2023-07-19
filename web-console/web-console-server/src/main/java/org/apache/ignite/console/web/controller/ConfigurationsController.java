@@ -17,7 +17,7 @@
 package org.apache.ignite.console.web.controller;
 
 import java.util.UUID;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.json.JsonArray;
 import org.apache.ignite.console.json.JsonObject;
@@ -57,7 +57,7 @@ public class ConfigurationsController {
      * @param acc Account.
      * @param clusterId Cluster ID.
      */
-    @ApiOperation(value = "Get full cluster object.")
+    @Operation(summary = "Get full cluster object.")
     @GetMapping(path = "/{clusterId}")
     public ResponseEntity<JsonObject> loadConfiguration(
         @AuthenticationPrincipal Account acc,
@@ -71,7 +71,7 @@ public class ConfigurationsController {
      * @param acc Account.
      * @return Clusters short list.
      */
-    @ApiOperation(value = "Clusters short list.")
+    @Operation(summary = "Clusters short list.")
     @GetMapping(path = "/clusters")
     public ResponseEntity<JsonArray> loadClustersShortList(
         @AuthenticationPrincipal Account acc,
@@ -85,7 +85,7 @@ public class ConfigurationsController {
      * @param clusterId Cluster ID.
      * @return Cluster as JSON.
      */
-    @ApiOperation(value = "Get cluster configuration.")
+    @Operation(summary = "Get cluster configuration.")
     @GetMapping(path = "/clusters/{clusterId}")
     public ResponseEntity<String> loadCluster(
         @AuthenticationPrincipal Account acc,
@@ -102,7 +102,7 @@ public class ConfigurationsController {
      * @param clusterId Cluster ID.
      * @return Caches short list.
      */
-    @ApiOperation(value = "Caches short list.")
+    @Operation(summary = "Caches short list.")
     @GetMapping(path = "/clusters/{clusterId}/caches")
     public ResponseEntity<JsonArray> loadCachesShortList(
         @AuthenticationPrincipal Account acc,
@@ -119,7 +119,7 @@ public class ConfigurationsController {
      * @param clusterId Cluster ID.
      * @return Models short list.
      */
-    @ApiOperation(value = "Get models short list.")
+    @Operation(summary = "Get models short list.")
     @GetMapping(path = "/clusters/{clusterId}/models")
     public ResponseEntity<JsonArray> loadModelsShortList(
         @AuthenticationPrincipal Account acc,
@@ -133,7 +133,7 @@ public class ConfigurationsController {
      * @param acc Account.
      * @param cacheId Cache ID.
      */
-    @ApiOperation(value = "Get cache configuration.")
+    @Operation(summary = "Get cache configuration.")
     @GetMapping(path = "/caches/{cacheId}")
     public ResponseEntity<String> loadCache(
         @AuthenticationPrincipal Account acc,
@@ -147,7 +147,7 @@ public class ConfigurationsController {
      * @param acc Account.
      * @param mdlId Model ID.
      */
-    @ApiOperation(value = "Get model configuration.")
+    @Operation(summary = "Get model configuration.")
     @GetMapping(path = "/domains/{modelId}")
     public ResponseEntity<String> loadModel(
         @AuthenticationPrincipal Account acc,
@@ -163,7 +163,7 @@ public class ConfigurationsController {
      * @param acc Account.
      * @param changedItems Items to save.
      */
-    @ApiOperation(value = "Save cluster advanced configuration.")
+    @Operation(summary = "Save cluster advanced configuration.")
     @PutMapping(path = "/clusters", consumes = APPLICATION_JSON_VALUE)
     public ResponseEntity<Void> saveAdvancedCluster(
         @AuthenticationPrincipal Account acc,
@@ -181,7 +181,7 @@ public class ConfigurationsController {
      * @param acc Account.
      * @param changedItems Items to save.
      */
-    @ApiOperation(value = "Save cluster basic configuration.")
+    @Operation(summary = "Save cluster basic configuration.")
     @PutMapping(path = "/clusters/basic", consumes = APPLICATION_JSON_VALUE)
     public ResponseEntity<Void> saveBasicCluster(
         @AuthenticationPrincipal Account acc,
@@ -199,7 +199,7 @@ public class ConfigurationsController {
      * @param acc Account.
      * @param clusterIDs Cluster IDs for removal.
      */
-    @ApiOperation(value = "Delete cluster.")
+    @Operation(summary = "Delete cluster.")
     @PostMapping(path = "/clusters/remove", consumes = APPLICATION_JSON_VALUE)
     public ResponseEntity<Void> deleteClusters(
         @AuthenticationPrincipal Account acc,

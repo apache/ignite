@@ -25,10 +25,12 @@ import pageDatasourceBasic from './components/page-datasource-basic';
 import pageDatasourceAdvanced from './components/page-datasource-advanced';
 import pageDatasourceOverview from './components/page-datasource-overview';
 
-
 import {registerStates} from './states';
 
-
+import {
+    editReducer2,
+    loadingReducer    
+} from 'app/configuration/store/reducer';
 
 import {errorState} from '../configuration/transitionHooks/errorState';
 import {default as ActivitiesData} from '../core/activities/Activities.data';
@@ -65,6 +67,11 @@ export default angular
     .run(errorState)
     .run(['ConfigureState', '$uiRouter', (ConfigureState, $uiRouter) => {
         $uiRouter.plugin(UIRouterRx);
+
+        ConfigureState.addReducer((state, action) => Object.assign({}, state, {           
+            configurationLoading: loadingReducer(state.configurationLoading, action),            
+            edit: editReducer2(state.edit, action)
+        }));
 
         const la = ConfigureState.actions$.pipe(scan((acc, action) => [...acc, action], []));
 

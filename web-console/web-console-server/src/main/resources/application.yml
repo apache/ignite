@@ -13,6 +13,10 @@ server:
 #    key-store-type: JKS
 #    key-store: certificates/server.jks
 #    key-store-password: change_me
+spring:
+  mvc:
+    pathmatch:
+      matching-strategy: ANT_PATH_MATCHER
 
-spring.mail:
-  defaultTemplatePath: templates/mail/base.html
+  mail:
+    defaultTemplatePath: templates/mail/base.html

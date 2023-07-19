@@ -6,7 +6,7 @@ import {default as MessagesFactory} from 'app/services/Messages.service';
 import {DemoService} from 'app/modules/demo/Demo.module';
 
 export type User = {
-    id: string,
+    id: string,    
     admin: boolean,
     country: string,
     email: string,

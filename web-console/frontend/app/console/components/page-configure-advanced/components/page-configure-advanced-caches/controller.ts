@@ -1,7 +1,7 @@
 
 
 import {Subject, from, merge, combineLatest} from 'rxjs';
-import {tap, map, refCount, pluck, publishReplay, switchMap, distinctUntilChanged} from 'rxjs/operators';
+import {tap, map, filter, refCount, pluck, publishReplay, switchMap, distinctUntilChanged} from 'rxjs/operators';
 import {UIRouter, TransitionService, StateService} from '@uirouter/angularjs';
 import naturalCompare from 'natural-compare-lite';
 
@@ -95,6 +95,7 @@ export default class Controller {
         this.shortModels$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortModels);
         this.originalCache$ = cacheID$.pipe(
             distinctUntilChanged(),
+            filter((id) => id),
             switchMap((id) => {
                 return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCacheToEdit(id));
             })
@@ -102,8 +103,10 @@ export default class Controller {
         
         this.cacheDataProvider$ = this.originalCache$.pipe(            
             switchMap((cache) => {
-                return this.TaskFlows.getTaskFlowsOfTarget(this.clusterId,cache.name);
-                   
+                if(cache){
+                    return this.TaskFlows.getTaskFlowsOfTarget(this.clusterId,cache.name);
+                }
+                return { data: [] }                   
             }),
             map((result) => { return result.data; })
             

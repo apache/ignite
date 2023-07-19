@@ -57,7 +57,9 @@ export default class PageConfigureAdvancedDatasource {
         stat.subscribe(
             (next) => {                
                 if(redirect){
-                    return this.$uiRouter.stateService.go('base.datasource.overview');
+                    setTimeout(() => {
+                        this.$uiRouter.stateService.go('base.datasource.overview');
+                    },100)
                 }
             }
         );        

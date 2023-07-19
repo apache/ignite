@@ -31,36 +31,16 @@ export default class IgniteVersion {
     constructor() {
         this.supportedVersions = [
             {
+                label: 'Ignite 2.15+',
+                ignite: '2.15.0'
+            },
+            {
                 label: 'Ignite 2.9+',
                 ignite: '2.9.0'
             },
             {
-                label: 'Ignite 2.8',
+                label: 'Ignite 2.8-',
                 ignite: '2.8.0'
-            },
-            {
-                label: 'Ignite 2.7',
-                ignite: '2.7.0'
-            },
-            {
-                label: 'Ignite 2.6',
-                ignite: '2.6.0'
-            },
-            {
-                label: 'Ignite 2.5',
-                ignite: '2.5.0'
-            },
-            {
-                label: 'Ignite 2.4',
-                ignite: '2.4.0'
-            },
-            {
-                label: 'Ignite 2.3',
-                ignite: '2.3.0'
-            },
-            {
-                label: 'Ignite 2.2',
-                ignite: '2.2.0'
             }
         ];
 

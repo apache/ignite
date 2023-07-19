@@ -16,7 +16,7 @@
 
 package org.apache.ignite.console.web.controller;
 
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.services.DemoService;
 import org.springframework.http.ResponseEntity;
@@ -44,7 +44,7 @@ public class DemoController {
     /**
      * @param acc Account.
      */
-    @ApiOperation(value = "Reset demo configuration.")
+    @Operation(summary = "Reset demo configuration.")
     @PostMapping(path = "/reset")
     public ResponseEntity<Void> reset(@AuthenticationPrincipal Account acc) {
         demoSrv.reset(acc.getId());

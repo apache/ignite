@@ -444,7 +444,7 @@
 
     input[type="text"].ui-grid-filter-input {
         display: block;
-        width: 100%;
+        max-width: 350px;
         height: 28px;
         padding: 3px 3px;
 

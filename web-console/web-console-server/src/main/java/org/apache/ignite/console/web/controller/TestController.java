@@ -16,7 +16,7 @@
 
 package org.apache.ignite.console.web.controller;
 
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
 import javax.validation.Valid;
 import org.apache.ignite.console.common.Test;
 import org.apache.ignite.console.dto.Account;
@@ -59,7 +59,7 @@ public class TestController {
     /**
      * @param params SignUp params.
      */
-    @ApiOperation(value = "Register admin user.")
+    @Operation(summary = "Register admin user.")
     @PutMapping(path = "/admins")
     public ResponseEntity<Void> registerAdmin(@Valid @RequestBody SignUpRequest params) {
         Account acc = adminSrv.registerUser(params);
@@ -72,7 +72,7 @@ public class TestController {
     /**
      * @param email Account email.
      */
-    @ApiOperation(value = "Delete test users.")
+    @Operation(summary = "Delete test users.")
     @DeleteMapping(path = "/users/{email}")
     public ResponseEntity<Void> delete(@PathVariable("email") String email) {
         JsonArray accounts = adminSrv.list(U.currentTimeMillis(), U.currentTimeMillis());

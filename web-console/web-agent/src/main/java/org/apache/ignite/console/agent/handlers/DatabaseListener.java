@@ -120,8 +120,8 @@ public class DatabaseListener {
 				dbInfo.jndiName= String.format("ds%s_%s",dbProductName,catalog.replaceAll("_", "").replace('-','_'));					
 				DataSourceManager.bindDataSource(dbInfo.jndiName, dbInfo);
 				
-				// 保存datasource
-				DataSourceManager.createDataSource(dbInfo.getId().toString(), dbInfo);
+				//- 保存datasource
+				//-DataSourceManager.createDataSource(dbInfo.getId().toString(), dbInfo);
 				
 				clusters.put(dbInfo.getId().toString(), dbInfo);
 				

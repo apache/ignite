@@ -22,24 +22,26 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.springframework.context.support.MessageSourceAccessor;
-import org.springframework.session.ExpiringSession;
+
 import org.springframework.session.MapSession;
 import org.springframework.session.Session;
 import org.springframework.session.SessionRepository;
 
 import static org.apache.ignite.console.errors.Errors.convertToDatabaseNotAvailableException;
 
+import java.time.Duration;
+
 /**
  * A {@link SessionRepository} backed by a Apache Ignite and that uses a {@link MapSession}.
  */
-public class IgniteSessionRepository implements SessionRepository<ExpiringSession> {
+public class IgniteSessionRepository implements SessionRepository<MapSession> {
     /** */
     private final Ignite ignite;
 
     /** Messages accessor. */
     private final MessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
 
-    /** If non-null, this value is used to override {@link ExpiringSession#setMaxInactiveIntervalInSeconds(int)}. */
+    /** If non-null, this value is used to override {@link MapSession#setMaxInactiveIntervalInSeconds(int)}. */
     private Integer dfltMaxInactiveInterval;
 
     /** Session cache configuration. */
@@ -57,7 +59,7 @@ public class IgniteSessionRepository implements SessionRepository<ExpiringSessio
     }
 
     /**
-     * If non-null, this value is used to override {@link ExpiringSession#setMaxInactiveIntervalInSeconds(int)}.
+     * If non-null, this value is used to override {@link MapSession#setMaxInactiveIntervalInSeconds(int)}.
      *
      * @param dfltMaxInactiveInterval Number of seconds that the {@link Session} should be kept alive between client
      * requests.
@@ -69,11 +71,11 @@ public class IgniteSessionRepository implements SessionRepository<ExpiringSessio
     }
 
     /** {@inheritDoc} */
-    @Override public ExpiringSession createSession() {
-        ExpiringSession ses = new MapSession();
+    @Override public MapSession createSession() {
+    	MapSession ses = new MapSession();
 
         if (dfltMaxInactiveInterval != null)
-            ses.setMaxInactiveIntervalInSeconds(dfltMaxInactiveInterval);
+            ses.setMaxInactiveInterval(Duration.ofSeconds(dfltMaxInactiveInterval));
 
         return ses;
     }
@@ -86,7 +88,7 @@ public class IgniteSessionRepository implements SessionRepository<ExpiringSessio
     }
 
     /** {@inheritDoc} */
-    @Override public void save(ExpiringSession ses) {
+    @Override public void save(MapSession ses) {
         try {
             cache().put(ses.getId(), new MapSession(ses));
         }
@@ -96,15 +98,15 @@ public class IgniteSessionRepository implements SessionRepository<ExpiringSessio
     }
 
     /** {@inheritDoc} */
-    @Override public ExpiringSession getSession(String id) {
+    @Override public MapSession findById(String id) {
         try {
-            ExpiringSession ses = cache().get(id);
+            MapSession ses = cache().get(id);
 
             if (ses == null)
                 return null;
 
             if (ses.isExpired()) {
-                delete(ses.getId());
+            	deleteById(ses.getId());
 
                 return null;
             }
@@ -117,7 +119,7 @@ public class IgniteSessionRepository implements SessionRepository<ExpiringSessio
     }
 
     /** {@inheritDoc} */
-    @Override public void delete(String id) {
+    @Override public void deleteById(String id) {
         try {
             cache().remove(id);
         }

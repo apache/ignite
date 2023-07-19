@@ -14,7 +14,7 @@ import AgentModal from './AgentModal.service';
 // @ts-ignore
 import Worker from './decompress.worker';
 import SimpleWorkerPool from '../../utils/SimpleWorkerPool';
-import maskNull from 'app/core/utils/maskNull';
+
 
 import {ClusterSecretsManager} from './types/ClusterSecretsManager';
 import ClusterLoginService from './components/cluster-login/service';
@@ -102,6 +102,10 @@ const getLastActiveClusterId = () => {
         return null;
     }
 };
+
+const maskNull = (val) => {
+    return _.isNil(val) ? 'null' : val;
+}
 
 class ConnectionState {
     cluster: AgentTypes.ClusterStats | null;

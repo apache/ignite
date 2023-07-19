@@ -2,7 +2,7 @@ package org.apache.ignite.console.web.controller;
 
 import java.util.Collection;
 import java.util.UUID;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.dto.DBInfoDto;
 import org.apache.ignite.console.repositories.DBInfoRepository;
@@ -40,7 +40,7 @@ public class DBInfoController {
      * @param acc Account.
      * @param datasourceId Notebook ID.
      */
-    @ApiOperation(value = "get user's datasource.")
+    @Operation(summary = "get user's datasource.")
     @GetMapping(path = "/{datasourceId}")
     public ResponseEntity<DBInfoDto> get(
         @AuthenticationPrincipal Account acc,
@@ -55,7 +55,7 @@ public class DBInfoController {
      * @param acc Account.
      * @return Collection of datasources.
      */
-    @ApiOperation(value = "Get user's datasources.")
+    @Operation(summary = "Get user's datasources.")
     @GetMapping
     public ResponseEntity<Collection<DBInfoDto>> list(@AuthenticationPrincipal Account acc) {
         return ResponseEntity.ok(datasourcesSrv.list(acc.getId()));
@@ -64,7 +64,7 @@ public class DBInfoController {
     /**
      * @param acc Account.
      */
-    @ApiOperation(value = "Save user's datasource.")
+    @Operation(summary = "Save user's datasource.")
     @PutMapping(consumes = APPLICATION_JSON_VALUE)
     public ResponseEntity<UUID> save(@AuthenticationPrincipal Account acc, @RequestBody DBInfoDto datasource) {
         if(datasource.getId()==null) {
@@ -83,7 +83,7 @@ public class DBInfoController {
      * @param acc Account.
      * @param datasourceId Notebook ID.
      */
-    @ApiOperation(value = "Delete user's datasource.")
+    @Operation(summary = "Delete user's datasource.")
     @DeleteMapping(path = "/{datasourceId}")
     public ResponseEntity<Void> delete(
         @AuthenticationPrincipal Account acc,

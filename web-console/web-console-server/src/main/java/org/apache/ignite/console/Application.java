@@ -18,6 +18,7 @@ package org.apache.ignite.console;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
@@ -31,7 +32,7 @@ import org.apache.ignite.console.common.Utils;
 /**
  * Web console launcher.
  */
-@SpringBootApplication
+@SpringBootApplication(exclude = MongoAutoConfiguration.class)
 @EnableScheduling
 public class Application extends SpringBootServletInitializer{
     /**

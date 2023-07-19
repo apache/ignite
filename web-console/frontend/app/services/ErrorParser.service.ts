@@ -72,6 +72,10 @@ export default class {
                 );
             }
 
+            if (err.hasOwnProperty('error')) {
+                err = err.error
+            }
+
             if (nonEmpty(err.className)) {
                 if (isEmpty(prefix))
                     prefix = 'Internal cluster error: ';

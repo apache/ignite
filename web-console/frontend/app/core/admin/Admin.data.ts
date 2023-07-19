@@ -85,7 +85,7 @@ export default class IgniteAdminData {
     loadUsers(params) {
         return this.$http.post('/api/v1/admin/list', params)
             .then(({ data }) => data)
-            .then((users) => _.map(users, this.prepareUsers.bind(this)))
+            .then((users: Array<object>) => _.map(users, this.prepareUsers.bind(this)))
             .catch(this.Messages.showError);
     }
 

@@ -16,7 +16,7 @@
 
 package org.apache.ignite.console.web.model;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import javax.validation.constraints.NotNull;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -27,35 +27,35 @@ import org.hibernate.validator.constraints.NotEmpty;
  */
 public class User {
     /** Email. */
-    @ApiModelProperty(value = "User email", required = true)
+    @Schema(title = "User email", required = true)
     @NotNull
     @NotEmpty
     private String email;
 
     /** First name. */
-    @ApiModelProperty(value = "User first name", required = true)
+    @Schema(title = "User first name", required = true)
     @NotNull
     @NotEmpty
     private String firstName;
 
     /** Last name. */
-    @ApiModelProperty(value = "User last name", required = true)
+    @Schema(title = "User last name", required = true)
     @NotNull
     @NotEmpty
     private String lastName;
 
     /** Phone. */
-    @ApiModelProperty(value = "User phone")
+    @Schema(title = "User phone")
     private String phone;
 
     /** Company. */
-    @ApiModelProperty(value = "User company", required = true)
+    @Schema(title = "User company", required = true)
     @NotNull
     @NotEmpty
     private String company;
 
     /** Country. */
-    @ApiModelProperty(value = "User country", required = true)
+    @Schema(title = "User country", required = true)
     @NotNull
     @NotEmpty
     private String country;

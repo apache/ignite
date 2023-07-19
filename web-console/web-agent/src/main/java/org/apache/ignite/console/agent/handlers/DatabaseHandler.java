@@ -353,10 +353,11 @@ public class DatabaseHandler{
 		            
 		            top.setClusterVersion(VER_STR);
 		            top.setId(info.getId().toString());
-		            top.setName(info.getJndiName());
+		            top.setName(info.getDb()+"-"+info.getJndiName());
 		            top.setDemo(false); 
 		            top.setActive(true);
 		            if(schemas.isEmpty()) {
+		            	
 		            	top.setActive(false);
 		            	databaseListener.deactivedCluster(info.getId().toString());
 		            }
@@ -366,6 +367,7 @@ public class DatabaseHandler{
 	        	else {
 	        		Collection<GridClientCacheBean> schemas = schemas(info);
 	        		if(schemas.isEmpty()) {
+	        			
 		            	info.top.setActive(false);
 		            	databaseListener.deactivedCluster(info.getId().toString());
 		            }

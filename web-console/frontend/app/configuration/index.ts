@@ -1,5 +1,4 @@
-
-
+import angular from 'angular';
 import uiValidate from 'angular-ui-validate';
 import {UIRouterRx} from '@uirouter/rx';
 import {UIRouter} from '@uirouter/angularjs';

@@ -16,20 +16,21 @@
 
 package org.apache.ignite.console.web.model;
 
-import io.swagger.annotations.ApiModelProperty;
 import javax.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.NotEmpty;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * Web model of change user request.
  */
 public class ChangeUserRequest extends User {
     /** Password. */
-    @ApiModelProperty(value = "User password.")
+    @Schema(title = "User password.")
     private String pwd;
 
     /** Agent token. */
-    @ApiModelProperty(value = "Agent token.", required = true)
+    @Schema(title = "Agent token.", required = true)
     @NotNull
     @NotEmpty
     private String tok;

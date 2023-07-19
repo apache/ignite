@@ -16,23 +16,25 @@
 
 package org.apache.ignite.console.web.model;
 
-import io.swagger.annotations.ApiModelProperty;
+
 import javax.validation.constraints.NotNull;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.hibernate.validator.constraints.NotEmpty;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * Web model of activity update request.
  */
 public class ActivityRequest {
     /** Group. */
-    @ApiModelProperty(value = "Activity group.", required = true)
+    @Schema(title = "Activity group.", required = true)
     @NotNull
     @NotEmpty
     private String grp;
 
     /** Activity. */
-    @ApiModelProperty(value = "Activity name.", required = true)
+    @Schema(title = "Activity name.", required = true)
     @NotNull
     @NotEmpty
     private String act;

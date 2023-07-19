@@ -9,37 +9,19 @@ include /app/configuration/mixins
 panel-collapsible(opened=`::true` ng-form=form)
     panel-title General
     panel-description
-        | Common service invoke configuration.
-        a.link-success(href="https://apacheignite.readme.io/docs/data-grid" target="_blank") More info
+        | {{ $ctrl.clonedService.text }}
     panel-content.pca-form-row
         .pca-form-column-6.pc-form-grid-row
+                            
             .pc-form-grid-col-60
                 +form-field__text({
-                    label: 'Command name:',
-                    model: `${model}.name`,
-                    name: '"name"',                   
-                    required: true
-                })(
-                    
-                    ignite-unique-property='name'
-                    ignite-unique-skip=`["id", ${model}]`
-                )
-                
-            .pc-form-grid-col-60
-                +form-field__text({
-                    label: 'Command text:',
-                    model: `${model}.text`,
-                    name: '"text"'
-                })
-                    
-            .pc-form-grid-col-60
-                +form-field__label({
-                    label: 'Command usage:',
-                    tip: `${model}.usage`,
-                    name: '"usage"'
-                })
-                
-                .help(ng-bind-html='$ctrl.clonedService.usage')
+                    label: 'Command text and args:',
+                    placeholder: '--cmd --port --host ',
+                    name: '"input"',
+                    model: `${model}.input`,
+                    required: true,  
+                    tip: '{{ $ctrl.clonedService.usage }}'                  
+                })           
             
             .pc-form-grid-col-30
                 +form-field__cache-modes({

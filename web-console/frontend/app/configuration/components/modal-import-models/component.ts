@@ -218,11 +218,13 @@ export class ModalImportModels {
 
     onDatasourceSelectionChange(selected) {
         this.$scope.$applyAsync(() => {
-            this.$scope.selectedPreset = selected[0]
-            this.$scope.selectedPreset.jdbcDriverClass = selected[0].driverCls
-            if(this.$scope.ui.selectedJdbcDriverJar>=0)
+            if(selected.length>0){
+                this.$scope.selectedPreset = selected[0]
+                this.$scope.selectedPreset.jdbcDriverClass = selected[0].driverCls
+            }            
+            if(this.$scope.ui.selectedJdbcDriverJar>=0){
                 this.$scope.selectedPreset.jdbcDriverJar = this.$scope.jdbcDriverJars[this.$scope.ui.selectedJdbcDriverJar].label
-            
+            }
             this.selectedDatasourcesIDs = selected.map((i) => i.id);
         });
     }
