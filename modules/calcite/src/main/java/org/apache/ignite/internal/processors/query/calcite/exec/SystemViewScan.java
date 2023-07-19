@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
@@ -31,8 +29,6 @@ import org.apache.ignite.internal.processors.query.calcite.schema.SystemViewColu
 import org.apache.ignite.internal.processors.query.calcite.schema.SystemViewTableDescriptorImpl;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.jetbrains.annotations.Nullable;
@@ -51,12 +47,6 @@ public class SystemViewScan<Row, ViewRow> implements Iterable<Row> {
     /** */
     private final RangeIterable<Row> ranges;
 
-    /** */
-    private final Predicate<Row> filters;
-
-    /** */
-    private final Function<Row, Row> rowTransformer;
-
     /** Participating colunms. */
     private final ImmutableBitSet requiredColumns;
 
@@ -71,15 +61,11 @@ public class SystemViewScan<Row, ViewRow> implements Iterable<Row> {
         ExecutionContext<Row> ectx,
         SystemViewTableDescriptorImpl<ViewRow> desc,
         @Nullable RangeIterable<Row> ranges,
-        Predicate<Row> filters,
-        Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     ) {
         this.ectx = ectx;
         this.desc = desc;
         this.ranges = ranges;
-        this.filters = filters;
-        this.rowTransformer = rowTransformer;
         this.requiredColumns = requiredColumns;
 
         RelDataType rowType = desc.rowType(ectx.getTypeFactory(), requiredColumns);
@@ -137,18 +123,6 @@ public class SystemViewScan<Row, ViewRow> implements Iterable<Row> {
         else
             viewIter = view.iterator();
 
-        Iterator<Row> iter = F.iterator(
-            viewIter,
-            row -> desc.toRow(ectx, row, factory, requiredColumns),
-            true);
-
-        if (rowTransformer != null || filters != null) {
-            IgniteClosure<Row, Row> trans = rowTransformer == null ? F.identity() : rowTransformer::apply;
-            IgnitePredicate<Row> filter = filters == null ? F.alwaysTrue() : filters::test;
-
-            iter = F.iterator(iter, trans, true, filter);
-        }
-
-        return iter;
+        return F.iterator(viewIter, row -> desc.toRow(ectx, row, factory, requiredColumns), true);
     }
 }

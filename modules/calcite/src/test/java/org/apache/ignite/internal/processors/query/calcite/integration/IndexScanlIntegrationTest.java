@@ -21,13 +21,12 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.Iterator;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.function.IntFunction;
-import java.util.function.Predicate;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -44,6 +43,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -372,25 +372,22 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
         @Override public <Row> Iterable<Row> scan(
             ExecutionContext<Row> execCtx,
             ColocationGroup grp,
-            Predicate<Row> filters,
             RangeIterable<Row> ranges,
-            Function<Row, Row> rowTransformer,
             @Nullable ImmutableBitSet requiredColumns
         ) {
-            Predicate<Row> filter = row -> {
-                filteredRows.incrementAndGet();
-
-                return true;
-            };
-
-            filters = filters == null ? filter : filter.and(filters);
-
-            IndexScan<Row> scan = (IndexScan<Row>)delegate.scan(execCtx, grp, filters, ranges, rowTransformer,
-                requiredColumns);
+            IndexScan<Row> scan = (IndexScan<Row>)delegate.scan(execCtx, grp, ranges, requiredColumns);
 
             isInlineScan.set(scan.isInlineScan());
 
-            return scan;
+            return new Iterable<Row>() {
+                @NotNull @Override public Iterator<Row> iterator() {
+                    return F.iterator(scan.iterator(), r -> {
+                        filteredRows.incrementAndGet();
+
+                        return r;
+                    }, true);
+                }
+            };
         }
 
         /** */

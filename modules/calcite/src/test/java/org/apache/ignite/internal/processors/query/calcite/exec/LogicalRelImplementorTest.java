@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelCollation;
@@ -77,7 +76,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
     private RelOptCluster cluster;
 
     /** */
-    private ScanAwareTable tbl;
+    private TestTable tbl;
 
     /** */
     private BaseQueryContext qctx;
@@ -105,7 +104,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
 
         RelDataType rowType = b.build();
 
-        tbl = new ScanAwareTable(rowType);
+        tbl = new ScannableTestTable(rowType);
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
         publicSchema.addTable("TBL", tbl);
@@ -284,13 +283,13 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
         tbl.markIndexRebuildInProgress(true);
 
         Predicate<Node<Object[]>> isScanNoFilterNoProject =
-            node -> node instanceof ScanNode && !tbl.lastScanHasFilter && !tbl.lastScanHasProject;
+            node -> node instanceof ScanNode && !hasFilter(node) && !hasProject(node);
         Predicate<Node<Object[]>> isScanWithFilterNoProject =
-            node -> node instanceof ScanNode && tbl.lastScanHasFilter && !tbl.lastScanHasProject;
+            node -> node instanceof ScanNode && hasFilter(node) && !hasProject(node);
         Predicate<Node<Object[]>> isScanWithProjectNoFilter =
-            node -> node instanceof ScanNode && !tbl.lastScanHasFilter && tbl.lastScanHasProject;
+            node -> node instanceof ScanNode && !hasFilter(node) && hasProject(node);
         Predicate<Node<Object[]>> isScanWithFilterWithProject =
-            node -> node instanceof ScanNode && tbl.lastScanHasFilter && tbl.lastScanHasProject;
+            node -> node instanceof ScanNode && hasFilter(node) && hasProject(node);
 
         Predicate<Node<Object[]>> isSort = node -> node instanceof SortNode;
         Predicate<Node<Object[]>> isSpool = node -> node instanceof IndexSpoolNode;
@@ -418,28 +417,28 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class ScanAwareTable extends TestTable {
-        /** */
-        private volatile boolean lastScanHasFilter;
+    private boolean hasFilter(Node<?> node) {
+        return ((ScanNode<?>)node).filter() != null;
+    }
 
-        /** */
-        private volatile boolean lastScanHasProject;
+    /** */
+    private boolean hasProject(Node<?> node) {
+        return ((ScanNode<?>)node).rowTransformer() != null;
+    }
 
+    /** */
+    private static class ScannableTestTable extends TestTable {
         /** */
-        public ScanAwareTable(RelDataType rowType) {
-            super(rowType);
+        public ScannableTestTable(RelDataType type) {
+            super(type);
         }
 
         /** {@inheritDoc} */
         @Override public <Row> Iterable<Row> scan(
             ExecutionContext<Row> execCtx,
             ColocationGroup grp,
-            Predicate<Row> filter,
-            Function<Row, Row> transformer,
             ImmutableBitSet bitSet
         ) {
-            lastScanHasFilter = filter != null;
-            lastScanHasProject = transformer != null;
             return Collections.emptyList();
         }
     }

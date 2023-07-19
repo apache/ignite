@@ -49,8 +49,7 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
         int[] parts,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        super(ectx, desc, new FirstLastIndexWrapper(idx, first), idxFieldMapping, parts, null, null, null,
-            requiredColumns);
+        super(ectx, desc, new FirstLastIndexWrapper(idx, first), idxFieldMapping, parts, null, requiredColumns);
     }
 
     /** {@inheritDoc} */

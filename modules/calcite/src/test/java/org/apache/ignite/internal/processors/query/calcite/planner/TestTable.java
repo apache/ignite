@@ -25,8 +25,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.plan.RelOptCluster;
@@ -169,8 +167,7 @@ public class TestTable implements IgniteCacheTable {
     /** {@inheritDoc} */
     @Override public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
-        ColocationGroup grp, Predicate<Row> filter,
-        Function<Row, Row> transformer,
+        ColocationGroup grp,
         ImmutableBitSet bitSet
     ) {
         throw new AssertionError();
