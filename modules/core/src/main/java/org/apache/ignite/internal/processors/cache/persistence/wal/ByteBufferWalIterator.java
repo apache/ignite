@@ -108,8 +108,11 @@ public class ByteBufferWalIterator extends AbstractWalRecordsIteratorAdapter {
 
             lastReadPtr = new WALPointer(segIdx, 0, HEADER_RECORD_SIZE);
         }
-        else
+        else {
+            assert lastReadPtr != null;
+
             dataInput.buffer().position(position);
+        }
     }
 
     /** {@inheritDoc} */

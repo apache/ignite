@@ -59,7 +59,7 @@ public class CdcProcessor {
     private volatile boolean enabled;
 
     /** */
-    private volatile WALPointer lastWrittenPtr;
+    private WALPointer lastWrittenPtr;
 
     /** */
     public CdcProcessor(GridCacheSharedContext<?, ?> cctx, IgniteLogger log) throws IgniteCheckedException {
@@ -81,10 +81,7 @@ public class CdcProcessor {
         if (!enabled)
             return;
 
-        try {
-            // TODO: restore buffer position after iteration?
-            WALIterator walIt = new ByteBufferWalIterator(dataBuf, serializer, lastWrittenPtr);
-
+        try (WALIterator walIt = new ByteBufferWalIterator(dataBuf, serializer, lastWrittenPtr)) {
             while (walIt.hasNext()) {
                 MarshalledRecord rec = (MarshalledRecord)walIt.next().getValue();
 
@@ -99,6 +96,8 @@ public class CdcProcessor {
                     return;
                 }
             }
+
+            assert walIt.lastRead().isPresent();
 
             lastWrittenPtr = walIt.lastRead().get();
         }
