@@ -17,17 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.cdc;
 
-import java.nio.ByteBuffer;
+import java.util.Collection;
+import org.apache.ignite.cdc.CdcEvent;
 
 /** Mock for Realtime CDC buffer consumer. */
 public interface CdcBufferConsumer {
     /**
      * Consumes raw WAL data.
      *
-     * @param data Raw data to consume.
+     * @param cdcEvents CDC events to consume.
      * @return {@code True} if current offset in WAL should be commited.
      */
-    public boolean consume(ByteBuffer data);
+    public boolean consume(Collection<CdcEvent> cdcEvents);
 
     /** */
     public void close();

@@ -810,6 +810,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
                 ByteBuffer cdcBuf = buf.duplicate();
                 cdcBuf.position(bufPos);
                 cdcBuf.limit(buf.limit());
+                cdcBuf.order(buf.order());
 
                 cdcProc.collect(cdcBuf);
             }
