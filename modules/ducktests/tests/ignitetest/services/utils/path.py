@@ -204,6 +204,13 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
         return os.path.join(self.work_dir, "db")
 
     @property
+    def perf_stat_dir(self):
+        """
+        :return: path to performance statistics directory
+        """
+        return os.path.join(self.work_dir, "perf_stat")
+
+    @property
     def wal_dir(self):
         """
         :return: path to wal directory
