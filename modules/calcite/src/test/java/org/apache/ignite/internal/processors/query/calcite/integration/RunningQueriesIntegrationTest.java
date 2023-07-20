@@ -378,4 +378,49 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
 
         assertTrue(GridTestUtils.waitForCondition(() -> F.isEmpty(engine.runningQueries()), PLANNER_TIMEOUT * 2));
     }
+
+    /** */
+    @Test
+    public void testErrorOnRemoteFragment() throws Exception {
+        MetricRegistry mreg = client.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        mreg.reset();
+
+        CalciteQueryProcessor clientEngine = queryProcessor(client);
+        CalciteQueryProcessor srvEngine = queryProcessor(srv);
+
+        sql("CREATE TABLE t(id int, val varchar)");
+
+        IgniteCacheTable oldTbl = (IgniteCacheTable)srvEngine.schemaHolder().schema("PUBLIC").getTable("T");
+
+        CountDownLatch initLatch = new CountDownLatch(1);
+
+        IgniteCacheTable newTbl = new CacheTableImpl(srv.context(), oldTbl.descriptor()) {
+            @Override public <Row> Iterable<Row> scan(
+                ExecutionContext<Row> execCtx,
+                ColocationGroup grp,
+                Predicate<Row> filter,
+                Function<Row, Row> rowTransformer,
+                @Nullable ImmutableBitSet usedColumns
+            ) {
+                initLatch.countDown();
+
+                throw new IllegalStateException("Init error");
+            }
+        };
+
+        srvEngine.schemaHolder().schema("PUBLIC").add("T", newTbl);
+
+        IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> sql("SELECT * FROM t"));
+
+        initLatch.await(TIMEOUT_IN_MS, TimeUnit.MILLISECONDS);
+
+        assertTrue(GridTestUtils.waitForCondition(
+            () -> clientEngine.runningQueries().isEmpty() && srvEngine.runningQueries().isEmpty(),
+            TIMEOUT_IN_MS));
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(100), IllegalStateException.class, "Init error");
+
+        assertEquals(0, ((LongMetric)mreg.findMetric("canceled")).value());
+        assertEquals(1, ((LongMetric)mreg.findMetric("failed")).value());
+    }
 }
