@@ -35,10 +35,8 @@ enum State {
 }
 
 const IGNITE_2_0 = '2.0.0';
-const LAZY_QUERY_SINCE = [['2.1.4-p1', '2.2.0'], '2.2.1'];
-const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], ['2.5.1-p13', '2.6.0'], '2.7.0'];
+
 const COLLECT_BY_CACHE_GROUPS_SINCE = '2.7.0';
-const QUERY_PING_SINCE = [['2.5.6', '2.6.0'], '2.7.4'];
 
 const EVENT_REST = 'node:rest';
 const EVENT_VISOR = 'node:visor';
@@ -627,10 +625,8 @@ export default class AgentManager {
     }
 
     cacheNodes(cacheName: string) {
-        if (this.available(IGNITE_2_0))
-            return this.visorTask<AgentTypes.CacheNodesTaskResponse>('cacheNodesTaskX2', null, cacheName);
 
-        return this.visorTask<AgentTypes.CacheNodesTaskResponse>('cacheNodesTask', null, cacheName);
+        return this.visorTask<AgentTypes.CacheNodesTaskResponse>('cacheNodesTaskX2', null, [cacheName]);
     }
 
     /**
@@ -733,10 +729,9 @@ export default class AgentManager {
     /**
      * @param {String} taskId
      * @param {Array.<String>|String} nids
-     * @param {Array.<Object>} args
+     * @param {Object|Array} args
      */
-    visorTask<T>(taskId, nids, ...args): Promise<T> {
-        args = _.map(args, (arg) => maskNull(arg));
+    visorTask<T>(taskId, nids, args): Promise<T> {        
 
         nids = _.isArray(nids) ? nids.join(';') : maskNull(nids);
 
@@ -758,39 +753,17 @@ export default class AgentManager {
      */
     querySql({nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSize, lazy = false, collocated = false}) {
         if (this.available(IGNITE_2_0)) {
-            let args = [cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSize];
+            let args = {cacheName, qry:query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSize, lazy, collocated};
 
-            if (this.available(...COLLOCATED_QUERY_SINCE))
-                args = [...args, lazy, collocated];
-            else if (this.available(...LAZY_QUERY_SINCE))
-                args = [...args, lazy];
-
-            return this.visorTask<AgentTypes.QuerySqlX2Response>('querySqlX2', nid, ...args).then(({error, result}) => {
+            
+            return this.visorTask<AgentTypes.QuerySqlX2Response>('querySqlX2', nid, args).then(({error, result}) => {
                 if (_.isEmpty(error))
                     return result;
 
                 return Promise.reject(error);
             });
         }
-
-        cacheName = _.isEmpty(cacheName) ? null : cacheName;
-
-        let queryPromise;
-
-        if (enforceJoinOrder)
-            queryPromise = this.visorTask('querySqlV3', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, local, pageSize);
-        else if (nonCollocatedJoins)
-            queryPromise = this.visorTask('querySqlV2', nid, cacheName, query, nonCollocatedJoins, local, pageSize);
-        else
-            queryPromise = this.visorTask('querySql', nid, cacheName, query, local, pageSize);
-
-        return queryPromise
-            .then(({key, value}) => {
-                if (_.isEmpty(key))
-                    return value;
-
-                return Promise.reject(key);
-            });
+        
     }
 
     /**
@@ -800,7 +773,7 @@ export default class AgentManager {
      * @returns Query execution result.
      */
     queryFetchFistsPage(nid: string, queryId: string, pageSize: number) {
-        return this.visorTask<AgentTypes.QueryFetchFirstPageResult>('queryFetchFirstPage', nid, queryId, pageSize).then(({error, result}) => {
+        return this.visorTask<AgentTypes.QueryFetchFirstPageResult>('queryFetchFirstPage', nid, {qryId:queryId, pageSize}).then(({error, result}) => {
             if (_.isEmpty(error))
                 return result;
 
@@ -813,15 +786,7 @@ export default class AgentManager {
      * @param {String} queryId Query ID.
      * @returns {Promise.<VisorQueryPingResult>} Query execution result.
      */
-    queryPing(nid, queryId) {
-        if (this.available(...QUERY_PING_SINCE)) {
-            return this.visorTask('queryPing', nid, queryId, 1).then(({error, result}) => {
-                if (_.isEmpty(error))
-                    return {queryPingSupported: true};
-
-                return Promise.reject(error);
-            });
-        }
+    queryPing(nid, queryId) {   
 
         return Promise.resolve({queryPingSupported: false});
     }
@@ -832,11 +797,9 @@ export default class AgentManager {
      * @param {Number} pageSize
      * @returns {Promise.<VisorQueryResult>} Query execution result.
      */
-    queryNextPage(nid, queryId, pageSize) {
-        if (this.available(IGNITE_2_0))
-            return this.visorTask('queryFetchX2', nid, queryId, pageSize);
+    queryNextPage(nid, queryId, pageSize) {        
 
-        return this.visorTask('queryFetch', nid, queryId, pageSize);
+        return this.visorTask('queryFetch', nid, {qryId:queryId, pageSize});
     }
 
     /**
@@ -844,13 +807,9 @@ export default class AgentManager {
      * @param {Number} [queryId]
      * @returns {Promise<Void>}
      */
-    queryClose(nid, queryId) {
-        if (this.available(IGNITE_2_0)) {
-            return this.visorTask('queryCloseX2', nid, 'java.util.Map', 'java.util.UUID', 'java.util.Collection',
-                nid + '=' + queryId);
-        }
+    queryClose(nid, queryId) {        
 
-        return this.visorTask('queryClose', nid, nid, queryId);
+        return this.visorTask('queryClose', nid, {qryId:queryId});
     }
 
     /**
@@ -866,7 +825,7 @@ export default class AgentManager {
      */
     queryScan({nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize}) {
         if (this.available(IGNITE_2_0)) {
-            return this.visorTask('queryScanX2', nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize)
+            return this.visorTask('queryScanX2', nid, {cacheName, filter, regEx, caseSensitive, near, local, pageSize})
                 .then(({error, result}) => {
                     if (_.isEmpty(error))
                         return result;
@@ -874,17 +833,6 @@ export default class AgentManager {
                     return Promise.reject(error);
                 });
         }
-
-        /** Prefix for node local key for SCAN near queries. */
-        const SCAN_CACHE_WITH_FILTER = 'VISOR_SCAN_CACHE_WITH_FILTER';
-
-        /** Prefix for node local key for SCAN near queries. */
-        const SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE = 'VISOR_SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE';
-
-        const prefix = caseSensitive ? SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE : SCAN_CACHE_WITH_FILTER;
-        const query = `${prefix}${filter}`;
-
-        return this.querySql({nid, cacheName, query, nonCollocatedJoins: false, enforceJoinOrder: false, replicatedOnly: false, local, pageSize});
     }
 
     /**
@@ -895,9 +843,12 @@ export default class AgentManager {
     toggleClusterState() {
         const { cluster } = this.connectionSbj.getValue();
         const active = !cluster.active;
-
-        return this.visorTask('toggleClusterState', null, active)
-            .then(() => this.updateCluster({ ...cluster, active }));
+        if(active)
+            return this.visorTask('toggleClusterState', null, {state:'ACTIVE'})
+                .then(() => this.updateCluster({ ...cluster, active }));
+        else
+            return this.visorTask('toggleClusterState', null, {state:'INACTIVE'})
+                .then(() => this.updateCluster({ ...cluster, active }));
     }
 
     hasCredentials(clusterId) {

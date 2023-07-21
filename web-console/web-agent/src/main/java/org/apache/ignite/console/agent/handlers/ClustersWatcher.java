@@ -271,27 +271,17 @@ public class ClustersWatcher implements Closeable {
         if (v23)
             params.put("cmd", "currentState");
         else {
-            params.put("cmd", "exe");
-            params.put("name", "org.apache.ignite.internal.visor.compute.VisorGatewayTask");
-            params.put("p1", nid);
-            params.put("p2", "org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTask");
-            params.put("p3", "org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskArg");
-            params.put("p4", false);
-            params.put("p5", EVT_LAST_ORDER_KEY);
-            params.put("p6", EVT_THROTTLE_CNTR_KEY);
-
-            if (ver.compareTo(IGNITE_2_1) >= 0)
-                params.put("p7", false);
-            else {
-                params.put("p7", 10);
-                params.put("p8", false);
-            }
+            params.put("cmd", "top");           
+            params.put("id", nid);
+            params.put("attr", false);
+            params.put("mtr", false);
+            params.put("caches", false);
         }
 
         RestResult res = restCommand(clusterId,params);
 
         if (res.getStatus() == STATUS_SUCCESS)
-            return v23 ? Boolean.valueOf(res.getData()) : res.getData().contains("\"active\":true");
+            return v23 ? Boolean.valueOf(res.getData()) : res.getData().contains("\"nodeId\"");
 
         return false;
     }

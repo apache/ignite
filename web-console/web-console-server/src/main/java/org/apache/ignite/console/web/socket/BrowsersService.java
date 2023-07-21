@@ -287,6 +287,14 @@ public class BrowsersService extends AbstractSocketHandler {
     protected String igniteVisor(String shortName) {
         return VISOR_IGNITE + shortName;
     }
+    
+    /**
+     * @param shortName Class short name.
+     * @return Full class name.
+     */
+    protected String igniteCmd(String shortName) {
+        return shortName;
+    }
 
     /**
      * @param taskId Task ID.
@@ -300,64 +308,26 @@ public class BrowsersService extends AbstractSocketHandler {
     /**
      * Register Visor tasks.
      */
-    protected void registerVisorTasks() {
-        registerVisorTask(
-            "querySql",
-            igniteVisor("query.VisorQueryTask"),
-            igniteVisor("query.VisorQueryArg"));
+	protected void registerVisorTasks() {
 
-        registerVisorTask("querySqlV2",
-            igniteVisor("query.VisorQueryTask"),
-            igniteVisor("query.VisorQueryArgV2"));
+		registerVisorTask("querySqlX2", igniteCmd("qryfldexe"), Map.class.getName());
+		// scanf
+		registerVisorTask("queryScanX2", igniteCmd("qryscanexe"), Map.class.getName());
 
-        registerVisorTask("querySqlV3",
-            igniteVisor("query.VisorQueryTask"),
-            igniteVisor("query.VisorQueryArgV3"));
+		registerVisorTask("queryFetch", igniteCmd("qryfetch"), Map.class.getName());
 
-        registerVisorTask("querySqlX2",
-            igniteVisor("query.VisorQueryTask"),
-            igniteVisor("query.VisorQueryTaskArg"));
+		registerVisorTask("queryFetchFirstPage", igniteCmd("qryfetch"), Map.class.getName());
 
-        registerVisorTask("queryScanX2",
-            igniteVisor("query.VisorScanQueryTask"),
-            igniteVisor("query.VisorScanQueryTaskArg"));
+		registerVisorTask("queryClose", igniteCmd("qrycls"), Map.class.getName());
 
-        registerVisorTask("queryFetch",
-            igniteVisor("query.VisorQueryNextPageTask"),
-            IgniteBiTuple.class.getName(), String.class.getName(), Integer.class.getName());
+		registerVisorTask("toggleClusterState", igniteCmd("setstate"), Map.class.getName());
 
-        registerVisorTask("queryFetchX2",
-            igniteVisor("query.VisorQueryNextPageTask"),
-            igniteVisor("query.VisorQueryNextPageTaskArg"));
+		registerVisorTask("cacheNamesCollectorTask", igniteVisor("cache.VisorCacheNamesCollectorTask"),
+				Void.class.getName());
 
-        registerVisorTask("queryFetchFirstPage",
-            igniteVisor("query.VisorQueryFetchFirstPageTask"),
-            igniteVisor("query.VisorQueryNextPageTaskArg"));
-
-        registerVisorTask("queryClose",
-            igniteVisor("query.VisorQueryCleanupTask"),
-            Map.class.getName(), UUID.class.getName(), Set.class.getName());
-
-        registerVisorTask("queryCloseX2",
-            igniteVisor("query.VisorQueryCleanupTask"),
-            igniteVisor("query.VisorQueryCleanupTaskArg"));
-
-        registerVisorTask("toggleClusterState",
-            igniteVisor("misc.VisorChangeGridActiveStateTask"),
-            igniteVisor("misc.VisorChangeGridActiveStateTaskArg"));
-
-        registerVisorTask("cacheNamesCollectorTask",
-            igniteVisor("cache.VisorCacheNamesCollectorTask"),
-            Void.class.getName());
-
-        registerVisorTask("cacheNodesTask",
-            igniteVisor("cache.VisorCacheNodesTask"),
-            String.class.getName());
-
-        registerVisorTask("cacheNodesTaskX2",
-            igniteVisor("cache.VisorCacheNodesTask"),
-            igniteVisor("cache.VisorCacheNodesTaskArg"));
-    }
+		registerVisorTask("cacheNodesTaskX2", igniteVisor("cache.VisorCacheNodesTask"),
+				igniteVisor("cache.VisorCacheNodesTaskArg"));
+	}
 
     /**
      * Prepare task event for execution on agent.
@@ -378,27 +348,50 @@ public class BrowsersService extends AbstractSocketHandler {
 
         if (desc == null)
             throw new IllegalStateException(messages.getMessageWithArgs("err.unknown-task", taskId, payload));
+        
+        // not visor task
+        if(!desc.getTaskClass().startsWith(VISOR_IGNITE)) {
+        	
+        	JsonObject exeParams =  new JsonObject();
+        	exeParams.add("cmd", desc.getTaskClass());            
 
-        JsonObject exeParams =  new JsonObject()
-            .add("cmd", "exe")
-            .add("name", "org.apache.ignite.internal.visor.compute.VisorGatewayTask")
-            .add("p1", nids)
-            .add("p2", desc.getTaskClass());
+            JsonObject args = params.getJsonObject("args");
 
-        AtomicInteger idx = new AtomicInteger(3);
+            if (!F.isEmpty(args))
+                args.entrySet().forEach(arg -> exeParams.put(arg.getKey(),arg.getValue()));
 
-        Arrays.stream(desc.getArgumentsClasses()).forEach(arg ->  exeParams.put("p" + idx.getAndIncrement(), arg));
+            Stream.of("user", "password", "sessionToken").forEach(p -> exeParams.add(p, params.get(p)));
 
-        JsonArray args = params.getJsonArray("args");
+            payload.put("params", exeParams);
 
-        if (!F.isEmpty(args))
-            args.forEach(arg -> exeParams.put("p" + idx.getAndIncrement(), arg));
+            return payload;
+        	
+        }
+        else {
+        	JsonObject exeParams =  new JsonObject()
+                    .add("cmd", "exe")
+                    .add("name", "org.apache.ignite.internal.visor.compute.VisorGatewayTask")
+                    .add("p1", nids)
+                    .add("p2", desc.getTaskClass());
 
-        Stream.of("user", "password", "sessionToken").forEach(p -> exeParams.add(p, params.get(p)));
+            AtomicInteger idx = new AtomicInteger(3);
 
-        payload.put("params", exeParams);
+            Arrays.stream(desc.getArgumentsClasses()).forEach(arg ->  exeParams.put("p" + idx.getAndIncrement(), arg));
 
-        return payload;
+            JsonArray args = params.getJsonArray("args");
+
+            if (!F.isEmpty(args))
+                args.forEach(arg -> exeParams.put("p" + idx.getAndIncrement(), arg));
+
+            Stream.of("user", "password", "sessionToken").forEach(p -> exeParams.add(p, params.get(p)));
+
+            payload.put("params", exeParams);
+
+            return payload;
+        	
+        }
+
+        
     }
 
     /**
