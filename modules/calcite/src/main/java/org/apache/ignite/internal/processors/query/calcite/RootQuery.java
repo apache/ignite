@@ -378,7 +378,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
     }
 
     /** */
-    public void onError(Throwable error) {
+    @Override public void onError(Throwable error) {
         root.onError(error);
 
         tryClose(error);

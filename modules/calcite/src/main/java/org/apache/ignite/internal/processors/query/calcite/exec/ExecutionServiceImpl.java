@@ -805,19 +805,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Error occurred during send error message: " + X.getFullStackTrace(e));
-
-                IgniteException wrpEx = new IgniteException("Error occurred during send error message", e);
-
-                e.addSuppressed(ex);
-
-                Query<Row> qry = (Query<Row>)qryReg.query(msg.queryId());
-
-                qry.cancel();
-
-                throw wrpEx;
             }
-
-            throw ex;
+            finally {
+                qryReg.query(msg.queryId()).onError(ex);
+            }
         }
     }
 
@@ -853,7 +844,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 );
             }
 
-            ((RootQuery<Row>)qry).onError(e);
+            qry.onError(e);
         }
     }
 
