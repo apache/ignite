@@ -177,7 +177,7 @@ class ControlUtility:
         """
         data = self.__run("--cache idle_verify --dump", node=node)
 
-        assert ('VisorIdleVerifyDumpTask successfully' in data), data
+        assert ('IdleVerifyDumpTask successfully' in data), data
 
         return re.search(r'/.*.txt', data).group(0)
 

@@ -142,8 +142,12 @@ public class Fragment {
         try {
             FragmentMapping mapping = IgniteMdFragmentMapping._fragmentMapping(root, mq, ctx);
 
-            if (rootFragment())
-                mapping = FragmentMapping.create(ctx.localNodeId()).colocate(mapping);
+            if (rootFragment()) {
+                if (ctx.isLocal())
+                    mapping = mapping.local(ctx.localNodeId());
+                else
+                    mapping = FragmentMapping.create(ctx.localNodeId()).colocate(mapping);
+            }
 
             if (single() && mapping.nodeIds().size() > 1) {
                 // this is possible when the fragment contains scan of a replicated cache, which brings

@@ -28,10 +28,11 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The result of execution snapshot partitions verify task which besides calculating partition hashes of
@@ -45,7 +46,7 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
     private Map<ClusterNode, List<SnapshotMetadata>> metas;
 
     /** Result of cluster nodes partitions comparison. */
-    private IdleVerifyResultV2 idleRes;
+    @Nullable private IdleVerifyResultV2 idleRes;
 
     /** Default constructor. */
     public SnapshotPartitionsVerifyTaskResult() {
@@ -58,7 +59,7 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
      */
     public SnapshotPartitionsVerifyTaskResult(
         Map<ClusterNode, List<SnapshotMetadata>> metas,
-        IdleVerifyResultV2 idleRes
+        @Nullable IdleVerifyResultV2 idleRes
     ) {
         this.metas = metas;
         this.idleRes = idleRes;
@@ -77,10 +78,12 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
      * @param printer Consumer for handle formatted result.
      */
     public void print(Consumer<String> printer) {
-        idleRes.print(printer, true);
+        if (idleRes != null) {
+            idleRes.print(printer, true);
 
-        if (!F.isEmpty(idleVerifyResult().exceptions()))
-            return;
+            if (!F.isEmpty(idleRes.exceptions()))
+                return;
+        }
 
         Collection<String> wrns = F.flatCollections(F.viewReadOnly(
             F.flatCollections(metas.values()).stream().distinct().collect(Collectors.toList()),

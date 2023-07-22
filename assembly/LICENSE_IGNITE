@@ -212,12 +212,6 @@ licenses.
 
 
 ==============================================================================
-For SnapTree:
-==============================================================================
-This product bundles SnapTree, which is available under the following:
-"3-clause BSD" license. For details, see https://github.com/nbronson/snaptree/blob/master/LICENSE.
-
-==============================================================================
 For JSR 166 classes in "org.jsr166" package
 ==============================================================================
 This product bundles JSR-166 classes which are donated to public domain.

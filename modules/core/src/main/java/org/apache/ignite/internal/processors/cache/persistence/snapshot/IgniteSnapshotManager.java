@@ -100,6 +100,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.DistributedConfigurationUtils;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.communication.TransmissionCancelledException;
@@ -148,7 +149,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
@@ -253,7 +253,7 @@ import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VI
  * These major actions available:
  * <ul>
  *     <li>Create snapshot of the whole cluster cache groups by triggering PME to achieve consistency.</li>
- *     <li>Create incremental snapshot of transactional cache groups by using Consistent Cut algorithm.</li>
+ *     <li>Create incremental snapshot using lightweight, non-blocking Consistent Cut algorithm.</li>
  * </ul>
  */
 public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
@@ -318,12 +318,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Default value of {@link IgniteSystemProperties#IGNITE_SNAPSHOT_SEQUENTIAL_WRITE}. */
     public static final boolean DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE = true;
 
+    /** Default value of check flag. */
+    public static final boolean DFLT_CHECK_ON_RESTORE = false;
+
     /** @deprecated Use #SNP_RUNNING_DIR_KEY instead. */
     @Deprecated
     private static final String SNP_RUNNING_KEY = "snapshot-running";
 
     /** Snapshot operation finish log message. */
     private static final String SNAPSHOT_FINISHED_MSG = "Cluster-wide snapshot operation finished successfully: ";
+
+    /** Snapshot operation finish with warnings log message. */
+    public static final String SNAPSHOT_FINISHED_WRN_MSG = "Cluster-wide snapshot operation finished with warnings: ";
 
     /** Snapshot operation fail log message. */
     private static final String SNAPSHOT_FAILED_MSG = "Cluster-wide snapshot operation failed: ";
@@ -895,11 +901,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
             return new GridFinishedFuture<>();
 
-        if (!CU.isPersistenceEnabled(cctx.gridConfig())) {
-            throw new IgniteException("Create snapshot request has been rejected. Snapshots on an in-memory " +
-                "clusters are not allowed.");
-        }
-
         Set<UUID> leftNodes = new HashSet<>(req.nodes());
         leftNodes.removeAll(F.viewReadOnly(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
             F.node2id()));
@@ -1119,7 +1120,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (cctx.cache().cacheGroup(grpId) == null)
                 continue;
 
-            parts.put(grpId, null);
+            CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpId);
+
+            AffinityTopologyVersion topVer = grpCtx.affinity().lastVersion();
+
+            if (req.onlyPrimary()) {
+                Set<Integer> include = new HashSet<>(grpCtx.affinity().primaryPartitions(cctx.localNodeId(), topVer));
+
+                include.remove(INDEX_PARTITION);
+
+                if (log.isInfoEnabled())
+                    log.info("Snapshot only primary partitions " +
+                        "[grpId=" + grpId + ", grpName=" + grpCtx.cacheOrGroupName() + ", parts=" + include + ']');
+
+                parts.put(grpId, include);
+            }
+            else
+                parts.put(grpId, null);
         }
 
         IgniteInternalFuture<?> task0;
@@ -1165,11 +1182,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     blts,
                     res.parts(),
                     res.snapshotPointer(),
-                    cctx.gridConfig().getEncryptionSpi().masterKeyDigest()
+                    cctx.gridConfig().getEncryptionSpi().masterKeyDigest(),
+                    req.onlyPrimary()
                 );
 
                 SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir,
-                    req.streamerWarning());
+                    req.streamerWarning(), true);
 
                 req.meta(meta);
 
@@ -1463,17 +1481,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (clusterSnpFut != null) {
                 if (endFail.isEmpty() && snpReq.error() == null) {
                     if (!F.isEmpty(snpReq.warnings())) {
+                        String wrnsLst = U.nl() + "\t- " + String.join(U.nl() + "\t- ", snpReq.warnings());
+
                         SnapshotWarningException wrn = new SnapshotWarningException("Snapshot task '" +
-                            snpReq.snapshotName() + "' completed with the warnings:" + U.nl() + "\t- " +
-                            String.join(U.nl() + "\t- ", snpReq.warnings()));
+                            snpReq.snapshotName() + "' completed with the warnings:" + wrnsLst);
 
                         clusterSnpFut.onDone(wrn);
+
+                        log.warning(SNAPSHOT_FINISHED_WRN_MSG + snpReq + ". Warnings:" + wrnsLst);
                     }
-                    else
+                    else {
                         clusterSnpFut.onDone();
 
-                    if (log.isInfoEnabled())
-                        log.info(SNAPSHOT_FINISHED_MSG + snpReq);
+                        if (log.isInfoEnabled())
+                            log.info(SNAPSHOT_FINISHED_MSG + snpReq);
+                    }
                 }
                 else if (snpReq.error() == null) {
                     clusterSnpFut.onDone(new IgniteCheckedException("Snapshot creation has been finished with an error. " +
@@ -1772,7 +1794,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
-        return checkSnapshot(name, snpPath, null, false, incIdx).chain(f -> {
+        return checkSnapshot(name, snpPath, null, false, incIdx, true).chain(f -> {
             try {
                 return f.get();
             }
@@ -1793,6 +1815,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param includeCustomHandlers {@code True} to invoke all user-defined {@link SnapshotHandlerType#RESTORE}
      *                              handlers, otherwise only system consistency check will be performed.
      * @param incIdx Incremental snapshot index.
+     * @param check If {@code true} check snapshot integrity.
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
      *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
      */
@@ -1801,7 +1824,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Nullable String snpPath,
         @Nullable Collection<String> grps,
         boolean includeCustomHandlers,
-        int incIdx
+        int incIdx,
+        boolean check
     ) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
@@ -1896,12 +1920,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     return;
                 }
 
-                Class<? extends AbstractSnapshotVerificationTask> cls =
-                    includeCustomHandlers ? SnapshotHandlerRestoreTask.class : SnapshotPartitionsVerifyTask.class;
+                Class<? extends AbstractSnapshotVerificationTask> cls;
+
+                if (includeCustomHandlers)
+                    cls = SnapshotHandlerRestoreTask.class;
+                else
+                    cls = incIdx > 0 ? IncrementalSnapshotVerificationTask.class : SnapshotPartitionsVerifyTask.class;
 
                 kctx0.task().execute(
                         cls,
-                        new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath),
+                        new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath, incIdx, check),
                         options(new ArrayList<>(metas.keySet()))
                     ).listen(f1 -> {
                         if (f1.error() == null)
@@ -2078,12 +2106,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createSnapshot(String name) {
-        return createSnapshot(name, null, false);
+        return createSnapshot(name, null, false, false);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createIncrementalSnapshot(String name) {
-        return createSnapshot(name, null, true);
+        return createSnapshot(name, null, true, false);
     }
 
     /**
@@ -2091,11 +2119,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      *
      * @param name Snapshot unique name which satisfies the following name pattern [a-zA-Z0-9_].
      * @param snpPath Snapshot directory path.
+     * @param incremental Incremental snapshot flag.
+     * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
      * @return Future which will be completed when a process ends.
      */
-    public IgniteFutureImpl<Void> createSnapshot(String name, @Nullable String snpPath, boolean incremental) {
+    public IgniteFutureImpl<Void> createSnapshot(
+        String name,
+        @Nullable String snpPath,
+        boolean incremental,
+        boolean onlyPrimary
+    ) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
+        A.ensure(!(incremental && onlyPrimary), "Only primary not supported for incremental snapshots");
 
         try {
             cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
@@ -2120,9 +2156,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return new IgniteSnapshotFutureImpl(cctx.kernalContext().closure()
                     .callAsync(
                         BALANCE,
-                        new CreateSnapshotCallable(name, incremental),
+                        new CreateSnapshotCallable(name, incremental, onlyPrimary),
                         options(Collections.singletonList(crd)).withFailoverDisabled()
                     ));
+            }
+
+            if (!CU.isPersistenceEnabled(cctx.gridConfig())) {
+                throw new IgniteException("Create snapshot request has been rejected. " +
+                    "Snapshots on an in-memory clusters are not allowed.");
             }
 
             ClusterSnapshotFuture snpFut0;
@@ -2187,8 +2228,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             snpFut0.listen(f -> {
                 if (f.error() == null)
                     recordSnapshotEvent(name, SNAPSHOT_FINISHED_MSG + grps, EVT_CLUSTER_SNAPSHOT_FINISHED);
-                else
-                    recordSnapshotEvent(name, SNAPSHOT_FAILED_MSG + f.error().getMessage(), EVT_CLUSTER_SNAPSHOT_FAILED);
+                else {
+                    String errMsgPref = f.error() instanceof SnapshotWarningException ? SNAPSHOT_FINISHED_WRN_MSG
+                        : SNAPSHOT_FAILED_MSG;
+
+                    recordSnapshotEvent(name, errMsgPref + f.error().getMessage(), EVT_CLUSTER_SNAPSHOT_FAILED);
+                }
             });
 
             Set<UUID> bltNodeIds =
@@ -2202,7 +2247,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 grps,
                 bltNodeIds,
                 incremental,
-                incIdx
+                incIdx,
+                onlyPrimary
             ));
 
             String msg =
@@ -2262,7 +2308,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> restoreSnapshot(String name, @Nullable Collection<String> grpNames) {
-        return restoreSnapshot(name, null, grpNames, 0);
+        return restoreSnapshot(name, null, grpNames, 0, DFLT_CHECK_ON_RESTORE);
     }
 
     /** {@inheritDoc} */
@@ -2273,7 +2319,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     ) {
         A.ensure(incIdx > 0, "Incremental snapshot index must be greater than 0.");
 
-        return restoreSnapshot(name, null, grpNames, incIdx);
+        return restoreSnapshot(name, null, grpNames, incIdx, DFLT_CHECK_ON_RESTORE);
     }
 
     /**
@@ -2285,7 +2331,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future which will be completed when restore operation finished.
      */
     public IgniteFutureImpl<Void> restoreSnapshot(String name, @Nullable String snpPath, @Nullable Collection<String> grpNames) {
-        return restoreSnapshot(name, snpPath, grpNames, 0);
+        return restoreSnapshot(name, snpPath, grpNames, 0, DFLT_CHECK_ON_RESTORE);
     }
 
     /**
@@ -2295,13 +2341,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpPath Snapshot directory path.
      * @param grpNames Cache groups to be restored or {@code null} to restore all cache groups from the snapshot.
      * @param incIdx Index of incremental snapshot.
+     * @param check If {@code true} check snapshot before restore.
      * @return Future which will be completed when restore operation finished.
      */
     public IgniteFutureImpl<Void> restoreSnapshot(
         String name,
         @Nullable String snpPath,
         @Nullable Collection<String> grpNames,
-        int incIdx
+        int incIdx,
+        boolean check
     ) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
@@ -2309,7 +2357,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
-        return restoreCacheGrpProc.start(name, snpPath, grpNames, incIdx);
+        return restoreCacheGrpProc.start(name, snpPath, grpNames, incIdx, check);
     }
 
     /** {@inheritDoc} */
@@ -2496,7 +2544,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             false, false, false, false);
 
         GridCacheSharedContext<?, ?> sctx = new GridCacheSharedContext<>(ctx, null, null, null,
-            null, null, null, null, null, null,
+            null, null, null, null, null,
             null, null, null, null, null,
             null, null, null, null, null, null, null);
 
@@ -3533,8 +3581,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (isDone())
                 return;
 
-            if (stopChecker.getAsBoolean())
-                throw new TransmissionCancelledException("Future cancelled prior to the all requested partitions processed.");
+            if (stopChecker.getAsBoolean()) {
+                TransmissionCancelledException err =
+                    new TransmissionCancelledException("Future cancelled prior to the all requested partitions processed.");
+
+                acceptException(err);
+
+                throw err;
+            }
 
             try {
                 partHnd.accept(part, null);
@@ -4470,6 +4524,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Incremental flag. */
         private final boolean incremental;
 
+        /** If {@code true} snapshot only primary copies of partitions. */
+        private final boolean onlyPrimary;
+
         /** Auto-injected grid instance. */
         @IgniteInstanceResource
         private transient IgniteEx ignite;
@@ -4477,9 +4534,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /**
          * @param snpName Snapshot name.
          */
-        public CreateSnapshotCallable(String snpName, boolean incremental) {
+        public CreateSnapshotCallable(String snpName, boolean incremental, boolean onlyPrimary) {
             this.snpName = snpName;
             this.incremental = incremental;
+            this.onlyPrimary = onlyPrimary;
         }
 
         /** {@inheritDoc} */
@@ -4487,7 +4545,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (incremental)
                 ignite.snapshot().createIncrementalSnapshot(snpName).get();
             else
-                ignite.snapshot().createSnapshot(snpName).get();
+                ignite.context().cache().context().snapshotMgr().createSnapshot(snpName, null, false, onlyPrimary).get();
 
             return null;
         }

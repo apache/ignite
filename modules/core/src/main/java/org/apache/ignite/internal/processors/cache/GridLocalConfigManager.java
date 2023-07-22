@@ -38,14 +38,19 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -65,10 +70,13 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_SUFFIX;
+import static org.apache.ignite.internal.processors.query.QueryUtils.normalizeObjectName;
+import static org.apache.ignite.internal.processors.query.QueryUtils.normalizeSchemaName;
 
 /**
  * Responsible for restoring local cache configurations (both from static configuration and persistence).
@@ -220,6 +228,38 @@ public class GridLocalConfigManager {
             throw new IgniteCheckedException("An error occurred during cache configuration loading from file [file=" +
                 conf.getAbsolutePath() + "]", e);
         }
+    }
+
+    /**
+     * @param dbDir Root directory for all cache datas.
+     * @param marshaller Marshaller.
+     * @param cfg Ignite configuration.
+     * @return Collection of cache data files and actual cache data.
+     */
+    public static Map<File, StoredCacheData> readCachesData(
+        File dbDir,
+        @Nullable Marshaller marshaller,
+        @Nullable IgniteConfiguration cfg
+    ) {
+        File[] caches = dbDir.listFiles();
+
+        if (caches == null)
+            return Collections.emptyMap();
+
+        return Arrays.stream(caches)
+            .filter(f -> f.isDirectory() &&
+                (f.getName().startsWith(CACHE_DIR_PREFIX) || f.getName().startsWith(CACHE_GRP_DIR_PREFIX)) &&
+                !f.getName().equals(CACHE_DIR_PREFIX + UTILITY_CACHE_NAME))
+            .filter(File::exists)
+            .flatMap(cacheDir -> Arrays.stream(FilePageStoreManager.cacheDataFiles(cacheDir)))
+            .collect(Collectors.toMap(f -> f, f -> {
+                try {
+                    return readCacheData(f, marshaller, cfg);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }));
     }
 
     /**
@@ -649,6 +689,16 @@ public class GridLocalConfigManager {
 
         CU.validateCacheName(cacheName);
 
+        Collection<CacheConfiguration<?, ?>> ccfgs = new ArrayList<>(caches.size());
+
+        for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : caches.values())
+            ccfgs.add(cacheInfo.cacheData().config());
+
+        String err = validateIncomingConfiguration(ccfgs, cfg);
+
+        if (err != null)
+            throw new IgniteException(err);
+
         cacheProcessor.cloneCheckSerializable(cfg);
 
         CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
@@ -682,6 +732,63 @@ public class GridLocalConfigManager {
 
             addStoredCache(caches, cacheData, cacheName, cacheType, false, true);
         }
+    }
+
+    /**
+     * Validates already processed cache configuration instead a newly defined.
+     *
+     * @param cacheConfigs Already processed caches.
+     * @param cfg Currently processed cache config.
+     * @return Error message, if supplied configuration is incorrect.
+     * @throws IgniteException If misconfigured.
+     */
+    @Nullable public static String validateIncomingConfiguration(
+        Collection<CacheConfiguration<?, ?>> cacheConfigs,
+        CacheConfiguration<?, ?> cfg
+    ) {
+        Map<String, String> idxNamesPerCache = new HashMap<>();
+
+        String schemaName = normalizeSchemaName(cfg.getName(), cfg.getSqlSchema());
+
+        for (CacheConfiguration<?, ?> conf0 : cacheConfigs) {
+            Collection<QueryEntity> entrs = conf0.getQueryEntities();
+            String cacheName = conf0.getName();
+            String cacheSchemaName = normalizeSchemaName(conf0.getName(), conf0.getSqlSchema());
+
+            if (!Objects.equals(cacheSchemaName, schemaName) || CU.isSystemCache(cacheName) ||
+                (Objects.equals(cacheSchemaName, schemaName) && Objects.equals(cfg.getName(), cacheName)))
+                continue;
+
+            for (QueryEntity ent : entrs) {
+                Collection<QueryIndex> idxs = ent.getIndexes();
+
+                for (QueryIndex idx : idxs)
+                    idxNamesPerCache.put(idx.getName(), cacheName);
+            }
+        }
+
+        if (idxNamesPerCache.isEmpty())
+            return null;
+
+        Collection<QueryEntity> entrs = cfg.getQueryEntities();
+
+        for (QueryEntity ent : entrs) {
+            Collection<QueryIndex> idxs = ent.getIndexes();
+
+            for (QueryIndex idx : idxs) {
+                String normalizedIdxName = normalizeObjectName(idx.getName(), false);
+
+                String cacheName = idxNamesPerCache.get(normalizedIdxName);
+
+                if (cacheName != null) {
+                    return "Duplicate index name for [cache=" + cfg.getName() +
+                        ", idxName=" + idx.getName() + "], an equal index name is already configured for [cache=" +
+                        cacheName + ']';
+                }
+            }
+        }
+
+        return null;
     }
 
     /**

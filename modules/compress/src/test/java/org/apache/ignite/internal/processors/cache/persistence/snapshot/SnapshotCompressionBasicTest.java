@@ -23,11 +23,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -47,9 +49,9 @@ import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -82,7 +84,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     protected static final String SNAPSHOT_WITH_HOLES = "testSnapshotWithHoles";
 
     /** */
-    protected static final long TIMEOUT = 30_000;
+    protected static final long TIMEOUT = 120_000;
 
     /** */
     protected static final Map<String, String> CACHES = new HashMap<>();
@@ -106,10 +108,15 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
         COMPRESSED_CACHES.add("cache3");
     }
 
-    /** */
-    @Parameterized.Parameters(name = "Encryption={0}")
-    public static Collection<Boolean> encryptionParams() {
-        return Collections.singletonList(false);
+    /** Parameters. */
+    @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}")
+    public static Collection<Object[]> params() {
+        List<Object[]> res = new ArrayList<>();
+
+        for (boolean onlyPrimary: new boolean[] {true, false})
+            res.add(new Object[] { false, onlyPrimary});
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -322,7 +329,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
         G.allGrids().forEach(i -> failCompressionProcessor(i, SNAPSHOT_WITHOUT_HOLES));
 
         for (String snpName : Arrays.asList(SNAPSHOT_WITH_HOLES, SNAPSHOT_WITHOUT_HOLES)) {
-            ignite.snapshot().createSnapshot(snpName).get(TIMEOUT);
+            snp(ignite).createSnapshot(snpName, null, false, onlyPrimary).get(TIMEOUT);
 
             IdleVerifyResultV2 res = ignite.context().cache().context().snapshotMgr().checkSnapshot(snpName, null)
                 .get().idleVerifyResult();

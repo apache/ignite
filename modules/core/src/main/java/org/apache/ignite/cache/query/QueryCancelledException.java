@@ -35,4 +35,11 @@ public class QueryCancelledException extends IgniteCheckedException {
     public QueryCancelledException() {
         super(ERR_MSG);
     }
+
+    /**
+     * @param msg Error message.
+     */
+    public QueryCancelledException(String msg) {
+        super(msg);
+    }
 }

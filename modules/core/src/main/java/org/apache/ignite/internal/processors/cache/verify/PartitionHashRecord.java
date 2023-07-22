@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.cache.verify;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 

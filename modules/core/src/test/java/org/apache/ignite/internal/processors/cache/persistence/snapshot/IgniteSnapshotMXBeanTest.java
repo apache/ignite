@@ -134,7 +134,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
         IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME, null, TIMEOUT);
 
         try (IgniteDataStreamer<Integer, Object> ds = ignite.dataStreamer(dfltCacheCfg.getName())) {
             for (int i = CACHE_KEYS_RANGE; i < 2 * CACHE_KEYS_RANGE; i++)
@@ -225,7 +225,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
         spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 
-        IgniteFuture<Void> fut = srv.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> fut = snp(srv).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         spi.waitForBlocked();
 
@@ -234,6 +234,8 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         spi.stopBlock();
 
         fut.get(getTestTimeout());
+
+        checkSnapshot(SNAPSHOT_NAME, null);
 
         checkSnapshotStatus(false, false, false, null);
 
@@ -258,6 +260,8 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         // Restore full snapshot.
         srv.destroyCache(DEFAULT_CACHE_NAME);
 
+        awaitPartitionMapExchange();
+
         spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 
         fut = srv.snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList(DEFAULT_CACHE_NAME));
@@ -276,6 +280,8 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         // TODO: remove condition after resolving IGNITE-17819.
         if (!encryption) {
             srv.destroyCache(DEFAULT_CACHE_NAME);
+
+            awaitPartitionMapExchange();
 
             spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 

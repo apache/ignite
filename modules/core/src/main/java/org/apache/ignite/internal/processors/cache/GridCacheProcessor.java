@@ -125,7 +125,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -1083,8 +1082,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             ctx.kernalContext().continuous().onCacheStop(ctx);
-
-            ctx.kernalContext().cache().context().snapshot().onCacheStop(ctx, callDestroy);
 
             ctx.kernalContext().coordinators().onCacheStop(ctx);
 
@@ -2074,6 +2071,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheContext.finishRecovery(cacheStartVer, updatedDescriptor);
 
+        if (isNearEnabled(cacheContext)) {
+            GridDhtCacheAdapter dht = cacheContext.near().dht();
+
+            dht.context().finishRecovery(cacheStartVer, updatedDescriptor);
+        }
+
         if (cacheContext.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT && groupContext.affinityNode())
             sharedCtx.coordinators().ensureStarted();
 
@@ -2771,9 +2774,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     }
 
                     for (ExchangeActions.CacheActionData action : cachesToStopByGrp.getValue()) {
+                        // Rollback tx started before gateway blocked to avoid deadlock with gateway stop.
                         context().tm().rollbackTransactionsForStoppingCache(action.descriptor().cacheId());
 
                         stopGateway(action.request());
+
+                        // Rollback tx started after gateway blocked but not stopped.
+                        context().tm().rollbackTransactionsForStoppingCache(action.descriptor().cacheId());
 
                         String cacheName = action.request().cacheName();
 
@@ -2786,6 +2793,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     return null;
                 }
             );
+
+            grpsToStop.forEach(g -> g.get1().prepareToStop());
 
             if (!exchActions.cacheStopRequests().isEmpty())
                 removeOffheapListenerAfterCheckpoint(grpsToStop);
@@ -3059,11 +3068,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (snapshotMgr == null)
             snapshotMgr = new IgniteSnapshotManager(ctx);
 
-        IgniteCacheSnapshotManager snpMgr = ctx.plugins().createComponent(IgniteCacheSnapshotManager.class);
-
-        if (snpMgr == null)
-            snpMgr = new IgniteCacheSnapshotManager();
-
         CacheObjectTransformerManager transMgr = ctx.plugins().createComponent(CacheObjectTransformerManager.class);
 
         GridCacheIoManager ioMgr = new GridCacheIoManager();
@@ -3089,7 +3093,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             walStateMgr,
             dbMgr,
             snapshotMgr,
-            snpMgr,
             depMgr,
             exchMgr,
             topMgr,

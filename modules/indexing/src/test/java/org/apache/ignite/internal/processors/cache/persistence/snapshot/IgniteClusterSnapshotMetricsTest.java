@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
 import javax.management.MBeanException;
@@ -186,16 +187,21 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
         String failingFilePath = Paths.get(FilePageStoreManager.cacheDirName(dfltCacheCfg),
-            PART_FILE_PREFIX + (dfltCacheCfg.getAffinity().partitions() / 2) + FILE_SUFFIX).toString();
+            PART_FILE_PREFIX + primaries[0] + FILE_SUFFIX).toString();
 
         FileIOFactory ioFactory = new RandomAccessFileIOFactory();
         String testErrMsg = "Test exception";
 
+        AtomicBoolean failFlag = new AtomicBoolean();
+
         ignite.context().cache().context().snapshotMgr().ioFactory((file, modes) -> {
             FileIO delegate = ioFactory.create(file, modes);
 
-            if (file.getPath().endsWith(failingFilePath))
+            if (file.getPath().endsWith(failingFilePath)) {
+                failFlag.set(true);
+
                 throw new RuntimeException(testErrMsg);
+            }
 
             return delegate;
         });
@@ -221,6 +227,47 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
             assertTrue(nodeNameMsg, startTime > 0);
             assertTrue(nodeNameMsg, endTime >= startTime);
             assertTrue(nodeNameMsg, ((String)mReg.getAttribute("error")).contains(testErrMsg));
+        }
+
+        assertTrue(failFlag.get());
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testUnableToRestoreSnapshotError() throws Exception {
+        Ignite ignite = startGridsWithCache(DEDICATED_CNT, CACHE_KEYS_RANGE, key -> key, dfltCacheCfg);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        checkMetricsDefaults();
+
+        try {
+            ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get();
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+
+        String errMsg = "Unable to restore cache group - directory is not empty. Cache group should be destroyed " +
+            "manually before perform restore operation";
+
+        for (Ignite ig : G.allGrids()) {
+            DynamicMBean mReg = metricRegistry(ig.name(), null, SNAPSHOT_RESTORE_METRICS);
+
+            assertTrue("Wrong 'endTime' metric on " + ig.name(),
+                GridTestUtils.waitForCondition(() -> getNumMetric("endTime", mReg) > 0, TIMEOUT));
+
+            assertEquals("Wrong 'totalPartitions' metric on" + ig.name(), -1,
+                getNumMetric("totalPartitions", mReg));
+
+            assertEquals("Wrong 'processedPartitions' metric on " + ig.name(), 0,
+                getNumMetric("processedPartitions", mReg));
+
+            assertEquals("Wrong 'snapshotName' metric on " + ig.name(), SNAPSHOT_NAME,
+                mReg.getAttribute("snapshotName"));
+
+            assertTrue("Wrong 'error' metric on " + ig.name(),
+                mReg.getAttribute("error").toString().contains(errMsg));
         }
     }
 

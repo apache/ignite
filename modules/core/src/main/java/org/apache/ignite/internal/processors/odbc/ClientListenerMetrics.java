@@ -16,12 +16,12 @@
  */
 package org.apache.ignite.internal.processors.odbc;
 
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CLI_TYPES;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.ODBC_CLIENT;
@@ -43,6 +43,18 @@ public class ClientListenerMetrics {
     /** Number of successfully established sessions. */
     public static final String METRIC_ACEPTED = "AcceptedSessions";
 
+    /** */
+    public static final String AFF_KEY_HITS = "AffinityKeyRequestsHits";
+
+    /** */
+    public static final String AFF_KEY_MISSES = "AffinityKeyRequestsMisses";
+
+    /** */
+    public static final String AFF_QRY_HITS = "AffinityQueryRequestsHits";
+
+    /** */
+    public static final String AFF_QRY_MISSES = "AffinityQueryRequestsMisses";
+
     /** Rejected by timeout. */
     private final IntMetricImpl rejectedTimeout;
 
@@ -55,12 +67,22 @@ public class ClientListenerMetrics {
     /** Connections accepted. */
     private final IntMetricImpl[] accepted;
 
-    /**
-     * @param ctx Kernal context.
-     */
-    public ClientListenerMetrics(GridKernalContext ctx) {
-        MetricRegistry mreg = ctx.metric().registry(CLIENT_CONNECTOR_METRICS);
+    /** */
+    private final LongAdderMetric affKeyHits;
 
+    /** */
+    private final LongAdderMetric affKeyMisses;
+
+    /** */
+    private final AtomicLongMetric affQryHits;
+
+    /** */
+    private final AtomicLongMetric affQryMisses;
+
+    /**
+     * @param mreg Metrics registry.
+     */
+    public ClientListenerMetrics(MetricRegistry mreg) {
         rejectedTimeout = mreg.intMetric(METRIC_REJECTED_TIMEOUT,
                 "TCP sessions count that were rejected due to handshake timeout.");
 
@@ -70,6 +92,18 @@ public class ClientListenerMetrics {
         rejectedTotal = mreg.intMetric(METRIC_REJECTED_TOTAL, "Total number of rejected TCP connections.");
 
         accepted = new IntMetricImpl[CLI_TYPES.length];
+
+        affKeyHits = mreg.longAdderMetric(AFF_KEY_HITS,
+            "The number of affinity-aware cache key requests that were sent to the primary node");
+
+        affKeyMisses = mreg.longAdderMetric(AFF_KEY_MISSES,
+            "The number of affinity-aware cache key requests that were sent not to the primary node");
+
+        affQryHits = mreg.longMetric(AFF_QRY_HITS,
+            "The number of affinity-aware query requests that were sent to the primary node");
+
+        affQryMisses = mreg.longMetric(AFF_QRY_MISSES,
+            "The number of affinity-aware query requests that were sent not to the primary node");
 
         for (byte clientType : CLI_TYPES) {
             String clientLabel = clientTypeLabel(clientType);
@@ -110,6 +144,26 @@ public class ClientListenerMetrics {
      */
     public void onHandshakeAccept(byte clientType) {
         accepted[clientType].increment();
+    }
+
+    /** */
+    public void onAffinityKeyHit() {
+        affKeyHits.increment();
+    }
+
+    /** */
+    public void onAffinityKeyMiss() {
+        affKeyMisses.increment();
+    }
+
+    /** */
+    public void onAffinityQryHit() {
+        affQryHits.increment();
+    }
+
+    /** */
+    public void onAffinityQryMiss() {
+        affQryMisses.increment();
     }
 
     /**

@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecuto
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
@@ -372,7 +373,7 @@ public class PlannerTest extends AbstractPlannerTest {
     private MultiStepPlan splitPlan(IgniteRel phys) {
         assertNotNull(phys);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null, null);
+        MultiStepPlan plan = new MultiStepQueryPlan(null, new QueryTemplate(new Splitter().go(phys)), null, null);
 
         assertNotNull(plan);
 
@@ -438,6 +439,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 plan.remotes(fragment)),
             ArrayRowHandler.INSTANCE,
             NoOpMemoryTracker.INSTANCE,
+            NoOpIoTracker.INSTANCE,
+            0,
             Commons.parametersMap(ctx.parameters()));
 
         return new LogicalRelImplementor<>(ectx, c -> r -> 0, mailboxRegistry, exchangeSvc,

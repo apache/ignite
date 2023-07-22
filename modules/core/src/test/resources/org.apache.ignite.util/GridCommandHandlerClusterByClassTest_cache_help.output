@@ -7,21 +7,30 @@ Arguments: --cache help --yes
 --------------------------------------------------------------------------------
   The '--cache subcommand' is used to get information about and perform actions with caches. The command has the following syntax:
 
-  control.(sh|bat) [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT] [--verbose] [--ssl-protocol SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]] [--ssl-cipher-suites SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]] [--ssl-key-algorithm SSL_KEY_ALGORITHM] [--keystore-type KEYSTORE_TYPE] [--keystore KEYSTORE_PATH] [--keystore-password KEYSTORE_PASSWORD] [--truststore-type TRUSTSTORE_TYPE] [--truststore TRUSTSTORE_PATH] [--truststore-password TRUSTSTORE_PASSWORD] [--enable-experimental] --cache [subcommand] <subcommand_parameters>
+  control.(sh|bat) [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT] [--verbose] [--ssl-protocol SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]] [--ssl-cipher-suites SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]] [--ssl-key-algorithm SSL_KEY_ALGORITHM] [--ssl-factory SSL_FACTORY_PATH] [--keystore-type KEYSTORE_TYPE] [--keystore KEYSTORE_PATH] [--keystore-password KEYSTORE_PASSWORD] [--truststore-type TRUSTSTORE_TYPE] [--truststore TRUSTSTORE_PATH] [--truststore-password TRUSTSTORE_PASSWORD] [--enable-experimental] --cache [subcommand] <subcommand_parameters>
 
   The subcommands that take [nodeId] as an argument ('list', 'find_garbage', 'contention' and 'validate_indexes') will be executed on the given node or on all server nodes if the option is not specified. Other commands will run on a random server node.
 
 
   Subcommands:
 
-  --cache idle_verify [--dump] [--skip-zeros] [--check-crc] [--exclude-caches cacheName1,...,cacheNameN] [--cache-filter DEFAULT|SYSTEM|PERSISTENT|NOT_PERSISTENT|USER|ALL] [cacheName1,...,cacheNameN]
-    Verify counters and hash sums of primary and backup partitions for the specified caches/cache groups on an idle cluster and print out the differences, if any. Cache filtering options configure the set of caches that will be processed by idle_verify command. Default value for the set of cache names (or cache group names) is all cache groups. Default value for --exclude-caches is empty set. Default value for --cache-filter is no filtering. Therefore, the set of all caches is sequently filtered by cache name regexps, by cache type and after all by exclude regexps.
+  Print cache command help:
+    control.(sh|bat) --cache help
+
+  Verify counters and hash sums of primary and backup partitions for the specified caches/cache groups on an idle cluster and print out the differences, if any. Cache filtering options configure the set of caches that will be processed by idle_verify command. Default value for the set of cache names (or cache group names) is all cache groups. Default value for --exclude-caches is empty set. Default value for --cache-filter is no filtering. Therefore, the set of all caches is sequently filtered by cache name regexps, by cache type and after all by exclude regexps:
+    control.(sh|bat) --cache idle_verify [cacheName1,...,cacheNameN] [--skip-zeros] [--check-crc] [--exclude-caches cacheName1,...,cacheNameN] [--cache-filter DEFAULT|SYSTEM|PERSISTENT|NOT_PERSISTENT|USER|ALL]
 
     Parameters:
       --check-crc  - check the CRC-sum of pages stored on disk before verifying data consistency in partitions between primary and backup nodes.
 
-  --cache list regexPattern [--groups|--seq] [nodeId] [--config] [--output-format multi-line]
-    Show information about caches, groups or sequences that match a regular expression. When executed without parameters, this subcommand prints the list of caches.
+  Calculate partition hash and print into standard output:
+    control.(sh|bat) --cache idle_verify --dump [cacheName1,...,cacheNameN] [--skip-zeros] [--check-crc] [--exclude-caches cacheName1,...,cacheNameN] [--cache-filter DEFAULT|SYSTEM|PERSISTENT|NOT_PERSISTENT|USER|ALL]
+
+    Parameters:
+      --check-crc  - check the CRC-sum of pages stored on disk before verifying data consistency in partitions between primary and backup nodes.
+
+  Show information about caches, groups or sequences that match a regular expression. When executed without parameters, this subcommand prints the list of caches:
+    control.(sh|bat) --cache list regexPattern [nodeId] [--config] [--output-format multi-line] [--groups|--seq]
 
     Parameters:
       --config                    - print all configuration parameters for each cache.
@@ -29,80 +38,92 @@ Arguments: --cache help --yes
       --groups                    - print information about groups.
       --seq                       - print information about sequences.
 
-  --cache destroy --caches cache1,...,cacheN|--destroy-all-caches
-    Permanently destroy specified caches.
+  Create caches from Spring XML configuration. Note that the 'ignite-spring' module should be enabled:
+    control.(sh|bat) --cache create --springxmlconfig springXmlConfigPath
+
+    Parameters:
+      --springxmlconfig springXmlConfigPath  - Path to the Spring XML configuration that contains 'org.apache.ignite.configuration.CacheConfiguration' beans to create caches from.
+
+  Permanently destroy specified caches:
+    control.(sh|bat) --cache destroy --caches cache1,...,cacheN|--destroy-all-caches
 
     Parameters:
       --caches cache1,...,cacheN  - specifies a comma-separated list of cache names to be destroyed.
       --destroy-all-caches        - permanently destroy all user-created caches.
 
-  --cache clear
-    Clear specified caches.
+  Clear specified caches:
+    control.(sh|bat) --cache clear --caches cache1[,cache2,....,cacheN]
 
     Parameters:
-      --caches  - specifies a comma-separated list of cache names to be cleared.
+      --caches cache1[,cache2,....,cacheN]  - specifies a comma-separated list of cache names to be cleared.
 
-  --cache validate_indexes [cacheName1,...,cacheNameN] [nodeId] [--check-first N|--check-through K|--check-crc|--check-sizes]
-    Validates indexes for the specified caches/cache groups on an idle cluster on all or specified cluster nodes. validate_indexes checks consistence between primary/secondary indexes against each other and data entries.
-
-    Parameters:
-      --check-first N    - validate only the first N keys
-      --check-through K  - validate every Kth key
-      --check-crc        - check the CRC-sum of pages stored on disk
-      --check-sizes      - check that index size and cache size are the same
-
-  --cache check_index_inline_sizes
-    Checks that secondary indexes inline size are same on the cluster nodes.
-
-  --cache contention minQueueSize [nodeId] [maxPrint]
-    Show the keys that are point of contention for multiple transactions.
-
-  --cache distribution nodeId|null [cacheName1,...,cacheNameN] [--user-attributes attrName1,...,attrNameN]
-    Prints the information about partition distribution.
-
-  --cache reset_lost_partitions cacheName1,...,cacheNameN
-    Reset the state of lost partitions for the specified caches.
-
-  --cache find_garbage [groupName1,...,groupNameN] [nodeId] [--delete]
-    Find and optionally delete garbage from shared cache groups which could be left after cache destroy.
-
-  --cache indexes_list [--node-id nodeId] [--group-name grpRegExp] [--cache-name cacheRegExp] [--index-name idxNameRegExp]
-    List all indexes that match specified filters.
+  Validates indexes for the specified caches/cache groups on an idle cluster on all or specified cluster nodes. validate_indexes checks consistence between primary/secondary indexes against each other and data entries:
+    control.(sh|bat) --cache validate_indexes [cacheName1,...,cacheNameN] [nodeId] [--check-first N] [--check-through K] [--check-crc] [--check-sizes]
 
     Parameters:
-      --node-id nodeId     - Specify node for job execution. If not specified explicitly, node will be chosen by grid
-      --group-name regExp  - Regular expression allowing filtering by cache group name
-      --cache-name regExp  - Regular expression allowing filtering by cache name
-      --index-name regExp  - Regular expression allowing filtering by index name
+      --check-first N            - validate only the first N keys.
+      --check-through K          - validate every Kth key.
+      --check-crc                - check the CRC-sum of pages stored on disk.
+      --check-sizes              - check that index size and cache size are the same.
 
-  --cache indexes_rebuild_status [--node-id nodeId]
-    List all indexes that have index rebuild in progress.
+  Checks that secondary indexes inline size are same on the cluster nodes:
+    control.(sh|bat) --cache check_index_inline_sizes
+
+  Show the keys that are point of contention for multiple transactions:
+    control.(sh|bat) --cache contention minQueueSize [nodeId] [maxPrint]
+
+  Prints the information about partition distribution:
+    control.(sh|bat) --cache distribution nodeId|null [cacheName1,...,cacheNameN] [--user-attributes attrName1,...,attrNameN]
+
+  Reset the state of lost partitions for the specified caches:
+    control.(sh|bat) --cache reset_lost_partitions cacheName1,...,cacheNameN
+
+  Find and optionally delete garbage from shared cache groups which could be left after cache destroy:
+    control.(sh|bat) --cache find_garbage [groupName1,...,groupNameN] [nodeId] [--delete]
+
+  List all indexes that match specified filters:
+    control.(sh|bat) --cache indexes_list [--node-id nodeId] [--group-name grpRegExp] [--cache-name cacheRegExp] [--index-name idxNameRegExp]
 
     Parameters:
-      --node-id nodeId  - Specify node for job execution. If not specified explicitly, info will be gathered from all nodes
+      --node-id nodeId            - Specify node for job execution. If not specified explicitly, node will be chosen by grid.
+      --group-name grpRegExp      - Regular expression allowing filtering by cache group name.
+      --cache-name cacheRegExp    - Regular expression allowing filtering by cache name.
+      --index-name idxNameRegExp  - Regular expression allowing filtering by index name.
 
-  --cache indexes_force_rebuild --node-id nodeId --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
-    Triggers rebuild of all indexes for specified caches or cache groups.
+  List all indexes that have index rebuild in progress:
+    control.(sh|bat) --cache indexes_rebuild_status [--node-id nodeId]
 
     Parameters:
-      --node-id      - Specify node for indexes rebuild.
-      --cache-names  - Comma-separated list of cache names for which indexes should be rebuilt.
-      --group-names  - Comma-separated list of cache group names for which indexes should be rebuilt.
+      --node-id nodeId  - Specify node for job execution. If not specified explicitly, info will be gathered from all nodes.
 
-  --cache metrics enable|disable|status --caches cache1[,...,cacheN]|--all-caches
-    Manages user cache metrics collection: enables, disables it or shows status.
+  Triggers rebuild of all indexes for specified caches or cache groups:
+    control.(sh|bat) --cache indexes_force_rebuild --node-id nodeId --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
+
+    Parameters:
+      --node-id nodeId                        - Specify node for indexes rebuild.
+      --cache-names cacheName1,...cacheNameN  - Comma-separated list of cache names for which indexes should be rebuilt.
+      --group-names groupName1,...groupNameN  - Comma-separated list of cache group names for which indexes should be rebuilt.
+
+  Manages user cache metrics collection: enables, disables it or shows status:
+    control.(sh|bat) --cache metrics ENABLE|DISABLE|STATUS --caches cache1[,...,cacheN]|--all-caches
 
     Parameters:
       --caches cache1[,...,cacheN]  - specifies a comma-separated list of cache names to which operation should be applied.
       --all-caches                  - applies operation to all user caches.
 
-  --cache schedule_indexes_rebuild --node-id nodeId --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1] --group-names groupName1,groupName2,...groupNameN
-    Schedules rebuild of the indexes for specified caches via the Maintenance Mode. Schedules rebuild of specified caches and cache-groups
+  Schedules rebuild of the indexes for specified caches via the Maintenance Mode. Schedules rebuild of specified caches and cache-groups:
+    control.(sh|bat) --cache schedule_indexes_rebuild [--node-id nodeId] --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1] --group-names groupName1,groupName2,...groupNameN
 
     Parameters:
-      --node-id      - (Optional) Specify node for indexes rebuild. If not specified, schedules rebuild on all nodes.
-      --cache-names  - Comma-separated list of cache names with optionally specified indexes. If indexes are not specified then all indexes of the cache will be scheduled for the rebuild operation. Can be used simultaneously with cache group names.
-      --group-names  - Comma-separated list of cache group names for which indexes should be scheduled for the rebuild. Can be used simultaneously with cache names.
+      --node-id nodeId                                                         - (Optional) Specify node for indexes rebuild. If not specified, schedules rebuild on all nodes.
+      --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1]  - Comma-separated list of cache names with optionally specified indexes. If indexes are not specified then all indexes of the cache will be scheduled for the rebuild operation. Can be used simultaneously with cache group names.
+      --group-names groupName1,groupName2,...groupNameN                        - Comma-separated list of cache group names for which indexes should be scheduled for the rebuild. Can be used simultaneously with cache names.
+
+  Show cache content:
+    control.(sh|bat) --cache scan cacheName [--limit N]
+
+    Parameters:
+      --limit N  - limit count of entries to scan (1000 by default).
 
 Command [CACHE] finished with code: 0
 Control utility has completed execution at: <!any!>

@@ -26,13 +26,15 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Impl.Deployment;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Resource;
+    using static IgniteUtils;
 
     /// <summary>
     /// Non-generic version of IComputeJob{T}.
     /// </summary>
     internal interface IComputeJob : IComputeJob<object>
     {
-        // No-op.
+        /// <returns>Name of the wrapped job.</returns>
+        string GetName();
     }
 
     /// <summary>
@@ -102,6 +104,12 @@ namespace Apache.Ignite.Core.Impl.Compute
 
                 throw;
             }
+        }
+        
+        /** <inheritDoc /> */ 
+        public string GetName()
+        {
+            return GetComputeExecutableName(_job);
         }
 
         /** <inheritDoc /> */

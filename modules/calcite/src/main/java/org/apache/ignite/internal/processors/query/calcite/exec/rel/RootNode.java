@@ -22,19 +22,23 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.query.QueryCancelledException.ERR_MSG;
 
@@ -49,7 +53,7 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     private final Condition cond = lock.newCondition();
 
     /** */
-    private final Runnable onClose;
+    private final Consumer<Throwable> onClose;
 
     /** */
     private final AtomicReference<Throwable> ex = new AtomicReference<>();
@@ -67,6 +71,15 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     private Deque<Row> outBuff = new ArrayDeque<>(IN_BUFFER_SIZE);
 
     /** */
+    private long idleTime;
+
+    /** */
+    private long execTime;
+
+    /** Timestamp of last change between idle and execution. */
+    private long prevTs;
+
+    /** */
     private volatile boolean closed;
 
     /**
@@ -75,18 +88,20 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
     public RootNode(ExecutionContext<Row> ctx, RelDataType rowType) {
         super(ctx, rowType);
 
-        onClose = this::closeInternal;
+        onClose = t -> closeInternal();
         converter = TypeUtils.resultTypeConverter(ctx, rowType);
+        prevTs = System.nanoTime();
     }
 
     /**
      * @param ctx Execution context.
      */
-    public RootNode(ExecutionContext<Row> ctx, RelDataType rowType, Runnable onClose) {
+    public RootNode(ExecutionContext<Row> ctx, RelDataType rowType, Consumer<Throwable> onClose) {
         super(ctx, rowType);
 
         this.onClose = onClose;
         converter = TypeUtils.resultTypeConverter(ctx, rowType);
+        prevTs = System.nanoTime();
     }
 
     /** */
@@ -101,8 +116,10 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
         lock.lock();
         try {
-            if (waiting != -1)
-                ex.compareAndSet(null, new IgniteSQLException(ERR_MSG, IgniteQueryErrorCode.QUERY_CANCELED));
+            if (waiting != -1) {
+                ex.compareAndSet(null, new IgniteSQLException(ERR_MSG, IgniteQueryErrorCode.QUERY_CANCELED,
+                    new QueryCancelledException()));
+            }
 
             closed = true; // an exception has to be set first to get right check order
 
@@ -112,7 +129,12 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
             lock.unlock();
         }
 
-        onClose.run();
+        onClose.accept(ex.get());
+    }
+
+    /** */
+    public @Nullable Throwable failure() {
+        return ex.get();
     }
 
     /** {@inheritDoc} */
@@ -139,6 +161,14 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
             if (inBuff.size() == IN_BUFFER_SIZE)
                 cond.signalAll();
+
+            if (waiting == 0) {
+                long curTs = System.nanoTime();
+
+                execTime += curTs - prevTs;
+
+                prevTs = curTs;
+            }
         }
         finally {
             lock.unlock();
@@ -154,6 +184,9 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
             checkState();
 
             waiting = -1;
+
+            execTime += System.nanoTime() - prevTs;
+            prevTs = 0;
 
             cond.signalAll();
         }
@@ -216,6 +249,30 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         throw new UnsupportedOperationException();
     }
 
+    /** Query execution time (millis). */
+    public long execTime() {
+        lock.lock();
+
+        try {
+            return TimeUnit.NANOSECONDS.toMillis(execTime + (waiting > 0 ? System.nanoTime() - prevTs : 0));
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    /** Query idle time (waiting for users action, millis). */
+    public long idleTime() {
+        lock.lock();
+
+        try {
+            return TimeUnit.NANOSECONDS.toMillis(idleTime + (waiting == 0 ? System.nanoTime() - prevTs : 0));
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
     /** */
     private void exchangeBuffers() {
         assert !F.isEmpty(sources()) && sources().size() == 1;
@@ -236,6 +293,12 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
                 else if (inBuff.isEmpty() && waiting == 0) {
                     int req = waiting = IN_BUFFER_SIZE;
                     context().execute(() -> source().request(req), this::onError);
+
+                    long curTs = System.nanoTime();
+
+                    idleTime += curTs - prevTs;
+
+                    prevTs = curTs;
                 }
 
                 if (!outBuff.isEmpty() || waiting == -1)

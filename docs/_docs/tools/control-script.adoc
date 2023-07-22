@@ -60,6 +60,7 @@ If you want to connect to a node that is running on a remove machine, specify th
 | --truststore-type TRUSTSTORE_TYPE | The type of the truststore. | `JKS`
 | --truststore TRUSTSTORE_PATH | The path to the truststore. |
 | --truststore-password TRUSTSTORE_PWD | The password to the truststore. |
+| --ssl-factory SSL_FACTORY_PATH | Custom SSL factory Spring xml file path. |
 |===
 
 
@@ -421,6 +422,33 @@ control.sh|bat --cache list . --seq
 control.sh|bat --cache list counter-.* --seq
 ----
 
+== Creating Caches
+
+You can use the control script to create specific caches.
+
+NOTE: The 'ignite-spring' module should be enabled.
+
+[source, shell]
+----
+control.sh|bat --cache create --springXmlConfig springXmlFilePath
+----
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--springXmlConfig springXmlConfigPath` | Path to the Spring XML configuration that contains
+'org.apache.ignite.configuration.CacheConfiguration' beans to create caches from.
+|===
+
+Examples:
+[source, shell]
+----
+# Create caches from the `/ignite/config/userCaches.xml` configuration.
+control.sh|bat --cache create --springXmlConfig /ignite/config/userCaches.xml`
+----
+
 == Destroying Caches
 
 You can use the control script to destroy specific caches.
@@ -471,6 +499,32 @@ Examples:
 ----
 # Clear cache1 and cache2.
 control.sh|bat --cache clear --caches cache1,cache2
+----
+
+== Scanning Caches
+
+You can use the control script to scan cache entries.
+
+[source, shell]
+----
+control.sh|bat --cache scan cacheName [--limit N]
+----
+
+For each entry four columns will be displayed: key class, string representation of key, value class, and string representation of value.
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--limit N`| Limit amount of entries to scan (default 1000).
+|===
+
+Examples:
+[source, shell]
+----
+# Query no more than 10 entries from cache "cache1"
+control.sh|bat --cache scan cache1 --limit 10
 ----
 
 == Resetting Lost Partitions
@@ -680,6 +734,19 @@ a primary partition and a corresponding backup partitions and prints a report if
 Differences may be the result of inconsistencies in some data on the cluster from which the snapshot was taken. It is
 recommended to perform the `idle_verify` procedure on the cluster if this case occurs.
 
+The checking incremental snapshot command verifies data in WAL segments only. It checks that every transaction included into
+snapshot is fully committed on every participated node. It also calculates hashes of these transactions and committed data
+changes and compares it between nodes.
+
+[WARNING]
+====
+[discrete]
+=== The Incremental Snapshot Check verifies transactional caches only
+Please note, incremental snapshots doesn't guarantee consistency of atomic caches. It is highly recommended verifying these
+caches after restoring with the `idle_verify` command. If it is needed it's possible to repair inconsistent partitions with
+the `--consistency` command.
+====
+
 This procedure does not require the cluster to be in the `idle` state.
 
 [tabs]
@@ -689,6 +756,10 @@ tab:Shell[]
 ----
 # Checks that partitions of all snapshot caches have the correct checksums and primary/backup ones actually contain the same data.
 control.(sh|bat) --snapshot check snapshot_name
+
+# Checks the transactional data included into incremental snapshots. Incremental snapshots with indices from 1 to 3 are checked.
+control.(sh|bat) --snapshot check snapshot_name --increment 3
+
 ----
 --
 

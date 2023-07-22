@@ -22,10 +22,12 @@ import org.apache.ignite.events.BaselineEventsRemoteTest;
 import org.apache.ignite.internal.commandline.CommandHandlerParsingTest;
 import org.apache.ignite.internal.processors.security.GridCommandHandlerSslWithSecurityTest;
 import org.apache.ignite.util.GridCommandHandlerBrokenIndexTest;
+import org.apache.ignite.util.GridCommandHandlerCheckIncrementalSnapshotTest;
 import org.apache.ignite.util.GridCommandHandlerCheckIndexesInlineSizeTest;
 import org.apache.ignite.util.GridCommandHandlerClusterByClassTest;
 import org.apache.ignite.util.GridCommandHandlerClusterByClassWithSSLTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest;
+import org.apache.ignite.util.GridCommandHandlerIncompatibleSslConfigTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingCheckSizeTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassWithSSLTest;
@@ -35,7 +37,8 @@ import org.apache.ignite.util.GridCommandHandlerInterruptCommandTest;
 import org.apache.ignite.util.GridCommandHandlerMetadataTest;
 import org.apache.ignite.util.GridCommandHandlerSslTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
-import org.apache.ignite.util.GridCommandHandlerWithSSLTest;
+import org.apache.ignite.util.GridCommandHandlerWithSslFactoryTest;
+import org.apache.ignite.util.GridCommandHandlerWithSslTest;
 import org.apache.ignite.util.KillCommandsControlShTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -48,7 +51,9 @@ import org.junit.runners.Suite;
     CommandHandlerParsingTest.class,
 
     GridCommandHandlerTest.class,
-    GridCommandHandlerWithSSLTest.class,
+    GridCommandHandlerWithSslTest.class,
+    GridCommandHandlerWithSslFactoryTest.class,
+    GridCommandHandlerIncompatibleSslConfigTest.class,
     GridCommandHandlerClusterByClassTest.class,
     GridCommandHandlerClusterByClassWithSSLTest.class,
     GridCommandHandlerSslTest.class,
@@ -64,13 +69,14 @@ import org.junit.runners.Suite;
     GridCommandHandlerCheckIndexesInlineSizeTest.class,
     GridCommandHandlerInterruptCommandTest.class,
     GridCommandHandlerMetadataTest.class,
+    GridCommandHandlerCheckIncrementalSnapshotTest.class,
 
     KillCommandsControlShTest.class,
 
     BaselineEventsLocalTest.class,
     BaselineEventsRemoteTest.class,
 
-    GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest.class,
+    GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest.class
 })
 public class IgniteControlUtilityTestSuite {
 }

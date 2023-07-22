@@ -152,6 +152,7 @@ import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
@@ -990,7 +991,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     // Only data records handled by CDC.
                     // No need to forcefully rollover for other record types.
-                    if (walForceArchiveTimeout > 0 && rec.type() == DATA_RECORD_V2)
+                    if (walForceArchiveTimeout > 0 && (rec.type() == DATA_RECORD_V2 || rec.type() == CDC_DATA_RECORD))
                         lastDataRecordLoggedMs.set(millis);
                 }
 

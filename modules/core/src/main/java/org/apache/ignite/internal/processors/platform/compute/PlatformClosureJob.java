@@ -53,8 +53,8 @@ public class PlatformClosureJob extends PlatformAbstractJob {
      * @param ptr Job pointer.
      * @param job Job.
      */
-    public PlatformClosureJob(PlatformAbstractTask task, long ptr, Object job) {
-        super(task, ptr, job);
+    public PlatformClosureJob(PlatformAbstractTask task, long ptr, Object job, String jobName) {
+        super(task, ptr, job, jobName);
     }
 
     /** {@inheritDoc} */
@@ -105,10 +105,12 @@ public class PlatformClosureJob extends PlatformAbstractJob {
         assert job != null;
 
         out.writeObject(job);
+        out.writeObject(jobName);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         job = in.readObject();
+        jobName = (String)in.readObject();
     }
 }

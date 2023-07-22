@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservati
 import org.apache.ignite.internal.processors.query.h2.twostep.ReducePartitionMapResult;
 import org.apache.ignite.internal.processors.query.h2.twostep.ReducePartitionMapper;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
+import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;

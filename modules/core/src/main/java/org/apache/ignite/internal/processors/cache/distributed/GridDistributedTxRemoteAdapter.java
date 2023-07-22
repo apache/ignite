@@ -162,7 +162,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             ctx,
             nodeId,
             xidVer,
-            null,
             Thread.currentThread().getId(),
             sys,
             plc,
@@ -498,7 +497,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     try {
                         assert !txState.mvccEnabled() || mvccSnapshot != null : "Mvcc is not initialized: " + this;
 
-                        Collection<IgniteTxEntry> entries = near() || cctx.snapshot().needTxReadLogging() ? allEntries() : writeEntries();
+                        Collection<IgniteTxEntry> entries = near() ? allEntries() : writeEntries();
 
                         // Data entry to write to WAL.
                         List<DataEntry> dataEntries = null;
@@ -603,7 +602,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                     GridCacheVersion dhtVer = cached.isNear() ? writeVersion() : null;
 
                                     if (!near() && cacheCtx.group().logDataRecords() &&
-                                        op != NOOP && op != RELOAD && (op != READ || cctx.snapshot().needTxReadLogging())) {
+                                        op != NOOP && op != RELOAD && op != READ) {
                                         if (dataEntries == null)
                                             dataEntries = new ArrayList<>(entries.size());
 

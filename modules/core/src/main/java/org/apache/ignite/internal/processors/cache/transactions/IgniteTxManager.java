@@ -787,8 +787,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             securitySubjectId(cctx),
             taskNameHash,
             lb,
-            txDumpsThrottling,
-            tracingEnabled
+            txDumpsThrottling
         );
 
         if (tx.system()) {

@@ -26,10 +26,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -67,13 +65,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
-import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotStartRecord;
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -90,10 +82,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -106,9 +94,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -116,10 +102,6 @@ import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.IgniteFeatures.SNAPSHOT_RESTORE_CACHE_GROUP;
 import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CLUSTER_SNAPSHOT;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INCREMENTAL_SNAPSHOT_FINISH_RECORD;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INCREMENTAL_SNAPSHOT_START_RECORD;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
@@ -127,8 +109,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK;
@@ -278,9 +258,16 @@ public class SnapshotRestoreProcess {
      * @param snpPath Snapshot directory path.
      * @param cacheGrpNames Cache groups to be restored or {@code null} to restore all cache groups from the snapshot.
      * @param incIdx Index of incremental snapshot.
+     * @param check If {@code true} check snapshot before restore.
      * @return Future that will be completed when the restore operation is complete and the cache groups are started.
      */
-    public IgniteFutureImpl<Void> start(String snpName, @Nullable String snpPath, @Nullable Collection<String> cacheGrpNames, int incIdx) {
+    public IgniteFutureImpl<Void> start(
+        String snpName,
+        @Nullable String snpPath,
+        @Nullable Collection<String> cacheGrpNames,
+        int incIdx,
+        boolean check
+    ) {
         IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
         ClusterSnapshotFuture fut0;
 
@@ -303,7 +290,7 @@ public class SnapshotRestoreProcess {
                 throw new IgniteException(OP_REJECT_MSG + "A cluster snapshot operation is in progress.");
 
             synchronized (this) {
-                if (restoringSnapshotName() != null)
+                if (restoringSnapshotName() != null || fut != null)
                     throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
 
                 fut = new ClusterSnapshotFuture(UUID.randomUUID(), snpName, incIdx);
@@ -346,7 +333,7 @@ public class SnapshotRestoreProcess {
 
         snpMgr.recordSnapshotEvent(snpName, msg, EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED);
 
-        snpMgr.checkSnapshot(snpName, snpPath, cacheGrpNames, true, incIdx).listen(f -> {
+        snpMgr.checkSnapshot(snpName, snpPath, cacheGrpNames, true, incIdx, check).listen(f -> {
             if (f.error() != null) {
                 finishProcess(fut0.rqId, f.error());
 
@@ -371,6 +358,21 @@ public class SnapshotRestoreProcess {
             Map<Integer, String> reqGrpIds = cacheGrpNames == null ? Collections.emptyMap() :
                 cacheGrpNames.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
 
+            Optional<SnapshotMetadata> firstMeta = metas.values().iterator().next()
+                .stream()
+                .findFirst();
+
+            if (!firstMeta.isPresent()) {
+                finishProcess(
+                    fut0.rqId,
+                    new IllegalArgumentException(OP_REJECT_MSG + "No snapshot metadata read")
+                );
+
+                return;
+            }
+
+            boolean onlyPrimary = firstMeta.get().onlyPrimary();
+
             for (Map.Entry<ClusterNode, List<SnapshotMetadata>> entry : metas.entrySet()) {
                 dataNodes.add(entry.getKey().id());
 
@@ -381,6 +383,15 @@ public class SnapshotRestoreProcess {
                         snpBltNodes = new HashSet<>(meta.baselineNodes());
 
                     reqGrpIds.keySet().removeAll(meta.partitions().keySet());
+
+                    if (onlyPrimary != meta.onlyPrimary()) {
+                        finishProcess(
+                            fut0.rqId,
+                            new IllegalArgumentException(OP_REJECT_MSG + "Only primary value different on nodes")
+                        );
+
+                        return;
+                    }
                 }
             }
 
@@ -408,7 +419,8 @@ public class SnapshotRestoreProcess {
                 cacheGrpNames,
                 new HashSet<>(bltNodes),
                 false,
-                incIdx
+                incIdx,
+                onlyPrimary
             );
 
             prepareRestoreProc.start(req.requestId(), req);
@@ -425,12 +437,7 @@ public class SnapshotRestoreProcess {
     public @Nullable String restoringSnapshotName() {
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        if (opCtx0 != null)
-            return opCtx0.snpName;
-
-        ClusterSnapshotFuture fut0 = fut;
-
-        return fut0 != null ? fut0.name : null;
+        return opCtx0 == null ? null : opCtx0.snpName;
     }
 
     /**
@@ -507,12 +514,21 @@ public class SnapshotRestoreProcess {
             log.info(OP_FINISHED_MSG + " [reqId=" + reqId + "].");
 
         SnapshotRestoreContext opCtx0 = opCtx;
+        SnapshotRestoreContext lastOpCtx0 = lastOpCtx;
+
+        long endTime = U.currentTimeMillis();
 
         if (opCtx0 != null && reqId.equals(opCtx0.reqId)) {
             opCtx = null;
 
-            opCtx0.endTime = U.currentTimeMillis();
+            opCtx0.endTime = endTime;
         }
+
+        // Actual operation context may not be assigned because some previous checks failed. The last operation context
+        // is assigned before the preparation to keep all operation statuses including failures of the preceding checks.
+        // @See #prepare(SnapshotOperationRequest).
+        if (lastOpCtx0 != opCtx0 && reqId.equals(lastOpCtx0.reqId))
+            lastOpCtx0.endTime = endTime;
 
         synchronized (this) {
             ClusterSnapshotFuture fut0 = fut;
@@ -626,7 +642,23 @@ public class SnapshotRestoreProcess {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
+        if (log.isInfoEnabled()) {
+            log.info("Starting local snapshot prepare restore operation" +
+                " [reqId=" + req.requestId() +
+                ", snapshot=" + req.snapshotName() +
+                ", caches=" + req.groups() + ']');
+        }
+
+        SnapshotRestoreContext opCtx0 = new SnapshotRestoreContext(req);
+
         try {
+            if (opCtx != null) {
+                throw new IgniteCheckedException(OP_REJECT_MSG +
+                    "The previous snapshot restore operation was not completed.");
+            }
+
+            lastOpCtx = opCtx0;
+
             DiscoveryDataClusterState state = ctx.state().clusterState();
             IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
 
@@ -655,25 +687,9 @@ public class SnapshotRestoreProcess {
                 }
             }
 
-            if (log.isInfoEnabled()) {
-                log.info("Starting local snapshot prepare restore operation" +
-                    " [reqId=" + req.requestId() +
-                    ", snapshot=" + req.snapshotName() +
-                    ", caches=" + req.groups() + ']');
-            }
-
             List<SnapshotMetadata> locMetas = snpMgr.readSnapshotMetadatas(req.snapshotName(), req.snapshotPath());
 
-            SnapshotRestoreContext opCtx0 = prepareContext(req, locMetas);
-
-            synchronized (this) {
-                lastOpCtx = opCtx = opCtx0;
-
-                ClusterSnapshotFuture fut0 = fut;
-
-                if (fut0 != null)
-                    opCtx0.errHnd.accept(fut0.interruptEx);
-            }
+            enrichContext(opCtx0, req, locMetas);
 
             // Ensure that shared cache groups has no conflicts.
             for (StoredCacheData cfg : opCtx0.cfgs.values()) {
@@ -686,9 +702,20 @@ public class SnapshotRestoreProcess {
             if (ctx.isStopping())
                 throw new NodeStoppingException("The node is stopping: " + ctx.localNodeId());
 
+            synchronized (this) {
+                ClusterSnapshotFuture fut0 = fut;
+
+                if (fut0 != null)
+                    opCtx0.errHnd.accept(fut0.interruptEx);
+
+                opCtx = opCtx0;
+            }
+
             return new GridFinishedFuture<>(new SnapshotRestoreOperationResponse(opCtx0.cfgs.values(), locMetas));
         }
-        catch (IgniteIllegalStateException | IgniteCheckedException | RejectedExecutionException e) {
+        catch (Exception e) {
+            opCtx0.errHnd.accept(e);
+
             log.error("Unable to restore cache group(s) from the snapshot " +
                 "[reqId=" + req.requestId() + ", snapshot=" + req.snapshotName() + ']', e);
 
@@ -717,31 +744,22 @@ public class SnapshotRestoreProcess {
     }
 
     /**
+     * @param curOpCtx Restore operation context to enrich.
      * @param req Request to prepare cache group restore from the snapshot.
      * @param metas Local snapshot metadatas.
-     * @return Snapshot restore operation context.
      * @throws IgniteCheckedException If failed.
      */
-    private SnapshotRestoreContext prepareContext(
+    private void enrichContext(
+        SnapshotRestoreContext curOpCtx,
         SnapshotOperationRequest req,
         Collection<SnapshotMetadata> metas
     ) throws IgniteCheckedException {
-        if (opCtx != null) {
-            throw new IgniteCheckedException(OP_REJECT_MSG +
-                "The previous snapshot restore operation was not completed.");
-        }
+        assert req.requestId().equals(curOpCtx.reqId);
+
         GridCacheSharedContext<?, ?> cctx = ctx.cache().context();
 
-        // Collection of baseline nodes that must survive and additional discovery data required for the affinity calculation.
-        DiscoCache discoCache = ctx.discovery().discoCache();
-
-        if (!F.transform(discoCache.aliveBaselineNodes(), F.node2id()).containsAll(req.nodes()))
-            throw new IgniteCheckedException("Restore context cannot be inited since the required baseline nodes missed: " + discoCache);
-
-        DiscoCache discoCache0 = discoCache.copy(discoCache.version(), null);
-
         if (F.isEmpty(metas))
-            return new SnapshotRestoreContext(req, discoCache0, Collections.emptyMap());
+            return;
 
         if (F.first(metas).pageSize() != cctx.database().pageSize()) {
             throw new IgniteCheckedException("Incompatible memory page size " +
@@ -819,10 +837,8 @@ public class SnapshotRestoreProcess {
             }
         }
 
-        Map<Integer, StoredCacheData> cfgsById =
+        curOpCtx.cfgs =
             cfgsByName.values().stream().collect(Collectors.toMap(v -> CU.cacheId(v.config().getName()), v -> v));
-
-        return new SnapshotRestoreContext(req, discoCache0, cfgsById);
     }
 
     /**
@@ -852,6 +868,8 @@ public class SnapshotRestoreProcess {
         // Context has been created - should rollback changes cluster-wide.
         if (failure != null) {
             opCtx0.errHnd.accept(failure);
+
+            finishProcess(reqId, failure);
 
             return;
         }
@@ -996,18 +1014,22 @@ public class SnapshotRestoreProcess {
 
             for (StoredCacheData data : opCtx0.cfgs.values()) {
                 affCache.computeIfAbsent(CU.cacheOrGroupName(data.config()),
-                    grp -> calculateAffinity(ctx, data.config(), opCtx0.discoCache));
+                    grp -> calculateAffinity(ctx, data.config(), ctx.discovery().discoCache()));
             }
 
             Map<Integer, Set<PartitionRestoreFuture>> allParts = new HashMap<>();
             Map<Integer, Set<PartitionRestoreFuture>> rmtLoadParts = new HashMap<>();
             ClusterNode locNode = ctx.cache().context().localNode();
             List<SnapshotMetadata> locMetas = opCtx0.metasPerNode.get(locNode.id());
+            Map<Integer, String> cacheGrpNames = new HashMap<>();
 
             // First preload everything from the local node.
             for (File dir : opCtx0.dirs) {
                 String cacheOrGrpName = cacheGroupName(dir);
                 int grpId = CU.cacheId(cacheOrGrpName);
+
+                if (log.isInfoEnabled())
+                    cacheGrpNames.put(grpId, cacheOrGrpName);
 
                 File tmpCacheDir = formatTmpDirName(dir);
                 tmpCacheDir.mkdir();
@@ -1099,15 +1121,15 @@ public class SnapshotRestoreProcess {
                     rmtLoadParts.get(grpId).remove(new PartitionRestoreFuture(partId, opCtx0.processedParts)));
 
             try {
-                if (log.isInfoEnabled() && !snpAff.isEmpty()) {
-                    log.info("Trying to request partitions from remote nodes " +
-                        "[reqId=" + reqId +
-                        ", snapshot=" + opCtx0.snpName +
-                        ", map=" + snpAff.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
-                            e -> partitionsMapToString(e.getValue()))) + ']');
-                }
-
                 for (Map.Entry<UUID, Map<Integer, Set<Integer>>> m : snpAff.entrySet()) {
+                    if (log.isInfoEnabled()) {
+                        log.info("Trying to request partitions from remote node " +
+                            "[reqId=" + reqId +
+                            ", snapshot=" + opCtx0.snpName +
+                            ", nodeId=" + m.getKey() +
+                            ", grpParts=" + partitionsMapToString(m.getValue(), cacheGrpNames) + "]");
+                    }
+
                     ctx.cache().context().snapshotMgr()
                         .requestRemoteSnapshotFiles(m.getKey(),
                             opCtx0.reqId,
@@ -1116,8 +1138,14 @@ public class SnapshotRestoreProcess {
                             m.getValue(),
                             opCtx0.stopChecker,
                             (snpFile, t) -> {
-                                if (opCtx0.stopChecker.getAsBoolean())
-                                    throw new IgniteInterruptedException("Snapshot remote operation request cancelled.");
+                                if (opCtx0.stopChecker.getAsBoolean()) {
+                                    completeListExceptionally(
+                                        rmtAwaitParts,
+                                        new IgniteInterruptedException("Snapshot remote operation request cancelled.")
+                                    );
+
+                                    return;
+                                }
 
                                 if (t != null) {
                                     opCtx0.errHnd.accept(t);
@@ -1320,7 +1348,7 @@ public class SnapshotRestoreProcess {
         opCtx0.err.compareAndSet(null, failure);
 
         if (U.isLocalNodeCoordinator(ctx.discovery()))
-            rollbackRestoreProc.start(reqId, reqId);
+            cacheStopProc.start(reqId, reqId);
     }
 
     /**
@@ -1377,10 +1405,10 @@ public class SnapshotRestoreProcess {
      * @return Result future.
      */
     private IgniteInternalFuture<Boolean> incrementalSnapshotRestore(UUID reqId) {
-        if (ctx.clientNode())
-            return new GridFinishedFuture<>();
-
         SnapshotRestoreContext opCtx0 = opCtx;
+
+        if (ctx.clientNode() || opCtx0 == null || !opCtx0.nodes().contains(ctx.localNodeId()))
+            return new GridFinishedFuture<>();
 
         if (log.isInfoEnabled()) {
             log.info("Starting incremental snapshot restore operation " +
@@ -1396,7 +1424,7 @@ public class SnapshotRestoreProcess {
 
                 walEnabled(false, cacheIds);
 
-                restoreIncrementalSnapshot(opCtx0.snpName, opCtx0.snpPath, cacheIds, opCtx0.incIdx);
+                restoreIncrementalSnapshot(cacheIds);
 
                 walEnabled(true, cacheIds);
 
@@ -1421,147 +1449,45 @@ public class SnapshotRestoreProcess {
 
     /**
      * Restore incremental snapshot.
-     *
-     * @param snpName Base snapshot name.
-     * @param snpPath Base snapshot path.
-     * @param cacheIds Restoring cache IDs.
-     * @param incIdx Index of incremental snapshot.
      */
-    private void restoreIncrementalSnapshot(
-        String snpName,
-        String snpPath,
-        Set<Integer> cacheIds,
-        int incIdx
-    ) throws IgniteCheckedException, IOException {
+    private void restoreIncrementalSnapshot(Set<Integer> cacheIds) throws IgniteCheckedException, IOException {
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        IncrementalSnapshotMetadata meta = ctx.cache().context().snapshotMgr()
-            .readIncrementalSnapshotMetadata(snpName, snpPath, incIdx);
+        IncrementalSnapshotProcessor incSnpProc = new IncrementalSnapshotProcessor(
+            ctx.cache().context(), opCtx0.snpName, opCtx0.snpPath, opCtx0.incIdx, cacheIds
+        ) {
+            @Override void totalWalSegments(int segCnt) {
+                opCtx0.totalWalSegments = segCnt;
+            }
 
-        File[] segments = walSegments(snpName, snpPath, incIdx, meta.folderName());
+            @Override void processedWalSegments(int segCnt) {
+                opCtx0.processedWalSegments = segCnt;
+            }
 
-        opCtx0.totalWalSegments = segments.length;
-
-        UUID incSnpId = meta.requestId();
-
-        File lastSeg = Arrays.stream(segments)
-            .map(File::toPath)
-            .max(Comparator.comparingLong(FileWriteAheadLogManager::segmentIndex))
-            .orElseThrow(() -> new IgniteCheckedException("Last WAL segment wasn't found [snpName=" + snpName + ']'))
-            .toFile();
-
-        IncrementalSnapshotFinishRecord incSnpFinRec = readFinishRecord(lastSeg, incSnpId);
-
-        if (incSnpFinRec == null) {
-            throw new IgniteCheckedException("System WAL record for incremental snapshot wasn't found " +
-                "[id=" + incSnpId + ", walSegFile=" + lastSeg + ']');
-        }
+            @Override void initWalEntries(LongAdder entriesCnt) {
+                opCtx0.processedWalEntries = entriesCnt;
+            }
+        };
 
         CacheStripedExecutor exec = new CacheStripedExecutor(ctx.pools().getStripedExecutorService());
 
         long start = U.currentTimeMillis();
 
-        LongAdder applied = new LongAdder();
+        incSnpProc.process(e -> {
+            GridCacheContext<?, ?> cacheCtx = ctx.cache().context().cacheContext(e.cacheId());
+            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ctx.cache().context().database();
 
-        opCtx0.processedWalEntries = applied;
-        opCtx0.processedWalSegments = 0;
-
-        Set<WALRecord.RecordType> recTypes = new HashSet<>(F.asList(
-            CLUSTER_SNAPSHOT,
-            INCREMENTAL_SNAPSHOT_START_RECORD,
-            INCREMENTAL_SNAPSHOT_FINISH_RECORD,
-            DATA_RECORD_V2));
-
-        // Create a single WAL iterator for 2 steps: finding ClusterSnapshotRecord and applying incremental snapshots.
-        // TODO: Fix it after resolving https://issues.apache.org/jira/browse/IGNITE-18718.
-        try (WALIterator it = walIter(log, recTypes, segments)) {
-            long startIdx = -1;
-
-            // Step 1. Skips applying WAL until base snapshot record has been reached.
-            while (it.hasNext()) {
-                IgniteBiTuple<WALPointer, WALRecord> walRec = it.next();
-
-                WALRecord rec = walRec.getValue();
-
-                if (rec.type() == CLUSTER_SNAPSHOT) {
-                    if (((ClusterSnapshotRecord)rec).clusterSnapshotName().equals(snpName)) {
-                        startIdx = walRec.getKey().index();
-
-                        break;
-                    }
+            exec.submit(() -> {
+                try {
+                    applyDataEntry(dbMgr, cacheCtx, e);
                 }
-            }
+                catch (IgniteCheckedException err) {
+                    U.error(log, "Failed to apply data entry [entry=" + e + ']');
 
-            if (startIdx < 0) {
-                throw new IgniteCheckedException("System WAL record for full snapshot wasn't found " +
-                    "[snpName=" + snpName + ", walSegFile=" + segments[0] + ']');
-            }
-
-            UUID prevIncSnpId = incIdx > 1
-                ? ctx.cache().context().snapshotMgr().readIncrementalSnapshotMetadata(snpName, snpPath, incIdx - 1).requestId()
-                : null;
-
-            IgnitePredicate<GridCacheVersion> txVerFilter = prevIncSnpId != null
-                ? txVer -> true : txVer -> !incSnpFinRec.excluded().contains(txVer);
-
-            long lastProcessedIdx = 0;
-
-            // Step 2. Apply incremental snapshots.
-            while (it.hasNext()) {
-                IgniteBiTuple<WALPointer, WALRecord> walRec = it.next();
-
-                long curIdx = walRec.getKey().index();
-
-                if (curIdx != lastProcessedIdx) {
-                    opCtx0.processedWalSegments = (int)(curIdx - startIdx);
-
-                    lastProcessedIdx = curIdx;
+                    exec.onError(err);
                 }
-
-                WALRecord rec = walRec.getValue();
-
-                if (rec.type() == INCREMENTAL_SNAPSHOT_START_RECORD) {
-                    IncrementalSnapshotStartRecord startRec = (IncrementalSnapshotStartRecord)rec;
-
-                    if (startRec.id().equals(incSnpFinRec.id()))
-                        txVerFilter = v -> incSnpFinRec.included().contains(v);
-                }
-                else if (rec.type() == INCREMENTAL_SNAPSHOT_FINISH_RECORD) {
-                    IncrementalSnapshotFinishRecord finRec = (IncrementalSnapshotFinishRecord)rec;
-
-                    if (finRec.id().equals(prevIncSnpId))
-                        txVerFilter = txVer -> !incSnpFinRec.excluded().contains(txVer);
-                }
-                else if (rec.type() == DATA_RECORD_V2) {
-                    DataRecord data = (DataRecord)rec;
-
-                    for (DataEntry e: data.writeEntries()) {
-                        // That is OK to restore only part of transaction related to a specified cache group,
-                        // because a full snapshot restoring does the same.
-                        if (!cacheIds.contains(e.cacheId()) || !txVerFilter.apply(e.nearXidVersion()))
-                            continue;
-
-                        GridCacheContext<?, ?> cacheCtx = ctx.cache().context().cacheContext(e.cacheId());
-                        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ctx.cache().context().database();
-
-                        exec.submit(() -> {
-                            try {
-                                applyDataEntry(dbMgr, cacheCtx, e);
-
-                                applied.increment();
-                            }
-                            catch (IgniteCheckedException err) {
-                                U.error(log, "Failed to apply data entry, dataEntry=" + e + ", ptr=" + data.position());
-
-                                exec.onError(err);
-                            }
-                        }, cacheCtx.groupId(), e.partitionId());
-                    }
-                }
-            }
-        }
-
-        opCtx0.processedWalSegments += 1;
+            }, cacheCtx.groupId(), e.partitionId());
+        }, null);
 
         exec.awaitApplyComplete();
 
@@ -1584,62 +1510,10 @@ public class SnapshotRestoreProcess {
         exec.awaitApplyComplete();
 
         if (log.isInfoEnabled()) {
-            log.info("Finished restore incremental snapshot [snpName=" + snpName + ", incrementIndex=" + incIdx +
-                ", id=" + incSnpId + ", updatesApplied=" + applied.longValue() + ", time=" + (U.currentTimeMillis() - start) + " ms]");
+            log.info("Finished restore incremental snapshot [snpName=" + opCtx0.snpName + ", incrementIndex=" + opCtx0.incIdx +
+                ", id=" + opCtx0.reqId + ", updatesApplied=" + opCtx0.processedWalEntries.longValue() +
+                ", time=" + (U.currentTimeMillis() - start) + " ms]");
         }
-    }
-
-    /** @return {@link IncrementalSnapshotFinishRecord} for specified snapshot, or {@code null} if not found. */
-    private @Nullable IncrementalSnapshotFinishRecord readFinishRecord(File segment, UUID incSnpId) throws IgniteCheckedException {
-        try (WALIterator it = walIter(log, Collections.singleton(INCREMENTAL_SNAPSHOT_FINISH_RECORD), segment)) {
-            while (it.hasNext()) {
-                IncrementalSnapshotFinishRecord finRec = (IncrementalSnapshotFinishRecord)it.next().getValue();
-
-                if (finRec.id().equals(incSnpId))
-                    return finRec;
-            }
-        }
-
-        return null;
-    }
-
-    /** @return WAL segments to restore for specified incremental index since the base snapshot. */
-    private File[] walSegments(String snpName, String snpPath, int incIdx, String folderName) throws IgniteCheckedException {
-        File[] segments = null;
-
-        for (int i = 1; i <= incIdx; i++) {
-            File incSnpDir = ctx.cache().context().snapshotMgr().incrementalSnapshotLocalDir(snpName, snpPath, i);
-
-            if (!incSnpDir.exists())
-                throw new IgniteCheckedException("Incremental snapshot doesn't exists [dir=" + incSnpDir + ']');
-
-            File incSnpWalDir = incrementalSnapshotWalsDir(incSnpDir, folderName);
-
-            if (!incSnpWalDir.exists())
-                throw new IgniteCheckedException("Incremental snapshot WAL directory doesn't exists [dir=" + incSnpWalDir + ']');
-
-            File[] incSegs = incSnpWalDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
-
-            if (incSegs == null)
-                throw new IgniteCheckedException("Failed to list WAL segments from snapshot directory [dir=" + incSnpDir + ']');
-
-            if (segments == null)
-                segments = incSegs;
-            else {
-                int segLen = segments.length;
-
-                segments = Arrays.copyOf(segments, segLen + incSegs.length);
-
-                System.arraycopy(incSegs, 0, segments, segLen, incSegs.length);
-            }
-        }
-
-        if (F.isEmpty(segments)) {
-            throw new IgniteCheckedException("No WAL segments found for incremental snapshot " +
-                "[snpName=" + snpName + ", snpPath=" + snpPath + ", incrementIndex=" + incIdx + ']');
-        }
-
-        return segments;
     }
 
     /**
@@ -1689,20 +1563,6 @@ public class SnapshotRestoreProcess {
 
         if (dbMgr.applyDataEntry(cacheCtx, locPart, dataEntry))
             cacheCtx.offheap().dataStore(locPart).updateCounter(dataEntry.partitionCounter() - 1, 1);
-    }
-
-    /**
-     * @param log Ignite logger.
-     * @param types WAL record types to read.
-     * @param segments WAL segments.
-     * @return Iterator over WAL segments.
-     */
-    public WALIterator walIter(IgniteLogger log, Set<WALRecord.RecordType> types, File... segments) throws IgniteCheckedException {
-        return new IgniteWalIteratorFactory(log)
-            .iterator(new IgniteWalIteratorFactory.IteratorParametersBuilder()
-                .filter((recType, recPtr) -> types.contains(recType))
-                .sharedContext(ctx.cache().context())
-                .filesOrDirs(segments));
     }
 
     /**
@@ -1993,12 +1853,15 @@ public class SnapshotRestoreProcess {
 
     /**
      * @param map Map of partitions and cache groups.
+     * @param cacheGrpNames Map of cache group ids and names.
      * @return String representation.
      */
-    private static String partitionsMapToString(Map<Integer, Set<Integer>> map) {
+    private String partitionsMapToString(Map<Integer, Set<Integer>> map, Map<Integer, String> cacheGrpNames) {
         return map.entrySet()
             .stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> S.toStringSortedDistinct(e.getValue())))
+            .collect(Collectors.toMap(
+                e -> String.format("{grpId=%d, grpName=%s}", e.getKey(), cacheGrpNames.get(e.getKey())),
+                e -> S.toStringSortedDistinct(e.getValue())))
             .toString();
     }
 
@@ -2015,8 +1878,8 @@ public class SnapshotRestoreProcess {
         /** Snapshot directory path. */
         private final String snpPath;
 
-        /** Baseline discovery cache for node IDs that must be alive to complete the operation.*/
-        private final DiscoCache discoCache;
+        /** IDs of the required nodes. */
+        private final Set<UUID> nodes;
 
         /** Operational node id. */
         private final UUID opNodeId;
@@ -2045,7 +1908,7 @@ public class SnapshotRestoreProcess {
         /** Compressed groups. */
         private final Set<Integer> comprGrps = new HashSet<>();
 
-        /** Cache ID to configuration mapping. */
+        /** Cache ID to configuration mapping. Empty if the context is not initialized yet. */
         private volatile Map<Integer, StoredCacheData> cfgs = Collections.emptyMap();
 
         /** Graceful shutdown future. */
@@ -2078,37 +1941,29 @@ public class SnapshotRestoreProcess {
             snpName = "";
             startTime = 0;
             opNodeId = null;
-            discoCache = null;
+            nodes = null;
             snpPath = null;
             incIdx = 0;
         }
 
         /**
          * @param req Request to prepare cache group restore from the snapshot.
-         * @param discoCache Baseline discovery cache for node IDs that must be alive to complete the operation.
-         * @param cfgs Cache ID to configuration mapping.
          */
-        protected SnapshotRestoreContext(
-            SnapshotOperationRequest req,
-            DiscoCache discoCache,
-            Map<Integer, StoredCacheData> cfgs
-        ) {
+        protected SnapshotRestoreContext(SnapshotOperationRequest req) {
             reqId = req.requestId();
             snpName = req.snapshotName();
             snpPath = req.snapshotPath();
             opNodeId = req.operationalNodeId();
             incIdx = req.incrementIndex();
             startTime = U.currentTimeMillis();
-
-            this.discoCache = discoCache;
-            this.cfgs = cfgs;
+            nodes = req.nodes();
         }
 
         /**
          * @return Required baseline nodeIds that must be alive to complete restore operation.
          */
         public Collection<UUID> nodes() {
-            return F.transform(discoCache.aliveBaselineNodes(), F.node2id());
+            return nodes;
         }
 
         /** */

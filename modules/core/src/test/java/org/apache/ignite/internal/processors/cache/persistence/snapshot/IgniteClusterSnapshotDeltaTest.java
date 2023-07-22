@@ -21,8 +21,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiFunction;
@@ -35,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecora
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -48,7 +49,6 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DeltaSortedIterator.DELTA_SORT_BATCH_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaIndexFile;
-import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
@@ -57,13 +57,27 @@ import static org.junit.Assert.assertArrayEquals;
 @RunWith(Parameterized.class)
 public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
     /** */
-    @Parameterized.Parameter(1)
+    @Parameterized.Parameter(2)
     public boolean sequentialWrite;
 
     /** Parameters. */
-    @Parameterized.Parameters(name = "encryption={0}, sequentialWrite={1}")
+    @Parameterized.Parameters(name = "encryption={0}, onlyPrimary={1}, sequentialWrite={1}")
     public static Collection<Object[]> parameters() {
-        return cartesianProduct(encryptionParams(), F.asList(false, true));
+        Collection<Object[]> baseParams = params();
+
+        List<Object[]> res = new ArrayList<>();
+
+        for (boolean seqWrite : new boolean[] {false, true}) {
+            for (Object[] baseParam : baseParams) {
+                Object[] res0 = Arrays.copyOf(baseParam, baseParam.length + 1);
+
+                res0[baseParam.length] = seqWrite;
+
+                res.add(res0);
+            }
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -139,7 +153,7 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
         });
 
         // 2. Start a snapshot and block copy of a partitions.
-        IgniteFuture<Void> fut = srv.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> fut = snp(srv).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         GridTestUtils.waitForCondition(() -> mgr.currentCreateRequest() != null, getTestTimeout());
 

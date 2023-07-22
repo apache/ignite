@@ -271,6 +271,13 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
         try (IgniteClient cli = startClient("no-permissions-login-0")) {
             assertFailed(() -> cli.compute().executeAsync2(PublicAccessSystemTask.class.getName(), null).get());
         }
+
+        // Internal tasks with public access permissions explicitly specified still can be executed via Private API
+        // without permission checks.
+        assertCompleted(
+            () -> grid(0).context().task().execute(PublicAccessSystemTask.class, null).get(getTestTimeout()),
+            SRV_NODES_CNT
+        );
     }
 
     /** */

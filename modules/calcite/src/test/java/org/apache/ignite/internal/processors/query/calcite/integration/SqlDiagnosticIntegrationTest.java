@@ -1,0 +1,578 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+package org.apache.ignite.internal.processors.query.calcite.integration;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
+import org.apache.ignite.events.CacheQueryExecutedEvent;
+import org.apache.ignite.events.CacheQueryReadEvent;
+import org.apache.ignite.events.SqlQueryExecutionEvent;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.Query;
+import org.apache.ignite.internal.processors.query.calcite.QueryRegistry;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
+import org.junit.Test;
+
+import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
+import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
+import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.cleanPerformanceStatisticsDir;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.startCollectStatistics;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.stopCollectStatisticsAndRead;
+import static org.apache.ignite.internal.processors.query.QueryParserMetricsHolder.QUERY_PARSER_METRIC_GROUP_NAME;
+import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.BIG_RESULT_SET_MSG;
+import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_ERROR_MSG;
+import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_EXEC_MSG;
+import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_FINISHED_MSG;
+import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_USER_QUERIES_REG_NAME;
+
+/**
+ * Test SQL diagnostic tools.
+ */
+public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
+    /** */
+    private static final String jdbcUrl = "jdbc:ignite:thin://127.0.0.1:" + ClientConnectorConfiguration.DFLT_PORT;
+
+    /** */
+    private static final long LONG_QRY_TIMEOUT = 1_000L;
+
+    /** */
+    private static final int BIG_RESULT_SET_THRESHOLD = 10_000;
+
+    /** */
+    private ListeningTestLogger log;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setGridLogger(log)
+            .setSqlConfiguration(new SqlConfiguration()
+                .setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration())
+                .setLongQueryWarningTimeout(LONG_QRY_TIMEOUT))
+            .setIncludeEventTypes(EVT_SQL_QUERY_EXECUTION, EVT_CACHE_QUERY_EXECUTED, EVT_CACHE_QUERY_OBJECT_READ);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        log = new ListeningTestLogger(log());
+
+        startGrids(nodeCount());
+
+        client = startClientGrid();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
+
+    /** */
+    @Override protected int nodeCount() {
+        return 2;
+    }
+
+    /** */
+    @Test
+    public void testParserMetrics() {
+        MetricRegistry mreg0 = grid(0).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
+        MetricRegistry mreg1 = grid(1).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
+        mreg0.reset();
+        mreg1.reset();
+
+        LongMetric hits0 = mreg0.findMetric("hits");
+        LongMetric hits1 = mreg1.findMetric("hits");
+        LongMetric misses0 = mreg0.findMetric("misses");
+        LongMetric misses1 = mreg1.findMetric("misses");
+
+        // Parse and plan on client.
+        sql("CREATE TABLE test_parse(a INT)");
+
+        assertEquals(0, hits0.value());
+        assertEquals(0, hits1.value());
+        assertEquals(0, misses0.value());
+        assertEquals(0, misses1.value());
+
+        for (int i = 0; i < 10; i++)
+            sql(grid(0), "INSERT INTO test_parse VALUES (?)", i);
+
+        assertEquals(9, hits0.value());
+        assertEquals(0, hits1.value());
+        assertEquals(1, misses0.value());
+        assertEquals(0, misses1.value());
+
+        for (int i = 0; i < 10; i++)
+            sql(grid(1), "SELECT * FROM test_parse WHERE a = ?", i);
+
+        assertEquals(9, hits0.value());
+        assertEquals(9, hits1.value());
+        assertEquals(1, misses0.value());
+        assertEquals(1, misses1.value());
+    }
+
+    /** */
+    @Test
+    public void testBatchParserMetrics() throws Exception {
+        MetricRegistry mreg0 = grid(0).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
+        MetricRegistry mreg1 = grid(1).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
+        mreg0.reset();
+        mreg1.reset();
+
+        LongMetric hits0 = mreg0.findMetric("hits");
+        LongMetric hits1 = mreg1.findMetric("hits");
+        LongMetric misses0 = mreg0.findMetric("misses");
+        LongMetric misses1 = mreg1.findMetric("misses");
+
+        sql("CREATE TABLE test_batch(a INT)");
+
+        assertEquals(0, hits0.value());
+        assertEquals(0, hits1.value());
+        assertEquals(0, misses0.value());
+        assertEquals(0, misses1.value());
+
+        try (Connection conn = DriverManager.getConnection(jdbcUrl)) {
+            conn.setSchema("PUBLIC");
+
+            try (Statement stmt = conn.createStatement()) {
+                for (int i = 0; i < 10; i++)
+                    stmt.addBatch(String.format("INSERT INTO test_batch VALUES (%d)", i));
+
+                stmt.executeBatch();
+
+                assertEquals(0, hits0.value());
+                assertEquals(0, hits1.value());
+                assertEquals(10, misses0.value());
+                assertEquals(0, misses1.value());
+            }
+
+            String sql = "INSERT INTO test_batch VALUES (?)";
+
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                for (int i = 10; i < 20; i++) {
+                    stmt.setInt(1, i);
+                    stmt.addBatch();
+                }
+
+                stmt.executeBatch();
+
+                assertEquals(0, hits0.value());
+                assertEquals(0, hits1.value());
+                assertEquals(11, misses0.value()); // Only one increment per batch.
+                assertEquals(0, misses1.value());
+            }
+
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                for (int i = 20; i < 30; i++) {
+                    stmt.setInt(1, i);
+                    stmt.addBatch();
+                }
+
+                stmt.executeBatch();
+
+                assertEquals(1, hits0.value()); // Only one increment per batch.
+                assertEquals(0, hits1.value());
+                assertEquals(11, misses0.value());
+                assertEquals(0, misses1.value());
+            }
+        }
+    }
+
+    /** */
+    @Test
+    public void testUserQueriesMetrics() throws Exception {
+        sql(grid(0), "CREATE TABLE test_metric (a INT)");
+
+        MetricRegistry mreg0 = grid(0).context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        MetricRegistry mreg1 = grid(1).context().metric().registry(SQL_USER_QUERIES_REG_NAME);
+        mreg0.reset();
+        mreg1.reset();
+
+        AtomicInteger qryCnt = new AtomicInteger();
+        grid(0).context().query().runningQueryManager().registerQueryFinishedListener(q -> qryCnt.incrementAndGet());
+
+        sql(grid(0), "INSERT INTO test_metric VALUES (?)", 0);
+        sql(grid(0), "SELECT * FROM test_metric WHERE a = ?", 0);
+
+        try {
+            sql(grid(0), "SELECT * FROM test_fail");
+
+            fail();
+        }
+        catch (IgniteSQLException ignored) {
+            // Expected.
+        }
+
+        FieldsQueryCursor<?> cur = grid(0).getOrCreateCache("test_metric")
+            .query(new SqlFieldsQuery("SELECT * FROM table(system_range(1, 10000))"));
+
+        assertTrue(cur.iterator().hasNext());
+
+        cur.close();
+
+        // Query unregistering is async process, wait for it before metrics check.
+        assertTrue(GridTestUtils.waitForCondition(() -> qryCnt.get() == 4, 1_000L));
+
+        assertEquals(2, ((LongMetric)mreg0.findMetric("success")).value());
+        assertEquals(2, ((LongMetric)mreg0.findMetric("failed")).value()); // 1 error + 1 cancelled.
+        assertEquals(1, ((LongMetric)mreg0.findMetric("canceled")).value());
+
+        assertEquals(0, ((LongMetric)mreg1.findMetric("success")).value());
+        assertEquals(0, ((LongMetric)mreg1.findMetric("failed")).value());
+        assertEquals(0, ((LongMetric)mreg1.findMetric("canceled")).value());
+    }
+
+    /** */
+    @Test
+    public void testPerformanceStatistics() throws Exception {
+        cleanPerformanceStatisticsDir();
+        startCollectStatistics();
+
+        long startTime = U.currentTimeMillis();
+
+        sql(grid(0), "SELECT * FROM table(system_range(1, 1000))");
+        sql(grid(0), "CREATE TABLE test_perf_stat (a INT)");
+        sql(grid(0), "INSERT INTO test_perf_stat VALUES (0), (1), (2), (3), (4)");
+        sql(grid(0), "SELECT * FROM test_perf_stat");
+
+        // Only the last query should trigger queryReads event.
+        // The first query uses generated data and doesn't require any page reads.
+        // The second query is DDL and doesn't perform any page reads as well.
+        // The third query performs scan for static values and insert data into cache. We are able to analyze only
+        // ScanNode page reads, since table/index scans are local and executed in current thread. ModifyNode uses
+        // distributed `invoke` operation, which can be executed by other threads or on other nodes. It's hard to
+        // obtain correct value of page reads for these types of operations, so, currently we just ignore page reads
+        // performed by ModifyNode. Despite static values scan themself doesn't require any page reads, it still can
+        // catch some page reads performed by insert operation. But, taking into account small amount of inserted
+        // values, it's not enough rows to trigger batch insert during values scan, and we expect zero page-reads
+        // for this query in this test.
+        // The fourth query is a table scan and should perform page reads on all data nodes.
+
+        AtomicInteger qryCnt = new AtomicInteger();
+        AtomicInteger readsCnt = new AtomicInteger();
+        Iterator<String> sqlIt = F.asList("SELECT", "CREATE", "INSERT", "SELECT").iterator();
+        Set<UUID> dataNodesIds = new HashSet<>(F.asList(grid(0).localNode().id(), grid(1).localNode().id()));
+        Set<UUID> readsNodes = new HashSet<>(dataNodesIds);
+        Set<Long> readsQueries = new HashSet<>();
+        AtomicLong lastQryId = new AtomicLong();
+
+        stopCollectStatisticsAndRead(new AbstractPerformanceStatisticsTest.TestHandler() {
+            @Override public void query(
+                UUID nodeId,
+                GridCacheQueryType type,
+                String text,
+                long id,
+                long qryStartTime,
+                long duration,
+                boolean success
+            ) {
+                qryCnt.incrementAndGet();
+
+                assertTrue(nodeId.equals(grid(0).localNode().id()));
+                assertEquals(SQL_FIELDS, type);
+                assertTrue(text.startsWith(sqlIt.next()));
+                assertTrue(qryStartTime >= startTime);
+                assertTrue(duration >= 0);
+                assertTrue(success);
+
+                lastQryId.set(id);
+            }
+
+            @Override public void queryReads(
+                UUID nodeId,
+                GridCacheQueryType type,
+                UUID qryNodeId,
+                long id,
+                long logicalReads,
+                long physicalReads
+            ) {
+                readsCnt.incrementAndGet();
+
+                readsQueries.add(id);
+                assertTrue(dataNodesIds.contains(qryNodeId));
+                readsNodes.remove(nodeId);
+
+                assertTrue(grid(0).localNode().id().equals(qryNodeId));
+                assertEquals(SQL_FIELDS, type);
+                assertTrue(logicalReads > 0);
+            }
+        });
+
+        assertEquals(4, qryCnt.get());
+        assertTrue("Query reads expected on nodes: " + readsNodes, readsNodes.isEmpty());
+        assertEquals(Collections.singleton(lastQryId.get()), readsQueries);
+    }
+
+    /** */
+    @Test
+    public void testSqlEvents() {
+        sql("CREATE TABLE test_event (a INT) WITH cache_name=\"test_event\"");
+
+        AtomicIntegerArray evtsSqlExec = new AtomicIntegerArray(nodeCount());
+        AtomicIntegerArray evtsQryExec = new AtomicIntegerArray(nodeCount());
+        AtomicIntegerArray evtsQryRead = new AtomicIntegerArray(nodeCount());
+        for (int i = 0; i < nodeCount(); i++) {
+            int n = i;
+            grid(i).events().localListen(e -> {
+                evtsSqlExec.incrementAndGet(n);
+
+                assertTrue(e instanceof SqlQueryExecutionEvent);
+                assertTrue(((SqlQueryExecutionEvent)e).text().toLowerCase().contains("test_event"));
+
+                return true;
+            }, EVT_SQL_QUERY_EXECUTION);
+
+            grid(i).events().localListen(e -> {
+                evtsQryExec.incrementAndGet(n);
+
+                assertTrue(e instanceof CacheQueryExecutedEvent);
+                assertEquals("test_event", ((CacheQueryExecutedEvent<?, ?>)e).cacheName());
+                assertTrue(((CacheQueryExecutedEvent<?, ?>)e).clause().toLowerCase().contains("test_event"));
+                assertEquals(SQL_FIELDS.name(), ((CacheQueryExecutedEvent<?, ?>)e).queryType());
+                assertEquals(3, ((CacheQueryExecutedEvent<?, ?>)e).arguments().length);
+                assertNull(((CacheQueryExecutedEvent<?, ?>)e).scanQueryFilter());
+                assertNull(((CacheQueryExecutedEvent<?, ?>)e).continuousQueryFilter());
+
+                return true;
+            }, EVT_CACHE_QUERY_EXECUTED);
+
+            grid(i).events().localListen(e -> {
+                evtsQryRead.incrementAndGet(n);
+
+                assertTrue(e instanceof CacheQueryReadEvent);
+                assertEquals(SQL_FIELDS.name(), ((CacheQueryReadEvent<?, ?>)e).queryType());
+                assertTrue(((CacheQueryReadEvent<?, ?>)e).clause().toLowerCase().contains("test_event"));
+                assertNotNull(((CacheQueryReadEvent<?, ?>)e).row());
+
+                return true;
+            }, EVT_CACHE_QUERY_OBJECT_READ);
+        }
+
+        grid(0).cache("test_event").query(new SqlFieldsQuery("INSERT INTO test_event VALUES (?), (?), (?)")
+                .setArgs(0, 1, 2)).getAll();
+
+        grid(0).cache("test_event").query(new SqlFieldsQuery("SELECT * FROM test_event WHERE a IN (?, ?, ?)")
+                .setArgs(0, 1, 3)).getAll();
+
+        assertEquals(2, evtsSqlExec.get(0));
+        assertEquals(0, evtsSqlExec.get(1));
+        assertEquals(2, evtsQryExec.get(0));
+        assertEquals(0, evtsQryExec.get(1));
+        // 1 event fired by insert (number of rows inserted) + 2 events (1 per row selected) fired by the second query.
+        assertEquals(3, evtsQryRead.get(0));
+        assertEquals(0, evtsQryRead.get(1));
+    }
+
+    /** */
+    @Test
+    public void testSensitiveInformationHiding() throws Exception {
+        cleanPerformanceStatisticsDir();
+        startCollectStatistics();
+
+        client.getOrCreateCache(new CacheConfiguration<Integer, Integer>("func_cache")
+            .setSqlFunctionClasses(FunctionsLibrary.class)
+            .setSqlSchema("PUBLIC")
+        );
+
+        QueryUtils.INCLUDE_SENSITIVE = false;
+
+        try {
+            // Check the same query twice, the first time - with parsing and planning,
+            // the second time from the parsers cache.
+            for (int i = 0; i < 2; i++) {
+                FunctionsLibrary.latch = new CountDownLatch(1);
+
+                IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+                    List<List<?>> res = sql(grid(0), "SELECT * FROM (VALUES('sensitive')) t(v) " +
+                        "WHERE v = 'sensitive' and waitLatch(1000)");
+
+                    assertEquals(1, res.size());
+                    assertEquals(1, res.get(0).size());
+                    assertEquals("sensitive", res.get(0).get(0));
+                });
+
+                try {
+                    QueryRegistry qreg = queryProcessor(grid(0)).queryRegistry();
+                    assertTrue(GridTestUtils.waitForCondition(() -> qreg.runningQueries().size() == 1, 1000L));
+                    Query<?> qry = F.first(qreg.runningQueries());
+                    assertFalse(qry.toString().contains("sensitive"));
+                }
+                finally {
+                    FunctionsLibrary.latch.countDown();
+                }
+
+                fut.get();
+            }
+
+            AtomicInteger qryCnt = new AtomicInteger();
+
+            stopCollectStatisticsAndRead(new AbstractPerformanceStatisticsTest.TestHandler() {
+                @Override public void query(
+                    UUID nodeId,
+                    GridCacheQueryType type,
+                    String text,
+                    long id,
+                    long qryStartTime,
+                    long duration,
+                    boolean success
+                ) {
+                    qryCnt.incrementAndGet();
+                    assertFalse(text.contains("sensitive"));
+                }
+            });
+
+            assertEquals(2, qryCnt.get());
+        }
+        finally {
+            QueryUtils.INCLUDE_SENSITIVE = true;
+        }
+    }
+
+    /** */
+    @Test
+    public void testLongRunningQueries() throws Exception {
+        client.getOrCreateCache(new CacheConfiguration<Integer, Integer>("func_cache")
+            .setSqlFunctionClasses(FunctionsLibrary.class)
+            .setSqlSchema("PUBLIC")
+        );
+
+        LogListener logLsnr0 = LogListener.matches(LONG_QUERY_EXEC_MSG).build();
+
+        log.registerListener(logLsnr0);
+
+        FunctionsLibrary.latch = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> sql(grid(0), "SELECT waitLatch(10000)"));
+
+        doSleep(LONG_QRY_TIMEOUT * 3);
+
+        assertTrue(logLsnr0.check());
+
+        LogListener logLsnr1 = LogListener.matches(LONG_QUERY_FINISHED_MSG).build();
+
+        log.registerListener(logLsnr1);
+
+        FunctionsLibrary.latch.countDown();
+
+        fut.get();
+
+        assertTrue(logLsnr1.check(1000L));
+
+        FunctionsLibrary.latch = new CountDownLatch(1);
+
+        fut = GridTestUtils.runAsync(() -> sql(grid(0), "SELECT waitLatch(2000)"));
+
+        LogListener logLsnr2 = LogListener.matches(LONG_QUERY_ERROR_MSG).build();
+
+        log.registerListener(logLsnr2);
+
+        doSleep(LONG_QRY_TIMEOUT * 2);
+
+        try {
+            fut.get();
+        }
+        catch (Exception ignore) {
+            // Expected.
+        }
+
+        assertTrue(logLsnr2.check(1000L));
+    }
+
+    /** */
+    @Test
+    public void testBigResultSet() throws Exception {
+        grid(0).context().query().runningQueryManager().heavyQueriesTracker()
+            .setResultSetSizeThreshold(BIG_RESULT_SET_THRESHOLD);
+
+        int rowCnt = BIG_RESULT_SET_THRESHOLD * 5 + 1;
+
+        LogListener logLsnr0 = LogListener.matches(BIG_RESULT_SET_MSG).build();
+        LogListener logLsnr1 = LogListener.matches("fetched=" + BIG_RESULT_SET_THRESHOLD).build();
+        LogListener logLsnr2 = LogListener.matches("fetched=" + rowCnt).build();
+
+        log.registerListener(logLsnr0);
+        log.registerListener(logLsnr1);
+        log.registerListener(logLsnr2);
+
+        sql(grid(0), "SELECT * FROM TABLE(SYSTEM_RANGE(1, ?))", rowCnt);
+
+        assertTrue(logLsnr0.check(1000L));
+        assertTrue(logLsnr1.check(1000L));
+        assertTrue(logLsnr2.check(1000L));
+    }
+
+    /** */
+    public static class FunctionsLibrary {
+        /** */
+        static volatile CountDownLatch latch;
+
+        /** */
+        @QuerySqlFunction
+        public static boolean waitLatch(long time) {
+            try {
+                if (!latch.await(time, TimeUnit.MILLISECONDS))
+                    throw new RuntimeException();
+            }
+            catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            return true;
+        }
+    }
+}

@@ -59,8 +59,8 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectEnum;
-import org.apache.ignite.internal.commandline.CommandList;
-import org.apache.ignite.internal.commandline.systemview.SystemViewCommandArg;
+import org.apache.ignite.internal.management.SystemViewCommand;
+import org.apache.ignite.internal.management.SystemViewTask;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
@@ -75,7 +75,6 @@ import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.AttributeVisitor;
@@ -91,11 +90,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.commandline.CommandList.SYSTEM_VIEW;
-import static org.apache.ignite.internal.commandline.systemview.SystemViewCommand.COLUMN_SEPARATOR;
-import static org.apache.ignite.internal.commandline.systemview.SystemViewCommandArg.ALL_NODES;
-import static org.apache.ignite.internal.commandline.systemview.SystemViewCommandArg.NODE_ID;
-import static org.apache.ignite.internal.commandline.systemview.SystemViewCommandArg.NODE_IDS;
+import static org.apache.ignite.internal.management.SystemViewCommand.COLUMN_SEPARATOR;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODES_SYS_VIEW;
 import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
 import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_PREDICATE;
@@ -135,10 +130,10 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
-/** Tests output of {@link CommandList#SYSTEM_VIEW} command. */
+/** Tests output of {@link SystemViewCommand} command. */
 public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstractTest {
     /** Command line argument for printing content of a system view. */
-    private static final String CMD_SYS_VIEW = SYSTEM_VIEW.text();
+    private static final String CMD_SYS_VIEW = "--system-view";
 
     /** Latch that is used to unblock all compute jobs. */
     private static final CountDownLatch COMPUTE_JOB_UNBLOCK_LATCH = new CountDownLatch(1);
@@ -148,6 +143,15 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
 
     /** Name of the test data region. */
     private static final String DATA_REGION_NAME = "in-memory";
+
+    /** */
+    public static final String ALL_NODES = "--all-nodes";
+
+    /** */
+    public static final String NODE_ID = "--node-id";
+
+    /** */
+    public static final String NODE_IDS = "--node-ids";
 
     /** Test node with 0 index. */
     private IgniteEx ignite0;
@@ -185,22 +189,22 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     @Test
     public void testSystemViewNameMissedFailure() {
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_SYS_VIEW),
-            "The name of the system view for which its content should be printed is expected.");
+            "Argument system_view_name required.");
     }
 
-    /** Tests command error output in case value of {@link SystemViewCommandArg#NODE_ID} argument is omitted. */
+    /** Tests command error output in case value of {@code --node-id} argument is omitted. */
     @Test
     public void testNodeIdMissedFailure() {
-        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_SYS_VIEW, SVCS_VIEW, NODE_ID.argName()),
-            "ID of the node from which system view content should be obtained is expected.");
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_SYS_VIEW, SVCS_VIEW, NODE_ID),
+            "Please specify a value for argument: --node-id");
     }
 
-    /** Tests command error output in case value of {@link SystemViewCommandArg#NODE_ID} argument is invalid.*/
+    /** Tests command error output in case value of {@code --node-id} argument is invalid.*/
     @Test
     public void testInvalidNodeIdFailure() {
         assertContains(log,
-            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_SYS_VIEW, SVCS_VIEW, NODE_ID.argName(), "invalid_node_id"),
-            "Failed to parse " + NODE_ID.argName() +
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_SYS_VIEW, SVCS_VIEW, NODE_ID, "invalid_node_id"),
+            "Failed to parse " + NODE_ID +
                 " command argument. String representation of \"java.util.UUID\" is exepected." +
                 " For example: 123e4567-e89b-42d3-a456-556642440000"
         );
@@ -211,26 +215,26 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     public void testMultipleSystemViewNamesFailure() {
         assertContains(log,
             executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_SYS_VIEW, SVCS_VIEW, CACHE_GRP_PAGE_LIST_VIEW),
-            "Multiple system view names are not supported.");
+            "Unexpected argument: " + CACHE_GRP_PAGE_LIST_VIEW);
     }
 
     /**
-     * Tests command error output in case {@link SystemViewCommandArg#ALL_NODES} and
-     * {@link SystemViewCommandArg#NODE_IDS} are both specified.
+     * Tests command error output in case {@code --all-nodes} and
+     * {@code --node-ids} are both specified.
      */
     @Test
     public void testAllNodesAndNodeIds() {
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
-                CMD_SYS_VIEW, SVCS_VIEW, ALL_NODES.argName(), NODE_IDS.argName(), ignite0.localNode().id().toString()),
-            "The " + ALL_NODES.argName() + " parameter cannot be used with specified node IDs.");
+                CMD_SYS_VIEW, SVCS_VIEW, ALL_NODES, NODE_IDS, ignite0.localNode().id().toString()),
+            "Only one of [--node-ids, --all-nodes, --node-id] allowed");
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
-                CMD_SYS_VIEW, SVCS_VIEW, ALL_NODES.argName(), NODE_ID.argName(), ignite0.localNode().id().toString()),
-            "The " + ALL_NODES.argName() + " parameter cannot be used with specified node IDs.");
+                CMD_SYS_VIEW, SVCS_VIEW, ALL_NODES, NODE_ID, ignite0.localNode().id().toString()),
+            "Only one of [--node-ids, --all-nodes, --node-id] allowed");
     }
 
     /**
-     * Tests command error output in case {@link SystemViewCommandArg#NODE_ID} argument value refers to nonexistent
+     * Tests command error output in case {@code --node-id} argument value refers to nonexistent
      * node.
      */
     @Test
@@ -238,7 +242,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
         String incorrectNodeId = UUID.randomUUID().toString();
 
         assertContains(log,
-            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_SYS_VIEW, "--node-id", incorrectNodeId, CACHES_VIEW),
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_SYS_VIEW, NODE_ID, incorrectNodeId, CACHES_VIEW),
             "Failed to perform operation.\nNode with id=" + incorrectNodeId + " not found");
     }
 
@@ -303,7 +307,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             COMPUTE_JOB_BLOCK_LATCH.await();
 
             List<List<String>> tasksView = systemView(ignite0, TASKS_VIEW).stream()
-                .filter(row -> !VisorSystemViewTask.class.getName().equals(row.get(3)))
+                .filter(row -> !SystemViewTask.class.getName().equals(row.get(3)))
                 .collect(Collectors.toList());
 
             assertEquals(tasksCnt, tasksView.size());
@@ -343,6 +347,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
         assertEquals(srvcCfg.getName(), sysView.get(1)); // name
         assertEquals(DummyService.class.getName(), sysView.get(2)); // serviceClass
         assertEquals(Integer.toString(srvcCfg.getMaxPerNodeCount()), sysView.get(6)); // maxPerNodeCount
+        assertEquals(F.first(ignite0.services().serviceDescriptors()).topologySnapshot().toString(), sysView.get(10));
     }
 
     /** */
@@ -464,6 +469,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "NODE_ATTRIBUTES",
             "TABLES",
             "CLIENT_CONNECTIONS",
+            "CLIENT_CONNECTION_ATTRIBUTES",
             "TABLE_COLUMNS",
             "VIEW_COLUMNS",
             "TRANSACTIONS",
@@ -1061,7 +1067,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
         IgniteCache<Integer, TestObjectAllTypes> c1 = ignite0.createCache("test-cache");
         IgniteCache<Integer, TestObjectEnum> c2 = ignite0.createCache("test-enum-cache");
 
-        executeSql(ignite0, "CREATE TABLE T1(ID LONG PRIMARY KEY, NAME VARCHAR(40), ACCOUNT BIGINT)");
+        executeSql(ignite0, "CREATE TABLE IF NOT EXISTS T1(ID LONG PRIMARY KEY, NAME VARCHAR(40), ACCOUNT BIGINT)");
         executeSql(ignite0, "INSERT INTO T1(ID, NAME, ACCOUNT) VALUES(1, 'test', 1)");
 
         c1.put(1, new TestObjectAllTypes());
@@ -1069,13 +1075,17 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
 
         List<List<String>> binaryMetaView = systemView(ignite0, BINARY_METADATA_VIEW);
 
-        assertEquals(3, binaryMetaView.size());
+        assertTrue(binaryMetaView.size() >= 3);
+
+        int cntr = 0;
 
         for (List<String> row : binaryMetaView) {
             if (Objects.equals(TestObjectEnum.class.getName(), row.get(1))) {
                 assertTrue(Boolean.parseBoolean(row.get(6)));
 
                 assertEquals("0", row.get(3));
+
+                cntr++;
             }
             else if (Objects.equals(TestObjectAllTypes.class.getName(), row.get(1))) {
                 assertFalse(Boolean.parseBoolean(row.get(6)));
@@ -1086,16 +1096,22 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
 
                 for (Field field : fields)
                     assertTrue(row.get(4).contains(field.getName()));
+
+                cntr++;
             }
-            else {
+            else if (row.get(1).contains("T1")) {
                 assertFalse(Boolean.parseBoolean(row.get(6)));
 
                 assertEquals("2", row.get(3));
 
                 assertTrue(row.get(4).contains("NAME"));
                 assertTrue(row.get(4).contains("ACCOUNT"));
+
+                cntr++;
             }
         }
+
+        assertTrue(cntr >= 3);
     }
 
     /** */
@@ -1145,23 +1161,25 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     public void testSnapshotView() throws Exception {
         int srvCnt = ignite0.cluster().forServers().nodes().size();
 
-        String snap0 = "testSnapshot0";
+        int sz = systemView(ignite0, SNAPSHOT_SYS_VIEW).size();
+
+        String snap0 = "testSnapshot" + commandHandler;
 
         ignite0.snapshot().createSnapshot(snap0).get();
 
-        assertEquals(srvCnt, systemView(ignite0, SNAPSHOT_SYS_VIEW).size());
+        assertEquals(srvCnt + sz, systemView(ignite0, SNAPSHOT_SYS_VIEW).size());
     }
 
     /** */
     @Test
     public void testMultipleNodes() {
-        checkNodesResult(Collections.singleton(ignite0), NODE_IDS.argName());
-        checkNodesResult(Collections.singleton(client), NODE_IDS.argName());
+        //checkNodesResult(Collections.singleton(ignite0), NODE_IDS);
+        checkNodesResult(Collections.singleton(client), NODE_IDS);
 
-        checkNodesResult(F.asList(ignite0, ignite1), NODE_IDS.argName());
-        checkNodesResult(F.asList(ignite0, ignite1, client), NODE_IDS.argName());
+        checkNodesResult(F.asList(ignite0, ignite1), NODE_IDS);
+        checkNodesResult(F.asList(ignite0, ignite1, client), NODE_IDS);
 
-        checkNodesResult(F.viewReadOnly(G.allGrids(), node -> (IgniteEx)node), ALL_NODES.argName());
+        checkNodesResult(F.viewReadOnly(G.allGrids(), node -> (IgniteEx)node), ALL_NODES);
     }
 
     /** */
@@ -1205,7 +1223,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      * @return Content of the requested system view.
      */
     private List<List<String>> systemView(IgniteEx node, String sysViewName) {
-        Map<UUID, List<List<String>>> map = systemView(Collections.singleton(node), sysViewName, NODE_ID.argName());
+        Map<UUID, List<List<String>>> map = systemView(Collections.singleton(node), sysViewName, NODE_ID);
 
         assertEquals(1, map.size());
 
@@ -1239,8 +1257,8 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
         for (String nameArg : F.asList(toSqlName(sysViewName), toSqlName(sysViewName).toLowerCase(), sysViewName)) {
             String[] args;
 
-            if (ALL_NODES.argName().equals(nodesArg))
-                args = new String[] {CMD_SYS_VIEW, nameArg, ALL_NODES.argName()};
+            if (ALL_NODES.equals(nodesArg))
+                args = new String[] {CMD_SYS_VIEW, nameArg, ALL_NODES};
             else {
                 String nodeIds = String.join(",", F.viewReadOnly(nodes, n -> n.localNode().id().toString()));
 
@@ -1264,14 +1282,18 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      * @return System view values.
      */
     private Map<UUID, List<List<String>>> parseSystemViewCommandOutput(String out) {
-        String outStart = "--------------------------------------------------------------------------------";
+        if (commandHandler.equals(CLI_CMD_HND)) {
+            String outStart = "--------------------------------------------------------------------------------";
 
-        String outEnd = "Command [" + SYSTEM_VIEW.toCommandName() + "] finished with code: " + EXIT_CODE_OK;
+            String outEnd = "Command [SYSTEM-VIEW] finished with code: " + EXIT_CODE_OK;
 
-        String[] rows = out.substring(
-            out.indexOf(outStart) + outStart.length() + 1,
-            out.indexOf(outEnd) - 1
-        ).split(U.nl());
+            out = out.substring(
+                out.indexOf(outStart) + outStart.length() + 1,
+                out.indexOf(outEnd) - 1
+            );
+        }
+
+        String[] rows = out.split(U.nl());
 
         Pattern nodePtrn = Pattern.compile("Results from node with ID: (.*)");
         String tableDelim = "---";

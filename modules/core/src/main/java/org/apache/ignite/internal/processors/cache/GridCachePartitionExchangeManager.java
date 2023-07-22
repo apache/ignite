@@ -413,7 +413,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.gridEvents().addDiscoveryEventListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED,
             EVT_DISCOVERY_CUSTOM_EVT);
 
-        cctx.io().addCacheHandler(0, GridDhtPartitionsSingleMessage.class,
+        cctx.io().addCacheHandler(GridDhtPartitionsSingleMessage.class,
             new MessageHandler<GridDhtPartitionsSingleMessage>() {
                 @Override public void onMessage(final ClusterNode node, final GridDhtPartitionsSingleMessage msg) {
                     GridDhtPartitionExchangeId exchangeId = msg.exchangeId();
@@ -450,7 +450,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
             });
 
-        cctx.io().addCacheHandler(0, GridDhtPartitionsFullMessage.class,
+        cctx.io().addCacheHandler(GridDhtPartitionsFullMessage.class,
             new MessageHandler<GridDhtPartitionsFullMessage>() {
                 @Override public void onMessage(ClusterNode node, GridDhtPartitionsFullMessage msg) {
                     if (msg.exchangeId() == null) {
@@ -470,7 +470,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
             });
 
-        cctx.io().addCacheHandler(0, GridDhtPartitionsSingleRequest.class,
+        cctx.io().addCacheHandler(GridDhtPartitionsSingleRequest.class,
             new MessageHandler<GridDhtPartitionsSingleRequest>() {
                 @Override public void onMessage(ClusterNode node, GridDhtPartitionsSingleRequest msg) {
                     processSinglePartitionRequest(node, msg);
@@ -1343,16 +1343,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param grps Cache groups for partitions refresh.
      */
     public void refreshPartitions(@NotNull Collection<CacheGroupContext> grps) {
-        // TODO https://issues.apache.org/jira/browse/IGNITE-6857
-        if (cctx.snapshot().snapshotOperationInProgress()) {
-            if (log.isDebugEnabled())
-                log.debug("Schedule resend parititions due to snapshot in progress");
-
-            scheduleResendPartitions();
-
-            return;
-        }
-
         if (grps.isEmpty()) {
             if (log.isDebugEnabled())
                 log.debug("Skip partitions refresh, there are no cache groups for partition refresh.");
@@ -3460,11 +3450,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 forcedRebFut = ((ForceRebalanceExchangeTask)task).forcedRebalanceFuture();
 
                             for (CacheGroupContext grp : assignsSet.descendingSet()) {
-                                boolean disableRebalance = cctx.snapshot().partitionsAreFrozen(grp);
-
-                                if (disableRebalance)
-                                    continue;
-
                                 RebalanceFuture cur = grp.preloader().prepare(exchId,
                                     exchFut,
                                     cnt,

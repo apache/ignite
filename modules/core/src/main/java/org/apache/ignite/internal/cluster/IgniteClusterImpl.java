@@ -84,6 +84,8 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.parseFile;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.specifications;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_NODE_START;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_NODE_STOP;
 
 /**
  *
@@ -276,6 +278,8 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
+            ctx.security().authorize(ADMIN_CLUSTER_NODE_STOP);
+
             ctx.task().execute(IgniteKillTask.class, false, options().withProjection(nodes())).get();
         }
         catch (IgniteCheckedException e) {
@@ -291,6 +295,8 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
+            ctx.security().authorize(ADMIN_CLUSTER_NODE_STOP);
+
             ctx.task().execute(IgniteKillTask.class, false, options().withProjection(forNodeIds(ids).nodes())).get();
         }
         catch (IgniteCheckedException e) {
@@ -306,6 +312,8 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
+            ctx.security().authorize(ADMIN_CLUSTER_NODE_STOP);
+
             ctx.task().execute(IgniteKillTask.class, true, options().withProjection(nodes())).get();
         }
         catch (IgniteCheckedException e) {
@@ -321,6 +329,8 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
+            ctx.security().authorize(ADMIN_CLUSTER_NODE_STOP);
+
             ctx.task().execute(IgniteKillTask.class, true, options().withProjection(forNodeIds(ids).nodes())).get();
         }
         catch (IgniteCheckedException e) {
@@ -386,10 +396,15 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState) throws IgniteException {
+        state(newState, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void state(ClusterState newState, boolean force) throws IgniteException {
         guard();
 
         try {
-            ctx.state().changeGlobalState(newState, true, serverNodes(), false).get();
+            ctx.state().changeGlobalState(newState, force, serverNodes(), false).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -882,6 +897,8 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
+            ctx.security().authorize(ADMIN_CLUSTER_NODE_START);
+
             IgniteSshHelper sshHelper = IgniteComponentType.SSH.create(false);
 
             Map<String, Collection<IgniteRemoteStartSpecification>> specsMap = specifications(hosts, dflts);
@@ -920,6 +937,8 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
                 if (neighbors != null) {
                     if (restart && !neighbors.isEmpty()) {
+                        ctx.security().authorize(ADMIN_CLUSTER_NODE_STOP);
+
                         try {
                             ctx.task().execute(IgniteKillTask.class, false, options(forNodes(neighbors).nodes())).get();
                         }

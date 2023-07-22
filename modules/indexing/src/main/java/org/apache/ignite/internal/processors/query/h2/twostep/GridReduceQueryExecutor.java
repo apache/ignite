@@ -97,6 +97,7 @@ import org.h2.util.IntArray;
 import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
@@ -425,8 +426,6 @@ public class GridReduceQueryExecutor {
             H2PooledConnection conn = h2.connections().connection(schemaName);
 
             final long qryReqId = qryReqIdGen.incrementAndGet();
-
-            h2.runningQueryManager().trackRequestId(qryReqId);
 
             boolean release = true;
 
@@ -935,8 +934,6 @@ public class GridReduceQueryExecutor {
         }
 
         final long reqId = qryReqIdGen.incrementAndGet();
-
-        h2.runningQueryManager().trackRequestId(reqId);
 
         final DmlDistributedUpdateRun r = new DmlDistributedUpdateRun(nodes.size());
 

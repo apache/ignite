@@ -234,9 +234,10 @@ public interface PlatformContext {
      * @param task Task.
      * @param ptr Pointer.
      * @param job Native job.
+     * @param jobName Native job name.
      * @return job.
      */
-    public PlatformJob createJob(Object task, long ptr, @Nullable Object job);
+    public PlatformJob createJob(Object task, long ptr, @Nullable Object job, String jobName);
 
     /**
      * Create closure job.
@@ -244,9 +245,10 @@ public interface PlatformContext {
      * @param task Native task.
      * @param ptr Pointer.
      * @param job Native job.
+     * @param jobName Closure name.
      * @return Closure job.
      */
-    public PlatformJob createClosureJob(Object task, long ptr, Object job);
+    public PlatformJob createClosureJob(Object task, long ptr, Object job, String jobName);
 
     /**
      * Create cache entry processor.

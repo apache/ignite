@@ -315,6 +315,10 @@ Register name: `client.connector`
 |SentBytesCount|   long|   Sent bytes count.
 |SslEnabled|   boolean|   Indicates whether SSL is enabled.
 |SslHandshakeDurationHistogram|   histogram|   Histogram of SSL handshake duration in milliseconds (metric is exported only if SSL is enabled).
+|AffinityKeyRequestsHits|   long|   The number of affinity-aware cache key requests that were sent to the primary node.
+|AffinityKeyRequestsMisses|   long|   The number of affinity-aware cache key requests that were sent not to the primary node.
+|AffinityQueryRequestsHits|   long|   The number of affinity-aware query requests that were sent to the primary node.
+|AffinityQueryRequestsMisses|   long|   The number of affinity-aware query requests that were sent not to the primary node.
 |===
 
 
@@ -467,3 +471,29 @@ Register name: `cache`
 |LastDataVer| long | The latest data version on the node.
 |DataVersionClusterId| integer | Data version cluster id.
 |===
+
+== SQL parser metrics
+
+Register name: `sql.parser.cache`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name|    Type|    Description
+|hits| long | The number of SQL queries that were found in the parsers cache (doesn't require to be parsed and planned before execution).
+|misses| long | The number of SQL queries that were parsed and planned.
+|===
+
+== SQL executor metrics
+
+Register name: `sql.queries.user`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name|    Type|    Description
+|success| long | The number of succesfully executed SQL queries.
+|failed| long | The number of failed SQL queries (including canceled).
+|canceled| long | The number of canceled SQL queries.
+|===
+
+
+

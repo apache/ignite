@@ -43,9 +43,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -144,7 +144,7 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
             IgniteEx ignite = startDedicatedGridsWithCache(FIRST_CLUSTER_PREFIX, GRIDS, CACHE_KEYS_RANGE, valBuilder,
                 dfltCacheCfg.setBackups(0), cacheCfg1, cacheCfg2, cacheCfg3);
 
-            ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+            createAndCheckSnapshot(ignite, SNAPSHOT_NAME, null, TIMEOUT);
 
             awaitPartitionMapExchange();
             stopAllGrids();

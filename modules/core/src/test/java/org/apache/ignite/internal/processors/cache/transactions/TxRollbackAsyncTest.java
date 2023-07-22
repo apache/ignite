@@ -54,6 +54,10 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.management.tx.TxCommandArg;
+import org.apache.ignite.internal.management.tx.TxInfo;
+import org.apache.ignite.internal.management.tx.TxTask;
+import org.apache.ignite.internal.management.tx.TxTaskResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
@@ -69,11 +73,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.tx.VisorTxInfo;
-import org.apache.ignite.internal.visor.tx.VisorTxOperation;
-import org.apache.ignite.internal.visor.tx.VisorTxTask;
-import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
-import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -998,19 +997,20 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         U.awaitQuiet(tx2Latch);
 
         // Rollback tx using kill task.
-        VisorTxTaskArg arg =
-            new VisorTxTaskArg(VisorTxOperation.KILL, null, null, null, null, null, null, null, null, null, null);
+        TxCommandArg arg = new TxCommandArg();
 
-        Map<ClusterNode, VisorTxTaskResult> res = client.compute(client.cluster().forPredicate(F.alwaysTrue())).
-            execute(new VisorTxTask(), new VisorTaskArgument<>(client.cluster().localNode().id(), arg, false));
+        arg.kill(true);
+
+        Map<ClusterNode, TxTaskResult> res = client.compute(client.cluster().forPredicate(F.alwaysTrue())).
+            execute(new TxTask(), new VisorTaskArgument<>(client.cluster().localNode().id(), arg, false));
 
         int expCnt = 0;
 
-        for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
+        for (Map.Entry<ClusterNode, TxTaskResult> entry : res.entrySet()) {
             if (entry.getValue().getInfos().isEmpty())
                 continue;
 
-            for (VisorTxInfo info : entry.getValue().getInfos()) {
+            for (TxInfo info : entry.getValue().getInfos()) {
                 log.info(info.toUserString());
 
                 expCnt++;

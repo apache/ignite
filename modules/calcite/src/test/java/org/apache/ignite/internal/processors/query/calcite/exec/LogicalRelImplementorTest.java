@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.planner.TestTable;
@@ -130,6 +131,8 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             null,
             ArrayRowHandler.INSTANCE,
             NoOpMemoryTracker.INSTANCE,
+            NoOpIoTracker.INSTANCE,
+            0,
             null
         ) {
             @Override public ColocationGroup group(long srcId) {

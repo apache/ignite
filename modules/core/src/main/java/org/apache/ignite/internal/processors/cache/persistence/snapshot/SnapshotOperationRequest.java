@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -66,11 +67,13 @@ public class SnapshotOperationRequest implements Serializable {
     private volatile List<String> warnings;
 
     /** Snapshot metadata. */
+    @GridToStringExclude
     private transient SnapshotMetadata meta;
 
     /**
      * Warning flag of concurrent inconsistent-by-nature streamer updates.
      */
+    @GridToStringExclude
     private transient volatile boolean streamerWrn;
 
     /** Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed. */
@@ -85,6 +88,9 @@ public class SnapshotOperationRequest implements Serializable {
     /** Index of incremental snapshot. */
     private final int incIdx;
 
+    /** If {@code true} snapshot only primary copies of partitions. */
+    private final boolean onlyPrimary;
+
     /**
      * @param reqId Request ID.
      * @param opNodeId Operational node ID.
@@ -94,6 +100,7 @@ public class SnapshotOperationRequest implements Serializable {
      * @param nodes Baseline node IDs that must be alive to complete the operation.
      * @param incremental {@code True} if incremental snapshot requested.
      * @param incIdx Incremental snapshot index.
+     * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
      */
     public SnapshotOperationRequest(
         UUID reqId,
@@ -103,7 +110,8 @@ public class SnapshotOperationRequest implements Serializable {
         @Nullable Collection<String> grps,
         Set<UUID> nodes,
         boolean incremental,
-        int incIdx
+        int incIdx,
+        boolean onlyPrimary
     ) {
         this.reqId = reqId;
         this.opNodeId = opNodeId;
@@ -113,6 +121,7 @@ public class SnapshotOperationRequest implements Serializable {
         this.snpPath = snpPath;
         this.incremental = incremental;
         this.incIdx = incIdx;
+        this.onlyPrimary = onlyPrimary;
         startTime = U.currentTimeMillis();
     }
 
@@ -180,6 +189,11 @@ public class SnapshotOperationRequest implements Serializable {
     /** @return Incremental index. */
     public int incrementIndex() {
         return incIdx;
+    }
+
+    /** @return If {@code true} snapshot only primary copies of partitions. */
+    public boolean onlyPrimary() {
+        return onlyPrimary;
     }
 
     /** @return Start time. */

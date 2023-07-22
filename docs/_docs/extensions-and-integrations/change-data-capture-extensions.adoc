@@ -27,6 +27,9 @@ NOTE: For each cache replicated between clusters link:https://github.com/apache/
 
 NOTE: All implementations of CDC replication support replication of link:https://ignite.apache.org/releases/latest/javadoc/org/apache/ignite/binary/BinaryType.html[BinaryTypes] and link:https://ignite.apache.org/releases/latest/javadoc/org/apache/ignite/cdc/TypeMapping.html[TypeMappings]
 
+NOTE: To use SQL queries on the destination cluster over CDC-replicated data, set the same `VALUE_TYPE` in
+link:sql-reference/ddl#create-table[CREATE TABLE] on both source and destination clusters for each table.
+
 == Ignite to Java Thin Client CDC streamer
 This streamer starts link:thin-clients/java-thin-client[Java Thin Client] which connects to destination cluster.
 After connection is established, all changes captured by CDC will be replicated to destination cluster.
@@ -213,6 +216,8 @@ Conflict resolution field should contain user provided monotonically increasing 
 . If both old and new entry from the same cluster version comparison used to determine order.
 . If `conflictResolveField` if provided then field values comparison used to determine order.
 . Conflict resolution failed. Update will be ignored.
+
+IMPORTANT: The current implementation does not support deleting data from the cache in the destination cluster. The data must be deleted in the source cluster.
 
 === Configuration example
 Configuration is done via Ignite node plugin:

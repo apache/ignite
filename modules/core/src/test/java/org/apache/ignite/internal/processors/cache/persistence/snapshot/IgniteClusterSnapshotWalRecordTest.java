@@ -80,7 +80,7 @@ public class IgniteClusterSnapshotWalRecordTest extends AbstractSnapshotSelfTest
                 }
             }, 5, "cache-loader-");
 
-            snp(ign).createSnapshot(SNAPSHOT_NAME).get();
+            snp(ign).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get();
 
             loadStopLatch.countDown();
 
@@ -122,7 +122,7 @@ public class IgniteClusterSnapshotWalRecordTest extends AbstractSnapshotSelfTest
 
         for (int i = 0; i < snapshots; i++) {
             // Start changing data concurrently with performing the ClusterSnapshot operation.
-            snp(grid(0)).createSnapshot(SNAPSHOT_NAME + i).get();
+            snp(grid(0)).createSnapshot(SNAPSHOT_NAME + i, null, false, onlyPrimary).get();
         }
 
         for (int i = 0; i < nodes; i++) {

@@ -364,7 +364,7 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
 
     /** */
     private static int clientPort(IgniteEx ign) {
-        return ign.context().sqlListener().port();
+        return ign.context().clientListener().port();
     }
 
     /**

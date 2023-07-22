@@ -40,14 +40,24 @@ public class ConvertingClosableIterator<Row> implements Iterator<List<?>>, AutoC
     @Nullable private final Function<Object, Object> fieldConverter;
 
     /** */
+    @Nullable Function<List<Object>, List<Object>> rowConverter;
+
+    /** */
+    @Nullable Runnable onClose;
+
+    /** */
     public ConvertingClosableIterator(
         Iterator<Row> it,
         ExecutionContext<Row> ectx,
-        @Nullable Function<Object, Object> fieldConverter
+        @Nullable Function<Object, Object> fieldConverter,
+        @Nullable Function<List<Object>, List<Object>> rowConverter,
+        @Nullable Runnable onClose
     ) {
         this.it = it;
         rowHnd = ectx.rowHandler();
         this.fieldConverter = fieldConverter;
+        this.rowConverter = rowConverter;
+        this.onClose = onClose;
     }
 
     /**
@@ -70,7 +80,7 @@ public class ConvertingClosableIterator<Row> implements Iterator<List<?>>, AutoC
         for (int i = 0; i < rowSize; i++)
             res.add(fieldConverter == null ? rowHnd.get(i, next) : fieldConverter.apply(rowHnd.get(i, next)));
 
-        return res;
+        return rowConverter == null ? res : rowConverter.apply(res);
     }
 
     /**
@@ -78,5 +88,8 @@ public class ConvertingClosableIterator<Row> implements Iterator<List<?>>, AutoC
      */
     @Override public void close() throws Exception {
         Commons.close(it);
+
+        if (onClose != null)
+            onClose.run();
     }
 }

@@ -30,18 +30,6 @@ def get_home_dir(install_root, product):
     return os.path.join(install_root, product)
 
 
-def get_module_path(project_dir, module_name, is_dev):
-    """
-    Get absolute path to the specified module.
-    """
-    if is_dev:
-        module_path = os.path.join("modules", module_name, "target")
-    else:
-        module_path = os.path.join("libs", "optional", "ignite-%s" % module_name)
-
-    return os.path.join(project_dir, module_path)
-
-
 def get_shared_root_path(test_globals):
     """
     Get path to shared root directory.
@@ -214,6 +202,13 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
         :return: path to database directory
         """
         return os.path.join(self.work_dir, "db")
+
+    @property
+    def perf_stat_dir(self):
+        """
+        :return: path to performance statistics directory
+        """
+        return os.path.join(self.work_dir, "perf_stat")
 
     @property
     def wal_dir(self):

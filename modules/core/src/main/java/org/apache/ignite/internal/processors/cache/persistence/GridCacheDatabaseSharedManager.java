@@ -66,7 +66,6 @@ import org.apache.ignite.internal.managers.systemview.walker.MetastorageViewWalk
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
-import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -128,7 +127,6 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -146,7 +144,6 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -326,9 +323,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** This is the earliest WAL pointer that was reserved during preloading. */
     private final AtomicReference<WALPointer> reservedForPreloading = new AtomicReference<>();
-
-    /** Snapshot manager. */
-    private IgniteCacheSnapshotManager snapshotMgr;
 
     /**
      * MetaStorage instance. Value {@code null} means storage not initialized yet.
@@ -531,8 +525,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        snapshotMgr = cctx.snapshot();
-
         IgnitePageStoreManager store = cctx.pageStore();
 
         assert store instanceof FilePageStoreManager : "Invalid page store manager was created: " + store;
@@ -570,7 +562,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 this::cacheGroupContexts,
                 this::getPageMemoryForCacheGroup,
                 resolveThrottlingPolicy(),
-                snapshotMgr,
                 dataStorageMetricsImpl(),
                 kernalCtx.longJvmPauseDetector(),
                 kernalCtx.failure(),
@@ -816,7 +807,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             () -> regions,
             this::getPageMemoryForCacheGroup,
             resolveThrottlingPolicy(),
-            snapshotMgr,
             dataStorageMetricsImpl(),
             kernalCtx.longJvmPauseDetector(),
             kernalCtx.failure(),
@@ -918,8 +908,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (log.isDebugEnabled())
             log.debug("Activate database manager [id=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
-
-        snapshotMgr = cctx.snapshot();
 
         checkpointManager.init();
 
@@ -1191,76 +1179,58 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override protected PageMemory createPageMemory(
         DirectMemoryProvider memProvider,
-        DataStorageConfiguration memCfg,
-        DataRegionConfiguration plcCfg,
-        DataRegionMetricsImpl memMetrics,
+        DataStorageConfiguration dsCfg,
+        DataRegionConfiguration regCfg,
+        DataRegionMetricsImpl regMetrics,
         final boolean trackable,
-        PageReadWriteManager pmPageMgr
+        PageReadWriteManager pageMgr
     ) {
-        if (!plcCfg.isPersistenceEnabled())
-            return super.createPageMemory(memProvider, memCfg, plcCfg, memMetrics, trackable, pmPageMgr);
+        if (!regCfg.isPersistenceEnabled())
+            return super.createPageMemory(memProvider, dsCfg, regCfg, regMetrics, trackable, pageMgr);
 
-        memMetrics.persistenceEnabled(true);
+        regMetrics.persistenceEnabled(true);
 
-        long cacheSize = plcCfg.getMaxSize();
+        long cacheSize = regCfg.getMaxSize();
 
         // Checkpoint buffer size can not be greater than cache size, it does not make sense.
-        long chpBufSize = checkpointBufferSize(plcCfg);
+        long chpBufSize = checkpointBufferSize(regCfg);
 
         if (chpBufSize > cacheSize) {
             U.quietAndInfo(log,
                 "Configured checkpoint page buffer size is too big, setting to the max region size [size="
-                    + U.readableSize(cacheSize, false) + ",  memPlc=" + plcCfg.getName() + ']');
+                    + U.readableSize(cacheSize, false) + ",  memPlc=" + regCfg.getName() + ']');
 
             chpBufSize = cacheSize;
         }
 
-        GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker;
-
-        if (trackable)
-            changeTracker = new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
-                @Override public void applyx(
-                    Long page,
-                    FullPageId fullId,
-                    PageMemoryEx pageMem
-                ) throws IgniteCheckedException {
-                    if (trackable)
-                        snapshotMgr.onChangeTrackerPage(page, fullId, pageMem);
-                }
-            };
-        else
-            changeTracker = null;
-
         PageMemoryImpl pageMem = new PageMemoryImpl(
-            wrapMetricsPersistentMemoryProvider(memProvider, memMetrics),
+            wrapMetricsPersistentMemoryProvider(memProvider, regMetrics),
             calculateFragmentSizes(
-                plcCfg.getName(),
-                memCfg.getConcurrencyLevel(),
+                regCfg.getName(),
+                dsCfg.getConcurrencyLevel(),
                 cacheSize,
                 chpBufSize
             ),
             cctx,
-            pmPageMgr,
-            memCfg.getPageSize(),
+            pageMgr,
+            dsCfg.getPageSize(),
             (fullId, pageBuf, tag) -> {
-                memMetrics.onPageWritten();
-
-                // We can write only page from disk into snapshot.
-                snapshotMgr.beforePageWrite(fullId);
+                regMetrics.onPageWritten();
 
                 // Write page to disk.
-                pmPageMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag, true);
+                pageMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag, true);
 
                 getCheckpointer().currentProgress().updateEvictedPages(1);
             },
-            changeTracker,
+            trackable,
             this,
-            memMetrics,
+            regMetrics,
+            regCfg,
             resolveThrottlingPolicy(),
             () -> getCheckpointer().currentProgress()
         );
 
-        memMetrics.pageMemory(pageMem);
+        regMetrics.pageMemory(pageMem);
 
         return pageMem;
     }
@@ -1567,8 +1537,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             if (!gctx.persistenceEnabled())
                 continue;
-
-            snapshotMgr.onCacheGroupStop(gctx, destroy);
 
             PageMemoryEx pageMem = (PageMemoryEx)dataRegion.pageMemory();
 
