@@ -239,8 +239,6 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     /** */
     @Test
     public void testMultipleCacheGroupAffinityMappingRequest() throws Exception {
-        initClient(getClientConfiguration(0));
-
         ClientCacheAffinityContext affCtx = ((TcpIgniteClient)client).reliableChannel().affinityContext();
 
         IgniteInternalFuture<Object> replCacheOpFut;
