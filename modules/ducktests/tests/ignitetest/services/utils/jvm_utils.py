@@ -115,6 +115,6 @@ class JvmProcessMixin:
         :param java_class: Java class name
         :return: List of service's pids.
         """
-        cmd = "pgrep -ax java | awk '/%s/ {print $1}'" % java_class
+        cmd = "ps -C java -wwo pid,args | grep '%s' | awk -F' ' '{print $1}'" % java_class
 
         return [int(pid) for pid in node.account.ssh_capture(cmd, allow_fail=True)]
