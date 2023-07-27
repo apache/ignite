@@ -10,7 +10,7 @@ import ConfigSelectors from 'app/configuration/store/selectors';
 import Caches from 'app/configuration/services/Caches';
 import TaskFlows from 'app/console/services/TaskFlows';
 import Version from 'app/services/Version.service';
-import {ShortCache} from '../../../../types';
+import {ShortCache} from 'app/configuration/types';
 import {IColumnDefOf} from 'ui-grid';
 
 // Controller for Caches screen.
@@ -90,7 +90,9 @@ export default class Controller {
             pluck('cacheID'),
             publishReplay(1),
             refCount()
-        );        
+        );
+          
+        this.shortClusters$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectShortClustersValue());  
         this.shortCaches$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortCaches);
         this.shortModels$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortModels);
         this.originalCache$ = cacheID$.pipe(

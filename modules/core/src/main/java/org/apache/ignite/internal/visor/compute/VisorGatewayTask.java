@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.visor.compute;
 
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
+
 import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -39,7 +42,9 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.security.PublicAccessJob;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -48,6 +53,7 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.jetbrains.annotations.NotNull;
@@ -57,6 +63,7 @@ import org.jetbrains.annotations.Nullable;
  * Task to run Visor tasks through http REST.
  */
 @GridInternal
+@GridVisorManagementTask
 public class VisorGatewayTask implements ComputeTask<Object[], Object> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -115,7 +122,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
     /**
      * Job to run Visor tasks through http REST.
      */
-    private static class VisorGatewayJob extends ComputeJobAdapter {
+    private static class VisorGatewayJob extends ComputeJobAdapter implements PublicAccessJob {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -147,6 +154,11 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
             assert args != null;
 
             argsCnt = args.length;
+        }
+        
+        /** {@inheritDoc} */
+        @Override public SecurityPermissionSet requiredPermissions() {
+            return systemPermissions(ADMIN_OPS);
         }
 
         /**

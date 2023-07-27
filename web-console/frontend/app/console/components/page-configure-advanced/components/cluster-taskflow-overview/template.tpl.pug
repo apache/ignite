@@ -25,7 +25,7 @@ task-flow-edit-form(
     target-cluster-id='$ctrl.clusterID$|async:this'     
     source-cluster='$ctrl.selectedRows$'
     target-caches='$ctrl.targetCaches'
-    target-models='$ctrl.targetModels'
+    models='$ctrl.models'
     on-save='$ctrl.onSave($event)'
     ng-class='{"pca-form-blocked": !(($ctrl.selectedRowsIDs$|async:this).length==1)}'
    

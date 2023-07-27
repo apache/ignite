@@ -1026,7 +1026,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             Map<ComputeJob, ClusterNode> map = U.newHashMap(F.isEmpty(cacheName) ? subgrid.size() : 1);
 
             if (!F.isEmpty(cacheName)) {
-                for (int i = 1; i < subgrid.size(); i++) {
+                for (int i = 0; i < subgrid.size(); i++) {
                     if (discovery.nodePublicCaches(subgrid.get(i)).keySet().contains(cacheName)) {
                         MetadataJob job = new MetadataJob();
 

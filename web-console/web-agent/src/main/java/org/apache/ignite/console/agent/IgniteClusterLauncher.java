@@ -94,9 +94,9 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_PO
  *
  * Cache will be created and populated with data to query.
  */
-public class AgentClusterLauncher implements StartNodeCallable{
+public class IgniteClusterLauncher implements StartNodeCallable{
     /** */
-    private static final Logger log = LoggerFactory.getLogger(AgentClusterLauncher.class);
+    private static final Logger log = LoggerFactory.getLogger(IgniteClusterLauncher.class);
 
     /** */
     private static final AtomicBoolean initGuard = new AtomicBoolean();
@@ -121,7 +121,7 @@ public class AgentClusterLauncher implements StartNodeCallable{
     /**
      * Required by Externalizable.
      */
-    public AgentClusterLauncher() {
+    public IgniteClusterLauncher() {
         spec = null;
         timeout = 0;        
     }	
@@ -132,7 +132,7 @@ public class AgentClusterLauncher implements StartNodeCallable{
      * @param spec Specification.
      * @param timeout Connection timeout.
      */
-    public AgentClusterLauncher(IgniteRemoteStartSpecification spec, int timeout) {
+    public IgniteClusterLauncher(IgniteRemoteStartSpecification spec, int timeout) {
         assert spec != null;
 
         this.spec = spec;
@@ -436,7 +436,7 @@ public class AgentClusterLauncher implements StartNodeCallable{
 			cfg.setConsistentId(clusterId);
 			cfg.setIgniteInstanceName(clusterName);
 			
-			AgentClusterLauncher.singleIgniteConfiguration(cfg);
+			IgniteClusterLauncher.singleIgniteConfiguration(cfg);
 			
 			ignite = IgnitionEx.start(cfg,cfgMap.get2());
 			

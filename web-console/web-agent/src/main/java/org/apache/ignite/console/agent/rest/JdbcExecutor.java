@@ -48,6 +48,7 @@ import org.apache.ignite.console.agent.db.JdbcQueryExecutor;
 import org.apache.ignite.console.agent.handlers.DatabaseListener;
 import org.apache.ignite.console.db.DBInfo;
 import org.apache.ignite.console.json.JsonObject;
+import org.apache.ignite.console.utils.Utils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -140,6 +141,8 @@ public class JdbcExecutor implements AutoCloseable {
             	}
             	
             	JSONObject res = new JSONObject();
+            	res.put("error",(String)null);
+            	
             	if("org.apache.ignite.internal.visor.cache.VisorCacheNamesCollectorTask".equals(p2)) {
             		
             		Collection<String> schemas = metadataReader.schemas(conn,importSamples);
@@ -158,14 +161,32 @@ public class JdbcExecutor implements AutoCloseable {
             	}
             	else if("org.apache.ignite.internal.visor.cache.VisorCacheNodesTask".equals(p2)) {
             		
-                    JSONArray result = new JSONArray();                    
-                    result.put(clusterId);                    
-                    res.put("result", result);                   
+                    JSONArray result = new JSONArray();
+                    result.put(clusterId);
+                    res.put("result", result);
+            	}
+            	else if("top".equals(cmd)) {
+            		
+            		JSONArray result = new JSONArray();
+            		JSONObject node = new JSONObject();
+            		node.put("nodeId", dbInfo.top.getId());
+            		node.put("tcpAddresses", dbInfo.jdbcUrl);
+            		node.put("consistentId", dbInfo.getJndiName());
+            		node.put("tcpPort", dbInfo.getSchemaName());
+            		node.put("replicaCount", dbInfo.top.getNodes().size());
+            		node.put("attributes", dbInfo.getJdbcProp());
+            		node.put("isActive", dbInfo.top.isActive());
+            		node.getJSONObject("attributes").put("database.version", dbInfo.driverCls);
+            		node.getJSONObject("attributes").put("os.name", "Linux");
+            		
+                    result.put(node);
+                    res.put("result", result);
+                    
             	}
             	else if("metadata".equals(cmd)) {
             		
             		List<String> schemas = new ArrayList<>(2);
-            		String schema = (String)params.get("p4");
+            		String schema = (String)params.get("cacheName");
             		if(!StringUtil.isEmpty(schema)) {
             			schemas.add(schema);
             		}
@@ -227,21 +248,22 @@ public class JdbcExecutor implements AutoCloseable {
                     
                     return RestResult.success(arr.toString(), (String)args.get("token"));
             	}
-            	else if("org.apache.ignite.internal.visor.query.VisorQueryTask".equals(p2)){
+            	else if("qryfldexe".equals(cmd)){
             		
-            		String schema = (String)params.get("p4");
+            		String schema = (String)params.get("cacheName");
             		if(!StringUtil.isEmpty(schema)) {
             			conn.setSchema(schema);
             		}
-            		JdbcQueryExecutor exec = new JdbcQueryExecutor(conn.createStatement(),(String)params.get("p5"));
+            		JdbcQueryExecutor exec = new JdbcQueryExecutor(conn.createStatement(),(String)params.get("qry"));
             	
-            		res = exec.executeSqlVisor(0,(String)params.get("p1"));
+            		JSONObject result = exec.executeSqlVisor(0, clusterId);
+            		res.put("result", result);
             		
             	}
             	else {
-            		//return null;
+            		res.put("error", "Unsupport cmd "+ cmd);
             	}
-            	res.put("error", (String)null);
+            	
             	res.put("id", "~"+clusterId);
         		res.put("finished",true);
 
@@ -249,9 +271,7 @@ public class JdbcExecutor implements AutoCloseable {
                 if (i > 0)
                     LT.clear();
 
-                LT.info(log, "Connected to cluster [url=" + nodeUrl + "]");
-
-                
+                LT.info(log, "Connected to cluster [url=" + nodeUrl + "]");                
                
                 return RestResult.success(res.toString(), (String)args.get("sessionToken"));
            

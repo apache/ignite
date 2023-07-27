@@ -191,7 +191,7 @@ public class AgentLauncher implements IgniteSshHelper {
      @Override 
      public StartNodeCallable nodeStartCallable(IgniteRemoteStartSpecification spec, int timeout) {     	
     	// use agent server
-  		return new AgentClusterLauncher(spec,timeout);
+  		return new IgniteClusterLauncher(spec,timeout);
      }
 
     /**

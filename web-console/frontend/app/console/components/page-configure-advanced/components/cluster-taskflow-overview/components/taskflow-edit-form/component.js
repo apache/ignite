@@ -7,9 +7,9 @@ export default {
     controller,
     templateUrl,
     bindings: {
-        sourceCluster: '=',
+        sourceCluster: '<',
         targetCaches: '=',
-        targetModels: '=',
+        models: '<',
         targetClusterId: '=',
         onSave: '&'
     }

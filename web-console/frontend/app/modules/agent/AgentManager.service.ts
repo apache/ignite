@@ -393,7 +393,7 @@ export default class AgentManager {
      * @returns {ng.IPromise}
      */
     awaitConnectionState(...states) {
-        const defer = this.$q.defer();
+        const defer: angular.IDeferred<unknown> = this.$q.defer();
 
         this.promises.add(defer);
 
@@ -516,7 +516,7 @@ export default class AgentManager {
      */
     _restOnActiveCluster(cluster, credentials, event, params) {
         return this._sendToAgent(event, {clusterId: cluster.id, params: _.merge({}, credentials, params)})
-            .then((res) => {
+            .then((res:any) => {
                 const {status = SuccessStatus.STATUS_SUCCESS} = res;
 
                 switch (status) {
@@ -556,8 +556,28 @@ export default class AgentManager {
      * @private
      */
     _executeOnCluster(event, params) {
+        const now = Date.now()
         return this._restOnCluster(event, params)
-            .then((res) => res.result);
+            .then((res) => {
+                if('result' in res){
+                    return res.result
+                }
+                // adapte query result
+                if('items' in res && !('rows' in res)){
+                    res['rows'] = res['items']
+                }
+                if('fieldsMetadata' in res && !('columns' in res)){
+                    res['columns'] = res['fieldsMetadata']
+                }
+                if('last' in res && !('hasMore' in res)){
+                    res['hasMore'] = !res['last']
+                }
+                if(!('duration' in res)){
+                    const end = Date.now()
+                    res['duration'] = end-now
+                }
+                return res
+            });
     }
 
     /**
@@ -567,7 +587,7 @@ export default class AgentManager {
      * @returns {Promise}
      * @private
      */
-    _restOnCluster(event, params, repeatReason) {
+    _restOnCluster(event, params, repeatReason=null) {
         return this.connectionSbj.pipe(first()).toPromise()
             .then(({cluster}) => {
                 if (_.isNil(cluster))
@@ -606,13 +626,13 @@ export default class AgentManager {
 
     collectCacheNames(nid: string) {
         if (this.available(COLLECT_BY_CACHE_GROUPS_SINCE))
-            return this.visorTask<AgentTypes.CacheNamesCollectorTaskResponse>('cacheNamesCollectorTask', nid);
+            return this.visorTask<AgentTypes.CacheNamesCollectorTaskResponse>('cacheNamesCollectorTask', nid,[]);
 
         return Promise.resolve({cacheGroupsNotAvailable: true});
     }
 
     publicCacheNames() {
-        return this.collectCacheNames()
+        return this.collectCacheNames(null)
             .then((data) => {
                 if (nonEmpty(data.caches))
                     return _.difference(_.keys(data.caches), RESERVED_CACHE_NAMES);
@@ -625,7 +645,6 @@ export default class AgentManager {
     }
 
     cacheNodes(cacheName: string) {
-
         return this.visorTask<AgentTypes.CacheNodesTaskResponse>('cacheNodesTaskX2', null, [cacheName]);
     }
 
@@ -633,7 +652,7 @@ export default class AgentManager {
      * @returns {Promise}
      */
     metadata(schema: string) {
-        return this._restOnCluster(EVENT_REST, {cmd: 'metadata', p4: schema})
+        return this._restOnCluster(EVENT_REST, {cmd: 'metadata', cacheName: schema})
             .then((caches) => {
                 let types = [];
 
@@ -756,11 +775,15 @@ export default class AgentManager {
             let args = {cacheName, qry:query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSize, lazy, collocated};
 
             
-            return this.visorTask<AgentTypes.QuerySqlX2Response>('querySqlX2', nid, args).then(({error, result}) => {
-                if (_.isEmpty(error))
-                    return result;
+            return this.visorTask<AgentTypes.QuerySqlX2Response>('querySqlX2', nid, args).then((data) => {                
+                if (!('error' in data) || !(data.error)){
+                    if('result' in data){
+                        return data.result
+                    }
+                    return data;
+                }                   
 
-                return Promise.reject(error);
+                return Promise.reject(data.error);
             });
         }
         
@@ -773,11 +796,15 @@ export default class AgentManager {
      * @returns Query execution result.
      */
     queryFetchFistsPage(nid: string, queryId: string, pageSize: number) {
-        return this.visorTask<AgentTypes.QueryFetchFirstPageResult>('queryFetchFirstPage', nid, {qryId:queryId, pageSize}).then(({error, result}) => {
-            if (_.isEmpty(error))
-                return result;
+        return this.visorTask<AgentTypes.QueryFetchFirstPageResult>('queryFetchFirstPage', nid, {qryId:queryId, pageSize}).then((data) => {
+            if (!(data.error)){
+                if(!(data.result)){
+                    return data
+                }
+                return data.result;
+            }                   
 
-            return Promise.reject(error);
+            return Promise.reject(data.error);
         });
     }
 
@@ -823,14 +850,20 @@ export default class AgentManager {
      * @param {Number} pageSize Page size.
      * @returns {Promise.<VisorQueryResult>} Query execution result.
      */
-    queryScan({nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize}) {
+    queryScan(query) {
+        const nid = query['nid']
         if (this.available(IGNITE_2_0)) {
-            return this.visorTask('queryScanX2', nid, {cacheName, filter, regEx, caseSensitive, near, local, pageSize})
-                .then(({error, result}) => {
-                    if (_.isEmpty(error))
-                        return result;
-
-                    return Promise.reject(error);
+            return this.visorTask('queryScanX2', nid, query)
+                .then((data:any) => {
+                    if (!(data.error)){
+                        if(!(data.result)){
+                            return data
+                        }
+                        return data.result;
+                    }                   
+    
+                    return Promise.reject(data.error);
+                    
                 });
         }
     }

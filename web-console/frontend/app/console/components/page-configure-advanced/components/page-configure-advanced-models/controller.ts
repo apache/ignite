@@ -16,7 +16,7 @@ import {default as ConfigureState} from 'app/configuration/services/ConfigureSta
 import {default as Models} from 'app/configuration/services/Models';
 
 import {UIRouter, StateService} from '@uirouter/angularjs';
-import {ShortDomainModel, DomainModel, ShortCache} from '../../../../types';
+import {ShortDomainModel, DomainModel, ShortCache} from 'app/configuration/types';
 import {IColumnDefOf} from 'ui-grid';
 import ConfigSelectionManager from 'app/configuration/services/ConfigSelectionManager';
 

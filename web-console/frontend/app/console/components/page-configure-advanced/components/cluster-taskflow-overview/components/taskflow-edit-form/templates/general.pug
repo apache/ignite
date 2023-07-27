@@ -42,40 +42,29 @@ panel-collapsible(opened=`::true` ng-form=form)
                 .help(ng-bind-html='$ctrl.clonedService.usage')
             
             .pc-form-grid-col-30
-                +form-field__cache-modes({
-                    label: 'Mode:',
-                    model: `${model}.mode`,
-                    name: '"mode"',
-                    placeholder: 'PARTITIONED'
+                 +form-field__dropdown({
+                    label: 'Existing Update Mode:',
+                    model: '$model.existingMode',
+                    name: '"existingMode"',
+                    placeholder: 'REPLACE_EXISTING',
+                    options: '::$ctrl.TaskFlows.updateModes'
                 })
 
             .pc-form-grid-col-30
                 +form-field__dropdown({
                     label: 'Atomicity:',
-                    model: `${model}.atomicityMode`,
+                    model: '$model.atomicityMode',
                     name: '"atomicityMode"',
                     placeholder: 'ATOMIC',
-                    options: '[\
-                        {value: "ATOMIC", label: "ATOMIC"},\
-                        {value: "TRANSACTIONAL", label: "TRANSACTIONAL"},\
-                        {value: "TRANSACTIONAL_SNAPSHOT", label: "TRANSACTIONAL_SNAPSHOT"}\
-                    ]',
-                    tip: 'Atomicity:\
-                        <ul>\
-                            <li>ATOMIC - in this mode distributed transactions and distributed locking are not supported</li>\
-                            <li>TRANSACTIONAL - in this mode specified fully ACID-compliant transactional cache behavior</li>\
-                            <li>TRANSACTIONAL_SNAPSHOT - in this mode specified fully ACID-compliant transactional cache behavior for both key-value API and SQL transactions</li>\
-                        </ul>'
+                    options: '::$ctrl.TaskFlows.atomicityModes'
                 })
            
             
             .pc-form-grid-col-60
                 +form-field__checkbox({
-                    label: 'Copy on read',
-                    model: `${model}.copyOnRead`,
-                    name: '"copyOnRead"',
-                    tip: 'Flag indicating whether copy of the value stored in cache should be created for cache operation implying return value<br/>\
-                          Also if this flag is set copies are created for values passed to CacheInterceptor and to CacheEntryProcessor'
+                    label: 'Read from backup',
+                    model: `$model.readFromBackup`,
+                    name: '"readFromBackup"',                                    
                 })
            
 

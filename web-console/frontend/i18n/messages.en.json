@@ -178,6 +178,9 @@
                 "maxPagesInput": {
                     "tooltip": "Limit query max results to specified number of pages"
                 },
+                "keepBinary": {
+                    "tooltip": "do not deserialize binary objects, false by default"
+                },
                 "refreshRateInput": {
                     "tooltip": "Configure periodical execution of last successfully executed query"
                 },

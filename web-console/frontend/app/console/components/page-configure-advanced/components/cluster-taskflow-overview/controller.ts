@@ -8,10 +8,11 @@ import {default as ConfigureState} from 'app/configuration/services/ConfigureSta
 import {default as ConfigSelectors} from 'app/configuration/store/selectors';
 import {default as Clusters} from 'app/configuration/services/Clusters';
 import TaskFlows from 'app/console/services/TaskFlows';
+import AgentManager from 'app/modules/agent/AgentManager.service';
 import {Confirm} from 'app/services/Confirm.service';
 
 import {UIRouter} from '@uirouter/angularjs';
-import {ShortCluster} from '../../types';
+import {ShortCluster,ShortCache} from 'app/configuration/types';
 import {IColumnDefOf} from 'ui-grid';
 
 export default class ClusterTaskFlowController {
@@ -41,8 +42,8 @@ export default class ClusterTaskFlowController {
     selectedRows$: Subject<Array<ShortCluster>>;
     selectedRowsIDs$: Observable<Array<string>>;
     
-    targetCaches: Array<object>; // user selected caches    
-    targetModels: Array<object>; // cluster defined models
+    targetCaches: Subject<Array<ShortCache>>; // user selected caches    
+    models: Array<object>; // cluster defined models
     
     clustersColumnDefs: Array<any> = [
         {
@@ -173,8 +174,7 @@ export default class ClusterTaskFlowController {
     
         
     onSave(event) {
-        this.saved = true; 
-        event.caches = this.targetCaches;
+        this.saved = true;        
         return event;
     }
 }

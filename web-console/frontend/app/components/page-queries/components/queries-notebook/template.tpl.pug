@@ -381,6 +381,22 @@ mixin paragraph-scan
                     translate='queries.notebook.scanActions.cancel'
                 )
             div
+                .row(ng-if='enforceJoinOrderAvailable(paragraph)')
+                    +form-field__checkbox({
+                        label: 'KeepBinary result set',
+                        model: 'paragraph.keepBinary',
+                        name: '"keepBinary" + paragraph.id',
+                        tip: '{{::"queries.notebook.querySettings.keepBinary.tooltip"|translate}}',
+                        tipOpts: { placement: 'top' }
+                    })
+                .row(ng-if='lazyQueryAvailable(paragraph)')
+                    +form-field__checkbox({
+                        label: 'Lazy result set',
+                        model: 'paragraph.lazy',
+                        name: '"lazy" + paragraph.id',
+                        tip: '{{::"queries.notebook.querySettings.lazyResultSetInput.tooltip"|translate}}',
+                        tipOpts: { placement: 'top' }
+                    })
 
         .col-sm-12.sql-result(ng-if='paragraph.queryExecuted() && !paragraph.scanningInProgress' ng-switch='paragraph.resultType()')
             .error(

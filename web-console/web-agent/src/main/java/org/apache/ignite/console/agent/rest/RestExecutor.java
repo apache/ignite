@@ -106,7 +106,7 @@ public class RestExecutor implements AutoCloseable {
 
         Fields fields = new Fields();
 
-        params.forEach((k, v) -> fields.add(k, String.valueOf(v)));
+        params.forEach((k, v) ->{ if(v!=null) fields.add(k, String.valueOf(v)); });
 
         InputStreamResponseListener lsnr = new InputStreamResponseListener();
         

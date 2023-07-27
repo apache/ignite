@@ -31,18 +31,18 @@ export default class TaskFlows {
     constructor(private $http: ng.IHttpService) {}
 
     getBlankTaskFlow() {
-        return {           
+        return {    
+            id: uuidv4(),
             name: '',
             sourceCluster: null,
             source: null,
             targetCluster: null,
             target: null,
             group: null,
-            cacheMode: 'PARTITIONED',
+            existingMode: 'REPLACE_EXISTING',
             atomicityMode: 'ATOMIC',
             readFromBackup: true,
-            copyOnRead: true,
-            
+            copyOnRead: true,            
             writeBehindCoalescing: true        
             
         };
@@ -143,10 +143,10 @@ export default class TaskFlows {
     }
 
     saveBasic(changedItems) {
-        return this.$http.put('/api/v1/taskflow', changedItems);
+        return this.$http.put('/api/v1/taskflow', changedItems, {responseType:'text'});
     }
 
     saveAdvanced(changedItems) {
-        return this.$http.put('/api/v1/taskflow/advanced/', changedItems);
+        return this.$http.put('/api/v1/taskflow/advanced/', changedItems, {responseType:'text'});
     }
 }

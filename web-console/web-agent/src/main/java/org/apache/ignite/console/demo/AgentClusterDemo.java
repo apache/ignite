@@ -36,7 +36,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.console.agent.AgentClusterLauncher;
+import org.apache.ignite.console.agent.IgniteClusterLauncher;
 import org.apache.ignite.console.agent.handlers.DemoClusterHandler;
 import org.apache.ignite.console.demo.service.DemoCachesLoadService;
 import org.apache.ignite.console.demo.service.DemoComputeLoadService;
@@ -261,7 +261,7 @@ public class AgentClusterDemo {
 
                             throw new IgniteException("DEMO: Failed to start Jetty REST server on embedded node");
                         }
-                        demoUrl = AgentClusterLauncher.registerNodeUrl(ignite);
+                        demoUrl = IgniteClusterLauncher.registerNodeUrl(ignite);
                         
                         initLatch.countDown();
                     }                    

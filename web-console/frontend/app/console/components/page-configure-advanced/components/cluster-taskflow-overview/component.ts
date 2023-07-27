@@ -9,7 +9,7 @@ export default {
     controller,
     bindings: {
         clusterId: '<',
-        targetModels: '=',
+        models: '<',
         targetCaches: '=' 
     }
 };

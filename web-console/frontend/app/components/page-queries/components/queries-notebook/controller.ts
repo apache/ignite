@@ -29,13 +29,13 @@ const ROW_IDX = {value: -2, type: 'java.lang.Integer', label: 'ROW_IDX'};
 
 const NON_COLLOCATED_JOINS_SINCE = '1.7.0';
 
-const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], ['2.5.1-p13', '2.6.0'], '2.7.0'];
+const COLLOCATED_QUERY_SINCE = ['2.7.0'];
 
-const ENFORCE_JOIN_SINCE = [['1.7.9', '1.8.0'], ['1.8.4', '1.9.0'], '1.9.1'];
+const ENFORCE_JOIN_SINCE = ['1.9.1'];
 
-const LAZY_QUERY_SINCE = [['2.1.4-p1', '2.2.0'], '2.2.1'];
+const LAZY_QUERY_SINCE = ['2.2.1'];
 
-const DDL_SINCE = [['2.1.6', '2.2.0'], '2.3.0'];
+const DDL_SINCE = ['2.3.0'];
 
 const _fullColName = (col) => {
     const res = [];
@@ -50,6 +50,12 @@ const _fullColName = (col) => {
 
     return res.join('.');
 };
+
+
+function _hasRunningQueries(paragraphs) {
+    return !!_.find(paragraphs,
+        (paragraph) => paragraph.loading || paragraph.scanningInProgress || paragraph.csvIsPreparing);
+}
 
 let paragraphId = 0;
 
@@ -269,7 +275,8 @@ class Paragraph {
             nonCollocatedJoins: this.nonCollocatedJoins,
             enforceJoinOrder: this.enforceJoinOrder,
             lazy: this.lazy,
-            collocated: this.collocated
+            collocated: this.collocated,
+            keepBinary: this.keepBinary
         };
     }
 }
@@ -1243,7 +1250,7 @@ export class NotebookCtrl {
             }
 
             // We could accept onl not object columns for X axis.
-            paragraph.chartKeyCols = _retainColumns(paragraph.chartColumns, paragraph.chartKeyCols, _notObjectType, true);
+            paragraph.chartKeyCols = _retainColumns(paragraph.chartColumns, paragraph.chartKeyCols, _notObjectType, true, []);
 
             // We could accept only numeric columns for Y axis.
             paragraph.chartValCols = _retainColumns(paragraph.chartColumns, paragraph.chartValCols, _numberType, false, paragraph.chartKeyCols);
@@ -1389,7 +1396,7 @@ export class NotebookCtrl {
                     paragraph.chartValCols = [];
 
                 if (res.columns.length) {
-                    const _key = _.find(res.columns, {fieldName: '_KEY'});
+                    const _key = _.find(res.columns, {fieldName: '_KEY'});                    
                     const _val = _.find(res.columns, {fieldName: '_VAL'});
 
                     paragraph.disabledSystemColumns = !(_key && _val) ||
@@ -1425,6 +1432,16 @@ export class NotebookCtrl {
 
                     line.replace(/\"/g, '').split('\n').forEach((ln) => paragraph.rows.push([ln]));
                 });
+            }
+            else if(res.rows.length>0 && 'key' in res.rows[0] && 'value' in res.rows[0]){
+                let rows = []
+                for(const row of res.rows){
+                    if(row.value.__proto__){
+                        row.value.__proto__.toString = CSV.toJsonString
+                    }
+                    rows.push([row.key, row.value])
+                }
+                paragraph.rows = rows;
             }
             else
                 paragraph.rows = res.rows;
@@ -1516,16 +1533,30 @@ export class NotebookCtrl {
         const cacheNodesModel = (name, nids) => {
             return agentMgr.topology(true)
                 .then((nodes) =>
-                    _.reduce(nodes, (acc, node) => {
+                    _.reduce(nodes.result || nodes, (acc, node) => {
                         if (_.includes(nids, node.nodeId)) {
-                            acc.push({
-                                nid: node.nodeId.toUpperCase(),
-                                ip: _.head(node.attributes['org.apache.ignite.ips'].split(', ')),
-                                version: node.attributes['org.apache.ignite.build.ver'],
-                                gridName: node.attributes['org.apache.ignite.ignite.name'],
-                                os: `${node.attributes['os.name']} ${node.attributes['os.arch']} ${node.attributes['os.version']}`,
-                                client: node.attributes['org.apache.ignite.cache.client']
-                            });
+                            if (node.attributes['org.apache.ignite.ips']){
+                                acc.push({
+                                    nid: node.nodeId.toUpperCase(),
+                                    ip: _.head(node.attributes['org.apache.ignite.ips'].split(', ')),
+                                    version: node.attributes['org.apache.ignite.build.ver'],
+                                    gridName: node.attributes['org.apache.ignite.ignite.name'],
+                                    os: `${node.attributes['os.name']} ${node.attributes['os.arch']} ${node.attributes['os.version']}`,
+                                    client: node.attributes['org.apache.ignite.cache.client']
+                                });
+
+                            }
+                            else{
+                                acc.push({
+                                    nid: node.nodeId.toUpperCase(),
+                                    ip: node.tcpAddresses,
+                                    version: node.attributes['database.version'],
+                                    gridName: node.consistentId,
+                                    os: node.attributes['os.name'],
+                                    client: node.replicaCount
+                                });
+                            }
+                            
                         }
 
                         return acc;
@@ -1573,6 +1604,7 @@ export class NotebookCtrl {
                         cacheName: args.cacheName,
                         query: args.query,
                         nonCollocatedJoins: args.nonCollocatedJoins,
+                        keepBinary: args.keepBinary,
                         enforceJoinOrder: args.enforceJoinOrder,
                         replicatedOnly: false,
                         local: !!args.localNid,
@@ -1670,7 +1702,7 @@ export class NotebookCtrl {
             const enforceJoinOrder = !!paragraph.enforceJoinOrder;
             const lazy = !!paragraph.lazy;
             const collocated = !!paragraph.collocated;
-
+            const keepBinary = !! paragraph.keepBinary;
             _cancelRefresh(paragraph);
 
             from(_chooseNode(paragraph.cacheName, local)).pipe(
@@ -1697,6 +1729,7 @@ export class NotebookCtrl {
                         pageSize: paragraph.pageSize,
                         maxPages: paragraph.maxPages,
                         nonCollocatedJoins,
+                        keepBinary,
                         enforceJoinOrder,
                         localNid: local ? nid : null,
                         lazy,
@@ -1711,6 +1744,7 @@ export class NotebookCtrl {
                         cacheName: args.cacheName,
                         query: qry,
                         nonCollocatedJoins,
+                        keepBinary,
                         enforceJoinOrder,
                         replicatedOnly: false,
                         local,
@@ -1757,6 +1791,7 @@ export class NotebookCtrl {
             const nonCollocatedJoins = !!paragraph.nonCollocatedJoins;
             const enforceJoinOrder = !!paragraph.enforceJoinOrder;
             const collocated = !!paragraph.collocated;
+            const keepBinary = !! paragraph.keepBinary;
 
             if (!paragraph.partialQuery)
                 Notebook.save($scope.notebook).catch(Messages.showError);
@@ -1777,6 +1812,7 @@ export class NotebookCtrl {
                         local: false,
                         pageSize: paragraph.pageSize,
                         lazy: false,
+                        keepBinary,
                         collocated
                     };
 
@@ -1806,22 +1842,23 @@ export class NotebookCtrl {
             const caseSensitive = !!paragraph.caseSensitive;
             const filter = paragraph.filter;
             const pageSize = paragraph.pageSize;
+            const keepBinary = !!paragraph.keepBinary;
 
             from(_chooseNode(cacheName, local)).pipe(
                 switchMap((nid) => {
                     paragraph.localQueryMode = local;
 
-                    Notebook.save($scope.notebook)
-                        .catch(Messages.showError);
+                    Notebook.save($scope.notebook).catch(Messages.showError);
 
                     paragraph.showLoading(true);
 
                     const qryArg = paragraph.queryArgs = {
                         cacheName,
-                        filter,
+                        className: filter,
                         regEx: false,
                         caseSensitive,
                         near: false,
+                        keepBinary,
                         pageSize,
                         localNid: local ? nid : null
                     };
@@ -2129,12 +2166,15 @@ export class NotebookCtrl {
 
                             if (cache.sqlSchema)
                                 meta.children.unshift({type: 'plain', name: 'cacheName: ' + meta.maskedName, maskedName: meta.maskedName});
-
-                            meta.children.unshift({type: 'plain', name: 'mode: ' + cache.mode, maskedName: meta.maskedName});
+                            if (cache.mode)
+                                meta.children.unshift({type: 'plain', name: 'mode: ' + cache.mode, maskedName: meta.maskedName});                            
                         }
 
                         return cache;
                     }), 'name');
+
+                    $scope.$apply(); // 手动刷新
+
                 })
                 .catch(Messages.showError)
                 .then(() => Loading.finish('loadingCacheMetadata'));
@@ -2215,7 +2255,7 @@ export class NotebookCtrl {
         this.onClusterSwitchLnr = () => {
             const paragraphs = _.get(this, '$scope.notebook.paragraphs');
 
-            if (this._hasRunningQueries(paragraphs)) {
+            if (_hasRunningQueries(paragraphs)) {
                 try {
                     return Confirm.confirm($translate.instant('queries.notebook.leaveWithRunningQueriesConfirmationMessage'))
                         .then(() => this._closeOpenedQueries(paragraphs));
@@ -2250,15 +2290,11 @@ export class NotebookCtrl {
         }));
     }
 
-    _hasRunningQueries(paragraphs) {
-        return !!_.find(paragraphs,
-            (paragraph) => paragraph.loading || paragraph.scanningInProgress || paragraph.csvIsPreparing);
-    }
 
     async closeOpenedQueries() {
         const paragraphs = _.get(this, '$scope.notebook.paragraphs');
 
-        if (this._hasRunningQueries(paragraphs)) {
+        if (_hasRunningQueries(paragraphs)) {
             try {
                 await this.Confirm.confirm($translate.instant('queries.notebook.leaveWithRunningQueriesConfirmationMessage'));
                 this._closeOpenedQueries(paragraphs);
@@ -2364,7 +2400,7 @@ export class NotebookCtrl {
     async removeParagraph(paragraph: Paragraph) {
         try {
             const msg = this.$translate.instant('queries.notebook.removeQueryDialog.message', {
-                hasRunningQueries: this._hasRunningQueries([paragraph]),
+                hasRunningQueries: _hasRunningQueries([paragraph]),
                 name: paragraph.name
             });
 

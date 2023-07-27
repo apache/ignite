@@ -50,10 +50,10 @@ export default class CacheEditFormController {
         )
         .subscribe();        
         
-        this.cachesColDefs = [
-            {name: 'Name:', cellClass: 'pc-form-grid-col-10'},
-            {name: 'Source ClusterName:', cellClass: 'pc-form-grid-col-20'},
-            {name: 'Mode:', cellClass: 'pc-form-grid-col-10'},
+        this.cachesColDefs = [            
+            {name: 'Source Cluster:', cellClass: 'pc-form-grid-col-20'},
+            {name: 'Source Cache:', cellClass: 'pc-form-grid-col-10'},
+            {name: 'Existing Mode:', cellClass: 'pc-form-grid-col-10'},
             {name: 'Atomicity:', cellClass: 'pc-form-grid-col-10', tip: `
                 Atomicity:
                 <ul>
@@ -62,8 +62,8 @@ export default class CacheEditFormController {
                     <li>TRANSACTIONAL_SNAPSHOT - in this mode specified fully ACID-compliant transactional cache behavior for both key-value API and SQL transactions</li>
                 </ul>
             `},
-            {name: 'Amount:', cellClass: 'pc-form-grid-col-10', tip: `
-                Number of amount data copy from source cache used to back up single partition for partitioned cache
+            {name: 'Read From Backup:', cellClass: 'pc-form-grid-col-10', tip: `
+                Read from source cache used to back up single partition for partitioned cache
             `}
         ]; 
         
@@ -74,6 +74,13 @@ export default class CacheEditFormController {
             {text: 'Save', icon: 'checkmark', click: () => this.save()},
             {text: 'Save and Start', icon: 'download', click: () => this.save(true)}
         ];
+
+        this.clustersOptions = []
+        if(this.clusters){
+            for(let c of this.clusters){
+                this.clustersOptions.push({value:c.id,label:c.name})
+            }
+        }        
     }
 
     $onDestroy() {
@@ -101,6 +108,29 @@ export default class CacheEditFormController {
     save(start) {
         if (this.$scope.ui.inputForm.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
+        
+        for(let task of this.cacheDataProvider){
+            task.group = task.targetCluster
+            if(!task.name){
+                task.name = 'Data from '+task.source+' to '+ task.target
+            }
+                
+            let stat = this.TaskFlows.saveBasic(task).
+              then((d)=>{
+                if(d.data && d.data.message){
+                    this.$scope.message = d.data.message;
+                }
+                else{
+                    this.$scope.message = '成功保存任务！'
+                }
+             })
+             .catch((d)=>{
+                if(d.data && d.data.message){
+                    this.$scope.message = d.data.message;
+                }
+            }); 
+        }
+            
         this.onSave({$event: {cache: cloneDeep(this.clonedCache), start}});
     }
 
@@ -117,34 +147,40 @@ export default class CacheEditFormController {
     
     
     addCache() {
-        this.cacheDataProvider.push(this.TaskFlows.getBlankTaskFlow());
+        const newFlow = this.TaskFlows.getBlankTaskFlow()
+        newFlow.target = this.cache.name
+        newFlow.targetCluster = this.clusterId                
+        this.cacheDataProvider.push(newFlow);
     }
     
     removeCache(task) {
-        let stat = from(this.TaskFlows.removeTaskFlow(task.group,task.id)).pipe(
-            switchMap(({data}) => of(
-                {type: 'DELETE_TASK_FLOW_OK'}
-            )),
-            catchError((error) => of({
-                type: 'DELETE_TASK_FLOW_ERR',
-                error: {
-                    message: `Failed to remove cluster task flow: ${error.data.message}.`
+        if(task.id){
+            let stat = from(this.TaskFlows.removeTaskFlow(task.group,task.id)).pipe(
+                switchMap(({data}) => of(
+                    {type: 'DELETE_TASK_FLOW_OK'}
+                )),
+                catchError((error) => of({
+                    type: 'DELETE_TASK_FLOW_ERR',
+                    error: {
+                        message: `Failed to remove cluster task flow: ${error.data.message}.`
+                    }
+                }))
+            );         
+            stat.subscribe((d)=>{
+                if(d.error){
+                    this.$scope.message = d.error.message;
                 }
-            }))
-        );         
-        stat.subscribe((d)=>{
-            if(d.error){
-                this.$scope.message = d.error.message;
-            }
-        });
+            });
+        }        
         const index = this.cacheDataProvider.indexOf(task, 0);
         if (index > -1) {
             this.cacheDataProvider.splice(index, 1);
-        }
-        //this.cacheDataProvider = this.cacheDataProvider.filter((item) => { item.id != task.id });
+        }        
     }
     
     changeCache(task) {
-        
+        let editFlow = this.cacheDataProvider.filter((item) => item.id == task.id )
+        Object.assign(editFlow[0], task)
+        console.log(task)
     }
 }

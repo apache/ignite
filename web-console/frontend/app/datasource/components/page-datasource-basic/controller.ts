@@ -186,10 +186,12 @@ export default class PageDatasourceBasicController {
     }
     
     pingDatasource() {
-      let cluster =  this.clonedCluster;
-      this.AgentManager.callClusterService(cluster,'datasourceTest',cluster).then((msg) => {
+      let datasource =  this.clonedCluster;
+      const foundPreset = this._findPreset(datasource.driverCls);
+      datasource.db = foundPreset.db
+      this.AgentManager.callClusterService(datasource,'datasourceTest',datasource).then((msg) => {
           if(msg.status){
-             cluster.status = msg.status;
+            datasource.status = msg.status;
              this.$scope.status = msg.status;
              this.$scope.message = msg.message;
           }
@@ -197,10 +199,10 @@ export default class PageDatasourceBasicController {
     }
     
     disconnectDatasource() {
-      let cluster =  this.clonedCluster;
-      this.AgentManager.callClusterService(cluster,'datasourceDisconnect').then((msg) => {
+      let datasource =  this.clonedCluster;
+      this.AgentManager.callClusterService(datasource,'datasourceDisconnect').then((msg) => {
           if(msg.status){
-             cluster.status = msg.status;
+            datasource.status = msg.status;
              this.$scope.status = msg.status;
              this.$scope.message = msg.message;
           }

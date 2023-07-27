@@ -18,7 +18,7 @@ public class DBInfo {
 	private UUID accId; // 用户ID	
 	public String driverJar; // jar路径
 	public String driverCls;
-	private String db; // 数据库类型
+	private String db = "General"; // 数据库类型
 	public String jdbcUrl;
 	public String jndiName;
 	public String schemaName; // 默认的模式名称
@@ -167,6 +167,9 @@ public class DBInfo {
 			throw new IllegalArgumentException("Missing url in arguments: " + args);
 
 		jdbcUrl = args.get("jdbcUrl").toString();
+		
+		if (args.containsKey("db"))	
+			db = args.get("db").toString();
 		
 		if (args.containsKey("jndiName"))	
 			jndiName = args.get("jndiName").toString();

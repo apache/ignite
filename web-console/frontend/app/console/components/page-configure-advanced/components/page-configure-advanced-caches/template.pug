@@ -26,8 +26,8 @@ h2.pc-page-header.ng-animate-disabled(ng-if='!($ctrl.isBlocked$|async:this)')
     
 cluster-task-flow-overview(ng-if='!($ctrl.isBlocked$|async:this)'
     cluster-id='$ctrl.clusterID$|async:this'    
-    target-caches='$ctrl.selectedRows$|async:this'
-    target-models='$ctrl.shortModels$|async:this'
+    target-caches='$ctrl.selectedRows$'
+    models='$ctrl.shortModels$|async:this'
 )
 
 h2.pc-page-header.ng-animate-disabled(ng-if='$ctrl.isBlocked$|async:this')
@@ -37,6 +37,7 @@ cache-meric-form(ng-if='$ctrl.isBlocked$|async:this'
     cache='$ctrl.originalCache$|async:this'
     caches='$ctrl.shortCaches$|async:this'
     models='$ctrl.shortModels$|async:this'
+    clusters='$ctrl.shortClusters$|async:this'
     cluster-id='$ctrl.clusterID$|async:this'
     cache-data-provider='$ctrl.cacheDataProvider$|async:this'
     on-save='$ctrl.save($event)'

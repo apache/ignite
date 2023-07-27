@@ -36,16 +36,14 @@ public class JdbcQueryExecutor implements Callable<JSONObject> {
 
     public JSONObject executeSqlVisor(int queryId,String nodeId) throws SQLException {
         ResultSet resultSet = null;
-        long start = System.currentTimeMillis();
-        JSONObject res = new JSONObject();
-        JSONObject result = new JSONObject();
+        long start = System.currentTimeMillis();        
+        JSONObject queryResult = new JSONObject();
         String err = null;
         try {
             resultSet = this.statement.executeQuery(this.sql);
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             int rowCount = 0; //To count the number of rows
-
-            JSONObject queryResult = new JSONObject();
+            
             queryResult.put("hasMore", false);
             queryResult.put("queryId", queryId);
             queryResult.put("responseNodeId", nodeId);
@@ -77,28 +75,20 @@ public class JdbcQueryExecutor implements Callable<JSONObject> {
             queryResult.put("duration", end-start);
             
             
-            result.put("result", queryResult);
-            result.put("protocolVersion", 1);
-            res.put("result", result);
+           
+            queryResult.put("protocolVersion", 1);
+            return queryResult;
             
         } catch (SQLException ex) {
-        	err = ex.getMessage();            
+        	err = ex.getMessage();
+        	queryResult.put("error",err);
         } catch (JSONException ex) {			
         	throw new SQLException("Couldn't build the database json", ex);
 		} finally {
             if(null!=resultSet) resultSet.close();
-        }
+        }        
         
-        try {
-			result.put("error",err);
-			res.put("error",err);
-			res.put("finished",true);
-			res.put("id","~"+nodeId);
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-        return res;
+        return queryResult;
     }
 
     

@@ -878,6 +878,11 @@ public class GridJettyRestHandler extends AbstractHandler {
                 restReq0.cacheName(params.get(CACHE_NAME_PARAM));
 
                 restReq0.className(params.get("className"));
+                
+                String keepBinary = params.get("keepBinary");
+
+                if (keepBinary != null)
+                    restReq0.keepBinary(Boolean.parseBoolean(keepBinary));
 
                 restReq0.queryType(RestQueryRequest.QueryType.SCAN);
 

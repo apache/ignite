@@ -53,7 +53,7 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.console.agent.AgentClusterLauncher;
+import org.apache.ignite.console.agent.IgniteClusterLauncher;
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.AgentUtils;
 import org.apache.ignite.console.agent.db.DataSourceManager;
@@ -402,22 +402,22 @@ public class WebSocketRouter implements AutoCloseable {
         String clusterName = Utils.escapeFileName(json.getString("name"));
 		try {
 			
-			AgentClusterLauncher.saveBlobToFile(json);
+			IgniteClusterLauncher.saveBlobToFile(json);
 			
 			Boolean restart = json.getBoolean("restart");
 			if(restart!=null && restart) {
 				String id = json.getString("id");
-	        	AgentClusterLauncher.stop(clusterName,id);
+	        	IgniteClusterLauncher.stop(clusterName,id);
 			}
 			
 			if(!json.getBoolean("demo",false)) {	
 				// 启动一个独立的node，jvm内部的node之间相互隔离
-				Ignite ignite = AgentClusterLauncher.trySingleStart(json);
+				Ignite ignite = IgniteClusterLauncher.trySingleStart(json);
 				
 				if(ignite!=null) {
-					AgentClusterLauncher.registerNodeUrl(ignite);
+					IgniteClusterLauncher.registerNodeUrl(ignite);
 					
-					AgentClusterLauncher.deployServices(ignite.services(ignite.cluster().forServers()));
+					IgniteClusterLauncher.deployServices(ignite.services(ignite.cluster().forServers()));
 		        	stat.put("status", "started");
 				}
 				else {
@@ -440,12 +440,12 @@ public class WebSocketRouter implements AutoCloseable {
 		    	}
 		        else {
 		        	// 启动一个节点，最后再部署服务
-		        	Ignite ignite = AgentClusterLauncher.tryStart(cfg);
+		        	Ignite ignite = IgniteClusterLauncher.tryStart(cfg);
 		        	if(ignite!=null) {
 		        		//ignite.cluster().tag(clusterName);
-			        	AgentClusterLauncher.registerNodeUrl(ignite);
+			        	IgniteClusterLauncher.registerNodeUrl(ignite);
 			        	
-			        	AgentClusterLauncher.deployServices(ignite.services(ignite.cluster().forServers()));
+			        	IgniteClusterLauncher.deployServices(ignite.services(ignite.cluster().forServers()));
 		        	}
 		        	stat.put("status", "started");
 		        }
@@ -476,7 +476,7 @@ public class WebSocketRouter implements AutoCloseable {
     	}
         else {
         	String id = json.getString("id");
-        	AgentClusterLauncher.stop(clusterName,id);
+        	IgniteClusterLauncher.stop(clusterName,id);
         }
         stat.put("status", "stoped");
         return stat;

@@ -164,6 +164,7 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
  	    	   
  	       }catch(Exception e) {
  	    	   log.error("GremlinServer bind fail.",e);
+ 	    	   throw new RuntimeException(e);
  	       }
      	}
     }

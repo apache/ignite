@@ -40,10 +40,10 @@ export default class TaskFlowFormController {
     onSave: ng.ICompiledExpression;
     
     sourceCluster: object;
+
+    models: Array<object>;
     
-    targetCaches: Array<object>;
-    
-    targetModels: Array<object>;
+    selectCaches: Array<object>;    
     
     targetCluster: object;
     
@@ -71,6 +71,10 @@ export default class TaskFlowFormController {
                 this.clonedTaskFlow = cloneDeep(this.taskFlow);
             }            
         });
+
+        this.selectCaches = []
+
+        this.targetCaches.subscribe((caches) => this.selectCaches = caches)
         
         this.$scope.ui = this.IgniteFormUtils.formUI();
 
@@ -78,17 +82,22 @@ export default class TaskFlowFormController {
             {text: 'Save TaskFlow', icon: 'checkmark', click: () => this.confirmAndSave()},
             {text: 'Start TaskFlow', icon: 'checkmark', click: () => this.confirmAndStart()}                
         ];
-    }
+    }   
 
     $onDestroy() {
         this.subscrition.unsubscribe();
     }
     
-    buildTaskFlows(tplFlow){      
+    buildTaskFlows(tplFlow){   
+       this.$scope.message = ''   
        tplFlow.group = this.targetClusterId;
        tplFlow.targetCluster = this.targetClusterId;
        let taskList = []
-       for(let cache of this.targetCaches){
+       if(this.selectCaches.length==0){
+            this.$scope.message = 'Selected Caches length is 0, Please select at least two!';
+            return []
+       }
+       for(let cache of this.selectCaches){
            this.taskFlow = Object.assign({},tplFlow);
            this.taskFlow.target = cache.name;
            this.taskFlow.source = cache.name;
@@ -130,17 +139,11 @@ export default class TaskFlowFormController {
                 catchError((error) => of({
                     type: 'SAVE_AND_EDIT_TASK_FLOW_ERR',
                     error: {
-                        message: `Failed to save cluster task flow: ${error.data.message}.`
+                        message: `Failed to save cluster task flow: ${error}.`
                     }
                 }))
             );    
-            result.push(stat);
-            
-            stat.subscribe((d)=>{
-                if(d.error){
-                    this.$scope.message = d.error.message;
-                }
-            });
+            result.push(stat);            
         }
         if(!result){
             this.$scope.message = 'no task save!';
@@ -167,7 +170,7 @@ export default class TaskFlowFormController {
             result.push(stat);
         }
         if(result){
-            this.AgentManager.callClusterService({id: tplFlow.sourceCluster},serviceName,{tasks,task,targetModel:this.targetModels}).then((data) => {
+            this.AgentManager.callClusterService({id: tplFlow.sourceCluster},serviceName,{tasks,task,models:this.models}).then((data) => {
                  this.$scope.status = data.status; 
                  if(data.result){
                      return data.result;

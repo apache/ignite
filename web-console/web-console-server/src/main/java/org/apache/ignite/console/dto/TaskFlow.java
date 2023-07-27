@@ -28,7 +28,7 @@ public class TaskFlow extends AbstractDto {
 	/** */
     private UUID accId;
 
-    /** task group 和 clusterId 等价 */
+    /** 任务组，需要同时启动和管理的任务，task group 和 to clusterId 等价 */
     private String grp;
 
     /** */
@@ -59,8 +59,15 @@ public class TaskFlow extends AbstractDto {
      * MERGE_EXISTING 
      **/
     private String existingMode;
-
+    /**
+     * 传输时，cache级别或者item级别原子操作
+     */
+    private String atomicityMode;
     
+    /**
+     * 是否从备份库读取
+     */
+    private boolean readFromBackup;
 
 	/** 采集数据量 */
     private int amount;
