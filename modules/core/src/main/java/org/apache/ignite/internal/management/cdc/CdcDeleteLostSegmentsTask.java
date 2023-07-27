@@ -177,7 +177,7 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
                     return;
 
                 if (log.isInfoEnabled())
-                    log.info("Processing CDC segment [segment=" + segment + ']');
+                    log.info("Start process CDC segment [segment=" + segment + ']');
 
                 IgniteWalIteratorFactory.IteratorParametersBuilder builder =
                     new IgniteWalIteratorFactory.IteratorParametersBuilder()

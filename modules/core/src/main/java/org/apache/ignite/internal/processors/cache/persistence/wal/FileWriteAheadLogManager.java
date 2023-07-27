@@ -55,7 +55,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -70,6 +69,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cluster.DistributedConfigurationUtils;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -111,6 +111,8 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.Re
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -124,7 +126,6 @@ import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -135,7 +136,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
-import static java.lang.String.format;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -514,28 +514,42 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 ensureHardLinkAvailable(walArchiveDir.toPath(), walCdcDir.toPath());
 
                 cctx.kernalContext().internalSubscriptionProcessor()
-                    .registerDistributedConfigurationListener(dispatcher -> {
-                        cdcDisabled.addListener((name, oldVal, newVal) -> {
-                            if (log.isInfoEnabled()) {
-                                log.info(format("Distributed property '%s' was changed from '%s' to '%s'.",
-                                    name, oldVal, newVal));
-                            }
+                    .registerDistributedConfigurationListener(new DistributedConfigurationLifecycleListener() {
+                        @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
+                            cdcDisabled.addListener((name, oldVal, newVal) -> {
+                                if (newVal == null || oldVal == newVal)
+                                    return;
 
-                            if (newVal != null && newVal) {
-                                log.warning("CDC was disabled.");
+                                if (oldVal == null) {
+                                    if (newVal) {
+                                        if (log.isInfoEnabled())
+                                            log.info("CDC disabled. Distributed property '" + name + "' inited to 'true'.");
 
-                                logCdcDisableRecord();
-                            }
+                                        lastCdcDisableSgmnt = -1;
+                                    }
 
-                            if (oldVal != null && oldVal && !newVal) {
-                                if (log.isInfoEnabled())
-                                    log.info("CDC was enabled.");
+                                    return;
+                                }
 
-                                lastCdcDisableSgmnt = Long.MAX_VALUE;
-                            }
-                        });
+                                if (newVal) {
+                                    log.warning("CDC was disabled.");
 
-                        dispatcher.registerProperty(cdcDisabled);
+                                    logCdcDisableRecord();
+                                }
+                                else {
+                                    if (log.isInfoEnabled())
+                                        log.info("CDC was enabled.");
+
+                                    lastCdcDisableSgmnt = Long.MAX_VALUE;
+                                }
+                            });
+
+                            dispatcher.registerProperty(cdcDisabled);
+                        }
+
+                        @Override public void onReadyToWrite() {
+                            DistributedConfigurationUtils.setDefaultValue(cdcDisabled, false, log);
+                        }
                     });
             }
 
@@ -940,7 +954,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             !(rec instanceof PageDeltaRecord || rec instanceof PageSnapshot || rec instanceof MemoryRecoveryRecord))
             return null;
 
-        if (skipIfCdcDisabled(rec))
+        // Skip if in-memory CDC disabled.
+        if (inMemoryCdc && cdcDisabled.getOrDefault(false) && !(rec instanceof CdcDisableRecord))
             return null;
 
         FileWriteHandle currWrHandle = currentHandle();
@@ -1837,17 +1852,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         return maxWalSegmentSize;
     }
 
-    /** @return {@code True} if log record should be skipped when CDC is disabled. */
-    private boolean skipIfCdcDisabled(WALRecord rec) {
-        if (!inMemoryCdc || rec instanceof CdcDisableRecord || !cdcDisabled.getOrDefault(false))
-            return false;
-
-        LT.warn(log, "Logging CDC data records to WAL skipped. The '" + CDC_DISABLED +
-            "' distributed property is 'true'.");
-
-        return true;
-    }
-
     /** */
     private void logCdcDisableRecord() {
         cctx.database().checkpointReadLock();
@@ -1855,13 +1859,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         try {
             WALPointer ptr = log(new CdcDisableRecord(), RolloverType.CURRENT_SEGMENT);
 
-            if (ptr == null)
-                throw new IgniteException("CDC disable record was not logged.");
-
-            lastCdcDisableSgmnt = ptr.index();
+            lastCdcDisableSgmnt = ptr != null ? ptr.index() : -1;
         }
         catch (Exception e) {
-            U.error(log, "Unable to log CDC disable record: " + e.getMessage(), e);
+            lastCdcDisableSgmnt = -1;
+
+            log.warning("Unable to log CDC disable record: " + e.getMessage(), e);
         }
         finally {
             cctx.database().checkpointReadUnlock();
