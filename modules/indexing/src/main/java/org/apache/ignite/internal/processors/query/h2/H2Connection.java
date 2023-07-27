@@ -31,12 +31,15 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.jdbc.JdbcStatement;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_STATEMENT_CACHE_SIZE;
+
 /**
  * Wrapper to store connection with currently used schema and statement cache.
  */
 public class H2Connection implements AutoCloseable {
     /** */
-    private static final int STATEMENT_CACHE_SIZE = 256;
+    private static final int STATEMENT_CACHE_SIZE =
+        Integer.getInteger(IGNITE_H2_INDEXING_CACHE_STATEMENT_CACHE_SIZE, 256);
 
     /** */
     private final Connection conn;

@@ -958,6 +958,14 @@ public final class IgniteSystemProperties {
         "IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT";
 
     /**
+     * Number of thread's SQL statements cache size.
+     */
+    @SystemProperty(value = "Number of thread's SQL statements cache size.",
+        type = Integer.class, defaults = "256")
+    public static final String IGNITE_H2_INDEXING_CACHE_STATEMENT_CACHE_SIZE =
+        "IGNITE_H2_INDEXING_CACHE_STATEMENT_CACHE_SIZE";
+
+    /**
      * Manages backward compatibility of {@link StreamTransformer#from(CacheEntryProcessor)} method.
      * <p>
      * If the property is {@code true}, then the wrapped {@link CacheEntryProcessor} won't be able to be loaded over
