@@ -349,6 +349,35 @@ public class RunningQueryManager {
             if (failed)
                 qrySpan.addTag(ERROR, failReason::getMessage);
 
+            //We need to collect query history and metrics only for SQL queries.
+            if (isSqlQuery(qry)) {
+                qry.runningFuture().onDone();
+
+                qryHistTracker.collectHistory(qry, failed);
+
+                if (!failed)
+                    successQrsCnt.increment();
+                else {
+                    failedQrsCnt.increment();
+
+                    // We measure cancel metric as "number of times user's queries ended up with query cancelled exception",
+                    // not "how many user's KILL QUERY command succeeded". These may be not the same if cancel was issued
+                    // right when query failed due to some other reason.
+                    if (QueryUtils.wasCancelled(failReason))
+                        canceledQrsCnt.increment();
+                }
+            }
+
+            if (ctx.performanceStatistics().enabled() && qry.startTimeNanos() > 0) {
+                ctx.performanceStatistics().query(
+                    qry.queryType(),
+                    qry.query(),
+                    qry.id(),
+                    qry.startTime(),
+                    System.nanoTime() - qry.startTimeNanos(),
+                    !failed);
+            }
+
             if (!qryFinishedListeners.isEmpty()) {
                 GridQueryFinishedInfo info = new GridQueryFinishedInfo(
                     qry.id(),
@@ -384,35 +413,6 @@ public class RunningQueryManager {
                 catch (IgniteCheckedException ex) {
                     throw new IgniteException(ex.getMessage(), ex);
                 }
-            }
-
-            //We need to collect query history and metrics only for SQL queries.
-            if (isSqlQuery(qry)) {
-                qry.runningFuture().onDone();
-
-                qryHistTracker.collectHistory(qry, failed);
-
-                if (!failed)
-                    successQrsCnt.increment();
-                else {
-                    failedQrsCnt.increment();
-
-                    // We measure cancel metric as "number of times user's queries ended up with query cancelled exception",
-                    // not "how many user's KILL QUERY command succeeded". These may be not the same if cancel was issued
-                    // right when query failed due to some other reason.
-                    if (QueryUtils.wasCancelled(failReason))
-                        canceledQrsCnt.increment();
-                }
-            }
-
-            if (ctx.performanceStatistics().enabled() && qry.startTimeNanos() > 0) {
-                ctx.performanceStatistics().query(
-                    qry.queryType(),
-                    qry.query(),
-                    qry.id(),
-                    qry.startTime(),
-                    System.nanoTime() - qry.startTimeNanos(),
-                    !failed);
             }
         }
         finally {

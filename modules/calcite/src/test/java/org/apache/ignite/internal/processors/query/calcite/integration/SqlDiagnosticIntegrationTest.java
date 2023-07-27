@@ -285,10 +285,15 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
         long startTime = U.currentTimeMillis();
 
+        AtomicInteger finishQryCnt = new AtomicInteger();
+        grid(0).context().query().runningQueryManager().registerQueryFinishedListener(q -> finishQryCnt.incrementAndGet());
+
         sql(grid(0), "SELECT * FROM table(system_range(1, 1000))");
         sql(grid(0), "CREATE TABLE test_perf_stat (a INT)");
         sql(grid(0), "INSERT INTO test_perf_stat VALUES (0), (1), (2), (3), (4)");
         sql(grid(0), "SELECT * FROM test_perf_stat");
+
+        assertTrue(GridTestUtils.waitForCondition(() -> finishQryCnt.get() == 4, 1_000L));
 
         // Only the last query should trigger queryReads event.
         // The first query uses generated data and doesn't require any page reads.
