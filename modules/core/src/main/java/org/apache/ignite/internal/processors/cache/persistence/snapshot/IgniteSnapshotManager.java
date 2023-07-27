@@ -296,9 +296,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Snapshot metafile extension. */
     public static final String SNAPSHOT_METAFILE_EXT = ".smf";
 
-    /** Dump metafile extension. */
-    public static final String DUMP_METAFILE_EXT = ".dmf";
-
     /** Snapshot temporary metafile extension. */
     public static final String SNAPSHOT_METAFILE_TMP_EXT = ".tmp";
 
@@ -368,6 +365,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Lock file for dump directory. */
     public static final String DUMP_LOCK = "dump.lock";
+
+    /** Dump metafile extension. */
+    public static final String DUMP_METAFILE_EXT = ".dmf";
 
     /**
      * Local buffer to perform copy-on-write operations with pages for {@code SnapshotFutureTask.PageStoreSerialWriter}s.
@@ -548,7 +548,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         tmpWorkDir = U.resolveWorkDirectory(pdsSettings.persistentStoreNodePath().getAbsolutePath(), DFLT_SNAPSHOT_TMP_DIR, true);
 
         U.ensureDirectory(locSnpDir, "snapshot work directory", log);
-        U.ensureDirectory(locDumpDir, "snapshot work directory", log);
+        U.ensureDirectory(locDumpDir, "dump work directory", log);
         U.ensureDirectory(tmpWorkDir, "temp directory for snapshot creation", log);
 
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(
@@ -1211,7 +1211,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
 
-                storeSnapshotMeta(meta, smf);
+                storeSnapshotMeta(req.meta(), smf);
 
                 log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
 
@@ -1468,7 +1468,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     if (!isLocalNodeCoordinator(cctx.discovery()))
                         snpReq.warnings(req.warnings());
 
-                    snpReq.<SnapshotMetadata>meta().warnings(Collections.unmodifiableList(req.warnings()));
+                    snpReq.meta().warnings(Collections.unmodifiableList(req.warnings()));
 
                     storeWarnings(snpReq);
                 }
@@ -4700,6 +4700,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /**
          * @param snpName Snapshot name.
+         * @param incremental If {@code true} then incremental snapshot must be created.
+         * @param onlyPrimary If {@code true} then only copy of primary partitions will be created.
+         * @param dump If {@code true} then cache dump must be created.
+         * @param cacheGroupNames Cache group names to include in dump.
          */
         public CreateSnapshotCallable(
             String snpName,
