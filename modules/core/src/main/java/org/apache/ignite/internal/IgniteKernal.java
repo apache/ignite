@@ -1091,7 +1091,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 startProcessor(new GridTaskSessionProcessor(ctx));
                 startProcessor(new GridJobProcessor(ctx));
                 startProcessor(new GridTaskProcessor(ctx));
-                startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
+                startProcessor(SCHEDULE.createOptional(ctx));
                 startProcessor(createComponent(IgniteRestProcessor.class, ctx));
                 startProcessor(new DataStreamProcessor(ctx));
                 startProcessor(new GridContinuousProcessor(ctx));

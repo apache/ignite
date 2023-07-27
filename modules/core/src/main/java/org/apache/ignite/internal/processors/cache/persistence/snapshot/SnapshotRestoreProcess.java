@@ -420,7 +420,8 @@ public class SnapshotRestoreProcess {
                 new HashSet<>(bltNodes),
                 false,
                 incIdx,
-                onlyPrimary
+                onlyPrimary,
+                false
             );
 
             prepareRestoreProc.start(req.requestId(), req);

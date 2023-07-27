@@ -95,4 +95,11 @@ public interface IgniteSnapshot {
      * future will be {@code false} if the restore process with the specified snapshot name is not running at all.
      */
     public IgniteFuture<Boolean> cancelSnapshotRestore(String name);
+
+    /**
+     * @param name Dump name.
+     * @param cacheGroupNames Cache group names to be dumped or {@code null} to dump all cache groups.
+     * @return Future which will be completed when dump ends.
+     */
+    public IgniteFuture<Void> createDump(String name, @Nullable Collection<String> cacheGroupNames);
 }

@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * @param <T> Type of snapshot processing result.
  */
-abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
+public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
     /** Shared context. */
     protected final GridCacheSharedContext<?, ?> cctx;
 

@@ -157,6 +157,7 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_DUMPS_DIRECTORY;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -1972,8 +1973,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_BINARY_METADATA_PATH,
             false));
 
-        if (!saveSnp)
+        if (!saveSnp) {
             U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false));
+            U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_DUMPS_DIRECTORY, false));
+        }
+
     }
 
     /**
