@@ -103,7 +103,6 @@ import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
@@ -466,14 +465,15 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private BaseQueryContext createQueryContext(Context parent, @Nullable String schema) {
+    private BaseQueryContext createQueryContext(Context parent, QueryStartRequest msg) {
         return BaseQueryContext.builder()
             .parentContext(parent)
             .frameworkConfig(
                 Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(schemaHolder().schema(schema))
+                    .defaultSchema(schemaHolder().schema(msg.schema()))
                     .build()
             )
+            .partitions(msg.partitions())
             .logger(log)
             .build();
     }
@@ -558,7 +558,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     ) {
         qry.mapping();
 
-        MappingQueryContext mapCtx = Commons.mapContext(locNodeId, topologyVersion(), qry.context().isLocal());
+        MappingQueryContext mapCtx = Commons.mapContext(locNodeId, topologyVersion(), qry.context());
 
         plan.init(mappingSvc, mapCtx);
 
@@ -643,6 +643,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                             fragmentsPerNode.get(nodeId).intValue(),
                             qry.parameters(),
                             parametersMarshalled,
+                            qry.context().partitions(),
                             timeout
                         );
 
@@ -766,7 +767,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 )
             );
 
-            final BaseQueryContext qctx = createQueryContext(Contexts.empty(), msg.schema());
+            final BaseQueryContext qctx = createQueryContext(Contexts.empty(), msg);
 
             QueryPlan qryPlan = queryPlanCache().queryPlan(
                 new CacheKey(msg.schema(), msg.root()),

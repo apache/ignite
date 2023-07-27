@@ -107,6 +107,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
         Object[] params,
         QueryContext qryCtx,
         boolean isLocal,
+        int[] parts,
         ExchangeService exch,
         BiConsumer<Query<RowT>, Throwable> unregister,
         IgniteLogger log,
@@ -144,6 +145,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
                     .build()
             )
             .local(isLocal)
+            .partitions(parts)
             .logger(log)
             .build();
     }
@@ -157,7 +159,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
      * @param schema new schema.
      */
     public RootQuery<RowT> childQuery(SchemaPlus schema) {
-        return new RootQuery<>(sql, schema, params, QueryContext.of(cancel), ctx.isLocal(), exch, unregister, log,
+        return new RootQuery<>(sql, schema, params, QueryContext.of(cancel), ctx.isLocal(), ctx.partitions(), exch, unregister, log,
             plannerTimeout, totalTimeout);
     }
 

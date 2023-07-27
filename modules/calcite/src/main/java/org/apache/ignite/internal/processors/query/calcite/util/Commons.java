@@ -444,11 +444,12 @@ public final class Commons {
 
     /** */
     public static MappingQueryContext mapContext(UUID locNodeId, AffinityTopologyVersion topVer) {
-        return mapContext(locNodeId, topVer, false);
+        return mapContext(locNodeId, topVer, null);
     }
 
     /** */
-    public static MappingQueryContext mapContext(UUID locNodeId, AffinityTopologyVersion topVer, boolean isLocal) {
-        return new MappingQueryContext(locNodeId, topVer, isLocal);
+    public static MappingQueryContext mapContext(UUID locNodeId, AffinityTopologyVersion topVer, BaseQueryContext qryCtx) {
+        return new MappingQueryContext(locNodeId, topVer, qryCtx != null && qryCtx.isLocal(),
+                qryCtx != null ? qryCtx.partitions() : null);
     }
 }

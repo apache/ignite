@@ -17,8 +17,11 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.plan.RelOptCluster;
@@ -48,10 +51,14 @@ import org.apache.ignite.internal.processors.query.calcite.exec.IndexFirstLastSc
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
+import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.jetbrains.annotations.Nullable;
@@ -120,8 +127,17 @@ public class CacheIndexImpl implements IgniteIndex {
     ) {
         UUID locNodeId = execCtx.localNodeId();
         if (grp.nodeIds().contains(locNodeId) && idx != null) {
+            int[] parts = null;
+
+            if (tbl.descriptor().cacheContext().isPartitioned()) {
+                parts = partitions(grp, execCtx);
+
+                if (F.isEmpty(parts) && hasPartitionParameter(execCtx))
+                    return Collections.emptyList();
+            }
+
             return new IndexScan<>(execCtx, tbl.descriptor(), idx.unwrap(InlineIndex.class), collation.getKeys(),
-                grp.partitions(locNodeId), ranges, requiredColumns);
+                parts, ranges, requiredColumns);
         }
 
         return Collections.emptyList();
@@ -137,13 +153,22 @@ public class CacheIndexImpl implements IgniteIndex {
         UUID localNodeId = ectx.localNodeId();
 
         if (grp.nodeIds().contains(localNodeId) && idx != null) {
+            int[] parts = null;
+
+            if (tbl.descriptor().cacheContext().isPartitioned()) {
+                parts = partitions(grp, ectx);
+
+                if (F.isEmpty(parts) && hasPartitionParameter(ectx))
+                    return Collections.emptyList();
+            }
+
             return new IndexFirstLastScan<>(
                 first,
                 ectx,
                 tbl.descriptor(),
                 idx.unwrap(InlineIndexImpl.class),
                 collation.getKeys(),
-                grp.partitions(localNodeId),
+                parts,
                 requiredColumns
             );
         }
@@ -156,8 +181,31 @@ public class CacheIndexImpl implements IgniteIndex {
         long cnt = 0;
 
         if (idx != null && grp.nodeIds().contains(ectx.localNodeId())) {
-            IndexingQueryFilter filter = new IndexingQueryFilterImpl(tbl.descriptor().cacheContext().kernalContext(),
-                ectx.topologyVersion(), grp.partitions(ectx.localNodeId()));
+            boolean isReplicated = tbl.descriptor().cacheContext().isReplicated();
+
+            final int[] parts = !isReplicated ? partitions(grp, ectx) : null;
+
+            if (!isReplicated && F.isEmpty(parts) && hasPartitionParameter(ectx))
+                return 0;
+
+            IndexingQueryFilter filter = new IndexingQueryFilter() {
+                @Override public @Nullable IndexingQueryCacheFilter forCache(String cacheName) {
+                    Set<Integer> parts0 = null;
+
+                    if (isReplicated)
+                        return null;
+
+                    if (!F.isEmpty(parts)) {
+                        parts0 = new HashSet<>();
+
+                        for (int part : parts)
+                            parts0.add(part);
+                    }
+
+                    return new IndexingQueryCacheFilter(tbl.descriptor().cacheContext().affinity(), parts0, ectx.topologyVersion(),
+                            tbl.descriptor().cacheContext().kernalContext().discovery().localNode());
+                }
+            };
 
             InlineIndex iidx = idx.unwrap(InlineIndex.class);
 
@@ -268,5 +316,31 @@ public class CacheIndexImpl implements IgniteIndex {
         }
 
         return true;
+    }
+
+    /** */
+    private <Row> boolean hasPartitionParameter(ExecutionContext<Row> ctx) {
+        BaseQueryContext qryCtx = ctx.unwrap(BaseQueryContext.class);
+
+        return qryCtx != null && !F.isEmpty(qryCtx.partitions());
+    }
+
+    /** */
+    private <Row> int[] partitions(ColocationGroup grp, ExecutionContext<Row> ctx) {
+        BaseQueryContext qryCtx = ctx.unwrap(BaseQueryContext.class);
+
+        int[] targetParts = qryCtx != null ? qryCtx.partitions() : null;
+        int[] parts = grp.partitions(ctx.localNodeId());
+
+        if (F.isEmpty(targetParts))
+            return parts;
+
+        GridIntList res = new GridIntList();
+        for (int p: parts) {
+            if (Arrays.binarySearch(targetParts, p) >= 0)
+                res.add(p);
+        }
+
+        return !res.isEmpty() ? res.array() : null;
     }
 }
