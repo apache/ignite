@@ -164,6 +164,7 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -1224,18 +1225,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param req Request
-     * @param grpIds0 Groups.
+     * @param req Request.
+     * @param grps0 Cache groups to dump.
      * @return Create dump future.
      */
-    private IgniteInternalFuture<SnapshotOperationResponse> initLocalDump(SnapshotOperationRequest req, List<Integer> grpIds0) {
+    private IgniteInternalFuture<SnapshotOperationResponse> initLocalDump(SnapshotOperationRequest req, List<Integer> grps0) {
         IgniteInternalFuture<?> task0;
 
-        List<Integer> grpIds = grpIds0.stream().filter(grpId -> cctx.cache().cacheGroup(grpId) != null).collect(Collectors.toList());
+        List<Integer> grps = grps0.stream().filter(grpId -> cctx.cache().cacheGroup(grpId) != null).collect(Collectors.toList());
 
         File dumpDir = snapshotLocalDir(req.snapshotName(), null, locDumpDir);
 
-        if (grpIds.isEmpty())
+        if (grps.isEmpty())
             task0 = new GridFinishedFuture<>(Collections.emptySet());
         else {
             dumpDir.mkdirs();
@@ -1248,7 +1249,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 req.snapshotPath(),
                 dumpDir,
                 tmpWorkDir,
-                ioFactory
+                ioFactory,
+                grps
             ));
         }
 
@@ -1266,7 +1268,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 req.requestId(),
                 cctx.localNode().consistentId().toString(),
                 req.snapshotName(),
-                grpIds,
+                grps,
                 nodes
             );
 
@@ -2903,7 +2905,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** */
     private void removeDumpLock(String dumpName) throws IgniteCheckedException {
-        File lock = dumpLockFile(snapshotLocalDir(dumpName, null, locDumpDir), cctx);
+        File lock = new File(nodeDumpDirectory(snapshotLocalDir(dumpName, null, locDumpDir), cctx), DUMP_LOCK);
 
         if (!lock.exists())
             throw new IgniteCheckedException("Lock file not exists: " + lock);
@@ -2913,17 +2915,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** */
-    public static File dumpLockFile(File dumpDir, GridCacheSharedContext<?, ?> cctx) throws IgniteCheckedException {
+    public static File nodeDumpDirectory(File dumpDir, GridCacheSharedContext<?, ?> cctx) throws IgniteCheckedException {
         File nodeDumpDir = new File(dumpDir, databaseRelativePath(cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName()));
 
-        if (nodeDumpDir.exists()) {
-            if (!nodeDumpDir.isDirectory())
-                throw new IgniteCheckedException(nodeDumpDir + " must be a directory");
-        }
-        else if (!nodeDumpDir.mkdirs())
-            throw new IgniteCheckedException("Dump directory can't be created: " + nodeDumpDir);
+        IgniteUtils.ensureDirectory(nodeDumpDir, "dump directory", null);
 
-        return new File(nodeDumpDir, DUMP_LOCK);
+        return nodeDumpDir;
     }
 
     /**

@@ -87,32 +87,33 @@ class BinaryMetadataFileStore {
         final ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache,
         final GridKernalContext ctx,
         final IgniteLogger log,
-        final File binaryMetadataFileStoreDir
+        final File binaryMetadataFileStoreDir,
+        final boolean forceEnabled
     ) throws IgniteCheckedException {
         this.metadataLocCache = metadataLocCache;
         this.ctx = ctx;
 
-        enabled = CU.isPersistenceEnabled(ctx.config()) || CU.isCdcEnabled(ctx.config());
+        enabled = forceEnabled || CU.isPersistenceEnabled(ctx.config()) || CU.isCdcEnabled(ctx.config());
 
         this.log = log;
 
-        if (!enabled)
-            return;
+        DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
 
-        fileIOFactory = ctx.config().getDataStorageConfiguration().getFileIOFactory();
-
-        final String nodeFolderName = ctx.pdsFolderResolver().resolveFolders().folderName();
+        fileIOFactory = dsCfg == null ? new DataStorageConfiguration().getFileIOFactory() : dsCfg.getFileIOFactory();
 
         if (binaryMetadataFileStoreDir != null)
             metadataDir = binaryMetadataFileStoreDir;
-        else
+        else {
+            final String nodeFolderName = ctx.pdsFolderResolver().resolveFolders().folderName();
+
             metadataDir = new File(U.resolveWorkDirectory(
                 ctx.config().getWorkDirectory(),
                 DataStorageConfiguration.DFLT_BINARY_METADATA_PATH,
                 false
             ), nodeFolderName);
 
-        fixLegacyFolder(nodeFolderName);
+            fixLegacyFolder(nodeFolderName);
+        }
     }
 
     /**
