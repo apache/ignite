@@ -155,6 +155,9 @@ Apache Ignite In-Memory Distributed Database 2.14.0
 -----------------------------------------------------------
 
 (!) WARNINGS:
+* Java thin client retrieves BinaryConfiguration from server and overrides configured and/or default properties.
+  The behavior is defined by ClientConfiguration#isAutoBinaryConfigurationEnabled.
+  This is a breaking change for users who use POJO as cache keys and rely on default BinaryConfiguration.
 * Removed LOCAL caches support.
 * Removed scalar module.
 

@@ -166,17 +166,14 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
             .collect(Collectors.toList());
     }
 
-    /**
-     * @param name Property name.
-     * @return Public property.
-     */
-    public @Nullable DistributedChangeableProperty<Serializable> property(String name) {
-        DistributedChangeableProperty<?> p = props.get(name);
+    /** {@inheritDoc} */
+    @Override public @Nullable <T extends Serializable> DistributedChangeableProperty<T> property(String name) {
+        DistributedChangeableProperty<T> p = props.get(name);
 
         if (!(p instanceof DistributedChangeableProperty))
             return null;
         else
-            return (DistributedChangeableProperty<Serializable>)p;
+            return p;
     }
 
     /**

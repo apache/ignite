@@ -136,6 +136,12 @@
             </property>
         {% endif %}
 
+        {% if config.sql_configuration %}
+            <property name="sqlConfiguration">
+            {{ misc_utils.bean(config.sql_configuration) }}
+            </property>
+        {% endif %}
+
         {{ misc_utils.plugins(config) }}
     </bean>
 {% endmacro %}

@@ -89,6 +89,9 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
     private final long plannerTimeout;
 
     /** */
+    private final long totalTimeout;
+
+    /** */
     private volatile long locQryId;
 
     /** Query start timestamp (millis). */
@@ -103,10 +106,12 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
         SchemaPlus schema,
         Object[] params,
         QueryContext qryCtx,
+        boolean isLocal,
         ExchangeService exch,
         BiConsumer<Query<RowT>, Throwable> unregister,
         IgniteLogger log,
-        long plannerTimeout
+        long plannerTimeout,
+        long totalTimeout
     ) {
         super(
             UUID.randomUUID(),
@@ -126,7 +131,8 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
         remoteFragments = new HashMap<>();
         waiting = new HashSet<>();
 
-        this.plannerTimeout = plannerTimeout;
+        this.plannerTimeout = totalTimeout > 0 ? Math.min(plannerTimeout, totalTimeout) : plannerTimeout;
+        this.totalTimeout = totalTimeout;
 
         Context parent = Commons.convert(qryCtx);
 
@@ -137,6 +143,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
                     .defaultSchema(schema)
                     .build()
             )
+            .local(isLocal)
             .logger(log)
             .build();
     }
@@ -150,7 +157,8 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
      * @param schema new schema.
      */
     public RootQuery<RowT> childQuery(SchemaPlus schema) {
-        return new RootQuery<>(sql, schema, params, QueryContext.of(cancel), exch, unregister, log, plannerTimeout);
+        return new RootQuery<>(sql, schema, params, QueryContext.of(cancel), ctx.isLocal(), exch, unregister, log,
+            plannerTimeout, totalTimeout);
     }
 
     /** */
@@ -370,7 +378,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
     }
 
     /** */
-    public void onError(Throwable error) {
+    @Override public void onError(Throwable error) {
         root.onError(error);
 
         tryClose(error);
@@ -418,6 +426,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
         msgSb.append(", planningTime=").append(root == null ? U.currentTimeMillis() - startTs : planningTime).append("ms")
             .append(", execTime=").append(root == null ? 0 : root.execTime()).append("ms")
             .append(", idleTime=").append(root == null ? 0 : root.idleTime()).append("ms")
+            .append(", timeout=").append(totalTimeout).append("ms")
             .append(", type=CALCITE")
             .append(", state=").append(state)
             .append(", schema=").append(ctx.schemaName())
@@ -431,6 +440,18 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
     /** {@inheritDoc} */
     @Override public long time() {
         return root == null ? U.currentTimeMillis() - startTs : planningTime + root.execTime();
+    }
+
+    /**
+     * @return Time left to execute the query, {@code -1} if timeout is not set, {@code 0} if timeout reached.
+     */
+    public long remainingTime() {
+        if (totalTimeout <= 0)
+            return -1;
+
+        long curTimeout = totalTimeout - (U.currentTimeMillis() - startTs);
+
+        return curTimeout <= 0 ? 0 : curTimeout;
     }
 
     /** */

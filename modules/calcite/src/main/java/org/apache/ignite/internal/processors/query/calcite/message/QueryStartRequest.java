@@ -60,6 +60,9 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     private byte[] paramsBytes;
 
     /** */
+    private long timeout;
+
+    /** */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public QueryStartRequest(
         UUID qryId,
@@ -70,7 +73,8 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         FragmentDescription fragmentDesc,
         int totalFragmentsCnt,
         Object[] params,
-        @Nullable byte[] paramsBytes
+        @Nullable byte[] paramsBytes,
+        long timeout
     ) {
         this.qryId = qryId;
         this.originatingQryId = originatingQryId;
@@ -81,6 +85,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         this.totalFragmentsCnt = totalFragmentsCnt;
         this.params = params;
         this.paramsBytes = paramsBytes; // If we already have marshalled params, use it.
+        this.timeout = timeout;
     }
 
     /** */
@@ -154,6 +159,13 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         return paramsBytes;
     }
 
+    /**
+     * @return Query timeout.
+     */
+    public long timeout() {
+        return timeout;
+    }
+
     /** {@inheritDoc} */
     @Override public void prepareMarshal(MarshallingContext ctx) throws IgniteCheckedException {
         if (paramsBytes == null && params != null)
@@ -219,12 +231,18 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeInt("totalFragmentsCnt", totalFragmentsCnt))
+                if (!writer.writeLong("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
             case 7:
+                if (!writer.writeInt("totalFragmentsCnt", totalFragmentsCnt))
+                    return false;
+
+                writer.incrementState();
+
+            case 8:
                 if (!writer.writeAffinityTopologyVersion("ver", ver))
                     return false;
 
@@ -292,7 +310,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 6:
-                totalFragmentsCnt = reader.readInt("totalFragmentsCnt");
+                timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())
                     return false;
@@ -300,6 +318,14 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 7:
+                totalFragmentsCnt = reader.readInt("totalFragmentsCnt");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 8:
                 ver = reader.readAffinityTopologyVersion("ver");
 
                 if (!reader.isLastRead())
@@ -319,6 +345,6 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 }

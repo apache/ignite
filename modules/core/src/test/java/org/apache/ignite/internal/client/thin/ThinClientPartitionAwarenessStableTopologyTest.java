@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -34,9 +36,16 @@ import org.apache.ignite.client.ClientPartitionAwarenessMapper;
 import org.apache.ignite.client.ClientPartitionAwarenessMapperFactory;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongEx;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import static java.util.Arrays.asList;
 
 /**
  * Test partition awareness of thin client on stable topology.
@@ -225,6 +234,33 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
         testIgniteSet("testIgniteSet2", null, CacheAtomicityMode.TRANSACTIONAL);
         testIgniteSet("testIgniteSet3", "grp-testIgniteSet3", CacheAtomicityMode.ATOMIC);
         testIgniteSet("testIgniteSet4", "grp-testIgniteSet4", CacheAtomicityMode.TRANSACTIONAL);
+    }
+
+    /** */
+    @Test
+    public void testMultipleCacheGroupAffinityMappingRequest() throws Exception {
+        ClientCacheAffinityContext affCtx = ((TcpIgniteClient)client).reliableChannel().affinityContext();
+
+        IgniteInternalFuture<Object> replCacheOpFut;
+        IgniteInternalFuture<Object> partCacheOpFut;
+
+        synchronized (affCtx.cacheKeyMapperFactoryMap) {
+            partCacheOpFut = GridTestUtils.runAsync(() -> client.cache(PART_CACHE_NAME).get(0));
+            replCacheOpFut = GridTestUtils.runAsync(() -> client.cache(REPL_CACHE_NAME).get(0));
+
+            GridTestUtils.waitForCondition(
+                () -> affCtx.pendingCacheIds.containsAll(F.transform(asList(REPL_CACHE_NAME, PART_CACHE_NAME), CU::cacheId)),
+                getTestTimeout()
+            );
+        }
+
+        partCacheOpFut.get();
+        replCacheOpFut.get();
+
+        Map<ClientOperation, Integer> ops = opsQueue.stream().map(T2::get2).collect(Collectors.toMap(v -> v, v -> 1, Integer::sum));
+
+        assertEquals(2, (int)ops.get(ClientOperation.CACHE_GET));
+        assertEquals(1, (int)ops.get(ClientOperation.CACHE_PARTITIONS));
     }
 
     /**

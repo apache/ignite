@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.cache.index.StaticCacheDdlTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousBatchAckTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFilterListenerTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryDeploymentToClientTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntriesExpireTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFilterDeploymentFailedTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryOperationP2PTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryOrderingEventTest;
@@ -77,7 +78,8 @@ import org.junit.runners.Suite;
     CacheContinuousQueryFilterDeploymentFailedTest.class,
     CacheContinuousQueryDeploymentToClientTest.class,
     IgniteSqlSinglePartitionMultiParallelismTest.class,
-    QueryEntityAliasesTest.class
+    QueryEntityAliasesTest.class,
+    CacheContinuousQueryEntriesExpireTest.class,
 })
 public class IgniteCacheQuerySelfTestSuite6 {
 }

@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.RunnableX;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.checkRange;
@@ -102,6 +103,12 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     private final IoTracker ioTracker;
 
     /** */
+    private final long timeout;
+
+    /** */
+    private final long startTs;
+
+    /** */
     private Object[] correlations = new Object[16];
 
     /**
@@ -122,6 +129,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         RowHandler<Row> handler,
         MemoryTracker qryMemoryTracker,
         IoTracker ioTracker,
+        long timeout,
         Map<String, Object> params
     ) {
         super(qctx);
@@ -136,6 +144,9 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         this.qryMemoryTracker = qryMemoryTracker;
         this.ioTracker = ioTracker;
         this.params = params;
+        this.timeout = timeout;
+
+        startTs = U.currentTimeMillis();
 
         baseDataContext = new BaseDataContext(qctx.typeFactory());
 
@@ -322,6 +333,11 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** */
     public boolean isCancelled() {
         return cancelFlag.get();
+    }
+
+    /** */
+    public boolean isTimedOut() {
+        return timeout > 0 && U.currentTimeMillis() - startTs >= timeout;
     }
 
     /** */

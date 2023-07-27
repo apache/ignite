@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -75,6 +76,19 @@ public class ColocationGroup implements MarshalableMessage {
     /** */
     public static ColocationGroup forSourceId(long sourceId) {
         return new ColocationGroup(new long[] {sourceId}, null, null);
+    }
+
+    /** */
+    public ColocationGroup local(UUID nodeId) {
+        List<List<UUID>> localAssignments = null;
+        if (assignments != null) {
+            localAssignments = assignments.stream()
+                    .map(l -> nodeId.equals(l.get(0)) ? l : Collections.<UUID>emptyList())
+                    .collect(Collectors.toList());
+        }
+
+        return new ColocationGroup(Arrays.copyOf(sourceIds, sourceIds.length), Collections.singletonList(nodeId),
+                localAssignments);
     }
 
     /** */

@@ -31,6 +31,7 @@ import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -49,9 +50,11 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.binary.BinaryUtils.FLAG_COMPACT_FOOTER;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_AUX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
+import static org.apache.ignite.internal.processors.cache.CacheObject.TYPE_BINARY;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 
 /**
@@ -281,7 +284,11 @@ public class IdleVerifyUtility {
                 state == GridDhtPartitionState.MOVING ?
                     PartitionHashRecordV2.MOVING_PARTITION_SIZE : 0,
                 state == GridDhtPartitionState.MOVING ?
-                    PartitionHashRecordV2.PartitionState.MOVING : PartitionHashRecordV2.PartitionState.LOST);
+                    PartitionHashRecordV2.PartitionState.MOVING : PartitionHashRecordV2.PartitionState.LOST,
+                0,
+                0,
+                0,
+                0);
         }
 
         if (state != GridDhtPartitionState.OWNING)
@@ -289,6 +296,10 @@ public class IdleVerifyUtility {
 
         int partHash = 0;
         int partVerHash = 0;
+        int cf = 0;
+        int noCf = 0;
+        int binary = 0;
+        int regular = 0;
 
         while (it.hasNextX()) {
             CacheDataRow row = it.nextX();
@@ -298,10 +309,33 @@ public class IdleVerifyUtility {
 
             // Object context is not required since the valueBytes have been read directly from page.
             partHash += Arrays.hashCode(row.value().valueBytes(null));
+
+            if (row.key().cacheObjectType() == TYPE_BINARY) {
+                binary++;
+
+                if (((BinaryObjectEx)row.key()).isFlagSet(FLAG_COMPACT_FOOTER))
+                    cf++;
+                else
+                    noCf++;
+            }
+            else
+                regular++;
         }
 
-        return new PartitionHashRecordV2(partKey, isPrimary, consId, partHash, partVerHash, updCntr,
-            partSize, PartitionHashRecordV2.PartitionState.OWNING);
+        return new PartitionHashRecordV2(
+            partKey,
+            isPrimary,
+            consId,
+            partHash,
+            partVerHash,
+            updCntr,
+            partSize,
+            PartitionHashRecordV2.PartitionState.OWNING,
+            cf,
+            noCf,
+            binary,
+            regular
+        );
     }
 
     /**

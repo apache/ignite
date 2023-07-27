@@ -620,6 +620,10 @@ public class QueryUtils {
             desc.primaryKeyInlineSize(qe.getPrimaryKeyInlineSize() != null ? qe.getPrimaryKeyInlineSize() : -1);
             desc.affinityFieldInlineSize(qe.getAffinityKeyInlineSize() != null ? qe.getAffinityKeyInlineSize() : -1);
         }
+        else {
+            desc.primaryKeyInlineSize(-1);
+            desc.affinityFieldInlineSize(-1);
+        }
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);
     }

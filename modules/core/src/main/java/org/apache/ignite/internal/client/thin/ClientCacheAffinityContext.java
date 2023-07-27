@@ -60,7 +60,7 @@ public class ClientCacheAffinityContext {
     private final AtomicReference<TopologyNodes> lastTop = new AtomicReference<>();
 
     /** Cache IDs, which should be included to the next affinity mapping request. */
-    private final Set<Integer> pendingCacheIds = new GridConcurrentHashSet<>();
+    final Set<Integer> pendingCacheIds = new GridConcurrentHashSet<>();
 
     /** Current affinity mapping. */
     private volatile ClientCacheAffinityMapping affinityMapping;

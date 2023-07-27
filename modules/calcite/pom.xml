@@ -264,26 +264,47 @@
                                     <outputDirectory>${project.build.directory}/</outputDirectory>
                                     <includes>codegen/templates/Parser.jj</includes>
                                 </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.apache.calcite</groupId>
+                                    <artifactId>calcite-core</artifactId>
+                                    <type>jar</type>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}/</outputDirectory>
+                                    <includes>codegen/default_config.fmpp</includes>
+                                </artifactItem>
                             </artifactItems>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
             <plugin>
-                <groupId>com.googlecode.fmpp-maven-plugin</groupId>
-                <artifactId>fmpp-maven-plugin</artifactId>
-                <version>1.0</version>
-                <configuration>
-                    <cfgFile>${project.build.directory}/codegen/config.fmpp</cfgFile>
-                    <templateDirectory>${project.build.directory}/codegen/templates</templateDirectory>
-                </configuration>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>net.sourceforge.fmpp</groupId>
+                        <artifactId>fmpp</artifactId>
+                        <version>0.9.16</version>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <id>generate-fmpp-sources</id>
                         <phase>validate</phase>
                         <goals>
-                            <goal>generate</goal>
+                            <goal>run</goal>
                         </goals>
+                        <configuration>
+                            <target>
+                                <taskdef name="fmpp" classname="fmpp.tools.AntTask" />
+                                <fmpp
+                                    configuration="${project.build.directory}/codegen/config.fmpp"
+                                    sourceRoot="${project.build.directory}/codegen/templates"
+                                    outputRoot="${project.build.directory}/generated-sources/fmpp"
+                                    data="tdd(${project.build.directory}/codegen/config.fmpp), default: tdd(${project.build.directory}/codegen/default_config.fmpp)"
+                                />
+                            </target>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
