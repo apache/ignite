@@ -137,28 +137,28 @@ public class DumpCacheFutureTask extends AbstractSnapshotFutureTask<Void> {
             ));
 
             for (int grp : grps) {
-                CacheGroupContext grpCtx = cctx.cache().cacheGroup(grp);
-
-                File grpDir = new File(
-                    dumpNodeDir,
-                    (grpCtx.caches().size() > 1 ? CACHE_GRP_DIR_PREFIX : CACHE_DIR_PREFIX) + grpCtx.cacheOrGroupName()
-                );
-
-                IgniteUtils.ensureDirectory(grpDir, "dump group directory", null);
-
-                for (GridCacheContext<?, ?> cacheCtx : grpCtx.caches()) {
-                    CacheConfiguration<?, ?> ccfg = cacheCtx.config();
-
-                    cctx.cache().configManager().writeCacheData(
-                        new StoredCacheData(ccfg),
-                        new File(grpDir, cachDataFilename(ccfg))
-                    );
-                }
-
                 futs.add(CompletableFuture.runAsync(wrapExceptionIfStarted(() -> {
                     long start = System.currentTimeMillis();
 
+                    CacheGroupContext grpCtx = cctx.cache().cacheGroup(grp);
+
                     log.info("Start group dump [name=" + grpCtx.cacheOrGroupName() + ", id=" + grp + ']');
+
+                    File grpDir = new File(
+                        dumpNodeDir,
+                        (grpCtx.caches().size() > 1 ? CACHE_GRP_DIR_PREFIX : CACHE_DIR_PREFIX) + grpCtx.cacheOrGroupName()
+                    );
+
+                    IgniteUtils.ensureDirectory(grpDir, "dump group directory", null);
+
+                    for (GridCacheContext<?, ?> cacheCtx : grpCtx.caches()) {
+                        CacheConfiguration<?, ?> ccfg = cacheCtx.config();
+
+                        cctx.cache().configManager().writeCacheData(
+                            new StoredCacheData(ccfg),
+                            new File(grpDir, cachDataFilename(ccfg))
+                        );
+                    }
 
                     try {
                         Thread.sleep(ThreadLocalRandom.current().nextInt(5_000));

@@ -142,7 +142,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadO
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpCacheFutureTask;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -1233,17 +1232,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param req Request.
-     * @param grps0 Cache groups to dump.
+     * @param grps Cache groups to dump.
      * @return Create dump future.
      */
-    private IgniteInternalFuture<SnapshotOperationResponse> initLocalDump(SnapshotOperationRequest req, List<Integer> grps0) {
+    private IgniteInternalFuture<SnapshotOperationResponse> initLocalDump(SnapshotOperationRequest req, List<Integer> grps) {
         IgniteInternalFuture<?> task0;
 
-        List<Integer> grps = grps0.stream().filter(grpId -> cctx.cache().cacheGroup(grpId) != null).collect(Collectors.toList());
+        List<Integer> grpIds = grps.stream().filter(grpId -> cctx.cache().cacheGroup(grpId) != null).collect(Collectors.toList());
 
         File dumpDir = snapshotLocalDir(req.snapshotName(), null, locDumpDir);
 
-        if (grps.isEmpty())
+        if (grpIds.isEmpty())
             task0 = new GridFinishedFuture<>(Collections.emptySet());
         else {
             dumpDir.mkdirs();
@@ -1257,7 +1256,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 dumpDir,
                 tmpWorkDir,
                 ioFactory,
-                grps
+                grpIds
             ));
         }
 
@@ -1269,15 +1268,26 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .map(n -> cctx.discovery().node(n).consistentId().toString())
                 .collect(Collectors.toSet());
 
-            // Ignoring Void result fut.result().
+            SnapshotFutureTaskResult res = (SnapshotFutureTaskResult)fut.result();
 
-            DumpMetadata meta = new DumpMetadata(
-                req.requestId(),
-                cctx.localNode().consistentId().toString(),
+            SnapshotMetadata meta = new SnapshotMetadata(req.requestId(),
                 req.snapshotName(),
-                grps,
-                nodes
+                cctx.localNode().consistentId().toString(),
+                pdsSettings.folderName(),
+                cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
+                grpIds,
+                Collections.emptyList(),
+                nodes,
+                res.parts(),
+                null,
+                null,
+                false
             );
+
+            SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), dumpDir,
+                req.streamerWarning(), true);
+
+            req.meta(meta);
 
             File dmf = new File(dumpDir, dumpMetaFileName(cctx.localNode().consistentId().toString()));
 
@@ -1285,7 +1295,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             log.info("Dump metafile has been created: " + dmf.getAbsolutePath());
 
-            return new SnapshotOperationResponse(null);
+            try {
+                return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
+            }
+            catch (IgniteCheckedException e) {
+                throw F.wrap(e);
+            }
         }, snapshotExecutorService());
     }
 
@@ -2612,7 +2627,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param grps List of cache groups which will be destroyed.
      */
     public void onCacheGroupsStopped(List<Integer> grps) {
-        for (AbstractSnapshotFutureTask<?> sctx : F.view(locSnpTasks.values(), t -> t instanceof SnapshotFutureTask)) {
+        Collection<AbstractSnapshotFutureTask<?>> tasks =
+            F.view(locSnpTasks.values(), t -> t instanceof SnapshotFutureTask || t instanceof DumpCacheFutureTask);
+
+        for (AbstractSnapshotFutureTask<?> sctx : tasks) {
             Set<Integer> retain = new HashSet<>(grps);
 
             retain.retainAll(sctx.affectedCacheGroups());
