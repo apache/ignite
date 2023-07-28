@@ -193,18 +193,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         Integer.getInteger(IGNITE_SLOW_TX_WARN_TIMEOUT, DFLT_SLOW_TX_WARN_TIMEOUT);
 
     /** Returns {@code true} if transaction has completed states. */
-    public static final Predicate<TxRecord> COMPLETED_TX_STATES = new Predicate<TxRecord>() {
-        @Override public boolean test(TxRecord txRec) {
-            return txRec.state() == COMMITTED || txRec.state() == ROLLED_BACK;
-        }
-    };
+    public static final Predicate<TxRecord> COMPLETED_TX_STATES =
+        txRec -> txRec.state() == COMMITTED || txRec.state() == ROLLED_BACK;
 
     /** Returns {@code true} if transaction has prepared states. */
-    public static final Predicate<TxRecord> PREPARED_TX_STATES = new Predicate<TxRecord>() {
-        @Override public boolean test(TxRecord txRec) {
-            return txRec.state() == PREPARED || txRec.state() == PREPARING;
-        }
-    };
+    public static final Predicate<TxRecord> PREPARED_TX_STATES =
+        txRec -> txRec.state() == PREPARED || txRec.state() == PREPARING;
 
     /** Uncommited tx states. */
     private Set<GridCacheVersion> uncommitedTx = new HashSet<>();
@@ -366,26 +360,24 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         cctx.gridEvents().addDiscoveryEventListener(new TransactionRecoveryListener(), EVT_NODE_FAILED, EVT_NODE_LEFT);
 
         cctx.gridEvents().addDiscoveryEventListener(
-            new DiscoveryEventListener() {
-                @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
-                    if (evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) {
-                        UUID nodeId = evt.eventNode().id();
+            (DiscoveryEvent evt, DiscoCache discoCache) -> {
+                if (evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) {
+                    UUID nodeId = evt.eventNode().id();
 
-                        for (TxDeadlockFuture fut : deadlockDetectFuts.values())
-                            fut.onNodeLeft(nodeId);
+                    for (TxDeadlockFuture fut : deadlockDetectFuts.values())
+                        fut.onNodeLeft(nodeId);
 
-                        for (Map.Entry<GridCacheVersion, Object> entry : completedVersHashMap.entrySet()) {
-                            Object obj = entry.getValue();
+                    for (Map.Entry<GridCacheVersion, Object> entry : completedVersHashMap.entrySet()) {
+                        Object obj = entry.getValue();
 
-                            if (obj instanceof GridCacheReturnCompletableWrapper &&
-                                nodeId.equals(((GridCacheReturnCompletableWrapper)obj).nodeId()))
-                                removeTxReturn(entry.getKey());
-                        }
+                        if (obj instanceof GridCacheReturnCompletableWrapper &&
+                            nodeId.equals(((GridCacheReturnCompletableWrapper)obj).nodeId()))
+                            removeTxReturn(entry.getKey());
                     }
-
-                    suspendResumeForPessimisticSupported = IgniteFeatures.allNodesSupports(
-                        cctx.discovery().remoteNodes(), IgniteFeatures.SUSPEND_RESUME_PESSIMISTIC_TX);
                 }
+
+                suspendResumeForPessimisticSupported = IgniteFeatures.allNodesSupports(
+                    cctx.discovery().remoteNodes(), IgniteFeatures.SUSPEND_RESUME_PESSIMISTIC_TX);
             },
             EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED);
 
@@ -2176,8 +2168,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             if (log.isDebugEnabled())
                 log.debug("Found near transaction, will wait for completion: " + tx);
 
-            tx.finishFuture().listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
-                @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
+            tx.finishFuture().listen((IgniteInternalFuture<IgniteInternalTx> fut) -> {
                     TransactionState state = tx.state();
 
                     if (log.isDebugEnabled())
@@ -2185,7 +2176,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     resFut.onDone(state == COMMITTED);
                 }
-            });
+            );
 
             return resFut;
         }
@@ -2256,18 +2247,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     final Collection<GridCacheVersion> processedVers0 = processedVers;
 
-                    prepFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                        @Override public void apply(IgniteInternalFuture<?> prepFut) {
-                            if (log.isDebugEnabled())
-                                log.debug("Transaction prepare future finished: " + tx);
+                    prepFut.listen((IgniteInternalFuture<?> ignored) -> {
+                        if (log.isDebugEnabled())
+                            log.debug("Transaction prepare future finished: " + tx);
 
-                            IgniteInternalFuture<Boolean> fut = txsPreparedOrCommitted(nearVer,
-                                txNum0,
-                                fut0,
-                                processedVers0);
+                        IgniteInternalFuture<Boolean> f = txsPreparedOrCommitted(nearVer,
+                            txNum0,
+                            fut0,
+                            processedVers0);
 
-                            assert fut == fut0;
-                        }
+                        assert f == fut0;
                     });
 
                     return fut0;
