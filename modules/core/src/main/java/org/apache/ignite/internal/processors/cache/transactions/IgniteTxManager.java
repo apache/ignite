@@ -603,21 +603,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Sets threshold timeout for long transactions, if transaction exceeds it, it will be dumped in log with
-     * information about how much time did it spent in system time (time while aquiring locks, preparing,
-     * commiting, etc) and user time (time when client node runs some code while holding transaction and not
-     * waiting it). Can be set to 0 - no transactions will be dumped in log in this case.
-     *
-     * @param longTransactionTimeDumpThreshold Value of threshold timeout in milliseconds.
-     */
-    public void longTransactionTimeDumpThreshold(long longTransactionTimeDumpThreshold) {
-        assert longTransactionTimeDumpThreshold >= 0
-            : "longTransactionTimeDumpThreshold must be greater than or equal to 0.";
-
-        distributedTransactionConfiguration.updateLongTransactionTimeDumpThresholdLocal(longTransactionTimeDumpThreshold);
-    }
-
-    /**
      * The coefficient for samples of completed transactions that will be dumped in log.
      */
     public double transactionTimeDumpSamplesCoefficient() {
@@ -3124,13 +3109,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         if (qSize >= COLLISIONS_QUEUE_THRESHOLD)
             pushCollidingKeysWithQueueSize(entry, qSize);
-    }
-
-    /**
-     * @return Distributed configuration.
-     */
-    public DistributedTransactionConfiguration getDistributedTransactionConfiguration() {
-        return distributedTransactionConfiguration;
     }
 
     /** @param transform Transaction message transformer. */
