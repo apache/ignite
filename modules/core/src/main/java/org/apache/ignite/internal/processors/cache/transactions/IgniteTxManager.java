@@ -277,7 +277,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private int slowTxWarnTimeout = SLOW_TX_WARN_TIMEOUT;
 
     /** */
-    private TxDumpsThrottling txDumpsThrottling = new TxDumpsThrottling();
+    private final TxDumpsThrottling txDumpsThrottling = new TxDumpsThrottling();
 
     /**
      * Near version to DHT version map. Note that we initialize to 5K size from get go,
@@ -296,7 +296,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private volatile boolean suspendResumeForPessimisticSupported;
 
     /** The futures for changing transaction timeout on partition map exchange. */
-    private ConcurrentMap<UUID, TxTimeoutOnPartitionMapExchangeChangeFuture> txTimeoutOnPartitionMapExchangeFuts =
+    private final ConcurrentMap<UUID, TxTimeoutOnPartitionMapExchangeChangeFuture> txTimeoutOnPartitionMapExchangeFuts =
         new ConcurrentHashMap<>();
 
     /** Timeout operations. */
@@ -389,7 +389,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             },
             EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED);
 
-        this.txDeadlockDetection = new TxDeadlockDetection(cctx);
+        txDeadlockDetection = new TxDeadlockDetection(cctx);
 
         cctx.gridIO().addMessageListener(TOPIC_TX, new DeadlockDetectionListener());
 
@@ -631,7 +631,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         assert transactionTimeDumpSamplesCoefficient >= 0.0 && transactionTimeDumpSamplesCoefficient <= 1.0
             : "transactionTimeDumpSamplesCoefficient value must be between 0.0 and 1.0 inclusively.";
 
-        this.distributedTransactionConfiguration.updateTransactionTimeDumpSamplesCoefficientLocal(transactionTimeDumpSamplesCoefficient);
+        distributedTransactionConfiguration.updateTransactionTimeDumpSamplesCoefficientLocal(transactionTimeDumpSamplesCoefficient);
     }
 
     /**
@@ -1311,8 +1311,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         }
 
         return new IgnitePair<>(
-            committed == null ? Collections.<GridCacheVersion>emptyList() : committed,
-            rolledback == null ? Collections.<GridCacheVersion>emptyList() : rolledback);
+            committed == null ? Collections.emptyList() : committed,
+            rolledback == null ? Collections.emptyList() : rolledback);
     }
 
     /**
@@ -2457,9 +2457,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             IgniteTxRemoteEx rmtTx = (IgniteTxRemoteEx)tx;
 
             rmtTx.doneRemote(tx.xidVersion(),
-                Collections.<GridCacheVersion>emptyList(),
-                Collections.<GridCacheVersion>emptyList(),
-                Collections.<GridCacheVersion>emptyList());
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList());
         }
 
         if (commit)
@@ -3192,7 +3192,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         private static final int MAX_OBJS = 5;
 
         /** Store for keys and collisions queue sizes. */
-        private final Map<GridCacheMapEntry, Integer> stores[] = new LinkedHashMap[stripesCnt];
+        private final Map<GridCacheMapEntry, Integer>[] stores = new LinkedHashMap[stripesCnt];
 
         /** Metric per cache store. */
         private final Map<GridCacheAdapter<?, ?>, List<Map.Entry<GridCacheMapEntry, Integer>>> metricPerCacheStore =
@@ -3465,10 +3465,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     private static class TxThreadKey {
         /** Thread ID. */
-        private long threadId;
+        private final long threadId;
 
         /** Cache ID. */
-        private int cacheId;
+        private final int cacheId;
 
         /**
          * @param threadId Thread ID.
@@ -3734,10 +3734,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public class TxDumpsThrottling {
         /** */
-        private AtomicInteger skippedTxCntr = new AtomicInteger();
+        private final AtomicInteger skippedTxCntr = new AtomicInteger();
 
         /** */
-        private HitRateMetric transactionHitRateCntr = new HitRateMetric("transactionHitRateCounter", null, 1000, 2);
+        private final HitRateMetric transactionHitRateCntr = new HitRateMetric("transactionHitRateCounter", null, 1000, 2);
 
         /**
          * Returns should we skip dumping the transaction in current moment.
@@ -3776,7 +3776,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     private class TxTimeoutOnPartitionMapExchangeChangeFuture extends GridFutureAdapter<Void> {
         /** */
-        private UUID id;
+        private final UUID id;
 
         /**
          * @param id Future ID.
