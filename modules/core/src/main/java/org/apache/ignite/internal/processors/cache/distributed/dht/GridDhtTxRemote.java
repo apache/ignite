@@ -135,7 +135,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         txState = single ? new IgniteTxRemoteSingleStateImpl() :
             new IgniteTxRemoteStateImpl(
                 Collections.emptyMap(),
-                new ConcurrentLinkedHashMap<IgniteTxKey, IgniteTxEntry>(U.capacity(txSize), 0.75f, 1));
+                new ConcurrentLinkedHashMap<>(U.capacity(txSize), 0.75f, 1));
 
         assert topVer != null && topVer.topologyVersion() > 0 : topVer;
 
@@ -209,18 +209,11 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
 
         txState = new IgniteTxRemoteStateImpl(
             Collections.emptyMap(),
-            new ConcurrentLinkedHashMap<IgniteTxKey, IgniteTxEntry>(U.capacity(txSize), 0.75f, 1));
+            new ConcurrentLinkedHashMap<>(U.capacity(txSize), 0.75f, 1));
 
         assert topVer != null && topVer.topologyVersion() > 0 : topVer;
 
         topologyVersion(topVer);
-    }
-
-    /**
-     * @param txNodes Transaction nodes.
-     */
-    @Override public void transactionNodes(Map<UUID, Collection<UUID>> txNodes) {
-        this.txNodes = txNodes;
     }
 
     /** {@inheritDoc} */
@@ -268,13 +261,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      */
     public UUID nearNodeId() {
         return nearNodeId;
-    }
-
-    /**
-     * @return Remote future ID.
-     */
-    IgniteUuid remoteFutureId() {
-        return rmtFutId;
     }
 
     /** {@inheritDoc} */
