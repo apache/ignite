@@ -54,9 +54,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     /** Near node ID. */
     private final UUID nearNodeId;
 
-    /** Remote future ID. */
-    private final IgniteUuid rmtFutId;
-
     /** Near transaction ID. */
     private final GridCacheVersion nearXidVer;
 
@@ -68,7 +65,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      *
      * @param ctx Cache context.
      * @param nearNodeId Near node ID.
-     * @param rmtFutId Remote future ID.
      * @param nodeId Node ID.
      * @param topVer Topology version.
      * @param xidVer XID version.
@@ -87,7 +83,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     public GridDhtTxRemote(
         GridCacheSharedContext ctx,
         UUID nearNodeId,
-        IgniteUuid rmtFutId,
         UUID nodeId,
         AffinityTopologyVersion topVer,
         GridCacheVersion xidVer,
@@ -124,10 +119,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         );
 
         assert nearNodeId != null;
-        assert rmtFutId != null;
 
         this.nearNodeId = nearNodeId;
-        this.rmtFutId = rmtFutId;
         this.nearXidVer = nearXidVer;
         this.txNodes = txNodes;
         this.storeWriteThrough = storeWriteThrough;
@@ -147,7 +140,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      *
      * @param ctx Cache context.
      * @param nearNodeId Near node ID.
-     * @param rmtFutId Remote future ID.
      * @param nodeId Node ID.
      * @param nearXidVer Near transaction ID.
      * @param topVer Topology version.
@@ -165,7 +157,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     public GridDhtTxRemote(
         GridCacheSharedContext ctx,
         UUID nearNodeId,
-        IgniteUuid rmtFutId,
         UUID nodeId,
         GridCacheVersion nearXidVer,
         AffinityTopologyVersion topVer,
@@ -200,11 +191,9 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         );
 
         assert nearNodeId != null;
-        assert rmtFutId != null;
 
         this.nearXidVer = nearXidVer;
         this.nearNodeId = nearNodeId;
-        this.rmtFutId = rmtFutId;
         this.storeWriteThrough = storeWriteThrough;
 
         txState = new IgniteTxRemoteStateImpl(

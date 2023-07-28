@@ -376,7 +376,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             if (dhtTx == null) {
                 dhtTx = new GridDhtTxRemote(cctx.shared(),
                     cctx.localNodeId(),
-                    dhtFutId,
                     primaryId,
                     lockVer,
                     topVer,
