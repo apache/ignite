@@ -1356,7 +1356,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param tx Committed transaction.
      */
     public void addCommittedTxReturn(IgniteInternalTx tx, GridCacheReturnCompletableWrapper ret) {
-        addCommittedTxReturn(tx.nearXidVersion(), null, ret);
+        addCommittedTxReturn(tx.nearXidVersion(), ret);
     }
 
     /**
@@ -1396,18 +1396,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /**
      * @param xidVer Completed transaction version.
-     * @param nearXidVer Optional near transaction ID.
      * @param retVal Invoke result.
      */
     private void addCommittedTxReturn(
         GridCacheVersion xidVer,
-        @Nullable GridCacheVersion nearXidVer,
         GridCacheReturnCompletableWrapper retVal
     ) {
         assert retVal != null;
-
-        if (nearXidVer != null)
-            xidVer = new CommittedVersion(xidVer, nearXidVer);
 
         Object prev = completedVersHashMap.putIfAbsent(xidVer, retVal);
 
