@@ -226,7 +226,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public static final int DFLT_DUMP_TX_COLLISIONS_INTERVAL = 1000;
 
     /** Deadlock detection maximum iterations. */
-    static int DEADLOCK_MAX_ITERS =
+    static final int DEADLOCK_MAX_ITERS =
         IgniteSystemProperties.getInteger(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, DFLT_TX_DEADLOCK_DETECTION_MAX_ITERS);
 
     /** Lower tx collisions queue size threshold. */
@@ -330,7 +330,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void start0() throws IgniteCheckedException {
+    @Override protected void start0() {
         txHnd = new IgniteTxHandler(cctx);
 
         deferredAckMsgSnd = new GridDeferredAckMessageSender<GridCacheVersion>(cctx.time(), cctx.kernalContext().closure()) {
@@ -478,7 +478,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *     tx.currentPrepareFuture().onDone(new IgniteTxRollbackCheckedException())
      * </pre>
      *
-     * It is assumed that the given transaction did not acquired any locks.
+     * It is assumed that the given transaction did not acquire any locks.
      *
      * @param tx Transaction.
      * @return Rollback future.
@@ -569,7 +569,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Sets if dump requests from local node to near node are allowed, when long running transaction
+     * Sets if dump requests from local node to near node are allowed, when long-running transaction
      * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
      * owner thread.
      *
@@ -580,7 +580,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Sets if dump requests from local node to near node are allowed, when long running transaction
+     * Sets if dump requests from local node to near node are allowed, when long-running transaction
      * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
      * owner thread.
      *
@@ -793,7 +793,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (tx.system()) {
             AffinityTopologyVersion topVer = cctx.tm().lockedTopologyVersion(Thread.currentThread().getId(), tx);
 
-            // If there is another system transaction in progress, use it's topology version to prevent deadlock.
+            // If there is another system transaction in progress, use its topology version to prevent deadlock.
             if (topVer != null)
                 tx.topologyVersion(topVer);
         }
@@ -832,7 +832,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         sysThreadMap.put(new TxThreadKey(tx.threadId(), cacheCtx.cacheId()), tx);
                 }
 
-                ((GridNearTxLocal)tx).recordStateChangedEvent(EVT_TX_STARTED);
+                ((IgniteTxAdapter)tx).recordStateChangedEvent(EVT_TX_STARTED);
             }
 
             // Handle mapped versions.
@@ -942,7 +942,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /**
      * Creates a future that will wait for finishing all tx updates on backups after all local transactions are finished.
-     *
      * NOTE:
      * As we send finish request to backup nodes after transaction successfully completed on primary node
      * it's important to ensure that all updates from primary to backup are finished or at least remote transaction has created
@@ -1390,7 +1389,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             assert b == null;
         }
 
-        Boolean committed = committed0 != null && !committed0.equals(Boolean.FALSE);
+        boolean committed = committed0 != null && !committed0.equals(Boolean.FALSE);
 
         return committed0 == null || committed;
     }
@@ -1432,7 +1431,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             assert b == null;
         }
 
-        Boolean committed = committed0 != null && !committed0.equals(Boolean.FALSE);
+        boolean committed = committed0 != null && !committed0.equals(Boolean.FALSE);
 
         return committed0 == null || !committed;
     }
@@ -1506,7 +1505,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Gets versions of all not acquired locks for collection of tx entries that are less then base version.
+     * Gets versions of all not acquired locks for collection of tx entries that are less than base version.
      *
      * @param entries Tx entries to process.
      * @param baseVer Base version to compare with.
@@ -1521,7 +1520,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             GridCacheEntryEx cached = txEntry.cached();
 
             try {
-                // If check should be faster then exception handling.
+                // If check should be faster than exception handling.
                 if (!cached.obsolete()) {
                     for (GridCacheMvccCandidate cand : cached.localCandidates()) {
                         if (!cand.owner() && cand.version().compareTo(baseVer) < 0) {
@@ -1543,7 +1542,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /**
      * Go through all candidates for entries involved in transaction and find their min
      * version. We know that these candidates will commit after this transaction, and
-     * therefore we can grab the min version so we can send all committed and rolled
+     * therefore we can grab the min version, so we can send all committed and rolled
      * back versions from min to current to remote nodes for re-ordering.
      *
      * @param entries Entries.
@@ -1601,7 +1600,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         Object committed0 = completedVersHashMap.get(tx.xidVersion());
 
-        Boolean committed = committed0 != null && !committed0.equals(Boolean.FALSE);
+        boolean committed = committed0 != null && !committed0.equals(Boolean.FALSE);
 
         // 1. Make sure that committed version has been recorded.
         if (!(committed || tx.writeSet().isEmpty() || tx.isSystemInvalidate())) {
@@ -2327,7 +2326,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     if (log.isDebugEnabled())
                         log.debug("Transaction is preparing (will wait): " + tx);
 
-                    final GridFutureAdapter<Boolean> fut0 = fut != null ? fut : new GridFutureAdapter<Boolean>();
+                    final GridFutureAdapter<Boolean> fut0 = fut != null ? fut : new GridFutureAdapter<>();
 
                     final int txNum0 = txNum;
 
@@ -2623,12 +2622,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     if (nearFut != null) {
                         Set<IgniteTxKey> nearRequestedKeys = nearFut.requestedKeys();
 
-                        if (nearRequestedKeys != null) {
-                            if (requestedKeys == null)
-                                requestedKeys = nearRequestedKeys;
-                            else
-                                requestedKeys = nearRequestedKeys;
-                        }
+                        if (nearRequestedKeys != null)
+                            requestedKeys = nearRequestedKeys;
                     }
                 }
                 else {
@@ -2968,7 +2963,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /**
      * Method checks that current thread does not have active transactions.
-     *
      * If transaction or topology lock is hold by current thread
      * exception {@link IgniteException} with given {@code errMsgConstructor} message will be thrown.
      *
@@ -2980,7 +2974,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Sets if dump requests from local node to near node are allowed, when long running transaction
+     * Sets if dump requests from local node to near node are allowed, when long-running transaction
      * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
      * owner thread. Also broadcasts this setting on other server nodes in cluster.
      *
@@ -3016,8 +3010,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Sets the coefficient for samples of long running transactions that will be dumped in log, if
-     * {@link #longTransactionTimeDumpThreshold} is set to non-zero value."
+     * Sets the coefficient for samples of long-running transactions that will be dumped in log, if
+     * {@link #longTransactionTimeDumpThreshold} is set to non-zero value.
      *
      * @param coefficient Coefficient, must be value between 0.0 and 1.0 inclusively.
      */
@@ -3341,7 +3335,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         salvageTx(tx, RECOVERY_FINISH);
                     }
                     else {
-                        // Check prepare only if originating node ID failed. Otherwise parent node will finish this tx.
+                        // Check prepare only if originating node ID failed. Otherwise, parent node will finish this tx.
                         if (tx.originatingNodeId().equals(evtNodeId)) {
                             if (tx.state() == PREPARED)
                                 processPrepared(tx, evtNodeId);
