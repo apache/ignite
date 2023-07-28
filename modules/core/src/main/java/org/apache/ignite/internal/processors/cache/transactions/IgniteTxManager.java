@@ -948,20 +948,20 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * it's important to ensure that all updates from primary to backup are finished or at least remote transaction has created
      * on backup node.
      *
-     * @param finishLocalTxsFuture Local transactions finish future.
+     * @param finishLocTxsFut Local transactions finish future.
      * @param topVer Topology version.
      * @return Future that will be completed when all ongoing transactions are finished.
      */
-    public IgniteInternalFuture<?> finishAllTxs(IgniteInternalFuture<?> finishLocalTxsFuture, AffinityTopologyVersion topVer) {
-        final GridCompoundFuture finishAllTxsFuture = new CacheObjectsReleaseFuture("AllTx", topVer);
+    public IgniteInternalFuture<?> finishAllTxs(IgniteInternalFuture<?> finishLocTxsFut, AffinityTopologyVersion topVer) {
+        final GridCompoundFuture finishAllTxsFut = new CacheObjectsReleaseFuture("AllTx", topVer);
 
         // After finishing all local updates, wait for finishing all tx updates on backups.
-        finishLocalTxsFuture.listen(future -> {
-            finishAllTxsFuture.add(cctx.mvcc().finishRemoteTxs(topVer));
-            finishAllTxsFuture.markInitialized();
+        finishLocTxsFut.listen(future -> {
+            finishAllTxsFut.add(cctx.mvcc().finishRemoteTxs(topVer));
+            finishAllTxsFut.markInitialized();
         });
 
-        return finishAllTxsFuture;
+        return finishAllTxsFut;
     }
 
     /**
