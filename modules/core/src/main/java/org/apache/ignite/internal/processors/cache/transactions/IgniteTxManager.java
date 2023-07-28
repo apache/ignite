@@ -580,17 +580,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Sets if dump requests from local node to near node are allowed, when long-running transaction
-     * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
-     * owner thread.
-     *
-     * @param allowed whether allowed
-     */
-    public void setTxOwnerDumpRequestsAllowed(boolean allowed) {
-        distributedTransactionConfiguration.updateTxOwnerDumpRequestsAllowedLocal(allowed);
-    }
-
-    /**
      * Threshold timeout for long transactions, if transaction exceeds it, it will be dumped in log with
      * information about how much time did it spent in system time (time while aquiring locks, preparing,
      * commiting, etc) and user time (time when client node runs some code while holding transaction and not
@@ -610,35 +599,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Sets the coefficient for samples of completed transactions that will be dumped in log.
-     */
-    public void transactionTimeDumpSamplesCoefficient(double transactionTimeDumpSamplesCoefficient) {
-        assert transactionTimeDumpSamplesCoefficient >= 0.0 && transactionTimeDumpSamplesCoefficient <= 1.0
-            : "transactionTimeDumpSamplesCoefficient value must be between 0.0 and 1.0 inclusively.";
-
-        distributedTransactionConfiguration.updateTransactionTimeDumpSamplesCoefficientLocal(transactionTimeDumpSamplesCoefficient);
-    }
-
-    /**
      * The limit of samples of completed transactions that will be dumped in log per second, if
      * {@link #transactionTimeDumpSamplesCoefficient} is above <code>0.0</code>. Must be integer value
      * greater than <code>0</code>.
      */
     public int transactionTimeDumpSamplesPerSecondLimit() {
         return distributedTransactionConfiguration.longTransactionTimeDumpSamplesPerSecondLimit();
-    }
-
-    /**
-     * Sets the limit of samples of completed transactions that will be dumped in log per second, if
-     * {@link #transactionTimeDumpSamplesCoefficient} is above <code>0.0</code>. Must be integer value
-     * greater than <code>0</code>.
-     */
-    public void transactionTimeDumpSamplesPerSecondLimit(int transactionTimeDumpSamplesPerSecondLimit) {
-        assert transactionTimeDumpSamplesPerSecondLimit > 0
-            : "transactionTimeDumpSamplesPerSecondLimit must be integer value greater than 0.";
-
-        distributedTransactionConfiguration.updateLongTransactionTimeDumpSamplesPerSecondLimitLocal(
-                transactionTimeDumpSamplesPerSecondLimit);
     }
 
     /**
@@ -2107,31 +2073,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Gets version of transaction in tx context or {@code null}
-     * if tx context is empty.
-     * <p>
-     * This is a convenience method provided mostly for debugging.
-     *
-     * @return Transaction version from transaction context.
-     */
-    @Nullable public GridCacheVersion txContextVersion() {
-        IgniteInternalTx tx = txContext();
-
-        return tx == null ? null : tx.xidVersion();
-    }
-
-    /**
      * Commit ended.
      */
     public void resetContext() {
         threadCtx.set(null);
-    }
-
-    /**
-     * @return Slow tx warn timeout.
-     */
-    public int slowTxWarnTimeout() {
-        return slowTxWarnTimeout;
     }
 
     /**
