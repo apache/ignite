@@ -780,7 +780,8 @@ public class CachePartitionDefragmentationManager {
 
     /** */
     private void bothChpLock(boolean lock) {
-        if (U.FIX) {
+        // Didn't work
+        if (false && U.FIX) {
             if (lock) {
                 dbMgr.getCheckpointManager().checkpointTimeoutLock().checkpointReadLock();
 
