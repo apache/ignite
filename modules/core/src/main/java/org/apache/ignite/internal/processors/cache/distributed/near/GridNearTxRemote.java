@@ -304,7 +304,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
     private void addEntry(IgniteTxEntry entry) throws IgniteCheckedException {
         checkInternal(entry.txKey());
 
-        GridCacheContext<?,?> cacheCtx = entry.context();
+        GridCacheContext<?, ?> cacheCtx = entry.context();
 
         assert cacheCtx.isNear() : entry;
 
