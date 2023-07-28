@@ -43,9 +43,8 @@ export default class PageConfigureAdvancedDatasource {
 
     save({datasource,redirect}) {        
         let stat = from(this.Datasource.saveAdvanced(datasource)).pipe(
-            switchMap(({data}) => of(                   
-                {type: 'EDIT_TASK_FLOW', datasource: data},
-                {type: 'SAVE_AND_EDIT_TASK_FLOW_OK'}
+            switchMap(({data}) => of(
+                {type: 'SAVE_AND_EDIT_DATASOURCE_OK'}
             )),
             catchError((error) => of({
                 type: 'SAVE_AND_EDIT_DATASOURCE_ERR',

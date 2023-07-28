@@ -59,8 +59,7 @@ form(novalidate name=form)
                 list-editable.pcb-caches-list(
                     ng-model='$ctrl.shortCaches'
                     list-editable-one-way
-                    on-item-change='$ctrl.changeCache($event)'
-                    on-item-remove='$ctrl.removeCache($event)'
+                    on-item-change='$ctrl.changeCache($event)'                    
                     list-editable-cols='::$ctrl.cachesColDefs'
                     list-editable-cols-row-class='pc-form-grid-row pcb-row-no-margin'
                 )

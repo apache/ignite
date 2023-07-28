@@ -128,15 +128,7 @@ function registerStates($stateProvider) {
     .state('base.console.edit.service.select', {
         url: `/{serviceID}`,
         permission: 'configuration',
-        resolve: {
-            _cache: ['ConfigEffects', '$transition$', ({etp}, $transition$) => {
-                const {clusterID, serviceID} = $transition$.params();
-
-                if (serviceID === 'new')
-                    return Promise.resolve();
-
-                return etp('LOAD_CACHE', {serviceID,cacheID:'485743be-e9f3-4c01-8e47-7947abaaac85'});
-            }]
+        resolve: {            
         },
         data: {
             errorState: 'base.console.edit.service'

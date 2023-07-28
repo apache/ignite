@@ -10,7 +10,8 @@ export default {
         sourceCluster: '<',
         targetCaches: '=',
         models: '<',
-        targetClusterId: '=',
+        targetClusterId: '<',
+        targetCluster: '<',       
         onSave: '&'
     }
 };

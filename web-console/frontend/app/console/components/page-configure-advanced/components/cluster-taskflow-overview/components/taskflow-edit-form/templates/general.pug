@@ -27,19 +27,10 @@ panel-collapsible(opened=`::true` ng-form=form)
                 
             .pc-form-grid-col-60
                 +form-field__text({
-                    label: 'Task group:',
+                    label: 'Task group (default is target cluster name):',
                     model: `${model}.group`,
                     name: '"group"'
                 })
-                    
-            .pc-form-grid-col-60
-                +form-field__label({
-                    label: 'Task action:',
-                    tip: `${model}.action`,
-                    name: '"action"'
-                })
-                
-                .help(ng-bind-html='$ctrl.clonedService.usage')
             
             .pc-form-grid-col-30
                  +form-field__dropdown({

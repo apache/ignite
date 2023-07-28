@@ -20,17 +20,18 @@ pc-items-table(
             ) Create one?           
         
 
-h2.pc-page-header.ng-animate-disabled(ng-if='!($ctrl.isBlocked$|async:this)')
+h2.pc-page-header.ng-animate-disabled(ng-hide='($ctrl.isBlocked$|async:this)')
     | {{ ($ctrl.selectionManager.selectedItemIDs$|async:this).length ? 'Multiple' : 'No' }} caches selected
     span.pc-page-header-sub Select only one cache to see settings and edit it
     
-cluster-task-flow-overview(ng-if='!($ctrl.isBlocked$|async:this)'
-    cluster-id='$ctrl.clusterID$|async:this'    
+cluster-task-flow-overview(ng-hide='($ctrl.isBlocked$|async:this)'
+    cluster-id='$ctrl.clusterID$|async:this'
+    cluster='$ctrl.originalCluster$|async:this'
     target-caches='$ctrl.selectedRows$'
     models='$ctrl.shortModels$|async:this'
 )
 
-h2.pc-page-header.ng-animate-disabled(ng-if='$ctrl.isBlocked$|async:this')
+h2.pc-page-header.ng-animate-disabled(ng-show='$ctrl.isBlocked$|async:this')
     | {{ $ctrl.itemEditTitle$|async:this }}
 
 cache-meric-form(ng-if='$ctrl.isBlocked$|async:this'

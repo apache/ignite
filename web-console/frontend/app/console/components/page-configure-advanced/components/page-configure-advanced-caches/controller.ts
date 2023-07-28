@@ -83,8 +83,7 @@ export default class Controller {
 
     $onInit() {
         
-        this.clusterID$ = this.$uiRouter.globals.params$.pipe(pluck('clusterID'));
-        this.clusterID$.subscribe((c)=>{ this.clusterId = c; }); 
+        this.clusterID$ = this.$uiRouter.globals.params$.pipe(pluck('clusterID'));        
                 
         const cacheID$ = this.$uiRouter.globals.params$.pipe(
             pluck('cacheID'),
@@ -95,6 +94,18 @@ export default class Controller {
         this.shortClusters$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectShortClustersValue());  
         this.shortCaches$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortCaches);
         this.shortModels$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortModels);
+        
+        this.originalCluster$ = this.clusterID$.pipe(
+            distinctUntilChanged(),
+            switchMap((id) => {
+                this.clusterId = id;
+                return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectClusterToEdit(id));
+            }),
+            distinctUntilChanged(),
+            publishReplay(1),
+            refCount()
+        );
+
         this.originalCache$ = cacheID$.pipe(
             distinctUntilChanged(),
             filter((id) => id),

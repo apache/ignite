@@ -10,6 +10,9 @@ import {default as Clusters} from 'app/configuration/services/Clusters';
 import TaskFlows from 'app/console/services/TaskFlows';
 import AgentManager from 'app/modules/agent/AgentManager.service';
 import {Confirm} from 'app/services/Confirm.service';
+import {    
+    shortClustersActionTypes
+} from 'app/configuration/store/reducer';
 
 import {UIRouter} from '@uirouter/angularjs';
 import {ShortCluster,ShortCache} from 'app/configuration/types';
@@ -56,7 +59,7 @@ export default class ClusterTaskFlowController {
             },
             sort: {direction: 'asc', priority: 0},
             sortingAlgorithm: naturalCompare,            
-            minWidth: 165
+            width: 365
         },
         {
             name: 'discovery',
@@ -72,7 +75,7 @@ export default class ClusterTaskFlowController {
             cellClass: 'ui-grid-number-cell',            
             enableFiltering: false,
             type: 'number',
-            width: 95
+            width: 105
         },
         {
             name: 'models',
@@ -81,7 +84,7 @@ export default class ClusterTaskFlowController {
             cellClass: 'ui-grid-number-cell',            
             enableFiltering: false,
             type: 'number',
-            width: 95
+            width: 105
         },
         {
             name: 'status',
@@ -93,7 +96,7 @@ export default class ClusterTaskFlowController {
             `,
             enableFiltering: false,
             type: 'string',
-            width: 95
+            width: 105
         }
     ];
     
@@ -106,26 +109,6 @@ export default class ClusterTaskFlowController {
              
          });         
       }
-    }
-
-    editCluster(cluster: ShortCluster) {
-        return this.$uiRouter.stateService.go('^.edit', {clusterID: cluster.id});
-    }
-
-    loadUserClusters(a: any) {
-        return this.Clusters.getClustersOverview().pipe(
-            switchMap(({data}) => of(
-                {type: shortClustersActionTypes.SET, items: data},
-                {type: `${a.type}_OK`}
-            )),
-            catchError((error) => of({
-                type: `${a.type}_ERR`,
-                error: {
-                    message: `Failed to load clusters:  ${error.data.message}`
-                },
-                action: a
-            }))
-        );        
     }
     
     ngAfterContentInit(){
@@ -148,12 +131,7 @@ export default class ClusterTaskFlowController {
                 action: 'Ping',
                 click: () => this.pingClusters(selectedClusters),
                 available: true
-            },
-            {
-                action: 'Start',
-                click: () => this.editCluster(selectedClusters[0]),
-                available: selectedClusters.length === 1
-            }           
+            }                    
         ]));
         
         this.isBlocked$ = this.selectedRowsIDs$.pipe(count()); 
@@ -170,8 +148,7 @@ export default class ClusterTaskFlowController {
     
     $onDestroy() {
         this.selectedRows$.complete();
-    }
-    
+    }    
         
     onSave(event) {
         this.saved = true;        

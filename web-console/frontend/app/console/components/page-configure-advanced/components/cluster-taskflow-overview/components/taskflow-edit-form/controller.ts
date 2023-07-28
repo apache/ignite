@@ -49,7 +49,7 @@ export default class TaskFlowFormController {
     
     targetClusterId: string;
     
-    $onInit() {
+    $onInit() {        
         
         this.originalCluster$ = this.sourceCluster.pipe(
             filter((v) => v.length==1),
@@ -66,8 +66,9 @@ export default class TaskFlowFormController {
             if(c && c.data.cluster){
                 let cluster = c.data.cluster;
                 this.taskFlow.name = 'receive data from '+ cluster.name;
-                this.taskFlow.group = this.targetClusterId;
-                this.taskFlow.sourceCluster = cluster.id;
+                this.taskFlow.group = this.targetCluster.name
+                this.taskFlow.targetCluster = this.targetClusterId
+                this.taskFlow.sourceCluster = cluster.id
                 this.clonedTaskFlow = cloneDeep(this.taskFlow);
             }            
         });
@@ -90,7 +91,7 @@ export default class TaskFlowFormController {
     
     buildTaskFlows(tplFlow){   
        this.$scope.message = ''   
-       tplFlow.group = this.targetClusterId;
+       tplFlow.group = this.targetCluster.name;
        tplFlow.targetCluster = this.targetClusterId;
        let taskList = []
        if(this.selectCaches.length==0){
@@ -101,7 +102,7 @@ export default class TaskFlowFormController {
            this.taskFlow = Object.assign({},tplFlow);
            this.taskFlow.target = cache.name;
            this.taskFlow.source = cache.name;
-           this.taskFlow.name = 'Data from '+this.taskFlow.source+' to '+cache.name;
+           this.taskFlow.name = 'Data from '+this.targetCluster.name+'.'+this.taskFlow.source+' to '+cache.name;
            taskList.push(this.taskFlow);
        }
        return taskList;
@@ -131,13 +132,12 @@ export default class TaskFlowFormController {
         let result = [];
         
         for(let task of tasks){           
-            let stat = from(this.TaskFlows.saveBasic(task)).pipe(
-                switchMap(({data}) => of(                   
-                    {type: 'EDIT_TASK_FLOW', taskFlow: data},
-                    {type: 'SAVE_AND_EDIT_TASK_FLOW_OK'}
+            let stat = from(this.TaskFlows.saveAdvanced(task)).pipe(
+                switchMap(({data}) => of(
+                    {type: 'SAVE_TASK_FLOW'}
                 )),
                 catchError((error) => of({
-                    type: 'SAVE_AND_EDIT_TASK_FLOW_ERR',
+                    type: 'SAVE_TASK_FLOW_ERR',
                     error: {
                         message: `Failed to save cluster task flow: ${error}.`
                     }

@@ -147,6 +147,6 @@ export default class TaskFlows {
     }
 
     saveAdvanced(changedItems) {
-        return this.$http.put('/api/v1/taskflow/advanced/', changedItems, {responseType:'text'});
+        return this.$http.put('/api/v1/taskflow/advance/', changedItems, {responseType:'text'});
     }
 }

@@ -55,8 +55,7 @@ export default class PageConfigureBasicController {
     }
     
     $onDestroy() {
-        this.subscription.unsubscribe();
-        if (this.onBeforeTransition) this.onBeforeTransition();
+        this.subscription.unsubscribe();        
         this.$element = null;
     }
 
@@ -64,8 +63,7 @@ export default class PageConfigureBasicController {
         this.$element.addClass('panel--ignite');
     }
 
-    $onInit() {
-        //this.onBeforeTransition = this.$uiRouter.transitionService.onBefore({}, (t) => this._uiCanExit(t));
+    $onInit() {        
 
         this.memorySizeInputVisible$ = this.IgniteVersion.currentSbj.pipe(
             map((version) => this.IgniteVersion.since(version.ignite, '2.0.0'))
@@ -82,6 +80,7 @@ export default class PageConfigureBasicController {
         this.isNew$ = this.$uiRouter.globals.params$.pipe(pluck('clusterID'), map((id) => id === 'new'));
         this.shortCaches$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortCaches);
         this.shortClusters$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectShortClustersValue());
+        
         this.originalCluster$ = clusterID$.pipe(
             distinctUntilChanged(),
             switchMap((id) => {
@@ -136,16 +135,6 @@ export default class PageConfigureBasicController {
             `}
         ]; 
         
-    }
-
-    addCache() {
-        this.ConfigureState.dispatchAction({type: 'ADD_CACHE_TO_EDIT'});
-    }
-
-    removeCache(cache) {
-        this.ConfigureState.dispatchAction(
-            removeClusterItems(this.$uiRouter.globals.params.clusterID, 'caches', [cache.id], false, false)
-        );
     }
 
     changeCache(cache) {

@@ -9,6 +9,7 @@ export default {
     controller,
     bindings: {
         clusterId: '<',
+        cluster: '<',
         models: '<',
         targetCaches: '=' 
     }
