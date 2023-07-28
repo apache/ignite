@@ -27,6 +27,7 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -126,6 +127,31 @@ public abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T>
      */
     public Set<Integer> affectedCacheGroups() {
         return parts.keySet();
+    }
+
+    /**
+     * @param exec Runnable task to execute.
+     * @return Wrapped task.
+     */
+    protected Runnable wrapExceptionIfStarted(IgniteThrowableRunner exec) {
+        return () -> {
+            if (stopping())
+                return;
+
+            try {
+                exec.run();
+            }
+            catch (Throwable t) {
+                acceptException(t);
+            }
+        };
+    }
+
+    /**
+     * @return {@code true} if current task requested to be stopped.
+     */
+    protected boolean stopping() {
+        return err.get() != null;
     }
 
     /**

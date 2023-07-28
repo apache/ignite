@@ -74,7 +74,6 @@ import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C3;
 import org.apache.ignite.internal.util.typedef.F;
@@ -246,13 +245,6 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<SnapshotFutureTaskRe
      */
     public IgniteInternalFuture<?> started() {
         return startedFut;
-    }
-
-    /**
-     * @return {@code true} if current task requested to be stopped.
-     */
-    private boolean stopping() {
-        return err.get() != null;
     }
 
     /**
@@ -598,24 +590,6 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<SnapshotFutureTaskRe
 
             partFileLengths.put(pair, store.size());
         }
-    }
-
-    /**
-     * @param exec Runnable task to execute.
-     * @return Wrapped task.
-     */
-    private Runnable wrapExceptionIfStarted(IgniteThrowableRunner exec) {
-        return () -> {
-            if (stopping())
-                return;
-
-            try {
-                exec.run();
-            }
-            catch (Throwable t) {
-                acceptException(t);
-            }
-        };
     }
 
     /**

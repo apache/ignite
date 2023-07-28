@@ -19,11 +19,17 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import java.util.function.BiConsumer;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -34,7 +40,9 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotFutureTask;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotSender;
+import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.cachDataFilename;
@@ -43,7 +51,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
 
 /** */
-public class DumpCacheFutureTask extends AbstractSnapshotFutureTask<Void> implements BiConsumer<String, File> {
+public class DumpCacheFutureTask extends AbstractSnapshotFutureTask<Void> {
+    /** */
+    public static final CompletableFuture<?>[] COMPLETABLE_FUTURES = new CompletableFuture[0];
+
     /** */
     private final File dumpDir;
 
@@ -97,8 +108,6 @@ public class DumpCacheFutureTask extends AbstractSnapshotFutureTask<Void> implem
 
         this.dumpDir = dumpDir;
         this.grps = grps;
-
-        cctx.cache().configManager().addConfigurationChangeListener(this);
     }
 
     /** {@inheritDoc} */
@@ -110,7 +119,24 @@ public class DumpCacheFutureTask extends AbstractSnapshotFutureTask<Void> implem
 
             createDumpLock(dumpNodeDir);
 
-            for (Integer grp : grps) {
+            // Submit all tasks for groups processing.
+            List<CompletableFuture<Void>> futs = new ArrayList<>();
+
+            Collection<BinaryType> types = cctx.kernalContext().cacheObjects().binary().types();
+
+            futs.add(CompletableFuture.runAsync(
+                wrapExceptionIfStarted(() -> cctx.kernalContext().cacheObjects().saveMetadata(types, dumpDir)),
+                snpSndr.executor()
+            ));
+
+            ArrayList<Map<Integer, MappedName>> mappings = cctx.kernalContext().marshallerContext().getCachedMappings();
+
+            futs.add(CompletableFuture.runAsync(
+                wrapExceptionIfStarted(() -> MarshallerContextImpl.saveMappings(cctx.kernalContext(), mappings, dumpDir)),
+                snpSndr.executor()
+            ));
+
+            for (int grp : grps) {
                 CacheGroupContext grpCtx = cctx.cache().cacheGroup(grp);
 
                 File grpDir = new File(
@@ -128,20 +154,35 @@ public class DumpCacheFutureTask extends AbstractSnapshotFutureTask<Void> implem
                         new File(grpDir, cachDataFilename(ccfg))
                     );
                 }
+
+                futs.add(CompletableFuture.runAsync(wrapExceptionIfStarted(() -> {
+                    long start = System.currentTimeMillis();
+
+                    log.info("Start group dump [name=" + grpCtx.cacheOrGroupName() + ", id=" + grp + ']');
+
+                    try {
+                        Thread.sleep(ThreadLocalRandom.current().nextInt(5_000));
+                    }
+                    catch (InterruptedException e) {
+                        acceptException(e);
+                    }
+
+                    long time = System.currentTimeMillis() - start;
+
+                    log.info("Finish group dump [name=" + grpCtx.cacheOrGroupName() + ", id=" + grp + ", time=" + time + ']');
+                }), snpSndr.executor()));
             }
 
-            cctx.kernalContext().cacheObjects().saveMetadata(
-                cctx.kernalContext().cacheObjects().binary().types(),
-                dumpDir
-            );
+            CompletableFuture.allOf(futs.toArray(COMPLETABLE_FUTURES)).whenComplete((res, t) -> {
+                assert t == null : "Exception must never be thrown since a wrapper is used " +
+                    "for each dum task: " + t;
 
-            MarshallerContextImpl.saveMappings(cctx.kernalContext(), cctx.kernalContext()
-                .marshallerContext()
-                .getCachedMappings(), dumpDir);
-
-            onDone();
+                onDone(err.get()); // Will complete OK if err.get() == null.
+            });
         }
         catch (IgniteCheckedException | IOException e) {
+            acceptException(e);
+
             onDone(e);
         }
 
@@ -158,11 +199,12 @@ public class DumpCacheFutureTask extends AbstractSnapshotFutureTask<Void> implem
 
     /** {@inheritDoc} */
     @Override public void acceptException(Throwable th) {
+        if (th == null)
+            return;
 
-    }
+        if (!(th instanceof IgniteFutureCancelledCheckedException))
+            U.error(log, "Snapshot task has accepted exception to stop", th);
 
-    /** {@inheritDoc} */
-    @Override public void accept(String s, File file) {
-
+        err.compareAndSet(null, th);
     }
 }

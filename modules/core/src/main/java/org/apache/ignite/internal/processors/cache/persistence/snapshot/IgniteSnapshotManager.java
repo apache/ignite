@@ -701,6 +701,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return views;
             })),
             Function.identity());
+
+        Arrays.stream(locDumpDir.listFiles())
+            .filter(File::isDirectory)
+            .filter(dumpDir -> new File(dumpDir, DUMP_LOCK).exists())
+            .forEach(lockedDumpDir -> log.warning("Found locked dump dir. " +
+                "This means, dump creation not finished prior to node fail. " +
+                "Please, remove it manually: " + lockedDumpDir));
     }
 
     /** {@inheritDoc} */
@@ -1262,7 +1269,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .map(n -> cctx.discovery().node(n).consistentId().toString())
                 .collect(Collectors.toSet());
 
-            fut.result();
+            // Ignoring Void result fut.result().
 
             DumpMetadata meta = new DumpMetadata(
                 req.requestId(),
@@ -1272,13 +1279,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 nodes
             );
 
-            File smf = new File(dumpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
+            File dmf = new File(dumpDir, dumpMetaFileName(cctx.localNode().consistentId().toString()));
 
-            storeSnapshotMeta(meta, smf);
+            storeSnapshotMeta(meta, dmf);
 
-            log.info("Dump metafile has been created: " + smf.getAbsolutePath());
+            log.info("Dump metafile has been created: " + dmf.getAbsolutePath());
 
-            // TODO: Do we need to invoke handlers here?
             return new SnapshotOperationResponse(null);
         }, snapshotExecutorService());
     }
@@ -1458,6 +1464,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                     if (req.incremental())
                         U.delete(incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.incrementIndex()));
+                    else if (req.dump())
+                        U.delete(snapshotLocalDir(req.snapshotName(), null, locDumpDir));
                     else {
                         deleteSnapshot(
                             snapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.dump() ? locDumpDir : locSnpDir),
@@ -1581,7 +1589,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         clusterSnpFut.onDone();
 
                         if (log.isInfoEnabled())
-                            log.info(SNAPSHOT_FINISHED_MSG + snpReq);
+                            log.info(snpMsg(SNAPSHOT_FINISHED_MSG + snpReq, snpReq.dump()));
                     }
                 }
                 else if (snpReq.error() == null) {
