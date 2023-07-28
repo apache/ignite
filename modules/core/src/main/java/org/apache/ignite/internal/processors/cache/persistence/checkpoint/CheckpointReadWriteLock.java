@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.ReentrantReadWriteLockWithTracking;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_LOG_CP_READ_LOCK_HOLDERS;
@@ -68,7 +69,7 @@ public class CheckpointReadWriteLock {
 
         checkpointLock.readLock().lock();
 
-        if (ASSERTION_ENABLED)
+        if (!U.FIX && ASSERTION_ENABLED)
             CHECKPOINT_LOCK_HOLD_COUNT.set(CHECKPOINT_LOCK_HOLD_COUNT.get() + 1);
     }
 
@@ -84,7 +85,7 @@ public class CheckpointReadWriteLock {
 
         boolean res = checkpointLock.readLock().tryLock(timeout, unit);
 
-        if (ASSERTION_ENABLED && res)
+        if (!U.FIX && ASSERTION_ENABLED && res)
             CHECKPOINT_LOCK_HOLD_COUNT.set(CHECKPOINT_LOCK_HOLD_COUNT.get() + 1);
 
         return res;
@@ -98,6 +99,7 @@ public class CheckpointReadWriteLock {
     public boolean checkpointLockIsHeldByThread() {
         return !ASSERTION_ENABLED ||
             checkpointLock.isWriteLockedByCurrentThread() ||
+            (U.FIX && checkpointLock.getReadHoldCount() > 0) ||
             CHECKPOINT_LOCK_HOLD_COUNT.get() > 0 ||
             Thread.currentThread().getName().startsWith(CHECKPOINT_RUNNER_THREAD_PREFIX);
     }
@@ -111,7 +113,7 @@ public class CheckpointReadWriteLock {
 
         checkpointLock.readLock().unlock();
 
-        if (ASSERTION_ENABLED)
+        if (!U.FIX && ASSERTION_ENABLED)
             CHECKPOINT_LOCK_HOLD_COUNT.set(CHECKPOINT_LOCK_HOLD_COUNT.get() - 1);
     }
 

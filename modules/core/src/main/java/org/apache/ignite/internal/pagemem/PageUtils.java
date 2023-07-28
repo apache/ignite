@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.pagemem;
 
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -223,4 +225,59 @@ public class PageUtils {
 
         GridUnsafe.putLong(addr + off, v);
     }
+
+    /** Diagnostic.  */
+    public static void testVal(long absPtr, int val) {
+        if (!U.TEST)
+            return;
+
+        testVal(absPtr, val, false);
+    }
+
+    /** Diagnostic.  */
+    public static void testVal(long absPtr, int val, boolean reset) {
+        if (!U.TEST)
+            return;
+
+        if (reset)
+            putInt(absPtr, PageMemoryImpl.PAGE_OVERHEAD - 16, 0);
+        else
+            putInt(absPtr, PageMemoryImpl.PAGE_OVERHEAD - 16, testValSum(absPtr) + val);
+
+        putInt(absPtr, PageMemoryImpl.PAGE_OVERHEAD - 12, val);
+
+        putLong(absPtr, PageMemoryImpl.PAGE_OVERHEAD - 8, System.nanoTime());
+    }
+
+    /** Diagnostic.  */
+    public static int testValSum(long absPtr) {
+        if (!U.TEST)
+            return 0;
+
+        return getInt(absPtr, PageMemoryImpl.PAGE_OVERHEAD - 16);
+    }
+
+    /** Diagnostic.  */
+    public static int testVal(long absPtr) {
+        if (!U.TEST)
+            return 0;
+
+        return getInt(absPtr, PageMemoryImpl.PAGE_OVERHEAD - 12);
+    }
+
+    /** Diagnostic.  */
+    public static long lastNanos(long absPtr) {
+        if (!U.TEST)
+            return 0;
+
+        return getLong(absPtr, PageMemoryImpl.PAGE_OVERHEAD - 8);
+    }
+
+//    /** Diagnostic.  */
+//    public static void resetTid(long absPtr) {
+//        if (PageMemoryImpl.PAGE_OVERHEAD < 49)
+//            return;
+//
+//        putLong(absPtr, PageMemoryImpl.PAGE_OVERHEAD - 8, 0);
+//    }
 }

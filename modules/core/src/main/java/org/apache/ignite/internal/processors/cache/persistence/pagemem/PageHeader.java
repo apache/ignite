@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -137,7 +138,13 @@ class PageHeader {
      * @param absPtr Absolute pointer.
      */
     public static int releasePage(long absPtr) {
-        return GridUnsafe.decrementAndGetInt(absPtr + PAGE_PIN_CNT_OFFSET);
+        int pinCnt = GridUnsafe.decrementAndGetInt(absPtr + PAGE_PIN_CNT_OFFSET);
+
+        if(U.TEST) {
+            assert pinCnt >= 0;
+        }
+
+        return pinCnt;
     }
 
     /**
@@ -145,7 +152,7 @@ class PageHeader {
      * @return Number of acquires for the page.
      */
     public static int pinCount(long absPtr) {
-        return GridUnsafe.getIntVolatile(null, absPtr);
+        return GridUnsafe.getIntVolatile(null, absPtr + PAGE_PIN_CNT_OFFSET);
     }
 
     /**

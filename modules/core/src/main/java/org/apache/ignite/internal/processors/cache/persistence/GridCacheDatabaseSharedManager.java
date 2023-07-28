@@ -366,6 +366,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private GridKernalContext ctx;
 
+    /** */
+    private final CheckpointLockStateChecker defragChpLockChecker = new CheckpointLockStateChecker() {
+        @Override public boolean checkpointLockIsHeldByThread() {
+            return defrgMgr.checkpointManager().checkpointTimeoutLock().checkpointLockIsHeldByThread();
+        }
+    };
+
     /**
      * @param ctx Kernal context.
      */
@@ -1203,6 +1210,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             chpBufSize = cacheSize;
         }
 
+        CheckpointLockStateChecker cpLockChecker = U.FIX &&
+            (regCfg.getName().equals(DEFRAGMENTATION_MAPPING_REGION_NAME) ||
+                regCfg.getName().equals(DEFRAGMENTATION_PART_REGION_NAME))
+            ? defragChpLockChecker
+            : this;
+
         PageMemoryImpl pageMem = new PageMemoryImpl(
             wrapMetricsPersistentMemoryProvider(memProvider, regMetrics),
             calculateFragmentSizes(
@@ -1223,7 +1236,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 getCheckpointer().currentProgress().updateEvictedPages(1);
             },
             trackable,
-            this,
+            cpLockChecker,
             regMetrics,
             regCfg,
             resolveThrottlingPolicy(),

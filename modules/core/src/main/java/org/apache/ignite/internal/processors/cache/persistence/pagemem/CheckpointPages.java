@@ -27,7 +27,7 @@ import org.apache.ignite.internal.pagemem.FullPageId;
  */
 class CheckpointPages {
     /** */
-    private final Collection<FullPageId> segCheckpointPages;
+    final Collection<FullPageId> segCheckpointPages;
 
     /** The sign which allows to replace pages from a checkpoint by page replacer. */
     private final IgniteInternalFuture allowToReplace;
