@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public abstract class SnapshotSender {
+abstract class SnapshotSender {
     /** Busy processing lock. */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 

@@ -141,7 +141,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpCacheFutureTask;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -838,7 +837,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** */
-    private File snapshotLocalDir(String snpName, @Nullable String snpPath, File locSnpDir) {
+    public static File snapshotLocalDir(String snpName, @Nullable String snpPath, File locSnpDir) {
         assert locSnpDir != null;
         assert U.alphanumericUnderscore(snpName) : snpName;
 
@@ -975,8 +974,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             return initLocalIncrementalSnapshot(req, meta);
         }
-        else if (req.dump())
-            return initLocalDump(req, grpIds);
         else
             return initLocalFullSnapshot(req, grpIds, comprGrpIds, withMetaStorage);
     }
@@ -1051,8 +1048,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             meta,
             req.snapshotPath(),
             req.incrementIndex(),
-            tmpWorkDir,
-            ioFactory,
             lowPtr,
             markWalFut
         )).chain(fut -> {
@@ -1174,6 +1169,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 req.requestId(),
                 parts,
                 withMetaStorage,
+                req.dump(),
                 locSndrFactory.apply(req.snapshotName(), req.snapshotPath()));
 
             if (withMetaStorage && task0 instanceof SnapshotFutureTask) {
@@ -1191,7 +1187,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     .map(n -> cctx.discovery().node(n).consistentId().toString())
                     .collect(Collectors.toSet());
 
-                File snpDir = snapshotLocalDir(req.snapshotName(), req.snapshotPath());
+                File snpDir = snapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.dump() ? locDumpDir : locSnpDir);
 
                 snpDir.mkdirs();
 
@@ -1208,7 +1204,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     res.parts(),
                     res.snapshotPointer(),
                     cctx.gridConfig().getEncryptionSpi().masterKeyDigest(),
-                    req.onlyPrimary()
+                    req.onlyPrimary(),
+                    req.dump()
                 );
 
                 SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir,
@@ -1216,86 +1213,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 req.meta(meta);
 
-                File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
+                String consId = cctx.localNode().consistentId().toString();
+
+                File smf = new File(snpDir, req.dump() ? dumpMetaFileName(consId) : snapshotMetaFileName(consId));
 
                 storeSnapshotMeta(req.meta(), smf);
 
                 log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
 
-                return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
-            }
-            catch (IgniteCheckedException e) {
-                throw F.wrap(e);
-            }
-        }, snapshotExecutorService());
-    }
-
-    /**
-     * @param req Request.
-     * @param grps Cache groups to dump.
-     * @return Create dump future.
-     */
-    private IgniteInternalFuture<SnapshotOperationResponse> initLocalDump(SnapshotOperationRequest req, List<Integer> grps) {
-        IgniteInternalFuture<?> task0;
-
-        List<Integer> grpIds = grps.stream().filter(grpId -> cctx.cache().cacheGroup(grpId) != null).collect(Collectors.toList());
-
-        File dumpDir = snapshotLocalDir(req.snapshotName(), null, locDumpDir);
-
-        if (grpIds.isEmpty())
-            task0 = new GridFinishedFuture<>(Collections.emptySet());
-        else {
-            dumpDir.mkdirs();
-
-            task0 = registerTask(req.snapshotName(), new DumpCacheFutureTask(
-                cctx,
-                req.snapshotName(),
-                req.operationalNodeId(),
-                req.requestId(),
-                req.snapshotPath(),
-                dumpDir,
-                tmpWorkDir,
-                ioFactory,
-                grpIds
-            ));
-        }
-
-        return task0.chain(fut -> {
-            if (fut.error() != null)
-                throw F.wrap(fut.error());
-
-            Set<String> nodes = req.nodes().stream()
-                .map(n -> cctx.discovery().node(n).consistentId().toString())
-                .collect(Collectors.toSet());
-
-            SnapshotFutureTaskResult res = (SnapshotFutureTaskResult)fut.result();
-
-            SnapshotMetadata meta = new SnapshotMetadata(req.requestId(),
-                req.snapshotName(),
-                cctx.localNode().consistentId().toString(),
-                pdsSettings.folderName(),
-                cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
-                grpIds,
-                Collections.emptyList(),
-                nodes,
-                res.parts(),
-                null,
-                null,
-                false
-            );
-
-            SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), dumpDir,
-                req.streamerWarning(), true);
-
-            req.meta(meta);
-
-            File dmf = new File(dumpDir, dumpMetaFileName(cctx.localNode().consistentId().toString()));
-
-            storeSnapshotMeta(meta, dmf);
-
-            log.info("Dump metafile has been created: " + dmf.getAbsolutePath());
-
-            try {
                 return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
             }
             catch (IgniteCheckedException e) {
@@ -2770,6 +2695,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param requestId Snapshot operation request ID.
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
      * @param withMetaStorage {@code true} if all metastorage data must be also included into snapshot.
+     * @param dump {@code true} if cache group dump must be created.
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @return Snapshot operation task which should be registered on checkpoint to run.
      */
@@ -2779,10 +2705,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         UUID requestId,
         Map<Integer, Set<Integer>> parts,
         boolean withMetaStorage,
+        boolean dump,
         SnapshotSender snpSndr
     ) {
-        AbstractSnapshotFutureTask<?> task = registerTask(snpName, new SnapshotFutureTask(cctx, srcNodeId, requestId,
-            snpName, tmpWorkDir, ioFactory, snpSndr, parts, withMetaStorage, locBuff));
+        AbstractSnapshotFutureTask<?> createTask = dump
+            ? new DumpCacheFutureTask(cctx, srcNodeId, requestId, snpName, snapshotLocalDir(snpName, null, locDumpDir), snpSndr, parts)
+            : new SnapshotFutureTask(cctx, srcNodeId, requestId, snpName, tmpWorkDir, ioFactory, snpSndr, parts, withMetaStorage, locBuff);
+
+        AbstractSnapshotFutureTask<?> task = registerTask(snpName, createTask);
 
         if (!withMetaStorage) {
             for (Integer grpId : parts.keySet()) {
@@ -2798,17 +2728,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         return task;
-    }
-
-    /**
-     * @param snpName Unique snapshot name.
-     * @param srcNodeId Node id which cause snapshot operation.
-     * @param requestId Snapshot operation request ID.
-     * @param grpIds Groups.
-     * @return Snapshot operation task which should be registered on checkpoint to run.
-     */
-    private IgniteInternalFuture<?> registerDumpTask(String snpName, UUID srcNodeId, UUID requestId, List<Integer> grpIds) {
-        return new GridFinishedFuture<>("Done!");
     }
 
     /**
@@ -3055,7 +2974,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Relative configured path of persistence data storage directory for the local node.
      * Example: {@code snapshotWorkDir/db/IgniteNodeName0}
      */
-    public static String databaseRelativePath(String folderName) {
+    static String databaseRelativePath(String folderName) {
         return Paths.get(DB_DEFAULT_FOLDER, folderName).toString();
     }
 
@@ -3948,8 +3867,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                 reqMsg0.requestId(),
                                 snpName,
                                 reqMsg0.snapshotPath(),
-                                tmpWorkDir,
-                                ioFactory,
                                 rmtSndrFactory.apply(rqId, nodeId),
                                 reqMsg0.parts()));
 
