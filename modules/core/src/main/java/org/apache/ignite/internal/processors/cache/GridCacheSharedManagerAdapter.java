@@ -65,13 +65,6 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
     }
 
     /**
-     * @return Logger.
-     */
-    protected IgniteLogger log() {
-        return log;
-    }
-
-    /**
      * @return Context.
      */
     protected GridCacheSharedContext<K, V> context() {
@@ -172,13 +165,6 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
      */
     protected String stopInfo() {
         return "Cache manager stopped.";
-    }
-
-    /**
-     * @return Start info.
-     */
-    protected String kernalStartInfo() {
-        return "Cache manager received onKernalStart() callback.";
     }
 
     /**
