@@ -52,16 +52,16 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
  */
 public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     /** Near node ID. */
-    private UUID nearNodeId;
+    private final UUID nearNodeId;
 
     /** Remote future ID. */
-    private IgniteUuid rmtFutId;
+    private final IgniteUuid rmtFutId;
 
     /** Near transaction ID. */
-    private GridCacheVersion nearXidVer;
+    private final GridCacheVersion nearXidVer;
 
     /** Store write through flag. */
-    private boolean storeWriteThrough;
+    private final boolean storeWriteThrough;
 
     /**
      * This constructor is meant for optimistic transactions.
@@ -134,7 +134,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
 
         txState = single ? new IgniteTxRemoteSingleStateImpl() :
             new IgniteTxRemoteStateImpl(
-                Collections.<IgniteTxKey, IgniteTxEntry>emptyMap(),
+                Collections.emptyMap(),
                 new ConcurrentLinkedHashMap<IgniteTxKey, IgniteTxEntry>(U.capacity(txSize), 0.75f, 1));
 
         assert topVer != null && topVer.topologyVersion() > 0 : topVer;
@@ -208,7 +208,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         this.storeWriteThrough = storeWriteThrough;
 
         txState = new IgniteTxRemoteStateImpl(
-            Collections.<IgniteTxKey, IgniteTxEntry>emptyMap(),
+            Collections.emptyMap(),
             new ConcurrentLinkedHashMap<IgniteTxKey, IgniteTxEntry>(U.capacity(txSize), 0.75f, 1));
 
         assert topVer != null && topVer.topologyVersion() > 0 : topVer;
