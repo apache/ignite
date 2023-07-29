@@ -338,7 +338,6 @@ If you don't use link:configuring-caches/cache-groups[cache groups], each cache 
 | Attribute | Type | Description | Scope
 |TotalAllocatedSize |long | The amount of space allocated for the cache group on this node. | Node
 |===
---
 
 === Monitoring Checkpointing Operations
 Checkpointing may slow down cluster operations.
@@ -354,7 +353,6 @@ See link:persistence/persistence-tuning#pages-writes-throttling[Pages Writes Thr
 |LastCheckpointDuration | long | The time in milliseconds it took to create the last checkpoint. | Node
 |CheckpointBufferSize | long | The size of the checkpointing buffer. | Global
 |===
---
 
 === Monitoring Rebalancing
 link:data-rebalancing[Rebalancing] is the process of moving partitions between the cluster nodes so that the data is always distributed in a balanced manner. Rebalancing is triggered when a new node joins, or an existing node leaves the cluster.
@@ -370,8 +368,6 @@ In the metric system, link:monitoring-metrics/new-metrics#caches[Cache metrics]:
 | EstimatedRebalancingFinishTime | long | Expected time of completion of the rebalancing process. |  Node
 | KeysToRebalanceLeft | long | The number of keys on the node that remain to be rebalanced.  You can monitor this metric to learn when the rebalancing process finishes.| Node
 |===
---
-
 
 === Monitoring Topology
 Topology refers to the set of nodes in a cluster. There are a number of metrics that expose the information about the topology of the cluster. If the topology changes too frequently or has a size that is different from what you expect, you may want to look into whether there are network problems.
@@ -404,7 +400,6 @@ ver=8.7.5#20190520-sha1:d159cd7a, isClient=false]
 
 | Global
 |===
---
 
 === Monitoring Caches
 
@@ -436,7 +431,6 @@ Note that if a transaction spans multiple nodes (i.e., if the keys that are chan
 | OwnerTransactionsNumber | long |  The number of transactions initiated on the node. | Node
 | TransactionsHoldingLockNumber | long | The number of open transactions that hold a lock on at least one key on the node.| Node
 |===
---
 
 === Monitoring Snapshots
 
@@ -447,8 +441,6 @@ Note that if a transaction spans multiple nodes (i.e., if the keys that are chan
 | LastSnapshotStartTime || |
 | SnapshotInProgress | | |
 |===
---
-////
 
 === Monitoring Client Connections
 Metrics related to JDBC/ODBC or thin client connections.
@@ -479,7 +471,6 @@ If the size is growing, it means there is a problem.
 | Attribute | Type | Description | Scope
 | OutboundMessagesQueueSize  | int | The size of the queue of outgoing communication messages. | Node
 |===
---
 
 ==== Discovery Messages Queue
 
