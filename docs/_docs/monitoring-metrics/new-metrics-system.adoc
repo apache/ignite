@@ -380,7 +380,6 @@ Topology refers to the set of nodes in a cluster. There are a number of metrics 
 | TotalBaselineNodes | long | The number of nodes that are registered in the link:clustering/baseline-topology[baseline topology]. When a node goes down, it remains registered in the baseline topology and you need to remote it manually. |  Global
 | ActiveBaselineNodes | long | The number of nodes that are currently active in the baseline topology.  |  Global
 |===
---
 
 [{table_opts}]
 |===
