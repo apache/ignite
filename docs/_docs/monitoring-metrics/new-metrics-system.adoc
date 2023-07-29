@@ -293,7 +293,6 @@ The amount of data in RAM can be monitored for each data region through the foll
 | PhysicalMemoryPages |long | The number of the allocated pages in RAM. | Node
 | PhysicalMemorySize |long |The size of the allocated space in RAM in bytes. | Node
 |===
---
 
 If you have multiple data regions, add up the sizes of all data regions to get the total size of the data on the node.
 
