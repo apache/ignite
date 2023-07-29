@@ -117,13 +117,11 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
 
                 Long lastSegBeforeSkip = findLastSegmentBeforeSkip();
 
-                if (lastSegBeforeSkip != null)
-                    deleteAllUntil(lastSegBeforeSkip);
+                deleteAllUntil(lastSegBeforeSkip);
 
                 Long cdcDisableSgmnt = findLastSegmentWithCdcDisabledRecord();
 
-                if (cdcDisableSgmnt != null)
-                    deleteAllUntil(cdcDisableSgmnt);
+                deleteAllUntil(cdcDisableSgmnt);
 
                 if (lastSegBeforeSkip != null || cdcDisableSgmnt != null)
                     deleteCdcWalState();
@@ -219,7 +217,10 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
         }
 
         /** Delete all segments with an absolute index less than or equal to the given one. */
-        private void deleteAllUntil(long lastIdx) {
+        private void deleteAllUntil(Long lastIdx) {
+            if (lastIdx == null)
+                return;
+
             consumeCdcSegments(segment -> {
                 if (FileWriteAheadLogManager.segmentIndex(segment) > lastIdx)
                     return;
