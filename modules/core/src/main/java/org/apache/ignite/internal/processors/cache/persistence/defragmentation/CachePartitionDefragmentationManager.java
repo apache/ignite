@@ -422,7 +422,7 @@ public class CachePartitionDefragmentationManager {
                     }
 
                     if (U.FIX)
-                        U.sleep(15_000);
+                        U.sleep(60_000);
 
                     IgniteUtils.doInParallel(
                         defragmentationThreadPool,
