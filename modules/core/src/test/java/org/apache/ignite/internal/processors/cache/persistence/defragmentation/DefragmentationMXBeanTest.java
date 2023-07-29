@@ -160,7 +160,7 @@ public class DefragmentationMXBeanTest extends GridCommonAbstractTest {
         dsCfg.setMaxWalArchiveSize(1L * 1024L * 1024L * 1024L);
         dsCfg.setWalSegments(20);
 
-        long regSize = 128L * 1024 * 1024;
+        long regSize = 256L * 1024 * 1024;
 
         dsCfg.setDefaultDataRegionConfiguration(
             new DataRegionConfiguration()
@@ -181,11 +181,11 @@ public class DefragmentationMXBeanTest extends GridCommonAbstractTest {
         dsCfg.setWalPath(basePath + "wal");
 //        dsCfg.setWalCompactionEnabled(true);
 
-        dsCfg.setDefragmentationThreadPoolSize(4);
-        dsCfg.setCheckpointThreads(2);
+//        dsCfg.setDefragmentationThreadPoolSize(4);
+//        dsCfg.setCheckpointThreads(2);
 
         dsCfg.setCheckpointReadLockTimeout(280_000);
-        dsCfg.setCheckpointFrequency(3_000);
+        dsCfg.setCheckpointFrequency(1500);
 
         return cfg.setDataStorageConfiguration(dsCfg);
     }

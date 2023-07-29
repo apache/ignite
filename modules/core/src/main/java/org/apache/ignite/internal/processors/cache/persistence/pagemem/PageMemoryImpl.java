@@ -539,6 +539,16 @@ public class PageMemoryImpl implements PageMemoryEx {
         assert started;
         assert stateChecker.checkpointLockIsHeldByThread();
 
+        if (U.TEST) {
+            assert stateChecker.checkpointLockIsHeldByThread();
+
+            if (U.TEST_DEBUG && dataRegionCfg.getName().equals("metastoreMemPlc") || dataRegionCfg.getName().equals("volatileDsMemPlc") ||
+                dataRegionCfg.getName().equals("TxLog") || dataRegionCfg.getName().equals("sysMemPlc")){
+                assert stateChecker.checkpointLockIsHeldByThread();
+            }
+
+        }
+
         if (isThrottlingEnabled())
             writeThrottle.onMarkDirty(false);
 
@@ -722,6 +732,12 @@ public class PageMemoryImpl implements PageMemoryEx {
         assert started;
         if (U.TEST) {
             assert stateChecker.checkpointLockIsHeldByThread();
+
+            if (U.TEST_DEBUG && dataRegionCfg.getName().equals("metastoreMemPlc") || dataRegionCfg.getName().equals("volatileDsMemPlc") ||
+                dataRegionCfg.getName().equals("TxLog") || dataRegionCfg.getName().equals("sysMemPlc")){
+                assert stateChecker.checkpointLockIsHeldByThread();
+            }
+
         }
 
         int partId = PageIdUtils.partId(pageId);

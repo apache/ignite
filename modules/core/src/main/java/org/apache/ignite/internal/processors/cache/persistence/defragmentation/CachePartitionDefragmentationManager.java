@@ -369,6 +369,13 @@ public class CachePartitionDefragmentationManager {
                     if (true || !U.FIX)
                         dbMgr.checkpointedDataRegions().remove(oldGrpCtx.dataRegion());
 
+                    if (U.FIX) {
+                        dbMgr.checkpointedDataRegions().remove(dbMgr.dataRegion("sysMemPlc"));
+                        dbMgr.checkpointedDataRegions().remove(dbMgr.dataRegion("metastoreMemPlc"));
+                        dbMgr.checkpointedDataRegions().remove(dbMgr.dataRegion("volatileDsMemPlc"));
+                        dbMgr.checkpointedDataRegions().remove(dbMgr.dataRegion("TxLog"));
+                    }
+
                     // Another cheat. Ttl cleanup manager knows too much shit.
                     oldGrpCtx.caches().stream()
                         .filter(cacheCtx -> cacheCtx.groupId() == grpId)
@@ -421,8 +428,8 @@ public class CachePartitionDefragmentationManager {
                         bothChpLock(false);
                     }
 
-                    if (U.FIX)
-                        U.sleep(60_000);
+//                    if (U.FIX)
+//                        U.sleep(60_000);
 
                     IgniteUtils.doInParallel(
                         defragmentationThreadPool,
@@ -760,8 +767,8 @@ public class CachePartitionDefragmentationManager {
         PendingEntriesTree newPendingTree = partCtx.newCacheDataStore.pendingTree();
         AbstractFreeList<CacheDataRow> freeList = partCtx.newCacheDataStore.getCacheStoreFreeList();
 
-//        long cpLockThreshold = U.FIX ? 75l: 150L;
-        long cpLockThreshold = 150L;
+        long cpLockThreshold = U.FIX ? 75l: 150L;
+//        long cpLockThreshold = 150L;
 
         bothChpLock(true);
 
