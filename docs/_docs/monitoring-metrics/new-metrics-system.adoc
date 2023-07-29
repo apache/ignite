@@ -12,14 +12,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-= New Metrics System
+= Metrics System
 
 :javaFile: {javaCodeDir}/ConfiguringMetrics.java
 
 == Overview
 
 This section explains the metrics system and how you can use it to monitor your cluster.
-//the types of metrics and how to export them, but first let's explore the basic concepts of the new metrics mechanism in Ignite.
+//the types of metrics and how to export them, but first let's explore the basic concepts of the metrics mechanism in Ignite.
 
 Let's explore the basic concepts of the metrics system in Ignite.
 First, there are different metrics.
