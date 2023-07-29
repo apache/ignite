@@ -1289,4 +1289,3 @@ Parameters:
 |--node-id | A list of nodes to rebuild indexes on. If not specified, schedules rebuild on all nodes.
 |--cache-names | Comma-separated list of cache names, optionally with indexes. If indexes are not specified, all indexes of the cache will be scheduled for the rebuild operation. Can be used simultaneously with cache group names.
 |--group-names | Comma-separated list of cache group names. Can be used simultaneously with cache names.
-|===
