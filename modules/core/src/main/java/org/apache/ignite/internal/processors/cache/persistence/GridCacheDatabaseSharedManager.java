@@ -1210,7 +1210,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             chpBufSize = cacheSize;
         }
 
-        CheckpointLockStateChecker cpLockChecker = U.FIX &&
+        CheckpointLockStateChecker cpLockChecker = false && U.FIX &&
             (regCfg.getName().equals(DEFRAGMENTATION_MAPPING_REGION_NAME) ||
                 regCfg.getName().equals(DEFRAGMENTATION_PART_REGION_NAME))
             ? defragChpLockChecker
