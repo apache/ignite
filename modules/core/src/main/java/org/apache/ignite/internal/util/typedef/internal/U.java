@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util.typedef.internal;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.util.IgniteUtils;
 
 /**
@@ -30,4 +31,8 @@ public class U extends IgniteUtils {
     public static final boolean TEST = true;
 
     public static final boolean TEST_DEBUG = TEST && false;
+    public static final AtomicBoolean TEST_ACTION1 = new AtomicBoolean();
+    public static final AtomicBoolean TEST_ACTION2 = new AtomicBoolean();
+    public static final AtomicBoolean TEST_ACTION3 = new AtomicBoolean();
+    public static final AtomicBoolean TEST_ACTION4 = new AtomicBoolean();
 }

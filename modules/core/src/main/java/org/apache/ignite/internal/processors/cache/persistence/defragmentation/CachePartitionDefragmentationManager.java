@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.GridCacheDataStore;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointTimeoutLock;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer;
@@ -369,12 +370,13 @@ public class CachePartitionDefragmentationManager {
                     if (true || !U.FIX)
                         dbMgr.checkpointedDataRegions().remove(oldGrpCtx.dataRegion());
 
-                    if (U.FIX) {
-                        dbMgr.checkpointedDataRegions().remove(dbMgr.dataRegion("sysMemPlc"));
-                        dbMgr.checkpointedDataRegions().remove(dbMgr.dataRegion("metastoreMemPlc"));
-                        dbMgr.checkpointedDataRegions().remove(dbMgr.dataRegion("volatileDsMemPlc"));
-                        dbMgr.checkpointedDataRegions().remove(dbMgr.dataRegion("TxLog"));
-                    }
+                    // Didnt work
+//                    if (U.FIX) {
+//                        dbMgr.checkpointedDataRegions().remove(dbMgr.dataRegion("sysMemPlc"));
+//                        dbMgr.checkpointedDataRegions().remove(dbMgr.dataRegion("metastoreMemPlc"));
+//                        dbMgr.checkpointedDataRegions().remove(dbMgr.dataRegion("volatileDsMemPlc"));
+//                        dbMgr.checkpointedDataRegions().remove(dbMgr.dataRegion("TxLog"));
+//                    }
 
                     // Another cheat. Ttl cleanup manager knows too much shit.
                     oldGrpCtx.caches().stream()
@@ -427,6 +429,8 @@ public class CachePartitionDefragmentationManager {
                     finally {
                         bothChpLock(false);
                     }
+
+                    dbMgr.removeCheckpointListener((CheckpointListener)newGrpCtx.offheap());
 
 //                    if (U.FIX)
 //                        U.sleep(60_000);
@@ -825,9 +829,12 @@ public class CachePartitionDefragmentationManager {
 
             bothChpLock(true);
 
-            freeList.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
+            //Didn't fix
+            //if(!U.TEST) {
+                freeList.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
 
-            copyCacheMetadata(partCtx);
+                copyCacheMetadata(partCtx);
+           // }
         }
         finally {
             bothChpLock(false);
