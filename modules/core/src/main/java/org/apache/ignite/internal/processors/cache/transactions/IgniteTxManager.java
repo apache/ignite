@@ -219,12 +219,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /** @see IgniteSystemProperties#IGNITE_DUMP_TX_COLLISIONS_INTERVAL */
     public static final int DFLT_DUMP_TX_COLLISIONS_INTERVAL = 1000;
 
-    /** Deadlock detection maximum iterations. */
-    static final int DEADLOCK_MAX_ITERS =
-        IgniteSystemProperties.getInteger(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, DFLT_TX_DEADLOCK_DETECTION_MAX_ITERS);
-
     /** Lower tx collisions queue size threshold. */
     private static final int COLLISIONS_QUEUE_THRESHOLD = 100;
+
+    /** Deadlock detection maximum iterations. */
+    final int deadlockMaxIters =
+        IgniteSystemProperties.getInteger(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, DFLT_TX_DEADLOCK_DETECTION_MAX_ITERS);
 
     /** Committing transactions. */
     private final ThreadLocal<IgniteInternalTx> threadCtx = new ThreadLocal<>();
@@ -2428,7 +2428,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return {@code True} if deadlock detection is enabled.
      */
     public boolean deadlockDetectionEnabled() {
-        return DEADLOCK_MAX_ITERS > 0;
+        return deadlockMaxIters > 0;
     }
 
     /**
