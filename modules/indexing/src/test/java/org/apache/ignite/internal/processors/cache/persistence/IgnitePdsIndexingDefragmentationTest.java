@@ -174,7 +174,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         validateIndexes(node);
 
-        for (int k = 0; k < ADDED_KEYS_COUNT; k++)
+        for (int k = 0; k < keysCnt; k++)
             cache.get(keyMapper.apply(k));
     }
 
@@ -260,7 +260,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         cache.query(new SqlFieldsQuery("CREATE INDEX TEST_VAL_OBJ ON TEST(VAL_OBJ)"));
 
-        for (int i = 0; i < ADDED_KEYS_COUNT; i++)
+        for (int i = 0; i < keysCnt; i++)
             cache.query(new SqlFieldsQuery("INSERT INTO TEST VALUES (?, ?, ?)").setArgs(i, i, (long)i));
 
         cache.query(new SqlFieldsQuery("DELETE FROM TEST WHERE MOD(ID, 2) = 0"));
@@ -309,7 +309,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         cache.query(new SqlFieldsQuery("CREATE INDEX TEST_VAL_DEC ON TEST(VAL_DEC)"));
 
-        for (int i = 0; i < ADDED_KEYS_COUNT; i++)
+        for (int i = 0; i < keysCnt; i++)
             cache.query(new SqlFieldsQuery("INSERT INTO TEST VALUES (?, ?, ?)").setArgs(i, i, BigDecimal.valueOf(i)));
 
         cache.query(new SqlFieldsQuery("DELETE FROM TEST WHERE MOD(ID, 2) = 0"));
@@ -356,7 +356,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         cache.query(new SqlFieldsQuery("CREATE INDEX TEST_VAL_STR ON TEST(VAL_STR)"));
 
-        for (int i = 0; i < ADDED_KEYS_COUNT; i++) {
+        for (int i = 0; i < keysCnt; i++) {
             cache.query(new SqlFieldsQuery("INSERT INTO TEST VALUES (?, ?, ?)")
                 .setArgs(i, i, strPrefix + i));
         }

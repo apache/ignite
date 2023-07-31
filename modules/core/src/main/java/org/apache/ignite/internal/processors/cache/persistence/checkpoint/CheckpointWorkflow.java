@@ -247,9 +247,8 @@ public class CheckpointWorkflow {
         checkpointReadWriteLock.readLock();
 
         try {
-            if(U.FIX && (U.TEST_ACTION3.get() || !Thread.currentThread().getName().startsWith("db-checkpoint-thread-#")))
-                for (CheckpointListener lsnr : dbLsnrs)
-                    lsnr.beforeCheckpointBegin(ctx0);
+            for (CheckpointListener lsnr : dbLsnrs)
+                lsnr.beforeCheckpointBegin(ctx0);
 
             ctx0.awaitPendingTasksFinished();
         }
@@ -267,9 +266,8 @@ public class CheckpointWorkflow {
             tracker.onMarkStart();
 
             // Listeners must be invoked before we write checkpoint record to WAL.
-            if(U.FIX && (U.TEST_ACTION1.get() || !Thread.currentThread().getName().startsWith("db-checkpoint-thread-#")))
-                for (CheckpointListener lsnr : dbLsnrs)
-                    lsnr.onMarkCheckpointBegin(ctx0);
+            for (CheckpointListener lsnr : dbLsnrs)
+                lsnr.onMarkCheckpointBegin(ctx0);
 
             ctx0.awaitPendingTasksFinished();
 
@@ -305,9 +303,8 @@ public class CheckpointWorkflow {
 
         curr.transitTo(LOCK_RELEASED);
 
-        if(U.FIX && (U.TEST_ACTION2.get() || !Thread.currentThread().getName().startsWith("db-checkpoint-thread-#")))
-            for (CheckpointListener lsnr : dbLsnrs)
-                lsnr.onCheckpointBegin(ctx0);
+        for (CheckpointListener lsnr : dbLsnrs)
+            lsnr.onCheckpointBegin(ctx0);
 
         if (dirtyPagesCount > 0 || hasPartitionsToDestroy) {
             tracker.onWalCpRecordFsyncStart();
@@ -543,6 +540,8 @@ public class CheckpointWorkflow {
      */
     public void markCheckpointEnd(Checkpoint chp) throws IgniteCheckedException {
         synchronized (this) {
+            log.info("Clearing counters. Reaso: " + chp.progress.reason());
+
             chp.progress.clearCounters();
 
             for (DataRegion memPlc : dataRegions.get()) {
@@ -577,9 +576,8 @@ public class CheckpointWorkflow {
 
         List<CheckpointListener> dbLsnrs = getRelevantCheckpointListeners(checkpointedRegions);
 
-        if(U.FIX && (U.TEST_ACTION4.get() || !Thread.currentThread().getName().startsWith("db-checkpoint-thread-#")))
-            for (CheckpointListener lsnr : dbLsnrs)
-                lsnr.afterCheckpointEnd(emptyCtx);
+        for (CheckpointListener lsnr : dbLsnrs)
+            lsnr.afterCheckpointEnd(emptyCtx);
 
         chp.progress.transitTo(FINISHED);
     }

@@ -68,7 +68,6 @@ public class CheckpointReadWriteLock {
 
         checkpointLock.readLock().lock();
 
-//        if (!U.FIX && ASSERTION_ENABLED)
         if (ASSERTION_ENABLED)
             CHECKPOINT_LOCK_HOLD_COUNT.set(CHECKPOINT_LOCK_HOLD_COUNT.get() + 1);
     }
@@ -85,7 +84,6 @@ public class CheckpointReadWriteLock {
 
         boolean res = checkpointLock.readLock().tryLock(timeout, unit);
 
-//        if (!U.FIX && ASSERTION_ENABLED && res)
         if (ASSERTION_ENABLED && res)
             CHECKPOINT_LOCK_HOLD_COUNT.set(CHECKPOINT_LOCK_HOLD_COUNT.get() + 1);
 
@@ -100,8 +98,6 @@ public class CheckpointReadWriteLock {
     public boolean checkpointLockIsHeldByThread() {
         return !ASSERTION_ENABLED ||
             checkpointLock.isWriteLockedByCurrentThread() ||
-            // Disn't work
-//            (U.FIX && checkpointLock.getReadHoldCount() > 0) ||
             CHECKPOINT_LOCK_HOLD_COUNT.get() > 0 ||
             Thread.currentThread().getName().startsWith(CHECKPOINT_RUNNER_THREAD_PREFIX);
     }
@@ -115,7 +111,6 @@ public class CheckpointReadWriteLock {
 
         checkpointLock.readLock().unlock();
 
-//        if (!U.FIX && ASSERTION_ENABLED)
         if (ASSERTION_ENABLED)
             CHECKPOINT_LOCK_HOLD_COUNT.set(CHECKPOINT_LOCK_HOLD_COUNT.get() - 1);
     }

@@ -285,26 +285,24 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 saveStoreMetadata(store, false);
         }
         else {
-//            if (U.FIX && U.TEST_ACTION1.get())
+            execSvc.execute(() -> {
+                try {
+                    reuseList.saveMetadata(grp.statisticsHolderData());
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            });
+
+            for (CacheDataStore store : cacheDataStores())
                 execSvc.execute(() -> {
                     try {
-                        reuseList.saveMetadata(grp.statisticsHolderData());
+                        saveStoreMetadata(store, false);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
                     }
                 });
-
-//            if (U.FIX && U.TEST_ACTION2.get())
-                for (CacheDataStore store : cacheDataStores())
-                    execSvc.execute(() -> {
-                        try {
-                            saveStoreMetadata(store, false);
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw new IgniteException(e);
-                        }
-                    });
         }
 
         if (grp.config().isEncryptionEnabled())

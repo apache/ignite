@@ -138,13 +138,7 @@ class PageHeader {
      * @param absPtr Absolute pointer.
      */
     public static int releasePage(long absPtr) {
-        int pinCnt = GridUnsafe.decrementAndGetInt(absPtr + PAGE_PIN_CNT_OFFSET);
-
-        if(U.TEST) {
-            assert pinCnt >= 0;
-        }
-
-        return pinCnt;
+        return GridUnsafe.decrementAndGetInt(absPtr + PAGE_PIN_CNT_OFFSET);
     }
 
     /**
