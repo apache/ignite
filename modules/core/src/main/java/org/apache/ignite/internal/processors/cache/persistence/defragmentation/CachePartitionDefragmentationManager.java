@@ -216,7 +216,7 @@ public class CachePartitionDefragmentationManager {
 
             linkMapByPart.clear();
 
-            manageDefaultCheckpointer(true);
+            //manageDefaultCheckpointer(true);
 
             return future.result();
         });
@@ -269,6 +269,18 @@ public class CachePartitionDefragmentationManager {
         dbMgr.onStateRestored(null);
 
         nodeCheckpoint.forceCheckpoint("beforeDefragmentation", null).futureFor(FINISHED).get();
+
+        if (U.FIX) {
+//            nodeCheckpoint.getCheckpointer().cancel();
+//            nodeCheckpoint.getCheckpointer().shutdownNow();
+
+            U.sleep(10_000);
+
+            U.TEST_ACTION4.set(false);
+            U.TEST_ACTION3.set(false);
+            U.TEST_ACTION2.set(false);
+            U.TEST_ACTION1.set(false);
+        }
 
         dbMgr.preserveWalTailPointer();
 
@@ -430,10 +442,9 @@ public class CachePartitionDefragmentationManager {
                         bothChpLock(false);
                     }
 
-                    dbMgr.removeCheckpointListener((CheckpointListener)newGrpCtx.offheap());
-
-//                    if (U.FIX)
-//                        U.sleep(60_000);
+                    // Didnt work
+                    if(U.FIX)
+                        dbMgr.removeCheckpointListener((CheckpointListener)newGrpCtx.offheap());
 
                     IgniteUtils.doInParallel(
                         defragmentationThreadPool,
@@ -771,8 +782,8 @@ public class CachePartitionDefragmentationManager {
         PendingEntriesTree newPendingTree = partCtx.newCacheDataStore.pendingTree();
         AbstractFreeList<CacheDataRow> freeList = partCtx.newCacheDataStore.getCacheStoreFreeList();
 
-        long cpLockThreshold = U.FIX ? 75l: 150L;
-//        long cpLockThreshold = 150L;
+//        long cpLockThreshold = U.FIX ? 75l: 150L;
+        long cpLockThreshold = 150L;
 
         bothChpLock(true);
 

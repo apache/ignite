@@ -160,7 +160,7 @@ public class DefragmentationMXBeanTest extends GridCommonAbstractTest {
         dsCfg.setMaxWalArchiveSize(1L * 1024L * 1024L * 1024L);
         dsCfg.setWalSegments(20);
 
-        long regSize = 256L * 1024 * 1024;
+        long regSize = 400L * 1024 * 1024;
 
         dsCfg.setDefaultDataRegionConfiguration(
             new DataRegionConfiguration()
@@ -181,7 +181,7 @@ public class DefragmentationMXBeanTest extends GridCommonAbstractTest {
         dsCfg.setWalPath(basePath + "wal");
 //        dsCfg.setWalCompactionEnabled(true);
 
-//        dsCfg.setDefragmentationThreadPoolSize(4);
+//        dsCfg.setDefragmentationThreadPoolSize(1);
 //        dsCfg.setCheckpointThreads(2);
 
         dsCfg.setCheckpointReadLockTimeout(280_000);
@@ -363,7 +363,7 @@ public class DefragmentationMXBeanTest extends GridCommonAbstractTest {
      * Test that defragmentation can be successfuly cancelled via JMX bean.
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testDefragmentationCancel() throws Exception {
         Ignite ignite = startGrids(2);
 
@@ -389,7 +389,7 @@ public class DefragmentationMXBeanTest extends GridCommonAbstractTest {
      * 5. Stop the defragmentation.
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testDefragmentationCancelInProgress() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -470,7 +470,7 @@ public class DefragmentationMXBeanTest extends GridCommonAbstractTest {
      * 7. Check defragmentation finished.
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testDefragmentationStatus() throws Exception {
         IgniteEx ig = startGrid(0);
 

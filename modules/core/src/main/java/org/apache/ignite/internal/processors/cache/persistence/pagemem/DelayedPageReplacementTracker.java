@@ -88,7 +88,7 @@ public class DelayedPageReplacementTracker {
      */
     public DelayedDirtyPageStoreWrite delayedPageWrite() {
         return delayedPageWriteThreadLocMap.computeIfAbsent(Thread.currentThread().getId(),
-            id -> new DelayedDirtyPageStoreWrite(flushDirtyPage, byteBufThreadLoc, pageSize, this));
+            id -> new DelayedDirtyPageStoreWrite(flushDirtyPage, byteBufThreadLoc, pageSize, this, log));
     }
 
     /**

@@ -70,6 +70,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentationCompletionMarkerFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedIndexFile;
@@ -94,6 +95,16 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
     /** Defragmentation pool size. If < 1, default value is used. */
     private int defragPoolSize;
+
+    /** */
+    protected int keysCnt = ADDED_KEYS_COUNT;
+
+    /** */
+    protected long maxRegionSize = 1024L * 1024 * 1024;
+
+    /** */
+    protected long checkpointFreq = DFLT_CHECKPOINT_FREQ;
+
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -150,12 +161,15 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         cfg.setConsistentId(igniteInstanceName);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
+
         dsCfg.setWalSegmentSize(4 * 1024 * 1024);
+
+        dsCfg.setCheckpointFrequency(checkpointFreq);
 
         dsCfg.setDefaultDataRegionConfiguration(
             new DataRegionConfiguration()
                 .setInitialSize(100L * 1024 * 1024)
-                .setMaxSize(1024L * 1024 * 1024)
+                .setMaxSize(maxRegionSize)
                 .setPersistenceEnabled(true)
         );
 
@@ -200,6 +214,23 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     @Test
     public void testSuccessfulDefragmentationOneThread() throws Exception {
         defragPoolSize = 1;
+
+        checkSuccessfulDefragmentation();
+    }
+
+    /**
+     * Tests defragmentation with page replacement and frequent concurrent default checkpointer. Uses larger data
+     * to defragment.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSuccessfulDefragmentationLargeData() throws Exception {
+        maxRegionSize = U.MB * 100L;
+
+        keysCnt = 1_000_000;
+
+        checkpointFreq = 1500;
 
         checkSuccessfulDefragmentation();
     }
@@ -625,7 +656,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     /** */
     protected <T> void fillCache(Function<Integer, T> keyMapper, IgniteCache<T, Object> cache) {
         try (IgniteDataStreamer<T, Object> ds = grid(0).dataStreamer(cache.getName())) {
-            for (int i = 0; i < ADDED_KEYS_COUNT; i++) {
+            for (int i = 0; i < keysCnt; i++) {
                 byte[] val = new byte[8192];
                 new Random().nextBytes(val);
 
@@ -636,14 +667,14 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         try (IgniteDataStreamer<T, Object> ds = grid(0).dataStreamer(cache.getName())) {
             ds.allowOverwrite(true);
 
-            for (int i = 0; i <= ADDED_KEYS_COUNT / 2; i++)
+            for (int i = 0; i <= keysCnt / 2; i++)
                 ds.removeData(keyMapper.apply(i * 2));
         }
     }
 
     /** */
     public void validateCache(IgniteCache<Object, Object> cache) {
-        for (int k = 0; k < ADDED_KEYS_COUNT; k++) {
+        for (int k = 0; k < keysCnt; k++) {
             Object val = cache.get(k);
 
             if (k % 2 == 0)

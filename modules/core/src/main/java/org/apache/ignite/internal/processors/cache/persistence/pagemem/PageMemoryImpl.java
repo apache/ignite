@@ -658,6 +658,11 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             throw e;
         }
+        catch (Exception e){
+            log.error("Error at page allocation.", e);
+
+            throw e;
+        }
         finally {
             seg.writeLock().unlock();
         }

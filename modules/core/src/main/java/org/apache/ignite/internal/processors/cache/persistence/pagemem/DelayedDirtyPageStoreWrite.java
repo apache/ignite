@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -51,6 +52,9 @@ public class DelayedDirtyPageStoreWrite implements PageStoreWriter {
     /** Partition update tag to be used in{@link #finishReplacement()} or null if -1 to write. */
     private int tag = -1;
 
+    /** */
+    private final IgniteLogger log;
+
     /**
      * @param flushDirtyPage real writer to save page to store.
      * @param byteBufThreadLoc thread local buffers to use for pages copying.
@@ -61,12 +65,14 @@ public class DelayedDirtyPageStoreWrite implements PageStoreWriter {
         PageStoreWriter flushDirtyPage,
         ThreadLocal<ByteBuffer> byteBufThreadLoc,
         int pageSize,
-        DelayedPageReplacementTracker tracker
+        DelayedPageReplacementTracker tracker,
+        IgniteLogger log
     ) {
         this.flushDirtyPage = flushDirtyPage;
         this.pageSize = pageSize;
         this.byteBufThreadLoc = byteBufThreadLoc;
         this.tracker = tracker;
+        this.log = log;
     }
 
     /** {@inheritDoc} */
@@ -97,6 +103,10 @@ public class DelayedDirtyPageStoreWrite implements PageStoreWriter {
 
         try {
             flushDirtyPage.writePage(fullPageId, byteBuf, tag);
+        } catch (Exception e){
+            log.error("Error at page replacement", e);
+
+            throw e;
         }
         finally {
             tracker.unlock(fullPageId);

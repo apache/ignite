@@ -247,8 +247,9 @@ public class CheckpointWorkflow {
         checkpointReadWriteLock.readLock();
 
         try {
-            for (CheckpointListener lsnr : dbLsnrs)
-                lsnr.beforeCheckpointBegin(ctx0);
+            if(U.FIX && (U.TEST_ACTION3.get() || !Thread.currentThread().getName().startsWith("db-checkpoint-thread-#")))
+                for (CheckpointListener lsnr : dbLsnrs)
+                    lsnr.beforeCheckpointBegin(ctx0);
 
             ctx0.awaitPendingTasksFinished();
         }
@@ -266,8 +267,9 @@ public class CheckpointWorkflow {
             tracker.onMarkStart();
 
             // Listeners must be invoked before we write checkpoint record to WAL.
-            for (CheckpointListener lsnr : dbLsnrs)
-                lsnr.onMarkCheckpointBegin(ctx0);
+            if(U.FIX && (U.TEST_ACTION1.get() || !Thread.currentThread().getName().startsWith("db-checkpoint-thread-#")))
+                for (CheckpointListener lsnr : dbLsnrs)
+                    lsnr.onMarkCheckpointBegin(ctx0);
 
             ctx0.awaitPendingTasksFinished();
 
@@ -303,8 +305,9 @@ public class CheckpointWorkflow {
 
         curr.transitTo(LOCK_RELEASED);
 
-        for (CheckpointListener lsnr : dbLsnrs)
-            lsnr.onCheckpointBegin(ctx0);
+        if(U.FIX && (U.TEST_ACTION2.get() || !Thread.currentThread().getName().startsWith("db-checkpoint-thread-#")))
+            for (CheckpointListener lsnr : dbLsnrs)
+                lsnr.onCheckpointBegin(ctx0);
 
         if (dirtyPagesCount > 0 || hasPartitionsToDestroy) {
             tracker.onWalCpRecordFsyncStart();
@@ -574,8 +577,9 @@ public class CheckpointWorkflow {
 
         List<CheckpointListener> dbLsnrs = getRelevantCheckpointListeners(checkpointedRegions);
 
-        for (CheckpointListener lsnr : dbLsnrs)
-            lsnr.afterCheckpointEnd(emptyCtx);
+        if(U.FIX && (U.TEST_ACTION4.get() || !Thread.currentThread().getName().startsWith("db-checkpoint-thread-#")))
+            for (CheckpointListener lsnr : dbLsnrs)
+                lsnr.afterCheckpointEnd(emptyCtx);
 
         chp.progress.transitTo(FINISHED);
     }

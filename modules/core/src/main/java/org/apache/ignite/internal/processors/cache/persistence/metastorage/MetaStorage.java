@@ -637,33 +637,25 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
             saveStoreMetadata();
         }
         else {
-            executor.execute(() -> {
-                U.TEST_ACTION3.set(true);
+//            if (U.TEST_ACTION3.get())
+                executor.execute(() -> {
+                    try {
+                        partStorage.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                });
 
-                try {
-                    partStorage.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-                finally {
-                    U.TEST_ACTION3.set(false);
-                }
-            });
-
-            executor.execute(() -> {
-                U.TEST_ACTION4.set(true);
-
-                try {
-                    saveStoreMetadata();
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-                finally {
-                    U.TEST_ACTION4.set(false);
-                }
-            });
+            //if (U.TEST_ACTION4.get())
+                executor.execute(() -> {
+                    try {
+                        saveStoreMetadata();
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                });
         }
     }
 
