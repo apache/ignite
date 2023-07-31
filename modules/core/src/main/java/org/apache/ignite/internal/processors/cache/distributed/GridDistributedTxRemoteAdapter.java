@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -112,7 +111,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
     /** Started flag. */
     @GridToStringInclude
-    private boolean started;
+    private final boolean started;
 
     /** {@code True} only if all write entries are locked by this transaction. */
     @GridToStringInclude
@@ -124,7 +123,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
     /** Transaction label. */
     @GridToStringInclude
-    @Nullable private String txLbl;
+    @Nullable private final String txLbl;
 
     /**
      * @param ctx Cache registry.
@@ -142,7 +141,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
      * @param taskNameHash Task name hash code.
      * @param txLbl Transaction label.
      */
-    public GridDistributedTxRemoteAdapter(
+    protected GridDistributedTxRemoteAdapter(
         GridCacheSharedContext<?, ?> ctx,
         UUID nodeId,
         GridCacheVersion xidVer,
@@ -239,10 +238,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public GridTuple<CacheObject> peek(GridCacheContext cacheCtx,
-        boolean failFast,
-        KeyCacheObject key)
-        throws GridCacheFilterFailedException {
+    @Override public GridTuple<CacheObject> peek(GridCacheContext cacheCtx, boolean failFast, KeyCacheObject key) {
         assert false : "Method peek can only be called on user transaction: " + this;
 
         throw new IllegalStateException("Method peek can only be called on user transaction: " + this);
@@ -458,7 +454,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
             // Only one thread gets to commit.
             if (COMMIT_ALLOWED_UPD.compareAndSet(this, 0, 1)) {
-                IgniteCheckedException err = null;
+                IgniteCheckedException err;
 
                 Map<IgniteTxKey, IgniteTxEntry> writeMap = txState.writeMap();
 
@@ -478,7 +474,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                     !cctx.localNodeId().equals(origNodeId) ? origNodeId : null));
                         }
                         else
-                            cctx.tm().addCommittedTx(this, this.nearXidVersion(), null);
+                            cctx.tm().addCommittedTx(this, nearXidVersion(), null);
                     }
 
                     // Register this transaction as completed prior to write-phase to
@@ -880,7 +876,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         try {
             commitRemoteTx();
 
-            return new GridFinishedFuture<IgniteInternalTx>(this);
+            return new GridFinishedFuture<>(this);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
@@ -903,9 +899,9 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             }
 
             doneRemote(xidVersion(),
-                Collections.<GridCacheVersion>emptyList(),
-                Collections.<GridCacheVersion>emptyList(),
-                Collections.<GridCacheVersion>emptyList());
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList());
 
             commitRemoteTx();
         }
@@ -952,12 +948,12 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     @Override public IgniteInternalFuture<IgniteInternalTx> rollbackAsync() {
         rollbackRemoteTx();
 
-        return new GridFinishedFuture<IgniteInternalTx>(this);
+        return new GridFinishedFuture<>(this);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<GridCacheVersion> alternateVersions() {
-        return explicitVers == null ? Collections.<GridCacheVersion>emptyList() : explicitVers;
+        return explicitVers == null ? Collections.emptyList() : explicitVers;
     }
 
     /** {@inheritDoc} */
