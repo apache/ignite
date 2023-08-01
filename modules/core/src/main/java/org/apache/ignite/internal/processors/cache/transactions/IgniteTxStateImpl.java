@@ -61,23 +61,23 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** Per-transaction read map. */
     @GridToStringExclude
-    protected Map<IgniteTxKey, IgniteTxEntry> txMap;
+    private Map<IgniteTxKey, IgniteTxEntry> txMap;
 
     /** Read view on transaction map. */
     @GridToStringExclude
-    protected IgniteTxMap readView;
+    private IgniteTxMap readView;
 
     /** Write view on transaction map. */
     @GridToStringExclude
-    protected IgniteTxMap writeView;
+    private IgniteTxMap writeView;
 
     /** */
     @GridToStringInclude
-    protected Boolean recovery;
+    private Boolean recovery;
 
     /** */
     @GridToStringInclude
-    protected Boolean mvccEnabled;
+    private Boolean mvccEnabled;
 
     /** Cache ids used for mvcc caching. See {@link MvccCachingManager}. */
     private final GridIntList mvccCachingCacheIds = new GridIntList();
