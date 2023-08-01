@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *

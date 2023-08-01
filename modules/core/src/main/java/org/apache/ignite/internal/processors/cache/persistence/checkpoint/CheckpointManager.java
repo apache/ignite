@@ -21,6 +21,8 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
@@ -418,6 +420,23 @@ public class CheckpointManager {
         assert checkpointer != null : "Checkpointer can't be null during the start";
 
         this.checkpointer.start();
+    }
+
+    /**
+     * Cancels, stops and starts again.
+     */
+    public void restart() {
+        Map<CheckpointListener, DataRegion> lsnrs = new HashMap<>(checkpointWorkflow.lsnrs);
+
+        stop(true);
+
+        init();
+
+        lsnrs.forEach(this::addCheckpointListener);
+
+        start();
+
+        unblockCheckpointLock();
     }
 
     /**

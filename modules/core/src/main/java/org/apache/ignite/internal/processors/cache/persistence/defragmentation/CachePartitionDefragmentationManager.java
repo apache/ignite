@@ -218,49 +218,27 @@ public class CachePartitionDefragmentationManager {
 
             linkMapByPart.clear();
 
-            //manageDefaultCheckpointer(true);
+            sharedCtx.kernalContext().gateway().writeLock();
+
+            try {
+                if (!sharedCtx.kernalContext().isStopping()) {
+                    if (log.isDebugEnabled())
+                        log.debug("Restarting default checkpointer.");
+
+                    nodeCheckpoint.restart();
+
+                    U.sleep(10_000);
+                }
+            }
+            catch (Exception ignored) {
+                log.warning("Failed to restart default checkpointer.");
+            }
+            finally {
+                this.sharedCtx.kernalContext().gateway().writeUnlock();
+            }
 
             return future.result();
         });
-    }
-
-    // TODO
-    private void manageDefaultCheckpointer(boolean start) {
-        if (false)
-            return;
-
-        sharedCtx.kernalContext().gateway().writeLock();
-
-        try {
-            if(start) {
-                nodeCheckpoint.init();
-
-                nodeCheckpoint.start();
-
-                nodeCheckpoint.getCheckpointer().scheduleCheckpoint(0, "afterDefragmentation")
-                    .futureFor(FINISHED).get();
-            }
-            else {
-                Checkpointer chp = nodeCheckpoint.getCheckpointer();
-
-                nodeCheckpoint.stop(false);
-
-                if (chp != null && !chp.isDone()) {
-                    chp.cancel();
-
-                    while (!chp.isDone()) {
-                        U.sleep(10);
-                    }
-                }
-            }
-        }
-        catch (Exception ignored) {
-            log.warning("Failed to " + (start ? "resume" : "stop") + " default checkpointer.");
-        }
-        finally {
-            this.sharedCtx.kernalContext().gateway().writeUnlock();
-        }
-
     }
 
     /** */
@@ -271,6 +249,25 @@ public class CachePartitionDefragmentationManager {
         dbMgr.onStateRestored(null);
 
         nodeCheckpoint.forceCheckpoint(BEFORE_DEFRAG_CHP_REASON, null).futureFor(FINISHED).get();
+
+        sharedCtx.kernalContext().gateway().writeLock();
+
+        try {
+            // Concurrent default checkpointer has various listeners, interferes with new dedicated CacheGroupContext
+            // and at least clears shared CheckpointProgress#clearCounters().
+            Checkpointer defaultCheckpointer = nodeCheckpoint.getCheckpointer();
+
+            if (defaultCheckpointer != null && !defaultCheckpointer.isDone() &&
+                !sharedCtx.kernalContext().isStopping()) {
+                if (log.isDebugEnabled())
+                    log.debug("Stopping default checkpointer.");
+
+                defaultCheckpointer.shutdownNow();
+            }
+        }
+        finally {
+            sharedCtx.kernalContext().gateway().writeUnlock();
+        }
 
         dbMgr.preserveWalTailPointer();
 
@@ -369,7 +366,7 @@ public class CachePartitionDefragmentationManager {
                             cacheDataStores.put(store.partId(), store);
                     }
 
-                    dbMgr.checkpointedDataRegions().remove(oldGrpCtx.dataRegion());
+                    //dbMgr.checkpointedDataRegions().remove(oldGrpCtx.dataRegion());
 
                     // Another cheat. Ttl cleanup manager knows too much shit.
                     oldGrpCtx.caches().stream()
@@ -662,11 +659,6 @@ public class CachePartitionDefragmentationManager {
     /** */
     public IgniteInternalFuture<?> completionFuture() {
         return completionFut.chain(future -> null);
-    }
-
-    /** */
-    public LightweightCheckpointManager checkpointManager(){
-        return defragmentationCheckpoint;
     }
 
     /** */

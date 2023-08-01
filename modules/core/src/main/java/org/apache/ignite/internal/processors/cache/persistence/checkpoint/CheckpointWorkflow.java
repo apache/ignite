@@ -143,7 +143,7 @@ public class CheckpointWorkflow {
     private final CheckpointWriteOrder checkpointWriteOrder;
 
     /** Collections of checkpoint listeners. */
-    private final Map<CheckpointListener, DataRegion> lsnrs = new ConcurrentLinkedHashMap<>();
+    final Map<CheckpointListener, DataRegion> lsnrs = new ConcurrentLinkedHashMap<>();
 
     /** Ignite instance name. */
     private final String igniteInstanceName;
@@ -540,8 +540,6 @@ public class CheckpointWorkflow {
      */
     public void markCheckpointEnd(Checkpoint chp) throws IgniteCheckedException {
         synchronized (this) {
-            log.info("Clearing counters. Reaso: " + chp.progress.reason());
-
             chp.progress.clearCounters();
 
             for (DataRegion memPlc : dataRegions.get()) {

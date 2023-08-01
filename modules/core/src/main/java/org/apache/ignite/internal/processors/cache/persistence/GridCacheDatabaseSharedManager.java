@@ -1203,8 +1203,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             chpBufSize = cacheSize;
         }
 
-        // Should be actual checkpoint lock checker, related to actual checkpointer for this data region. Like
-        // LightweightCheckpointManager#checkpointer for defragmentation.
+        // Should be actual checkpoint lock checker, related to the checkpointer for this data region. Like
+        // LightweightCheckpointManager#checkpointer for the defragmentation.
         CheckpointLockStateChecker chpLockChecker = this;
 
         PageMemoryImpl pageMem = new PageMemoryImpl(
@@ -1224,8 +1224,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 // Write page to disk.
                 pageMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag, true);
 
-                // Should be actual checkpointer, related to this deta rageion. Like
-                // LightweightCheckpointManager#checkpointer for defragmentation.
+                // Should be actual checkpointer, related to this data rageion. Like
+                // LightweightCheckpointManager#checkpointer for the defragmentation.
                 getCheckpointer().currentProgress().updateEvictedPages(1);
             },
             trackable,
