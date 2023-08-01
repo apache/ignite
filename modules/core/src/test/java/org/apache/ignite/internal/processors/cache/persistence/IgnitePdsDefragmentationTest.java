@@ -59,6 +59,7 @@ import org.apache.ignite.internal.maintenance.MaintenanceFileStore;
 import org.apache.ignite.internal.pagemem.store.PageStoreCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightweightCheckpointManager;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -70,8 +71,6 @@ import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -79,6 +78,8 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DEFRAGMENTATION_MAPPING_REGION_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DEFRAGMENTATION_PART_REGION_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentationCompletionMarkerFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedIndexFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartFile;
@@ -97,9 +98,6 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     /** */
     protected static final String GRP_NAME = "group";
 
-    /** Test logger. */
-    private static ListeningTestLogger srvLog;
-
     /** Defragmentation pool size. If < 1, default value is used. */
     private int defragPoolSize;
 
@@ -114,13 +112,6 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
     /** */
     private LifecycleBean nodeLsnr;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        srvLog = new ListeningTestLogger(log);
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -210,8 +201,6 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         if (nodeLsnr != null)
             cfg.setLifecycleBeans(nodeLsnr);
 
-        cfg.setGridLogger(srvLog);
-
         return cfg;
     }
 
@@ -252,7 +241,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         ig.cluster().state(ClusterState.ACTIVE);
 
-        keysCnt = 50_000;
+        keysCnt = 100_000;
 
         fillCache(ig.cache(DEFAULT_CACHE_NAME));
 
@@ -264,14 +253,14 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         File workDir = resolveCacheWorkDir(ig);
 
-        checkpointFreq = 2000;
+        checkpointFreq = 3000;
 
-        maxRegionSize = U.MB * 100L;
+        maxRegionSize = U.MB * 350;
 
         defragPoolSize = 1;
 
-        AtomicBoolean defragActuallyStarted = new AtomicBoolean(false);
-        AtomicBoolean releaseDefaultChp = new AtomicBoolean(false);
+        AtomicBoolean defragActuallyStarted = new AtomicBoolean();
+        AtomicBoolean releaseDefaultChp = new AtomicBoolean();
 
         nodeLsnr = new LifecycleBean() {
             @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteException {
@@ -296,12 +285,10 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
                                     while (!releaseDefaultChp.get()) {
                                         lever = !lever;
 
-                                        if(lever)
+                                        if (lever)
                                             ctx.progress().clearCounters();
                                         else
                                             ctx.progress().initCounters(100);
-
-                                        U.sleep(1);
                                     }
                                 }
                                 catch (Exception ignored) {
@@ -319,12 +306,36 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
                         }
                     });
 
-                    LogListener lsnr = LogListener.matches("Defragmentation started.").build();
+                    // Defragmentation checkpointer listener.
+                    CheckpointListener defragChpLsnr = new CheckpointListener() {
+                        @Override public void onMarkCheckpointBegin(Context ctx) {
+                            // No-op.
+                        }
 
-                    lsnr.andThen(s -> defragActuallyStarted.set(true));
+                        @Override public void onCheckpointBegin(Context ctx) {
+                            // No-op.
+                        }
 
-                    srvLog.registerListener(lsnr);
-                } catch(Exception e) {
+                        @Override public void beforeCheckpointBegin(Context ctx) {
+                            // No-op.
+                        }
+
+                        @Override public void afterCheckpointEnd(Context ctx) {
+                            defragActuallyStarted.set(true);
+                        }
+                    };
+
+                    GridCacheDatabaseSharedManager dbMgr = dbMgr(ignite);
+
+                    LightweightCheckpointManager defragChp =
+                        U.field(dbMgr.defragmentationManager(), "defragmentationCheckpoint");
+
+                    assert defragChp != null;
+
+                    defragChp.addCheckpointListener(defragChpLsnr, dbMgr.dataRegion(DEFRAGMENTATION_PART_REGION_NAME));
+                    defragChp.addCheckpointListener(defragChpLsnr, dbMgr.dataRegion(DEFRAGMENTATION_MAPPING_REGION_NAME));
+                }
+                catch (Exception e) {
                     log.error("Unable to configure test at node start.", e);
                 }
             }
@@ -339,6 +350,8 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         File completionMarkerFile = defragmentationCompletionMarkerFile(workDir);
 
         assertTrue(completionMarkerFile.exists());
+
+        assertTrue(defragActuallyStarted.get());
     }
 
     /**

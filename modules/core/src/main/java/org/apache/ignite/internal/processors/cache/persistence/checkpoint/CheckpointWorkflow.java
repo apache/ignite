@@ -143,7 +143,7 @@ public class CheckpointWorkflow {
     private final CheckpointWriteOrder checkpointWriteOrder;
 
     /** Collections of checkpoint listeners. */
-    final Map<CheckpointListener, DataRegion> lsnrs = new ConcurrentLinkedHashMap<>();
+    private final Map<CheckpointListener, DataRegion> lsnrs = new ConcurrentLinkedHashMap<>();
 
     /** Ignite instance name. */
     private final String igniteInstanceName;
