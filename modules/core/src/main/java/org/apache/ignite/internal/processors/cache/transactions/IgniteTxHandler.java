@@ -1424,7 +1424,7 @@ public class IgniteTxHandler {
                 ctx.tm().addCommittedTx(null, req.version(), null);
 
             if (dhtTx != null)
-                finish(nodeId, dhtTx, req);
+                finish(dhtTx, req);
             else {
                 try {
                     applyPartitionsUpdatesCounters(req.updateCounters(), !req.commit(), false);
@@ -1435,7 +1435,7 @@ public class IgniteTxHandler {
             }
 
             if (nearTx != null)
-                finish(nodeId, nearTx, req);
+                finish(nearTx, req);
 
             if (req.replyRequired()) {
                 IgniteInternalFuture completeFut;
@@ -1477,15 +1477,10 @@ public class IgniteTxHandler {
     }
 
     /**
-     * @param nodeId Node ID.
      * @param tx Transaction.
      * @param req Request.
      */
-    protected void finish(
-        UUID nodeId,
-        IgniteTxRemoteEx tx,
-        GridDhtTxFinishRequest req
-    ) {
+    protected void finish(IgniteTxRemoteEx tx, GridDhtTxFinishRequest req) {
         assert tx != null;
 
         req.txState(tx.txState());
