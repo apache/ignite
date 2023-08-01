@@ -114,9 +114,6 @@ public class CachePartitionDefragmentationManager {
     public static final String DEFRAGMENTATION_MNTC_TASK_NAME = "defragmentationMaintenanceTask";
 
     /** */
-    public static final String BEFORE_DEFRAG_CHP_REASON = "beforeDefragmentation";
-
-    /** */
     private final Set<String> cachesForDefragmentation;
 
     /** */
@@ -218,25 +215,6 @@ public class CachePartitionDefragmentationManager {
 
             linkMapByPart.clear();
 
-            sharedCtx.kernalContext().gateway().writeLock();
-
-            try {
-                if (!sharedCtx.kernalContext().isStopping()) {
-                    if (log.isDebugEnabled())
-                        log.debug("Restarting default checkpointer.");
-
-                    nodeCheckpoint.restart();
-
-                    U.sleep(10_000);
-                }
-            }
-            catch (Exception ignored) {
-                log.warning("Failed to restart default checkpointer.");
-            }
-            finally {
-                this.sharedCtx.kernalContext().gateway().writeUnlock();
-            }
-
             return future.result();
         });
     }
@@ -248,13 +226,15 @@ public class CachePartitionDefragmentationManager {
 
         dbMgr.onStateRestored(null);
 
-        nodeCheckpoint.forceCheckpoint(BEFORE_DEFRAG_CHP_REASON, null).futureFor(FINISHED).get();
+        nodeCheckpoint.forceCheckpoint("beforeDefragmentation", null).futureFor(FINISHED).get();
 
         sharedCtx.kernalContext().gateway().writeLock();
 
         try {
-            // Concurrent default checkpointer has various listeners, interferes with new dedicated CacheGroupContext
-            // and at least clears shared CheckpointProgress#clearCounters().
+            // The concurrent default checkpointer has various listeners, interferes with new dedicated
+            // CacheGroupContext for defragmentation and at least clears shared CheckpointProgress#clearCounters().
+            // Should be properly reconfigured and restarted after the defragmentation task to have ability launch
+            // other maintenance tasks after.
             Checkpointer defaultCheckpointer = nodeCheckpoint.getCheckpointer();
 
             if (defaultCheckpointer != null && !defaultCheckpointer.isDone() &&
@@ -365,8 +345,6 @@ public class CachePartitionDefragmentationManager {
                         if (store.tree() != null)
                             cacheDataStores.put(store.partId(), store);
                     }
-
-                    //dbMgr.checkpointedDataRegions().remove(oldGrpCtx.dataRegion());
 
                     // Another cheat. Ttl cleanup manager knows too much shit.
                     oldGrpCtx.caches().stream()
