@@ -182,16 +182,13 @@ public class IgniteTxHandler {
      * @param nearNode Sender node.
      * @param req Request.
      */
-    private IgniteInternalFuture<GridNearTxPrepareResponse> processNearTxPrepareRequest0(
-        ClusterNode nearNode,
-        GridNearTxPrepareRequest req
-    ) {
+    private void processNearTxPrepareRequest0(ClusterNode nearNode, GridNearTxPrepareRequest req) {
         IgniteInternalFuture<GridNearTxPrepareResponse> fut;
 
         if (req.firstClientRequest() && req.allowWaitTopologyFuture()) {
             for (;;) {
                 if (waitForExchangeFuture(nearNode, req))
-                    return new GridFinishedFuture<>();
+                    return;
 
                 fut = prepareNearTx(nearNode, req);
 
@@ -204,8 +201,6 @@ public class IgniteTxHandler {
 
         assert req.txState() != null || fut == null || fut.error() != null ||
             (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
-
-        return fut;
     }
 
     /**
@@ -944,12 +939,8 @@ public class IgniteTxHandler {
     /**
      * @param nodeId Node ID.
      * @param req Request.
-     * @return Future.
      */
-    @Nullable private IgniteInternalFuture<IgniteInternalTx> processNearTxFinishRequest(
-        UUID nodeId,
-        GridNearTxFinishRequest req
-    ) {
+    private void processNearTxFinishRequest(UUID nodeId, GridNearTxFinishRequest req) {
         try (TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(TX_NEAR_FINISH_REQ, MTC.span()))) {
             if (txFinishMsgLog.isDebugEnabled())
@@ -961,8 +952,6 @@ public class IgniteTxHandler {
             assert req.txState() != null || fut == null || fut.error() != null ||
                 (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null) :
                 "[req=" + req + ", fut=" + fut + "]";
-
-            return fut;
         }
     }
 
