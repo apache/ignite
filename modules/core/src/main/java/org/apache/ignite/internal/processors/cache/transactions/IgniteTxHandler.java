@@ -93,7 +93,6 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -215,68 +214,38 @@ public class IgniteTxHandler {
         txPrepareMsgLog = ctx.logger(CU.TX_MSG_PREPARE_LOG_CATEGORY);
         txFinishMsgLog = ctx.logger(CU.TX_MSG_FINISH_LOG_CATEGORY);
 
-        ctx.io().addCacheHandler(GridNearTxPrepareRequest.class, new CI2<UUID, GridCacheMessage>() {
-            @Override public void apply(UUID nodeId, GridCacheMessage msg) {
-                processNearTxPrepareRequest(nodeId, (GridNearTxPrepareRequest)msg);
-            }
-        });
+        ctx.io().addCacheHandler(GridNearTxPrepareRequest.class, (UUID nodeId, GridCacheMessage msg) ->
+            processNearTxPrepareRequest(nodeId, (GridNearTxPrepareRequest)msg));
 
-        ctx.io().addCacheHandler(GridNearTxPrepareResponse.class, new CI2<UUID, GridCacheMessage>() {
-            @Override public void apply(UUID nodeId, GridCacheMessage msg) {
-                processNearTxPrepareResponse(nodeId, (GridNearTxPrepareResponse)msg);
-            }
-        });
+        ctx.io().addCacheHandler(GridNearTxPrepareResponse.class, (UUID nodeId, GridCacheMessage msg) ->
+            processNearTxPrepareResponse(nodeId, (GridNearTxPrepareResponse)msg));
 
-        ctx.io().addCacheHandler(GridNearTxFinishRequest.class, new CI2<UUID, GridCacheMessage>() {
-            @Override public void apply(UUID nodeId, GridCacheMessage msg) {
-                processNearTxFinishRequest(nodeId, (GridNearTxFinishRequest)msg);
-            }
-        });
+        ctx.io().addCacheHandler(GridNearTxFinishRequest.class, (UUID nodeId, GridCacheMessage msg) ->
+            processNearTxFinishRequest(nodeId, (GridNearTxFinishRequest)msg));
 
-        ctx.io().addCacheHandler(GridNearTxFinishResponse.class, new CI2<UUID, GridCacheMessage>() {
-            @Override public void apply(UUID nodeId, GridCacheMessage msg) {
-                processNearTxFinishResponse(nodeId, (GridNearTxFinishResponse)msg);
-            }
-        });
+        ctx.io().addCacheHandler(GridNearTxFinishResponse.class, (UUID nodeId, GridCacheMessage msg) ->
+            processNearTxFinishResponse(nodeId, (GridNearTxFinishResponse)msg));
 
-        ctx.io().addCacheHandler(GridDhtTxPrepareRequest.class, new CI2<UUID, GridCacheMessage>() {
-            @Override public void apply(UUID nodeId, GridCacheMessage msg) {
-                processDhtTxPrepareRequest(nodeId, (GridDhtTxPrepareRequest)msg);
-            }
-        });
+        ctx.io().addCacheHandler(GridDhtTxPrepareRequest.class, (UUID nodeId, GridCacheMessage msg) ->
+            processDhtTxPrepareRequest(nodeId, (GridDhtTxPrepareRequest)msg));
 
-        ctx.io().addCacheHandler(GridDhtTxPrepareResponse.class, new CI2<UUID, GridCacheMessage>() {
-            @Override public void apply(UUID nodeId, GridCacheMessage msg) {
-                processDhtTxPrepareResponse(nodeId, (GridDhtTxPrepareResponse)msg);
-            }
-        });
+        ctx.io().addCacheHandler(GridDhtTxPrepareResponse.class, (UUID nodeId, GridCacheMessage msg) ->
+            processDhtTxPrepareResponse(nodeId, (GridDhtTxPrepareResponse)msg));
 
-        ctx.io().addCacheHandler(GridDhtTxFinishRequest.class, new CI2<UUID, GridCacheMessage>() {
-            @Override public void apply(UUID nodeId, GridCacheMessage msg) {
-                processDhtTxFinishRequest(nodeId, (GridDhtTxFinishRequest)msg);
-            }
-        });
+        ctx.io().addCacheHandler(GridDhtTxFinishRequest.class, (UUID nodeId, GridCacheMessage msg) ->
+            processDhtTxFinishRequest(nodeId, (GridDhtTxFinishRequest)msg));
 
-        ctx.io().addCacheHandler(GridDhtTxOnePhaseCommitAckRequest.class, new CI2<UUID, GridCacheMessage>() {
-            @Override public void apply(UUID nodeId, GridCacheMessage msg) {
-                processDhtTxOnePhaseCommitAckRequest(nodeId, (GridDhtTxOnePhaseCommitAckRequest)msg);
-            }
-        });
+        ctx.io().addCacheHandler(GridDhtTxOnePhaseCommitAckRequest.class, (UUID nodeId, GridCacheMessage msg) ->
+            processDhtTxOnePhaseCommitAckRequest(nodeId, (GridDhtTxOnePhaseCommitAckRequest)msg));
 
-        ctx.io().addCacheHandler(GridDhtTxFinishResponse.class, new CI2<UUID, GridCacheMessage>() {
-            @Override public void apply(UUID nodeId, GridCacheMessage msg) {
-                processDhtTxFinishResponse(nodeId, (GridDhtTxFinishResponse)msg);
-            }
-        });
+        ctx.io().addCacheHandler(GridDhtTxFinishResponse.class, (UUID nodeId, GridCacheMessage msg) ->
+            processDhtTxFinishResponse(nodeId, (GridDhtTxFinishResponse)msg));
 
-        ctx.io().addCacheHandler(GridCacheTxRecoveryRequest.class,
-            (CI2<UUID, GridCacheTxRecoveryRequest>)this::processCheckPreparedTxRequest);
+        ctx.io().addCacheHandler(GridCacheTxRecoveryRequest.class, this::processCheckPreparedTxRequest);
 
-        ctx.io().addCacheHandler(GridCacheTxRecoveryResponse.class,
-            (CI2<UUID, GridCacheTxRecoveryResponse>)this::processCheckPreparedTxResponse);
+        ctx.io().addCacheHandler(GridCacheTxRecoveryResponse.class, this::processCheckPreparedTxResponse);
 
-        ctx.io().addCacheHandler(IncrementalSnapshotAwareMessage.class,
-            (CI2<UUID, IncrementalSnapshotAwareMessage>)this::processIncrementalSnapshotAwareMessage);
+        ctx.io().addCacheHandler(IncrementalSnapshotAwareMessage.class, this::processIncrementalSnapshotAwareMessage);
     }
 
     /** */
@@ -977,7 +946,7 @@ public class IgniteTxHandler {
 
         // Transaction on local cache only.
         if (locTx != null && !locTx.nearLocallyMapped() && !locTx.colocatedLocallyMapped())
-            return new GridFinishedFuture<IgniteInternalTx>(locTx);
+            return new GridFinishedFuture<>(locTx);
 
         if (log.isDebugEnabled())
             log.debug("Processing near tx finish request [nodeId=" + nodeId + ", req=" + req + "]");
