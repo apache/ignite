@@ -1758,7 +1758,6 @@ public class IgniteTxHandler {
                 tx = new GridDhtTxRemote(
                     ctx,
                     req.nearNodeId(),
-                    req.futureId(),
                     nodeId,
                     req.topologyVersion(),
                     req.version(),
