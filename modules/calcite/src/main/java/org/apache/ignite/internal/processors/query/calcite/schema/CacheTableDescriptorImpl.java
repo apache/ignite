@@ -575,7 +575,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         try {
             return cctx.isReplicated()
                 ? replicatedGroup(ctx.topologyVersion())
-                : partitionedGroup(ctx.topologyVersion(), ctx.partitions());
+                : partitionedGroup(ctx.topologyVersion());
 
         }
         finally {
@@ -584,25 +584,12 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** */
-    private ColocationGroup partitionedGroup(@NotNull AffinityTopologyVersion topVer, int[] partitions) {
+    private ColocationGroup partitionedGroup(@NotNull AffinityTopologyVersion topVer) {
         GridCacheContext<?, ?> cctx = cacheContext();
 
-        List<List<ClusterNode>> assignments;
-        if (!F.isEmpty(partitions)) {
-            assignments = new ArrayList<>();
-
-            List<List<ClusterNode>> assignments0 = cctx.affinity().assignments(topVer);
-            for (int i = 0; i <= assignments0.size(); ++i) {
-                if (Arrays.binarySearch(partitions, i) >= 0)
-                    assignments.add(assignments0.get(i));
-                else
-                    assignments.add(Collections.emptyList());
-            }
-        }
-        else
-            assignments = cctx.affinity().assignments(topVer);
-
+        List<List<ClusterNode>> assignments = cctx.affinity().assignments(topVer);
         List<List<UUID>> assignments0;
+
         if (cctx.config().getWriteSynchronizationMode() != CacheWriteSynchronizationMode.PRIMARY_SYNC)
             assignments0 = Commons.transform(assignments, nodes -> Commons.transform(nodes, ClusterNode::id));
         else {

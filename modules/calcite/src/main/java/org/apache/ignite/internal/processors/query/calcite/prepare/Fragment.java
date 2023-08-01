@@ -157,7 +157,7 @@ public class Fragment {
                     .get(ThreadLocalRandom.current().nextInt(mapping.nodeIds().size()))).colocate(mapping);
             }
 
-            return mapping.finalize(nodesSource);
+            return mapping.finalize(nodesSource, ctx.partitions());
         }
         catch (NodeMappingException e) {
             throw new FragmentMappingException("Failed to calculate physical distribution", this, e.node(), e);

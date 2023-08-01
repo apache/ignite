@@ -18,24 +18,27 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import com.google.common.collect.ImmutableList;
+import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  *
  */
+@RunWith(Parameterized.class)
 public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegrationTest {
     /**
      *
@@ -43,7 +46,20 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
     private static final int ENTRIES_COUNT = 10000;
 
     /** */
-    private volatile int[] parts = IntStream.range(0, 128).toArray();
+    private final int[] parts = IntStream.range(0, 128).toArray();
+
+    /** */
+    @Parameterized.Parameter()
+    public boolean local;
+
+    /** */
+    @Parameterized.Parameters(name = "local = {0}")
+    public static List<Object[]> parameters() {
+        return ImmutableList.of(
+                new Object[]{true},
+                new Object[]{false}
+        );
+    }
 
 
     /**
@@ -67,7 +83,7 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
      * {@inheritDoc}
      */
     @Override protected QueryContext queryContext() {
-        return QueryContext.of(new SqlFieldsQuery("").setTimeout(10, TimeUnit.SECONDS)
+        return QueryContext.of(new SqlFieldsQuery("").setLocal(local).setTimeout(10, TimeUnit.SECONDS)
                 .setPartitions(parts));
     }
 
@@ -75,7 +91,7 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
      * {@inheritDoc}
      */
     @Override protected List<List<?>> sql(String sql, Object... params) {
-        return sql(grid(0), sql, params);
+        return sql(local ? grid(0) : client, sql, params);
     }
 
     /**
@@ -123,7 +139,21 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
      */
     @Test
     public void testSingle() {
-        test("select * from T1 order by id", "T1_CACHE");
+        Stream.of(Pair.of("SELECT * FROM T1", null),
+                  Pair.of("SELECT * FROM T1 WHERE ID < ?", ENTRIES_COUNT))
+            .forEach(query -> {
+                long cnt = sql(query.left, query.right).size();
+
+                assertEquals(cacheSize("T1_CACHE", parts), cnt);
+            });
+
+        Stream.of(Pair.of("SELECT count(*) FROM T1", null),
+                  Pair.of("SELECT count(*) FROM T1 WHERE ID < ?", ENTRIES_COUNT))
+            .forEach(query -> {
+                Long cnt = (Long)sql(query.left, query.right).get(0).get(0);
+
+                assertEquals(cacheSize("T1_CACHE", parts), cnt.longValue());
+            });
     }
 
     /**
@@ -131,13 +161,21 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
      */
     @Test
     public void testReplicated() {
-        List<List<?>> res = sql("select * from DICT where id < 100 and id > 10");
+        Stream.of(Pair.of("select * from DICT", null),
+                  Pair.of("select * from DICT where id < ?", ENTRIES_COUNT))
+            .forEach(query -> {
+                List<List<?>> res = sql(query.left, query.right);
 
-        //assertEquals(grid(0).cache("DICT_CACHE").size(CachePeekMode.PRIMARY), res.size());
+                assertEquals(res.size(), cacheSize("DICT_CACHE"));
+            });
 
-        long cnt = (Long)sql("select count(*) from DICT").get(0).get(0);
+        Stream.of(Pair.of("select count(*) from DICT", null),
+                  Pair.of("select count(*) from DICT where id < ?", ENTRIES_COUNT))
+            .forEach(query -> {
+                Long size = (Long)sql(query.left, query.right).get(0).get(0);
 
-        assertEquals(cnt, res.size());
+                assertEquals(cacheSize("DICT_CACHE"), size.longValue());
+            });
     }
 
     /**
@@ -153,7 +191,19 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
      */
     @Test
     public void testJoinReplicated() {
-        Stream.of("ID", "VAL").forEach(col -> testJoin("T1", "DICT", col));
+        Stream.of("ID", "IDX_VAL", "VAL").forEach(col -> testJoin("T1", "DICT", col));
+    }
+
+    /**
+     *
+     */
+    private void testJoin(String table1, String table2, String joinCol) {
+        String sqlStr = "select * from " + table1 + " join " + table2 +
+                " on " + table1 + "." + joinCol + "=" + table2 + "." + joinCol;
+
+        List<?> res = sql(sqlStr);
+
+        assertEquals(res.size(), cacheSize(table1 + "_CACHE", parts));
     }
 
     /**
@@ -161,17 +211,20 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
      */
     @Test
     public void testInsertFromSelect() {
-        try {
-            sql("CREATE TABLE T3(ID INT PRIMARY KEY, IDX_VAL VARCHAR, VAL VARCHAR) WITH cache_name=t3_cache");
+        Stream.of(Pair.of("SELECT ID, IDX_VAL, VAL FROM T1 WHERE ID < ?", ENTRIES_COUNT),
+                  Pair.of("SELECT ID, IDX_VAL, VAL FROM T1", null))
+            .forEach(query -> {
+                try {
+                    sql("CREATE TABLE T3(ID INT PRIMARY KEY, IDX_VAL VARCHAR, VAL VARCHAR) WITH cache_name=t3_cache");
 
-            sql("INSERT INTO T3(ID, IDX_VAL, VAL) SELECT ID, IDX_VAL, VAL FROM T1 WHERE ID < ?", ENTRIES_COUNT);
+                    sql("INSERT INTO T3(ID, IDX_VAL, VAL) " + query.left, query.right);
 
-            assertEquals(grid(0).cache("T1_CACHE").localSizeLong(CachePeekMode.PRIMARY),
-                    client.cache("T3_CACHE").sizeLong(CachePeekMode.PRIMARY));
-        }
-        finally {
-            grid(0).cache("T3_CACHE").destroy();
-        }
+                    assertEquals(cacheSize("T1_CACHE", parts), cacheSize("T3_CACHE"));
+                }
+                finally {
+                    client.cache("T3_CACHE").destroy();
+                }
+            });
     }
 
     /**
@@ -179,22 +232,26 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
      */
     @Test
     public void testDelete() {
-        try {
-            sql("CREATE TABLE T3(ID INT PRIMARY KEY, IDX_VAL VARCHAR, VAL VARCHAR) WITH cache_name=t3_cache");
+        Stream.of(Pair.of("DELETE FROM T3 WHERE ID < ?", ENTRIES_COUNT), Pair.of("DELETE FROM T3", null))
+            .forEach(query -> {
+                try {
+                    sql("CREATE TABLE T3(ID INT PRIMARY KEY, IDX_VAL VARCHAR, VAL VARCHAR) WITH cache_name=t3_cache");
 
-            sql("INSERT INTO T3(ID, IDX_VAL, VAL) SELECT ID, IDX_VAL, VAL FROM DICT");
+                    sql("INSERT INTO T3(ID, IDX_VAL, VAL) SELECT ID, IDX_VAL, VAL FROM DICT");
 
-            assertEquals(ENTRIES_COUNT, client.cache("T3_CACHE").sizeLong(CachePeekMode.PRIMARY));
+                    assertEquals(ENTRIES_COUNT, cacheFullSize("T3_CACHE"));
 
-            long localSize = grid(0).cache("T3_CACHE").localSizeLong(CachePeekMode.PRIMARY);
+                    long partsCnt = cacheSize("T3_CACHE", parts);
 
-            sql("DELETE FROM T3 WHERE ID < ?", ENTRIES_COUNT);
+                    sql(query.left, query.right);
 
-            assertEquals(ENTRIES_COUNT - localSize, client.cache("T3_CACHE").sizeLong(CachePeekMode.PRIMARY));
-        }
-        finally {
-            grid(0).cache("T3_CACHE").destroy();
-        }
+                    assertEquals(ENTRIES_COUNT - partsCnt, cacheFullSize("T3_CACHE"));
+                }
+                finally {
+                    client.cache("T3_CACHE").destroy();
+                }
+
+            });
     }
 
     /**
@@ -202,62 +259,44 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
      */
     @Test
     public void testCreateTableAsSelect() {
-        try {
-            sql("CREATE TABLE T3(ID, IDX_VAL, VAL) WITH cache_name=t3_cache AS SELECT ID, IDX_VAL, VAL FROM T1");
+        Stream.of(Pair.of("SELECT ID, IDX_VAL, VAL FROM T1 WHERE ID < ?", ENTRIES_COUNT),
+                  Pair.of("SELECT ID, IDX_VAL, VAL FROM T1", null))
+            .forEach(query -> {
+                try {
+                    sql("CREATE TABLE T3(ID, IDX_VAL, VAL) WITH cache_name=t3_cache AS " + query.left, query.right);
 
-            assertEquals(grid(0).cache("T1_CACHE").localSizeLong(CachePeekMode.PRIMARY),
-                    client.cache("T3_CACHE").sizeLong(CachePeekMode.PRIMARY));
-        }
-        finally {
-            grid(0).cache("T3_CACHE").destroy();
-        }
+                    assertEquals(cacheSize("T1_CACHE", parts), cacheFullSize("T3_CACHE"));
+                }
+                finally {
+                    client.cache("T3_CACHE").destroy();
+                }
+            });
     }
 
     /**
      *
      */
-    @Test
-    public void testCount() {
-        long cnt = sql("SELECT * FROM T1").size();
-
-        assertEquals(cacheSize("T1_CACHE", parts), cnt);
+    private long cacheFullSize(String cacheName) {
+        return client.cache(cacheName).sizeLong(CachePeekMode.PRIMARY);
     }
 
     /**
      *
      */
-    private void testJoin(String table1, String table2, String joinCol) {
-        String sql = "select * from " + table1 + " join " + table2 +
-                " on " + table1 + "." + joinCol + "=" + table2 + "." + joinCol;
-
-        test(sql, table1 + "_CACHE");
-    }
-
-    /** */
     private long cacheSize(String cacheName, int... parts) {
         IgniteCache<?, ?> cache = grid(0).cache(cacheName);
 
+        GridCacheContext<?, ?> ctx = grid(0).cachex(cacheName).context();
+
         if (F.isEmpty(parts))
-            return cache.sizeLong(CachePeekMode.PRIMARY);
+            return local && ctx.isPartitioned() ?
+                    cache.localSizeLong(CachePeekMode.PRIMARY) : cache.sizeLong(CachePeekMode.PRIMARY);
 
-        return IntStream.of(parts).mapToLong(p -> cache.sizeLong(p, CachePeekMode.PRIMARY)).sum();
-    }
-
-    /**
-     *
-     */
-    private void test(String sql, String cacheName) {
-        List<List<?>> res = sql(sql);
-
-        Affinity<Object> aff = grid(0).affinity(cacheName);
-        ClusterNode localNode = grid(0).localNode();
-
-        List<?> primaries = res.stream().filter(l -> {
-            int part = aff.partition(l.get(0));
-
-            return aff.isPrimary(localNode, part);
-        }).collect(Collectors.toList());
-
-        assertEquals(primaries.size(), res.size());
+        return IntStream.of(parts).mapToLong(p -> {
+            if (local && ctx.isPartitioned())
+                return cache.localSizeLong(p, CachePeekMode.PRIMARY);
+            else
+                return cache.sizeLong(p, CachePeekMode.PRIMARY);
+        }).sum();
     }
 }

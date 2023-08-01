@@ -208,17 +208,20 @@ public class ColocationGroup implements MarshalableMessage {
     }
 
     /** */
-    public ColocationGroup finalaze() {
+    public ColocationGroup finalize(int[] parts) {
         if (assignments == null && nodeIds == null)
             return this;
 
         if (assignments != null) {
             List<List<UUID>> assignments = new ArrayList<>(this.assignments.size());
             Set<UUID> nodes = new HashSet<>();
-            for (List<UUID> assignment : this.assignments) {
-                UUID first = F.first(assignment);
+
+            for (int i = 0; i < this.assignments.size(); ++i) {
+                UUID first = F.isEmpty(parts) || Arrays.binarySearch(parts, i) >= 0 ? F.first(this.assignments.get(i)) : null;
+
                 if (first != null)
                     nodes.add(first);
+
                 assignments.add(first != null ? Collections.singletonList(first) : Collections.emptyList());
             }
 

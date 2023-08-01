@@ -132,13 +132,16 @@ public class FragmentMapping implements MarshalableMessage {
     }
 
     /** */
-    public FragmentMapping finalize(Supplier<List<UUID>> nodesSource) {
+    public FragmentMapping finalize(Supplier<List<UUID>> nodesSource, int[] parts) throws ColocationMappingException {
         if (colocationGroups.isEmpty())
             return this;
 
         List<ColocationGroup> colocationGroups = this.colocationGroups;
 
-        colocationGroups = Commons.transform(colocationGroups, ColocationGroup::finalaze);
+        if (!F.isEmpty(parts) && colocationGroups.size() > 1)
+            throw new ColocationMappingException("Execution of non-collocated query with partition parameter is not possible");
+
+        colocationGroups = Commons.transform(colocationGroups, g -> g.finalize(parts));
         List<UUID> nodes = nodeIds(), nodes0 = nodes.isEmpty() ? nodesSource.get() : nodes;
         colocationGroups = Commons.transform(colocationGroups, g -> g.mapToNodes(nodes0));
 
