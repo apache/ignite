@@ -63,8 +63,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     private volatile boolean useMvccCaching;
 
     /** {@inheritDoc} */
-    @Override public void addActiveCache(GridCacheContext ctx, boolean recovery, IgniteTxAdapter tx)
-        throws IgniteCheckedException {
+    @Override public void addActiveCache(GridCacheContext ctx, boolean recovery, IgniteTxAdapter tx) {
         assert cacheCtx == null : "Cache already set [cur=" + cacheCtx.name() + ", new=" + ctx.name() + ']';
         assert tx.local();
 
