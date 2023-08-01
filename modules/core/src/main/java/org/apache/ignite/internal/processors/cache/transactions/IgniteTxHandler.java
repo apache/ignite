@@ -91,7 +91,6 @@ import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -1278,7 +1277,7 @@ public class IgniteTxHandler {
             }
 
             if (req.onePhaseCommit()) {
-                IgniteInternalFuture completeFut;
+                IgniteInternalFuture<IgniteInternalTx> completeFut;
 
                 IgniteInternalFuture<IgniteInternalTx> dhtFin = dhtTx == null ?
                     null : dhtTx.done() ? null : dhtTx.finishFuture();
@@ -1304,11 +1303,8 @@ public class IgniteTxHandler {
                     final GridDhtTxRemote dhtTx0 = dhtTx;
                     final GridNearTxRemote nearTx0 = nearTx;
 
-                    completeFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
-                        @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
-                            sendReply(nodeId, req, res0, dhtTx0, nearTx0);
-                        }
-                    });
+                    completeFut.listen((IgniteInternalFuture<IgniteInternalTx> fut) ->
+                        sendReply(nodeId, req, res0, dhtTx0, nearTx0));
                 }
                 else
                     sendReply(nodeId, req, res, dhtTx, nearTx);
@@ -1398,7 +1394,7 @@ public class IgniteTxHandler {
                 finish(nearTx, req);
 
             if (req.replyRequired()) {
-                IgniteInternalFuture completeFut;
+                IgniteInternalFuture<IgniteInternalTx> completeFut;
 
                 IgniteInternalFuture<IgniteInternalTx> dhtFin = dhtTx == null ?
                     null : dhtTx.done() ? null : dhtTx.finishFuture();
@@ -1420,11 +1416,8 @@ public class IgniteTxHandler {
                     completeFut = dhtFin != null ? dhtFin : nearFin;
 
                 if (completeFut != null) {
-                    completeFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
-                        @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
-                            sendReply(nodeId, req, true, nearTxId);
-                        }
-                    });
+                    completeFut.listen((IgniteInternalFuture<IgniteInternalTx> fut) ->
+                        sendReply(nodeId, req, true, nearTxId));
                 }
                 else
                     sendReply(nodeId, req, true, nearTxId);
@@ -2164,21 +2157,19 @@ public class IgniteTxHandler {
             sendCheckPreparedResponse(nodeId, req, prepared);
         }
         else {
-            fut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-                @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                    boolean prepared;
+            fut.listen((IgniteInternalFuture<Boolean> f) -> {
+                boolean prepared;
 
-                    try {
-                        prepared = fut.get();
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Check prepared transaction future failed [req=" + req + ']', e);
-
-                        prepared = false;
-                    }
-
-                    sendCheckPreparedResponse(nodeId, req, prepared);
+                try {
+                    prepared = fut.get();
                 }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Check prepared transaction future failed [req=" + req + ']', e);
+
+                    prepared = false;
+                }
+
+                sendCheckPreparedResponse(nodeId, req, prepared);
             });
         }
     }
