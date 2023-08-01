@@ -107,9 +107,8 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, value = "0")
-    public void testNoHangsPessimistic() throws Exception {
-        assertFalse(grid(0).context().cache().context().tm().deadlockDetectionEnabled());
+    public void testNoHangsPessimisticDetectionEnabled() throws Exception {
+        assertTrue(grid(0).context().cache().context().tm().deadlockDetectionEnabled());
 
         doTest(PESSIMISTIC);
     }
@@ -119,7 +118,28 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
      */
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, value = "0")
-    public void testNoHangsOptimistic() throws Exception {
+    public void testNoHangsPessimisticDetectionDisabled() throws Exception {
+        assertFalse(grid(0).context().cache().context().tm().deadlockDetectionEnabled());
+
+        doTest(PESSIMISTIC);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNoHangsOptimisticDetectionEnabled() throws Exception {
+        assertTrue(grid(0).context().cache().context().tm().deadlockDetectionEnabled());
+
+        doTest(OPTIMISTIC);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, value = "0")
+    public void testNoHangsOptimisticDetectionDisabled() throws Exception {
         assertFalse(grid(0).context().cache().context().tm().deadlockDetectionEnabled());
 
         doTest(OPTIMISTIC);
