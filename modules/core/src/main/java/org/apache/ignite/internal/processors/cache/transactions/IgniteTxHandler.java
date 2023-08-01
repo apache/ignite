@@ -1359,11 +1359,7 @@ public class IgniteTxHandler {
                 else {
                     IgniteInternalFuture<?> fut = ctx.tm().remoteTxFinishFuture(req.version());
 
-                    fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                        @Override public void apply(IgniteInternalFuture<?> fut) {
-                            sendReply(nodeId, req, true, null);
-                        }
-                    });
+                    fut.listen((IgniteInternalFuture<?> f) -> sendReply(nodeId, req, true, null));
                 }
 
                 return;
