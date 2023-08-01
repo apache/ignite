@@ -91,7 +91,6 @@ import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -337,31 +336,29 @@ public class IgniteTxHandler {
 
         IgniteInternalFuture<GridNearTxPrepareResponse> fut = locTx.prepareAsyncLocal(req);
 
-        return fut.chain(new C1<IgniteInternalFuture<GridNearTxPrepareResponse>, GridNearTxPrepareResponse>() {
-            @Override public GridNearTxPrepareResponse apply(IgniteInternalFuture<GridNearTxPrepareResponse> f) {
-                try {
-                    return f.get();
-                }
-                catch (Exception e) {
-                    locTx.setRollbackOnly(); // Just in case.
+        return fut.chain((IgniteInternalFuture<GridNearTxPrepareResponse> f) -> {
+            try {
+                return f.get();
+            }
+            catch (Exception e) {
+                locTx.setRollbackOnly(); // Just in case.
 
-                    if (!X.hasCause(e, IgniteTxOptimisticCheckedException.class) &&
-                        !X.hasCause(e, IgniteFutureCancelledException.class))
-                        U.error(log, "Failed to prepare DHT transaction: " + locTx, e);
+                if (!X.hasCause(e, IgniteTxOptimisticCheckedException.class) &&
+                    !X.hasCause(e, IgniteFutureCancelledException.class))
+                    U.error(log, "Failed to prepare DHT transaction: " + locTx, e);
 
-                    return new GridNearTxPrepareResponse(
-                        req.partition(),
-                        req.version(),
-                        req.futureId(),
-                        req.miniId(),
-                        req.version(),
-                        req.version(),
-                        null,
-                        e,
-                        null,
-                        req.onePhaseCommit(),
-                        req.deployInfo() != null);
-                }
+                return new GridNearTxPrepareResponse(
+                    req.partition(),
+                    req.version(),
+                    req.futureId(),
+                    req.miniId(),
+                    req.version(),
+                    req.version(),
+                    null,
+                    e,
+                    null,
+                    req.onePhaseCommit(),
+                    req.deployInfo() != null);
             }
         });
     }
@@ -622,18 +619,16 @@ public class IgniteTxHandler {
 
             final GridDhtTxLocal tx0 = tx;
 
-            fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> txFut) {
-                    try {
-                        txFut.get();
-                    }
-                    catch (IgniteCheckedException e) {
-                        tx0.setRollbackOnly(); // Just in case.
+            fut.listen((IgniteInternalFuture<?> txFut) -> {
+                try {
+                    txFut.get();
+                }
+                catch (IgniteCheckedException e) {
+                    tx0.setRollbackOnly(); // Just in case.
 
-                        if (!X.hasCause(e, IgniteTxOptimisticCheckedException.class) &&
-                            !X.hasCause(e, IgniteFutureCancelledException.class) && !ctx.kernalContext().isStopping())
-                            U.error(log, "Failed to prepare DHT transaction: " + tx0, e);
-                    }
+                    if (!X.hasCause(e, IgniteTxOptimisticCheckedException.class) &&
+                        !X.hasCause(e, IgniteFutureCancelledException.class) && !ctx.kernalContext().isStopping())
+                        U.error(log, "Failed to prepare DHT transaction: " + tx0, e);
                 }
             });
 
