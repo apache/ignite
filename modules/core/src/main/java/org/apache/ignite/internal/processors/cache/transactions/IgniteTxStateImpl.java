@@ -141,10 +141,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         Map<Integer, Set<KeyCacheObject>> keysByCacheId = new HashMap<>();
 
         for (IgniteTxKey key : txMap.keySet()) {
-            Set<KeyCacheObject> set = keysByCacheId.get(key.cacheId());
-
-            if (set == null)
-                keysByCacheId.put(key.cacheId(), set = new HashSet<>());
+            Set<KeyCacheObject> set = keysByCacheId.computeIfAbsent(key.cacheId(), k -> new HashSet<>());
 
             set.add(key.key());
         }
