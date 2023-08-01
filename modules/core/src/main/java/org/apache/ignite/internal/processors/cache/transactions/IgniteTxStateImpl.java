@@ -57,7 +57,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
  */
 public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** Active cache IDs. */
-    private GridIntList activeCacheIds = new GridIntList();
+    private final GridIntList activeCacheIds = new GridIntList();
 
     /** Per-transaction read map. */
     @GridToStringExclude
@@ -80,7 +80,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     protected Boolean mvccEnabled;
 
     /** Cache ids used for mvcc caching. See {@link MvccCachingManager}. */
-    private GridIntList mvccCachingCacheIds = new GridIntList();
+    private final GridIntList mvccCachingCacheIds = new GridIntList();
 
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
@@ -225,11 +225,11 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
         this.recovery = recovery;
 
-        if (this.mvccEnabled != null && this.mvccEnabled != cacheCtx.mvccEnabled())
+        if (mvccEnabled != null && mvccEnabled != cacheCtx.mvccEnabled())
             throw new IgniteCheckedException("Failed to enlist new cache to existing transaction " +
                 "(caches with different mvcc settings can't be enlisted in one transaction).");
 
-        this.mvccEnabled = cacheCtx.mvccEnabled();
+        mvccEnabled = cacheCtx.mvccEnabled();
 
         // Check if we can enlist new cache to transaction.
         if (!activeCacheIds.contains(cacheId)) {
@@ -422,14 +422,14 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry> allEntries() {
-        return txMap == null ? Collections.<IgniteTxEntry>emptySet() : txMap.values();
+        return txMap == null ? Collections.emptySet() : txMap.values();
     }
 
     /**
      * @return All entries. Returned collection is copy of internal collection.
      */
     public synchronized Collection<IgniteTxEntry> allEntriesCopy() {
-        return txMap == null ? Collections.<IgniteTxEntry>emptySet() : new ArrayList<>(txMap.values());
+        return txMap == null ? Collections.emptySet() : new ArrayList<>(txMap.values());
     }
 
     /** {@inheritDoc} */
@@ -444,32 +444,32 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Set<IgniteTxKey> readSet() {
-        return txMap == null ? Collections.<IgniteTxKey>emptySet() : readView.keySet();
+        return txMap == null ? Collections.emptySet() : readView.keySet();
     }
 
     /** {@inheritDoc} */
     @Override public Set<IgniteTxKey> writeSet() {
-        return txMap == null ? Collections.<IgniteTxKey>emptySet() : writeView.keySet();
+        return txMap == null ? Collections.emptySet() : writeView.keySet();
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry> writeEntries() {
-        return writeView == null ? Collections.<IgniteTxEntry>emptyList() : writeView.values();
+        return writeView == null ? Collections.emptyList() : writeView.values();
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry> readEntries() {
-        return readView == null ? Collections.<IgniteTxEntry>emptyList() : readView.values();
+        return readView == null ? Collections.emptyList() : readView.values();
     }
 
     /** {@inheritDoc} */
     @Override public Map<IgniteTxKey, IgniteTxEntry> writeMap() {
-        return writeView == null ? Collections.<IgniteTxKey, IgniteTxEntry>emptyMap() : writeView;
+        return writeView == null ? Collections.emptyMap() : writeView;
     }
 
     /** {@inheritDoc} */
     @Override public Map<IgniteTxKey, IgniteTxEntry> readMap() {
-        return readView == null ? Collections.<IgniteTxKey, IgniteTxEntry>emptyMap() : readView;
+        return readView == null ? Collections.emptyMap() : readView;
     }
 
     /** {@inheritDoc} */
