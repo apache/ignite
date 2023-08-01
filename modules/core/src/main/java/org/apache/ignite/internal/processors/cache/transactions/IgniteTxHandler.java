@@ -1277,26 +1277,7 @@ public class IgniteTxHandler {
             }
 
             if (req.onePhaseCommit()) {
-                IgniteInternalFuture<IgniteInternalTx> completeFut;
-
-                IgniteInternalFuture<IgniteInternalTx> dhtFin = dhtTx == null ?
-                    null : dhtTx.done() ? null : dhtTx.finishFuture();
-
-                final IgniteInternalFuture<IgniteInternalTx> nearFin = nearTx == null ?
-                    null : nearTx.done() ? null : nearTx.finishFuture();
-
-                if (dhtFin != null && nearFin != null) {
-                    GridCompoundFuture fut = new GridCompoundFuture();
-
-                    fut.add(dhtFin);
-                    fut.add(nearFin);
-
-                    fut.markInitialized();
-
-                    completeFut = fut;
-                }
-                else
-                    completeFut = dhtFin != null ? dhtFin : nearFin;
+                IgniteInternalFuture<IgniteInternalTx> completeFut = completeFuture(dhtTx, nearTx);
 
                 if (completeFut != null) {
                     final GridDhtTxPrepareResponse res0 = res;
@@ -1315,6 +1296,31 @@ public class IgniteTxHandler {
             assert req.txState() != null || res.error() != null || (dhtTx == null && nearTx == null) :
                 req + " tx=" + dhtTx + " nearTx=" + nearTx;
         }
+    }
+
+    /**
+     * @param dhtTx Dht tx.
+     * @param nearTx Near tx.
+     */
+    private IgniteInternalFuture<IgniteInternalTx> completeFuture(GridDhtTxRemote dhtTx, GridNearTxRemote nearTx) {
+        IgniteInternalFuture<IgniteInternalTx> dhtFin =
+            dhtTx == null ? null : dhtTx.done() ? null : dhtTx.finishFuture();
+
+        final IgniteInternalFuture<IgniteInternalTx> nearFin =
+            nearTx == null ? null : nearTx.done() ? null : nearTx.finishFuture();
+
+        if (dhtFin != null && nearFin != null) {
+            GridCompoundFuture<IgniteInternalTx, IgniteInternalTx> fut = new GridCompoundFuture<>();
+
+            fut.add(dhtFin);
+            fut.add(nearFin);
+
+            fut.markInitialized();
+
+            return fut;
+        }
+        else
+            return dhtFin != null ? dhtFin : nearFin;
     }
 
     /**
@@ -1394,26 +1400,7 @@ public class IgniteTxHandler {
                 finish(nearTx, req);
 
             if (req.replyRequired()) {
-                IgniteInternalFuture<IgniteInternalTx> completeFut;
-
-                IgniteInternalFuture<IgniteInternalTx> dhtFin = dhtTx == null ?
-                    null : dhtTx.done() ? null : dhtTx.finishFuture();
-
-                final IgniteInternalFuture<IgniteInternalTx> nearFin = nearTx == null ?
-                    null : nearTx.done() ? null : nearTx.finishFuture();
-
-                if (dhtFin != null && nearFin != null) {
-                    GridCompoundFuture fut = new GridCompoundFuture();
-
-                    fut.add(dhtFin);
-                    fut.add(nearFin);
-
-                    fut.markInitialized();
-
-                    completeFut = fut;
-                }
-                else
-                    completeFut = dhtFin != null ? dhtFin : nearFin;
+                IgniteInternalFuture<IgniteInternalTx> completeFut = completeFuture(dhtTx, nearTx);
 
                 if (completeFut != null) {
                     completeFut.listen((IgniteInternalFuture<IgniteInternalTx> fut) ->
