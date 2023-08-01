@@ -84,6 +84,9 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
             return;
 
         onKernalStart0(active);
+
+        if (log != null && log.isDebugEnabled())
+            log.debug(kernalStartInfo());
     }
 
     /**
@@ -165,6 +168,13 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
      */
     protected String stopInfo() {
         return "Cache manager stopped.";
+    }
+
+    /**
+     * @return Start info.
+     */
+    protected String kernalStartInfo() {
+        return "Cache manager received onKernalStart() callback.";
     }
 
     /**
