@@ -136,7 +136,7 @@ import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
  */
 public class IgniteTxHandler {
     /** Logger. */
-    private IgniteLogger log;
+    private final IgniteLogger log;
 
     /** */
     private final IgniteLogger txPrepareMsgLog;
@@ -148,7 +148,7 @@ public class IgniteTxHandler {
     private final IgniteLogger txRecoveryMsgLog;
 
     /** Shared cache context. */
-    private GridCacheSharedContext<?, ?> ctx;
+    private final GridCacheSharedContext<?, ?> ctx;
 
     /**
      * @param nearNodeId Sender node ID.
@@ -806,7 +806,7 @@ public class IgniteTxHandler {
                     nodeId + ']');
 
             GridNearTxPrepareFutureAdapter fut = (GridNearTxPrepareFutureAdapter)ctx.mvcc()
-                .<IgniteInternalTx>versionedFuture(res.version(), res.futureId());
+                .versionedFuture(res.version(), res.futureId());
 
             if (fut == null) {
                 U.warn(log, "Failed to find future for near prepare response [txId=" + res.version() +
@@ -836,7 +836,7 @@ public class IgniteTxHandler {
             if (txFinishMsgLog.isDebugEnabled())
                 txFinishMsgLog.debug("Received near finish response [txId=" + res.xid() + ", node=" + nodeId + ']');
 
-            GridNearTxFinishFuture fut = (GridNearTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(res.futureId());
+            GridNearTxFinishFuture fut = (GridNearTxFinishFuture)ctx.mvcc().future(res.futureId());
 
             if (fut == null) {
                 if (txFinishMsgLog.isDebugEnabled()) {
@@ -897,7 +897,7 @@ public class IgniteTxHandler {
             assert res != null;
 
             if (res.checkCommitted()) {
-                GridNearTxFinishFuture fut = (GridNearTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(res.futureId());
+                GridNearTxFinishFuture fut = (GridNearTxFinishFuture)ctx.mvcc().future(res.futureId());
 
                 if (fut == null) {
                     if (txFinishMsgLog.isDebugEnabled()) {
@@ -918,7 +918,7 @@ public class IgniteTxHandler {
                 fut.onResult(nodeId, res);
             }
             else {
-                GridDhtTxFinishFuture fut = (GridDhtTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(res.futureId());
+                GridDhtTxFinishFuture fut = (GridDhtTxFinishFuture)ctx.mvcc().future(res.futureId());
 
                 if (fut == null) {
                     if (txFinishMsgLog.isDebugEnabled()) {
@@ -2209,7 +2209,7 @@ public class IgniteTxHandler {
             boolean prepared;
 
             try {
-                prepared = fut == null ? true : fut.get();
+                prepared = fut == null || fut.get();
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Check prepared transaction future failed [req=" + req + ']', e);
