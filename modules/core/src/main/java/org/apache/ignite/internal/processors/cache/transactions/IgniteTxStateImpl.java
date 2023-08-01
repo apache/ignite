@@ -312,17 +312,9 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public void topologyReadUnlock(GridCacheSharedContext cctx) {
         if (!activeCacheIds.isEmpty()) {
-            GridCacheContext<?, ?> nonLocCtx = null;
+            int cacheId = activeCacheIds.get(0);
 
-            for (int i = 0; i < activeCacheIds.size(); i++) {
-                int cacheId = activeCacheIds.get(i);
-
-                GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
-
-                nonLocCtx = cacheCtx;
-
-                break;
-            }
+            GridCacheContext<?, ?> nonLocCtx = (GridCacheContext<?, ?>)cctx.cacheContext(cacheId);
 
             if (nonLocCtx != null)
                 nonLocCtx.topology().readUnlock();
