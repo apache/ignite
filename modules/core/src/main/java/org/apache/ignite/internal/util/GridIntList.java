@@ -221,7 +221,7 @@ public class GridIntList implements Message, Externalizable {
         if (size == idx)
             return;
 
-        if (!last && idx != 0 && size != 0)
+        if (!last && size != 0)
             System.arraycopy(arr, idx - size, arr, 0, size);
 
         idx = size;
