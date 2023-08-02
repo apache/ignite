@@ -38,7 +38,6 @@ import org.apache.ignite.internal.encryption.EncryptionMXBeanTest;
 import org.apache.ignite.internal.encryption.MasterKeyChangeConsistencyCheckTest;
 import org.apache.ignite.internal.encryption.MasterKeyChangeTest;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointReadLockFailureTest;
-import org.apache.ignite.internal.processors.cache.persistence.CommonPoolStarvationCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.SingleNodePersistenceSslTest;
 import org.apache.ignite.internal.processors.performancestatistics.CacheStartTest;
 import org.apache.ignite.internal.processors.performancestatistics.CheckpointTest;
@@ -67,8 +66,6 @@ import org.junit.runners.Suite;
     FailureHandlingConfigurationTest.class,
     SystemWorkersBlockingTest.class,
     CheckpointReadLockFailureTest.class,
-    CommonPoolStarvationCheckpointTest.class,
-
     GridInternalTaskUnusedWalSegmentsTest.class,
 
     GridNodeMetricsLogPdsSelfTest.class,
