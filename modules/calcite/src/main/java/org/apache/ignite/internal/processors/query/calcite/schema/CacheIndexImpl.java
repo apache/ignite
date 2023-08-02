@@ -60,7 +60,6 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
-import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.jetbrains.annotations.Nullable;
 
 /**
