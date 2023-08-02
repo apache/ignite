@@ -588,7 +588,7 @@ public class GridIntList implements Message, Externalizable {
      */
     public GridIntIterator iterator() {
         return new GridIntIterator() {
-            int c = 0;
+            int c;
 
             @Override public boolean hasNext() {
                 return c < idx;
