@@ -124,30 +124,6 @@ public class GridIntList implements Message, Externalizable {
     }
 
     /**
-     * @param l List to add all elements of.
-     */
-    public void addAll(GridIntList l) {
-        assert l != null;
-
-        if (l.isEmpty())
-            return;
-
-        if (arr == null)
-            arr = new int[4];
-
-        int len = arr.length;
-
-        while (len < idx + l.size())
-            len <<= 1;
-
-        arr = Arrays.copyOf(arr, len);
-
-        System.arraycopy(l.arr, 0, arr, idx, l.size());
-
-        idx += l.size();
-    }
-
-    /**
      * Add element to this array.
      * @param x Value.
      */
