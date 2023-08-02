@@ -228,7 +228,7 @@ public class CachePartitionDefragmentationManager {
 
         nodeCheckpoint.forceCheckpoint("beforeDefragmentation", null).futureFor(FINISHED).get();
 
-        sharedCtx.kernalContext().gateway().writeLock();
+        sharedCtx.kernalContext().gateway().readLock();
 
         try {
             // The concurrent default checkpointer has various listeners, interferes with new dedicated
@@ -246,7 +246,7 @@ public class CachePartitionDefragmentationManager {
             }
         }
         finally {
-            sharedCtx.kernalContext().gateway().writeUnlock();
+            sharedCtx.kernalContext().gateway().readUnlock();
         }
 
         dbMgr.preserveWalTailPointer();

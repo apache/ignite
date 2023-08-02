@@ -175,7 +175,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         dsCfg.setDefaultDataRegionConfiguration(
             new DataRegionConfiguration()
-                .setInitialSize(U.MB * 100L)
+                .setInitialSize(100L * 1024 * 1024)
                 .setMaxSize(maxRegionSize)
                 .setPersistenceEnabled(true)
         );
