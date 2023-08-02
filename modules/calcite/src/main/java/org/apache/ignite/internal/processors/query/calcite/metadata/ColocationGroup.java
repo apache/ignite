@@ -208,10 +208,28 @@ public class ColocationGroup implements MarshalableMessage {
     }
 
     /** */
-    public ColocationGroup finalize(int[] parts) {
+    public ColocationGroup finalizeMapping() {
         if (assignments == null && nodeIds == null)
             return this;
 
+        if (assignments != null) {
+            List<List<UUID>> assignments = new ArrayList<>(this.assignments.size());
+            Set<UUID> nodes = new HashSet<>();
+            for (List<UUID> assignment : this.assignments) {
+                UUID first = F.first(assignment);
+                if (first != null)
+                    nodes.add(first);
+                assignments.add(first != null ? Collections.singletonList(first) : Collections.emptyList());
+            }
+
+            return new ColocationGroup(sourceIds, new ArrayList<>(nodes), assignments);
+        }
+
+        return forNodes0(nodeIds);
+    }
+
+    /** */
+    public ColocationGroup filterForPartitions(int[] parts) {
         if (assignments != null) {
             List<List<UUID>> assignments = new ArrayList<>(this.assignments.size());
             Set<UUID> nodes = new HashSet<>();
@@ -228,7 +246,7 @@ public class ColocationGroup implements MarshalableMessage {
             return new ColocationGroup(sourceIds, new ArrayList<>(nodes), assignments);
         }
 
-        return forNodes0(nodeIds);
+        return this;
     }
 
     /** */

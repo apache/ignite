@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.util.Arrays;
 import java.util.UUID;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
@@ -43,19 +42,15 @@ public class MappingQueryContext {
     private final boolean isLocal;
 
     /** */
-    private final int[] parts;
-
-    /** */
     public MappingQueryContext(UUID locNodeId, AffinityTopologyVersion topVer) {
-        this(locNodeId, topVer, false, null);
+        this(locNodeId, topVer, false);
     }
 
     /** */
-    public MappingQueryContext(UUID locNodeId, AffinityTopologyVersion topVer, boolean isLocal, int[] parts) {
+    public MappingQueryContext(UUID locNodeId, AffinityTopologyVersion topVer, boolean isLocal) {
         this.locNodeId = locNodeId;
         this.topVer = topVer;
         this.isLocal = isLocal;
-        this.parts = parts != null ? Arrays.copyOf(parts, parts.length) : null;
     }
 
     /** */
@@ -71,14 +66,6 @@ public class MappingQueryContext {
     /** */
     public boolean isLocal() {
         return isLocal;
-    }
-
-    /** */
-    public int[] partitions() {
-        if (parts != null)
-            return Arrays.copyOf(parts, parts.length);
-
-        return null;
     }
 
     /** Creates a cluster. */
