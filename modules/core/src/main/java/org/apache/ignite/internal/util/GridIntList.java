@@ -404,7 +404,7 @@ public class GridIntList implements Message, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException {
         idx = in.readInt();
 
         arr = new int[idx];
