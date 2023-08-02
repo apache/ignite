@@ -228,25 +228,17 @@ public class CachePartitionDefragmentationManager {
 
         nodeCheckpoint.forceCheckpoint("beforeDefragmentation", null).futureFor(FINISHED).get();
 
-        sharedCtx.kernalContext().gateway().writeLock();
+        // The concurrent default checkpointer has various listeners, interferes with new dedicated
+        // CacheGroupContext for defragmentation and at least clears shared CheckpointProgress#clearCounters().
+        // Should be properly reconfigured and restarted after the defragmentation task to have ability launch
+        // other maintenance tasks after.
+        Checkpointer defaultCheckpointer = nodeCheckpoint.getCheckpointer();
 
-        try {
-            // The concurrent default checkpointer has various listeners, interferes with new dedicated
-            // CacheGroupContext for defragmentation and at least clears shared CheckpointProgress#clearCounters().
-            // Should be properly reconfigured and restarted after the defragmentation task to have ability launch
-            // other maintenance tasks after.
-            Checkpointer defaultCheckpointer = nodeCheckpoint.getCheckpointer();
+        if (defaultCheckpointer != null && !defaultCheckpointer.isDone()) {
+            if (log.isDebugEnabled())
+                log.debug("Stopping default checkpointer.");
 
-            if (defaultCheckpointer != null && !defaultCheckpointer.isDone() &&
-                !sharedCtx.kernalContext().isStopping()) {
-                if (log.isDebugEnabled())
-                    log.debug("Stopping default checkpointer.");
-
-                defaultCheckpointer.shutdownNow();
-            }
-        }
-        finally {
-            sharedCtx.kernalContext().gateway().writeUnlock();
+            defaultCheckpointer.shutdownNow();
         }
 
         dbMgr.preserveWalTailPointer();
