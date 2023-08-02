@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -36,15 +35,12 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.TableScan;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
-import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
-import org.apache.ignite.internal.util.GridIntList;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -116,18 +112,9 @@ public class CacheTableImpl extends AbstractTable implements IgniteCacheTable {
     ) {
         UUID locNodeId = execCtx.localNodeId();
 
-        if (grp.nodeIds().contains(locNodeId)) {
-            int[] parts = null;
+        if (grp.nodeIds().contains(locNodeId))
+            return new TableScan<>(execCtx, desc, grp.partitions(locNodeId), usedColumns);
 
-            if (descriptor().cacheContext().isPartitioned()) {
-                parts = partitions(grp, execCtx);
-
-                if (F.isEmpty(parts) && hasPartitionParameter(execCtx))
-                    return Collections.emptyList();
-            }
-
-            return new TableScan<>(execCtx, desc, parts, usedColumns);
-        }
         return Collections.emptyList();
     }
 
@@ -195,31 +182,5 @@ public class CacheTableImpl extends AbstractTable implements IgniteCacheTable {
     /** {@inheritDoc} */
     @Override public boolean isModifiable() {
         return true;
-    }
-
-    /** */
-    private <Row> boolean hasPartitionParameter(ExecutionContext<Row> ctx) {
-        BaseQueryContext qryCtx = ctx.unwrap(BaseQueryContext.class);
-
-        return qryCtx != null && !F.isEmpty(qryCtx.partitions());
-    }
-
-    /** */
-    private <Row> int[] partitions(ColocationGroup grp, ExecutionContext<Row> ctx) {
-        BaseQueryContext qryCtx = ctx.unwrap(BaseQueryContext.class);
-
-        int[] targetParts = qryCtx != null ? qryCtx.partitions() : null;
-        int[] parts = grp.partitions(ctx.localNodeId());
-
-        if (F.isEmpty(targetParts))
-            return parts;
-
-        GridIntList res = new GridIntList();
-        for (int p: parts) {
-            if (Arrays.binarySearch(targetParts, p) >= 0)
-                res.add(p);
-        }
-
-        return !res.isEmpty() ? res.array() : null;
     }
 }

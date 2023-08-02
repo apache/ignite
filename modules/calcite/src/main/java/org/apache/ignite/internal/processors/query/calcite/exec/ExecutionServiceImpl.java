@@ -473,7 +473,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                     .defaultSchema(schemaHolder().schema(msg.schema()))
                     .build()
             )
-            .partitions(msg.partitions())
             .logger(log)
             .build();
     }
@@ -643,7 +642,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                             fragmentsPerNode.get(nodeId).intValue(),
                             qry.parameters(),
                             parametersMarshalled,
-                            qry.context().partitions(),
                             timeout
                         );
 

@@ -100,8 +100,8 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        sql("CREATE TABLE T1(ID INT PRIMARY KEY, IDX_VAL VARCHAR, VAL VARCHAR) WITH cache_name=t1_cache");
-        sql("CREATE TABLE T2(ID INT PRIMARY KEY, IDX_VAL VARCHAR, VAL VARCHAR) WITH cache_name=t2_cache");
+        sql("CREATE TABLE T1(ID INT PRIMARY KEY, IDX_VAL VARCHAR, VAL VARCHAR) WITH cache_name=t1_cache,backups=1");
+        sql("CREATE TABLE T2(ID INT PRIMARY KEY, IDX_VAL VARCHAR, VAL VARCHAR) WITH cache_name=t2_cache,backups=1");
         sql("CREATE TABLE DICT(ID INT PRIMARY KEY, IDX_VAL VARCHAR, VAL VARCHAR) WITH template=replicated,cache_name=dict_cache");
 
         sql("CREATE INDEX T1_IDX ON T1(IDX_VAL)");
@@ -215,7 +215,7 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
                   Pair.of("SELECT ID, IDX_VAL, VAL FROM T1", null))
             .forEach(query -> {
                 try {
-                    sql("CREATE TABLE T3(ID INT PRIMARY KEY, IDX_VAL VARCHAR, VAL VARCHAR) WITH cache_name=t3_cache");
+                    sql("CREATE TABLE T3(ID INT PRIMARY KEY, IDX_VAL VARCHAR, VAL VARCHAR) WITH cache_name=t3_cache,backups=1");
 
                     sql("INSERT INTO T3(ID, IDX_VAL, VAL) " + query.left, query.right);
 
@@ -235,7 +235,7 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
         Stream.of(Pair.of("DELETE FROM T3 WHERE ID < ?", ENTRIES_COUNT), Pair.of("DELETE FROM T3", null))
             .forEach(query -> {
                 try {
-                    sql("CREATE TABLE T3(ID INT PRIMARY KEY, IDX_VAL VARCHAR, VAL VARCHAR) WITH cache_name=t3_cache");
+                    sql("CREATE TABLE T3(ID INT PRIMARY KEY, IDX_VAL VARCHAR, VAL VARCHAR) WITH cache_name=t3_cache,backups=1");
 
                     sql("INSERT INTO T3(ID, IDX_VAL, VAL) SELECT ID, IDX_VAL, VAL FROM DICT");
 
@@ -263,7 +263,7 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
                   Pair.of("SELECT ID, IDX_VAL, VAL FROM T1", null))
             .forEach(query -> {
                 try {
-                    sql("CREATE TABLE T3(ID, IDX_VAL, VAL) WITH cache_name=t3_cache AS " + query.left, query.right);
+                    sql("CREATE TABLE T3(ID, IDX_VAL, VAL) WITH cache_name=t3_cache,backups=1 AS " + query.left, query.right);
 
                     assertEquals(cacheSize("T1_CACHE", parts), cacheFullSize("T3_CACHE"));
                 }
