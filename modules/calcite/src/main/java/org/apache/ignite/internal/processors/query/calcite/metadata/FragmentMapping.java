@@ -152,7 +152,7 @@ public class FragmentMapping implements MarshalableMessage {
         if (!F.isEmpty(parts) && colocationGroups.size() > 1)
             throw new ColocationMappingException("Execution of non-collocated query with partition parameter is not possible");
 
-        colocationGroups = Commons.transform(colocationGroups, g -> g.filterForPartitions(parts));
+        colocationGroups = Commons.transform(colocationGroups, g -> g.filterByPartitions(parts));
 
         return new FragmentMapping(colocationGroups);
     }

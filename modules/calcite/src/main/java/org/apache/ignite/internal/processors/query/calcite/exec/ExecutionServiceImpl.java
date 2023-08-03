@@ -105,6 +105,7 @@ import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
@@ -467,12 +468,12 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private BaseQueryContext createQueryContext(Context parent, QueryStartRequest msg) {
+    private BaseQueryContext createQueryContext(Context parent, @Nullable String schema) {
         return BaseQueryContext.builder()
             .parentContext(parent)
             .frameworkConfig(
                 Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
-                    .defaultSchema(schemaHolder().schema(msg.schema()))
+                    .defaultSchema(schemaHolder().schema(schema))
                     .build()
             )
             .logger(log)
@@ -588,7 +589,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             List<UUID> nodes = mapping.nodeIds();
 
-            assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(localNodeId());
+            assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(localNodeId())
+                    : "nodes=" + nodes + ", localNode=" + localNodeId();
         }
 
         long timeout = qry.remainingTime();
@@ -778,7 +780,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 )
             );
 
-            final BaseQueryContext qctx = createQueryContext(Contexts.empty(), msg);
+            final BaseQueryContext qctx = createQueryContext(Contexts.empty(), msg.schema());
 
             QueryPlan qryPlan = queryPlanCache().queryPlan(
                 new CacheKey(msg.schema(), msg.root()),

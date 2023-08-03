@@ -354,7 +354,8 @@ public final class BaseQueryContext extends AbstractQueryContext {
         }
 
         /**
-         *
+         * @param parts Array of partitions' numbers.
+         * @return Builder for chaining.
          */
         public Builder partitions(int[] parts) {
             if (parts != null)

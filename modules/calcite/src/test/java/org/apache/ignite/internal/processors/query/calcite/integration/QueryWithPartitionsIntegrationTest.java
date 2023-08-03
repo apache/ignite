@@ -16,11 +16,15 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import com.google.common.collect.ImmutableList;
+import com.google.common.primitives.Ints;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
@@ -35,36 +39,41 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-/**
- *
- */
+/** */
 @RunWith(Parameterized.class)
 public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegrationTest {
-    /**
-     *
-     */
-    private static final int ENTRIES_COUNT = 10000;
-
     /** */
-    private final int[] parts = IntStream.range(0, 128).toArray();
+    private static final int ENTRIES_COUNT = 10000;
 
     /** */
     @Parameterized.Parameter()
     public boolean local;
 
     /** */
+    @Parameterized.Parameter(1)
+    public int[] parts;
+
+    /** */
     @Parameterized.Parameters(name = "local = {0}")
     public static List<Object[]> parameters() {
+        List<Integer> parts = IntStream.range(0, 1024).boxed().collect(Collectors.toList());
+        Collections.shuffle(parts);
+
+        int[] partsArr = Ints.toArray(parts.subList(0, 20));
         return ImmutableList.of(
-                new Object[]{true},
-                new Object[]{false}
+                new Object[]{true, partsArr},
+                new Object[]{false, partsArr}
         );
     }
 
+    /** {@inheritDoc} */
+    @Override public void beforeTest() throws Exception {
+        super.beforeTest();
 
-    /**
-     * {@inheritDoc}
-     */
+        log.info("Running tests with parts=" + Arrays.toString(parts));
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
         cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration());
@@ -72,31 +81,23 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
         return cfg;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected QueryChecker assertQuery(String qry) {
         return assertQuery(grid(0), qry);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected QueryContext queryContext() {
         return QueryContext.of(new SqlFieldsQuery("").setLocal(local).setTimeout(10, TimeUnit.SECONDS)
                 .setPartitions(parts));
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected List<List<?>> sql(String sql, Object... params) {
         return sql(local ? grid(0) : client, sql, params);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -127,16 +128,12 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
         });
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void afterTest() {
         // Skip super method to keep caches after each test.
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testSingle() {
         Stream.of(Pair.of("SELECT * FROM T1", null),
@@ -156,9 +153,7 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
             });
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testReplicated() {
         Stream.of(Pair.of("select * from DICT", null),
@@ -178,25 +173,19 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
             });
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testJoin() {
         Stream.of("ID", "IDX_VAL", "VAL").forEach(col -> testJoin("T1", "T2", col));
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testJoinReplicated() {
         Stream.of("ID", "IDX_VAL", "VAL").forEach(col -> testJoin("T1", "DICT", col));
     }
 
-    /**
-     *
-     */
+    /** */
     private void testJoin(String table1, String table2, String joinCol) {
         String sqlStr = "select * from " + table1 + " join " + table2 +
                 " on " + table1 + "." + joinCol + "=" + table2 + "." + joinCol;
@@ -206,9 +195,7 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
         assertEquals(res.size(), cacheSize(table1 + "_CACHE", parts));
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testInsertFromSelect() {
         Stream.of(Pair.of("SELECT ID, IDX_VAL, VAL FROM T1 WHERE ID < ?", ENTRIES_COUNT),
@@ -227,9 +214,7 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
             });
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testDelete() {
         Stream.of(Pair.of("DELETE FROM T3 WHERE ID < ?", ENTRIES_COUNT), Pair.of("DELETE FROM T3", null))
@@ -254,9 +239,7 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
             });
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testCreateTableAsSelect() {
         Stream.of(Pair.of("SELECT ID, IDX_VAL, VAL FROM T1 WHERE ID < ?", ENTRIES_COUNT),
@@ -273,16 +256,12 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
             });
     }
 
-    /**
-     *
-     */
+    /** */
     private long cacheFullSize(String cacheName) {
         return client.cache(cacheName).sizeLong(CachePeekMode.PRIMARY);
     }
 
-    /**
-     *
-     */
+    /** */
     private long cacheSize(String cacheName, int... parts) {
         IgniteCache<?, ?> cache = grid(0).cache(cacheName);
 
