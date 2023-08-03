@@ -18,8 +18,6 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableScan;
@@ -84,17 +82,13 @@ public interface IgniteTable extends TranslatableTable {
      * Creates rows iterator over the table.
      *
      * @param execCtx Execution context.
-     * @param group Colocation group.
-     * @param filter Row filter.
-     * @param rowTransformer Row transformer.
+     * @param grp Colocation group.
      * @param usedColumns Used columns enumeration.
      * @return Rows iterator.
      */
     public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
-        ColocationGroup group,
-        Predicate<Row> filter,
-        Function<Row, Row> rowTransformer,
+        ColocationGroup grp,
         @Nullable ImmutableBitSet usedColumns);
 
     /**

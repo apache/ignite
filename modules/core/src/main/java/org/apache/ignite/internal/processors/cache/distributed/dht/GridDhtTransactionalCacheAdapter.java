@@ -281,7 +281,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 tx = new GridDhtTxRemote(
                                     ctx.shared(),
                                     req.nodeId(),
-                                    req.futureId(),
                                     nodeId,
                                     req.nearXidVersion(),
                                     req.topologyVersion(),
@@ -2230,7 +2229,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 tx = new GridDhtTxRemote(ctx.shared(),
                     req0.nearNodeId(),
-                    req0.dhtFutureId(),
                     primary,
                     req0.nearXidVersion(),
                     req0.topologyVersion(),

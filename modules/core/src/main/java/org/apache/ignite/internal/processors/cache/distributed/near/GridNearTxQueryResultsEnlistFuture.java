@@ -342,7 +342,6 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
             if (dhtTx == null) {
                 dhtTx = new GridDhtTxRemote(cctx.shared(),
                     cctx.localNodeId(),
-                    dhtFutId,
                     primaryId,
                     lockVer,
                     topVer,
