@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
@@ -55,12 +54,16 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
     /** */
     private final DdlSqlToCommandConverter ddlConverter;
 
+    /** */
+    private final PlanExtractor planExtractor;
+
     /**
      * @param ctx Kernal.
      */
     public PrepareServiceImpl(GridKernalContext ctx) {
         super(ctx);
 
+        planExtractor = new PlanExtractor(ctx);
         ddlConverter = new DdlSqlToCommandConverter();
     }
 
@@ -171,7 +174,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         QueryTemplate template = new QueryTemplate(fragments);
 
-        return new MultiStepQueryPlan(ctx.query(), template,
+        return new MultiStepQueryPlan(ctx.query(), planExtractor.extract(igniteRel), template,
             queryFieldsMetadata(ctx, validated.dataType(), validated.origins()), params);
     }
 
@@ -193,7 +196,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         QueryTemplate template = new QueryTemplate(fragments);
 
-        return new MultiStepDmlPlan(ctx.query(), template,
+        return new MultiStepDmlPlan(ctx.query(), planExtractor.extract(igniteRel), template,
             queryFieldsMetadata(ctx, igniteRel.getRowType(), null), params);
     }
 

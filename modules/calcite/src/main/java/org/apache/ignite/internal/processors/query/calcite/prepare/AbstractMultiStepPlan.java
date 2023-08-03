@@ -48,14 +48,19 @@ public abstract class AbstractMultiStepPlan extends AbstractQueryPlan implements
     protected ExecutionPlan executionPlan;
 
     /** */
+    private final String textPlan;
+
+    /** */
     protected AbstractMultiStepPlan(
         String qry,
+        String textPlan,
         QueryTemplate queryTemplate,
         FieldsMetadata fieldsMetadata,
         @Nullable FieldsMetadata paramsMetadata
     ) {
         super(qry);
 
+        this.textPlan = textPlan;
         this.queryTemplate = queryTemplate;
         this.fieldsMetadata = fieldsMetadata;
         this.paramsMetadata = paramsMetadata;
@@ -118,5 +123,10 @@ public abstract class AbstractMultiStepPlan extends AbstractQueryPlan implements
                 "fragmentId=" + fragmentId + ", " +
                 "fragments=" + fragments() + "]"))
             .mapping();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String textPlan() {
+        return textPlan;
     }
 }
