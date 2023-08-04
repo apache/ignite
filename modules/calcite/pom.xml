@@ -199,11 +199,11 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- <dependency>
+        <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-clients</artifactId>
             <scope>test</scope>
-        </dependency> -->
+        </dependency>
 
         <dependency>
             <groupId>org.mockito</groupId>

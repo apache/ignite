@@ -22,10 +22,14 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.HashMap;
 import java.util.Map;
-import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
-import it.unimi.dsi.fastutil.ints.Int2DoubleRBTreeMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
-import it.unimi.dsi.fastutil.ints.IntSet;
+
+import org.apache.commons.math3.linear.OpenMapRealMatrix;
+import org.apache.commons.math3.linear.RealVector;
+import org.apache.ignite.internal.util.collection.BitSetIntSet;
+import org.apache.ignite.internal.util.collection.ImmutableIntSet;
+import org.apache.ignite.internal.util.collection.IntHashMap;
+import org.apache.ignite.internal.util.collection.IntMap;
+import org.apache.ignite.internal.util.collection.IntSet;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.matrix.MatrixStorage;
@@ -49,8 +53,8 @@ public class SparseMatrixStorage implements MatrixStorage, StorageConstants {
     /** */
     private int stoMode;
 
-    /** Actual map storage. */
-    private Map<Integer, Map<Integer, Double>> sto;
+    /** Actual map storage. */    
+    private OpenMapRealMatrix sto;
 
     /** */
     public SparseMatrixStorage() {
@@ -69,7 +73,7 @@ public class SparseMatrixStorage implements MatrixStorage, StorageConstants {
         this.acsMode = acsMode;
         this.stoMode = stoMode;
 
-        sto = new HashMap<>();
+        sto = new OpenMapRealMatrix(rows,cols);
     }
 
     /** {@inheritDoc} */
@@ -85,25 +89,19 @@ public class SparseMatrixStorage implements MatrixStorage, StorageConstants {
     /** {@inheritDoc} */
     @Override public double get(int x, int y) {
         if (stoMode == ROW_STORAGE_MODE) {
-            Map<Integer, Double> row = sto.get(x);
+            double val = sto.getEntry(x,y);
 
-            if (row != null) {
-                Double val = row.get(y);
-
-                if (val != null)
-                    return val;
+            if (val != Double.NaN) {                
+                return val;
             }
 
             return DEFAULT_VALUE;
         }
         else {
-            Map<Integer, Double> col = sto.get(y);
+        	double val = sto.getEntry(x,y);
 
-            if (col != null) {
-                Double val = col.get(x);
-
-                if (val != null)
-                    return val;
+            if (val != Double.NaN) {                
+                return val;
             }
 
             return DEFAULT_VALUE;
@@ -113,38 +111,11 @@ public class SparseMatrixStorage implements MatrixStorage, StorageConstants {
     /** {@inheritDoc} */
     @Override public void set(int x, int y, double v) {
         // Ignore default values (currently 0.0).
-        if (v != DEFAULT_VALUE) {
-            if (stoMode == ROW_STORAGE_MODE) {
-                Map<Integer, Double> row = sto.computeIfAbsent(x, k ->
-                    acsMode == SEQUENTIAL_ACCESS_MODE ? new Int2DoubleRBTreeMap() : new Int2DoubleOpenHashMap());
-
-                row.put(y, v);
-            }
-            else {
-                Map<Integer, Double> col = sto.computeIfAbsent(y, k ->
-                    acsMode == SEQUENTIAL_ACCESS_MODE ? new Int2DoubleRBTreeMap() : new Int2DoubleOpenHashMap());
-
-                col.put(x, v);
-            }
+    	if (stoMode == ROW_STORAGE_MODE) {
+            sto.setEntry(x, y, v);
         }
         else {
-            if (stoMode == ROW_STORAGE_MODE) {
-                if (sto.containsKey(x)) {
-                    Map<Integer, Double> row = sto.get(x);
-
-                    if (row.containsKey(y))
-                        row.remove(y);
-                }
-
-            }
-            else {
-                if (sto.containsKey(y)) {
-                    Map<Integer, Double> col = sto.get(y);
-
-                    if (col.containsKey(x))
-                        col.remove(x);
-                }
-            }
+        	sto.setEntry(x, y, v);
         }
     }
 
@@ -174,7 +145,7 @@ public class SparseMatrixStorage implements MatrixStorage, StorageConstants {
         cols = in.readInt();
         acsMode = in.readInt();
         stoMode = in.readInt();
-        sto = (Map<Integer, Map<Integer, Double>>)in.readObject();
+        sto = (OpenMapRealMatrix)in.readObject();
     }
 
     /** {@inheritDoc} */
@@ -191,28 +162,30 @@ public class SparseMatrixStorage implements MatrixStorage, StorageConstants {
 
     /** {@inheritDoc} */
     @Override public double[] data() {
-        double[] res = new double[rows * cols];
+        double[] data = new double[rows * cols];
 
         boolean isRowStorage = stoMode == ROW_STORAGE_MODE;
+        
+        for (int i = 0; i < sto.getRowDimension(); ++i) {
+            
+            for (int j = 0; j < sto.getColumnDimension(); ++j) {
+            	if (isRowStorage) {
+            		int k = i * rows + j;
+            		data[k] = sto.getEntry(i, j);
+            	}
+            	else{
+                	int k = j * cols + i;
+                    data[k] = sto.getEntry(i, j);
+                }
+            }
+        }
 
-        sto.forEach((fstIdx, map) ->
-            map.forEach((sndIdx, val) -> {
-                if (isRowStorage)
-                    res[sndIdx * rows + fstIdx] = val;
-                else
-                    res[fstIdx * cols + sndIdx] = val;
-
-            }));
-
-        return res;
+        return data;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int res = 1;
-
-        res = res * 37 + rows;
-        res = res * 37 + cols;
         res = res * 37 + sto.hashCode();
 
         return res;
@@ -234,16 +207,29 @@ public class SparseMatrixStorage implements MatrixStorage, StorageConstants {
 
     /** */
     public void compute(int row, int col, IgniteTriFunction<Integer, Integer, Double, Double> f) {
-        sto.get(row).compute(col, (c, val) -> f.apply(row, c, val));
+    	double val = sto.getEntry(row, col);
+        sto.setEntry(row,col, f.apply(row, col, val));
     }
 
+    public double[][] data2d() {
+    	return sto.getData();
+    }
+    
     /** */
-    public Int2ObjectArrayMap<IntSet> indexesMap() {
-        Int2ObjectArrayMap<IntSet> res = new Int2ObjectArrayMap<>();
+    public IntMap<IntSet> indexesMap() {
+    	IntHashMap<IntSet> res = new IntHashMap<>();
 
-        for (Integer row : sto.keySet())
-            res.put(row.intValue(), (IntSet)sto.get(row).keySet());
-
+        for (int row=0;row<rows;row++) {     
+        	BitSetIntSet set = new BitSetIntSet(cols/4);
+    		for(int j=0;j<cols;j++) {    			
+    			if(sto.getEntry(row,j)!=0.0) {
+    				set.add(j);
+    			}
+    		}
+    		if(set.size()>0) {
+    			res.put(row, set);
+    		}    			
+        }
         return res;
     }
 }

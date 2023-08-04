@@ -69,7 +69,7 @@ public class IgniteGraphFeatures implements Graph.Features {
 
         @Override
         public boolean supportsComputer() {
-            return false;
+            return true;
         }
 
         @Override

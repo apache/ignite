@@ -58,6 +58,7 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -222,11 +223,8 @@ public class GridLuceneIndex implements AutoCloseable {
             }
 
             doc.add(new StringField(KEY_FIELD_NAME, keyByteRef, Field.Store.YES));
-            doc.add(new StringField(FullTextLucene.FIELD_TABLE, this.type.name(), Field.Store.YES));
-            
-
+            doc.add(new StoredField(FullTextLucene.FIELD_TABLE, this.type.name()));
             doc.add(new StoredField(FullTextLucene.VER_FIELD_NAME, ver.toString()));
-
             doc.add(new LongPoint(FullTextLucene.EXPIRATION_TIME_FIELD_NAME, expires));
 
             // Next implies remove than add atomically operation.
@@ -248,8 +246,9 @@ public class GridLuceneIndex implements AutoCloseable {
      */
     public void remove(CacheObject key) throws IgniteCheckedException {
         try {
-        	indexAccess.writer.deleteDocuments(new Term(KEY_FIELD_NAME,
-                new BytesRef(key.valueBytes(objectContext()))));
+        	BytesRef keyBytes = new BytesRef(key.valueBytes(objectContext()));
+        	
+        	indexAccess.writer.deleteDocuments(new Term(KEY_FIELD_NAME,keyBytes));
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
@@ -282,7 +281,7 @@ public class GridLuceneIndex implements AutoCloseable {
         try {
             searcher = indexAccess.searcher;
 
-            MultiFieldQueryParser parser = new MultiFieldQueryParser(idxdFields, indexAccess.getQueryAnalyzer());
+            MultiFieldQueryParser parser = new MultiFieldQueryParser(idxdFields, indexAccess.analyzerWrapper);
 
 //            parser.setAllowLeadingWildcard(true);
             String [] items = qry.split("\\s");
@@ -429,7 +428,7 @@ public class GridLuceneIndex implements AutoCloseable {
             curr = null;
             ClassLoader ldr = null;
             
-            GridCacheAdapter cache = null;
+            GridCacheAdapter<K,V> cache = null;
             if (ctx != null){
             	cache = ctx.cache().internalCache(cacheName);
             }
@@ -449,8 +448,10 @@ public class GridLuceneIndex implements AutoCloseable {
                 catch (IOException e) {
                     throw new IgniteCheckedException(e);
                 }
+                
+                byte[] keyBytes = doc.getBinaryValue(KEY_FIELD_NAME).bytes;
 
-                K k = unmarshall(doc.getBinaryValue(KEY_FIELD_NAME).bytes, ldr);
+                K k = unmarshall(keyBytes, ldr);
 
                 if (filters != null && !filters.apply(k))
                     continue;
@@ -465,8 +466,7 @@ public class GridLuceneIndex implements AutoCloseable {
                 }
                 assert v != null;             
                 
-                curr = new ScoredCacheEntry<K,V>(k, v, score);
-                
+                curr = new ScoredCacheEntry<K,V>(k, v, score);                
 
                 break;
             }

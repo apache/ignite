@@ -25,7 +25,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Read-write lock wrapper for {@link IntMap}.
  */
 public class IntRWHashMap<V> implements IntMap<V> {
-    /** RW Lock. */
+    
+	private static final long serialVersionUID = 1L;
+
+	/** RW Lock. */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     /** Map delegate. */

@@ -45,6 +45,9 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
     @JsonSubTypes.Type(value = WeightedMinkowskiDistance.class, name = "WeightedMinkowskiDistance"),
 })
 public interface DistanceMeasure extends Externalizable {
+	default boolean isSimilarity() {
+		return false;
+	}
     /**
      * Compute the distance between two n-dimensional vectors.
      * <p>

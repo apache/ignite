@@ -38,4 +38,8 @@ public class JaccardIndex implements DistanceMeasure {
 
         return intersect / (a.size() + b.size() - intersect);
     }
+    
+    public boolean isSimilarity() {
+		return true;
+	}
 }

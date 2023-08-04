@@ -32,6 +32,8 @@ import de.kp.works.ignite.gremlin.exception.IgniteGraphException;
 import de.kp.works.ignite.gremlin.models.DocumentModel;
 import de.kp.works.ignite.gremlin.models.EdgeModel;
 import de.kp.works.ignite.gremlin.models.VertexModel;
+import de.kp.works.ignite.gremlin.process.computer.TinkerGraphComputer;
+import de.kp.works.ignite.gremlin.process.computer.TinkerGraphComputerView;
 import de.kp.works.ignite.gremlin.process.strategy.optimization.IgniteGraphStepStrategy;
 import de.kp.works.ignite.gremlin.process.strategy.optimization.IgniteVertexStepStrategy;
 import de.kp.works.ignite.mutate.IgnitePut;
@@ -59,6 +61,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -80,7 +83,10 @@ public class IgniteGraph implements Graph {
     private final IgniteGraphConfiguration config;
 
     private final IgniteGraphFeatures features;
-    private final IgniteAdmin admin;
+    
+    TinkerGraphComputerView graphComputerView = null;
+    
+    final IgniteAdmin admin;
 
     private final EdgeModel edgeModel;
     private final VertexModel vertexModel;
@@ -119,7 +125,7 @@ public class IgniteGraph implements Graph {
         this.config = config;
         this.admin = connection.getAdmin();
 
-        this.features = new IgniteGraphFeatures(true);
+        this.features = new IgniteGraphFeatures(this.admin.isPersistence());
         
         String propertyType = config.getString(IgniteGraphConfiguration.Keys.GRAPH_PROPERTY_TYPE);
         if(propertyType!=null && !propertyType.isEmpty()) {        	
@@ -499,17 +505,20 @@ public class IgniteGraph implements Graph {
     public Iterator<Edge> allEdges(Object fromId, int limit) {
         return edgeModel.edges(fromId, limit);
     }
-
+    
+    
     @Override
     public <C extends GraphComputer> C compute(final Class<C> graphComputerClass) {
-        throw Graph.Exceptions.graphComputerNotSupported();
+        if (!graphComputerClass.equals(TinkerGraphComputer.class))
+            throw Graph.Exceptions.graphDoesNotSupportProvidedGraphComputer(graphComputerClass);
+        return (C) new TinkerGraphComputer(this);
     }
 
     @Override
     public GraphComputer compute() {
-        throw Graph.Exceptions.graphComputerNotSupported();
-    }
-
+        return new TinkerGraphComputer(this);
+    }    
+    
     @Override
     public Transaction tx() {
         throw Graph.Exceptions.transactionsNotSupported();

@@ -39,7 +39,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * @param <K> Type of a key in <tt>upstream</tt> data.
  * @param <V> Type of a value in <tt>upstream</tt> data.
  */
-public class KNNPartitionDataBuilder<K, V> implements PartitionDataBuilder<K, V, EmptyContext, SpatialIndex<Double>> {
+public class KNNPartitionDataBuilder<K, V, L> implements PartitionDataBuilder<K, V, EmptyContext, SpatialIndex<L>> {
     /** Data preprocessor. */
     private final Preprocessor<K, V> preprocessor;
 
@@ -65,10 +65,10 @@ public class KNNPartitionDataBuilder<K, V> implements PartitionDataBuilder<K, V,
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public SpatialIndex<Double> build(LearningEnvironment env, Iterator<UpstreamEntry<K, V>> upstreamData,
+    @Override public SpatialIndex<L> build(LearningEnvironment env, Iterator<UpstreamEntry<K, V>> upstreamData,
         long upstreamDataSize, EmptyContext ctx) {
 
-        List<LabeledVector<Double>> dataPnts = new ArrayList<>();
+        List<LabeledVector<L>> dataPnts = new ArrayList<>();
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
             dataPnts.add(preprocessor.apply(entry.getKey(), entry.getValue()));

@@ -4,10 +4,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,25 +17,22 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
-import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneDirectory;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.RAMDirectory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.ApplicationContext;
@@ -53,10 +46,18 @@ public class LuceneIndexAccess {
 	public static final String DLF_LUCENE_CONFIG = "default";
 	 
     /** spring ctx for lucene.xml */
-    public static ApplicationContext springCtx = null;
+	public static ApplicationContext springCtx = null;
+    
+    private static final Map<String, LuceneIndexAccess> INDEX_ACCESS = new ConcurrentHashMap<>();
 
 	 /** */
-    private final AtomicLong updateCntr = new GridAtomicLong();   
+    private final AtomicLong updateCntr = new GridAtomicLong();
+    
+    /** 基于字段的分析器 */
+    public PerFieldAnalyzerWrapper analyzerWrapper;
+    
+    
+    private Directory indexDir =  null;
 
     /**
      * The index writer.
@@ -66,7 +67,7 @@ public class LuceneIndexAccess {
     /**
      * The index reader.
      */
-	public IndexReader reader;
+	public DirectoryReader reader;
 
     /**
      * The index searcher.
@@ -81,7 +82,13 @@ public class LuceneIndexAccess {
 	public LuceneConfiguration config;
 	
 	private GridKernalContext ctx;
-	
+	/**
+	 *  如果config/lucene.xml含有cacheName的bean，则使用这个bean作为luncene配置信息，否则使用default。
+	 * @param ctx
+	 * @param cacheName
+	 * @param path
+	 * @throws IOException
+	 */
 	public LuceneIndexAccess(GridKernalContext ctx, String cacheName,String path) throws IOException{	
 		this.ctx = ctx;
 		try{
@@ -92,7 +99,7 @@ public class LuceneIndexAccess {
     			this.config = springCtx.getBean(cacheName,LuceneConfiguration.class);
     		}
     		else if(springCtx.containsBean(DLF_LUCENE_CONFIG)){
-    			this.config = springCtx.getBean(DLF_LUCENE_CONFIG,LuceneConfiguration.class);
+    			this.config = new LuceneConfiguration(springCtx.getBean(DLF_LUCENE_CONFIG,LuceneConfiguration.class));
     		}
     		else {
     			this.config = new LuceneConfiguration();
@@ -127,6 +134,20 @@ public class LuceneIndexAccess {
 		return fields;
 	}
 	
+	public Analyzer getFieldAnalyzer(String field) {
+		String region = field;
+		Analyzer _instance = config.getFieldAnalyzerMap().get(region);
+		if (_instance == null) {
+			if(config.getQueryAnalyzer()!=null){
+				return config.getQueryAnalyzer();
+			}		
+			Analyzer ana = new StandardAnalyzer();
+			return ana;			
+		}
+		return _instance;
+	}	
+	
+	
 	public Map<String,FieldType> init(GridQueryTypeDescriptor type) {
 		
 		Map<String,FieldType> fields = fields(type.name());
@@ -153,10 +174,10 @@ public class LuceneIndexAccess {
         			}
         			else {
         				fields.put(field,TextField.TYPE_NOT_STORED);
-        			}
-        			
+        			}        			
         		}
-            }
+            }        	
+        	
     	}
     	catch(BeansException e){
     		e.printStackTrace();
@@ -196,49 +217,40 @@ public class LuceneIndexAccess {
         }
 
         return springCtx;
-    }
-      
-
-	public Analyzer getQueryAnalyzer(){
-		if(config.getQueryAnalyzer()!=null){
-			return config.getQueryAnalyzer();
-		}		
-		Analyzer ana = new StandardAnalyzer();
-		return ana;
-	}
+    }	
 	
-	public void open(String path) throws IOException{
-		 	
-        Directory indexDir =  null;
-              
+	public void open(String path) throws IOException{        
         if(path.startsWith(FullTextLucene.IN_MEMORY_PREFIX)){
-        	indexDir = new RAMDirectory();
+        	indexDir = new GridLuceneDirectory(new GridUnsafeMemory(0));
         }
         else if(config.isOffHeapStore()){ // offheap store
         	indexDir = new GridLuceneDirectory(new GridUnsafeMemory(0));
         }
         else{
         	indexDir = FSDirectory.open(new File(path).toPath());
-        }                   
+        }
 
-        Analyzer analyzer = new StandardAnalyzer();                  
+        Analyzer analyzer = null;                 
 		
 		if(config.getIndexAnalyzer()!=null){
 			analyzer = config.getIndexAnalyzer();
 		}
+		else {
+			analyzer = new StandardAnalyzer();
+		}		
+		analyzerWrapper = new PerFieldAnalyzerWrapper(analyzer, config.getFieldAnalyzerMap());
 		
-        IndexWriterConfig conf = new IndexWriterConfig(analyzer);
-        conf.setCommitOnClose(false); // we by default don't commit on close   
+        IndexWriterConfig conf = new IndexWriterConfig(analyzerWrapper);
+        conf.setCommitOnClose(config.isPersistenceEnabled()); // we by default don't commit on close   
         if(this.writer!=null || config.isPersistenceEnabled()){
         	conf.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);   
         }else{
         	conf.setOpenMode(IndexWriterConfig.OpenMode.CREATE);   
-        }
-       
+        }    
        
         IndexWriter writer = new IndexWriter(indexDir, conf);
         //see http://wiki.apache.org/lucene-java/NearRealtimeSearch
-        IndexReader reader = DirectoryReader.open(writer);
+        DirectoryReader reader = DirectoryReader.open(writer);
        
         this.writer = writer;
         this.reader = reader;
@@ -253,12 +265,16 @@ public class LuceneIndexAccess {
     /**
      * Commit all changes to the Lucene index.
      */
-    public void commitIndex() throws IOException {        
+    public void commitIndex() throws IOException {    	
         writer.commit();
-        // recreate Searcher with the IndexWriter's reader.               
-        reader.close();
-        reader = DirectoryReader.open(writer);
-        searcher = new IndexSearcher(reader);            
+        //writer.close();
+        // recreate Searcher with the IndexWriter's reader.
+        if(true) {
+        	boolean applyAllDeletes = true;     
+        	//reader = DirectoryReader.open(indexDir);
+        	reader = DirectoryReader.openIfChanged(reader, writer, applyAllDeletes);	        
+	        searcher = new IndexSearcher(reader);
+        }
     }
     
     public void close() throws IOException{      
@@ -320,22 +336,19 @@ public class LuceneIndexAccess {
             LuceneIndexAccess access = INDEX_ACCESS.get(path);
            
             if (access == null) {
-                try {
-                	
-                	access = new LuceneIndexAccess(ctx,cacheName,path); 
-                    
+                try {                	
+                	access = new LuceneIndexAccess(ctx,cacheName,path);                     
                     
                 } catch (IOException e) {
                     throw e;
                 }
-                INDEX_ACCESS.put(path, access);
                 
+                INDEX_ACCESS.put(path, access);                
                 
             }
             
             if (!access.writer.isOpen()) {
-                try {                	
-                	
+                try {
                 	access.open(path);                 
                     
                 } catch (IOException e) {
@@ -365,5 +378,5 @@ public class LuceneIndexAccess {
         }
     }
     
-    private static final Map<String, LuceneIndexAccess> INDEX_ACCESS = new ConcurrentHashMap<>();
+    
 }

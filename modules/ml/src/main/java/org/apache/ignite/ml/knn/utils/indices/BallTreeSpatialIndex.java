@@ -63,7 +63,7 @@ public class BallTreeSpatialIndex<L> implements SpatialIndex<L> {
 
     /** {@inheritDoc} */
     @Override public List<LabeledVector<L>> findKClosest(int k, Vector pnt) {
-        Queue<PointWithDistance<L>> heap = new PriorityQueue<>(Collections.reverseOrder());
+    	Queue<PointWithDistance<L>> heap = new PriorityQueue<>(k, distanceMeasure.isSimilarity()?Collections.reverseOrder():null);
 
         root.findKClosest(pnt, heap, k);
 

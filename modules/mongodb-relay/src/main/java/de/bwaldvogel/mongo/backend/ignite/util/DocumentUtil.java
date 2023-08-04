@@ -27,91 +27,86 @@ import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.binary.BinaryObjectException;
+
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+
 import org.apache.ignite.internal.processors.igfs.IgfsBaseBlockKey;
 
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.lucene.util.BytesRef;
 
 import com.fasterxml.jackson.databind.util.LRUMap;
 
+import de.bwaldvogel.mongo.backend.Missing;
 import de.bwaldvogel.mongo.backend.Utils;
-import de.bwaldvogel.mongo.backend.ignite.IgniteBinaryCollection;
 import de.bwaldvogel.mongo.bson.Document;
-import io.netty.buffer.ByteBuf;
-import io.netty.util.internal.StringUtil;
-import static de.bwaldvogel.mongo.backend.Constants.ID_FIELD;
+import de.bwaldvogel.mongo.wire.bson.BsonEncoder;
+
 
 public class DocumentUtil {
 	
 	public static LRUMap<BytesRef,Object> keyDict = new LRUMap<>(100,5000);
 	
-	public static Document toKeyValuePairs(Object instance) {
-		
-		  //MapFactry x;
-		Document doc = new Document();
-		for(Field field : instance.getClass().getDeclaredFields()){
+	/**
+	 *  将对象在类里面的公开字段作为key，生成document
+	 * @param doc
+	 * @param instance
+	 * @param cls
+	 * @return
+	 */
+	public static Document objectToDocumentForClass(Document doc, Object instance,Class<?> cls) {		
+		//MapFactry x;		
+		for(Field field : cls.getDeclaredFields()){
 			if(!Modifier.isStatic(field.getModifiers())) {
 				try {
 	              Object result = null;
 	              field.setAccessible(true);
 	              result = field.get(instance);
-	              if( result != null ) {
+	              if( result != null && !doc.containsKey(field.getName())) {
 	            	  if(result instanceof IgniteUuid || result instanceof IgfsBaseBlockKey) {
 	            		  result = result.toString();
 	            	  }
-	            	  if(Comparable.class.isAssignableFrom(result.getClass())) {
+	            	  try {
+	            		  byte t = BsonEncoder.determineType(result);
 	            		  doc.append(field.getName(), result); 
 	            	  }
-	            	  else {
+	            	  catch(Exception e) {
 	            		  doc.append(field.getName(), new Document(result));
-	            	  }
+	            	  }	            	 
 	              }
 	             
 	            } catch (Exception e) {		             
-	              e.printStackTrace();
+	                e.printStackTrace();
 	            }
 			}
 		}
-		Class p = instance.getClass().getSuperclass();
+		return doc;
+	}
+	/**
+	 * 对非binary对象进行文档化
+	 * @param instance
+	 * @return
+	 */
+	public static Document toKeyValuePairs(Object instance) {		
+		//MapFactry x;
+		Document doc = new Document();
+		doc = objectToDocumentForClass(doc,instance,instance.getClass());
+		Class<?> p = instance.getClass().getSuperclass();
 		while(p!=Object.class) {
-			for(Field field : p.getDeclaredFields()){
-				if(!Modifier.isStatic(field.getModifiers())) {
-					try {
-		              Object result = null;
-		              field.setAccessible(true);
-		              result = field.get(instance);
-		              if( result != null ) {
-		            	  if(result instanceof IgniteUuid || result instanceof IgfsBaseBlockKey) {
-		            		  result = result.toString();
-		            	  }
-		            	  if(Comparable.class.isAssignableFrom(result.getClass())) {
-		            		  doc.putIfAbsent(field.getName(), result); 
-		            	  }
-		            	  else {
-		            		  doc.putIfAbsent(field.getName(), new Document(result));
-		            	  }
-		              }
-		             
-		            } catch (Exception e) {		             
-		              e.printStackTrace();
-		            }
-				}
-			}
+			doc = objectToDocumentForClass(doc,instance,p);
 			p = p.getSuperclass();
 		}
-		return doc;
-			 
+		return doc;			 
 	}
 
 	
-	public static Document binaryObjectToDocument(Object key,Object obj,String idField){
-		if(obj instanceof byte[]) {
+	public static Document objectToDocument(Object key,Object obj,String idField){
+		if(obj instanceof byte[] || obj instanceof Number || obj instanceof CharSequence || obj.getClass().isArray()) {
 			key = toDocumentKey(key,idField);
 			Document doc = new Document();
 			doc.append(idField, key);
@@ -120,7 +115,15 @@ public class DocumentUtil {
 		}
 		else if(obj instanceof BinaryObject) {
 			BinaryObject bobj = (BinaryObject) obj;
-			return binaryObjectToDocument(key,bobj,idField,bobj.type().fieldNames());
+			return binaryObjectToDocument(key,bobj,idField);
+		}
+		else if(obj instanceof Vector) {
+			Vector bobj = (Vector) obj;
+			Document doc = new Document();
+			doc.append(idField, key);
+			doc.append("_data", bobj.getStorage().data());
+			doc.append("_meta", bobj.getMetaStorage());
+			return doc;
 		}
 		else {
 			key = toDocumentKey(key,idField);
@@ -134,94 +137,42 @@ public class DocumentUtil {
 	}
 	
 	/**
-	 * 
+	 * top decode
 	 * @param key
 	 * @param obj
 	 * @param idField document _id
 	 * @return
 	 */
-	public static Document binaryObjectToDocument(Object key,BinaryObject obj,String idField, Collection<String> fields){	    	
-    	
-    	Document doc = new Document();
-		if(fields.size()==0) {
-			Object $value = binaryObjectToDocument(obj);
-			doc = toKeyValuePairs($value);			
+	public static Document binaryObjectToDocument(Object key, BinaryObject obj, String idField){
+		Document doc = null;
+		Object $value = binaryObjectToDocument(obj);
+		if($value instanceof Document) {
+			doc = (Document)$value;
+			if(key!=null) {
+	    		key = toDocumentKey(key,idField);
+	    		doc.append(idField, key);
+	    	}
 		}
 		else {
-		    for(String field: fields){	    	
-		    	String $key =  field;
-		    	Object $value = obj.field(field);
-				try {
-				
-					if($value instanceof List){
-						List $arr = (List)$value;
-						List<Object> $arr2 = new ArrayList<>($arr.size());
-						for(int i=0;i<$arr.size();i++) {
-							Object $valueSlice = $arr.get(i);
-							if($valueSlice instanceof BinaryObject){
-								BinaryObject $arrSlice = (BinaryObject)$valueSlice;					
-								$valueSlice = binaryObjectToDocument($arrSlice);
-							}	
-							$arr2.add($valueSlice);
-						}
-						$value = ($arr2);
-					}
-					else if($value instanceof Set){
-						Set $arr = (Set)$value;
-						Set $arr2 = new HashSet<>($arr.size());
-						Iterator it = $arr.iterator();
-						while(it.hasNext()) {
-							Object $valueSlice = it.next();
-							if($valueSlice instanceof BinaryObject){
-								BinaryObject $arrSlice = (BinaryObject)$valueSlice;					
-								$valueSlice = binaryObjectToDocument($arrSlice);
-							}	
-							$arr2.add($valueSlice);
-						}
-						$value = ($arr2);
-					}
-					else if($value instanceof Map){
-						Map $arr = (Map)$value;
-						final Document docItem = new Document();
-						$arr.forEach((k,v)->{
-							if(v instanceof BinaryObject) {
-								BinaryObject $arrSlice = (BinaryObject)v;					
-								v = binaryObjectToDocument($arrSlice);
-							}
-							docItem.put(k.toString(),v);
-						});
-						$value = docItem;
-						
-					}
-					if($value instanceof BinaryObject){
-						BinaryObject $arr = (BinaryObject)$value;					
-						$value = binaryObjectToDocument($arr);
-					}	
-					if($value!=null) {
-						doc.append($key, $value);
-					}
-					
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}	    	
-		    }
+			doc = objectToDocument(key, $value, idField);
 		}
     	
-    	if(key!=null) {
-    		key = toDocumentKey(key,idField);
-    		doc.append(idField, key);
-    	}
 	    return doc;
 	}   
     
+	/**
+	 * document key only support bson type
+	 * @param key
+	 * @param idField
+	 * @return
+	 */
 	public static Object toDocumentKey(Object key,String idField) {
 		if(key!=null) {
     		if(key instanceof BinaryObject){
 				BinaryObject $arr = (BinaryObject)key;
 				key = binaryObjectToDocument($arr);
 				if(key instanceof Map) {
-					Map<String,Object> fileds = (Map) key;
+					Map fileds = (Map) key;
 					if(fileds.containsKey(idField)) {
 						key = $arr.field(idField);
 					}
@@ -238,6 +189,9 @@ public class DocumentUtil {
 	}
 	
 	public static Object toBinaryKey(Object key) {
+		if (key == null) {
+            return Missing.getInstance();
+        }
 		if(key instanceof byte[]){
 			Object bKey = keyDict.get(new BytesRef((byte[])key));
 			if(bKey!=null) {
@@ -250,30 +204,62 @@ public class DocumentUtil {
 	    return key;
 	}
 
-    public static Object binaryObjectToDocument(BinaryObject obj){	    	
-    	Object object = null;
-    	try {
-    		object = obj.deserialize();    		
+    public static Object binaryObjectToDocument(BinaryObject bobj){
+    	Collection<String> fields = bobj.type().fieldNames();
+    	try {    		
+        	if(fields.size()==0) {
+        		return bobj.deserialize();
+        	}
     	}
-    	catch(Exception ex) {
-
-        	Document doc = new Document();
-    	    for(String field: obj.type().fieldNames()){	    	
-    	    	String $key =  field;
-    	    	Object $value = obj.field(field);
-    	    	if($value instanceof List){
+    	catch(Exception e) {
+    		e.printStackTrace();    		
+    	}
+    	
+    	Document doc = new Document();
+	    for(String field: fields){	    	
+	    	String $key =  field;
+	    	Object $value = bobj.field(field);
+			try {
+			
+				if($value instanceof List){
 					List $arr = (List)$value;
-					//-$value = $arr.toArray();
-					$value = ($arr);
+					List<Object> $arr2 = new ArrayList<>($arr.size());
+					for(int i=0;i<$arr.size();i++) {
+						Object $valueSlice = $arr.get(i);
+						if($valueSlice instanceof BinaryObject){
+							BinaryObject $arrSlice = (BinaryObject)$valueSlice;					
+							$valueSlice = binaryObjectToDocument($arrSlice);
+						}	
+						$arr2.add($valueSlice);
+					}
+					$value = ($arr2);
 				}
 				else if($value instanceof Set){
 					Set $arr = (Set)$value;
-					//-$value = $arr.toArray();
-					$value = ($arr);
+					Set $arr2 = new HashSet<>($arr.size());
+					Iterator it = $arr.iterator();
+					while(it.hasNext()) {
+						Object $valueSlice = it.next();
+						if($valueSlice instanceof BinaryObject){
+							BinaryObject $arrSlice = (BinaryObject)$valueSlice;					
+							$valueSlice = binaryObjectToDocument($arrSlice);
+						}	
+						$arr2.add($valueSlice);
+					}
+					$value = ($arr2);
 				}
 				else if($value instanceof Map){
-					Map $arr = (Map)$value;					
-					$value = new Document($arr);
+					Map $arr = (Map)$value;
+					final Document docItem = new Document();
+					$arr.forEach((k,v)->{
+						if(v instanceof BinaryObject) {
+							BinaryObject $arrSlice = (BinaryObject)v;					
+							v = binaryObjectToDocument($arrSlice);
+						}
+						docItem.put(k.toString(),v);
+					});
+					$value = docItem;
+					
 				}
 				if($value instanceof BinaryObject){
 					BinaryObject $arr = (BinaryObject)$value;					
@@ -281,11 +267,14 @@ public class DocumentUtil {
 				}	
 				if($value!=null) {
 					doc.append($key, $value);
-				}    	
-    	    }        		
-    	    return doc;
-    	}    	
-    	return object;
+				}
+				
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}	    	
+	    }
+	    return doc;
 	}   
 
 
@@ -335,9 +324,7 @@ public class DocumentUtil {
 
                 break;               
         }
-
-        return (F)val;
-   
+        return (F)val;   
     }
     
 
@@ -348,28 +335,22 @@ public class DocumentUtil {
         Object val = buf;;
 
         switch (hdr) {
-            
-
             case GridBinaryMarshaller.BOOLEAN:
-            	 val = buf.getClass()==Boolean.class? buf: Utils.isTrue(buf);
-
+            	val = buf.getClass()==Boolean.class? buf: Utils.isTrue(buf);
                 break;
             
 
             case GridBinaryMarshaller.CHAR:
             	val = buf.getClass()==Character.class? buf: buf.toString().charAt(0);
-
-                break;
-           
+                break;           
 
             case GridBinaryMarshaller.STRING: {
             	val = buf.toString();
-
                 break;
             }
 
             case GridBinaryMarshaller.DATE: {
-            	val = buf.getClass()==Date.class? buf:null;
+            	val = buf.getClass()==Date.class? buf: null;
             	if(val==null) {
             		DateFormat dateFormatSecond = new SimpleDateFormat("yyyy-mm-dd hh:ss");
             		DateFormat dateFormatDay = new SimpleDateFormat("yyyy-mm-dd");
@@ -384,13 +365,11 @@ public class DocumentUtil {
             			}
             		}
             	}
-
                 break;
             }
 
-            case GridBinaryMarshaller.TIMESTAMP: {
-            	
-            	val = buf.getClass()==Timestamp.class? buf:null;
+            case GridBinaryMarshaller.TIMESTAMP: {            	
+            	val = buf.getClass()==Timestamp.class? buf: null;
             	if(val==null) {
             		long time = Long.parseLong(buf.toString());
             		val = new Timestamp(time);
@@ -399,7 +378,7 @@ public class DocumentUtil {
             }
 
             case GridBinaryMarshaller.TIME: {
-            	val = buf.getClass()==Time.class? buf:null;
+            	val = buf.getClass()==Time.class? buf: null;
             	if(val==null) {
             		long time = Long.parseLong(buf.toString());
             		val = new Time(time);
@@ -408,7 +387,7 @@ public class DocumentUtil {
             }
 
             case GridBinaryMarshaller.UUID: {
-            	val = buf.getClass()==UUID.class? buf:UUID.fromString(buf.toString());
+            	val = buf.getClass()==UUID.class? buf: UUID.fromString(buf.toString());
 
                 break;
             }
@@ -424,8 +403,7 @@ public class DocumentUtil {
                 break;
         }
 
-        return (F)val;
-   
+        return (F)val;   
       
     }
     
@@ -439,20 +417,16 @@ public class DocumentUtil {
      * @param keyField BinaryObject id 
      * @return
      */
-    public static T2<Object,BinaryObject> documentToBinaryObject(IgniteBinary igniteBinary,Object docId,Document doc,String typeName,String keyField){	
+    public static BinaryObject documentToBinaryObject(IgniteBinary igniteBinary,String typeName, Document doc, String idField){	
     	
     	BinaryTypeImpl type = (BinaryTypeImpl)igniteBinary.type(typeName);
-		BinaryObjectBuilder bb = igniteBinary.builder(typeName);
-		
+		BinaryObjectBuilder bb = igniteBinary.builder(typeName);		
 		Set<Map.Entry<String,Object>> ents = doc.entrySet();
 	    for(Map.Entry<String,Object> ent: ents){	    	
 	    	String $key =  ent.getKey();
 	    	Object $value = ent.getValue();
-	    	if($key.equals(ID_FIELD)) {
-	    		$key = keyField;
-	    	}
-			try {
-			
+	    	
+			try {			
 				if($value instanceof List){
 					List $arr = (List)$value;
 					//-$value = $arr.toArray();
@@ -464,8 +438,7 @@ public class DocumentUtil {
 					$value = ($arr);
 				}
 				else if($value instanceof Document){
-					Document $arr = (Document)$value;
-					//-$value = new HashMap<String,Object>($arr);
+					Document $arr = (Document)$value;					
 					$value = $arr.asMap();
 				}
 				else if($value instanceof Map){
@@ -485,8 +458,14 @@ public class DocumentUtil {
 						$value = readOtherBinaryField($value,field.typeId());
 					}
 				}
-				if($key.equals(keyField)) {
-					docId = $value;
+				if($key.equals(idField) && doc.size()>1) {
+								
+				}
+				else if($key.equals("_data") && doc.size()<=2) {
+					Object bValue = igniteBinary.toBinary($value);
+					if(bValue instanceof BinaryObject) {						
+						return (BinaryObject)bValue;
+					}
 				}
 				else {
 					Object bValue = igniteBinary.toBinary($value);
@@ -494,14 +473,12 @@ public class DocumentUtil {
 				}
 				
 				
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
+			} catch (Exception e) {				
 				e.printStackTrace();
 			}	    	
-	    }	   
+	    }
+	    
 	    BinaryObject  bobj = bb.build();
-	    return new T2<>(toBinaryKey(docId),bobj);
+	    return bobj;
 	}
-    
-
 }

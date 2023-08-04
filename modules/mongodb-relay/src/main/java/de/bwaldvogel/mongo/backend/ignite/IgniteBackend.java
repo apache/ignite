@@ -66,23 +66,23 @@ public class IgniteBackend extends AbstractMongoBackend {
     		gridName = null;
     		databaseName = IgniteDatabase.DEFAULT_DB_NAME;
     	}
-    	if(databaseName!=null && databaseName.isEmpty()) {
+    	if(databaseName==null || databaseName.isEmpty()) {
     		gridName = null;
     		databaseName = IgniteDatabase.DEFAULT_DB_NAME;
-    	}    	
+    	}
+    	
     	try {
 	    	Ignite mvStore = Ignition.ignite(gridName);
-	        return new IgniteDatabase(databaseName, this, mvStore, this.getCursorRegistry());
-        
+	        return new IgniteDatabase(databaseName, this, mvStore, this.getCursorRegistry());        
     	}
-    	catch(Exception e) {
+    	catch(Exception e) {    		
     		throw new MongoServerException(String.format("Database %s not install!",databaseName),e);
     	}
-    }
+    }    
     
-    
+    @Override
     protected Set<String> listDatabaseNames() {
-        return Ignition.allGrids().stream().map(Ignite::name).collect(Collectors.toSet());
+        return Ignition.allGrids().stream().map(Ignite::name).map(n -> n==null?"default":n).collect(Collectors.toSet());
     }
 
     @Override

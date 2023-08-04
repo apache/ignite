@@ -26,6 +26,10 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
 public class CosineSimilarity implements DistanceMeasure {
     /** {@inheritDoc} */
     @Override public double compute(Vector a, Vector b) throws CardinalityException {
-        return MatrixUtil.localCopyOf(a).dot(b) / (a.kNorm(2d) * b.kNorm(2d));
+        return a.dot(b) / (a.kNorm(2d) * b.kNorm(2d));
     }
+    
+    public boolean isSimilarity() {
+		return true;
+	}
 }

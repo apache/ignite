@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
+
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -75,7 +75,7 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
     
     @Override
     protected String extractCollectionNameFromNamespace(String namespace) {
-        if(StringUtils.startsWith(namespace, databaseName+'.')){
+        if(namespace.startsWith(databaseName+'.')){
         	return namespace.substring(databaseName.length() + 1);
         }
         return namespace;
@@ -103,17 +103,23 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
     
     @Override
     protected Index<Object> openOrCreateSecondaryIndex(String collectionName, String indexName, List<IndexKey> keys, boolean sparse) {
-    	if(keys.size() ==1 && keys.get(0).isText() ) {
+    	IgniteBinaryCollection collection = (IgniteBinaryCollection)resolveCollection(collectionName,true);
+    	if(keys.size()>0 && keys.get(0).isText() ) {
     		String indexType = (String)keys.get(0).textOptions().get("type");
-    		if("text".equalsIgnoreCase(indexType)) { // rnnVector
+    		if("knnVector".equalsIgnoreCase(indexType)) { // rnnVector
 	    		IgniteEx ignite = (IgniteEx)mvStore;
-	    		IgniteVectorIndex index = new IgniteVectorIndex(ignite.context(),collectionName,indexName,keys,sparse);    		
+	    		IgniteVectorIndex index = new IgniteVectorIndex(ignite.context(),collection,indexName,keys,sparse); 		
+	    		return index;
+    		}
+    		else if("text".equalsIgnoreCase(indexType)) { // text
+	    		IgniteEx ignite = (IgniteEx)mvStore;
+	    		IgniteLuceneIndex index = new IgniteLuceneIndex(ignite.context(),collection,indexName,keys,sparse);    		
 	    		return index;
     		}
     	}
     	if(keys.size()>0) {
     		IgniteEx ignite = (IgniteEx)mvStore;
-    		IgniteLuceneIndex index = new IgniteLuceneIndex(ignite.context(),collectionName,indexName,keys,sparse);    		
+    		IgniteLuceneIndex index = new IgniteLuceneIndex(ignite.context(),collection,indexName,keys,sparse);    		
     		return index;
     	}
     	return null;
@@ -124,7 +130,8 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
         super.drop(oplog);
         
         List<String> maps = mvStore.cacheNames().stream()
-            .filter(name -> !name.startsWith("system.")          
+            .filter(name -> 
+            	!name.startsWith("system.")          
             )
             //.map(mvStore::openMap)
             .collect(Collectors.toList());
@@ -143,7 +150,9 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
     
     @Override
     protected Iterable<String> listCollectionNamespaces() {    	
-    	return mvStore.cacheNames();
+    	return mvStore.cacheNames().stream().filter(c-> 
+    		!c.startsWith(INDEX_DB_PREFIX) && !c.startsWith("system."))
+    	.collect(Collectors.toList());
     }
 
     @Override
@@ -205,12 +214,16 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
         super.dropCollection(collectionName,oplog);
         String fullCollectionName = getCacheName(databaseName ,collectionName);
         List<String> maps = mvStore.cacheNames().stream()
-                .filter(name -> name.equals(fullCollectionName)  ||  name.startsWith(getIndexCacheName(databaseName,collectionName,""))          
+                .filter(name -> 
+	                name.equals(fullCollectionName)  
+	                ||  name.startsWith(getIndexCacheName(databaseName,collectionName,""))                 
                 )              
                 .collect(Collectors.toList());
        
         for (String cacheName : maps) {
-            mvStore.destroyCache(cacheName);
+        	if(!cacheName.startsWith("system.")) {
+        		mvStore.destroyCache(cacheName);
+        	}            
         }
         
     }

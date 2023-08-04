@@ -32,6 +32,8 @@ public class IgniteAdmin {
     private static final Logger LOGGER = LoggerFactory.getLogger(IgniteAdmin.class);    
     
     private IgniteConnect connect = null;
+    
+    private boolean persistence = false;
 
     private final String NO_CONNECT_INITIALIZATION = "IgniteConnect is not initialized.";
 
@@ -39,6 +41,7 @@ public class IgniteAdmin {
 
         try {
             this.connect = IgniteConnect.getInstance(namespace);
+            this.persistence = this.connect.getIgnite().configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().isPersistenceEnabled();
 
         } catch (Exception e) {
             String message = "Connecting to Apache Ignited failed";
@@ -68,6 +71,10 @@ public class IgniteAdmin {
 
     }
 
+    public Ignite ignite() {
+    	return this.connect.getIgnite();
+    }
+    
     public IgniteCache<String, BinaryObject> createTable(String name) {
 
         try {
@@ -471,4 +478,8 @@ public class IgniteAdmin {
     	}
     	return false;
     }
+
+	public boolean isPersistence() {
+		return persistence;
+	}
 }

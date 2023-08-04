@@ -144,9 +144,9 @@ public class Blas implements Serializable {
         if (x.isArrayBased())
             f2jBlas.dscal(x.size(), a, x.getStorage().data(), 1);
         else if (x instanceof SparseVector) {
-            Set<Integer> indexes = ((SparseVector)x).indexes();
+            int[] indexes = ((SparseVector)x).indexes();
 
-            for (Integer i : indexes)
+            for (int i : indexes)
                 x.compute(i, (ind, v) -> v * a);
         }
         else

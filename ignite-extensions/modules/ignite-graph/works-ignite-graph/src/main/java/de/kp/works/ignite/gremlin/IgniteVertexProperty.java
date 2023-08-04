@@ -29,7 +29,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-public final class IgniteVertexProperty<V> implements VertexProperty<V>,java.io.Serializable {
+public class IgniteVertexProperty<V> implements VertexProperty<V>,java.io.Serializable {
     protected final IgniteVertex vertex;
     protected final String key;
     protected final V value;

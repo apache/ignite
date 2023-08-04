@@ -30,6 +30,8 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 public class LabeledVector<L> extends DatasetRow<Vector> {
     /** Label. */
     private L lb;
+    
+    private float weight;
 
     /**
      * Default constructor.
@@ -47,8 +49,28 @@ public class LabeledVector<L> extends DatasetRow<Vector> {
         super(vector);
         this.lb = lb;
     }
-
+    
     /**
+     * Construct labeled vector.
+     *
+     * @param vector Vector.
+     * @param lb Label.
+     */
+    public LabeledVector(Vector vector, L lb, float weight) {
+        super(vector);
+        this.lb = lb;
+        this.weight = weight;
+    }    
+
+    public float weight() {
+		return weight;
+	}
+
+	public void setWeight(float weight) {
+		this.weight = weight;
+	}
+
+	/**
      * Get the label.
      *
      * @return Label.
@@ -91,12 +113,14 @@ public class LabeledVector<L> extends DatasetRow<Vector> {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(vector);
         out.writeObject(lb);
+        out.writeFloat(weight);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         vector = (Vector)in.readObject();
         lb = (L)in.readObject();
+        weight = in.readFloat();        	
     }
 
     /** */

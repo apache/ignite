@@ -17,6 +17,7 @@
 package de.kp.works.ignite.gremlin.plugin;
 
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.BindException;
@@ -49,22 +50,20 @@ import de.kp.works.ignite.IgniteConnect;
  * Security processor provider for tests.
  */
 public class GremlinServerPluginProvider implements PluginProvider<GremlinPluginConfiguration> {
-	 private String databaseName;
-	 
-	 /** Ignite logger. */
-	 private IgniteLogger log;
      
-	
-     private GremlinPluginConfiguration cfg;
-     
-	 //Singerton
+	 // Singerton
      public static GremlinServer gremlinServer;
      public static GraphManager backend;
      public static Settings settings;
      public static CompletableFuture<Void> serverStarted;
      
-     private Ignite ignite;
+     private String databaseName;
+     
 
+     /** Ignite logger. */
+	 private IgniteLogger log;     
+	
+     private GremlinPluginConfiguration cfg;
 	
     /** {@inheritDoc} */
     @Override public String name() {
@@ -92,7 +91,7 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
     	 IgniteConfiguration igniteCfg = ctx.igniteConfiguration();
 
-         this.ignite = ctx.grid();
+         Ignite ignite = ctx.grid();
          this.log = ctx.log(this.getClass());
          
          this.cfg = null;
@@ -109,17 +108,23 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
         	 // if node name == 'graph' auto enable create gremlin server
         	 cfg = new GremlinPluginConfiguration();
          }
+         
          boolean per = ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().isPersistenceEnabled();
          if(cfg!=null && per) {
         	 cfg.setPersistenceEnabled(true);        	 
          }
-         if(cfg!=null && settings==null) {
+         
+         if(cfg!=null) {
         	 try {
 				settings = Settings.read(cfg.getGremlinServerCfg());
+				// 设置默认的ignite
+	 	    	IgniteConnect.defaultIgnite = ignite;
+	 	    	databaseName = igniteCfg.getIgniteInstanceName();    
 			} catch (Exception e) {
 				log.error(e.getMessage(),e);
 			}
-         }
+         }       
+        
     }
 
     /** {@inheritDoc} */
@@ -137,8 +142,24 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
 
     /** {@inheritDoc} */
     @Override public void start(PluginContext ctx) {
-    	 // start mongodb singerton when admin grid start
-    	databaseName = ctx.igniteConfiguration().getIgniteInstanceName();    	
+    	String graphName = ctx.igniteConfiguration().getIgniteInstanceName();
+    	if(settings!=null) {
+    		
+    		String configBase = ctx.igniteConfiguration().getIgniteHome()+"/config/gremlin-server";
+    		
+    		File graphFile = new File(configBase,"graph-"+graphName+".properties");
+    		if(graphFile.exists()) {
+    			log.info(graphName+ "::load gremlim graph config file "+ graphFile.getAbsolutePath());
+    			settings.graphs.put(graphName, graphFile.getAbsolutePath());
+    		}
+    		else {
+    			log.info(graphName+ "::load gremlim graph config file "+ graphFile.getAbsolutePath());
+    			graphFile = new File(configBase,"graph-default.properties");
+    			settings.graphs.put(graphName, graphFile.getAbsolutePath());
+    		}    		
+    		
+    	}
+    		
     }
 
     /** {@inheritDoc} */
@@ -152,11 +173,11 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
 
     /** {@inheritDoc} */
     @Override public void onIgniteStart() {
+    	// start mongodb singerton when admin grid start
     	if(gremlinServer==null && settings!=null) {    		      
  	       try {
- 	    	   // 设置默认的ignite
- 	    	   IgniteConnect.defaultIgnite = this.ignite;
- 	    	   gremlinServer = new GremlinServer(settings, this.ignite.executorService());
+ 	    	   
+ 	    	   gremlinServer = new GremlinServer(settings, IgniteConnect.defaultIgnite.executorService());
  	    	   serverStarted = gremlinServer.start().thenAcceptAsync(GremlinServerPluginProvider::configure);
  	    	   serverStarted.join();
  	    	   printHeader();

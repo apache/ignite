@@ -136,13 +136,16 @@ public final class MatrixUtil {
 
     /** */
     public static DenseMatrix asDense(SparseMatrix m, int acsMode) {
-        DenseMatrix res = new DenseMatrix(m.rowSize(), m.columnSize(), acsMode);
-
-        for (int row : m.indexesMap().keySet())
-            for (int col : m.indexesMap().get(row))
-                res.set(row, col, m.get(row, col));
-
-        return res;
+    	if(m.getStorage().storageMode()==acsMode) {
+	        DenseMatrix res = new DenseMatrix(m.data(), m.rowSize(), acsMode);	
+	        
+	        return res;
+	    }
+    	else {
+    		DenseMatrix res = new DenseMatrix(m.data2d(), acsMode);	
+	        
+	        return res;
+    	}
     }
 
     /** */
@@ -174,6 +177,9 @@ public final class MatrixUtil {
 
     /** TODO: IGNITE-5723, rewrite in a more optimal way. */
     public static DenseVector localCopyOf(Vector vec) {
+    	if(vec.isDense() && vec.getStorage().isNumeric()) {
+    		return (DenseVector)vec;
+    	}
         DenseVector res = new DenseVector(vec.size());
 
         for (int i = 0; i < vec.size(); i++)

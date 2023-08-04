@@ -23,8 +23,12 @@ import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
-import it.unimi.dsi.fastutil.ints.IntArraySet;
-import it.unimi.dsi.fastutil.ints.IntSet;
+import java.util.Set;
+
+import org.apache.ignite.internal.util.collection.ImmutableIntSet;
+import org.apache.ignite.internal.util.collection.IntHashMap;
+import org.apache.ignite.internal.util.collection.IntMap;
+import org.apache.ignite.internal.util.collection.IntSet;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.primitives.vector.VectorStorage;
 
@@ -36,7 +40,7 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
     private int size;
 
     /** Actual map storage. */
-    private Map<Integer, Serializable> sto;
+    private IntMap<Serializable> sto;
 
     /**
      *
@@ -50,7 +54,9 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
         assert !map.isEmpty();
 
         this.size = map.size();
-        sto = new HashMap<>(map);
+        sto = new IntHashMap<>();
+        map.forEach((key,val)->{ sto.put(key, val); });
+        
     }
 
     /**
@@ -60,7 +66,7 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
         assert size > 0;
 
         this.size = size;
-        this.sto = new HashMap<>();
+        this.sto = new IntHashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -108,7 +114,7 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
     @SuppressWarnings({"unchecked"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
-        sto = (Map<Integer, Serializable>)in.readObject();
+        sto = (IntHashMap)in.readObject();
     }
 
     /** {@inheritDoc} */
@@ -168,7 +174,7 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
     }
 
     /** */
-    public IntSet indexes() {
-        return new IntArraySet(sto.keySet());
+    public int[] indexes() {
+        return sto.keys();
     }
 }

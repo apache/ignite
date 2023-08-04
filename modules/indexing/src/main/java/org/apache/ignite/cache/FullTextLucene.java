@@ -1262,10 +1262,10 @@ public class FullTextLucene {
     public static boolean buildDocumentField(Document doc,String idxdField,FieldType idxdType, Object fieldVal) throws SQLException {
     	Object data = fieldVal;
 		try {
-			if(fieldVal instanceof  BytesRef) {
+			if(fieldVal instanceof BytesRef) {
 				doc.add(new Field(idxdField, (BytesRef)fieldVal, idxdType));
 			}
-			else if(fieldVal instanceof  Field) {
+			else if(fieldVal instanceof Field) {
 				doc.add((Field)fieldVal);
 			}
 			else if (fieldVal instanceof Clob) {
@@ -1276,7 +1276,7 @@ public class FullTextLucene {
             	Reader dataBytes =(Reader) data;
             	doc.add(new Field(idxdField, dataBytes, idxdType));
             }
-            else {
+            else if(data instanceof CharSequence) {
             	doc.add(new Field(idxdField, fieldVal.toString(), idxdType));
             }
         } catch (Exception e) {

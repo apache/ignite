@@ -4,6 +4,7 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_N
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -11,10 +12,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.regex.Matcher;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.FullTextLucene;
 import org.apache.ignite.cache.LuceneIndexAccess;
 import org.apache.ignite.internal.GridKernalContext;
@@ -28,12 +31,14 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.document.Field.Store;
@@ -52,12 +57,14 @@ import org.jetbrains.annotations.Nullable;
 import de.bwaldvogel.mongo.MongoCollection;
 import de.bwaldvogel.mongo.backend.Assert;
 import de.bwaldvogel.mongo.backend.CollectionUtils;
+import de.bwaldvogel.mongo.backend.ComposeKeyValue;
 import de.bwaldvogel.mongo.backend.Index;
 import de.bwaldvogel.mongo.backend.IndexKey;
 import de.bwaldvogel.mongo.backend.KeyValue;
 import de.bwaldvogel.mongo.backend.QueryOperator;
 import de.bwaldvogel.mongo.backend.Utils;
 import de.bwaldvogel.mongo.backend.ValueComparator;
+import de.bwaldvogel.mongo.backend.ignite.util.DocumentUtil;
 import de.bwaldvogel.mongo.bson.BsonRegularExpression;
 import de.bwaldvogel.mongo.bson.Document;
 import de.bwaldvogel.mongo.bson.ObjectId;
@@ -76,22 +83,24 @@ public class IgniteLuceneIndex extends Index<Object> {
 	private boolean isFirstIndex = false;
 
 	private long docCount = 0;
+	
+	private String keyField = "_id";
 
 	/** */
 	private String[] idxdFields = null;
 	private FieldType[] idxdTypes = null;
 
-	protected IgniteLuceneIndex(GridKernalContext ctx, String collectionName, String name, List<IndexKey> keys,
-			boolean sparse) {
-		super(name, keys, true);
+	protected IgniteLuceneIndex(GridKernalContext ctx, IgniteBinaryCollection collection, String name, List<IndexKey> keys,	boolean sparse) {
+		super(name, keys, sparse);
 		this.ctx = ctx;
-		this.cacheName = collectionName;
+		this.cacheName = collection.getCollectionName();
+		this.keyField = collection.idField;
 
-		init(collectionName);
+		init();
 
 	}
 
-	public void init(String cacheName) {
+	public void init() {
 		if (indexAccess == null) {
 			try {
 				indexAccess = LuceneIndexAccess.getIndexAccess(ctx, cacheName);
@@ -118,17 +127,28 @@ public class IgniteLuceneIndex extends Index<Object> {
 	@Override
 	public Object getPosition(Document document) {
 		// Set<KeyValue> keyValues = getKeyValues(document);
-		Object key = document.getOrDefault("_id", null);
+		Object key = document.getOrDefault(keyField, null);
 		if (key != null) {
-			return key;
+			return DocumentUtil.toBinaryKey(key);
 		}
 		return null;
-	}
+	}	
 
 	@Override
 	public void checkAdd(Document document, MongoCollection<Object> collection) {
 		// TODO Auto-generated method stub
 
+	}
+	
+	private BytesRef marshalKeyField(Object key) {		
+		byte[] keyBytes = marshaller.marshal(ctx.grid().binary().toBinary(key), false);		
+		return new BytesRef(keyBytes);
+	}
+	
+	private Object unmarshalKeyField(BytesRef bytes, GridCacheAdapter cache, ClassLoader ldr) throws IgniteCheckedException {
+		byte[] keyBytes = bytes.bytes;
+		Object k = ctx.cacheObjects().unmarshal(cache.context().cacheObjectContext(), keyBytes, ldr);
+		return k;
 	}
 
 	public HashMap<String, FieldType> fieldsMapping(MongoCollection<Object> collection) {
@@ -136,7 +156,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 		for (Index<Object> idx : collection.getIndexes()) {
 			if (idx instanceof IgniteLuceneIndex) {
 				IgniteLuceneIndex igniteIndex = (IgniteLuceneIndex) idx;
-				igniteIndex.init(cacheName);
+				igniteIndex.init();
 				if (fields.isEmpty()) {
 					igniteIndex.setFirstIndex(true);
 				} else {
@@ -208,7 +228,10 @@ public class IgniteLuceneIndex extends Index<Object> {
 		Object[] row = new Object[idxdFields.length];
 		for (int i = 0, last = idxdFields.length; i < last; i++) {
 			Object fieldVal = document.get(idxdFields[i]);
-			if (idxdTypes[i].tokenized()) {
+			if (fieldVal == null) {
+				continue;
+			}
+			if (idxdTypes[i].tokenized() && fieldVal instanceof CharSequence) {
 				row[i] = new TextField(idxdFields[i],fieldVal.toString(),Store.NO);				
 			}
 			else if(fieldVal instanceof Number) {
@@ -236,8 +259,8 @@ public class IgniteLuceneIndex extends Index<Object> {
 				row[i] = fieldVal;
 			}
 		}
-		byte[] keyBytes = marshaller.marshal(ctx.grid().binary().toBinary(key), false);
-		BytesRef keyByteRef = new BytesRef(keyBytes);
+		
+		BytesRef keyByteRef = marshalKeyField(position);
 		Term term = new Term(KEY_FIELD_NAME, keyByteRef);
 		// build doc body
 		try {
@@ -247,9 +270,9 @@ public class IgniteLuceneIndex extends Index<Object> {
 
 				return; // We did not find any strings to be indexed, will not store data at all.
 			}
-
+			
 			doc.add(new StringField(KEY_FIELD_NAME, keyByteRef, Field.Store.YES));
-			doc.add(new StringField(FullTextLucene.FIELD_TABLE, typeName, Field.Store.YES));
+			doc.add(new StoredField(FullTextLucene.FIELD_TABLE, typeName));
 
 			// Next implies remove than add atomically operation.
 			docCount = indexAccess.writer.updateDocument(term, doc);
@@ -263,18 +286,16 @@ public class IgniteLuceneIndex extends Index<Object> {
 	}
 
 	@Override
-	public Object remove(Document document, MongoCollection<Object> collection) {
-		Object key = null;
+	public Object remove(Document document, MongoCollection<Object> collection) {		
 		if(!this.isFirstIndex) {
 			return null;
 		}
 		IgniteBinaryCollection coll = (IgniteBinaryCollection) collection;
-		key = document.getOrDefault(coll.idField, null);
+		Object key = getPosition(document);
 		try {
 			
-			if (key != null) {
-				byte[] keyBytes = marshaller.marshal(ctx.grid().binary().toBinary(key), false);
-				BytesRef keyByteRef = new BytesRef(keyBytes);
+			if (key != null) {				
+				BytesRef keyByteRef = marshalKeyField(key);
 				Term term = new Term(KEY_FIELD_NAME, keyByteRef);
 				long seq = indexAccess.writer.deleteDocuments(term);
 			}
@@ -337,28 +358,20 @@ public class IgniteLuceneIndex extends Index<Object> {
 
 	@Override
 	public Iterable<Object> getPositions(Document query) {
-
 		final KeyValue queriedKeys = getQueriedKeys(query);
-		KeyValue searchKey = queriedKeys;
-		
+		KeyValue searchKey = queriedKeys;		
 		int n = 0;
 		for (Object queriedKey : queriedKeys.iterator()) {
-			// fill $text value
-			if(queriedKey == null && this.isTextIndex() && query.containsKey("$text")) {
-				queriedKey = query.get("$text");
-			}
-			if (BsonRegularExpression.isRegularExpression(queriedKey)) {
-				if (isCompoundIndex()) {
-					throw new UnsupportedOperationException("Not yet implemented");
-				}
+			// for $text value  { textField : { $text: 'keyword' } }			
+			if (BsonRegularExpression.isRegularExpression(queriedKey)) { // { textField : { $regex: 'keyword' } }
+				
 				List<Object> positions = new ArrayList<>();
-				for (Entry<KeyValue, Object> entry : getFullTextIterable(queriedKey)) {
+				for (Entry<KeyValue, Object> entry : getFullTextList(this.keys().get(n), queriedKey)) {
 					KeyValue obj = entry.getKey();
-					if (obj.size() == 1) {
+					if (obj.size() >= 1) {
 						Object o = obj.get(0);
-						if (o instanceof String) {
-							BsonRegularExpression regularExpression = BsonRegularExpression
-									.convertToRegularExpression(queriedKey);
+						if (o!=null) {
+							BsonRegularExpression regularExpression = BsonRegularExpression.convertToRegularExpression(queriedKey);
 							Matcher matcher = regularExpression.matcher(o.toString());
 							if (matcher.find()) {
 								positions.add(entry.getValue());
@@ -367,34 +380,36 @@ public class IgniteLuceneIndex extends Index<Object> {
 					}
 				}
 				return positions;
-			} else if (BsonRegularExpression.isTextSearchExpression(queriedKey)) {
-				if (isCompoundIndex()) {
-					throw new UnsupportedOperationException("Not yet implemented");
-				}
+			} else if (BsonRegularExpression.isTextSearchExpression(queriedKey)) { // { textField : { $text: 'keyword' } }
+				
 				List<Object> positions = new ArrayList<>();
-				for (Entry<KeyValue, Object> entry : getFullTextIterable(queriedKey)) {
+				for (Entry<KeyValue, Object> entry : getFullTextList(this.keys().get(n), queriedKey)) {
 					KeyValue obj = entry.getKey();
-					if (obj.size() == 1) {
-						Object o = obj.get(0);
+					if (obj.size() >= 1) {
 						positions.add(entry.getValue());
 					}
 				}
+				query.remove(this.keys().get(n));
 				return positions;
-			} else if (queriedKey instanceof Document) {
+			} 
+			
+			// for { $text : { $search: 'keyword' } } || { $text : { $rnnVector: [0.1,0.4,0.6] } }
+			if(queriedKey == null && this.isTextIndex() && query.containsKey("$text")) {
+				queriedKey = query.get("$text");
+			}
+			if (queriedKey instanceof Document) {
 				if (isCompoundIndex() && !this.isTextIndex()) {
 					throw new UnsupportedOperationException("Not yet implemented");
 				}
 				Document keyObj = (Document) queriedKey;
 				if (Utils.containsQueryExpression(keyObj)) {
-					String expression = CollectionUtils.getSingleElement(keyObj.keySet(),
-							() -> new UnsupportedOperationException("illegal query key: " + queriedKeys));
+					Set<String> expression = keyObj.keySet();
 					
-					if (expression.equals("$search")) {
-						String input = (String)keyObj.get(expression);
-						searchKey.iterator()[n] = input;
-					}
-					else if (expression.startsWith("$")) {
-						return getPositionsForExpression(keyObj, expression);
+					if (expression.contains(QueryOperator.SEARCH.getValue())) {											
+						searchKey = searchKey.copyFrom(n, keyObj);						
+					}					
+					else if (expression.contains(QueryOperator.IN.getValue())) {
+						return getPositionsForExpression(keyObj, QueryOperator.IN.getValue());
 					}
 				}
 			}
@@ -423,8 +438,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 
 	@Override
 	public void checkUpdate(Document oldDocument, Document newDocument, MongoCollection<Object> collection) {
-		// TODO Auto-generated method stub
-
+		
 	}
 
 	@Override
@@ -484,7 +498,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 			String cacheName = access.cacheName();
 			ClassLoader ldr = null;
 
-			GridCacheAdapter cache = null;
+			GridCacheAdapter<KeyValue,Object> cache = null;
 			if (ctx != null) {
 				cache = ctx.cache().internalCache(cacheName);
 				if (cache == null) {
@@ -495,14 +509,16 @@ public class IgniteLuceneIndex extends Index<Object> {
 				ldr = cache.context().deploy().globalLoader();
 
 			access.flush();
+			
+			int limit = 0;
+			String scoreField = null;
 
 			// take a reference as the searcher may change
 			IndexSearcher searcher = access.searcher;
 			// reuse the same analyzer; it's thread-safe;
-			// also allows subclasses to control the analyzer used.
-			Analyzer analyzer = access.writer.getAnalyzer();
+			// also allows subclasses to control the analyzer used.			
 			// Filter expired items.
-			Query filter = LongPoint.newRangeQuery(FullTextLucene.EXPIRATION_TIME_FIELD_NAME, U.currentTimeMillis(),Long.MAX_VALUE);
+			//-Query filter = LongPoint.newRangeQuery(FullTextLucene.EXPIRATION_TIME_FIELD_NAME, U.currentTimeMillis(),Long.MAX_VALUE);
 
 			BooleanQuery.Builder query = new BooleanQuery.Builder();
 			int n = 0;
@@ -512,8 +528,23 @@ public class IgniteLuceneIndex extends Index<Object> {
 					n++;
 					continue;
 				}
+				
+				if (obj instanceof Map) {
+					Map<String, Object> opt = ((Map<String, Object>) obj);
+					if(opt.containsKey("$search")) {
+						obj = opt.get("$search");
+					}
+					else if(opt.containsKey("$knnVector")) {
+						obj = opt.get("$knnVector");
+					}
+					
+					if(opt.containsKey("$limit")) {
+						limit = Integer.parseInt(opt.get("$limit").toString());
+					}				
+				}
+				
 				if(key.isText()) {
-					QueryParser parser = new QueryParser(key.getKey(), access.getQueryAnalyzer()); // 定义查询分析器
+					QueryParser parser = new QueryParser(key.getKey(), access.getFieldAnalyzer(key.getKey())); // 定义查询分析器
 					
 					Query textQuery = parser.parse(obj.toString());
 					query.add(textQuery, BooleanClause.Occur.MUST);
@@ -556,24 +587,22 @@ public class IgniteLuceneIndex extends Index<Object> {
 				n++;
 			}
 			// query.add(filter, BooleanClause.Occur.FILTER);
-
-			int limit = 0;
+			
 			// Lucene 3 insists on a hard limit and will not provide
 			// a total hits value. Take at least 100 which is
 			// an optimal limit for Lucene as any more
 			// will trigger writing results to disk.
 			int maxResults = Integer.MAX_VALUE;
 			TopDocs docs = searcher.search(query.build(), maxResults);
-			if (limit == 0) {
-				limit = (int) docs.totalHits.value;
-			}
+			limit = (int) docs.totalHits.value;
+			
 			result = new ArrayList<>(limit);
 			for (int i = 0; i < limit; i++) {
 				ScoreDoc sd = docs.scoreDocs[i];
 				org.apache.lucene.document.Document doc = searcher.doc(sd.doc);
 				float score = sd.score;
 
-				Object k = ctx.cacheObjects().unmarshal(cache.context().cacheObjectContext(),doc.getBinaryValue(KEY_FIELD_NAME).bytes, ldr);
+				Object k = unmarshalKeyField(doc.getBinaryValue(KEY_FIELD_NAME), cache, ldr);
 
 				result.add(k);
 
@@ -585,22 +614,21 @@ public class IgniteLuceneIndex extends Index<Object> {
 	}
 
 	/**
-	 * 对字符串字段进行搜索查询，支持模糊匹配
+	 * 对指定的字符串字段进行搜索$search查询，支持模糊匹配
 	 * 
-	 * @param text
-	 * @return
+	 * @param text 
+	 * @return 字段值，_key
 	 */
-	protected Iterable<Entry<KeyValue, Object>> getFullTextIterable(Object exp) {
-		LuceneIndexAccess access = indexAccess;
-		String field = this.getKeys().get(0).getKey();
-
+	protected List<Entry<KeyValue, Object>> getFullTextList(String field, Object exp) {
+		LuceneIndexAccess access = indexAccess;		
+		int limit = 0;
 		List<Entry<KeyValue, Object>> result = new ArrayList<>();
 		try {
 
 			String cacheName = access.cacheName();
 			ClassLoader ldr = null;
 
-			GridCacheAdapter cache = null;
+			GridCacheAdapter<KeyValue, Object> cache = null;
 			if (ctx != null) {
 				cache = ctx.cache().internalCache(cacheName);
 				if (cache == null) {
@@ -616,36 +644,48 @@ public class IgniteLuceneIndex extends Index<Object> {
 			IndexSearcher searcher = access.searcher;
 			// reuse the same analyzer; it's thread-safe;
 			// also allows subclasses to control the analyzer used.
-			Analyzer analyzer = access.writer.getAnalyzer();
-			Object text = null;
-			QueryParser parser = new QueryParser(field, access.getQueryAnalyzer()); // 定义查询分析器
+			
+			Object text = exp;
+			QueryParser parser = new QueryParser(field, access.getFieldAnalyzer(field)); // 定义查询分析器
 			if (exp instanceof Map) {
-				text = ((Map<String, Object>) exp).get(BsonRegularExpression.TEXT);
-			} else {
-				text = exp;
+				Map<String, Object> opt = ((Map<String, Object>) exp);
+				if(opt.containsKey(BsonRegularExpression.REGEX)) {
+					text = opt.get(BsonRegularExpression.REGEX);
+				}
+				else if(opt.containsKey(BsonRegularExpression.TEXT)) {
+					text = opt.get(BsonRegularExpression.TEXT);
+				}
+				else if(opt.containsKey(BsonRegularExpression.SEARCH)) {
+					text = opt.get(BsonRegularExpression.SEARCH);
+				}
+				
+				if(opt.containsKey("$limit")) {
+					limit = Integer.parseInt(opt.get("$limit").toString());
+				}				
 			}
+			
 			Query query = parser.parse(text.toString());
-
-			int limit = 0;
+			
 			// Lucene 3 insists on a hard limit and will not provide
 			// a total hits value. Take at least 100 which is
 			// an optimal limit for Lucene as any more
 			// will trigger writing results to disk.
 			int maxResults = Integer.MAX_VALUE;
-			TopDocs docs = searcher.search(query, maxResults);
-			if (limit == 0) {
-				limit = (int) docs.totalHits.value;
+			if(limit>0) {
+				maxResults = limit;
 			}
+			TopDocs docs = searcher.search(query, maxResults);
+			limit = (int) docs.totalHits.value;
 			result = new ArrayList<>(limit);
 			for (int i = 0; i < limit; i++) {
 				ScoreDoc sd = docs.scoreDocs[i];
 				org.apache.lucene.document.Document doc = searcher.doc(sd.doc);
 				float score = sd.score;
 
-				Object k = ctx.cacheObjects().unmarshal(cache.context().cacheObjectContext(),doc.getBinaryValue(KEY_FIELD_NAME).bytes, ldr);
+				Object k = unmarshalKeyField(doc.getBinaryValue(KEY_FIELD_NAME), cache, ldr);
 				String v = doc.get(field);
 
-				result.add(new IgniteBiTuple<KeyValue, Object>(KeyValue.valueOf(v), k));
+				result.add(new IgniteBiTuple<KeyValue, Object>(KeyValue.valueOf(v,score), k));
 
 			}
 		} catch (Exception e) {

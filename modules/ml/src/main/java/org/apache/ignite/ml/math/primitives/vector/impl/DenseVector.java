@@ -101,6 +101,18 @@ public class DenseVector extends AbstractVector {
     public DenseVector(double[] arr) {
         this(arr, false);
     }
+    
+   
+    /**
+     * @param arr Source array.
+     */
+    public DenseVector(float[] arr) {
+    	double[] data = new double[arr.length];
+    	for(int i=0;i<arr.length;i++) {
+    		data[i] = arr[i];
+    	}
+        setStorage(mkStorage(data, false));
+    }
 
     /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {

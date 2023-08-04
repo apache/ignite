@@ -34,6 +34,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.QueryEntity;
@@ -65,8 +66,10 @@ import de.bwaldvogel.mongo.backend.QueryResult;
 import de.bwaldvogel.mongo.backend.Utils;
 import de.bwaldvogel.mongo.backend.ignite.util.BinaryObjectMatch;
 import de.bwaldvogel.mongo.bson.Document;
+import de.bwaldvogel.mongo.exception.BadValueException;
 import de.bwaldvogel.mongo.exception.DuplicateKeyError;
 import de.bwaldvogel.mongo.exception.MongoServerError;
+import de.bwaldvogel.mongo.exception.TypeMismatchException;
 import io.netty.util.internal.StringUtil;
 
 import static de.bwaldvogel.mongo.backend.ignite.util.DocumentUtil.*;
@@ -74,8 +77,7 @@ import static de.bwaldvogel.mongo.backend.ignite.util.DocumentUtil.*;
 public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 
 	public final IgniteCache<Object, BinaryObject> dataMap;	
-	public final String idField;	
-	public long dataSize = 0;
+	public final String idField;
 	private IgniteDatabase database;
     
     public IgniteBinaryCollection(IgniteDatabase database, String collectionName, CollectionOptions options,
@@ -83,8 +85,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
         super(database, collectionName,options,cursorRegistry);
         this.dataMap = dataMap;
         this.idField = options.getIdField();
-        this.database = database;
-        dataSize = dataMap.metrics().getCacheSize();
+        this.database = database;        
     }
     
 
@@ -99,14 +100,18 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     	for (Index<Object> idx : this.getIndexes()) {
 			if (idx instanceof IgniteLuceneIndex) {
 				IgniteLuceneIndex igniteIndex = (IgniteLuceneIndex) idx;
-				igniteIndex.init(this.getCollectionName());
+				igniteIndex.init();
 			}
     	}
     }
 
     @Override
     protected void updateDataSize(int sizeDelta) {
-    	dataSize+=sizeDelta;
+    	
+    }
+    
+    protected boolean tracksDataSize() {
+        return false;
     }
 
     @Override
@@ -130,14 +135,24 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     	String typeName = t2.get1();	
     	String keyField = t2.get2();
     	IgniteDatabase database = (IgniteDatabase)this.database;
-        T2<Object,BinaryObject> obj = documentToBinaryObject(database.getIgnite().binary(),key,document,typeName,keyField);
+    	try {
+    		key = toBinaryKey(key);
+    		BinaryObject obj = documentToBinaryObject(database.getIgnite().binary(),typeName,document,idField);
+    		boolean rv = dataMap.putIfAbsent(key, obj);
+            if(!rv) {
+            	throw new DuplicateKeyError(this.getCollectionName(),"Document with key '" + key + "' already existed");
+            }
+            //Assert.isNull(previous, () -> "Document with key '" + key + "' already existed in " + this + ": " + previous);
+            return key;
+    	}
+    	catch(BinaryObjectException e) {
+    		throw new TypeMismatchException(e.getMessage());
+    	}
+    	catch(Exception e) {
+    		throw new BadValueException(e.getMessage());
+    	}
        
-        boolean rv = dataMap.putIfAbsent(Missing.ofNullable(obj.getKey()), obj.getValue());
-        if(!rv) {
-        	throw new DuplicateKeyError(this.getCollectionName(),"Document with key '" + key + "' already existed");
-        }
-        //Assert.isNull(previous, () -> "Document with key '" + key + "' already existed in " + this + ": " + previous);
-        return key;
+        
     }
 
     @Override
@@ -147,14 +162,14 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 
     @Override
     protected Document getDocument(Object position) {    	
-    	Object obj = dataMap.get(toBinaryKey(position));
+    	Object obj = dataMap.get(position);
     	if(obj==null) return null;
-    	return binaryObjectToDocument(position,obj,idField);
+    	return objectToDocument(position,obj,idField);
     }
 
     @Override
     protected void removeDocument(Object position) {
-        boolean remove = dataMap.remove(toBinaryKey(position));
+        boolean remove = dataMap.remove(position);
         if (!remove) {
             throw new NoSuchElementException("No document with key " + position);
         }
@@ -164,6 +179,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     protected Object findDocumentPosition(Document document) {
     	 Object key = document.getOrDefault(this.idField, null);
     	 if(key!=null) {
+    		 key = toBinaryKey(key);
     		 return key;
     	 }    	 
          return null;
@@ -189,7 +205,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 		QueryCursor<Cache.Entry<Object, BinaryObject>>  cursor = dataMap.query(scan);
 		//Iterator<Cache.Entry<Object, BinaryObject>> it = cursor.iterator();
 	    for (Cache.Entry<Object, BinaryObject> entry: cursor) {	 	    	
-	    	Document document = binaryObjectToDocument(entry.getKey(),entry.getValue(),this.idField);	    	
+	    	Document document = objectToDocument(entry.getKey(),entry.getValue(),this.idField);	    	
 	    	matchedDocuments.add(document);
 	    }
 	    
@@ -208,8 +224,11 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 
     
     @Override
-    public void drop() {       
-        dataMap.destroy();
+    public void drop() {
+    	dataMap.clear();
+    	if(!this.getCollectionName().startsWith("system.")) {    		
+    		dataMap.destroy();
+    	}
     }
 
     @Override
@@ -218,22 +237,21 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     	String typeName = t2.get1();    	
     	String keyField = t2.get2();    
     	IgniteDatabase database = (IgniteDatabase)this.database;
-    	T2<Object,BinaryObject> obj = documentToBinaryObject(database.getIgnite().binary(),key,document,typeName,keyField);
+    	BinaryObject obj = documentToBinaryObject(database.getIgnite().binary(),typeName,document,idField);
         
-        dataMap.put(Missing.ofNullable(obj.getKey()), obj.getValue());        
+        dataMap.put(toBinaryKey(key), obj);
     }
 
 
     @Override
     protected Stream<DocumentWithPosition<Object>> streamAllDocumentsWithPosition() {
-    	// Get the data streamer reference and stream data.
-    	
+    	// Get the data streamer reference and stream data.    	
     	
     	 ScanQuery<Object, BinaryObject> scan = new ScanQuery<>();
     		 
     	 QueryCursor<Cache.Entry<Object, BinaryObject>>  cursor = dataMap.query(scan);
     	//Iterator<Cache.Entry<Object, Document>> it = cursor.iterator();
-    	 return StreamSupport.stream(cursor.spliterator(),false).map(entry -> new DocumentWithPosition<>(binaryObjectToDocument(entry.getKey(),entry.getValue(),this.idField), entry.getKey()));		
+    	 return StreamSupport.stream(cursor.spliterator(),false).map(entry -> new DocumentWithPosition<>(objectToDocument(entry.getKey(),entry.getValue(),this.idField), entry.getKey()));		
          
     }
    
@@ -260,7 +278,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     		Iterator<QueryEntity> qeit = cfg.getQueryEntities().iterator();
     		while(qeit.hasNext()) {
 	    		QueryEntity entity = qeit.next();   		
-	    		keyField = entity.getKeyFieldName();
+	    		keyField = entity.getKeyFieldName()!=null?entity.getKeyFieldName():keyField;
 	    		if(StringUtil.isNullOrEmpty(typeName)) {
 	        		typeName = entity.getValueType();
 	        		break;

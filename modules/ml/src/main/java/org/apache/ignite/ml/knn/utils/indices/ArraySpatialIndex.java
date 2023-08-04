@@ -58,11 +58,13 @@ public class ArraySpatialIndex<L> implements SpatialIndex<L> {
         if (k <= 0)
             throw new IllegalArgumentException("Number of neighbours should be positive.");
 
-        Queue<PointWithDistance<L>> heap = new PriorityQueue<>(Collections.reverseOrder());
+        Queue<PointWithDistance<L>> heap = new PriorityQueue<>(k, distanceMeasure.isSimilarity()?Collections.reverseOrder():null);
 
         for (LabeledVector<L> dataPnt : data) {
             double distance = distanceMeasure.compute(pnt, dataPnt.features());
-            tryToAddIntoHeap(heap, k, dataPnt, distance);
+            if(distance!=Double.NaN) {
+            	tryToAddIntoHeap(heap, k, dataPnt, distance);
+            }
         }
 
         return transformToListOrdered(heap);

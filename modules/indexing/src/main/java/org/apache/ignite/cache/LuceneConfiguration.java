@@ -35,10 +35,11 @@ public class LuceneConfiguration implements PluginConfiguration {
 	private Analyzer indexAnalyzer;
 
 	// default query analyzer
-	private Analyzer queryAnalyzer;
-	
+	private Analyzer queryAnalyzer;	
 		
 	private String cacheName = null;
+	
+	private Map<String, Analyzer> fieldAnalyzerMap = new HashMap<>();
 	
 	
 
@@ -48,6 +49,16 @@ public class LuceneConfiguration implements PluginConfiguration {
 		this.storeValue = Utils.getProperty("h2.storeValueInIndex", false);		
 	}
 
+	public LuceneConfiguration(LuceneConfiguration copy) {
+		this.storeTextFieldValue = copy.storeTextFieldValue;
+		this.storeValue = copy.storeValue;
+		this.persistenceEnabled = copy.persistenceEnabled;
+		this.cacheName = copy.cacheName;
+		this.fieldAnalyzerMap = new HashMap<>(copy.fieldAnalyzerMap);
+		this.indexAnalyzer = copy.indexAnalyzer;
+		this.queryAnalyzer = copy.queryAnalyzer;
+	}
+	
 	public boolean isPersistenceEnabled() {
 		return persistenceEnabled;
 	}
@@ -103,26 +114,13 @@ public class LuceneConfiguration implements PluginConfiguration {
 	
 	public String cacheName(){
 		return cacheName;
-	}		
-	
-	public Analyzer getFieldAnalyzer(String schema,String field) {
-		String region = QueryUtils.createTableCacheName(schema.toUpperCase(),field.toUpperCase());
-		Analyzer _instance = _fieldAnalyzerMap.get(region);
-		if (_instance == null) {
-			return this.getIndexAnalyzer();
-		}
-		return _instance;
-	}
-	
-	public boolean setFieldAnalyzer(String schema,String field,Analyzer config) {
-		String region = QueryUtils.createTableCacheName(schema.toUpperCase(),field.toUpperCase());
-		Analyzer _instance = _fieldAnalyzerMap.get(region);
-		if (_instance == null) {			
-			_fieldAnalyzerMap.put(region, config);
-			return true;
-		}
-		return false;
 	}
 
-	private Map<String, Analyzer> _fieldAnalyzerMap = new HashMap<>();
+	public Map<String, Analyzer> getFieldAnalyzerMap() {
+		return fieldAnalyzerMap;
+	}
+
+	public void setFieldAnalyzerMap(Map<String, Analyzer> fieldAnalyzerMap) {
+		this.fieldAnalyzerMap = fieldAnalyzerMap;
+	}
 }

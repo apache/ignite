@@ -60,7 +60,7 @@ public class KDTreeSpatialIndex<L> implements SpatialIndex<L> {
         if (k <= 0)
             throw new IllegalArgumentException("Number of neighbours should be positive.");
 
-        Queue<PointWithDistance<L>> heap = new PriorityQueue<>(Collections.reverseOrder());
+        Queue<PointWithDistance<L>> heap = new PriorityQueue<>(k, distanceMeasure.isSimilarity()?Collections.reverseOrder():null);
 
         findKClosest(pnt, root, 0, heap, k);
 

@@ -1,0 +1,31 @@
+{
+  "additional_special_tokens": [
+    "<eop>",
+    "<eod>"
+  ],
+  "bos_token": "<s>",
+  "clean_up_tokenization_spaces": true,
+  "cls_token": "<cls>",
+  "do_lower_case": false,
+  "eos_token": "</s>",
+  "keep_accents": false,
+  "mask_token": {
+    "__type": "AddedToken",
+    "content": "<mask>",
+    "lstrip": true,
+    "normalized": true,
+    "rstrip": false,
+    "single_word": false
+  },
+  "model_max_length": 1000000000000000019884624838656,
+  "pad_token": "<pad>",
+  "remove_space": true,
+  "sep_token": "<sep>",
+  "sp_model_kwargs": {},
+  "tokenizer_class": "XLNetTokenizer",
+  "vocab_size": 61580,
+  "english_tokens": [8,30812],
+  "chinese_tokens": [30812,59274],
+  "punct_tokens": [59274,59307],
+  "unk_token": "<unk>"
+}

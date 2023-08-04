@@ -45,17 +45,17 @@ import de.bwaldvogel.mongo.backend.ignite.IgniteBackend;
  * Security processor provider for tests.
  */
 public class MongoServerPluginProvider implements PluginProvider<MongoPluginConfiguration> {
-	 private String databaseName;
+	// Singerton
+    public static MongoServer mongoServer;
+    public static IgniteBackend backend;
+    
+	private String databaseName;
 	 
-	 /** Ignite logger. */
-	 private IgniteLogger log;
+	/** Ignite logger. */
+	private IgniteLogger log;
      
 	
-     private MongoPluginConfiguration cfg;
-     
-	 //Singerton
-     public static MongoServer mongoServer;
-     public static IgniteBackend backend;
+    private MongoPluginConfiguration cfg;
 
 	
     /** {@inheritDoc} */
@@ -105,6 +105,16 @@ public class MongoServerPluginProvider implements PluginProvider<MongoPluginConf
          if(cfg!=null && per) {
         	 cfg.setWithBinaryStorage(true);        	 
          }
+         
+         if(cfg!=null) {
+        	
+         	databaseName = igniteCfg.getIgniteInstanceName();
+         	if(backend==null) {
+	         	backend = new IgniteBackend(ctx.grid(),cfg);
+	      	    backend.setKeepBinary(cfg.isWithBinaryStorage());
+         	}
+         }
+         	
     }
 
     /** {@inheritDoc} */
@@ -122,12 +132,7 @@ public class MongoServerPluginProvider implements PluginProvider<MongoPluginConf
 
     /** {@inheritDoc} */
     @Override public void start(PluginContext ctx) {
-    	 // start mongodb singerton when admin grid start
-    	databaseName = ctx.igniteConfiguration().getIgniteInstanceName();
-    	if(cfg!=null && backend ==null) {
-    	   backend = new IgniteBackend(ctx.grid(),cfg);
- 	       backend.setKeepBinary(cfg.isWithBinaryStorage());
-    	}
+    	
     }
 
     /** {@inheritDoc} */
@@ -141,8 +146,9 @@ public class MongoServerPluginProvider implements PluginProvider<MongoPluginConf
 
     /** {@inheritDoc} */
     @Override public void onIgniteStart() {
+    	 // start mongodb singerton when admin grid start
     	if(cfg!=null && mongoServer==null) {    		      
- 	       try {	    	  
+ 	       try {
  	    	   mongoServer = new MongoServer(backend);
  	    	   mongoServer.bind(cfg.getHost(),cfg.getPort());
  	    	   log.info("mongoServer","listern on "+cfg.getHost()+":"+cfg.getPort());

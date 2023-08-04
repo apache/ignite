@@ -45,7 +45,10 @@ public class PointWithDistanceUtil {
 
         while (!points.isEmpty()) {
             PointWithDistance<L> pnt = points.remove();
-            res.add(pnt.getPnt());
+            // modify@byron
+            LabeledVector<L> vec = pnt.getPnt();
+            vec.setWeight((float)pnt.getDistance());
+            res.add(vec);
         }
 
         return res;

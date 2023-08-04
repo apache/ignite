@@ -1,53 +1,50 @@
 package de.bwaldvogel.mongo.backend.ignite;
 
-import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
+import static org.apache.ignite.ml.knn.utils.PointWithDistanceUtil.transformToListOrdered;
+import static org.apache.ignite.ml.knn.utils.PointWithDistanceUtil.tryToAddIntoHeap;
 
-import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.PriorityQueue;
+import java.util.Queue;
+import java.util.Set;
 import java.util.TreeSet;
-import java.util.UUID;
-import java.util.regex.Matcher;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import org.apache.ignite.cache.FullTextLucene;
-import org.apache.ignite.cache.LuceneIndexAccess;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document.DoublePoint;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.FloatPoint;
-import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.document.LongPoint;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.util.BytesRef;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.ml.dataset.feature.extractor.ExtractionUtils.IntCoordObjectLabelVectorizer;
+import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
+import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.knn.KNNPartitionDataBuilder;
+import org.apache.ignite.ml.knn.utils.PointWithDistance;
+import org.apache.ignite.ml.knn.utils.indices.SpatialIndex;
+import org.apache.ignite.ml.knn.utils.indices.SpatialIndexType;
+import org.apache.ignite.ml.math.distances.CosineSimilarity;
+import org.apache.ignite.ml.math.distances.DistanceMeasure;
+import org.apache.ignite.ml.math.distances.EuclideanDistance;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 
 import de.bwaldvogel.mongo.MongoCollection;
 import de.bwaldvogel.mongo.backend.Assert;
@@ -58,69 +55,178 @@ import de.bwaldvogel.mongo.backend.KeyValue;
 import de.bwaldvogel.mongo.backend.QueryOperator;
 import de.bwaldvogel.mongo.backend.Utils;
 import de.bwaldvogel.mongo.backend.ValueComparator;
+import de.bwaldvogel.mongo.backend.ignite.util.DocumentUtil;
+import de.bwaldvogel.mongo.backend.ignite.util.EmbeddingUtil;
 import de.bwaldvogel.mongo.bson.BsonRegularExpression;
 import de.bwaldvogel.mongo.bson.Document;
-import de.bwaldvogel.mongo.bson.ObjectId;
 import de.bwaldvogel.mongo.exception.KeyConstraintError;
 
 public class IgniteVectorIndex extends Index<Object> {
+	
+	 /** Learning environment builder. */
+    protected LearningEnvironmentBuilder envBuilder = LearningEnvironmentBuilder.defaultBuilder();
 
-	private final String cacheName;
+    /** Learning Environment. */
+    protected LearningEnvironment environment = envBuilder.buildForTrainer();
 
-	private LuceneIndexAccess indexAccess;
-
+	private final String cacheName;	
+	
+	private IgniteCache<Object, Vector> vecIndex;	
+	
 	private final GridKernalContext ctx;
+	
+	
+	/** Dataset with {@link SpatialIndex} as a partition data. */
+    private Dataset<EmptyContext, SpatialIndex<Object>> knnDataset;
 
-	private GridBinaryMarshaller marshaller;
+    /** Distance measure. */
+    protected DistanceMeasure distanceMeasure;
+    
+    /** Index type. */
+    private SpatialIndexType idxType = SpatialIndexType.KD_TREE; 
+	
+	private String keyField = "_id";
+	
+	private int K = 20;
+	
+	
+	static class EmbeddingIntCoordObjectLabelVectorizer implements FeatureLabelExtractor<Object,Vector,Object>{
+		
+		private static final long serialVersionUID = 1L;
 
-	private boolean isFirstIndex = false;
+		@Override
+		public LabeledVector<Object> apply(Object k, Vector v) {			
+			return extract(k, v);
+		}
 
-	private long docCount = 0;
-
-	/** */
-	private String[] idxdFields = null;
-	private FieldType[] idxdTypes = null;
-
-	protected IgniteVectorIndex(GridKernalContext ctx, String collectionName, String name, List<IndexKey> keys,
-			boolean sparse) {
-		super(name, keys, true);
-		this.ctx = ctx;
-		this.cacheName = collectionName;
-
-		init(collectionName);
-
+		@Override
+		public LabeledVector<Object> extract(Object k, Vector v) {
+			LabeledVector<Object> f = new  LabeledVector<>(v,k);
+			return f;
+		}		
+		
 	}
+	
 
-	public void init(String cacheName) {
-		if (indexAccess == null) {
+	protected IgniteVectorIndex(GridKernalContext ctx, IgniteBinaryCollection collection, String name, List<IndexKey> keys, boolean sparse) {
+		super(name, keys, sparse);
+		this.ctx = ctx;
+		this.cacheName = collection.getCollectionName();
+		this.keyField = collection.idField;
+		this.distanceMeasure = new CosineSimilarity();
+		//this.distanceMeasure = new EuclideanDistance();
+		if(sparse) {
+			idxType = SpatialIndexType.ARRAY;
+		}
+		
+		
+		CacheConfiguration<Object, Vector> cfg = new CacheConfiguration<>();        	
+        cfg.setCacheMode(CacheMode.PARTITIONED);
+        cfg.setName(IgniteDatabase.getIndexCacheName(collection.getDatabaseName(),this.cacheName,this.getName()));
+        cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC); 
+        cfg.setBackups(0);
+       
+        vecIndex = ctx.grid().getOrCreateCache(cfg);
+        
+		init();
+	}
+	
+
+	public void init() {
+		if (this.knnDataset == null) {
 			try {
-				indexAccess = LuceneIndexAccess.getIndexAccess(ctx, cacheName);
+				CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl) ctx.cacheObjects();				
+				 
+				EmbeddingIntCoordObjectLabelVectorizer vectorizer = new EmbeddingIntCoordObjectLabelVectorizer();
+		                   
 
-				CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl) ctx.cacheObjects();
+				CacheBasedDatasetBuilder<Object, Vector> datasetBuilder = new CacheBasedDatasetBuilder<>(ctx.grid(), vecIndex);
+				
+				knnDataset = datasetBuilder.build(
+		            envBuilder,
+		            new EmptyContextBuilder<>(),
+		            new KNNPartitionDataBuilder<>(vectorizer, idxType, distanceMeasure),
+		            environment
+		        );
 
-				marshaller = cacheObjProc.marshaller();
-				// marshaller = PlatformUtils.marshaller();
-				String typeName = IgniteBinaryCollection.tableOfCache(cacheName);
-				Map<String, FieldType> fields = indexAccess.fields(typeName);
-				for (IndexKey ik : this.getKeys()) {
-					fields.put(ik.getKey(), TextField.TYPE_NOT_STORED);
-				}
-
-			} catch (IOException e) {
+			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+		}			
+	}
+	
+	public Vector computeEmbedding(Document document) {
+		Vector vec = null;
+		for(String field : keys()) {
+			Object val = document.get(field);
+			vec = computeValueEmbedding(val);
+			if(vec!=null) break;
 		}
-		this.idxdFields = null;
-		this.idxdTypes = null;
+		return vec;
+	}
+	
+	
+
+	public Vector computeValueEmbedding(Object val) {
+		Vector vec = null;
+		if(val instanceof float[]) {
+			float[] fdata = (float[])val;
+			double[] data = new double[fdata.length];
+			for(int i=0;i<fdata.length;i++) {
+				data[i] = fdata[i];
+			}
+			vec = new DenseVector(data);
+		}
+		else if(val instanceof double[]) {
+			vec = new DenseVector((double[])val);
+		}
+		else if(val instanceof Number[]) {
+			Number[] fdata = (Number[])val;
+			double[] data = new double[fdata.length];
+			for(int i=0;i<fdata.length;i++) {
+				data[i] = fdata[i].doubleValue();
+			}
+			vec = new DenseVector(data);
+		}
+		else if(val instanceof List) {
+			List<Number> fdata = (List)val;
+			double[] data = new double[fdata.size()];
+			for(int i=0;i<fdata.size();i++) {
+				data[i] = fdata.get(i).doubleValue();
+			}
+			vec = new DenseVector(data);
+		}
+		else if(val instanceof String) {
+			if(this.isSparse()) {
+				vec = EmbeddingUtil.textTwoGramVec(val.toString());
+			}
+			else {			
+				vec = EmbeddingUtil.textXlmVec(val.toString());
+			}
+		}
+		return vec;
 	}
 
+	
+	  /** {@inheritDoc} */
+    public List<LabeledVector<Object>> findKClosest(int k, Vector pnt) {
+    	List<LabeledVector<Object>> res = knnDataset.compute(spatialIdx -> spatialIdx.findKClosest(k, pnt), (a, b) -> {
+            Queue<PointWithDistance<Object>> heap = new PriorityQueue<>(distanceMeasure.isSimilarity()?Collections.reverseOrder():null);
+            tryToAddIntoHeap(heap, k, pnt, a, distanceMeasure);
+            tryToAddIntoHeap(heap, k, pnt, b, distanceMeasure);
+            return transformToListOrdered(heap);
+        });
+
+        return res == null ? Collections.emptyList() : res;
+    }
+    
 	@Override
 	public Object getPosition(Document document) {
 		// Set<KeyValue> keyValues = getKeyValues(document);
-		Object key = document.getOrDefault("_id", null);
+		Object key = document.getOrDefault(keyField, null);
 		if (key != null) {
-			return key;
+			return DocumentUtil.toBinaryKey(key);
 		}
 		return null;
 	}
@@ -131,130 +237,23 @@ public class IgniteVectorIndex extends Index<Object> {
 
 	}
 
-	public HashMap<String, FieldType> fieldsMapping(MongoCollection<Object> collection) {
-		HashMap<String, FieldType> fields = new HashMap<>();
-		for (Index<Object> idx : collection.getIndexes()) {
-			if (idx instanceof IgniteVectorIndex) {
-				IgniteVectorIndex igniteIndex = (IgniteVectorIndex) idx;
-				igniteIndex.init(cacheName);
-				if (fields.isEmpty()) {
-					igniteIndex.setFirstIndex(true);
-				} else {
-					igniteIndex.setFirstIndex(false);
-				}
-				for (IndexKey ik : idx.getKeys()) {
-					if (ik.isText()) {
-						fields.putIfAbsent(ik.getKey(), TextField.TYPE_NOT_STORED);
-					} else {
-						fields.putIfAbsent(ik.getKey(), StringField.TYPE_STORED);
-					}
-				}
-			}
-		}
-		return fields;
-	}
 
 	@Override
-	public void add(Document document, Object position, MongoCollection<Object> collection) {
-		// index all field
-		if (idxdFields == null || idxdFields.length==0) {
-			Map<String, FieldType> fields = fieldsMapping(collection);
-			idxdFields = new String[fields.size()];
-			idxdTypes = new FieldType[fields.size()];
-			int i = 0;
-			for (Map.Entry<String, FieldType> ft : fields.entrySet()) {
-				idxdFields[i] = ft.getKey();
-				idxdTypes[i++] = ft.getValue();
-			}
-		}
+	public void add(Document document, Object position, MongoCollection<Object> collection) {		
 
 		String typeName = collection.getCollectionName();
-		Object key = null;
-		String keyField = "_id";
-		if (collection instanceof IgniteBinaryCollection) {
-
-			if (!this.isFirstIndex)
-				return;
-			
-			IgniteBinaryCollection coll = (IgniteBinaryCollection) collection;
-			T2<String, String> t2 = coll.typeNameAndKeyField(coll.dataMap, document);
-			typeName = t2.get1();
-			keyField = t2.get2();
-			key = document.getOrDefault(coll.idField, null);
-			Map<String, FieldType> fields = indexAccess.fields(typeName);
-			for (IndexKey ik : this.getKeys()) {
-				if (ik.isText()) {
-					fields.putIfAbsent(ik.getKey(), TextField.TYPE_NOT_STORED);
-				} else {
-					fields.putIfAbsent(ik.getKey(), StringField.TYPE_STORED);
-				}
-			}
-
-			IgniteH2Indexing idxing = (IgniteH2Indexing) ctx.query().getIndexing();
-
-			@Nullable
-			Collection<TableDescriptor> tables = idxing.schemaManager().tablesForCache(cacheName);
-			for(TableDescriptor table: tables) {
-				if (table.type().name().equalsIgnoreCase(typeName) && table.type().textIndex() != null) {
-					return;
-				}
-			}
-		}
-
-		org.apache.lucene.document.Document doc = new org.apache.lucene.document.Document();
-
+		
 		boolean stringsFound = false;
 
-		Object[] row = new Object[idxdFields.length];
-		for (int i = 0, last = idxdFields.length; i < last; i++) {
-			Object fieldVal = document.get(idxdFields[i]);
-			if (idxdTypes[i].tokenized()) {
-				row[i] = new TextField(idxdFields[i],fieldVal.toString(),Store.NO);				
-			}
-			else if(fieldVal instanceof Number) {
-				Number obj = (Number) fieldVal;
-				if (obj instanceof Long) {
-					row[i] = new LongPoint(idxdFields[i], (obj).longValue());
-					
-				} 
-				else if (obj instanceof Integer || obj instanceof Short) {
-					row[i] = new IntPoint(idxdFields[i], (obj).intValue());
-					
-				} 
-				else if (obj instanceof Float) {
-					row[i] = new FloatPoint(idxdFields[i], (obj).floatValue());
-					
-				}
-				else {
-					double d = ((Number) obj).doubleValue();						
-					row[i] = new DoublePoint(idxdFields[i], d);
-				}
-			} 
-			else {
-				//byte[] keyBytes = marshaller.marshal(ctx.grid().binary().toBinary(fieldVal), false);
-				//BytesRef keyByteRef = new BytesRef(keyBytes);
-				row[i] = fieldVal;
-			}
+		Vector vec = this.computeEmbedding(document);
+		if(vec==null) {
+			return ;
 		}
-		byte[] keyBytes = marshaller.marshal(ctx.grid().binary().toBinary(key), false);
-		BytesRef keyByteRef = new BytesRef(keyBytes);
-		Term term = new Term(KEY_FIELD_NAME, keyByteRef);
+		
 		// build doc body
 		try {
-			stringsFound = FullTextLucene.buildDocument(doc, this.idxdFields, idxdTypes, null, row);
-			if (!stringsFound) {
-				indexAccess.writer.deleteDocuments(term);
-
-				return; // We did not find any strings to be indexed, will not store data at all.
-			}
-
-			doc.add(new StringField(KEY_FIELD_NAME, keyByteRef, Field.Store.YES));
-			doc.add(new StringField(FullTextLucene.FIELD_TABLE, typeName, Field.Store.YES));
-
-			// Next implies remove than add atomically operation.
-			docCount = indexAccess.writer.updateDocument(term, doc);
 			
-			indexAccess.increment();
+			vecIndex.put(position, vec);
 
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -264,31 +263,19 @@ public class IgniteVectorIndex extends Index<Object> {
 
 	@Override
 	public Object remove(Document document, MongoCollection<Object> collection) {
-		Object key = null;
-		if(!this.isFirstIndex) {
-			return null;
-		}
 		IgniteBinaryCollection coll = (IgniteBinaryCollection) collection;
-		key = document.getOrDefault(coll.idField, null);
+		Object key = getPosition(document);
 		try {
+			vecIndex.remove(key);
 			
-			if (key != null) {
-				byte[] keyBytes = marshaller.marshal(ctx.grid().binary().toBinary(key), false);
-				BytesRef keyByteRef = new BytesRef(keyBytes);
-				Term term = new Term(KEY_FIELD_NAME, keyByteRef);
-				long seq = indexAccess.writer.deleteDocuments(term);
-			}
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
-		} finally {
-			indexAccess.increment();
 		}
-		return null;
+		return key;
 	}
 
 	@Override
 	public boolean canHandle(Document query) {
-
 		if (this.isTextIndex() && BsonRegularExpression.isTextSearchExpression(query)) {
 			return true;
 		}
@@ -310,7 +297,7 @@ public class IgniteVectorIndex extends Index<Object> {
 					return false;
 				}
 				if (BsonRegularExpression.isRegularExpression(queryValue)) {
-					continue;
+					return false;
 				}
 				if (BsonRegularExpression.isTextSearchExpression(queryValue)) {
 					continue;
@@ -320,6 +307,10 @@ public class IgniteVectorIndex extends Index<Object> {
 						// okay
 					} 
 					else if (this.isTextIndex() && queriedKeys.startsWith("$search")) {
+						// not yet supported
+						return true;
+					}
+					else if (this.isTextIndex() && queriedKeys.startsWith("$rnnVector")) {
 						// not yet supported
 						return true;
 					}
@@ -337,64 +328,44 @@ public class IgniteVectorIndex extends Index<Object> {
 
 	@Override
 	public Iterable<Object> getPositions(Document query) {
-
 		final KeyValue queriedKeys = getQueriedKeys(query);
-		KeyValue searchKey = queriedKeys;
-		
-		int n = 0;
+		KeyValue searchKey = queriedKeys;		
+		int n = 0;		
 		for (Object queriedKey : queriedKeys.iterator()) {
-			// fill $text value
-			if(queriedKey == null && this.isTextIndex() && query.containsKey("$text")) {
-				queriedKey = query.get("$text");
+			if (isCompoundIndex()) {
+				throw new UnsupportedOperationException("Not yet implemented");
 			}
-			if (BsonRegularExpression.isRegularExpression(queriedKey)) {
-				if (isCompoundIndex()) {
-					throw new UnsupportedOperationException("Not yet implemented");
-				}
+					
+			// for $text value  { textField : { $text: 'keyword' } }
+			if (BsonRegularExpression.isTextSearchExpression(queriedKey)) {				
 				List<Object> positions = new ArrayList<>();
-				for (Entry<KeyValue, Object> entry : getFullTextIterable(queriedKey)) {
+				for (Entry<KeyValue, Object> entry : getVectorTextList(queriedKey)) {
 					KeyValue obj = entry.getKey();
-					if (obj.size() == 1) {
+					if (obj.size() >= 1) {
 						Object o = obj.get(0);
-						if (o instanceof String) {
-							BsonRegularExpression regularExpression = BsonRegularExpression
-									.convertToRegularExpression(queriedKey);
-							Matcher matcher = regularExpression.matcher(o.toString());
-							if (matcher.find()) {
-								positions.add(entry.getValue());
-							}
+						if(o!=null) {
+							positions.add(entry.getValue());
 						}
 					}
 				}
+				query.remove(this.keys().get(n));
 				return positions;
-			} else if (BsonRegularExpression.isTextSearchExpression(queriedKey)) {
-				if (isCompoundIndex()) {
-					throw new UnsupportedOperationException("Not yet implemented");
-				}
-				List<Object> positions = new ArrayList<>();
-				for (Entry<KeyValue, Object> entry : getFullTextIterable(queriedKey)) {
-					KeyValue obj = entry.getKey();
-					if (obj.size() == 1) {
-						Object o = obj.get(0);
-						positions.add(entry.getValue());
-					}
-				}
-				return positions;
-			} else if (queriedKey instanceof Document) {
-				if (isCompoundIndex() && !this.isTextIndex()) {
-					throw new UnsupportedOperationException("Not yet implemented");
-				}
+			} 
+			
+			// for { $text : { $search: 'keyword' } } || { $text : { $rnnVector: [0.1,0.4,0.6] } }
+			if(queriedKey == null && this.isTextIndex() && query.containsKey("$text")) {
+				queriedKey = query.get("$text");
+			}	
+			if (queriedKey instanceof Document) {				
 				Document keyObj = (Document) queriedKey;
 				if (Utils.containsQueryExpression(keyObj)) {
-					String expression = CollectionUtils.getSingleElement(keyObj.keySet(),
-							() -> new UnsupportedOperationException("illegal query key: " + queriedKeys));
+					Set<String> expression = keyObj.keySet();
 					
-					if (expression.equals("$search")) {
-						String input = (String)keyObj.get(expression);
-						searchKey.iterator()[n] = input;
-					}
-					else if (expression.startsWith("$")) {
-						return getPositionsForExpression(keyObj, expression);
+					if (expression.contains(QueryOperator.SEARCH.getValue())) {						
+						searchKey = searchKey.copyFrom(n, keyObj);						
+					}					
+					else if (expression.contains(QueryOperator.IN.getValue())) {
+						return getPositionsForExpression(keyObj, QueryOperator.IN.getValue());
 					}
 				}
 			}
@@ -410,15 +381,13 @@ public class IgniteVectorIndex extends Index<Object> {
 
 	@Override
 	public long getCount() {
-		if(docCount>0) {
-			return docCount;
-		}
-		return indexAccess.writer.getDocStats().numDocs;
+		
+		return vecIndex.localSizeLong(CachePeekMode.ALL);
 	}
 
 	@Override
 	public long getDataSize() {		
-		return indexAccess.writer.getFlushingBytes();		
+		return vecIndex.localMetrics().getCacheSize();
 	}
 
 	@Override
@@ -442,10 +411,14 @@ public class IgniteVectorIndex extends Index<Object> {
 	@Override
 	public void drop() {
 		String typeName = IgniteBinaryCollection.tableOfCache(cacheName);
-		Map<String, FieldType> fields = indexAccess.fields(typeName);
-		for (IndexKey ik : this.getKeys()) {
-			fields.remove(ik.getKey());
+		try {
+			this.knnDataset.close();
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
+		this.vecIndex.destroy();		
 	}
 
 	private Iterable<Object> getPositionsForExpression(Document keyObj, String operator) {
@@ -476,108 +449,53 @@ public class IgniteVectorIndex extends Index<Object> {
 	}
 
 	protected List<Object> getPosition(KeyValue keyValue) {
-		List<Object> result = new ArrayList<>();
-		LuceneIndexAccess access = indexAccess;
+		List<Object> result = new ArrayList<>();		
 
 		try {
-
-			String cacheName = access.cacheName();
-			ClassLoader ldr = null;
-
-			GridCacheAdapter cache = null;
-			if (ctx != null) {
-				cache = ctx.cache().internalCache(cacheName);
-				if (cache == null) {
-					cache = ctx.cache().internalCache(this.cacheName);
-				}
-			}
-			if (cache != null && ctx.deploy().enabled())
-				ldr = cache.context().deploy().globalLoader();
-
-			access.flush();
-
-			// take a reference as the searcher may change
-			IndexSearcher searcher = access.searcher;
-			// reuse the same analyzer; it's thread-safe;
-			// also allows subclasses to control the analyzer used.
-			Analyzer analyzer = access.writer.getAnalyzer();
-			// Filter expired items.
-			Query filter = LongPoint.newRangeQuery(FullTextLucene.EXPIRATION_TIME_FIELD_NAME, U.currentTimeMillis(),Long.MAX_VALUE);
-
-			BooleanQuery.Builder query = new BooleanQuery.Builder();
 			int n = 0;
+			int limit = 0;
+			
 			for (IndexKey key : this.getKeys()) {
 				Object obj = keyValue.get(n);
 				if(obj == null) {
 					n++;
 					continue;
 				}
-				if(key.isText()) {
-					QueryParser parser = new QueryParser(key.getKey(), access.getQueryAnalyzer()); // 定义查询分析器
+				
+				if (obj instanceof Map) {
+					Map<String, Object> opt = ((Map<String, Object>) obj);
+					if(opt.containsKey("$search")) {
+						obj = opt.get("$search");
+					}
+					else if(opt.containsKey("$knnVector")) {
+						obj = opt.get("$knnVector");
+					}
 					
-					Query textQuery = parser.parse(obj.toString());
-					query.add(textQuery, BooleanClause.Occur.MUST);
+					if(opt.containsKey("$limit")) {
+						limit = Integer.parseInt(opt.get("$limit").toString());
+					}
+				}				
+				
+				Vector vec = this.computeValueEmbedding(obj);
+				
+				int maxResults = limit;
+				if(limit==0) {
+					maxResults = K;
 				}
-				else if(obj instanceof ObjectId || obj instanceof UUID) {									
-					byte[] keyBytes = marshaller.marshal(ctx.grid().binary().toBinary(obj),false);
-		            BytesRef keyByteRef = new BytesRef(keyBytes);	
-		            Term term = new Term(key.getKey(), keyByteRef);
-					Query termQuery = new TermQuery(term);
-					query.add(termQuery, BooleanClause.Occur.MUST);
-		     	}
+				List<LabeledVector<Object>> docs = this.findKClosest(maxResults, vec);
+				limit = (int) docs.size();
+				for (int i = 0; i < limit; i++) {
+					LabeledVector<Object> sd = docs.get(i);				
+					float score = sd.weight();
+					if(!distanceMeasure.isSimilarity() || score>0) {
+						result.add(sd.label());
+					}
 
-				else if (obj instanceof Number) {
-					if (obj instanceof Long ) {
-						Query termQuery = LongPoint.newExactQuery(key.getKey(), ((Number) obj).longValue());
-						query.add(termQuery, BooleanClause.Occur.MUST);
-					}
-					else if (obj instanceof Integer || obj instanceof Short) {
-						Query termQuery = IntPoint.newExactQuery(key.getKey(), ((Number) obj).intValue());
-						query.add(termQuery, BooleanClause.Occur.MUST);
-					}
-					else if (obj instanceof Float ) {
-						Query termQuery = FloatPoint.newExactQuery(key.getKey(), ((Number) obj).floatValue());
-						query.add(termQuery, BooleanClause.Occur.MUST);
-					}
-					else {
-						double d = ((Number) obj).doubleValue();						
-						Query termQuery = DoublePoint.newExactQuery(key.getKey(),d);
-						query.add(termQuery, BooleanClause.Occur.MUST);
-					}
-				} else if (obj instanceof byte[]) {
-					Term term = new Term(key.getKey(), new BytesRef((byte[]) obj));
-					Query termQuery = new TermQuery(term);
-					query.add(termQuery, BooleanClause.Occur.MUST);
-				} else {
-					Term term = new Term(key.getKey(), obj.toString());
-					Query termQuery = new TermQuery(term);
-					query.add(termQuery, BooleanClause.Occur.MUST);
 				}
 				n++;
 			}
-			// query.add(filter, BooleanClause.Occur.FILTER);
-
-			int limit = 0;
-			// Lucene 3 insists on a hard limit and will not provide
-			// a total hits value. Take at least 100 which is
-			// an optimal limit for Lucene as any more
-			// will trigger writing results to disk.
-			int maxResults = Integer.MAX_VALUE;
-			TopDocs docs = searcher.search(query.build(), maxResults);
-			if (limit == 0) {
-				limit = (int) docs.totalHits.value;
-			}
-			result = new ArrayList<>(limit);
-			for (int i = 0; i < limit; i++) {
-				ScoreDoc sd = docs.scoreDocs[i];
-				org.apache.lucene.document.Document doc = searcher.doc(sd.doc);
-				float score = sd.score;
-
-				Object k = ctx.cacheObjects().unmarshal(cache.context().cacheObjectContext(),doc.getBinaryValue(KEY_FIELD_NAME).bytes, ldr);
-
-				result.add(k);
-
-			}
+			
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -585,69 +503,58 @@ public class IgniteVectorIndex extends Index<Object> {
 	}
 
 	/**
-	 * 对字符串字段进行搜索查询，支持模糊匹配
+	 * 对字符串字段进行向量搜索查询，支持模糊匹配
 	 * 
 	 * @param text
 	 * @return
 	 */
-	protected Iterable<Entry<KeyValue, Object>> getFullTextIterable(Object exp) {
-		LuceneIndexAccess access = indexAccess;
-		String field = this.getKeys().get(0).getKey();
+	protected List<Entry<KeyValue, Object>> getVectorTextList(Object exp) {
 
 		List<Entry<KeyValue, Object>> result = new ArrayList<>();
 		try {
-
-			String cacheName = access.cacheName();
-			ClassLoader ldr = null;
-
-			GridCacheAdapter cache = null;
-			if (ctx != null) {
-				cache = ctx.cache().internalCache(cacheName);
-				if (cache == null) {
-					cache = ctx.cache().internalCache(this.cacheName);
-				}
-			}
-			if (cache != null && ctx.deploy().enabled())
-				ldr = cache.context().deploy().globalLoader();
-
-			access.flush();
-
-			// take a reference as the searcher may change
-			IndexSearcher searcher = access.searcher;
-			// reuse the same analyzer; it's thread-safe;
-			// also allows subclasses to control the analyzer used.
-			Analyzer analyzer = access.writer.getAnalyzer();
-			Object text = null;
-			QueryParser parser = new QueryParser(field, access.getQueryAnalyzer()); // 定义查询分析器
-			if (exp instanceof Map) {
-				text = ((Map<String, Object>) exp).get(BsonRegularExpression.TEXT);
-			} else {
-				text = exp;
-			}
-			Query query = parser.parse(text.toString());
-
 			int limit = 0;
-			// Lucene 3 insists on a hard limit and will not provide
-			// a total hits value. Take at least 100 which is
-			// an optimal limit for Lucene as any more
-			// will trigger writing results to disk.
-			int maxResults = Integer.MAX_VALUE;
-			TopDocs docs = searcher.search(query, maxResults);
-			if (limit == 0) {
-				limit = (int) docs.totalHits.value;
+			String scoreField = null;
+			Object obj = exp;
+			if (exp instanceof Map) {
+				Map<String, Object> opt = ((Map<String, Object>) obj);
+				
+				if(opt.containsKey("$knnVector")) {
+					obj = opt.get("$knnVector");
+				}				
+				else if(opt.containsKey("$search")) {
+					obj = opt.get("$search");
+				}
+				else if(opt.containsKey("$text")) {
+					obj = opt.get("$text");
+				}				
+				
+				if(opt.containsKey("$limit")) {
+					limit = Integer.parseInt(opt.get("$limit").toString());
+				}				
 			}
+
+			Vector vec = this.computeValueEmbedding(obj);
+			
+			int maxResults = limit;
+			if(limit==0) {
+				maxResults = K;
+			}
+			List<LabeledVector<Object>> docs = this.findKClosest(maxResults, vec);
+			limit = (int) docs.size();
 			result = new ArrayList<>(limit);
 			for (int i = 0; i < limit; i++) {
-				ScoreDoc sd = docs.scoreDocs[i];
-				org.apache.lucene.document.Document doc = searcher.doc(sd.doc);
-				float score = sd.score;
+				
+				LabeledVector<Object> doc = docs.get(i);
+				float score = doc.weight();
+				if(!distanceMeasure.isSimilarity() || score>0) {
+					Object k = doc.label();
+					Vector v = doc.features();
 
-				Object k = ctx.cacheObjects().unmarshal(cache.context().cacheObjectContext(),doc.getBinaryValue(KEY_FIELD_NAME).bytes, ldr);
-				String v = doc.get(field);
-
-				result.add(new IgniteBiTuple<KeyValue, Object>(KeyValue.valueOf(v), k));
-
+					result.add(new IgniteBiTuple<KeyValue, Object>(KeyValue.valueOf(v), k));
+				}
+				
 			}
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -658,20 +565,9 @@ public class IgniteVectorIndex extends Index<Object> {
 	private static boolean isInQuery(String key) {
 		return key.equals(QueryOperator.IN.getValue());
 	}
-
-	public boolean isFirstIndex() {
-		return isFirstIndex;
-	}
-
-	public void setFirstIndex(boolean isFirstIndex) {
-		this.isFirstIndex = isFirstIndex;
-	}
 	
 	public boolean isTextIndex() {
-		for(IndexKey ind: this.getKeys()) {
-			if(ind.isText()) return true;
-		}
-		return false;
+		return true;
 	}
 
 }

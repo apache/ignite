@@ -22,6 +22,7 @@ import de.bwaldvogel.mongo.backend.IndexKey;
 import de.bwaldvogel.mongo.backend.KeyValue;
 import de.bwaldvogel.mongo.backend.Missing;
 import de.bwaldvogel.mongo.backend.QueryMatcher;
+import de.bwaldvogel.mongo.backend.ignite.util.DocumentUtil;
 import de.bwaldvogel.mongo.bson.Document;
 
 
@@ -32,7 +33,7 @@ public class IgniteUniqueIndex extends AbstractUniqueIndex<Object> {
     protected final QueryMatcher matcher = new DefaultQueryMatcher();
 
     IgniteUniqueIndex(IgniteCache<KeyValue, Object> mvMap, String name, List<IndexKey> keys, boolean sparse) {
-        super(name, keys, true);
+        super(name, keys, sparse);
         this.mvMap = mvMap;
     }
 
@@ -48,7 +49,7 @@ public class IgniteUniqueIndex extends AbstractUniqueIndex<Object> {
 
     @Override
     protected boolean putKeyPosition(KeyValue key, Object position) {
-       return mvMap.putIfAbsent(key, Missing.ofNullable(position));       
+       return mvMap.putIfAbsent(key, position);       
     }
 
     @Override
