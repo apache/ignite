@@ -270,7 +270,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         if (activeCacheIds.isEmpty())
             return cctx.exchange().lastTopologyFuture();
 
-        GridCacheContext<?, ?> nonLocCtx = null;
+        GridCacheContext<?, ?> ctx = null;
 
         Map<Integer, GridCacheContext> cacheCtxs = U.newHashMap(activeCacheIds.size());
 
@@ -279,16 +279,16 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
             GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
 
-            if (nonLocCtx == null)
-                nonLocCtx = cacheCtx;
+            if (ctx == null)
+                ctx = cacheCtx;
 
             cacheCtxs.putIfAbsent(cacheCtx.cacheId(), cacheCtx);
         }
 
-        if (nonLocCtx == null)
+        if (ctx == null)
             return cctx.exchange().lastTopologyFuture();
 
-        nonLocCtx.topology().readLock();
+        ctx.topology().readLock();
 
         for (Map.Entry<Integer, GridCacheContext> e : cacheCtxs.entrySet()) {
             GridCacheContext activeCacheCtx = e.getValue();
@@ -303,7 +303,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
             }
         }
 
-        return nonLocCtx.topology().topologyVersionFuture();
+        return ctx.topology().topologyVersionFuture();
     }
 
     /** {@inheritDoc} */
