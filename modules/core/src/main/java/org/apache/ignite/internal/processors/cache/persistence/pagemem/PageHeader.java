@@ -145,7 +145,7 @@ class PageHeader {
      * @return Number of acquires for the page.
      */
     public static int pinCount(long absPtr) {
-        return GridUnsafe.getIntVolatile(null, absPtr);
+        return GridUnsafe.getIntVolatile(null, absPtr + PAGE_PIN_CNT_OFFSET);
     }
 
     /**
