@@ -46,29 +46,28 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
     private static final int ENTRIES_COUNT = 10000;
 
     /** */
+    private volatile int[] parts;
+
+    /** */
     @Parameterized.Parameter()
     public boolean local;
 
     /** */
-    @Parameterized.Parameter(1)
-    public int[] parts;
-
-    /** */
     @Parameterized.Parameters(name = "local = {0}")
     public static List<Object[]> parameters() {
-        List<Integer> parts = IntStream.range(0, 1024).boxed().collect(Collectors.toList());
-        Collections.shuffle(parts);
-
-        int[] partsArr = Ints.toArray(parts.subList(0, 20));
         return ImmutableList.of(
-                new Object[]{true, partsArr},
-                new Object[]{false, partsArr}
+                new Object[]{true},
+                new Object[]{false}
         );
     }
 
     /** {@inheritDoc} */
     @Override public void beforeTest() throws Exception {
         super.beforeTest();
+
+        List<Integer> parts0 = IntStream.range(0, 1024).boxed().collect(Collectors.toList());
+        Collections.shuffle(parts0);
+        parts = Ints.toArray(parts0.subList(0, 20));
 
         log.info("Running tests with parts=" + Arrays.toString(parts));
     }

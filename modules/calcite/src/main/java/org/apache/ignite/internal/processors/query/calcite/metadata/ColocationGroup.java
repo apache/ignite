@@ -45,7 +45,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.NotNull;
 
 /** */
 public class ColocationGroup implements MarshalableMessage {
@@ -114,7 +113,13 @@ public class ColocationGroup implements MarshalableMessage {
      * {@link GridDhtPartitionState#OWNING} state, calculated for distributed tables, involved in query execution.
      */
     public List<List<UUID>> assignments() {
-        return assignments == null ? Collections.emptyList() : assignments;
+        if (assignments != null)
+            return assignments;
+
+        if (!F.isEmpty(nodeIds))
+            return nodeIds.stream().map(Collections::singletonList).collect(Collectors.toList());
+
+        return Collections.emptyList();
     }
 
     /**
@@ -209,43 +214,39 @@ public class ColocationGroup implements MarshalableMessage {
 
     /** */
     public ColocationGroup finalizeMapping() {
-        if (assignments == null && nodeIds == null)
+        if (assignments == null)
             return this;
 
-        if (assignments != null) {
-            List<List<UUID>> assignments = new ArrayList<>(this.assignments.size());
-            Set<UUID> nodes = new HashSet<>();
-            for (List<UUID> assignment : this.assignments) {
-                UUID first = F.first(assignment);
-                if (first != null)
-                    nodes.add(first);
-                assignments.add(first != null ? Collections.singletonList(first) : Collections.emptyList());
-            }
+        List<List<UUID>> assignments = new ArrayList<>(this.assignments.size());
+        Set<UUID> nodes = new HashSet<>();
 
-            return new ColocationGroup(sourceIds, new ArrayList<>(nodes), assignments);
+        for (List<UUID> assignment : this.assignments) {
+            UUID first = F.first(assignment);
+            if (first != null)
+                nodes.add(first);
+            assignments.add(first != null ? Collections.singletonList(first) : Collections.emptyList());
         }
 
-        return forNodes0(nodeIds);
+        return new ColocationGroup(sourceIds, new ArrayList<>(nodes), assignments);
     }
 
     /** */
     public ColocationGroup filterByPartitions(int[] parts) {
-        if (assignments != null) {
+        if (!F.isEmpty(assignments)) {
             List<List<UUID>> assignments = new ArrayList<>(this.assignments.size());
             Set<UUID> nodes = new HashSet<>();
 
-            boolean isEmptyParts = F.isEmpty(parts);
+            if (F.isEmpty(parts))
+                return this;
+
             for (int i = 0; i < this.assignments.size(); ++i) {
-                UUID first = isEmptyParts || Arrays.binarySearch(parts, i) >= 0 ? F.first(this.assignments.get(i)) : null;
+                UUID first = Arrays.binarySearch(parts, i) >= 0 ? F.first(this.assignments.get(i)) : null;
 
                 if (first != null)
                     nodes.add(first);
 
                 assignments.add(first != null ? this.assignments.get(i) : Collections.emptyList());
             }
-
-            if (F.isEmpty(nodes))
-                return this;
 
             return new ColocationGroup(sourceIds, new ArrayList<>(nodes), assignments);
         }
@@ -255,17 +256,7 @@ public class ColocationGroup implements MarshalableMessage {
 
     /** */
     public ColocationGroup mapToNodes(List<UUID> nodeIds) {
-        return !F.isEmpty(this.nodeIds) ? this : forNodes0(nodeIds);
-    }
-
-    /** */
-    @NotNull private ColocationGroup forNodes0(List<UUID> nodeIds) {
-        List<List<UUID>> assignments = new ArrayList<>(nodeIds.size());
-
-        for (UUID nodeId : nodeIds)
-            assignments.add(Collections.singletonList(nodeId));
-
-        return new ColocationGroup(sourceIds, nodeIds, assignments);
+        return !F.isEmpty(this.nodeIds) ? this : new ColocationGroup(sourceIds, nodeIds, null);
     }
 
     /**
@@ -275,6 +266,9 @@ public class ColocationGroup implements MarshalableMessage {
      * @return List of partitions to scan on the given node.
      */
     public int[] partitions(UUID nodeId) {
+        if (F.isEmpty(assignments))
+            return null;
+
         GridIntList parts = new GridIntList(assignments.size());
 
         for (int i = 0; i < assignments.size(); i++) {
