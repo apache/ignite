@@ -1495,8 +1495,13 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                         }
                     });
                 }
-                else
+                else {
                     err = tx.timeoutException();
+
+                    synchronized (this) {
+                        onComplete(false, true);
+                    }
+                }
             }
             else {
                 synchronized (this) {
