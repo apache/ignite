@@ -311,10 +311,10 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         if (!activeCacheIds.isEmpty()) {
             int cacheId = activeCacheIds.get(0);
 
-            GridCacheContext<?, ?> nonLocCtx = (GridCacheContext<?, ?>)cctx.cacheContext(cacheId);
+            GridCacheContext<?, ?> ctx = (GridCacheContext<?, ?>)cctx.cacheContext(cacheId);
 
-            if (nonLocCtx != null)
-                nonLocCtx.topology().readUnlock();
+            if (ctx != null)
+                ctx.topology().readUnlock();
         }
     }
 
