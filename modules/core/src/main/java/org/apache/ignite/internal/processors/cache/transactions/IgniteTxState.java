@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
-import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,7 +50,7 @@ public interface IgniteTxState {
      *
      * @return tx cache ids.
      */
-    @Nullable public GridIntList cacheIds();
+    public int[] cacheIds();
 
     /**
      * Unwind evicts for caches involved in this transaction.

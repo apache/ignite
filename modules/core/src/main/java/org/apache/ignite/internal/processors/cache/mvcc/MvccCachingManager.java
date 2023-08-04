@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -152,13 +151,12 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
         if (txCntrs == null || F.isEmpty(cntrsColl))
             return;
 
-        GridIntList cacheIds = tx.txState().cacheIds();
+        int[] cacheIds = tx.txState().cacheIds();
 
         assert cacheIds != null;
+        assert cacheIds.length > 0 : cacheIds.length;
 
-        for (int i = 0; i < cacheIds.size(); i++) {
-            int cacheId = cacheIds.get(i);
-
+        for (int cacheId : tx.txState().cacheIds()) {
             GridCacheContext ctx0 = cctx.cacheContext(cacheId);
 
             assert ctx0 != null;

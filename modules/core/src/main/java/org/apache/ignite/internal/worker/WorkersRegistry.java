@@ -229,6 +229,8 @@ public class WorkersRegistry implements GridWorkerListener {
                                     "[workerName=" + worker.name() + ", threadName=" + runner.getName() +
                                     ", blockedFor=" + heartbeatDelay / 1000 + "s]");
 
+                            U.dumpThreads(log);
+
                             workerFailedHnd.apply(worker, SYSTEM_WORKER_BLOCKED);
                         }
 

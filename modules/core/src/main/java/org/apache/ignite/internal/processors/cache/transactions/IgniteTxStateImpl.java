@@ -57,30 +57,30 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
  */
 public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** Active cache IDs. */
-    private GridIntList activeCacheIds = new GridIntList();
+    private final GridIntList activeCacheIds = new GridIntList();
 
     /** Per-transaction read map. */
     @GridToStringExclude
-    protected Map<IgniteTxKey, IgniteTxEntry> txMap;
+    private Map<IgniteTxKey, IgniteTxEntry> txMap;
 
     /** Read view on transaction map. */
     @GridToStringExclude
-    protected IgniteTxMap readView;
+    private IgniteTxMap readView;
 
     /** Write view on transaction map. */
     @GridToStringExclude
-    protected IgniteTxMap writeView;
+    private IgniteTxMap writeView;
 
     /** */
     @GridToStringInclude
-    protected Boolean recovery;
+    private Boolean recovery;
 
     /** */
     @GridToStringInclude
-    protected Boolean mvccEnabled;
+    private Boolean mvccEnabled;
 
     /** Cache ids used for mvcc caching. See {@link MvccCachingManager}. */
-    private GridIntList mvccCachingCacheIds = new GridIntList();
+    private final GridIntList mvccCachingCacheIds = new GridIntList();
 
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
@@ -88,84 +88,79 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Integer firstCacheId() {
+    @Nullable @Override public synchronized Integer firstCacheId() {
         return activeCacheIds.isEmpty() ? null : activeCacheIds.get(0);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridIntList cacheIds() {
-        return activeCacheIds;
+    @Override public int[] cacheIds() {
+        return activeCacheIds();
     }
 
     /** {@inheritDoc} */
-    @Override public void unwindEvicts(GridCacheSharedContext cctx) {
-        for (int i = 0; i < activeCacheIds.size(); i++) {
-            int cacheId = activeCacheIds.get(i);
-
-            GridCacheContext ctx = cctx.cacheContext(cacheId);
+    @Override public void unwindEvicts(GridCacheSharedContext ctx) {
+        for (int cacheId : activeCacheIds()) {
+            GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
             if (ctx != null)
-                CU.unwindEvicts(ctx);
+                CU.unwindEvicts(cctx);
         }
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheContext singleCacheContext(GridCacheSharedContext cctx) {
-        if (activeCacheIds.size() == 1) {
-            int cacheId = activeCacheIds.get(0);
+    @Nullable @Override public GridCacheContext<?, ?> singleCacheContext(GridCacheSharedContext ctx) {
+        int[] cacheIds = activeCacheIds();
 
-            return cctx.cacheContext(cacheId);
+        if (cacheIds.length == 1) {
+            int cacheId = cacheIds[0];
+
+            return ctx.cacheContext(cacheId);
         }
 
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void awaitLastFuture(GridCacheSharedContext cctx) {
-        for (int i = 0; i < activeCacheIds.size(); i++) {
-            int cacheId = activeCacheIds.get(i);
-
-            if (cctx.cacheContext(cacheId) == null)
+    @Override public void awaitLastFuture(GridCacheSharedContext ctx) {
+        for (int cacheId : activeCacheIds()) {
+            if (ctx.cacheContext(cacheId) == null)
                 throw new IgniteException("Cache is stopped, id=" + cacheId);
 
-            cctx.cacheContext(cacheId).cache().awaitLastFut();
+            ctx.cacheContext(cacheId).cache().awaitLastFut();
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteCheckedException validateTopology(
-        GridCacheSharedContext cctx,
+        GridCacheSharedContext ctx,
         boolean read,
         GridDhtTopologyFuture topFut
     ) {
         Map<Integer, Set<KeyCacheObject>> keysByCacheId = new HashMap<>();
 
-        for (IgniteTxKey key : txMap.keySet()) {
-            Set<KeyCacheObject> set = keysByCacheId.get(key.cacheId());
+        synchronized (this) {
+            for (IgniteTxKey key : txMap.keySet()) {
+                Set<KeyCacheObject> set = keysByCacheId.computeIfAbsent(key.cacheId(), k -> new HashSet<>());
 
-            if (set == null)
-                keysByCacheId.put(key.cacheId(), set = new HashSet<>());
-
-            set.add(key.key());
+                set.add(key.key());
+            }
         }
 
         for (Map.Entry<Integer, Set<KeyCacheObject>> e : keysByCacheId.entrySet()) {
             int cacheId = e.getKey();
 
-            GridCacheContext ctx = cctx.cacheContext(cacheId);
+            GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
             assert ctx != null : cacheId;
 
-            CacheInvalidStateException err = topFut.validateCache(ctx, recovery(), read, null, e.getValue());
+            CacheInvalidStateException err = topFut.validateCache(cctx, recovery(), read, null, e.getValue());
 
             if (err != null)
                 return err;
         }
 
-        for (int i = 0; i < activeCacheIds.size(); i++) {
-            int cacheId = activeCacheIds.get(i);
-
-            GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
+        for (int cacheId : activeCacheIds()) {
+            GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(cacheId);
 
             if (CU.affinityNodes(cacheCtx, topFut.topologyVersion()).isEmpty()) {
                 return new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all " +
@@ -177,19 +172,17 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean recovery() {
+    @Override public synchronized boolean recovery() {
         return recovery != null && recovery;
     }
 
     /** {@inheritDoc} */
-    @Override public CacheWriteSynchronizationMode syncMode(GridCacheSharedContext cctx) {
+    @Override public CacheWriteSynchronizationMode syncMode(GridCacheSharedContext ctx) {
         CacheWriteSynchronizationMode syncMode = CacheWriteSynchronizationMode.FULL_ASYNC;
 
-        for (int i = 0; i < activeCacheIds.size(); i++) {
-            int cacheId = activeCacheIds.get(i);
-
+        for (int cacheId : activeCacheIds()) {
             CacheWriteSynchronizationMode cacheSyncMode =
-                cctx.cacheContext(cacheId).config().getWriteSynchronizationMode();
+                ctx.cacheContext(cacheId).config().getWriteSynchronizationMode();
 
             switch (cacheSyncMode) {
                 case FULL_SYNC:
@@ -211,11 +204,11 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery, IgniteTxAdapter tx)
+    @Override public synchronized void addActiveCache(GridCacheContext cacheCtx, boolean recovery, IgniteTxAdapter tx)
         throws IgniteCheckedException {
         assert tx.local();
 
-        GridCacheSharedContext cctx = cacheCtx.shared();
+        GridCacheSharedContext ctx = cacheCtx.shared();
 
         int cacheId = cacheCtx.cacheId();
 
@@ -225,15 +218,15 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
         this.recovery = recovery;
 
-        if (this.mvccEnabled != null && this.mvccEnabled != cacheCtx.mvccEnabled())
+        if (mvccEnabled != null && mvccEnabled != cacheCtx.mvccEnabled())
             throw new IgniteCheckedException("Failed to enlist new cache to existing transaction " +
                 "(caches with different mvcc settings can't be enlisted in one transaction).");
 
-        this.mvccEnabled = cacheCtx.mvccEnabled();
+        mvccEnabled = cacheCtx.mvccEnabled();
 
         // Check if we can enlist new cache to transaction.
         if (!activeCacheIds.contains(cacheId)) {
-            String err = cctx.verifyTxCompatibility(tx, activeCacheIds, cacheCtx);
+            String err = ctx.verifyTxCompatibility(tx, activeCacheIds, cacheCtx);
 
             if (err != null) {
                 StringBuilder cacheNames = new StringBuilder();
@@ -243,7 +236,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
                 for (int i = 0; i < activeCacheIds.size(); i++) {
                     int activeCacheId = activeCacheIds.get(i);
 
-                    cacheNames.append(cctx.cacheContext(activeCacheId).name());
+                    cacheNames.append(ctx.cacheContext(activeCacheId).name());
 
                     if (idx++ < activeCacheIds.size() - 1)
                         cacheNames.append(", ");
@@ -269,18 +262,18 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtTopologyFuture topologyReadLock(GridCacheSharedContext cctx, GridFutureAdapter<?> fut) {
-        if (activeCacheIds.isEmpty())
-            return cctx.exchange().lastTopologyFuture();
+    @Override public GridDhtTopologyFuture topologyReadLock(GridCacheSharedContext ctx, GridFutureAdapter<?> fut) {
+        int[] cacheIds = activeCacheIds();
+
+        if (cacheIds.length == 0)
+            return ctx.exchange().lastTopologyFuture();
 
         GridCacheContext<?, ?> nonLocCtx = null;
 
-        Map<Integer, GridCacheContext> cacheCtxs = U.newHashMap(activeCacheIds.size());
+        Map<Integer, GridCacheContext> cacheCtxs = U.newHashMap(cacheIds.length);
 
-        for (int i = 0; i < activeCacheIds.size(); i++) {
-            int cacheId = activeCacheIds.get(i);
-
-            GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
+        for (int cacheId : cacheIds) {
+            GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(cacheId);
 
             if (nonLocCtx == null)
                 nonLocCtx = cacheCtx;
@@ -289,16 +282,16 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         }
 
         if (nonLocCtx == null)
-            return cctx.exchange().lastTopologyFuture();
+            return ctx.exchange().lastTopologyFuture();
 
         nonLocCtx.topology().readLock();
 
         for (Map.Entry<Integer, GridCacheContext> e : cacheCtxs.entrySet()) {
-            GridCacheContext activeCacheCtx = e.getValue();
+            GridCacheContext<?, ?> activeCacheCtx = e.getValue();
 
             if (activeCacheCtx.topology().stopping()) {
                 fut.onDone(
-                    cctx.cache().isCacheRestarting(activeCacheCtx.name()) ?
+                    ctx.cache().isCacheRestarting(activeCacheCtx.name()) ?
                         new IgniteCacheRestartingException(activeCacheCtx.name()) :
                         new CacheStoppedException(activeCacheCtx.name()));
 
@@ -310,16 +303,14 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void topologyReadUnlock(GridCacheSharedContext cctx) {
-        if (!activeCacheIds.isEmpty()) {
+    @Override public void topologyReadUnlock(GridCacheSharedContext ctx) {
+        int[] cacheIds = activeCacheIds();
+
+        if (cacheIds.length != 0) {
             GridCacheContext<?, ?> nonLocCtx = null;
 
-            for (int i = 0; i < activeCacheIds.size(); i++) {
-                int cacheId = activeCacheIds.get(i);
-
-                GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
-
-                nonLocCtx = cacheCtx;
+            for (int cacheId : cacheIds) {
+                nonLocCtx = (GridCacheContext<?, ?>)ctx.cacheContext(cacheId);
 
                 break;
             }
@@ -331,33 +322,20 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean storeWriteThrough(GridCacheSharedContext sctx) {
-        if (!activeCacheIds.isEmpty()) {
-            for (int i = 0; i < activeCacheIds.size(); i++) {
-                int cacheId = activeCacheIds.get(i);
+        for (int cacheId : activeCacheIds()) {
+            CacheStoreManager store = sctx.cacheContext(cacheId).store();
 
-                GridCacheContext<?, ?> ctx = sctx.cacheContext(cacheId);
-
-                // Ad-hoc solution to avoid the node crash.
-                // Proper solution is expected at https://issues.apache.org/jira/browse/IGNITE-19529
-                if (ctx == null) // Most likely, because of reading of an inconsitent state of a non-threadsafe collection.
-                    continue;
-
-                CacheStoreManager store = ctx.store();
-
-                if (store.configured() && store.isWriteThrough())
-                    return true;
-            }
+            if (store.configured() && store.isWriteThrough())
+                return true;
         }
 
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasInterceptor(GridCacheSharedContext cctx) {
-        for (int i = 0; i < activeCacheIds.size(); i++) {
-            int cacheId = activeCacheIds.get(i);
-
-            CacheInterceptor interceptor = cctx.cacheContext(cacheId).config().getInterceptor();
+    @Override public boolean hasInterceptor(GridCacheSharedContext ctx) {
+        for (int cacheId : activeCacheIds()) {
+            CacheInterceptor<?, ?> interceptor = ctx.cacheContext(cacheId).config().getInterceptor();
 
             if (interceptor != null)
                 return true;
@@ -367,16 +345,15 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<CacheStoreManager> stores(GridCacheSharedContext cctx) {
-        GridIntList cacheIds = activeCacheIds;
+    @Override public Collection<CacheStoreManager> stores(GridCacheSharedContext ctx) {
+        int[] cacheIds = activeCacheIds();
 
-        if (!cacheIds.isEmpty()) {
-            Collection<CacheStoreManager> stores = new ArrayList<>(cacheIds.size());
+        if (cacheIds.length != 0) {
+            Collection<CacheStoreManager> stores = new ArrayList<>(cacheIds.length);
 
-            for (int i = 0; i < cacheIds.size(); i++) {
-                int cacheId = cacheIds.get(i);
+            for (int cacheId : cacheIds) {
 
-                CacheStoreManager store = cctx.cacheContext(cacheId).store();
+                CacheStoreManager store = ctx.cacheContext(cacheId).store();
 
                 if (store.configured())
                     stores.add(store);
@@ -389,11 +366,9 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onTxEnd(GridCacheSharedContext cctx, IgniteInternalTx tx, boolean commit) {
-        for (int i = 0; i < activeCacheIds.size(); i++) {
-            int cacheId = activeCacheIds.get(i);
-
-            GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+    @Override public void onTxEnd(GridCacheSharedContext ctx, IgniteInternalTx tx, boolean commit) {
+        for (int cacheId : activeCacheIds()) {
+            GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(cacheId);
 
             assert cacheCtx != null : "cacheCtx == null, cacheId=" + cacheId;
 
@@ -402,7 +377,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean init(int txSize) {
+    @Override public synchronized boolean init(int txSize) {
         if (txMap == null) {
             txMap = U.newLinkedHashMap(txSize > 0 ? txSize : 16);
 
@@ -416,64 +391,64 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean initialized() {
+    @Override public synchronized boolean initialized() {
         return txMap != null;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteTxEntry> allEntries() {
-        return txMap == null ? Collections.<IgniteTxEntry>emptySet() : txMap.values();
+    @Override public synchronized Collection<IgniteTxEntry> allEntries() {
+        return txMap == null ? Collections.emptySet() : txMap.values();
     }
 
     /**
      * @return All entries. Returned collection is copy of internal collection.
      */
     public synchronized Collection<IgniteTxEntry> allEntriesCopy() {
-        return txMap == null ? Collections.<IgniteTxEntry>emptySet() : new ArrayList<>(txMap.values());
+        return txMap == null ? Collections.emptySet() : new ArrayList<>(txMap.values());
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTxEntry entry(IgniteTxKey key) {
+    @Override public synchronized IgniteTxEntry entry(IgniteTxKey key) {
         return txMap == null ? null : txMap.get(key);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasWriteKey(IgniteTxKey key) {
+    @Override public synchronized boolean hasWriteKey(IgniteTxKey key) {
         return writeView.containsKey(key);
     }
 
     /** {@inheritDoc} */
-    @Override public Set<IgniteTxKey> readSet() {
-        return txMap == null ? Collections.<IgniteTxKey>emptySet() : readView.keySet();
+    @Override public synchronized Set<IgniteTxKey> readSet() {
+        return txMap == null ? Collections.emptySet() : readView.keySet();
     }
 
     /** {@inheritDoc} */
-    @Override public Set<IgniteTxKey> writeSet() {
-        return txMap == null ? Collections.<IgniteTxKey>emptySet() : writeView.keySet();
+    @Override public synchronized Set<IgniteTxKey> writeSet() {
+        return txMap == null ? Collections.emptySet() : writeView.keySet();
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteTxEntry> writeEntries() {
-        return writeView == null ? Collections.<IgniteTxEntry>emptyList() : writeView.values();
+    @Override public synchronized Collection<IgniteTxEntry> writeEntries() {
+        return writeView == null ? Collections.emptyList() : writeView.values();
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteTxEntry> readEntries() {
-        return readView == null ? Collections.<IgniteTxEntry>emptyList() : readView.values();
+    @Override public synchronized Collection<IgniteTxEntry> readEntries() {
+        return readView == null ? Collections.emptyList() : readView.values();
     }
 
     /** {@inheritDoc} */
-    @Override public Map<IgniteTxKey, IgniteTxEntry> writeMap() {
-        return writeView == null ? Collections.<IgniteTxKey, IgniteTxEntry>emptyMap() : writeView;
+    @Override public synchronized Map<IgniteTxKey, IgniteTxEntry> writeMap() {
+        return writeView == null ? Collections.emptyMap() : writeView;
     }
 
     /** {@inheritDoc} */
-    @Override public Map<IgniteTxKey, IgniteTxEntry> readMap() {
-        return readView == null ? Collections.<IgniteTxKey, IgniteTxEntry>emptyMap() : readView;
+    @Override public synchronized Map<IgniteTxKey, IgniteTxEntry> readMap() {
+        return readView == null ? Collections.emptyMap() : readView;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean empty() {
+    @Override public synchronized boolean empty() {
         return txMap.isEmpty();
     }
 
@@ -488,7 +463,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void seal() {
+    @Override public synchronized void seal() {
         if (readView != null)
             readView.seal();
 
@@ -497,18 +472,23 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTxEntry singleWrite() {
+    @Override public synchronized IgniteTxEntry singleWrite() {
         return writeView != null && writeView.size() == 1 ? F.firstValue(writeView) : null;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean mvccEnabled() {
+    @Override public synchronized boolean mvccEnabled() {
         return Boolean.TRUE == mvccEnabled;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean useMvccCaching(int cacheId) {
+    @Override public synchronized boolean useMvccCaching(int cacheId) {
         return mvccCachingCacheIds.contains(cacheId);
+    }
+
+    /** */
+    private synchronized int[] activeCacheIds() {
+        return activeCacheIds.array();
     }
 
     /** {@inheritDoc} */

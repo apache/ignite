@@ -24,7 +24,6 @@ import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
-import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -256,12 +255,14 @@ public class TransactionView {
      */
     @Order(8)
     public String cacheIds() {
-        GridIntList cacheIds = tx.txState().cacheIds();
+        int[] cacheIds = tx.txState().cacheIds();
 
-        if (cacheIds == null)
+        assert cacheIds != null;
+
+        if (cacheIds.length == 0)
             return null;
 
-        int sz = cacheIds.size();
+        int sz = cacheIds.length;
 
         if (sz == 0)
             return null;
@@ -274,7 +275,7 @@ public class TransactionView {
                 if (i != 0)
                     b.a(',');
 
-                b.a(cacheIds.get(i));
+                b.a(cacheIds[i]);
             }
 
             return b.toString();
