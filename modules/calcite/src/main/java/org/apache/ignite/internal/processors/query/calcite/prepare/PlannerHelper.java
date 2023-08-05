@@ -33,6 +33,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.query.calcite.hint.SqlHintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -45,7 +46,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescript
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.util.HintUtils;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
 
 /** */
 public class PlannerHelper {
@@ -68,7 +69,7 @@ public class PlannerHelper {
 
             RelNode rel = root.rel;
 
-            if (HintUtils.containsDisabledRules(root.hints))
+            if (HintUtils.containsRule(root.hints, SqlHintDefinition.DISABLE_RULE))
                 planner.setDisabledRules(HintUtils.disabledRules(root.hints));
 
             // Transformation chain

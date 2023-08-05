@@ -29,6 +29,7 @@ import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -70,6 +71,8 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
 
         if (igniteTable.isIndexRebuildInProgress())
             return;
+
+        HintUtils.containsDisabledRules()
 
         List<IgniteLogicalIndexScan> indexes = igniteTable.indexes().values().stream()
             .map(idx -> idx.toRel(cluster, optTable, proj, condition, requiredCols))

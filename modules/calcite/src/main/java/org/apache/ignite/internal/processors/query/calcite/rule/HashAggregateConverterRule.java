@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocat
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.util.HintUtils;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
 
 /**
  *
