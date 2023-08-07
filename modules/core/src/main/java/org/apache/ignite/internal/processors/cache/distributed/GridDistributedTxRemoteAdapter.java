@@ -155,7 +155,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash,
-        String txLbl
+        @Nullable String txLbl
     ) {
         super(
             ctx,
