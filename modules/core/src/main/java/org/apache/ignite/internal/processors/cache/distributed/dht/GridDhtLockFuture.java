@@ -440,7 +440,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             if (log.isDebugEnabled())
                 log.debug("Failed to acquire lock with negative timeout: " + entry);
 
-            onFailed(false);
+            onFailed();
 
             return null;
         }
@@ -512,10 +512,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
     /**
      *
-     * @param dist {@code True} if need to distribute lock release.
      */
-    private void onFailed(boolean dist) {
-        undoLocks(dist);
+    private void onFailed() {
+        undoLocks(false);
 
         onComplete(false, false, true);
     }
@@ -618,7 +617,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                     if (timeout < 0) {
                         if (owners == null || !owners.hasCandidate(lockVer)) {
                             // We did not send any requests yet.
-                            onFailed(false);
+                            onFailed();
 
                             return;
                         }
@@ -855,7 +854,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
                             // Possible in case of lock cancellation.
                             if (cand == null) {
-                                onFailed(false);
+                                onFailed();
 
                                 // Will mark initialized in finally block.
                                 return;
