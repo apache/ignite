@@ -420,13 +420,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     }
 
     /**
-     * @param success Success flag.
-     */
-    public void complete(boolean success) {
-        onComplete(success, true);
-    }
-
-    /**
      * @param nodeId Left node ID
      * @return {@code True} if node was in the list.
      */
@@ -1622,13 +1615,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
          */
         public ClusterNode node() {
             return node;
-        }
-
-        /**
-         * @return Keys.
-         */
-        public Collection<KeyCacheObject> keys() {
-            return keys;
         }
 
         /**
