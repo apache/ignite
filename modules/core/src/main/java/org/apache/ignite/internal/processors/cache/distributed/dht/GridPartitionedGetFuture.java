@@ -193,10 +193,10 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 fut = cctx.shared().exchange().lastFinishedFuture();
             else {
                 fut.listen((IgniteInternalFuture<AffinityTopologyVersion> fut0) -> {
-                        if (fut0.error() != null)
-                            onDone(fut0.error());
-                        else
-                            cctx.closures().runLocalSafe(() -> map(keys, mapped, topVer), true);
+                    if (fut0.error() != null)
+                        onDone(fut0.error());
+                    else
+                        cctx.closures().runLocalSafe(() -> map(keys, mapped, topVer), true);
                 });
 
                 return;
