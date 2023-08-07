@@ -69,12 +69,10 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
@@ -266,7 +264,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
         if (tx != null) {
             while (true) {
-                IgniteInternalFuture fut = tx.lockFut;
+                IgniteInternalFuture<?> fut = tx.lockFut;
 
                 if (fut != null) {
                     if (fut == GridDhtTxLocalAdapter.ROLLBACK_FUT)
@@ -276,14 +274,12 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                         assert fut instanceof GridDhtColocatedLockFuture : fut;
 
                         // Terminate this future if parent(collocated) future is terminated by rollback.
-                        fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
-                            @Override public void apply(IgniteInternalFuture fut) {
-                                try {
-                                    fut.get();
-                                }
-                                catch (IgniteCheckedException e) {
-                                    onError(e);
-                                }
+                        fut.listen((IgniteInternalFuture<?> fut0) -> {
+                            try {
+                                fut.get();
+                            }
+                            catch (IgniteCheckedException e) {
+                                onError(e);
                             }
                         });
                     }
@@ -1030,12 +1026,10 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
-            @Override public String apply(IgniteInternalFuture<?> f) {
-                MiniFuture m = (MiniFuture)f;
+        Collection<String> futs = F.viewReadOnly(futures(), (IgniteInternalFuture<?> f) -> {
+            MiniFuture m = (MiniFuture)f;
 
-                return "[node=" + m.node().id() + ", loc=" + m.node().isLocal() + ", done=" + f.isDone() + "]";
-            }
+            return "[node=" + m.node().id() + ", loc=" + m.node().isLocal() + ", done=" + f.isDone() + "]";
         });
 
         Collection<KeyCacheObject> locks;
@@ -1081,46 +1075,44 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                 cctx.store().loadAll(
                     null,
                     loadMap.keySet(),
-                    new CI2<KeyCacheObject, Object>() {
-                        @Override public void apply(KeyCacheObject key, Object val) {
-                            // No value loaded from store.
-                            if (val == null)
-                                return;
+                    (KeyCacheObject key, Object val) -> {
+                        // No value loaded from store.
+                        if (val == null)
+                            return;
 
-                            GridDhtCacheEntry entry0 = loadMap.get(key);
+                        GridDhtCacheEntry entry0 = loadMap.get(key);
 
-                            try {
-                                CacheObject val0 = cctx.toCacheObject(val);
+                        try {
+                            CacheObject val0 = cctx.toCacheObject(val);
 
-                                long ttl = createTtl;
-                                long expireTime;
+                            long ttl = createTtl;
+                            long expireTime;
 
-                                if (ttl == CU.TTL_ZERO)
-                                    expireTime = CU.expireTimeInPast();
-                                else {
-                                    if (ttl == CU.TTL_NOT_CHANGED)
-                                        ttl = CU.TTL_ETERNAL;
+                            if (ttl == CU.TTL_ZERO)
+                                expireTime = CU.expireTimeInPast();
+                            else {
+                                if (ttl == CU.TTL_NOT_CHANGED)
+                                    ttl = CU.TTL_ETERNAL;
 
-                                    expireTime = CU.toExpireTime(ttl);
-                                }
-
-                                entry0.initialValue(val0,
-                                    ver,
-                                    ttl,
-                                    expireTime,
-                                    false,
-                                    topVer,
-                                    GridDrType.DR_LOAD,
-                                    true,
-                                    false);
+                                expireTime = CU.toExpireTime(ttl);
                             }
-                            catch (GridCacheEntryRemovedException e) {
-                                assert false : "Should not get removed exception while holding lock on entry " +
-                                    "[entry=" + entry0 + ", e=" + e + ']';
-                            }
-                            catch (IgniteCheckedException e) {
-                                onDone(e);
-                            }
+
+                            entry0.initialValue(val0,
+                                ver,
+                                ttl,
+                                expireTime,
+                                false,
+                                topVer,
+                                GridDrType.DR_LOAD,
+                                true,
+                                false);
+                        }
+                        catch (GridCacheEntryRemovedException e) {
+                            assert false : "Should not get removed exception while holding lock on entry " +
+                                "[entry=" + entry0 + ", e=" + e + ']';
+                        }
+                        catch (IgniteCheckedException e) {
+                            onDone(e);
                         }
                     });
             }
