@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxAbst
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryEnlistFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -168,23 +167,21 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
 
                     updateLocalFuture(locFut);
 
-                    locFut.listen(new CI1<IgniteInternalFuture<Long>>() {
-                        @Override public void apply(IgniteInternalFuture<Long> fut) {
-                            assert fut.error() != null || fut.result() != null : fut;
+                    locFut.listen((IgniteInternalFuture<Long> fut) -> {
+                        assert fut.error() != null || fut.result() != null : fut;
 
-                            try {
-                                clearLocalFuture((GridDhtTxAbstractEnlistFuture)fut);
+                        try {
+                            clearLocalFuture((GridDhtTxAbstractEnlistFuture)fut);
 
-                                GridNearTxQueryEnlistResponse res = fut.error() == null ? createResponse(fut) : null;
+                            GridNearTxQueryEnlistResponse res = fut.error() == null ? createResponse(fut) : null;
 
-                                mini.onResult(res, fut.error());
-                            }
-                            catch (IgniteCheckedException e) {
-                                mini.onResult(null, e);
-                            }
-                            finally {
-                                CU.unwindEvicts(cctx);
-                            }
+                            mini.onResult(res, fut.error());
+                        }
+                        catch (IgniteCheckedException e) {
+                            mini.onResult(null, e);
+                        }
+                        finally {
+                            CU.unwindEvicts(cctx);
                         }
                     });
                 }
