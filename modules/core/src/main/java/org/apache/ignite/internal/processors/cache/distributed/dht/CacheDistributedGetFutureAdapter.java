@@ -159,7 +159,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         boolean keepCacheObjects,
         boolean recovery
     ) {
-        super(CU.<K, V>mapsReducer(keys.size()));
+        super(CU.mapsReducer(keys.size()));
 
         assert !F.isEmpty(keys);
 
@@ -174,7 +174,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         this.needVer = needVer;
         this.keepCacheObjects = keepCacheObjects;
         this.recovery = recovery;
-        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
+        deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         futId = IgniteUuid.randomUuid();
     }
@@ -414,7 +414,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
             this.node = node;
             this.keys = keys;
             this.topVer = topVer;
-            this.postProcessingClos = CU.createBackupPostProcessingClosure(
+            postProcessingClos = CU.createBackupPostProcessingClosure(
                 topVer, log, cctx, null, expiryPlc, readThrough && cctx.readThroughConfigured(), skipVals);
         }
 
@@ -489,7 +489,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
             if (!canRemap) {
                 map(keys.keySet(), F.t(node, keys), topVer);
 
-                onDone(Collections.<K, V>emptyMap());
+                onDone(Collections.emptyMap());
             }
             else {
                 long maxTopVer = Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion());
@@ -503,7 +503,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
                             // Remap.
                             map(keys.keySet(), F.t(node, keys), f.get());
 
-                            onDone(Collections.<K, V>emptyMap());
+                            onDone(Collections.emptyMap());
                         }
                         catch (IgniteCheckedException ex) {
                             CacheDistributedGetFutureAdapter.this.onDone(ex);
