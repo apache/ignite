@@ -461,22 +461,22 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
         updateLocalFuture(fut);
 
         fut.listen((IgniteInternalFuture<Long> fut0) -> {
-                assert fut.error() != null || fut.result() != null : fut;
+            assert fut.error() != null || fut.result() != null : fut;
 
-                try {
-                    clearLocalFuture(fut);
+            try {
+                clearLocalFuture(fut);
 
-                    GridNearTxQueryResultsEnlistResponse res = fut.error() == null ? createResponse(fut) : null;
+                GridNearTxQueryResultsEnlistResponse res = fut.error() == null ? createResponse(fut) : null;
 
-                    if (checkResponse(nodeId, res, fut.error()))
-                        sendNextBatches(nodeId);
-                }
-                catch (IgniteCheckedException e) {
-                    checkResponse(nodeId, null, e);
-                }
-                finally {
-                    CU.unwindEvicts(cctx);
-                }
+                if (checkResponse(nodeId, res, fut.error()))
+                    sendNextBatches(nodeId);
+            }
+            catch (IgniteCheckedException e) {
+                checkResponse(nodeId, null, e);
+            }
+            finally {
+                CU.unwindEvicts(cctx);
+            }
         });
 
         fut.init();
