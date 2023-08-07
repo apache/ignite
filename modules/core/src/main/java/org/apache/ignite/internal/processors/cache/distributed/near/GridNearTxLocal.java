@@ -191,13 +191,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /**
      * Counts how much time this transaction has spent on system calls, in nanoseconds.
      */
-    private final AtomicLong systemTime = new AtomicLong(0);
+    private final AtomicLong sysTime = new AtomicLong(0);
 
     /**
      * Stores the nano time value when current system time has started, or <code>0</code> if no system section
      * is running currently.
      */
-    private final AtomicLong systemStartTime = new AtomicLong(0);
+    private final AtomicLong sysStartTime = new AtomicLong(0);
 
     /**
      * Stores the nano time value when prepare step has started, or <code>0</code> if no prepare step
@@ -492,20 +492,20 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /**
      * @param cacheCtx Cache context.
      * @param key Key.
-     * @param entryProcessor Entry processor.
+     * @param entryProc Entry processor.
      * @param invokeArgs Optional arguments for entry processor.
      * @return Operation future.
      */
     public <K, V> IgniteInternalFuture<GridCacheReturn> invokeAsync(GridCacheContext cacheCtx,
         @Nullable AffinityTopologyVersion entryTopVer,
         K key,
-        EntryProcessor<K, V, Object> entryProcessor,
+        EntryProcessor<K, V, Object> entryProc,
         Object... invokeArgs) {
         return (IgniteInternalFuture)putAsync0(cacheCtx,
             entryTopVer,
             key,
             null,
-            entryProcessor,
+            entryProc,
             invokeArgs,
             true,
             null);
@@ -593,7 +593,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param cacheCtx Cache context.
      * @param key Key.
      * @param val Value.
-     * @param entryProcessor Entry processor.
+     * @param entryProc Entry processor.
      * @param invokeArgs Optional arguments for EntryProcessor.
      * @param retval Return value flag.
      * @param filter Filter.
@@ -604,7 +604,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable AffinityTopologyVersion entryTopVer,
         K key,
         @Nullable V val,
-        @Nullable EntryProcessor<K, V, Object> entryProcessor,
+        @Nullable EntryProcessor<K, V, Object> entryProc,
         @Nullable final Object[] invokeArgs,
         final boolean retval,
         @Nullable final CacheEntryPredicate filter
@@ -613,7 +613,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         if (cacheCtx.mvccEnabled())
             return mvccPutAllAsync0(cacheCtx, Collections.singletonMap(key, val),
-                entryProcessor == null ? null : Collections.singletonMap(key, entryProcessor), invokeArgs, retval, filter);
+                entryProc == null ? null : Collections.singletonMap(key, entryProc), invokeArgs, retval, filter);
 
         try {
             beforePut(cacheCtx, retval, false);
@@ -636,7 +636,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 cacheKey,
                 val,
                 opCtx != null ? opCtx.expiry() : null,
-                entryProcessor,
+                entryProc,
                 invokeArgs,
                 retval,
                 filters,
@@ -670,7 +670,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
                     timeout,
                     this,
-                    /*read*/entryProcessor != null, // Needed to force load from store.
+                    /*read*/entryProc != null, // Needed to force load from store.
                     retval,
                     isolation,
                     isInvalidate(),
@@ -799,9 +799,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 }
 
                 Object val = map == null ? null : map.get(key);
-                EntryProcessor entryProcessor = transform ? invokeMap.get(key) : null;
+                EntryProcessor entryProc = transform ? invokeMap.get(key) : null;
 
-                if (val == null && entryProcessor == null) {
+                if (val == null && entryProc == null) {
                     setRollbackOnly();
 
                     throw new NullPointerException("Null value.");
@@ -810,7 +810,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 KeyCacheObject cacheKey = cacheCtx.toCacheKeyObject(key);
 
                 if (transform)
-                    enlisted.put(cacheKey, new GridInvokeValue(entryProcessor, invokeArgs));
+                    enlisted.put(cacheKey, new GridInvokeValue(entryProc, invokeArgs));
                 else
                     enlisted.put(cacheKey, val);
             }
@@ -1025,7 +1025,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param cacheKey Key to enlist.
      * @param val Value.
      * @param expiryPlc Explicitly specified expiry policy for entry.
-     * @param entryProcessor Entry processor (for invoke operation).
+     * @param entryProc Entry processor (for invoke operation).
      * @param invokeArgs Optional arguments for EntryProcessor.
      * @param retval Flag indicating whether a value should be returned.
      * @param filter User filters.
@@ -1041,7 +1041,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         KeyCacheObject cacheKey,
         Object val,
         @Nullable ExpiryPolicy expiryPlc,
-        @Nullable EntryProcessor<K, V, Object> entryProcessor,
+        @Nullable EntryProcessor<K, V, Object> entryProc,
         @Nullable Object[] invokeArgs,
         final boolean retval,
         final CacheEntryPredicate[] filter,
@@ -1064,7 +1064,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 final boolean needVal = retval || hasFilters;
                 final boolean needReadVer = needVal && (serializable() && optimistic());
 
-                if (entryProcessor != null)
+                if (entryProc != null)
                     transform = true;
 
                 GridCacheVersion drVer = dataCenterId != null ? cacheCtx.cache().nextVersion(dataCenterId) : null;
@@ -1073,7 +1073,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     entryTopVer,
                     cacheKey,
                     val,
-                    entryProcessor,
+                    entryProc,
                     invokeArgs,
                     expiryPlc,
                     retval,
@@ -1104,7 +1104,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         needReadVer,
                         false,
                         hasFilters,
-                        /*read through*/(entryProcessor != null || cacheCtx.config().isLoadPreviousValue()) && !skipStore,
+                        /*read through*/(entryProc != null || cacheCtx.config().isLoadPreviousValue()) && !skipStore,
                         retval,
                         keepBinary,
                         recovery,
@@ -1218,7 +1218,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     }
 
                     Object val = rmv || lookup == null ? null : lookup.get(key);
-                    EntryProcessor entryProcessor = invokeMap == null ? null : invokeMap.get(key);
+                    EntryProcessor entryProc = invokeMap == null ? null : invokeMap.get(key);
 
                     GridCacheVersion drVer;
                     long drTtl;
@@ -1251,7 +1251,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         drExpireTime = -1L;
                     }
 
-                    if (!rmv && val == null && entryProcessor == null) {
+                    if (!rmv && val == null && entryProc == null) {
                         setRollbackOnly();
 
                         throw new NullPointerException("Null value.");
@@ -1263,7 +1263,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         entryTopVer,
                         cacheKey,
                         val,
-                        entryProcessor,
+                        entryProc,
                         invokeArgs,
                         expiryPlc,
                         retval,
@@ -1336,7 +1336,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param cacheCtx Cache context.
      * @param cacheKey Key.
      * @param val Value.
-     * @param entryProcessor Entry processor.
+     * @param entryProc Entry processor.
      * @param invokeArgs Optional arguments for EntryProcessor.
      * @param expiryPlc Explicitly specified expiry policy for entry.
      * @param retval Return value flag.
@@ -1358,7 +1358,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable AffinityTopologyVersion entryTopVer,
         final KeyCacheObject cacheKey,
         @Nullable final Object val,
-        @Nullable final EntryProcessor<?, ?, ?> entryProcessor,
+        @Nullable final EntryProcessor<?, ?, ?> entryProc,
         @Nullable final Object[] invokeArgs,
         @Nullable final ExpiryPolicy expiryPlc,
         final boolean retval,
@@ -1377,7 +1377,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     ) throws IgniteCheckedException {
         boolean loadMissed = false;
 
-        final boolean rmv = val == null && entryProcessor == null;
+        final boolean rmv = val == null && entryProc == null;
 
         IgniteTxKey txKey = cacheCtx.txKey(cacheKey);
 
@@ -1417,7 +1417,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                             this,
                                             /*metrics*/retval,
                                             /*events*/retval,
-                                            entryProcessor,
+                                            entryProc,
                                             resolveTaskName(),
                                             null,
                                             keepBinary,
@@ -1443,7 +1443,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                         /*read through*/false,
                                         /*metrics*/retval,
                                         /*events*/retval,
-                                        entryProcessor,
+                                        entryProc,
                                         resolveTaskName(),
                                         null,
                                         keepBinary);
@@ -1463,7 +1463,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         old = entry.rawGet();
 
                     final GridCacheOperation op = rmv ? DELETE :
-                        entryProcessor != null ? TRANSFORM : old != null ? UPDATE : CREATE;
+                        entryProc != null ? TRANSFORM : old != null ? UPDATE : CREATE;
 
                     if (old != null && hasFilters && !filter(entry.context(), cacheKey, old, filter)) {
                         ret.set(
@@ -1478,7 +1478,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             if (optimistic() && serializable()) {
                                 txEntry = addEntry(op,
                                     old,
-                                    entryProcessor,
+                                    entryProc,
                                     invokeArgs,
                                     entry,
                                     expiryPlc,
@@ -1530,7 +1530,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                     txEntry = addEntry(op,
                         cVal,
-                        entryProcessor,
+                        entryProc,
                         invokeArgs,
                         entry,
                         expiryPlc,
@@ -1622,7 +1622,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             }
         }
         else {
-            if (entryProcessor == null && txEntry.op() == TRANSFORM)
+            if (entryProc == null && txEntry.op() == TRANSFORM)
                 throw new IgniteCheckedException("Failed to enlist write value for key (cannot have update value in " +
                     "transaction after EntryProcessor is applied): " + CU.value(cacheKey, cacheCtx, false));
 
@@ -1639,7 +1639,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     return loadMissed;
                 }
 
-                GridCacheOperation op = rmv ? DELETE : entryProcessor != null ? TRANSFORM :
+                GridCacheOperation op = rmv ? DELETE : entryProc != null ? TRANSFORM :
                     v != null ? UPDATE : CREATE;
 
                 CacheObject cVal = cacheCtx.toCacheObject(val);
@@ -1649,7 +1649,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 txEntry = addEntry(op,
                     cVal,
-                    entryProcessor,
+                    entryProc,
                     invokeArgs,
                     entry,
                     expiryPlc,
@@ -3756,13 +3756,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @return Amount of time in milliseconds.
      */
     public long systemTimeCurrent() {
-        long systemTime0 = systemTime.get();
+        long sysTime0 = sysTime.get();
 
-        long systemStartTime0 = systemStartTime.get();
+        long sysStartTime0 = sysStartTime.get();
 
-        long t = systemStartTime0 == 0 ? 0 : (System.nanoTime() - systemStartTime0);
+        long t = sysStartTime0 == 0 ? 0 : (System.nanoTime() - sysStartTime0);
 
-        return U.nanosToMillis(systemTime0 + t);
+        return U.nanosToMillis(sysTime0 + t);
     }
 
     /** {@inheritDoc} */
@@ -3776,13 +3776,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (!commitOrRollbackTime.compareAndSet(0, System.nanoTime() - commitOrRollbackStartTime.get()))
                 return res;
 
-            long systemTimeMillis = U.nanosToMillis(systemTime.get());
+            long sysTimeMillis = U.nanosToMillis(sysTime.get());
             long totalTimeMillis = System.currentTimeMillis() - startTime();
 
             // In some cases totalTimeMillis can be less than systemTimeMillis, as they are calculated with different precision.
-            long userTimeMillis = Math.max(totalTimeMillis - systemTimeMillis, 0);
+            long userTimeMillis = Math.max(totalTimeMillis - sysTimeMillis, 0);
 
-            cctx.txMetrics().onNearTxComplete(systemTimeMillis, userTimeMillis);
+            cctx.txMetrics().onNearTxComplete(sysTimeMillis, userTimeMillis);
 
             boolean willBeSkipped = txDumpsThrottling == null || txDumpsThrottling.skipCurrent();
 
@@ -3797,7 +3797,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     && ThreadLocalRandom.current().nextDouble() <= transactionTimeDumpSamplesCoefficient;
 
                 if (randomlyChosen || isLong) {
-                    String txDump = completedTransactionDump(state, systemTimeMillis, userTimeMillis, isLong);
+                    String txDump = completedTransactionDump(state, sysTimeMillis, userTimeMillis, isLong);
 
                     if (isLong)
                         log.warning(txDump);
@@ -3818,27 +3818,27 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * Builds dump string for completed transaction.
      *
      * @param state Transaction state.
-     * @param systemTimeMillis System time in milliseconds.
+     * @param sysTimeMillis System time in milliseconds.
      * @param userTimeMillis User time in milliseconds.
      * @param isLong Whether the dumped transaction is long running or not.
      * @return Dump string.
      */
     private String completedTransactionDump(
         TransactionState state,
-        long systemTimeMillis,
+        long sysTimeMillis,
         long userTimeMillis,
         boolean isLong
     ) {
         long cacheOperationsTimeMillis =
-            U.nanosToMillis(systemTime.get() - prepareTime.get() - commitOrRollbackTime.get());
+            U.nanosToMillis(sysTime.get() - prepareTime.get() - commitOrRollbackTime.get());
 
         GridStringBuilder warning = new GridStringBuilder(isLong ? "Long transaction time dump " : "Transaction time dump ")
             .a("[startTime=")
             .a(IgniteUtils.DEBUG_DATE_FMT.format(Instant.ofEpochMilli(startTime)))
             .a(", totalTime=")
-            .a(systemTimeMillis + userTimeMillis)
+            .a(sysTimeMillis + userTimeMillis)
             .a(", systemTime=")
-            .a(systemTimeMillis)
+            .a(sysTimeMillis)
             .a(", userTime=")
             .a(userTimeMillis)
             .a(", cacheOperationsTime=")
@@ -3927,11 +3927,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
-     * @param awaitLastFuture If true - method will wait until transaction finish every action started before.
+     * @param awaitLastFut If true - method will wait until transaction finish every action started before.
      * @throws IgniteCheckedException If failed.
      */
-    public final void prepare(boolean awaitLastFuture) throws IgniteCheckedException {
-        if (awaitLastFuture)
+    public final void prepare(boolean awaitLastFut) throws IgniteCheckedException {
+        if (awaitLastFut)
             txState().awaitLastFuture(cctx);
 
         prepareNearTxLocal().get();
@@ -5016,17 +5016,17 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     public void enterSystemSection() {
         // Setting systemStartTime only if it equals 0, otherwise it means that we are already in system section
         // and should do nothing.
-        systemStartTime.compareAndSet(0, System.nanoTime());
+        sysStartTime.compareAndSet(0, System.nanoTime());
     }
 
     /**
      * Leaves the section when system time for this transaction is counted.
      */
     public void leaveSystemSection() {
-        long systemStartTime0 = systemStartTime.getAndSet(0);
+        long sysStartTime0 = sysStartTime.getAndSet(0);
 
-        if (systemStartTime0 > 0)
-            systemTime.addAndGet(System.nanoTime() - systemStartTime0);
+        if (sysStartTime0 > 0)
+            sysTime.addAndGet(System.nanoTime() - sysStartTime0);
     }
 
     /**
