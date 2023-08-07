@@ -1441,7 +1441,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                         IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(e, false, null);
 
-                        GridCacheContext cacheCtx = e.context();
+                        GridCacheContext<?, ?> cacheCtx = e.context();
 
                         GridCacheOperation op = res.get1();
                         KeyCacheObject key = e.key();
