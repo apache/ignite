@@ -133,7 +133,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * Thus access to this collection must be synchronized except cases
      * when this object is yet local to the thread created it.
      */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @GridToStringExclude
     private final List<GridDhtCacheEntry> entries;
 
