@@ -59,9 +59,7 @@ class MatrixStorageFixtures {
         /** */
         private final Integer[] cols = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 1024, 512, null};
 
-        /** */
-        private final Integer[] randomAccess =
-            new Integer[] {StorageConstants.SEQUENTIAL_ACCESS_MODE, StorageConstants.RANDOM_ACCESS_MODE, null};
+       
 
         /** */
         private final Integer[] rowStorage = new Integer[] {StorageConstants.ROW_STORAGE_MODE, StorageConstants.COLUMN_STORAGE_MODE, null};
@@ -82,7 +80,7 @@ class MatrixStorageFixtures {
                 /** {@inheritDoc} */
                 @Override public boolean hasNext() {
                     return hasNextCol(sizeIdx) && hasNextRow(sizeIdx)
-                        && hasNextAcsMode(acsModeIdx) && hasNextStoMode(stoModeIdx);
+                        && hasNextStoMode(stoModeIdx);
                 }
 
                 /** {@inheritDoc} */
@@ -91,7 +89,7 @@ class MatrixStorageFixtures {
                         throw new NoSuchElementException(SparseLocalMatrixStorageFixture.this.toString());
 
                     MatrixStorage storage = new SparseMatrixStorage(
-                        rows[sizeIdx], cols[sizeIdx], randomAccess[acsModeIdx], rowStorage[stoModeIdx]);
+                        rows[sizeIdx], cols[sizeIdx], rowStorage[stoModeIdx]);
 
                     nextIdx();
 
@@ -107,12 +105,6 @@ class MatrixStorageFixtures {
 
                     stoModeIdx = 0;
 
-                    if (hasNextAcsMode(acsModeIdx + 1)) {
-                        acsModeIdx++;
-
-                        return;
-                    }
-
                     acsModeIdx = 0;
                     sizeIdx++;
                 }
@@ -122,7 +114,7 @@ class MatrixStorageFixtures {
         /** {@inheritDoc} */
         @Override public String toString() {
             return "SparseLocalMatrixStorageFixture{ " + "rows=" + rows[sizeIdx] + ", cols=" + cols[sizeIdx] +
-                ", access mode=" + randomAccess[acsModeIdx] + ", storage mode=" + rowStorage[stoModeIdx] + "}";
+                ", storage mode=" + rowStorage[stoModeIdx] + "}";
         }
 
         /** */
@@ -133,11 +125,6 @@ class MatrixStorageFixtures {
         /** */
         private boolean hasNextCol(int idx) {
             return cols[idx] != null;
-        }
-
-        /** */
-        private boolean hasNextAcsMode(int idx) {
-            return randomAccess[idx] != null;
         }
 
         /** */

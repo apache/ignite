@@ -21,12 +21,7 @@ package org.apache.ignite.ml.math;
  * Support for different modes of accessing data storage.
  */
 public interface StorageConstants {
-    /** Storage mode optimized for sequential access. */
-    public static final int SEQUENTIAL_ACCESS_MODE = 1001;
-
-    /** Storage mode optimized for random access. */
-    public static final int RANDOM_ACCESS_MODE = 1002;
-
+   
     /** Storage mode optimized for row access. */
     public static final int ROW_STORAGE_MODE = 2001;
 
@@ -35,13 +30,7 @@ public interface StorageConstants {
 
     /** Storage mode is unknown. */
     public static final int UNKNOWN_STORAGE_MODE = 3001;
-
-    /**
-     * @param mode Access mode to verify.
-     */
-    public default void assertAccessMode(int mode) {
-        assert mode == SEQUENTIAL_ACCESS_MODE || mode == RANDOM_ACCESS_MODE;
-    }
+  
 
     /**
      * @param mode Storage mode to verify.

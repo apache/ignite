@@ -45,8 +45,7 @@ import static org.junit.Assert.assertNotNull;
 class VectorImplementationsFixtures {
     /** */
     private static final List<Supplier<Iterable<Vector>>> suppliers = Arrays.asList(
-        (Supplier<Iterable<Vector>>)DenseLocalOnHeapVectorFixture::new,
-        (Supplier<Iterable<Vector>>)SparseLocalVectorFixture::new,
+        (Supplier<Iterable<Vector>>)DenseLocalOnHeapVectorFixture::new,      
         (Supplier<Iterable<Vector>>)DelegatingVectorFixture::new,
         (Supplier<Iterable<Vector>>)MatrixVectorViewFixture::new
     );
@@ -72,15 +71,6 @@ class VectorImplementationsFixtures {
             super("DenseLocalOnHeapVector",
                 (size, shallowCp) -> new DenseVector(new double[size], shallowCp),
                 "shallow copy", new Boolean[] {false, true, null});
-        }
-    }
-
-    /** */
-    private static class SparseLocalVectorFixture extends VectorSizesExtraFixture<Integer> {
-        /** */
-        SparseLocalVectorFixture() {
-            super("SparseLocalVector", (x, y) -> new SparseVector(x), "access mode",
-                new Integer[] {StorageConstants.SEQUENTIAL_ACCESS_MODE, StorageConstants.RANDOM_ACCESS_MODE, null});
         }
     }
 

@@ -29,8 +29,8 @@ public class DenseVectorStorageTest extends AbstractStorageTest {
     /** {@inheritDoc} */
     @Override protected boolean isNumericVector(VectorStorage storage) {
         try {
-            double[] arr = ((DenseVectorStorage)storage).getData();
-            return storage.isNumeric() && (arr != null || !isRaw(storage));
+           
+            return storage.isNumeric();
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -39,9 +39,8 @@ public class DenseVectorStorageTest extends AbstractStorageTest {
 
     /** {@inheritDoc} */
     @Override protected boolean isRaw(VectorStorage storage) {
-        try {
-            Serializable[] arr = ((DenseVectorStorage)storage).getRawData();
-            return arr != null;
+        try {            
+            return storage instanceof DenseVectorStorage;
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -55,6 +54,8 @@ public class DenseVectorStorageTest extends AbstractStorageTest {
 
     /** {@inheritDoc} */
     @Override protected Vector createVector(int size) {
-        return new DenseVector(size);
+    	DenseVector vec = new DenseVector(new Number[size]);
+    	vec.assign(0);
+    	return vec;
     }
 }

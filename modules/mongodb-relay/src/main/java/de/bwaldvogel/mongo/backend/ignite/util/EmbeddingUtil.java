@@ -25,25 +25,22 @@ import ai.djl.sentencepiece.SpTokenizer;
 import ai.djl.translate.TranslateException;
 import me.aias.example.utils.SentenceEncoder;
 
-public class EmbeddingUtil {
+public class EmbeddingUtil {	
 	
-	private static JiebaAnalyzer textAnalyzer = new JiebaAnalyzer();
 	
 	private static HashMap<String,Tokenizer> tokenizerCache = new HashMap<>();
 	
 	private static HashMap<String,Predictor> predictorCache = new HashMap<>(); 
 	
-	public static Tokenizer tokenizer(String name) {
-		name = name.replace('\\', '/');
-		Tokenizer tokenizer = tokenizerCache.get(name);
+	public static Tokenizer tokenizer(Path name) {		
+		Tokenizer tokenizer = tokenizerCache.get(name.toString());
 		if(tokenizer!=null) {
 			return tokenizer;
 		}
 		
-		if(name.endsWith(".model")) { // sentencepiece	
-			try {
-				Path modelFile = Paths.get(name);
-				tokenizer = new SpTokenizer(modelFile);
+		if(name.toString().endsWith(".model")) { // is sentencepiece model	
+			try {				
+				tokenizer = new SpTokenizer(name);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -51,33 +48,35 @@ public class EmbeddingUtil {
 		}
 		else {
 			try {
-				tokenizer = HuggingFaceTokenizer.newInstance(Paths.get(name));
+				tokenizer = HuggingFaceTokenizer.newInstance(name);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}		    
 		
-		tokenizerCache.put(name, tokenizer);
+		tokenizerCache.put(name.toString(), tokenizer);
 		return tokenizer;
 	}
 	
-	public static <I,O> Predictor<I,O> predictor(String name) {
-		name = name.replace('\\', '/');
-		Predictor<I,O> predictor = predictorCache.get(name);
+	public static <I,O> Predictor<I,O> predictor(Path name, Tokenizer tokenizer) {
+		
+		Predictor<I,O> predictor = predictorCache.get(name.toString());
 		if(predictor!=null) {
 			return predictor;
 		}
 		
-		if(name.endsWith(".zip")) {
-			SentenceEncoder sentenceEncoder = new SentenceEncoder();
-			Path modelFile = Paths.get("models/sentencepiece.bpe.model");
+		if(name.toString().endsWith(".zip") || name.toString().endsWith(".pt")) {
+			SentenceEncoder sentenceEncoder = new SentenceEncoder();			
 			
 			try {
+				if(tokenizer==null) {
+					tokenizer = tokenizer(name);
+				}
 				
-				SpTextEmbedding processor = SpTextEmbedding.from(new SpTokenizer(modelFile));
+				SpTextEmbedding processor = SpTextEmbedding.from((SpTokenizer)tokenizer);
 				
-				ZooModel<String, float[]> model = ModelZoo.loadModel(sentenceEncoder.criteria(processor,name));
+				ZooModel<String, float[]> model = ModelZoo.loadModel(sentenceEncoder.criteria(processor,name.toString()));
 			            		  
 				Predictor<String, float[]> predictorNew = model.newPredictor();
 				
@@ -98,14 +97,14 @@ public class EmbeddingUtil {
 			predictor = null;
 		}		    
 		
-		predictorCache.put(name, predictor);
+		predictorCache.put(name.toString(), predictor);
 		return predictor;
 	}
 	
-	public static Vector textTwoGramVec(String sentence) {
+	public static Vector textTwoGramVec(String sentence,String home) {
 		SparseVector vec = new SparseVector(61580*3);
-		File file = new File("models","perceiver-ar-xlnet-large");
-		HuggingFaceTokenizer tokenizer = (HuggingFaceTokenizer)tokenizer(file.getPath());
+		Path file = Paths.get(home,"models/tokenizers/perceiver-ar-xlnet-large");
+		HuggingFaceTokenizer tokenizer = (HuggingFaceTokenizer)tokenizer(file);
 		
 		Encoding tokens = tokenizer.encode(sentence,false);
 		int last = 0;
@@ -127,9 +126,12 @@ public class EmbeddingUtil {
 		
 	}
 	
-	public static Vector textXlmVec(String sentence) {
-		String root = "C:\\Code\\GIT\\AIAS-main\\2_nlp_sdks\\embedding\\sentence_encoder_100_sdk\\models\\";
-		Predictor<String,float[]> predictor = predictor(root+"paraphrase-xlm-r-multilingual-v1.zip");
+	public static Vector textXlmVec(String sentence,String home) {		
+		Path file = Paths.get(home,"models/sentence_encoder/paraphrase-xlm-r-multilingual-v1.pt");		
+		Path sentencepieceModelFile = Paths.get(home, "models/sentence_encoder/sentencepiece.bpe.model");
+		
+		Tokenizer spTokenizer = tokenizer(sentencepieceModelFile);
+		Predictor<String,float[]> predictor = predictor(file,spTokenizer);
 		
 		try {
 			float[] embedding = predictor.predict(sentence);

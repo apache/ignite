@@ -57,10 +57,12 @@ import de.bwaldvogel.mongo.MongoDatabase;
 import de.bwaldvogel.mongo.backend.AbstractMongoCollection;
 import de.bwaldvogel.mongo.backend.Assert;
 import de.bwaldvogel.mongo.backend.CollectionOptions;
+import de.bwaldvogel.mongo.backend.ComposeKeyValue;
 import de.bwaldvogel.mongo.backend.CursorRegistry;
 import de.bwaldvogel.mongo.backend.DocumentComparator;
 import de.bwaldvogel.mongo.backend.DocumentWithPosition;
 import de.bwaldvogel.mongo.backend.Index;
+import de.bwaldvogel.mongo.backend.KeyValue;
 import de.bwaldvogel.mongo.backend.Missing;
 import de.bwaldvogel.mongo.backend.QueryResult;
 import de.bwaldvogel.mongo.backend.Utils;
@@ -157,11 +159,25 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 
     @Override
     public int count() {
+    	if(this.getCollectionName().equals("system.namespaces")) {
+    		return ((List)this.database.listCollectionNamespaces()).size();
+    	}
         return dataMap.size();
     }
 
     @Override
-    protected Document getDocument(Object position) {    	
+    protected Document getDocument(Object position) {
+    	// position with score
+    	if(position instanceof ComposeKeyValue) { // _key,_score,_indexValue
+    		ComposeKeyValue idWithScore = (ComposeKeyValue)position;    		
+    		position = idWithScore.get(0);    		
+    		Object obj = dataMap.get(position);
+        	if(obj==null) return null;
+        	Document doc = objectToDocument(position,obj,idField);
+        	Document meta = (Document) doc.computeIfAbsent("_meta", (k)-> new Document());        	
+        	meta.append("searchScore", idWithScore.get(1));
+        	return doc;
+    	}
     	Object obj = dataMap.get(position);
     	if(obj==null) return null;
     	return objectToDocument(position,obj,idField);

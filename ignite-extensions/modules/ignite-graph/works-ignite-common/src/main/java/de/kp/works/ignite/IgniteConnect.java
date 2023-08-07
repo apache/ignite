@@ -9,13 +9,14 @@ import org.apache.ignite.*;
 
 public class IgniteConnect
 {
-	public static Ignite defaultIgnite = null;
+	public static Ignite defaultIgnite = null; // first ignite
+	
 	private final Ignite ignite;
     private final String graphNS;
     
     
-    public static IgniteConnect getInstance(final String namespace) {
-        return new IgniteConnect(namespace);
+    public static IgniteConnect getInstance(IgniteConf conf) {
+        return new IgniteConnect(conf);
     }
     
     public String graphNS() {
@@ -51,27 +52,35 @@ public class IgniteConnect
         }
     }
     
-    public Ignite getOrStart(String instanceName) {
+    public Ignite getOrStart(IgniteConf cfg) {
+    	Ignite ignite = null;
     	try {
     		if(defaultIgnite==null) {
     			if(Ignition.allGrids().size()==0) {
-    				defaultIgnite = Ignition.start(IgniteConf.fromFile());
+    				defaultIgnite = Ignition.start(cfg.fromFile());
     			}
     			else {
     				defaultIgnite = Ignition.allGrids().get(0);
     			}
     		}
-    		Ignite ignite = Ignition.ignite(instanceName);
+    		ignite = Ignition.ignite(cfg.igniteName);
     		return ignite;
     	}
     	catch(Exception e) {
-    		return defaultIgnite;
+    		try {
+    			ignite = Ignition.getOrStart(cfg.fromConfig());
+    			return ignite;
+    		}
+    		catch(Exception e2) {
+    			IgniteConf.logger.error("Can not find "+ cfg.igniteName +", use default ignite", e2);
+    			return defaultIgnite;
+    		}
     	}
         
     }
     
-    public IgniteConnect(final String graphNS) {
-        this.graphNS = graphNS;       
-        this.ignite = this.getOrStart(graphNS);               
+    public IgniteConnect(IgniteConf conf) {
+        this.graphNS = conf.igniteName;       
+        this.ignite = this.getOrStart(conf);               
     }
 }

@@ -36,8 +36,9 @@ public class VectorAttributesTest {
         new AttrCfg("isDense", Vector::isDense,
             DenseVector.class),
         new AttrCfg("isArrayBased", Vector::isArrayBased,
-            DenseVector.class),
-        new AttrCfg("guidNotNull", v -> v.guid() == null)); // IMPL NOTE this is somewhat artificial
+            DenseVector.class)
+        );
+       
 
     /** */
     private final List<Specification> specFixture = Arrays.asList(
@@ -62,12 +63,7 @@ public class VectorAttributesTest {
     public void isArrayBasedTest() {
         assertAttribute("isArrayBased");
     }
-
-    /** */
-    @Test
-    public void guidTest() {
-        assertAttribute("guidNotNull");
-    }
+  
 
     /** */
     private void assertAttribute(String name) {

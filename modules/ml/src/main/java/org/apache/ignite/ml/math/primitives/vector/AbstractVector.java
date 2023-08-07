@@ -54,9 +54,7 @@ public abstract class AbstractVector implements Vector {
 
     /** Meta attribute storage. */
     private Map<String, Object> meta = new HashMap<>();
-
-    /** Vector's GUID. */
-    private IgniteUuid guid = IgniteUuid.randomUuid();
+   
 
     /** Cached value for length squared. */
     private double lenSq;
@@ -398,11 +396,7 @@ public abstract class AbstractVector implements Vector {
 
         return sum;
     }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid guid() {
-        return guid;
-    }
+   
 
     /** {@inheritDoc} */
     @Override public Iterable<Element> all() {
@@ -931,8 +925,7 @@ public abstract class AbstractVector implements Vector {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(sto);
-        out.writeObject(meta);
-        out.writeObject(guid);
+        out.writeObject(meta);        
         out.writeBoolean(readOnly);
     }
 
@@ -940,8 +933,7 @@ public abstract class AbstractVector implements Vector {
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         sto = (VectorStorage)in.readObject();
-        meta = (Map<String, Object>)in.readObject();
-        guid = (IgniteUuid)in.readObject();
+        meta = (Map<String, Object>)in.readObject();        
         readOnly = in.readBoolean();
     }
 
@@ -952,8 +944,7 @@ public abstract class AbstractVector implements Vector {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = 1;
-        res += res * 37 + guid.hashCode();
+        int res = 1;        
         res += sto == null ? 0 : res * 37 + sto.hashCode();
         return res;
     }

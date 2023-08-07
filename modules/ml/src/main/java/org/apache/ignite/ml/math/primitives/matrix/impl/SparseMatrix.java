@@ -18,6 +18,9 @@
 package org.apache.ignite.ml.math.primitives.matrix.impl;
 
 
+import java.util.Spliterator;
+import java.util.function.Consumer;
+
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.collection.IntSet;
 import org.apache.ignite.ml.math.StorageConstants;
@@ -53,7 +56,7 @@ public class SparseMatrix extends AbstractMatrix implements StorageConstants {
      * Create new {@link SparseMatrixStorage}.
      */
     private MatrixStorage mkStorage(int rows, int cols) {
-        return new SparseMatrixStorage(rows, cols, StorageConstants.RANDOM_ACCESS_MODE, StorageConstants.ROW_STORAGE_MODE);
+        return new SparseMatrixStorage(rows, cols, StorageConstants.ROW_STORAGE_MODE);
     }
 
     /** {@inheritDoc} */
@@ -76,6 +79,41 @@ public class SparseMatrix extends AbstractMatrix implements StorageConstants {
         }
 
         return res;
+    }
+    
+    /** {@inheritDoc} */
+    @Override public Spliterator<Double> nonZeroSpliterator() {
+        return new Spliterator<Double>() {
+            /** {@inheritDoc} */
+            @Override public boolean tryAdvance(Consumer<? super Double> act) {
+                IntSet res;
+                int[] rowIter = indexesMap().keys();
+                for (int row: rowIter) {            
+                    res = indexesMap().get(row);
+                    for (int j : res) {
+	                    double val = storageGet(row, j);	
+	                    if (val != 0.0)
+	                        act.accept(val);
+	                    }
+                }               
+                return true;
+            }
+
+            /** {@inheritDoc} */
+            @Override public Spliterator<Double> trySplit() {
+                return null; // No Splitting.
+            }
+
+            /** {@inheritDoc} */
+            @Override public long estimateSize() {
+                return nonZeroElements();
+            }
+
+            /** {@inheritDoc} */
+            @Override public int characteristics() {
+                return ORDERED | SIZED;
+            }
+        };
     }
     
     public double[] data() {

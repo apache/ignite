@@ -114,6 +114,10 @@ public class VectorViewStorage implements VectorStorage {
         return sto.rawData();
     }
 
+    public void clear() {
+    	sto.clear();
+    }
+    
     /** {@inheritDoc} */
     @Override public boolean isDense() {
         return sto.isDense();

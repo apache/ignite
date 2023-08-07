@@ -198,11 +198,12 @@ public class IgniteVectorIndex extends Index<Object> {
 			vec = new DenseVector(data);
 		}
 		else if(val instanceof String) {
+			String igniteHome = ctx.grid().configuration().getIgniteHome();
 			if(this.isSparse()) {
-				vec = EmbeddingUtil.textTwoGramVec(val.toString());
+				vec = EmbeddingUtil.textTwoGramVec(val.toString(),igniteHome);
 			}
 			else {			
-				vec = EmbeddingUtil.textXlmVec(val.toString());
+				vec = EmbeddingUtil.textXlmVec(val.toString(),igniteHome);
 			}
 		}
 		return vec;
@@ -212,6 +213,8 @@ public class IgniteVectorIndex extends Index<Object> {
 	  /** {@inheritDoc} */
     public List<LabeledVector<Object>> findKClosest(int k, Vector pnt) {
     	List<LabeledVector<Object>> res = knnDataset.compute(spatialIdx -> spatialIdx.findKClosest(k, pnt), (a, b) -> {
+    		if(a==null || a.isEmpty()) return b;
+    		if(b==null || b.isEmpty()) return a;
             Queue<PointWithDistance<Object>> heap = new PriorityQueue<>(distanceMeasure.isSimilarity()?Collections.reverseOrder():null);
             tryToAddIntoHeap(heap, k, pnt, a, distanceMeasure);
             tryToAddIntoHeap(heap, k, pnt, b, distanceMeasure);
@@ -310,7 +313,7 @@ public class IgniteVectorIndex extends Index<Object> {
 						// not yet supported
 						return true;
 					}
-					else if (this.isTextIndex() && queriedKeys.startsWith("$rnnVector")) {
+					else if (this.isTextIndex() && queriedKeys.startsWith("$knnVector")) {
 						// not yet supported
 						return true;
 					}
@@ -338,21 +341,12 @@ public class IgniteVectorIndex extends Index<Object> {
 					
 			// for $text value  { textField : { $text: 'keyword' } }
 			if (BsonRegularExpression.isTextSearchExpression(queriedKey)) {				
-				List<Object> positions = new ArrayList<>();
-				for (Entry<KeyValue, Object> entry : getVectorTextList(queriedKey)) {
-					KeyValue obj = entry.getKey();
-					if (obj.size() >= 1) {
-						Object o = obj.get(0);
-						if(o!=null) {
-							positions.add(entry.getValue());
-						}
-					}
-				}
+				List<KeyValue> positions = getVectorTextList(queriedKey);				
 				query.remove(this.keys().get(n));
-				return positions;
-			} 
+				return  (List)positions;
+			}
 			
-			// for { $text : { $search: 'keyword' } } || { $text : { $rnnVector: [0.1,0.4,0.6] } }
+			// for { $text : { $search: 'keyword' } } || { $text : { $knnVector: [0.1,0.4,0.6] } }
 			if(queriedKey == null && this.isTextIndex() && query.containsKey("$text")) {
 				queriedKey = query.get("$text");
 			}	
@@ -363,20 +357,25 @@ public class IgniteVectorIndex extends Index<Object> {
 					
 					if (expression.contains(QueryOperator.SEARCH.getValue())) {						
 						searchKey = searchKey.copyFrom(n, keyObj);						
-					}					
+						query.remove(this.keys().get(n));
+					}
+					else if (expression.contains(QueryOperator.RNNVECTOR.getValue())) {						
+						searchKey = searchKey.copyFrom(n, keyObj);
+						query.remove(this.keys().get(n));
+					}
 					else if (expression.contains(QueryOperator.IN.getValue())) {
-						return getPositionsForExpression(keyObj, QueryOperator.IN.getValue());
+						return (List)getPositionsForExpression(keyObj, QueryOperator.IN.getValue());
 					}
 				}
 			}
 			n++;
 		}
 
-		List<Object> positions = getPosition(searchKey);
+		List<KeyValue> positions = getPosition(searchKey);
 		if (positions == null) {
 			return Collections.emptyList();
 		}
-		return positions;
+		return (List)positions;
 	}
 
 	@Override
@@ -421,18 +420,18 @@ public class IgniteVectorIndex extends Index<Object> {
 		this.vecIndex.destroy();		
 	}
 
-	private Iterable<Object> getPositionsForExpression(Document keyObj, String operator) {
+	private Iterable<KeyValue> getPositionsForExpression(Document keyObj, String operator) {
 		if (isInQuery(operator)) {
 			@SuppressWarnings("unchecked")
 			Collection<Object> objects = (Collection<Object>) keyObj.get(operator);
 			Collection<Object> queriedObjects = new TreeSet<>(ValueComparator.asc());
 			queriedObjects.addAll(objects);
 
-			List<Object> allKeys = new ArrayList<>();
+			List<KeyValue> allKeys = new ArrayList<>();
 			for (Object object : queriedObjects) {
 
 				Object keyValue = Utils.normalizeValue(object);
-				List<Object> keys = getPosition(KeyValue.valueOf(keyValue));
+				List<KeyValue> keys = getPosition(KeyValue.valueOf(keyValue));
 				if (keys != null) {
 					allKeys.addAll(keys);
 				} else {
@@ -448,8 +447,8 @@ public class IgniteVectorIndex extends Index<Object> {
 		}
 	}
 
-	protected List<Object> getPosition(KeyValue keyValue) {
-		List<Object> result = new ArrayList<>();		
+	protected List<KeyValue> getPosition(KeyValue keyValue) {
+		List<KeyValue> result = new ArrayList<>();		
 
 		try {
 			int n = 0;
@@ -488,9 +487,8 @@ public class IgniteVectorIndex extends Index<Object> {
 					LabeledVector<Object> sd = docs.get(i);				
 					float score = sd.weight();
 					if(!distanceMeasure.isSimilarity() || score>0) {
-						result.add(sd.label());
+						result.add(KeyValue.valueOf(sd.label(),score));
 					}
-
 				}
 				n++;
 			}
@@ -508,9 +506,8 @@ public class IgniteVectorIndex extends Index<Object> {
 	 * @param text
 	 * @return
 	 */
-	protected List<Entry<KeyValue, Object>> getVectorTextList(Object exp) {
-
-		List<Entry<KeyValue, Object>> result = new ArrayList<>();
+	protected List<KeyValue> getVectorTextList(Object exp) {
+		List<KeyValue> result = new ArrayList<>();
 		try {
 			int limit = 0;
 			String scoreField = null;
@@ -550,7 +547,7 @@ public class IgniteVectorIndex extends Index<Object> {
 					Object k = doc.label();
 					Vector v = doc.features();
 
-					result.add(new IgniteBiTuple<KeyValue, Object>(KeyValue.valueOf(v), k));
+					result.add(KeyValue.valueOf(k,score,v));
 				}
 				
 			}

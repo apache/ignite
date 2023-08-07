@@ -377,11 +377,7 @@ public class DelegatingVector implements Vector {
     @Override public boolean isNumeric() {
         return dlg.isNumeric();
     }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid guid() {
-        return guid;
-    }
+  
 
     /** {@inheritDoc} */
     @Override public void compute(int i, IgniteIntDoubleToDoubleBiFunction f) {

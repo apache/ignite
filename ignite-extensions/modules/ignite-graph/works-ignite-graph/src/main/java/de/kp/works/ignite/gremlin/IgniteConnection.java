@@ -18,22 +18,36 @@ package de.kp.works.ignite.gremlin;
  *
  */
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.kp.works.ignite.IgniteAdmin;
+import de.kp.works.ignite.IgniteConf;
+import de.kp.works.ignite.IgniteConnect;
 
 /**
  * [IgniteConnection] is used in the IgniteGraph context
  * and provides [IgniteAdmin] as the user interface
  */
 public class IgniteConnection {
-
+	private static final Logger LOGGER = LoggerFactory.getLogger(IgniteConnection.class);    
     /*
      * [IgniteAdmin] is an API access class that hides
      * the functionality of the [Ignite] client
      */
-    private final IgniteAdmin admin;
+    private IgniteAdmin admin;
 
-    public IgniteConnection(String namespace) {
-        admin = new IgniteAdmin(namespace);
+    public IgniteConnection(String namespace,String cfg) {
+    	try {
+            
+    		IgniteConnect connect = IgniteConnect.getInstance(new IgniteConf(cfg,namespace));
+            admin = new IgniteAdmin(connect);
+
+        } catch (Exception e) {
+            String message = "Connecting to Apache Ignited failed";
+            LOGGER.error(message, e);
+        }
+    	
     }
 
     public IgniteAdmin getAdmin() {

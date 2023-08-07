@@ -165,6 +165,10 @@ public class VectorizedViewMatrixStorage implements VectorStorage {
 
         return res;
     }
+    
+    public void clear() {
+    	parent.assign(0);
+    }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {

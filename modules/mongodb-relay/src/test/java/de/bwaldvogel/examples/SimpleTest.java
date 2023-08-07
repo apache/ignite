@@ -35,12 +35,15 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class SimpleTest {
 
-    private MongoCollection<Document> collection;
-    private MongoClient client;
-    private MongoServer server;
+    private static MongoCollection<Document> collection;
+    private static MongoClient client;
+    private static MongoServer server;
 
     @BeforeEach
     public void setUp() {
+    	if(server!=null) {
+    		return ;
+    	}
         server = new MongoServer(IgniteBackend.inMemory(new MongoPluginConfiguration()));
 
         // bind on a random local port
@@ -56,9 +59,10 @@ public class SimpleTest {
 
     @AfterEach
     public void tearDown() {
-    	client.getDatabase("testdb").drop();
-        client.close();
-        server.shutdown();
+    	collection.drop();
+    	//client.getDatabase("testdb").drop();
+        //client.close();
+        //server.shutdown();
     }
 
     //@Test

@@ -68,7 +68,7 @@ import java.util.stream.Stream;
 
 public class IgniteGraph implements Graph {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(IgniteGraph.class);
+    private static final Logger logger = LoggerFactory.getLogger(IgniteGraph.class);
 
     static {
         TraversalStrategies.GlobalCache.registerStrategies(IgniteGraph.class,
@@ -88,8 +88,8 @@ public class IgniteGraph implements Graph {
     
     final IgniteAdmin admin;
 
-    private final EdgeModel edgeModel;
-    private final VertexModel vertexModel;
+    private EdgeModel edgeModel;
+    private VertexModel vertexModel;
 
     public transient final Cache<String, Edge> edgeCache;
     public transient final Cache<String, Vertex> vertexCache;
@@ -133,24 +133,8 @@ public class IgniteGraph implements Graph {
         	if(ValueUtils.defaultPropertyType==ValueUtils.PropertyType.STRING) {
         	    stringedPropertyType = true;
         	}
-        }   
-        
-        /*
-         * Create the Ignite caches that are used as the
-         * backed for this graph implementation
-         */
-        try {
-            IgniteGraphUtils.createTables(config, admin);
-        } catch (Exception e) {
-            throw new IgniteGraphException(e);
         }
-
-        /* Edge & Vertex models */
-        this.edgeModel = new EdgeModel(this,
-                admin.getTable(IgniteGraphUtils.getTableName(config, IgniteConstants.EDGES),ElementType.EDGE));
-
-        this.vertexModel = new VertexModel(this,
-                admin.getTable(IgniteGraphUtils.getTableName(config, IgniteConstants.VERTICES),ElementType.VERTEX));
+       
 
         this.edgeCache = Caffeine.newBuilder()
                 .maximumSize(config.getElementCacheMaxSize())
@@ -173,15 +157,48 @@ public class IgniteGraph implements Graph {
 
     }
     
+    private void init() throws IgniteGraphException {
+        if(this.edgeModel!=null && this.vertexModel!=null) {
+        	return ;
+        }
+        
+        /*
+         * Create the Ignite caches that are used as the
+         * backed for this graph implementation
+         */
+        try {
+        	while(!this.admin.ignite().cluster().active()) {
+            	logger.warn(this.admin.ignite().name() + " is not active. Please use control.sh to active it!");            	
+    			Thread.sleep(200);    			
+            }
+        	
+            IgniteGraphUtils.createTables(config, admin);
+            
+        } catch (Exception e) {
+        	logger.error("Failed to create table for graph "+ config.getGraphNamespace(), e);
+            throw new IgniteGraphException(e);
+        }
+
+        /* Edge & Vertex models */
+        this.edgeModel = new EdgeModel(this,
+                admin.getTable(IgniteGraphUtils.getTableName(config, IgniteConstants.EDGES),ElementType.EDGE));
+
+        this.vertexModel = new VertexModel(this,
+                admin.getTable(IgniteGraphUtils.getTableName(config, IgniteConstants.VERTICES),ElementType.VERTEX));        
+
+    }
+    
     public IgniteGraphConfiguration getIgniteGraphConfiguration() {
     	return config;
     	
     }
     public EdgeModel getEdgeModel() {
+    	init();
         return edgeModel;
     }
 
     public VertexModel getVertexModel() {
+    	init();
         return vertexModel;
     }
     
@@ -380,32 +397,32 @@ public class IgniteGraph implements Graph {
     /** VERTEX RETRIEVAL METHODS (see VertexModel) **/
 
     public Iterator<Vertex> allVertices() {
-        return vertexModel.vertices(0,-1);
+        return getVertexModel().vertices(0,-1);
     }
 
     public Iterator<Vertex> allVertices(Object fromId, int limit) {
-        return vertexModel.vertices(fromId, limit);
+        return getVertexModel().vertices(fromId, limit);
     }
 
     public Iterator<Vertex> verticesByLabel(String label, int offset,int limit) {
     	if(this.isDocumentModel(label)) {
     		return this.getDocumentModel(label).vertices(label,offset,limit);
     	}
-        return vertexModel.vertices(label,offset,limit);
+        return getVertexModel().vertices(label,offset,limit);
     }
 
     public Iterator<Vertex> verticesByLabel(String label, String key, Object value) {
     	if(this.isDocumentModel(label)) {
     		return this.getDocumentModel(label).vertices(label,key,value);
     	}
-        return vertexModel.vertices(label, key, value);
+        return getVertexModel().vertices(label, key, value);
     }
 
     public Iterator<Vertex> verticesInRange(String label, String key, Object inclusiveFromValue, Object exclusiveToValue) {
     	if(this.isDocumentModel(label)) {
     		return this.getDocumentModel(label).verticesInRange(label, key, inclusiveFromValue, exclusiveToValue);
     	}
-    	return vertexModel.verticesInRange(label, key, inclusiveFromValue, exclusiveToValue);
+    	return getVertexModel().verticesInRange(label, key, inclusiveFromValue, exclusiveToValue);
     }
     
 
@@ -420,7 +437,7 @@ public class IgniteGraph implements Graph {
     	if(this.isDocumentModel(label)) {
     		return this.getDocumentModel(label).verticesWithLimit(label, key, fromValue, limit, reversed);
     	}
-        return vertexModel.verticesWithLimit(label, key, fromValue, limit, reversed);
+        return getVertexModel().verticesWithLimit(label, key, fromValue, limit, reversed);
     }
 
     /** EDGE RELATED **/
@@ -499,11 +516,11 @@ public class IgniteGraph implements Graph {
     }
 
     public Iterator<Edge> allEdges() {
-        return edgeModel.edges(0,-1);
+        return getEdgeModel().edges(0,-1);
     }
 
     public Iterator<Edge> allEdges(Object fromId, int limit) {
-        return edgeModel.edges(fromId, limit);
+        return getEdgeModel().edges(fromId, limit);
     }
     
     

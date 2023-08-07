@@ -33,9 +33,6 @@ public class DenseVectorStorage implements VectorStorage {
     /** Raw data array. */
     private Serializable[] rawData;
 
-    /** Numeric vector array */
-    private double[] data;
-
     /**
      * IMPL NOTE required by {@link Externalizable}.
      */
@@ -43,22 +40,11 @@ public class DenseVectorStorage implements VectorStorage {
         // No-op.
     }
 
-    /**
-     * @param size Vector size.
-     */
+   
     public DenseVectorStorage(int size) {
-        assert size >= 0;
-
-        data = new double[size];
-    }
-
-    /**
-     * @param data Backing data array.
-     */
-    public DenseVectorStorage(double[] data) {
-        assert data != null;
-
-        this.data = data;
+    	 this.rawData = new Number[size];
+    	 for (int i = 0; i < rawData.length; i++)
+             rawData[i] = 0;
     }
 
     /**
@@ -72,48 +58,30 @@ public class DenseVectorStorage implements VectorStorage {
 
     /** {@inheritDoc} */
     @Override public int size() {
-        if (data == null && rawData == null)
+        if (rawData == null)
             return 0;
         else
-            return data != null ? data.length : rawData.length;
+            return rawData.length;
     }
 
     /**
      * Tries to cast internal representation of data to array of doubles if need.
      */
-    private void toNumericArray() {
-        A.ensure(data == null || rawData == null, "data == null || rawData == null");
-        if (data == null && rawData == null)
-            return;
-
-        if (data == null) {
-            data = new double[rawData.length];
+    private double[] toNumericArray() {    	
+        if (rawData == null)
+            return null;
+        double[] data = new double[rawData.length];
+        if (rawData.length>0) {            
             for (int i = 0; i < rawData.length; i++)
                 data[i] = rawData[i] == null ? 0.0 : ((Number)rawData[i]).doubleValue(); //TODO: IGNITE-11664
-            rawData = null;
+           
         }
+        return data;
     }
-
-    /**
-     * Tries to cast internal representation of data to array of Serializable objects if need.
-     */
-    private void toGenericArray() {
-        A.ensure(data == null || rawData == null, "data == null || rawData == null");
-        if (data == null && rawData == null)
-            return;
-
-        if (rawData == null) {
-            rawData = new Serializable[data.length];
-            for (int i = 0; i < rawData.length; i++)
-                rawData[i] = data[i];
-            data = null;
-        }
-    }
+    
 
     /** {@inheritDoc} */
-    @Override public double get(int i) {
-        if (data != null)
-            return data[i];
+    @Override public double get(int i) {       
 
         Serializable v = rawData[i];
         //TODO: IGNITE-11664
@@ -122,21 +90,16 @@ public class DenseVectorStorage implements VectorStorage {
 
     /** {@inheritDoc} */
     @Override public <T extends Serializable> T getRaw(int i) {
-        toGenericArray();
         return (T)rawData[i];
     }
 
     /** {@inheritDoc} */
-    @Override public void set(int i, double v) {
-        if (data != null)
-            data[i] = v;
-        else
-            rawData[i] = v;
+    @Override public void set(int i, double v) {      
+        rawData[i] = v;
     }
 
     /** {@inheritDoc} */
-    @Override public void setRaw(int i, Serializable v) {
-        toGenericArray();
+    @Override public void setRaw(int i, Serializable v) {        
         this.rawData[i] = v;
     }
 
@@ -149,15 +112,18 @@ public class DenseVectorStorage implements VectorStorage {
     @Override public double[] data() {
         if (!isNumeric())
             throw new ClassCastException("Vector has not only numeric values.");
-
-        toNumericArray();
-        return data;
+        
+        return toNumericArray();
     }
 
     /** {@inheritDoc} */
-    @Override public Serializable[] rawData() {
-        toGenericArray();
+    @Override public Serializable[] rawData() {        
         return rawData;
+    }
+    
+    public void clear() {
+    	for (int i = 0; i < rawData.length; i++)
+    		rawData[i] = null;
     }
 
     /** {@inheritDoc} */
@@ -167,7 +133,7 @@ public class DenseVectorStorage implements VectorStorage {
 
     /** {@inheritDoc} */
     @Override public boolean isNumeric() {
-        if (data != null || rawData == null)
+        if (rawData == null)
             return true;
 
         for (int i = 0; i < rawData.length; i++) {
@@ -180,26 +146,18 @@ public class DenseVectorStorage implements VectorStorage {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        boolean isRawVector = data == null;
-        out.writeBoolean(isRawVector);
-
-        if (data != null)
-            out.writeObject(data);
-        else
+        boolean isNull = rawData == null;
+        out.writeBoolean(isNull);
+        if (!isNull)
             out.writeObject(rawData);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        boolean isRawVector = in.readBoolean();
-        if (isRawVector) {
-            rawData = (Serializable[])in.readObject();
-            data = null;
-        }
-        else {
-            rawData = null;
-            data = (double[])in.readObject();
-        }
+        boolean isNull = in.readBoolean();
+        if (!isNull) {
+            rawData = (Serializable[])in.readObject();            
+        }       
     }
 
     /** {@inheritDoc} */
@@ -209,32 +167,18 @@ public class DenseVectorStorage implements VectorStorage {
         if (o == null || getClass() != o.getClass())
             return false;
         DenseVectorStorage storage = (DenseVectorStorage)o;
-        return Arrays.equals(rawData, storage.rawData) &&
-            Arrays.equals(data, storage.data);
+        return Arrays.equals(rawData, storage.rawData);
+            
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = Arrays.hashCode(rawData);
-        res = 31 * res + Arrays.hashCode(data);
+        int res = Arrays.hashCode(rawData);        
         return res;
     }
-
-    /**
-     * Returns array of raw values.
-     *
-     * @return Raw data array.
-     */
-    Serializable[] getRawData() {
-        return rawData;
+    
+    public Serializable[] getData() {
+    	return rawData;
     }
-
-    /**
-     * Returns array of double values.
-     *
-     * @return Numeric data array.
-     */
-    double[] getData() {
-        return data;
-    }
+   
 }

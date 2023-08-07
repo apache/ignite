@@ -29,6 +29,7 @@ import de.bwaldvogel.mongo.backend.CursorRegistry;
 import de.bwaldvogel.mongo.backend.Index;
 import de.bwaldvogel.mongo.backend.IndexKey;
 import de.bwaldvogel.mongo.backend.KeyValue;
+import de.bwaldvogel.mongo.exception.MongoServerException;
 import de.bwaldvogel.mongo.oplog.Oplog;
 
 
@@ -79,6 +80,16 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
         	return namespace.substring(databaseName.length() + 1);
         }
         return namespace;
+    }
+    
+    @Override
+    public MongoCollection<Object> resolveCollection(String collectionName, boolean throwIfNotFound) {        
+        MongoCollection<Object> collection = super.resolveCollection(collectionName,false);       
+        if (collection != null) {
+            return collection;
+        } else {
+            return createCollectionOrThrowIfExists(collectionName, CollectionOptions.withDefaults());
+        }
     }
 
     @Override

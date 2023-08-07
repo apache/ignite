@@ -79,7 +79,7 @@ public class SparseVector extends AbstractVector implements StorageConstants {
     /** {@inheritDoc} */
     @Override public Vector times(double x) {
         if (x == 0.0)
-            return assign(0);
+            return this.assign(0);
         else
             return super.times(x);
     }
@@ -93,7 +93,32 @@ public class SparseVector extends AbstractVector implements StorageConstants {
         	copy.set(indexes[i], this.get(indexes[i]));
         return copy;
     }
+    
+    /** {@inheritDoc} */
+    @Override public Vector assign(Vector vec) {
+        checkCardinality(vec);
+        if(vec.isDense()) {
+	        for (Vector.Element x : vec.all())
+	            storageSet(x.index(), x.get());
+        }
+        else {
+        	storage().clear();
+        	for (Vector.Element x : vec.nonZeroes())
+	            storageSet(x.index(), x.get());
+        }
 
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public double sum() {
+        double sum = 0;
+        int[] indexes = storage().indexes();
+        int len = indexes.length;
+        for (int i = 0; i < len; i++)
+        	sum+=this.get(indexes[i]);
+        return sum;
+    }
 
     /** {@inheritDoc} */
     @Override public double dot(Vector vec) {

@@ -97,7 +97,7 @@ public class MongoServerPluginProvider implements PluginProvider<MongoPluginConf
                  }
              }
          }
-         if(cfg == null && "admin".equals(ctx.grid().name())) {
+         if(cfg == null && "admin".equals(ctx.grid().name()) && !ignite.configuration().isClientMode()) {
         	 // if node name == 'admin' auto enable create mongodb server
         	 cfg = new MongoPluginConfiguration();
          }

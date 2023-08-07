@@ -75,6 +75,27 @@ public class PointWithDistanceUtil {
         }
     }
 
+    
+    /**
+     * Util method that adds data point into heap if it fits (if heap size is less than {@code k} or a distance from
+     * taget point to data point is less than a distance from target point to the most distant data point in heap).
+     *
+     * @param heap Heap with closest points.
+     * @param k Number of neighbours.
+     * @param dataPnt Data point to be added.
+     * @param distance Distance to target point.
+     * @param <L> Label type.
+     */
+    public static <L> void tryToAddIntoHeapUseSimilarity(Queue<PointWithDistance<L>> heap, int k, LabeledVector<L> dataPnt,
+        double sim) {
+        if (dataPnt != null) {
+            if (heap.size() == k && heap.peek().getDistance() < sim)
+                heap.remove();
+
+            if (heap.size() < k)
+                heap.add(new PointWithDistance<>(dataPnt, sim));
+        }
+    }
     /**
      * Util method that adds data points into heap if they fits (if heap size is less than {@code k} or a distance from
      * taget point to data point is less than a distance from target point to the most distant data point in heap).
@@ -91,7 +112,12 @@ public class PointWithDistanceUtil {
         if (dataPnts != null) {
             for (LabeledVector<L> dataPnt : dataPnts) {
                 double distance = distanceMeasure.compute(pnt, dataPnt.features());
-                tryToAddIntoHeap(heap, k, dataPnt, distance);
+                if(distanceMeasure.isSimilarity()) {
+                	tryToAddIntoHeapUseSimilarity(heap, k, dataPnt, distance);
+                }
+                else {
+                	tryToAddIntoHeap(heap, k, dataPnt, distance);
+                }
             }
         }
     }

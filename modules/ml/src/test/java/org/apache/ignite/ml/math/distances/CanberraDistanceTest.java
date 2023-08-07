@@ -77,7 +77,7 @@ public class CanberraDistanceTest {
         assertEquals(testData.expRes,
             distanceMeasure.compute(testData.vectorA, testData.vectorB), PRECISION);
         assertEquals(testData.expRes,
-            distanceMeasure.compute(testData.vectorA, testData.vectorB), PRECISION);
+            distanceMeasure.compute(testData.vectorB, testData.vectorA), PRECISION);
     }
 
     /** */

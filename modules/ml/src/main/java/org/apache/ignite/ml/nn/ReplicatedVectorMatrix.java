@@ -402,11 +402,7 @@ class ReplicatedVectorMatrix implements Matrix {
         if (cols != columnSize())
             throw new CardinalityException(columnSize(), cols);
     }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid guid() {
-        return null;
-    }
+   
 
     /** {@inheritDoc} */
     @Override public Matrix set(int row, int col, double val) {

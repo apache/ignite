@@ -15,38 +15,47 @@ import org.apache.ignite.logger.java.JavaLogger;
  * dataframes requires the path to a configuration file.
  */
 public class IgniteConf {
+  
+  /*
+   * Configure default java logger which leverages file
+   * config/java.util.logging.properties
+   */
+  public static JavaLogger logger = new JavaLogger();  
+  
+  
   /*
    * This implementation expects that the configuration
    * file is located resources/META-INF as in this case,
    * Apache Ignite automatically detects files in this
    * folder
    */
-  public static String file = "conf/ignite/graph-config.xml";
-  /*
-   * Configure default java logger which leverages file
-   * config/java.util.logging.properties
-   */
-  public static JavaLogger logger = new JavaLogger();
-  /*
-   * The current Ignite context is configured with the
-   * default configuration (except 'marshaller')
-   */
-  public static IgniteConfiguration config = new IgniteConfiguration();
+  public String file = "config/graph-config.xml";
   
-  static {
-	  config.setGridLogger(logger);
+  public String igniteName = "graph";
   
+  
+  public IgniteConf(String cfg,String name) {
+	  if(cfg!=null && !cfg.isBlank())
+		  this.file = cfg;
+	  this.igniteName = name;
   }
 
-  public static String fromFile() {	return file;}
+  public String fromFile() {	return file;	}
 
-  public static IgniteConfiguration fromConfig() { 	
-	  try {
-		  config = Ignition.loadSpringBean(IgniteConf.fromFile(), "ignite.cfg");
+  public IgniteConfiguration fromConfig() {
+	  IgniteConfiguration config = null;
+	  String[] cfgs = {igniteName, igniteName+".cfg", "graph-"+igniteName, "default", ""};
+	  for(String cfg: cfgs) {
+		  try {
+			  config = Ignition.loadSpringBean(fromFile(), cfg);
+			  config.setGridLogger(logger);
+			  return config;
+		  }
+		  catch(Exception e) {
+			  logger.warning("try load config from " + file+ " beanName = " + cfg, e);
+		  }
 	  }
-	  catch(Exception e) {
-		  logger.error("Error load config from "+IgniteConf.fromFile(),e);
-	  }
-	  return config; 	  
+	  return null;
+	    
   }
 }

@@ -72,9 +72,7 @@ public abstract class AbstractMatrix implements Matrix {
 
     /** Meta attributes storage. */
     private Map<String, Object> meta = new HashMap<>();
-
-    /** Matrix's GUID. */
-    private IgniteUuid guid = IgniteUuid.randomUuid();
+  
 
     /**
      * @param sto Backing {@link MatrixStorage}.
@@ -297,8 +295,7 @@ public abstract class AbstractMatrix implements Matrix {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(sto);
-        out.writeObject(meta);
-        out.writeObject(guid);
+        out.writeObject(meta);        
     }
 
     /** {@inheritDoc} */
@@ -310,8 +307,7 @@ public abstract class AbstractMatrix implements Matrix {
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         sto = (MatrixStorage)in.readObject();
-        meta = (Map<String, Object>)in.readObject();
-        guid = (IgniteUuid)in.readObject();
+        meta = (Map<String, Object>)in.readObject();        
     }
 
     /** {@inheritDoc} */
@@ -631,11 +627,7 @@ public abstract class AbstractMatrix implements Matrix {
         return res;
 
     }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid guid() {
-        return guid;
-    }
+   
 
     /** {@inheritDoc} */
     @Override public Matrix set(int row, int col, double val) {
@@ -866,12 +858,9 @@ public abstract class AbstractMatrix implements Matrix {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = 1;
-
-        res = res * 37 + guid.hashCode();
+        int res = 1;        
         res = res * 37 + sto.hashCode();
         res = res * 37 + meta.hashCode();
-
         return res;
     }
 

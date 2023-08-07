@@ -36,22 +36,11 @@ public class IgniteAdmin {
     private boolean persistence = false;
 
     private final String NO_CONNECT_INITIALIZATION = "IgniteConnect is not initialized.";
-
-    public IgniteAdmin(String namespace) {
-
-        try {
-            this.connect = IgniteConnect.getInstance(namespace);
-            this.persistence = this.connect.getIgnite().configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().isPersistenceEnabled();
-
-        } catch (Exception e) {
-            String message = "Connecting to Apache Ignited failed";
-            LOGGER.error(message, e);
-        }
-
-    }
+    
 
     public IgniteAdmin(IgniteConnect connect) {
         this.connect = connect;
+        this.persistence = this.connect.getIgnite().configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().isPersistenceEnabled();
     }
 
     public String namespace() {

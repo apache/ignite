@@ -60,7 +60,7 @@ public final class TinkerWorkerPool implements AutoCloseable {
 
     public TinkerWorkerPool(final IgniteGraph graph, final TinkerMemory memory) {
         // use Ignite Service pool
-        this.workerPool = ((IgniteEx)TinkerHelper.ignite(graph)).context().pools().getServiceExecutorService();
+        this.workerPool = ((IgniteEx)TinkerHelper.ignite(graph)).context().pools().getDataStreamerExecutorService();
         this.numberOfWorkers = TinkerHelper.ignite(graph).configuration().getServiceThreadPoolSize();
         this.completionService = new ExecutorCompletionService<>(this.workerPool);
         for (int i = 0; i < this.numberOfWorkers; i++) {

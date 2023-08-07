@@ -23,6 +23,7 @@ import org.apache.ignite.ml.math.exceptions.math.IndexException;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.primitives.MathTestConstants;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.vector.storage.DenseDoubleVectorStorage;
 import org.apache.ignite.ml.math.primitives.vector.storage.DenseVectorStorage;
 import org.junit.Assert;
 import org.junit.Before;
@@ -60,7 +61,7 @@ public class AbstractVectorTest {
         testVector.setStorage(createStorage());
         assertTrue(testVector.size() == MathTestConstants.STORAGE_SIZE);
 
-        testVector.setStorage(new DenseVectorStorage(MathTestConstants.STORAGE_SIZE + MathTestConstants.STORAGE_SIZE));
+        testVector.setStorage(new DenseDoubleVectorStorage(MathTestConstants.STORAGE_SIZE + MathTestConstants.STORAGE_SIZE));
         assertTrue(testVector.size() == MathTestConstants.STORAGE_SIZE + MathTestConstants.STORAGE_SIZE);
 
         testVector = getAbstractVector(createStorage());
@@ -184,25 +185,7 @@ public class AbstractVectorTest {
 
         assertFalse(MathTestConstants.UNEXPECTED_VAL, testVector.isZero(1d));
     }
-
-    /** */
-    @Test
-    public void guid() {
-        assertNotNull(MathTestConstants.NULL_GUID, testVector.guid());
-
-        assertEquals(MathTestConstants.UNEXPECTED_GUID_VAL, testVector.guid(), testVector.guid());
-
-        assertFalse(MathTestConstants.EMPTY_GUID, testVector.guid().toString().isEmpty());
-
-        testVector = getAbstractVector(createStorage());
-
-        assertNotNull(MathTestConstants.NULL_GUID, testVector.guid());
-
-        assertEquals(MathTestConstants.UNEXPECTED_GUID_VAL, testVector.guid(), testVector.guid());
-
-        assertFalse(MathTestConstants.EMPTY_GUID, testVector.guid().toString().isEmpty());
-    }
-
+   
     /** */
     @Test
     public void equalsTest() {
@@ -479,7 +462,7 @@ public class AbstractVectorTest {
      * @return VectorStorage
      */
     private VectorStorage createEmptyStorage() {
-        return new DenseVectorStorage(MathTestConstants.STORAGE_SIZE);
+        return new DenseDoubleVectorStorage(MathTestConstants.STORAGE_SIZE);
     }
 
     /**
@@ -488,7 +471,7 @@ public class AbstractVectorTest {
      * @return VectorStorage.
      */
     private VectorStorage createStorage() {
-        DenseVectorStorage storage = new DenseVectorStorage(MathTestConstants.STORAGE_SIZE);
+    	DenseDoubleVectorStorage storage = new DenseDoubleVectorStorage(MathTestConstants.STORAGE_SIZE);
 
         for (int i = 0; i < MathTestConstants.STORAGE_SIZE; i++)
             storage.set(i, Math.random());

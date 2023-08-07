@@ -366,34 +366,28 @@ public class IgniteLuceneIndex extends Index<Object> {
 			if (BsonRegularExpression.isRegularExpression(queriedKey)) { // { textField : { $regex: 'keyword' } }
 				
 				List<Object> positions = new ArrayList<>();
-				for (Entry<KeyValue, Object> entry : getFullTextList(this.keys().get(n), queriedKey)) {
-					KeyValue obj = entry.getKey();
-					if (obj.size() >= 1) {
-						Object o = obj.get(0);
-						if (o!=null) {
+				for (KeyValue obj : getFullTextList(this.keys().get(n), queriedKey)) {					
+					if (obj.size() > 2) { // k, score, v
+						Object v = obj.get(2);
+						if (v!=null) {
 							BsonRegularExpression regularExpression = BsonRegularExpression.convertToRegularExpression(queriedKey);
-							Matcher matcher = regularExpression.matcher(o.toString());
+							Matcher matcher = regularExpression.matcher(v.toString());
 							if (matcher.find()) {
-								positions.add(entry.getValue());
+								positions.add(obj.get(0));
 							}
 						}
 					}
 				}
+				query.remove(this.keys().get(n));
 				return positions;
 			} else if (BsonRegularExpression.isTextSearchExpression(queriedKey)) { // { textField : { $text: 'keyword' } }
 				
-				List<Object> positions = new ArrayList<>();
-				for (Entry<KeyValue, Object> entry : getFullTextList(this.keys().get(n), queriedKey)) {
-					KeyValue obj = entry.getKey();
-					if (obj.size() >= 1) {
-						positions.add(entry.getValue());
-					}
-				}
+				List<KeyValue> positions = getFullTextList(this.keys().get(n), queriedKey);				
 				query.remove(this.keys().get(n));
-				return positions;
+				return (List)positions;
 			} 
 			
-			// for { $text : { $search: 'keyword' } } || { $text : { $rnnVector: [0.1,0.4,0.6] } }
+			// for { $text : { $search: 'keyword' } } || { $text : { $knnVector: [0.1,0.4,0.6] } }
 			if(queriedKey == null && this.isTextIndex() && query.containsKey("$text")) {
 				queriedKey = query.get("$text");
 			}
@@ -406,21 +400,22 @@ public class IgniteLuceneIndex extends Index<Object> {
 					Set<String> expression = keyObj.keySet();
 					
 					if (expression.contains(QueryOperator.SEARCH.getValue())) {											
-						searchKey = searchKey.copyFrom(n, keyObj);						
+						searchKey = searchKey.copyFrom(n, keyObj);
+						query.remove(this.keys().get(n));
 					}					
 					else if (expression.contains(QueryOperator.IN.getValue())) {
-						return getPositionsForExpression(keyObj, QueryOperator.IN.getValue());
+						return (List)getPositionsForExpression(keyObj, QueryOperator.IN.getValue());
 					}
 				}
 			}
 			n++;
 		}
 
-		List<Object> positions = getPosition(searchKey);
+		List<KeyValue> positions = getPosition(searchKey);
 		if (positions == null) {
 			return Collections.emptyList();
 		}
-		return positions;
+		return (List)positions;
 	}
 
 	@Override
@@ -462,18 +457,18 @@ public class IgniteLuceneIndex extends Index<Object> {
 		}
 	}
 
-	private Iterable<Object> getPositionsForExpression(Document keyObj, String operator) {
+	private Iterable<KeyValue> getPositionsForExpression(Document keyObj, String operator) {
 		if (isInQuery(operator)) {
 			@SuppressWarnings("unchecked")
 			Collection<Object> objects = (Collection<Object>) keyObj.get(operator);
 			Collection<Object> queriedObjects = new TreeSet<>(ValueComparator.asc());
 			queriedObjects.addAll(objects);
 
-			List<Object> allKeys = new ArrayList<>();
+			List<KeyValue> allKeys = new ArrayList<>();
 			for (Object object : queriedObjects) {
 
 				Object keyValue = Utils.normalizeValue(object);
-				List<Object> keys = getPosition(KeyValue.valueOf(keyValue));
+				List<KeyValue> keys = getPosition(KeyValue.valueOf(keyValue));
 				if (keys != null) {
 					allKeys.addAll(keys);
 				} else {
@@ -489,8 +484,8 @@ public class IgniteLuceneIndex extends Index<Object> {
 		}
 	}
 
-	protected List<Object> getPosition(KeyValue keyValue) {
-		List<Object> result = new ArrayList<>();
+	protected List<KeyValue> getPosition(KeyValue keyValue) {
+		List<KeyValue> result = new ArrayList<>();
 		LuceneIndexAccess access = indexAccess;
 
 		try {
@@ -604,7 +599,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 
 				Object k = unmarshalKeyField(doc.getBinaryValue(KEY_FIELD_NAME), cache, ldr);
 
-				result.add(k);
+				result.add(KeyValue.valueOf(k,score));
 
 			}
 		} catch (Exception e) {
@@ -619,10 +614,10 @@ public class IgniteLuceneIndex extends Index<Object> {
 	 * @param text 
 	 * @return 字段值，_key
 	 */
-	protected List<Entry<KeyValue, Object>> getFullTextList(String field, Object exp) {
+	protected List<KeyValue> getFullTextList(String field, Object exp) {
 		LuceneIndexAccess access = indexAccess;		
 		int limit = 0;
-		List<Entry<KeyValue, Object>> result = new ArrayList<>();
+		List<KeyValue> result = new ArrayList<>();
 		try {
 
 			String cacheName = access.cacheName();
@@ -685,7 +680,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 				Object k = unmarshalKeyField(doc.getBinaryValue(KEY_FIELD_NAME), cache, ldr);
 				String v = doc.get(field);
 
-				result.add(new IgniteBiTuple<KeyValue, Object>(KeyValue.valueOf(v,score), k));
+				result.add(KeyValue.valueOf(v,score,k));
 
 			}
 		} catch (Exception e) {

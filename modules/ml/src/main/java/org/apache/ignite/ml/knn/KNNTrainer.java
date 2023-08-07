@@ -116,6 +116,7 @@ public abstract class KNNTrainer<M extends KNNModel<Double>, Self extends KNNTra
      */
     public Self withDistanceMeasure(DistanceMeasure distanceMeasure) {
         this.distanceMeasure = distanceMeasure;
+        this.weighted = distanceMeasure.isSimilarity();
         return self();
     }
 

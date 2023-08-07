@@ -46,12 +46,9 @@ public final class IgniteGraphUtils {
         conn = connections.get(namespace);
         if (conn != null) return conn;
         
-        String igniteCfg = config.getString("gremlin.graph.ignite.cfg");
-        if(igniteCfg!=null && !igniteCfg.isEmpty()) {
-        	IgniteConf.file = igniteCfg;
-        }  
+        String igniteCfg = config.getString("gremlin.graph.ignite.cfg");        
 
-        conn = new IgniteConnection(namespace);
+        conn = new IgniteConnection(namespace,igniteCfg);
 
         connections.put(config.getGraphNamespace(), conn);
         return conn;

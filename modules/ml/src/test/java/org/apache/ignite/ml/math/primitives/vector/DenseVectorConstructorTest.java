@@ -106,12 +106,6 @@ public class DenseVectorConstructorTest {
             new DenseVector(-1).size());
     }
 
-    /** */
-    @Test(expected = AssertionError.class)
-    public void nullCopyTest() {
-        assertEquals("Null array to non-shallow copy.", IMPOSSIBLE_SIZE,
-            new DenseVector(null, false).size());
-    }
 
     /** */
     @Test(expected = AssertionError.class)
@@ -127,13 +121,7 @@ public class DenseVectorConstructorTest {
             new DenseVector().size());
     }
 
-    /** */
-    @Test(expected = AssertionError.class)
-    public void nullArrShallowCopyTest() {
-        assertEquals("Null array shallow copy.", IMPOSSIBLE_SIZE,
-            new DenseVector(null, true).size());
-    }
-
+    
     /** */
     @Test
     public void primitiveTest() {

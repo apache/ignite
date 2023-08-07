@@ -45,10 +45,7 @@ public class SparseMatrixStorage implements MatrixStorage, StorageConstants {
     private int rows;
 
     /** */
-    private int cols;
-
-    /** */
-    private int acsMode;
+    private int cols;   
 
     /** */
     private int stoMode;
@@ -62,15 +59,14 @@ public class SparseMatrixStorage implements MatrixStorage, StorageConstants {
     }
 
     /** */
-    public SparseMatrixStorage(int rows, int cols, int acsMode, int stoMode) {
+    public SparseMatrixStorage(int rows, int cols, int stoMode) {
         assert rows > 0;
-        assert cols > 0;
-        assertAccessMode(acsMode);
+        assert cols > 0;        
         assertStorageMode(stoMode);
 
         this.rows = rows;
         this.cols = cols;
-        this.acsMode = acsMode;
+        
         this.stoMode = stoMode;
 
         sto = new OpenMapRealMatrix(rows,cols);
@@ -83,7 +79,7 @@ public class SparseMatrixStorage implements MatrixStorage, StorageConstants {
 
     /** {@inheritDoc} */
     @Override public int accessMode() {
-        return acsMode;
+        return stoMode;
     }
 
     /** {@inheritDoc} */
@@ -132,8 +128,7 @@ public class SparseMatrixStorage implements MatrixStorage, StorageConstants {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(rows);
-        out.writeInt(cols);
-        out.writeInt(acsMode);
+        out.writeInt(cols);        
         out.writeInt(stoMode);
         out.writeObject(sto);
     }
@@ -142,8 +137,7 @@ public class SparseMatrixStorage implements MatrixStorage, StorageConstants {
     @SuppressWarnings({"unchecked"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         rows = in.readInt();
-        cols = in.readInt();
-        acsMode = in.readInt();
+        cols = in.readInt();        
         stoMode = in.readInt();
         sto = (OpenMapRealMatrix)in.readObject();
     }
@@ -201,7 +195,7 @@ public class SparseMatrixStorage implements MatrixStorage, StorageConstants {
 
         SparseMatrixStorage that = (SparseMatrixStorage)o;
 
-        return rows == that.rows && cols == that.cols && acsMode == that.acsMode && stoMode == that.stoMode
+        return rows == that.rows && cols == that.cols && stoMode == that.stoMode
             && (sto != null ? sto.equals(that.sto) : that.sto == null);
     }
 

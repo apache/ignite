@@ -27,7 +27,7 @@ import org.apache.ignite.ml.math.StorageOpsMetrics;
  */
 public interface VectorStorage extends Externalizable, StorageOpsMetrics, Destroyable {
     /**
-     *
+     * data length
      *
      */
     public int size();
@@ -77,4 +77,6 @@ public interface VectorStorage extends Externalizable, StorageOpsMetrics, Destro
     public default Serializable[] rawData() {
         return null;
     }
+    
+    public void clear();
 }

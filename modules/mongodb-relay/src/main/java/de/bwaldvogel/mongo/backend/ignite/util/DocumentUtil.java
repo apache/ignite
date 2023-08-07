@@ -122,7 +122,7 @@ public class DocumentUtil {
 			Document doc = new Document();
 			doc.append(idField, key);
 			doc.append("_data", bobj.getStorage().data());
-			doc.append("_meta", bobj.getMetaStorage());
+			doc.append("_meta", new Document(bobj.getMetaStorage()));
 			return doc;
 		}
 		else {

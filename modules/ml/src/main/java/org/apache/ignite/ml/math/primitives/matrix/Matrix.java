@@ -373,12 +373,6 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      */
     public Matrix plus(Matrix mtx);
 
-    /**
-     * Auto-generated globally unique matrix ID.
-     *
-     * @return Matrix GUID.
-     */
-    public IgniteUuid guid();
 
     /**
      * Sets given value.

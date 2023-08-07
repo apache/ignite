@@ -74,6 +74,10 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
         return size;
     }
 
+    public void clear() {
+    	sto.clear();
+    }
+    
     /** {@inheritDoc} */
     @Override public double get(int i) {
         Serializable obj = sto.get(i);

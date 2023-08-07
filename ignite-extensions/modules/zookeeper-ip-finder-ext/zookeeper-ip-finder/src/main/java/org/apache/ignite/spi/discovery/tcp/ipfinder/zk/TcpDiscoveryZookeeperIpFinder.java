@@ -150,7 +150,7 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
         if (curator.getState() == CuratorFrameworkState.LATENT)
             curator.start();
 
-        A.ensure(curator.getState() == CuratorFrameworkState.STARTED, "CuratorFramework can't be started.");
+        A.ensure(curator.getState() == CuratorFrameworkState.STARTED, "CuratorFramework can't be started."); 
 
         discovery = ServiceDiscoveryBuilder.builder(IgniteInstanceDetails.class)
             .client(curator)

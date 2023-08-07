@@ -33,7 +33,7 @@ import org.apache.ignite.ml.math.primitives.vector.DelegatingVectorConstructorTe
 import org.apache.ignite.ml.math.primitives.vector.DenseVectorConstructorTest;
 import org.apache.ignite.ml.math.primitives.vector.MatrixVectorViewTest;
 import org.apache.ignite.ml.math.primitives.vector.SparseVectorConstructorTest;
-import org.apache.ignite.ml.math.primitives.vector.VectorArrayStorageTest;
+
 import org.apache.ignite.ml.math.primitives.vector.VectorAttributesTest;
 import org.apache.ignite.ml.math.primitives.vector.VectorFoldMapTest;
 import org.apache.ignite.ml.math.primitives.vector.VectorImplementationsTest;
@@ -65,8 +65,7 @@ import org.junit.runners.Suite;
     VectorNormTest.class,
     VectorFoldMapTest.class,
     VectorNormCasesTest.class,
-    // Vector storage tests
-    VectorArrayStorageTest.class,
+    // Vector storage tests    
     DenseVectorStorageTest.class,
     SparseVectorStorageTest.class,
     VectorImplementationsTest.class,

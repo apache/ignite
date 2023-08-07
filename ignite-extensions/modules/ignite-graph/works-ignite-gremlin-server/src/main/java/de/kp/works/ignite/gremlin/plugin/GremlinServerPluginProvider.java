@@ -24,12 +24,13 @@ import java.net.BindException;
 import java.net.Socket;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
@@ -45,6 +46,7 @@ import org.apache.tinkerpop.gremlin.server.util.ServerGremlinExecutor;
 import org.jetbrains.annotations.Nullable;
 
 import de.kp.works.ignite.IgniteConnect;
+import de.kp.works.ignite.gremlin.TinkerHelper;
 
 /**
  * Security processor provider for tests.
@@ -104,7 +106,7 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
                  }
              }
          }
-         if(cfg == null && "graph".equals(ctx.grid().name())) {
+         if(cfg == null && "graph".equals(ctx.grid().name()) && !ignite.configuration().isClientMode()) {
         	 // if node name == 'graph' auto enable create gremlin server
         	 cfg = new GremlinPluginConfiguration();
          }
@@ -173,11 +175,14 @@ public class GremlinServerPluginProvider implements PluginProvider<GremlinPlugin
 
     /** {@inheritDoc} */
     @Override public void onIgniteStart() {
-    	// start mongodb singerton when admin grid start
+    	// start gremlin server singerton when admin grid start
     	if(gremlinServer==null && settings!=null) {    		      
  	       try {
- 	    	   
- 	    	   gremlinServer = new GremlinServer(settings, IgniteConnect.defaultIgnite.executorService());
+ 	    	   ExecutorService workerPool = ((IgniteEx)IgniteConnect.defaultIgnite).context().pools().getRestExecutorService();
+ 	    	   if(workerPool==null) {
+ 	    		  workerPool = ((IgniteEx)IgniteConnect.defaultIgnite).context().pools().getServiceExecutorService();
+ 	    	   }
+ 	    	   gremlinServer = new GremlinServer(settings, workerPool);
  	    	   serverStarted = gremlinServer.start().thenAcceptAsync(GremlinServerPluginProvider::configure);
  	    	   serverStarted.join();
  	    	   printHeader();

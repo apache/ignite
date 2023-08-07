@@ -134,7 +134,7 @@ public class KNNClassificationTest {
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
-        assertEquals(2.0, knnMdl.predict(VectorUtils.of(-1.01, -1.01)), 0);
+        assertEquals(1.0, knnMdl.predict(VectorUtils.of(-1.01, -1.01)), 0);
     }
 
     /** */

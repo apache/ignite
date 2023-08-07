@@ -556,13 +556,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @throws CardinalityException Thrown if cardinality mismatch.
      */
     public double getDistanceSquared(Vector vec);
-
-    /**
-     * Auto-generated globally unique vector ID.
-     *
-     * @return Vector GUID.
-     */
-    public IgniteUuid guid();
+   
 
     /**
      * Replace vector entry with value oldVal at i with result of computing f(i, oldVal).

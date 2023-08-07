@@ -72,7 +72,9 @@ public abstract class KNNModel<L> implements IgniteModel<Vector, L>, SpatialInde
     /** {@inheritDoc} */
     @Override public List<LabeledVector<L>> findKClosest(int k, Vector pnt) {
         List<LabeledVector<L>> res = dataset.compute(spatialIdx -> spatialIdx.findKClosest(k, pnt), (a, b) -> {
-            Queue<PointWithDistance<L>> heap = new PriorityQueue<>(Collections.reverseOrder());
+        	if(a==null || a.isEmpty()) return b;
+    		if(b==null || b.isEmpty()) return a;
+            Queue<PointWithDistance<L>> heap = new PriorityQueue<>(distanceMeasure.isSimilarity()?Collections.reverseOrder():null);
             tryToAddIntoHeap(heap, k, pnt, a, distanceMeasure);
             tryToAddIntoHeap(heap, k, pnt, b, distanceMeasure);
             return transformToListOrdered(heap);
