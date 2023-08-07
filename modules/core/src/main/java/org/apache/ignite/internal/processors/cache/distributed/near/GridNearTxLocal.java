@@ -107,7 +107,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -4135,16 +4134,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         }
                     }
                     else {
-                        finishFut.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
-                            @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
-                                try {
-                                    fut.get();
+                        finishFut.listen((IgniteInternalFuture<IgniteInternalTx> f) -> {
+                            try {
+                                f.get();
 
-                                    rollbackFut.markInitialized();
-                                }
-                                catch (IgniteCheckedException e) {
-                                    rollbackFut.onDone(e);
-                                }
+                                rollbackFut.markInitialized();
+                            }
+                            catch (IgniteCheckedException e) {
+                                rollbackFut.onDone(e);
                             }
                         });
                     }
