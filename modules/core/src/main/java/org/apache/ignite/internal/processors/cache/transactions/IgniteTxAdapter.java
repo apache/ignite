@@ -326,7 +326,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         this.txSize = txSize;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
-        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
+        deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         nodeId = cctx.discovery().localNode().id();
 
@@ -384,7 +384,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         this.txSize = txSize;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
-        this.deploymentLdrId = null;
+        deploymentLdrId = null;
 
         implicit = false;
         loc = false;
@@ -903,7 +903,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             state = MARKED_ROLLBACK;
 
             if (log.isDebugEnabled())
-                log.debug("Changed transaction state [prev=" + prev + ", new=" + this.state + ", tx=" + this + ']');
+                log.debug("Changed transaction state [prev=" + prev + ", new=" + state + ", tx=" + this + ']');
 
             notifyAll();
         }
