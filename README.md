@@ -23,7 +23,7 @@ Apache Ignite is a distributed database for high-performance computing with in-m
 
 ## Mongodb Backend for Vector Engine
     
-Ingite can be used as a Mongo db server, it is fast and distributed, it supports the mongodb3.6 protocol and most mongdb commands.
+Ignite can be used as a Mongo db server, it is fast and distributed, it supports the mongodb3.6 protocol and most mongdb commands. Be default, if ignite instance name is admin, Ignite will start Mongo server automatic, Other wise, You should add MongoPluginConfiguration in IgniteConfiguration.plugins.
 
 It also supports vector search:
 
@@ -47,15 +47,39 @@ It also supports vector search:
 
 ## Text Search
 
-Based on the Mongodb protocol, it supports text search, like Mongodb text search.
+Based on the Mongodb protocol, Ignite supports text search, like Mongodb text search.
+
+
+## Gremlin Server
+Ignite can be used as a Gremlin server, it is fast and distributed, it supports the gremlin3.5+ protocol and all gremlin step. Be default, if ignite instance name is graph, Ignite will start Gremlin server automatic,Other wise, You should add GremlinPluginConfiguration in IgniteConfiguration.plugins.
+
+	```
+	import org.apache.tinkerpop.gremlin.driver.remote.DriverRemoteConnection;
+	import de.kp.works.ignite.gremlin.sql.IgniteGraphTraversalSource
+	// gremlin-core module
+	import static org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource.traversal;
+
+	g = traversal().withRemote(DriverRemoteConnection.using("localhost", 8182));
+	// addV will create record in ignite [graph]_vertex table
+	g.addV('node').property('id','test2').property('name','测试二').next()
+
+	// Ignite extensions:
+	g = traversal(IgniteGraphTraversalSource.class).withRemote(DriverRemoteConnection.using("localhost", 8182))
+	// addDoc will create record in ignite [graph]_test table
+	v1 = g.addDoc('test').property('id','test2').property('name','测试二').next()
+	// addIndex set field name as ignite entity index
+	g.addIndex('test','name',false)
+	g.selectQuery('test',null)
+	// use sql to query vertexes
+	g.selectQuery('test',"select count(*) from graph_test ").valueMap().next()
+	g.selectQuery('test',"select count(*) from graph_test where name=? ",'测试二').valueMap().next()
+	```
+
 
 ## Redis
-It can also be used as a distributed redis server.
+Ingite can also be used as a distributed redis server. To execute below script, run an Ignite instance with 'redis-ignite-internal-cache-0' cache specified and configured. 
     ```
-    import redis
-    '''
-    To execute this script, run an Ignite instance with 'redis-ignite-internal-cache-0' cache specified and configured.
-    '''
+    import redis    
 
     r = redis.StrictRedis(host='localhost', port=11211, db=0)
 
