@@ -1106,16 +1106,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         recovery,
                         expiryPlc);
 
-                    loadFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
-                        @Override public void apply(IgniteInternalFuture<Void> fut) {
-                            try {
-                                fut.get();
+                    loadFut.listen((IgniteInternalFuture<Void> fut) -> {
+                        try {
+                            fut.get();
 
-                                finishFuture(enlistFut, null, true);
-                            }
-                            catch (IgniteCheckedException e) {
-                                finishFuture(enlistFut, e, true);
-                            }
+                            finishFuture(enlistFut, null, true);
+                        }
+                        catch (IgniteCheckedException e) {
+                            finishFuture(enlistFut, e, true);
                         }
                     });
 
@@ -1304,16 +1302,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         recovery,
                         expiryPlc);
 
-                    loadFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
-                        @Override public void apply(IgniteInternalFuture<Void> fut) {
-                            try {
-                                fut.get();
+                    loadFut.listen((IgniteInternalFuture<Void> fut) -> {
+                        try {
+                            fut.get();
 
-                                finishFuture(enlistFut, null, true);
-                            }
-                            catch (IgniteCheckedException e) {
-                                finishFuture(enlistFut, e, true);
-                            }
+                            finishFuture(enlistFut, null, true);
+                        }
+                        catch (IgniteCheckedException e) {
+                            finishFuture(enlistFut, e, true);
                         }
                     });
 
