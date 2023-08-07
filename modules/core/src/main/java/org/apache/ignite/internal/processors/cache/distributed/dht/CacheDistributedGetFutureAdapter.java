@@ -237,15 +237,9 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         if (invalidNodes == Collections.<AffinityTopologyVersion, Map<Integer, Set<ClusterNode>>>emptyMap())
             invalidNodes = new HashMap<>();
 
-        Map<Integer, Set<ClusterNode>> invalidNodeMap = invalidNodes.get(topVer);
+        Map<Integer, Set<ClusterNode>> invalidNodeMap = invalidNodes.computeIfAbsent(topVer, k -> new HashMap<>());
 
-        if (invalidNodeMap == null)
-            invalidNodes.put(topVer, invalidNodeMap = new HashMap<>());
-
-        Set<ClusterNode> invalidNodeSet = invalidNodeMap.get(part);
-
-        if (invalidNodeSet == null)
-            invalidNodeMap.put(part, invalidNodeSet = new HashSet<>());
+        Set<ClusterNode> invalidNodeSet = invalidNodeMap.computeIfAbsent(part, k -> new HashSet<>());
 
         invalidNodeSet.add(node);
     }
