@@ -3086,7 +3086,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @return Future with {@code True} value if loading took place.
      */
     private IgniteInternalFuture<Void> loadMissing(
-        final GridCacheContext cacheCtx,
+        final GridCacheContext<Object, Object> cacheCtx,
         AffinityTopologyVersion topVer,
         boolean readThrough,
         final Collection<KeyCacheObject> keys,
@@ -3104,28 +3104,27 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         if (cacheCtx.isNear()) {
             return cacheCtx.nearTx().txLoadAsync(this,
-                topVer,
-                keys,
-                readThrough,
-                needVer || !cacheCtx.config().isReadFromBackup() || (optimistic() && serializable() && readThrough),
-                /*deserializeBinary*/false,
-                recovery,
-                expiryPlc0,
-                skipVals,
-                needVer).chain(new C1<IgniteInternalFuture<Map<Object, Object>>, Void>() {
-                    @Override public Void apply(IgniteInternalFuture<Map<Object, Object>> f) {
-                        try {
-                            Map<Object, Object> map = f.get();
+                    topVer,
+                    keys,
+                    readThrough,
+                    needVer || !cacheCtx.config().isReadFromBackup() || (optimistic() && serializable() && readThrough),
+                    /*deserializeBinary*/false,
+                    recovery,
+                    expiryPlc0,
+                    skipVals,
+                    needVer)
+                .chain((IgniteInternalFuture<Map<Object, Object>> f) -> {
+                    try {
+                        Map<Object, Object> map = f.get();
 
-                            processLoaded(map, keys, needVer, c);
+                        processLoaded(map, keys, needVer, c);
 
-                            return null;
-                        }
-                        catch (Exception e) {
-                            setRollbackOnly();
+                        return null;
+                    }
+                    catch (Exception e) {
+                        setRollbackOnly();
 
-                            throw new GridClosureException(e);
-                        }
+                        throw new GridClosureException(e);
                     }
                 });
         }
