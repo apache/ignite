@@ -45,10 +45,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -352,18 +350,16 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        Collection<String> futuresStrings = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
-            @Override public String apply(IgniteInternalFuture<?> f) {
-                if (isMini(f)) {
-                    AbstractMiniFuture mini = (AbstractMiniFuture)f;
+        Collection<String> futuresStrings = F.viewReadOnly(futures(), (IgniteInternalFuture<?> f) -> {
+            if (isMini(f)) {
+                AbstractMiniFuture mini = (AbstractMiniFuture)f;
 
-                    return "miniFuture([futId=" + mini.futureId() + ", node=" + mini.node().id() +
-                        ", loc=" + mini.node().isLocal() +
-                        ", done=" + f.isDone() + "])";
-                }
-                else
-                    return f.getClass().getSimpleName() + " [loc=true, done=" + f.isDone() + "]";
+                return "miniFuture([futId=" + mini.futureId() + ", node=" + mini.node().id() +
+                    ", loc=" + mini.node().isLocal() +
+                    ", done=" + f.isDone() + "])";
             }
+            else
+                return f.getClass().getSimpleName() + " [loc=true, done=" + f.isDone() + "]";
         });
 
         return S.toString(CacheDistributedGetFutureAdapter.class, this,
@@ -523,11 +519,8 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
                     log.debug("Remapping mini get future [invalidParts=" + invalidParts + ", fut=" + this + ']');
 
                 if (!canRemap) {
-                    map(F.view(keys.keySet(), new P1<KeyCacheObject>() {
-                        @Override public boolean apply(KeyCacheObject key) {
-                            return invalidParts.contains(cctx.affinity().partition(key));
-                        }
-                    }), F.t(node, keys), topVer);
+                    map(F.view(keys.keySet(), (KeyCacheObject key) -> invalidParts.contains(cctx.affinity().partition(key))),
+                        F.t(node, keys), topVer);
 
                     postProcessResult(res);
 
@@ -545,11 +538,8 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
                             AffinityTopologyVersion topVer = fut.get();
 
                             // This will append new futures to compound list.
-                            map(F.view(keys.keySet(), new P1<KeyCacheObject>() {
-                                @Override public boolean apply(KeyCacheObject key) {
-                                    return invalidParts.contains(cctx.affinity().partition(key));
-                                }
-                            }), F.t(node, keys), topVer);
+                            map(F.view(keys.keySet(), (KeyCacheObject key) -> invalidParts.contains(cctx.affinity().partition(key))),
+                                F.t(node, keys), topVer);
 
                             postProcessResult(res);
 
