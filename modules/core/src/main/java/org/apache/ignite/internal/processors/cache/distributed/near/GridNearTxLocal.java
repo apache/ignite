@@ -2903,74 +2903,70 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean recovery,
         final ExpiryPolicy expiryPlc) {
         GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c =
-            new GridInClosure3<KeyCacheObject, Object, GridCacheVersion>() {
-                @Override public void apply(KeyCacheObject key,
-                    @Nullable Object val,
-                    @Nullable GridCacheVersion loadVer) {
-                    if (log.isDebugEnabled())
-                        log.debug("Loaded value from remote node [key=" + key + ", val=" + val + ']');
+            (KeyCacheObject key, @Nullable Object val, @Nullable GridCacheVersion loadVer) -> {
+                if (log.isDebugEnabled())
+                    log.debug("Loaded value from remote node [key=" + key + ", val=" + val + ']');
 
-                    IgniteTxEntry e = entry(new IgniteTxKey(key, cacheCtx.cacheId()));
+                IgniteTxEntry e = entry(new IgniteTxKey(key, cacheCtx.cacheId()));
 
-                    assert e != null;
+                assert e != null;
 
-                    if (needReadVer) {
-                        assert loadVer != null;
+                if (needReadVer) {
+                    assert loadVer != null;
 
-                        e.entryReadVersion(singleRmv && val != null ? SER_READ_NOT_EMPTY_VER : loadVer);
-                    }
+                    e.entryReadVersion(singleRmv && val != null ? SER_READ_NOT_EMPTY_VER : loadVer);
+                }
 
-                    if (singleRmv) {
-                        assert !hasFilters && !retval;
-                        assert val == null || Boolean.TRUE.equals(val) : val;
+                if (singleRmv) {
+                    assert !hasFilters && !retval;
+                    assert val == null || Boolean.TRUE.equals(val) : val;
 
-                        ret.set(cacheCtx, null, val != null, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+                    ret.set(cacheCtx, null, val != null, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+                }
+                else {
+                    CacheObject cacheVal = cacheCtx.toCacheObject(val);
+
+                    if (e.op() == TRANSFORM) {
+                        GridCacheVersion ver;
+
+                        e.readValue(cacheVal);
+
+                        try {
+                            ver = e.cached().version();
+                        }
+                        catch (GridCacheEntryRemovedException ex) {
+                            assert optimistic() : e;
+
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to get entry version: [msg=" + ex.getMessage() + ']');
+
+                            ver = null;
+                        }
+
+                        addInvokeResult(e, cacheVal, ret, ver);
                     }
                     else {
-                        CacheObject cacheVal = cacheCtx.toCacheObject(val);
+                        boolean success;
 
-                        if (e.op() == TRANSFORM) {
-                            GridCacheVersion ver;
+                        if (hasFilters) {
+                            success = isAll(e.context(), key, cacheVal, filter);
 
-                            e.readValue(cacheVal);
+                            if (!success) {
+                                e.value(cacheVal, false, false);
 
-                            try {
-                                ver = e.cached().version();
+                                e.op(READ);
                             }
-                            catch (GridCacheEntryRemovedException ex) {
-                                assert optimistic() : e;
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to get entry version: [msg=" + ex.getMessage() + ']');
-
-                                ver = null;
-                            }
-
-                            addInvokeResult(e, cacheVal, ret, ver);
                         }
-                        else {
-                            boolean success;
+                        else
+                            success = true;
 
-                            if (hasFilters) {
-                                success = isAll(e.context(), key, cacheVal, filter);
-
-                                if (!success) {
-                                    e.value(cacheVal, false, false);
-
-                                    e.op(READ);
-                                }
-                            }
-                            else
-                                success = true;
-
-                            ret.set(
-                                cacheCtx,
-                                cacheVal,
-                                success,
-                                keepBinary,
-                                U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
-                            );
-                        }
+                        ret.set(
+                            cacheCtx,
+                            cacheVal,
+                            success,
+                            keepBinary,
+                            U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
+                        );
                     }
                 }
             };
