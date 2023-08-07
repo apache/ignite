@@ -664,30 +664,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     }
 
     /**
-     * @param cached Entry to check.
-     * @return {@code True} if filter passed.
-     */
-    private boolean filter(GridCacheEntryEx cached) {
-        try {
-            if (!cctx.isAll(cached, filter)) {
-                if (log.isDebugEnabled())
-                    log.debug("Filter didn't pass for entry (will fail lock): " + cached);
-
-                onFailed(true);
-
-                return false;
-            }
-
-            return true;
-        }
-        catch (IgniteCheckedException e) {
-            onError(e);
-
-            return false;
-        }
-    }
-
-    /**
      * Callback for whenever entry lock ownership changes.
      *
      * @param entry Entry whose lock ownership changed.
@@ -1425,44 +1401,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
                 // Finish mini future.
                 onDone(true);
-            }
-        }
-
-        /**
-         * @param cacheCtx Context.
-         * @param keys Keys to evict readers for.
-         * @param nodeId Node ID.
-         * @param msgId Message ID.
-         * @param entries Entries to check.
-         */
-        private void evictReaders(GridCacheContext<?, ?> cacheCtx, Collection<IgniteTxKey> keys, UUID nodeId, long msgId,
-            @Nullable List<GridDhtCacheEntry> entries) {
-            if (entries == null || keys == null || entries.isEmpty() || keys.isEmpty())
-                return;
-
-            for (ListIterator<GridDhtCacheEntry> it = entries.listIterator(); it.hasNext(); ) {
-                GridDhtCacheEntry cached = it.next();
-
-                if (keys.contains(cached.txKey())) {
-                    while (true) {
-                        try {
-                            cached.removeReader(nodeId, msgId);
-
-                            if (tx != null)
-                                tx.removeNearMapping(nodeId, cached);
-
-                            break;
-                        }
-                        catch (GridCacheEntryRemovedException ignore) {
-                            GridDhtCacheEntry e = cacheCtx.dht().peekExx(cached.key());
-
-                            if (e == null)
-                                break;
-
-                            it.set(e);
-                        }
-                    }
-                }
             }
         }
 
