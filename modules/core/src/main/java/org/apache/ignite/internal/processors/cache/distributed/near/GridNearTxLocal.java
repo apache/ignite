@@ -541,11 +541,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         GridCacheContext cacheCtx,
         Map<KeyCacheObject, GridCacheDrInfo> drMap
     ) {
-        Map<KeyCacheObject, Object> map = F.viewReadOnly(drMap, new IgniteClosure<GridCacheDrInfo, Object>() {
-            @Override public Object apply(GridCacheDrInfo val) {
-                return val.value();
-            }
-        });
+        Map<KeyCacheObject, Object> map = F.viewReadOnly(drMap, (IgniteClosure<GridCacheDrInfo, Object>)GridCacheDrInfo::value);
 
         return this.<Object, Object>putAllAsync0(cacheCtx,
             null,
@@ -2755,7 +2751,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 // First time access within transaction.
                 else {
                     if (lockKeys == null && !skipVals)
-                        lockKeys = single ? Collections.singleton(key) : new ArrayList<KeyCacheObject>(keysCnt);
+                        lockKeys = single ? Collections.singleton(key) : new ArrayList<>(keysCnt);
 
                     if (!single && !skipVals)
                         lockKeys.add(key);
