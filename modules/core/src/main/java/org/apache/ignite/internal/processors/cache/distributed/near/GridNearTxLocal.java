@@ -3377,7 +3377,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         MvccCoordinator crd = prc.currentCoordinator();
 
         synchronized (this) {
-            this.crdVer = crd.version();
+            crdVer = crd.version();
         }
 
         if (crd.local())
@@ -3776,7 +3776,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (!commitOrRollbackTime.compareAndSet(0, System.nanoTime() - commitOrRollbackStartTime.get()))
                 return res;
 
-            long systemTimeMillis = U.nanosToMillis(this.systemTime.get());
+            long systemTimeMillis = U.nanosToMillis(systemTime.get());
             long totalTimeMillis = System.currentTimeMillis() - startTime();
 
             // In some cases totalTimeMillis can be less than systemTimeMillis, as they are calculated with different precision.
@@ -3894,7 +3894,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (trackTimeout) {
                 prepFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> f) {
-                        GridNearTxLocal.this.removeTimeoutHandler();
+                        removeTimeoutHandler();
                     }
                 });
             }
