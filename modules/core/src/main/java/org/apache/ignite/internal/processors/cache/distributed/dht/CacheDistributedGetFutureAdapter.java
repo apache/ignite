@@ -427,13 +427,6 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         }
 
         /**
-         * @return Keys.
-         */
-        public Collection<KeyCacheObject> keys() {
-            return keys.keySet();
-        }
-
-        /**
          * Factory methond for generate request associated with this miniFuture.
          *
          * @param rootFutId Root future id.
@@ -483,7 +476,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
             if (!canRemap) {
                 map(keys.keySet(), F.t(node, keys), topVer);
 
-                onDone(Collections.emptyMap());
+                onDone(Collections.emptyMap(), e);
             }
             else {
                 long maxTopVer = Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion());
@@ -497,7 +490,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
                             // Remap.
                             map(keys.keySet(), F.t(node, keys), f.get());
 
-                            onDone(Collections.emptyMap());
+                            onDone(Collections.emptyMap(), e);
                         }
                         catch (IgniteCheckedException ex) {
                             CacheDistributedGetFutureAdapter.this.onDone(ex);
