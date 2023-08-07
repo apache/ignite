@@ -386,7 +386,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     /**
      * Returns future at the specified position in this list.
      *
-     * @param idx - index index of the element to return
+     * @param idx - index of the element to return
      * @return Future.
      */
     @SuppressWarnings("unchecked")
