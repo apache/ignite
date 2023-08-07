@@ -1845,6 +1845,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
          * @throws IgniteCheckedException If operation is failed.
          * @throws GridCacheEntryRemovedException If entry is removed.
          */
-        public void apply(E entry) throws IgniteCheckedException, GridCacheEntryRemovedException;
+        void apply(E entry) throws IgniteCheckedException, GridCacheEntryRemovedException;
     }
 }
