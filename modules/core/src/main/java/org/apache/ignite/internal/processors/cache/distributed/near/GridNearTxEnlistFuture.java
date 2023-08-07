@@ -223,7 +223,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
                 Object cur = next0();
 
-                KeyCacheObject key = cctx.toCacheKeyObject(op.isDeleteOrLock() ? cur : ((IgniteBiTuple)cur).getKey());
+                KeyCacheObject key = cctx.toCacheKeyObject(op.isDeleteOrLock() ? cur : ((Map.Entry<?, ?>)cur).getKey());
 
                 ClusterNode node = cctx.affinity().primaryByKey(key, topVer);
 
@@ -361,12 +361,12 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             if (keysOnly)
                 keys.add(cctx.toCacheKeyObject(row));
             else {
-                keys.add(cctx.toCacheKeyObject(((IgniteBiTuple)row).getKey()));
+                keys.add(cctx.toCacheKeyObject(((Map.Entry<?, ?>)row).getKey()));
 
                 if (op.isInvoke())
-                    vals.add((Message)((IgniteBiTuple)row).getValue());
+                    vals.add((Message)((Map.Entry<?, ?>)row).getValue());
                 else
-                    vals.add(cctx.toCacheObject(((IgniteBiTuple)row).getValue()));
+                    vals.add(cctx.toCacheObject(((Map.Entry<?, ?>)row).getValue()));
             }
         }
 
@@ -650,12 +650,12 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
          * Adds a row.
          *
          * @param row Row.
-         * @param localBackup {@code true}, when the row key has local backup.
+         * @param locBackup {@code true}, when the row key has local backup.
          */
-        public void add(Object row, boolean localBackup) {
+        public void add(Object row, boolean locBackup) {
             rows.add(row);
 
-            if (localBackup) {
+            if (locBackup) {
                 if (locBkpRows == null)
                     locBkpRows = new ArrayList<>();
 
