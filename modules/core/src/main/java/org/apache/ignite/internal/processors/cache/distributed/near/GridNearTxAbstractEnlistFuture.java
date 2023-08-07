@@ -91,7 +91,7 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
 
     /** */
     @GridToStringExclude
-    private GridDhtTxAbstractEnlistFuture localEnlistFuture;
+    private GridDhtTxAbstractEnlistFuture locEnlistFut;
 
     /** */
     @SuppressWarnings("unused")
@@ -277,9 +277,9 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
     protected synchronized void updateLocalFuture(GridDhtTxAbstractEnlistFuture fut) throws IgniteCheckedException {
         checkCompleted();
 
-        assert localEnlistFuture == null;
+        assert locEnlistFut == null;
 
-        localEnlistFuture = fut;
+        locEnlistFut = fut;
     }
 
     /**
@@ -289,8 +289,8 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
     protected synchronized void clearLocalFuture(GridDhtTxAbstractEnlistFuture fut) throws IgniteCheckedException {
         checkCompleted();
 
-        if (localEnlistFuture == fut)
-            localEnlistFuture = null;
+        if (locEnlistFut == fut)
+            locEnlistFut = null;
     }
 
     /**
@@ -376,10 +376,10 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
             tx.setRollbackOnly();
 
         synchronized (this) {
-            GridDhtTxAbstractEnlistFuture localFuture0 = localEnlistFuture;
+            GridDhtTxAbstractEnlistFuture locFut0 = locEnlistFut;
 
-            if (localFuture0 != null && (err != null || cancelled))
-                localFuture0.onDone(cancelled ? new IgniteFutureCancelledCheckedException("Future was cancelled: " + localFuture0) : err);
+            if (locFut0 != null && (err != null || cancelled))
+                locFut0.onDone(cancelled ? new IgniteFutureCancelledCheckedException("Future was cancelled: " + locFut0) : err);
 
             boolean done = super.onDone(res, err, cancelled);
 
