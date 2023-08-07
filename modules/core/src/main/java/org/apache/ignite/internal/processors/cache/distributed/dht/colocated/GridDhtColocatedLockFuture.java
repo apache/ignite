@@ -125,7 +125,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
     /** Keys to lock. */
     @GridToStringInclude
-    private Collection<KeyCacheObject> keys;
+    private final Collection<KeyCacheObject> keys;
 
     /** Future ID. */
     private final IgniteUuid futId;
@@ -1213,7 +1213,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
         // Fail fast if the transaction is timed out.
         if (tx != null && tx.remainingTime() == -1) {
-            GridDhtColocatedLockFuture.this.onDone(false, tx.timeoutException());
+            onDone(false, tx.timeoutException());
 
             clear();
 
@@ -1292,8 +1292,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         add(new GridEmbeddedFuture<>(
             new C2<Exception, Exception, Boolean>() {
                 @Override public Boolean apply(Exception resEx, Exception e) {
-                    if (CU.isLockTimeoutOrCancelled(e) ||
-                        (resEx != null && CU.isLockTimeoutOrCancelled(resEx)))
+                    if (CU.isLockTimeoutOrCancelled(e) || (CU.isLockTimeoutOrCancelled(resEx)))
                         return false;
 
                     if (e != null) {
