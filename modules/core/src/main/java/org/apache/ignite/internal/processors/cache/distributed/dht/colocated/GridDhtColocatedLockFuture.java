@@ -73,14 +73,11 @@ import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -721,21 +718,19 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
-            @Override public String apply(IgniteInternalFuture<?> f) {
-                if (isMini(f)) {
-                    MiniFuture m = (MiniFuture)f;
+        Collection<String> futs = F.viewReadOnly(futures(), (IgniteInternalFuture<?> f) -> {
+            if (isMini(f)) {
+                MiniFuture m = (MiniFuture)f;
 
-                    synchronized (m) {
-                        return "[node=" + m.node().id() +
-                            ", rcvRes=" + m.rcvRes +
-                            ", loc=" + m.node().isLocal() +
-                            ", done=" + f.isDone() + "]";
-                    }
+                synchronized (m) {
+                    return "[node=" + m.node().id() +
+                        ", rcvRes=" + m.rcvRes +
+                        ", loc=" + m.node().isLocal() +
+                        ", done=" + f.isDone() + "]";
                 }
-                else
-                    return "[loc=true, done=" + f.isDone() + "]";
             }
+            else
+                return "[loc=true, done=" + f.isDone() + "]";
         });
 
         return S.toString(GridDhtColocatedLockFuture.class, this,
@@ -1283,49 +1278,47 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
         // Add new future.
         add(new GridEmbeddedFuture<>(
-            new C2<Exception, Exception, Boolean>() {
-                @Override public Boolean apply(Exception resEx, Exception e) {
-                    if (CU.isLockTimeoutOrCancelled(e) || (CU.isLockTimeoutOrCancelled(resEx)))
-                        return false;
+            (Exception resEx, Exception e) -> {
+                if (CU.isLockTimeoutOrCancelled(e) || (CU.isLockTimeoutOrCancelled(resEx)))
+                    return false;
 
-                    if (e != null) {
-                        onError(e);
+                if (e != null) {
+                    onError(e);
 
-                        return false;
-                    }
-
-                    if (resEx != null) {
-                        onError(resEx);
-
-                        return false;
-                    }
-
-                    if (log.isDebugEnabled())
-                        log.debug("Acquired lock for local DHT mapping [locId=" + cctx.nodeId() +
-                            ", mappedKeys=" + keys + ", fut=" + GridDhtColocatedLockFuture.this + ']');
-
-                    if (inTx()) {
-                        for (KeyCacheObject key : keys)
-                            tx.entry(cctx.txKey(key)).markLocked();
-                    }
-                    else {
-                        for (KeyCacheObject key : keys)
-                            cctx.mvcc().markExplicitOwner(cctx.txKey(key), threadId);
-                    }
-
-                    try {
-                        // Proceed and add new future (if any) before completing embedded future.
-                        if (mappings != null)
-                            proceedMapping();
-                    }
-                    catch (IgniteCheckedException ex) {
-                        onError(ex);
-
-                        return false;
-                    }
-
-                    return true;
+                    return false;
                 }
+
+                if (resEx != null) {
+                    onError(resEx);
+
+                    return false;
+                }
+
+                if (log.isDebugEnabled())
+                    log.debug("Acquired lock for local DHT mapping [locId=" + cctx.nodeId() +
+                        ", mappedKeys=" + keys + ", fut=" + GridDhtColocatedLockFuture.this + ']');
+
+                if (inTx()) {
+                    for (KeyCacheObject key : keys)
+                        tx.entry(cctx.txKey(key)).markLocked();
+                }
+                else {
+                    for (KeyCacheObject key : keys)
+                        cctx.mvcc().markExplicitOwner(cctx.txKey(key), threadId);
+                }
+
+                try {
+                    // Proceed and add new future (if any) before completing embedded future.
+                    if (mappings != null)
+                        proceedMapping();
+                }
+                catch (IgniteCheckedException ex) {
+                    onError(ex);
+
+                    return false;
+                }
+
+                return true;
             },
             fut));
     }
@@ -1526,25 +1519,23 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
                     IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx, keys);
 
-                    fut.listen(new IgniteInClosure<IgniteInternalFuture<TxDeadlock>>() {
-                        @Override public void apply(IgniteInternalFuture<TxDeadlock> fut) {
-                            try {
-                                TxDeadlock deadlock = fut.get();
+                    fut.listen((IgniteInternalFuture<TxDeadlock> fut) -> {
+                        try {
+                            TxDeadlock deadlock = fut.get();
 
-                                err = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided " +
-                                    "timeout for transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
-                                    deadlock != null ? new TransactionDeadlockException(deadlock.toString(cctx.shared())) :
-                                        null);
-                            }
-                            catch (IgniteCheckedException e) {
-                                err = e;
+                            err = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided " +
+                                "timeout for transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
+                                deadlock != null ? new TransactionDeadlockException(deadlock.toString(cctx.shared())) :
+                                    null);
+                        }
+                        catch (IgniteCheckedException e) {
+                            err = e;
 
-                                U.warn(log, "Failed to detect deadlock.", e);
-                            }
+                            U.warn(log, "Failed to detect deadlock.", e);
+                        }
 
-                            synchronized (LockTimeoutObject.this) {
-                                onComplete(false, true);
-                            }
+                        synchronized (this) {
+                            onComplete(false, true);
                         }
                     });
                 }
@@ -1795,11 +1786,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             for (KeyCacheObject key : GridDhtColocatedLockFuture.this.keys)
                 cctx.mvcc().removeExplicitLock(threadId, cctx.txKey(key), lockVer);
 
-            mapOnTopology(true, new Runnable() {
-                @Override public void run() {
-                    onDone(true);
-                }
-            });
+            mapOnTopology(true, () -> onDone(true));
         }
 
         /** {@inheritDoc} */
