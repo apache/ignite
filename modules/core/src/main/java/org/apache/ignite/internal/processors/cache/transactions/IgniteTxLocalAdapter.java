@@ -67,7 +67,6 @@ import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -1711,10 +1710,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 setRollbackOnly();
 
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteInternalTx>, T>() {
-                        @Override public T apply(IgniteInternalFuture<IgniteInternalTx> f) {
-                            throw new GridClosureException(e);
-                        }
+                    return rollbackAsync().chain((IgniteInternalFuture<IgniteInternalTx> f) -> {
+                        throw new GridClosureException(e);
                     });
 
                 throw new GridClosureException(e);
@@ -1730,10 +1727,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 );
 
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteInternalTx>, T>() {
-                        @Override public T apply(IgniteInternalFuture<IgniteInternalTx> f) {
-                            throw ex;
-                        }
+                    return rollbackAsync().chain((IgniteInternalFuture<IgniteInternalTx> f) -> {
+                        throw ex;
                     });
 
                 throw ex;
@@ -1763,10 +1758,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             }
             catch (final IgniteCheckedException ex) {
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteInternalTx>, T>() {
-                        @Override public T apply(IgniteInternalFuture<IgniteInternalTx> f) {
-                            throw new GridClosureException(ex);
-                        }
+                    return rollbackAsync().chain((IgniteInternalFuture<IgniteInternalTx> f) -> {
+                        throw new GridClosureException(ex);
                     });
 
                 throw new GridClosureException(ex);
