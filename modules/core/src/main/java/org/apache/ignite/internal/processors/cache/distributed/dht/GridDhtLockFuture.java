@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
@@ -479,11 +480,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
         if (dist && tx == null) {
             cctx.dhtTx().removeLocks(nearNodeId, lockVer, F.viewReadOnly(entriesCp,
-                new C1<GridDhtCacheEntry, KeyCacheObject>() {
-                    @Override public KeyCacheObject apply(GridDhtCacheEntry e) {
-                        return e.key();
-                    }
-                }), false);
+                (C1<GridDhtCacheEntry, KeyCacheObject>)GridCacheMapEntry::key), false);
         }
         else {
             if (tx != null) {
