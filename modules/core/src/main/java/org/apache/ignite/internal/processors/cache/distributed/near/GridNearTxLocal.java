@@ -3633,7 +3633,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         Collection<GridCacheVersion> rolledbackVers
     ) {
         while (true) {
-            GridCacheContext cacheCtx = txEntry.cached().context();
+            GridCacheContext<?, ?> cacheCtx = txEntry.cached().context();
 
             assert cacheCtx.isNear();
 
@@ -4607,7 +4607,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 for (Map.Entry<IgniteTxKey, IgniteCacheExpiryPolicy> e : accessMap.entrySet()) {
                     if (e.getValue().entries() != null) {
-                        GridCacheContext cctx0 = cctx.cacheContext(e.getKey().cacheId());
+                        GridCacheContext<?, ?> cctx0 = cctx.cacheContext(e.getKey().cacheId());
 
                         if (cctx0.isNear())
                             cctx0.near().dht().sendTtlUpdateRequest(e.getValue());
