@@ -17,15 +17,11 @@
 
 # Start from Java 8 based on Alpine Linux image
 ARG JDK_VERSION=8
-FROM eclipse-temurin:${JDK_VERSION}-jre-alpine
+FROM eclipse-temurin:${JDK_VERSION}-jre-focal
 
 # Settings
 ENV IGNITE_HOME /opt/ignite/apache-ignite
 WORKDIR /opt/ignite
-
-# Add missing software
-RUN apk --no-cache \
-    add bash
 
 # Copy main binary archive
 COPY apache-ignite* apache-ignite
