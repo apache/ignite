@@ -109,19 +109,19 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
     /** Cache registry. */
     @GridToStringExclude
-    private GridCacheContext<?, ?> cctx;
+    private final GridCacheContext<?, ?> cctx;
 
     /** Near node ID. */
-    private UUID nearNodeId;
+    private final UUID nearNodeId;
 
     /** Near lock version. */
-    private GridCacheVersion nearLockVer;
+    private final GridCacheVersion nearLockVer;
 
     /** Topology version. */
-    private AffinityTopologyVersion topVer;
+    private final AffinityTopologyVersion topVer;
 
     /** Thread. */
-    private long threadId;
+    private final long threadId;
 
     /**
      * Keys locked so far.
@@ -135,20 +135,20 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @GridToStringExclude
-    private List<GridDhtCacheEntry> entries;
+    private final List<GridDhtCacheEntry> entries;
 
     /** DHT mappings. */
-    private Map<ClusterNode, List<GridDhtCacheEntry>> dhtMap =
+    private final Map<ClusterNode, List<GridDhtCacheEntry>> dhtMap =
         new ConcurrentHashMap<>();
 
     /** Future ID. */
-    private IgniteUuid futId;
+    private final IgniteUuid futId;
 
     /** Lock version. */
     private GridCacheVersion lockVer;
 
     /** Read flag. */
-    private boolean read;
+    private final boolean read;
 
     /** Error. */
     private Throwable err;
@@ -164,10 +164,10 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     private final long timeout;
 
     /** Filter. */
-    private CacheEntryPredicate[] filter;
+    private final CacheEntryPredicate[] filter;
 
     /** Transaction. */
-    private GridDhtTxLocalAdapter tx;
+    private final GridDhtTxLocalAdapter tx;
 
     /** All replies flag. */
     private boolean mapped;
@@ -182,13 +182,13 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     private final Collection<KeyCacheObject> pendingLocks;
 
     /** TTL for create operation. */
-    private long createTtl;
+    private final long createTtl;
 
     /** TTL for read operation. */
-    private long accessTtl;
+    private final long accessTtl;
 
     /** Need return value flag. */
-    private boolean needReturnVal;
+    private final boolean needReturnVal;
 
     /** Skip store flag. */
     private final boolean skipStore;
@@ -232,7 +232,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         assert nearNodeId != null;
         assert nearLockVer != null;
         assert topVer.topologyVersion() > 0;
-        assert (tx != null && timeout >= 0) || tx == null;
+        assert tx == null || timeout >= 0;
 
         this.cctx = cctx;
         this.nearNodeId = nearNodeId;
@@ -309,7 +309,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
     /** {@inheritDoc} */
     @Override public Collection<Integer> invalidPartitions() {
-        return invalidParts == null ? Collections.<Integer>emptyList() : invalidParts;
+        return invalidParts == null ? Collections.emptyList() : invalidParts;
     }
 
     /**
@@ -1283,11 +1283,11 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
         /** Node. */
         @GridToStringExclude
-        private ClusterNode node;
+        private final ClusterNode node;
 
         /** DHT mapping. */
         @GridToStringInclude
-        private List<GridDhtCacheEntry> dhtMapping;
+        private final List<GridDhtCacheEntry> dhtMapping;
 
         /**
          * @param node Node.
