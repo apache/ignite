@@ -75,7 +75,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     private volatile int lsnrCalls;
 
     /** The lock responds for a consistency of compounds. */
-    private ReentrantReadWriteLock compoundsLock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock compoundsLock = new ReentrantReadWriteLock();
 
     /** Count of compounds in the future. */
     private volatile int size;
