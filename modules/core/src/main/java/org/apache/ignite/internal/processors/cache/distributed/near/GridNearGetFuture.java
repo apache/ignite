@@ -431,10 +431,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     if (!addRdr && tx.readCommitted() && !tx.writeSet().contains(cctx.txKey(key)))
                         addRdr = true;
 
-                    LinkedHashMap<KeyCacheObject, Boolean> old = mappings.get(affNode);
-
-                    if (old == null)
-                        mappings.put(affNode, old = new LinkedHashMap<>(3, 1f));
+                    LinkedHashMap<KeyCacheObject, Boolean> old =
+                        mappings.computeIfAbsent(affNode, k -> new LinkedHashMap<>(3, 1f));
 
                     old.put(key, addRdr);
                 }
@@ -622,7 +620,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
     ) {
         boolean empty = F.isEmpty(keys);
 
-        Map<K, V> map = empty ? Collections.emptyMap() : new GridLeanMap<K, V>(keys.size());
+        Map<K, V> map = empty ? Collections.emptyMap() : new GridLeanMap<>(keys.size());
 
         if (!empty) {
             boolean atomic = cctx.atomic();
