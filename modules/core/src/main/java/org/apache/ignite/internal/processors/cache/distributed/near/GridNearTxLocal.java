@@ -3970,7 +3970,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 // Properly finish prepFut in case of unchecked error.
                 assert prepareFut != null; // Prep future must be set.
 
-                ((GridNearTxPrepareFutureAdapter)prepFut).onDone(t);
+                ((GridFutureAdapter<IgniteInternalTx>)prepFut).onDone(t);
             }
 
             prepareFut.listen(new CI1<IgniteInternalFuture<?>>() {
