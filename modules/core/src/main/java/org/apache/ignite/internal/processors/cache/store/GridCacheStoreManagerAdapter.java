@@ -351,13 +351,10 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                     "key", key, true,
                     "val", val, true));
 
-            if (convert) {
+            if (convert)
                 val = convert(val);
 
-                return val;
-            }
-            else
-                return val;
+            return val;
         }
 
         return null;
