@@ -31,6 +31,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -138,11 +139,12 @@ public class TestTable implements IgniteCacheTable {
     @Override public IgniteLogicalTableScan toRel(
         RelOptCluster cluster,
         RelOptTable relOptTbl,
+        List<RelHint> hints,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        return IgniteLogicalTableScan.create(cluster, cluster.traitSet(), relOptTbl, proj, cond, requiredColumns);
+        return IgniteLogicalTableScan.create(cluster, cluster.traitSet(), relOptTbl, hints, proj, cond, requiredColumns);
     }
 
     /** {@inheritDoc} */

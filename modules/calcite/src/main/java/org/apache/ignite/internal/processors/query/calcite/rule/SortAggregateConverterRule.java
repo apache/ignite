@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapSort
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
-import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -64,7 +63,7 @@ public class SortAggregateConverterRule {
             if (F.isEmpty(agg.getGroupSet()) || agg.getGroupSets().size() > 1)
                 return null;
 
-            if (HintUtils.isExpandDistinctAggregate(agg))
+            if (HashAggregateConverterRule.isExpandedDistinct(agg))
                 return null;
 
             RelOptCluster cluster = agg.getCluster();
@@ -106,7 +105,7 @@ public class SortAggregateConverterRule {
             if (F.isEmpty(agg.getGroupSet()) || agg.getGroupSets().size() > 1)
                 return null;
 
-            if (HintUtils.isExpandDistinctAggregate(agg))
+            if (HashAggregateConverterRule.isExpandedDistinct(agg))
                 return null;
 
             RelOptCluster cluster = agg.getCluster();

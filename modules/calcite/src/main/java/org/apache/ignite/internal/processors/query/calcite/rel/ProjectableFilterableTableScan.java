@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -47,6 +49,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.builder;
@@ -63,6 +66,9 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
     /** Participating columns. */
     protected final ImmutableBitSet requiredColumns;
 
+    /** Hints. */
+    protected ImmutableList<RelHint> hints;
+
     /** */
     protected ProjectableFilterableTableScan(
         RelOptCluster cluster,
@@ -73,11 +79,12 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet reqColumns
     ) {
-        super(cluster, traitSet, hints, table);
+        super(cluster, traitSet, Collections.emptyList(), table);
 
         projects = proj;
         condition = cond;
         requiredColumns = reqColumns;
+        this.hints = F.isEmpty(hints) ? ImmutableList.of() : ImmutableList.copyOf(hints);
     }
 
     /** */
@@ -86,6 +93,10 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
         condition = input.getExpression("filters");
         projects = input.get("projects") == null ? null : input.getExpressionList("projects");
         requiredColumns = input.get("requiredColumns") == null ? null : input.getBitSet("requiredColumns");
+
+        Iterable<RelHint> hints = (Iterable<RelHint>)input.get("hints");
+
+        this.hints = F.isEmpty(hints) ? ImmutableList.of() : ImmutableList.copyOf(hints);
     }
 
     /** @return Projections. */
@@ -123,6 +134,7 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
         }
 
         return pw
+            .itemIf("hints", hints, !F.isEmpty(hints))
             .itemIf("projects", projects, projects != null)
             .itemIf("requiredColumns", requiredColumns, requiredColumns != null);
     }
@@ -149,6 +161,18 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
             return RexUtil.createStructType(Commons.typeFactory(getCluster()), projects);
         else
             return table.unwrap(IgniteTable.class).getRowType(Commons.typeFactory(getCluster()), requiredColumns);
+    }
+
+    /** {@inheritDoc} */
+    @Override public ProjectableFilterableTableScan withHints(List<RelHint> hints) {
+        this.hints = ImmutableList.copyOf(hints);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ImmutableList<RelHint> getHints() {
+        return hints;
     }
 
     /** */
