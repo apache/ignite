@@ -36,7 +36,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheLockCandidates;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -202,7 +201,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @param tx Transaction.
      * @param threadId Thread ID.
      * @param accessTtl TTL for read operation.
-     * @param filter Filter.
      * @param skipStore Skip store flag.
      */
     public GridDhtLockFuture(
@@ -218,7 +216,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         long threadId,
         long createTtl,
         long accessTtl,
-        CacheEntryPredicate[] filter,
         boolean skipStore,
         boolean keepBinary) {
         super(CU.boolReducer());
