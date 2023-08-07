@@ -59,13 +59,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAdapter<K, V> {
     /** Transaction label. */
-    protected final String txLbl;
+    private final String txLbl;
 
     /** */
-    protected final MvccSnapshot mvccSnapshot;
+    private final MvccSnapshot mvccSnapshot;
 
     /** Explicit predefined single mapping (backup or primary). */
-    protected final ClusterNode affNode;
+    private final ClusterNode affNode;
 
     /**
      * @param cctx Context.
