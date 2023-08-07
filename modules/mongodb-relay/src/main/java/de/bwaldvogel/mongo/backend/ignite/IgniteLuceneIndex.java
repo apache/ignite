@@ -49,6 +49,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
@@ -90,7 +91,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 	private String[] idxdFields = null;
 	private FieldType[] idxdTypes = null;
 
-	protected IgniteLuceneIndex(GridKernalContext ctx, IgniteBinaryCollection collection, String name, List<IndexKey> keys,	boolean sparse) {
+	public IgniteLuceneIndex(GridKernalContext ctx, IgniteBinaryCollection collection, String name, List<IndexKey> keys,	boolean sparse) {
 		super(name, keys, sparse);
 		this.ctx = ctx;
 		this.cacheName = collection.getCollectionName();
@@ -237,16 +238,13 @@ public class IgniteLuceneIndex extends Index<Object> {
 			else if(fieldVal instanceof Number) {
 				Number obj = (Number) fieldVal;
 				if (obj instanceof Long) {
-					row[i] = new LongPoint(idxdFields[i], (obj).longValue());
-					
+					row[i] = new LongPoint(idxdFields[i], (obj).longValue());					
 				} 
 				else if (obj instanceof Integer || obj instanceof Short) {
-					row[i] = new IntPoint(idxdFields[i], (obj).intValue());
-					
+					row[i] = new IntPoint(idxdFields[i], (obj).intValue());					
 				} 
 				else if (obj instanceof Float) {
-					row[i] = new FloatPoint(idxdFields[i], (obj).floatValue());
-					
+					row[i] = new FloatPoint(idxdFields[i], (obj).floatValue());					
 				}
 				else {
 					double d = ((Number) obj).doubleValue();						
@@ -404,7 +402,9 @@ public class IgniteLuceneIndex extends Index<Object> {
 						query.remove(this.keys().get(n));
 					}					
 					else if (expression.contains(QueryOperator.IN.getValue())) {
-						return (List)getPositionsForExpression(keyObj, QueryOperator.IN.getValue());
+						Object queryObj = getQueryValueForExpression(keyObj, QueryOperator.IN.getValue());
+						searchKey = searchKey.copyFrom(n, queryObj);
+						query.remove(this.keys().get(n));
 					}
 				}
 			}
@@ -457,24 +457,17 @@ public class IgniteLuceneIndex extends Index<Object> {
 		}
 	}
 
-	private Iterable<KeyValue> getPositionsForExpression(Document keyObj, String operator) {
+	private Object getQueryValueForExpression(Document keyObj, String operator) {
 		if (isInQuery(operator)) {
 			@SuppressWarnings("unchecked")
 			Collection<Object> objects = (Collection<Object>) keyObj.get(operator);
 			Collection<Object> queriedObjects = new TreeSet<>(ValueComparator.asc());
 			queriedObjects.addAll(objects);
 
-			List<KeyValue> allKeys = new ArrayList<>();
+			List<Object> allKeys = new ArrayList<>();
 			for (Object object : queriedObjects) {
-
 				Object keyValue = Utils.normalizeValue(object);
-				List<KeyValue> keys = getPosition(KeyValue.valueOf(keyValue));
-				if (keys != null) {
-					allKeys.addAll(keys);
-				} else {
-					return null;
-				}
-
+				allKeys.add(keyValue);
 			}
 
 			return allKeys;
@@ -483,7 +476,11 @@ public class IgniteLuceneIndex extends Index<Object> {
 			throw new UnsupportedOperationException("unsupported query expression: " + operator);
 		}
 	}
-
+	/**
+	 * 对所有字段使用lucene索引进行查询
+	 * @param keyValue
+	 * @return
+	 */
 	protected List<KeyValue> getPosition(KeyValue keyValue) {
 		List<KeyValue> result = new ArrayList<>();
 		LuceneIndexAccess access = indexAccess;
@@ -529,6 +526,9 @@ public class IgniteLuceneIndex extends Index<Object> {
 					if(opt.containsKey("$search")) {
 						obj = opt.get("$search");
 					}
+					else if(opt.containsKey("$text")) {
+						obj = opt.get("$text");
+					}
 					else if(opt.containsKey("$knnVector")) {
 						obj = opt.get("$knnVector");
 					}
@@ -538,7 +538,25 @@ public class IgniteLuceneIndex extends Index<Object> {
 					}				
 				}
 				
-				if(key.isText()) {
+				else if(obj instanceof List) {  // in operator
+					BytesRef[] terms = new BytesRef[((List)obj).size()];
+					for(int i=0;i<terms.length;i++) {
+						Object item = ((List)obj).get(i);
+						if(item instanceof byte[]) {
+							BytesRef term = new BytesRef((byte[])item);
+							terms[i] = term;
+						}
+						else {
+							BytesRef term = new BytesRef(item.toString());
+							terms[i] = term;
+						}										
+					}
+					
+					Query termQuery = new TermInSetQuery(key.getKey(),terms);
+					query.add(termQuery, BooleanClause.Occur.MUST);
+				}
+				
+				else if(key.isText()) {
 					QueryParser parser = new QueryParser(key.getKey(), access.getFieldAnalyzer(key.getKey())); // 定义查询分析器
 					
 					Query textQuery = parser.parse(obj.toString());

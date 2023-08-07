@@ -40,7 +40,9 @@ import org.apache.ignite.ml.knn.utils.indices.SpatialIndex;
 import org.apache.ignite.ml.knn.utils.indices.SpatialIndexType;
 import org.apache.ignite.ml.math.distances.CosineSimilarity;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
+import org.apache.ignite.ml.math.distances.DotProductSimilarity;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
+import org.apache.ignite.ml.math.distances.JaccardIndex;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.structures.LabeledVector;
@@ -89,6 +91,8 @@ public class IgniteVectorIndex extends Index<Object> {
 	
 	private int K = 20;
 	
+	private int dimensions = 1024;
+	
 	
 	static class EmbeddingIntCoordObjectLabelVectorizer implements FeatureLabelExtractor<Object,Vector,Object>{
 		
@@ -108,18 +112,47 @@ public class IgniteVectorIndex extends Index<Object> {
 	}
 	
 
-	protected IgniteVectorIndex(GridKernalContext ctx, IgniteBinaryCollection collection, String name, List<IndexKey> keys, boolean sparse) {
+	public IgniteVectorIndex(GridKernalContext ctx, IgniteBinaryCollection collection, String name, List<IndexKey> keys, boolean sparse) {
 		super(name, keys, sparse);
 		this.ctx = ctx;
 		this.cacheName = collection.getCollectionName();
 		this.keyField = collection.idField;
 		this.distanceMeasure = new CosineSimilarity();
-		//this.distanceMeasure = new EuclideanDistance();
+		
 		if(sparse) {
 			idxType = SpatialIndexType.ARRAY;
 		}
 		
+		Document options = keys.get(0).textOptions();
+		if(options!=null) {
+			
+			dimensions = Integer.parseInt(options.getOrDefault("dimensions", dimensions).toString());
+			String similarity = options.getOrDefault("similarity", "").toString();
+			if(similarity.equals("euclidean ")) {
+				this.distanceMeasure = new EuclideanDistance();
+			}
+			else if(similarity.equals("cosine")) {
+				this.distanceMeasure = new CosineSimilarity();
+			}
+			else if(similarity.equals("dotProduct")) {
+				this.distanceMeasure = new DotProductSimilarity();
+			}
+			else if(!similarity.isBlank()) {
+				try {
+					this.distanceMeasure = DistanceMeasure.of(similarity);
+				} catch (InstantiationException e) {
+					e.printStackTrace();
+				}
+			}			
+			
+			String indexType = options.getOrDefault("indexType", "").toString();
+			if(!indexType.isBlank()) {
+				idxType = SpatialIndexType.valueOf(indexType.toUpperCase());
+			}
+			
+		}
 		
+		 
 		CacheConfiguration<Object, Vector> cfg = new CacheConfiguration<>();        	
         cfg.setCacheMode(CacheMode.PARTITIONED);
         cfg.setName(IgniteDatabase.getIndexCacheName(collection.getDatabaseName(),this.cacheName,this.getName()));
@@ -462,9 +495,12 @@ public class IgniteVectorIndex extends Index<Object> {
 				}
 				
 				if (obj instanceof Map) {
-					Map<String, Object> opt = ((Map<String, Object>) obj);
+					Map<String, Object> opt = (Map) obj;
 					if(opt.containsKey("$search")) {
 						obj = opt.get("$search");
+					}
+					else if(opt.containsKey("$text")) {
+						obj = opt.get("$text");
 					}
 					else if(opt.containsKey("$knnVector")) {
 						obj = opt.get("$knnVector");

@@ -16,7 +16,6 @@
  */
 package de.kp.works.ignite.gremlin.plugin;
 
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -52,177 +51,191 @@ import de.kp.works.ignite.gremlin.TinkerHelper;
  * Security processor provider for tests.
  */
 public class GremlinServerPluginProvider implements PluginProvider<GremlinPluginConfiguration> {
-     
-	 // Singerton
-     public static GremlinServer gremlinServer;
-     public static GraphManager backend;
-     public static Settings settings;
-     public static CompletableFuture<Void> serverStarted;
-     
-     private String databaseName;
-     
 
-     /** Ignite logger. */
-	 private IgniteLogger log;     
-	
-     private GremlinPluginConfiguration cfg;
-	
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return "GremlinServerPluginProvider";
-    }
+	// Singerton
+	public static GremlinServer gremlinServer;
+	public static GraphManager backend;
+	public static Settings settings;
+	public static CompletableFuture<Void> serverStarted;
 
-    /** {@inheritDoc} */
-    @Override public String version() {
-        return "0.5";
-    }
+	private String databaseName;
 
-    /** {@inheritDoc} */
-    @Override public String copyright() {
-        return "apache copy right";
-    }
+	private GremlinPlugin gremlin = new GremlinPlugin();
 
-    /** {@inheritDoc} */
-    @Override public <T extends IgnitePlugin> T plugin() {
-        return (T)new IgnitePlugin() {
-            // No-op.
-        };
-    }
+	/** Ignite logger. */
+	private IgniteLogger log;
 
-    /** {@inheritDoc} */
-    @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-    	 IgniteConfiguration igniteCfg = ctx.igniteConfiguration();
+	private GremlinPluginConfiguration cfg;
 
-         Ignite ignite = ctx.grid();
-         this.log = ctx.log(this.getClass());
-         
-         this.cfg = null;
-         
-         if (igniteCfg.getPluginConfigurations() != null) {
-             for (PluginConfiguration pluginCfg : igniteCfg.getPluginConfigurations()) {
-                 if (pluginCfg instanceof GremlinPluginConfiguration) {
-                     cfg = (GremlinPluginConfiguration)pluginCfg;
-                     break;
-                 }
-             }
-         }
-         if(cfg == null && "graph".equals(ctx.grid().name()) && !ignite.configuration().isClientMode()) {
-        	 // if node name == 'graph' auto enable create gremlin server
-        	 cfg = new GremlinPluginConfiguration();
-         }
-         
-         boolean per = ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().isPersistenceEnabled();
-         if(cfg!=null && per) {
-        	 cfg.setPersistenceEnabled(true);        	 
-         }
-         
-         if(cfg!=null) {
-        	 try {
+	/** {@inheritDoc} */
+	@Override
+	public String name() {
+		return "GremlinServer";
+	}
+
+	/** {@inheritDoc} */
+	@Override
+	public String version() {
+		return "3.6.4";
+	}
+
+	/** {@inheritDoc} */
+	@Override
+	public String copyright() {
+		return "apache copy right";
+	}
+
+	/** {@inheritDoc} */
+	@Override
+	public GremlinPlugin plugin() {
+		return gremlin;
+	}
+
+	/** {@inheritDoc} */
+	@Override
+	public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
+		IgniteConfiguration igniteCfg = ctx.igniteConfiguration();
+
+		Ignite ignite = ctx.grid();
+		this.log = ctx.log(this.getClass());
+
+		this.cfg = null;
+
+		if (igniteCfg.getPluginConfigurations() != null) {
+			for (PluginConfiguration pluginCfg : igniteCfg.getPluginConfigurations()) {
+				if (pluginCfg instanceof GremlinPluginConfiguration) {
+					cfg = (GremlinPluginConfiguration) pluginCfg;
+					break;
+				}
+			}
+		}
+		if (cfg == null && "graph".equals(ctx.grid().name()) && !ignite.configuration().isClientMode()) {
+			// if node name == 'graph' auto enable create gremlin server
+			cfg = new GremlinPluginConfiguration();
+		}
+
+		boolean per = ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration()
+				.isPersistenceEnabled();
+		if (cfg != null && per) {
+			cfg.setPersistenceEnabled(true);
+		}
+
+		if (cfg != null) {
+			try {
 				settings = Settings.read(cfg.getGremlinServerCfg());
 				// 设置默认的ignite
-	 	    	IgniteConnect.defaultIgnite = ignite;
-	 	    	databaseName = igniteCfg.getIgniteInstanceName();    
+				IgniteConnect.defaultIgnite = ignite;
+				databaseName = igniteCfg.getIgniteInstanceName();
+				gremlin.databaseName = databaseName;
 			} catch (Exception e) {
-				log.error(e.getMessage(),e);
+				log.error(e.getMessage(), e);
 			}
-         }       
-        
-    }
+		}
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public @Nullable  <T> T createComponent(PluginContext ctx, Class<T> cls) {
-        return null;
-    }
+	}
 
-    
+	/** {@inheritDoc} */
+	@SuppressWarnings("unchecked")
+	@Override
+	public @Nullable <T> T createComponent(PluginContext ctx, Class<T> cls) {
+		return null;
+	}
 
-    /** {@inheritDoc} */
-    @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
-        return null;
-    }
+	/** {@inheritDoc} */
+	@Override
+	public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
+		return null;
+	}
 
-    /** {@inheritDoc} */
-    @Override public void start(PluginContext ctx) {
-    	String graphName = ctx.igniteConfiguration().getIgniteInstanceName();
-    	if(settings!=null) {
-    		
-    		String configBase = ctx.igniteConfiguration().getIgniteHome()+"/config/gremlin-server";
-    		
-    		File graphFile = new File(configBase,"graph-"+graphName+".properties");
-    		if(graphFile.exists()) {
-    			log.info(graphName+ "::load gremlim graph config file "+ graphFile.getAbsolutePath());
-    			settings.graphs.put(graphName, graphFile.getAbsolutePath());
-    		}
-    		else {
-    			log.info(graphName+ "::load gremlim graph config file "+ graphFile.getAbsolutePath());
-    			graphFile = new File(configBase,"graph-default.properties");
-    			settings.graphs.put(graphName, graphFile.getAbsolutePath());
-    		}    		
-    		
-    	}
-    		
-    }
+	/** {@inheritDoc} */
+	@Override
+	public void start(PluginContext ctx) {
+		String graphName = ctx.igniteConfiguration().getIgniteInstanceName();
+		if (settings != null) {
 
-    /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) {
-    	if(gremlinServer!=null) {
-      	   log.info("gremlinServer","shutting down "+ gremlinServer.toString());
-      	   gremlinServer.stop();
-      	   gremlinServer = null;
-      	}
-    }
+			String configBase = ctx.igniteConfiguration().getIgniteHome() + "/config/gremlin-server";
 
-    /** {@inheritDoc} */
-    @Override public void onIgniteStart() {
-    	// start gremlin server singerton when admin grid start
-    	if(gremlinServer==null && settings!=null) {    		      
- 	       try {
- 	    	   ExecutorService workerPool = ((IgniteEx)IgniteConnect.defaultIgnite).context().pools().getRestExecutorService();
- 	    	   if(workerPool==null) {
- 	    		  workerPool = ((IgniteEx)IgniteConnect.defaultIgnite).context().pools().getServiceExecutorService();
- 	    	   }
- 	    	   gremlinServer = new GremlinServer(settings, workerPool);
- 	    	   serverStarted = gremlinServer.start().thenAcceptAsync(GremlinServerPluginProvider::configure);
- 	    	   serverStarted.join();
- 	    	   printHeader();
- 	    	   log.info("GremlinServer","listern on "+settings.host+":"+settings.port); 	    	   
- 	    	   
- 	       }catch(Exception e) {
- 	    	   log.error("GremlinServer bind fail.",e);
- 	    	   throw new RuntimeException(e);
- 	       }
-     	}
-    }
-    
-    private static void configure(ServerGremlinExecutor serverGremlinExecutor) {
-        GraphManager graphManager = serverGremlinExecutor.getGraphManager();        
-        backend = graphManager;
-        
-    }
+			File graphFile = new File(configBase, "graph-" + graphName + ".properties");
+			if (graphFile.exists()) {
+				log.info(graphName + "::load gremlim graph config file " + graphFile.getAbsolutePath());
+				settings.graphs.put(graphName, graphFile.getAbsolutePath());
+			} else {
+				log.info(graphName + "::load gremlim graph config file " + graphFile.getAbsolutePath());
+				graphFile = new File(configBase, "graph-default.properties");
+				settings.graphs.put(graphName, graphFile.getAbsolutePath());
+			}
 
-    /** {@inheritDoc} */
-    @Override public void onIgniteStop(boolean cancel) {    	
-    	
-    }
+		}
 
-    /** {@inheritDoc} */
-    @Override public @Nullable Serializable provideDiscoveryData(UUID nodeId) {
-        return null;
-    }
+	}
 
-    /** {@inheritDoc} */
-    @Override public void receiveDiscoveryData(UUID nodeId, Serializable data) {
-        // No-op.
-    }
+	/** {@inheritDoc} */
+	@Override
+	public void stop(boolean cancel) {
+		if (gremlinServer != null) {
+			log.info("gremlinServer", "shutting down " + gremlinServer.toString());
+			gremlinServer.stop();
+			gremlinServer = null;
+		}
+	}
 
-    /** {@inheritDoc} */
-    @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
-        // No-op.
-    }
-    
+	/** {@inheritDoc} */
+	@Override
+	public void onIgniteStart() {
+		// start gremlin server singerton when admin grid start
+		if (gremlinServer == null && settings != null) {
+			try {
+				ExecutorService workerPool = ((IgniteEx) IgniteConnect.defaultIgnite).context().pools().getRestExecutorService();
+				if (workerPool == null) {
+					workerPool = ((IgniteEx) IgniteConnect.defaultIgnite).context().pools().getServiceExecutorService();
+				}
+				gremlinServer = new GremlinServer(settings, workerPool);
+				gremlin.graphManager = gremlinServer.getServerGremlinExecutor().getGraphManager();
 
-    private void printHeader() {           
-        log.info("TinkerPop: {}",GremlinServer.getHeader());
-    }
+				serverStarted = gremlinServer.start().thenAcceptAsync(GremlinServerPluginProvider::configure);
+				serverStarted.join();
+
+				printHeader();
+				log.info("GremlinServer", "listern on " + settings.host + ":" + settings.port);
+
+			} catch (Exception e) {
+				log.error("GremlinServer bind fail.", e);
+				throw new RuntimeException(e);
+			}
+		}
+	}
+
+	private static void configure(ServerGremlinExecutor serverGremlinExecutor) {
+		GraphManager graphManager = serverGremlinExecutor.getGraphManager();
+		backend = graphManager;
+
+	}
+
+	/** {@inheritDoc} */
+	@Override
+	public void onIgniteStop(boolean cancel) {
+
+	}
+
+	/** {@inheritDoc} */
+	@Override
+	public @Nullable Serializable provideDiscoveryData(UUID nodeId) {
+		return null;
+	}
+
+	/** {@inheritDoc} */
+	@Override
+	public void receiveDiscoveryData(UUID nodeId, Serializable data) {
+		// No-op.
+	}
+
+	/** {@inheritDoc} */
+	@Override
+	public void validateNewNode(ClusterNode node) throws PluginValidationException {
+		// No-op.
+	}
+
+	private void printHeader() {
+		log.info("TinkerPop: {}", GremlinServer.getHeader());
+	}
 }

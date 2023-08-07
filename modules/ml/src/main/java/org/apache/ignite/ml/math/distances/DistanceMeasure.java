@@ -20,7 +20,10 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.lang.reflect.InvocationTargetException;
+
 import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -36,6 +39,7 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
     @JsonSubTypes.Type(value = CanberraDistance.class, name = "CanberraDistance"),
     @JsonSubTypes.Type(value = ChebyshevDistance.class, name = "ChebyshevDistance"),
     @JsonSubTypes.Type(value = CosineSimilarity.class, name = "CosineSimilarity"),
+    @JsonSubTypes.Type(value = DotProductSimilarity.class, name = "DotProductSimilarity"),
     @JsonSubTypes.Type(value = EuclideanDistance.class, name = "EuclideanDistance"),
     @JsonSubTypes.Type(value = HammingDistance.class, name = "HammingDistance"),
     @JsonSubTypes.Type(value = JaccardIndex.class, name = "JaccardIndex"),
@@ -82,5 +86,23 @@ public interface DistanceMeasure extends Externalizable {
     /** {@inheritDoc} */
     @Override default void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         // No-op
+    }
+    
+    
+    public static DistanceMeasure of(String name) throws InstantiationException {
+    	JsonSubTypes subTypes = DistanceMeasure.class.getAnnotation(JsonSubTypes.class);
+    	for(Type type: subTypes.value()) {
+    		if(type.name().equals(name)) {
+    			try {
+					return (DistanceMeasure)type.value().getDeclaredConstructor().newInstance();
+				} catch (InstantiationException | IllegalAccessException e) {					
+					throw new InstantiationException(e.getMessage());
+				} catch (Exception e) {					
+					throw new InstantiationException(e.getMessage());
+				}
+    		}
+    		
+    	}
+    	throw new InstantiationException("Not found DistanceMeasure name for "+name);
     }
 }

@@ -77,7 +77,7 @@ Ignite can be used as a Gremlin server, it is fast and distributed, it supports 
 
 
 ## Redis
-Ingite can also be used as a distributed redis server. To execute below script, run an Ignite instance with 'redis-ignite-internal-cache-0' cache specified and configured. 
+Ignite can also be used as a distributed redis server. To execute below script, run an Ignite instance with 'redis-ignite-internal-cache-0' cache specified and configured. 
     ```
     import redis    
 
@@ -98,7 +98,7 @@ Ingite can also be used as a distributed redis server. To execute below script, 
 
 ## Memcached 
 
-It is also available as a distributed memcached server.
+Ignite is also available as a distributed memcached server.
 
 php code:
     ```
@@ -128,10 +128,19 @@ Ignite replaces elasticsearch as a backend search engine implementation
 
 Ignite cache corresponds to the index of elasticsearch.
 The entity table corresponds to the type of elasticsearch.
-When cache and table are one-to-one, the type parameter is not required
+When cache and table are one-to-one, the type parameter is not required(like es7.0+)
 
 Using the http rest interface, it can emulate some of the functionality of elasticsearch, and it is distributed, across data centers.
 
+## Distributed File System
+Ignite has an distributed filesystem interface to work with files in memory/disk. IGFS is the acronym of Ignite distributed file system. 
+IGFS provides APIs to perform the following operations:
+
+- CRUD (Create, Read, Update, and Delete Files/Directories) file operations
+- Perform MapReduce; it sits on top of Hadoop File system (HDFS) to accelerate Hadoop processing
+- File caching and eviction
+
+When ignite-rest-http enabled, vistit /filemanger to manager IGFS files.
 
 ## Multi-Tier Storage
 

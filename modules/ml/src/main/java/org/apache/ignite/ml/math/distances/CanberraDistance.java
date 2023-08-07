@@ -36,7 +36,7 @@ public class CanberraDistance implements DistanceMeasure {
      */
     @Override public double compute(Vector a, Vector b)
         throws CardinalityException {
-        Vector top = MatrixUtil.localCopyOf(a).minus(b).map(Math::abs);
+        Vector top = a.minus(b).map(Math::abs);
         Vector down = MatrixUtil.localCopyOf(a).map(Math::abs)
             .plus(MatrixUtil.localCopyOf(b).map(Math::abs))
             .map(value -> value != 0 ? 1 / value : 0);

@@ -56,16 +56,18 @@ public class MongoServerPluginProvider implements PluginProvider<MongoPluginConf
      
 	
     private MongoPluginConfiguration cfg;
+    
+    private MongoPlugin mongoPlugin = new MongoPlugin();
 
 	
     /** {@inheritDoc} */
     @Override public String name() {
-        return "MongoServerPluginProvider";
+        return "MongoServer";
     }
 
     /** {@inheritDoc} */
     @Override public String version() {
-        return "1.0";
+        return "3.6";
     }
 
     /** {@inheritDoc} */
@@ -74,10 +76,8 @@ public class MongoServerPluginProvider implements PluginProvider<MongoPluginConf
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends IgnitePlugin> T plugin() {
-        return (T)new IgnitePlugin() {
-            // No-op.
-        };
+    @Override public MongoPlugin plugin() {
+        return mongoPlugin;
     }
 
     /** {@inheritDoc} */
@@ -113,6 +113,8 @@ public class MongoServerPluginProvider implements PluginProvider<MongoPluginConf
 	         	backend = new IgniteBackend(ctx.grid(),cfg);
 	      	    backend.setKeepBinary(cfg.isWithBinaryStorage());
          	}
+         	this.mongoPlugin.backend = backend;
+         	this.mongoPlugin.databaseName =	databaseName;
          }
          	
     }

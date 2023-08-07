@@ -85,7 +85,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     /** HTTP server. */
     private static Server httpSrv;
     
-    private static int handlerCount = 0;
+    private static int handlerCount = 0;    
 
     /**
      * @param ctx Context.
@@ -288,7 +288,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      * @throws IgniteCheckedException if load failed.
      */
     private void loadJettyConfiguration(@Nullable URL cfgUrl) throws IgniteCheckedException {
-        if (cfgUrl == null) {
+        if (cfgUrl == null) {        	
             HttpConfiguration httpCfg = new HttpConfiguration();
 
             httpCfg.setSecureScheme("https");
@@ -346,8 +346,8 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to start Jetty HTTP server.", e);
             }
-        }
-
+        }        
+        
         assert httpSrv != null;
         
         //add@byron support custom rest cmd handler        
@@ -396,7 +396,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 		    }
 		}
 	    
-	 // Create a handler list to store our static and servlet context handlers.
+		// Create a handler list to store our static and servlet context handlers.
 	    Handler hnd = httpSrv.getHandler();
 		HandlerList handlers = new HandlerList();
 		if(hnd!=null) {
