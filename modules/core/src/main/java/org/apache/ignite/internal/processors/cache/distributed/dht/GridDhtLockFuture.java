@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
@@ -161,9 +160,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     /** Lock timeout. */
     private final long timeout;
 
-    /** Filter. */
-    private final CacheEntryPredicate[] filter;
-
     /** Transaction. */
     private final GridDhtTxLocalAdapter tx;
 
@@ -239,7 +235,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         this.read = read;
         this.needReturnVal = needReturnVal;
         this.timeout = timeout;
-        this.filter = filter;
         this.tx = tx;
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
