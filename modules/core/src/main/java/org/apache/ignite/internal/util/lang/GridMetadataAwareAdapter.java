@@ -42,7 +42,7 @@ public class GridMetadataAwareAdapter {
         CACHE_EVICTION_MANAGER_KEY(2);
 
         /** key. */
-        private int key;
+        private final int key;
 
         /**
          * @param key key
@@ -63,7 +63,7 @@ public class GridMetadataAwareAdapter {
 
     /** Attributes. */
     @GridToStringInclude(sensitive = true)
-    private Object[] data = null;
+    private Object[] data;
 
     /**
      * Copies all metadata from another instance.
@@ -107,10 +107,10 @@ public class GridMetadataAwareAdapter {
         assert val != null;
 
         synchronized (this) {
-            if (this.data == null)
-                this.data = new Object[key + 1];
-            else if (this.data.length <= key)
-                this.data = Arrays.copyOf(this.data, key + 1);
+            if (data == null)
+                data = new Object[key + 1];
+            else if (data.length <= key)
+                data = Arrays.copyOf(data, key + 1);
 
             V old = (V)data[key];
 
@@ -239,7 +239,7 @@ public class GridMetadataAwareAdapter {
         assert val != null;
 
         synchronized (this) {
-            V v = (V)meta(key);
+            V v = meta(key);
 
             if (v == null)
                 return addMeta(key, val);
@@ -261,7 +261,7 @@ public class GridMetadataAwareAdapter {
         assert val != null;
 
         synchronized (this) {
-            V v = (V)meta(key);
+            V v = meta(key);
 
             if (v == null)
                 addMeta(key, v = val);
@@ -285,7 +285,7 @@ public class GridMetadataAwareAdapter {
         assert c != null;
 
         synchronized (this) {
-            V v = (V)meta(key);
+            V v = meta(key);
 
             if (v == null && c != null)
                 try {
