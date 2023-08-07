@@ -285,11 +285,11 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             else {
                 registrateFutureInMvccManager(this);
 
-                MiniFuture miniFuture = new MiniFuture(n, mappedKeys, saved, topVer);
+                MiniFuture miniFut = new MiniFuture(n, mappedKeys, saved, topVer);
 
-                GridNearGetRequest req = miniFuture.createGetRequest(futId);
+                GridNearGetRequest req = miniFut.createGetRequest(futId);
 
-                add(miniFuture); // Append new future.
+                add(miniFut); // Append new future.
 
                 try {
                     cctx.io().send(n, req, cctx.ioPolicy());
@@ -297,9 +297,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyCheckedException)
-                        miniFuture.onNodeLeft((ClusterTopologyCheckedException)e);
+                        miniFut.onNodeLeft((ClusterTopologyCheckedException)e);
                     else
-                        miniFuture.onResult(e);
+                        miniFut.onResult(e);
                 }
             }
         }
@@ -689,12 +689,10 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
     /**
      * @param keys Keys.
      * @param saved Saved entries.
-     * @param topVer Topology version.
      */
     private void releaseEvictions(
         Collection<KeyCacheObject> keys,
-        Map<KeyCacheObject, GridNearCacheEntry> saved,
-        AffinityTopologyVersion topVer
+        Map<KeyCacheObject, GridNearCacheEntry> saved
     ) {
         for (KeyCacheObject key : keys) {
             GridNearCacheEntry entry = saved.get(key);
@@ -767,7 +765,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Map<K, V> res, @Nullable Throwable err) {
             if (super.onDone(res, err)) {
-                releaseEvictions(keys.keySet(), savedEntries, topVer);
+                releaseEvictions(keys.keySet(), savedEntries);
 
                 return true;
             }
