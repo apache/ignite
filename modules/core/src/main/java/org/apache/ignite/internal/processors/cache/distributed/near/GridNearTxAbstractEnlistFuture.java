@@ -78,7 +78,7 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
     protected final IgniteLogger log;
 
     /** */
-    protected long timeout;
+    private long timeout;
 
     /** Initiated thread id. */
     protected final long threadId;
@@ -100,7 +100,7 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
 
     /** Timeout object. */
     @GridToStringExclude
-    protected LockTimeoutObject timeoutObj;
+    private LockTimeoutObject timeoutObj;
 
     /**
      * @param cctx Cache context.
@@ -108,7 +108,7 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
      * @param timeout Timeout.
      * @param rdc Compound future reducer.
      */
-    public GridNearTxAbstractEnlistFuture(
+    protected GridNearTxAbstractEnlistFuture(
         GridCacheContext<?, ?> cctx, GridNearTxLocal tx, long timeout, @Nullable IgniteReducer<T, T> rdc) {
         super(rdc);
 
