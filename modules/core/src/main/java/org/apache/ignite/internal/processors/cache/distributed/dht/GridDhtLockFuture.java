@@ -126,11 +126,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
     /**
      * Keys locked so far.
-     *
      * Thread created this object iterates over entries and tries to lock each of them.
      * If it finds some entry already locked by another thread it registers callback which will be executed
      * by the thread owning the lock.
-     *
      * Thus access to this collection must be synchronized except cases
      * when this object is yet local to the thread created it.
      */
@@ -965,7 +963,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             for (ListIterator<GridDhtCacheEntry> it = dhtMapping.listIterator(); it.hasNext(); ) {
                                 GridDhtCacheEntry e = it.next();
 
-                                boolean needVal = false;
+                                boolean needVal;
 
                                 try {
                                     // Must unswap entry so that isNewLocked returns correct value.
