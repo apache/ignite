@@ -251,7 +251,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @return Versions for all pending locks that were in queue before tx locks were released.
      */
     Collection<GridCacheVersion> pendingVersions() {
-        return pendingVers == null ? Collections.<GridCacheVersion>emptyList() : pendingVers;
+        return pendingVers == null ? Collections.emptyList() : pendingVers;
     }
 
     /**
