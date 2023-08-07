@@ -4458,39 +4458,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         );
     }
 
-    /**
-     * Gets cache entry for given key.
-     *
-     * @param cacheCtx Cache context.
-     * @param key Key.
-     * @return Cache entry.
-     */
-    protected GridCacheEntryEx entryEx(GridCacheContext cacheCtx, IgniteTxKey key) {
-        if (cacheCtx.isColocated()) {
-            IgniteTxEntry txEntry = entry(key);
-
-            if (txEntry == null)
-                return cacheCtx.colocated().entryExx(key.key(), topologyVersion(), true);
-
-            GridCacheEntryEx cached = txEntry.cached();
-
-            assert cached != null;
-
-            if (cached.detached())
-                return cached;
-
-            if (cached.obsoleteVersion() != null) {
-                cached = cacheCtx.colocated().entryExx(key.key(), topologyVersion(), true);
-
-                txEntry.cached(cached);
-            }
-
-            return cached;
-        }
-        else
-            return cacheCtx.cache().entryEx(key.key());
-    }
-
     /** {@inheritDoc} */
     @Override protected GridCacheEntryEx entryEx(
         GridCacheContext cacheCtx,
