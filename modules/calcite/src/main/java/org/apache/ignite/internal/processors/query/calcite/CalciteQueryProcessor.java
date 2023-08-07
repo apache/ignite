@@ -33,8 +33,6 @@ import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.core.Aggregate;
-import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlDynamicParam;
 import org.apache.calcite.sql.SqlKind;
@@ -75,6 +73,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryI
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexExecutorImpl;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintsConfig;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
@@ -138,14 +137,15 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             .withInSubQueryThreshold(Integer.MAX_VALUE)
             .withDecorrelationEnabled(true)
             .withExpand(false)
-            .withHintStrategyTable(
-                HintStrategyTable.builder()
-                    .hintStrategy("DISABLE_RULE", (hint, rel) -> true)
-                    .hintStrategy("EXPAND_DISTINCT_AGG", (hint, rel) -> rel instanceof Aggregate)
-                    // QUERY_ENGINE hint preprocessed by regexp, but to avoid warnings should be also in HintStrategyTable.
-                    .hintStrategy("QUERY_ENGINE", (hint, rel) -> true)
-                    .build()
-            )
+            .withHintStrategyTable(HintsConfig.buildHintTable())
+//            .withHintStrategyTable(
+//                HintStrategyTable.builder()
+//                    .hintStrategy("DISABLE_RULE", (hint, rel) -> true)
+//                    .hintStrategy("EXPAND_DISTINCT_AGG", (hint, rel) -> rel instanceof Aggregate)
+//                    // QUERY_ENGINE hint preprocessed by regexp, but to avoid warnings should be also in HintStrategyTable.
+//                    .hintStrategy("QUERY_ENGINE", (hint, rel) -> true)
+//                    .build()
+//            )
         )
         .convertletTable(IgniteConvertletTable.INSTANCE)
         .parserConfig(

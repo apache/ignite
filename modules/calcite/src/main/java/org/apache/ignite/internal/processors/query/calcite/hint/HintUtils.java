@@ -20,19 +20,11 @@ package org.apache.ignite.internal.processors.query.calcite.hint;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
-import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.ignite.internal.util.typedef.F;
-
-import static org.apache.ignite.internal.processors.query.calcite.hint.SqlHintDefinition.DISABLE_RULE;
-import static org.apache.ignite.internal.processors.query.calcite.hint.SqlHintDefinition.EXPAND_DISTINCT_AGG;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public class HintUtils {
@@ -44,7 +36,7 @@ public class HintUtils {
     /**
      * @return Hint if found by {@code hintDef} in {@code hints}. {@code Null} if hint is not found.
      */
-    public static RelHint hint(Collection<RelHint> hints, SqlHintDefinition hintDef) {
+    public static @Nullable RelHint hint(Collection<RelHint> hints, HintDefinition hintDef) {
         if (!F.isEmpty(hints)) {
             for (RelHint h : hints) {
                 if (h.hintName.equals(hintDef.name()))
@@ -58,29 +50,31 @@ public class HintUtils {
     /**
      * @return Hint of {@code rel} if found by {@code hintDef}. {@code Null} if hint is not found.
      */
-    public static RelHint hint(RelNode rel, SqlHintDefinition hintDef) {
+    public static @Nullable RelHint hint(RelNode rel, HintDefinition hintDef) {
         return rel instanceof Hintable ? hint(((Hintable)rel).getHints(), hintDef) : null;
     }
 
     /**
-     * @return {@code True} if {@code rel} contains hint {@code hintDef}. {@code False} otherwise,
+     * @return {@code True} if {@code rel} contains hint {@code hintDef}. {@code False} otherwise.
      */
-    public static boolean hasHint(RelNode rel, SqlHintDefinition hintDef) {
+    public static boolean hasHint(RelNode rel, HintDefinition hintDef) {
         return hint(rel, hintDef) != null;
     }
 
-    /** */
-    public static Collection<String> plainOptions(RelHint hint) {
-        return hint == null ? Collections.emptyList() : hint.listOptions;
+    /**
+     * @return {@code Null} if {@code rel} has no hint named as {@code hintDef}. Otherwise, plain options of the hint.
+     */
+    public static @Nullable Collection<String> plainOptions(RelNode rel, HintDefinition hintDef) {
+        RelHint hint = hint(rel, hintDef);
+
+        return hint == null ? null : hint.listOptions;
     }
 
-    /** */
+    /**
+     * @return Key-value options of {@code hint}. {@code Null} if {@code hint} is {@code null}. Emply map if hint
+     * exists but has no plain options.
+     */
     public static Map<String, String> kvOptions(RelHint hint) {
-        return hint == null ? Collections.emptyMap() : hint.kvOptions;
-    }
-
-    /** */
-    public static boolean isExpandDistinctAggregate(LogicalAggregate rel) {
-        return hasHint(rel, EXPAND_DISTINCT_AGG) && rel.getAggCallList().stream().anyMatch(AggregateCall::isDistinct);
+        return hint == null ? null : (hint.kvOptions == null ? Collections.emptyMap() : hint.kvOptions);
     }
 }

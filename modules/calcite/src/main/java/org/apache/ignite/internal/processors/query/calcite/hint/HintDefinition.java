@@ -17,32 +17,63 @@
 
 package org.apache.ignite.internal.processors.query.calcite.hint;
 
+import org.apache.calcite.rel.hint.HintOptionChecker;
 import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintPredicates;
 
 /** */
-public enum SqlHintDefinition {
-    DISABLE_RULE{
-        @Override
-        public HintPredicate predicate(){
+public enum HintDefinition {
+    QUERY_ENGINE {
+        /** {@inheritDoc} */
+        @Override public HintPredicate predicate() {
             return HintPredicates.SET_VAR;
+        }
+
+        /** {@inheritDoc} */
+        @Override public HintOptionChecker optionsChecker() {
+            return HintsConfig.OPTS_CHECK_ONE_PLAIN;
+        }
+    },
+
+    DISABLE_RULE {
+        /** {@inheritDoc} */
+        @Override public HintPredicate predicate() {
+            return HintPredicates.SET_VAR;
+        }
+
+        /** {@inheritDoc} */
+        @Override public HintOptionChecker optionsChecker() {
+            return HintsConfig.OPTS_CHECK_PLAIN;
         }
     },
 
     EXPAND_DISTINCT_AGG {
-        @Override
-        public HintPredicate predicate(){
+        /** {@inheritDoc} */
+        @Override public HintPredicate predicate() {
             return HintPredicates.AGGREGATE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public HintOptionChecker optionsChecker() {
+            return HintsConfig.OPTS_CHECK_EMPTY;
         }
     },
 
     NO_INDEX {
-        @Override
-        public HintPredicate predicate(){
+        /** {@inheritDoc} */
+        @Override public HintPredicate predicate() {
             return HintPredicates.TABLE_SCAN;
+        }
+
+        /** {@inheritDoc} */
+        @Override public HintOptionChecker optionsChecker() {
+            return HintsConfig.OPTS_CHECK_EMPTY_OR_PLAIN;
         }
     };
 
     /** */
     public abstract HintPredicate predicate();
+
+    /** */
+    public abstract HintOptionChecker optionsChecker();
 }

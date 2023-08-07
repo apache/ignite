@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
@@ -29,6 +31,7 @@ import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
@@ -72,19 +75,38 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
         if (igniteTable.isIndexRebuildInProgress())
             return;
 
-        HintUtils.containsDisabledRules()
-
         List<IgniteLogicalIndexScan> indexes = igniteTable.indexes().values().stream()
             .map(idx -> idx.toRel(cluster, optTable, proj, condition, requiredCols))
             .collect(Collectors.toList());
 
         assert !indexes.isEmpty();
 
+        disableIndexes(scan, indexes);
+
+        if (indexes.isEmpty())
+            return;
+
         Map<RelNode, RelNode> equivMap = new HashMap<>(indexes.size());
         for (int i = 1; i < indexes.size(); i++)
             equivMap.put(indexes.get(i), scan);
 
         call.transformTo(F.first(indexes), equivMap);
+    }
+
+    /**
+     * Disables indexes if requred by {@code SqlHintDefinition.NO_INDEX)}. If no hint options are present but the hint
+     * exists, every index is disabled.
+     */
+    private void disableIndexes(IgniteLogicalTableScan scan, List<IgniteLogicalIndexScan> indexes) {
+        Collection<String> hintOptions = HintUtils.plainOptions(scan, HintDefinition.NO_INDEX);
+
+        if (hintOptions == null)
+            return;
+
+        if (F.isEmpty(hintOptions))
+            indexes.clear();
+        else
+            indexes.removeIf(idxScan -> hintOptions.contains(idxScan.indexName()));
     }
 
     /** */
