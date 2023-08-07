@@ -78,7 +78,7 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
     protected final IgniteLogger log;
 
     /** */
-    private long timeout;
+    private final long timeout;
 
     /** Initiated thread id. */
     protected final long threadId;
