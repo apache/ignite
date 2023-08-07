@@ -51,7 +51,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -198,7 +197,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
 
                 Object cur = next0();
 
-                KeyCacheObject key = cctx.toCacheKeyObject(op.isDeleteOrLock() ? cur : ((IgniteBiTuple)cur).getKey());
+                KeyCacheObject key = cctx.toCacheKeyObject(op.isDeleteOrLock() ? cur : ((Map.Entry<?, ?>)cur).getKey());
 
                 ClusterNode node = cctx.affinity().primaryByPartition(key.partition(), topVer);
 
@@ -331,8 +330,8 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
             if (keysOnly)
                 keys.add(cctx.toCacheKeyObject(row));
             else {
-                keys.add(cctx.toCacheKeyObject(((IgniteBiTuple)row).getKey()));
-                vals.add(cctx.toCacheObject(((IgniteBiTuple)row).getValue()));
+                keys.add(cctx.toCacheKeyObject(((Map.Entry<?, ?>)row).getKey()));
+                vals.add(cctx.toCacheObject(((Map.Entry<?, ?>)row).getValue()));
             }
         }
 
@@ -571,7 +570,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
     /**
      * A batch of rows
      */
-    private class Batch {
+    private static class Batch {
         /** Node ID. */
         @GridToStringExclude
         private final ClusterNode node;
@@ -603,12 +602,12 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
          * Adds a row.
          *
          * @param row Row.
-         * @param localBackup {@code true}, when the row key has local backup.
+         * @param locBackup {@code true}, when the row key has local backup.
          */
-        public void add(Object row, boolean localBackup) {
+        public void add(Object row, boolean locBackup) {
             rows.add(row);
 
-            if (localBackup) {
+            if (locBackup) {
                 if (locBkpRows == null)
                     locBkpRows = new ArrayList<>();
 
