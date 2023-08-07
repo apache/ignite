@@ -785,7 +785,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
     /** {@inheritDoc} */
     @Override public final void sessionEnd(IgniteInternalTx tx, boolean commit, boolean last,
-        boolean storeSessionEnded) throws IgniteCheckedException {
+        boolean storeSesEnded) throws IgniteCheckedException {
         assert store != null;
 
         sessionInit0(tx, commit ? StoreOperation.COMMIT : StoreOperation.ROLLBACK, false);
@@ -796,7 +796,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                     lsnr.onSessionEnd(locSes, commit);
             }
 
-            if (!sesHolder.get().ended(store) && !storeSessionEnded)
+            if (!sesHolder.get().ended(store) && !storeSesEnded)
                 store.sessionEnd(commit);
         }
         catch (Throwable e) {
