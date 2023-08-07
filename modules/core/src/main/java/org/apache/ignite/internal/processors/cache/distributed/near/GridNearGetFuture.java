@@ -581,8 +581,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             K key0 = (K)cctx.unwrapBinaryIfNeeded(key, !deserializeBinary, false, null);
             V val0 = needVer ?
                 (V)new EntryGetResult(!skipVals ?
-                    (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false, null) :
-                    (V)Boolean.TRUE, ver) :
+                    cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false, null) :
+                    Boolean.TRUE, ver) :
                 !skipVals ?
                     (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false, null) :
                     (V)Boolean.TRUE;
@@ -622,7 +622,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
     ) {
         boolean empty = F.isEmpty(keys);
 
-        Map<K, V> map = empty ? Collections.<K, V>emptyMap() : new GridLeanMap<K, V>(keys.size());
+        Map<K, V> map = empty ? Collections.emptyMap() : new GridLeanMap<K, V>(keys.size());
 
         if (!empty) {
             boolean atomic = cctx.atomic();
