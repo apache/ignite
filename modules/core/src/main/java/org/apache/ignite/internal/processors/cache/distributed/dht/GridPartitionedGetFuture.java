@@ -409,10 +409,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         ClusterNode node,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings
     ) {
-        LinkedHashMap<KeyCacheObject, Boolean> old = mappings.get(node);
-
-        if (old == null)
-            mappings.put(node, old = new LinkedHashMap<>(3, 1f));
+        LinkedHashMap<KeyCacheObject, Boolean> old =
+            mappings.computeIfAbsent(node, k -> new LinkedHashMap<>(3, 1f));
 
         old.put(key, false);
     }
