@@ -99,7 +99,6 @@ import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CX1;
@@ -3185,20 +3184,18 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     recovery,
                     null,
                     label()
-                ).chain(new C1<IgniteInternalFuture<Object>, Void>() {
-                    @Override public Void apply(IgniteInternalFuture<Object> f) {
-                        try {
-                            Object val = f.get();
+                ).chain((IgniteInternalFuture<Object> f) -> {
+                    try {
+                        Object val = f.get();
 
-                            processLoaded(key, val, needVer, skipVals, c);
+                        processLoaded(key, val, needVer, skipVals, c);
 
-                            return null;
-                        }
-                        catch (Exception e) {
-                            setRollbackOnly();
+                        return null;
+                    }
+                    catch (Exception e) {
+                        setRollbackOnly();
 
-                            throw new GridClosureException(e);
-                        }
+                        throw new GridClosureException(e);
                     }
                 });
             }
@@ -3217,20 +3214,18 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     /*keepCacheObject*/true,
                     label(),
                     null
-                ).chain(new C1<IgniteInternalFuture<Map<Object, Object>>, Void>() {
-                    @Override public Void apply(IgniteInternalFuture<Map<Object, Object>> f) {
-                        try {
-                            Map<Object, Object> map = f.get();
+                ).chain((IgniteInternalFuture<Map<Object, Object>> f) -> {
+                    try {
+                        Map<Object, Object> map = f.get();
 
-                            processLoaded(map, keys, needVer, c);
+                        processLoaded(map, keys, needVer, c);
 
-                            return null;
-                        }
-                        catch (Exception e) {
-                            setRollbackOnly();
+                        return null;
+                    }
+                    catch (Exception e) {
+                        setRollbackOnly();
 
-                            throw new GridClosureException(e);
-                        }
+                        throw new GridClosureException(e);
                     }
                 });
             }
@@ -3878,13 +3873,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (!PREP_FUT_UPD.compareAndSet(this, null, fut))
                 return prepFut;
 
-            if (trackTimeout) {
-                prepFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                    @Override public void apply(IgniteInternalFuture<?> f) {
-                        removeTimeoutHandler();
-                    }
-                });
-            }
+            if (trackTimeout)
+                prepFut.listen((IgniteInternalFuture<?> f) -> removeTimeoutHandler());
 
             if (timeout == -1) {
                 fut.onDone(this, timeoutException());
