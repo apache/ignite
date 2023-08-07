@@ -279,7 +279,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             for (IgniteTxEntry e : allEntries()) {
                 assert e.cached() != null;
 
-                GridCacheContext cacheCtx = e.cached().context();
+                GridCacheContext<?, ?> cacheCtx = e.cached().context();
 
                 if (cacheCtx.isNear())
                     continue;
@@ -470,9 +470,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
         checkInternal(e.txKey());
 
-        GridCacheContext cacheCtx = e.context();
+        GridCacheContext<?, ?> cacheCtx = e.context();
 
-        GridDhtCacheAdapter dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
+        GridDhtCacheAdapter<?, ?> dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
 
         try {
             IgniteTxEntry existing = entry(e.txKey());
@@ -575,7 +575,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             try {
                 AffinityTopologyVersion topVer = topologyVersion();
 
-                GridDhtCacheAdapter dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
+                GridDhtCacheAdapter<?, ?> dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
 
                 // Enlist locks into transaction.
                 for (int i = 0; i < entries.size(); i++) {
@@ -911,7 +911,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
     /**
      * @param prepFut Prepare future.
-     * @return If transaction if finished on prepare step returns future which is completed after transaction finish.
+     * @return If transaction is finished on prepare step returns future which is completed after transaction finish.
      */
     protected final IgniteInternalFuture<GridNearTxPrepareResponse> chainOnePhasePrepare(
         final GridDhtTxPrepareFuture prepFut) {
