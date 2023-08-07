@@ -1383,7 +1383,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                     cache0 = ((GridNearCacheAdapter)cache0).dht();
 
                 synchronized (GridDhtLockFuture.this) { // Prevents entry re-creation on concurrent rollback.
-                    if (GridDhtLockFuture.this.checkDone())
+                    if (checkDone())
                         return;
 
                     for (GridCacheEntryInfo info : res.preloadEntries()) {
