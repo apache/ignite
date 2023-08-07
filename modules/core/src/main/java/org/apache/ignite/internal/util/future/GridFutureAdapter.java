@@ -632,10 +632,10 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
      */
     private static class ChainFuture<R, T> extends GridFutureAdapter<T> {
         /** */
-        private GridFutureAdapter<R> fut;
+        private final GridFutureAdapter<R> fut;
 
         /** */
-        private IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb;
+        private final IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb;
 
         /**
          * @param fut Future.
