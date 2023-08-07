@@ -973,8 +973,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         private Object attach;
 
         /** */
-        private final Set<CacheStore> started =
-            new GridSetWrapper<>(new IdentityHashMap<CacheStore, Object>());
+        private final Set<CacheStore> started = new GridSetWrapper<>(new IdentityHashMap<>());
 
         /**
          * @param tx Current transaction.
