@@ -37,7 +37,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxAbstractEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryResultsEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
@@ -47,7 +46,6 @@ import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -462,12 +460,11 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
 
         updateLocalFuture(fut);
 
-        fut.listen(new CI1<IgniteInternalFuture<Long>>() {
-            @Override public void apply(IgniteInternalFuture<Long> fut) {
+        fut.listen((IgniteInternalFuture<Long> fut0) -> {
                 assert fut.error() != null || fut.result() != null : fut;
 
                 try {
-                    clearLocalFuture((GridDhtTxAbstractEnlistFuture)fut);
+                    clearLocalFuture(fut);
 
                     GridNearTxQueryResultsEnlistResponse res = fut.error() == null ? createResponse(fut) : null;
 
@@ -480,7 +477,6 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
                 finally {
                     CU.unwindEvicts(cctx);
                 }
-            }
         });
 
         fut.init();
