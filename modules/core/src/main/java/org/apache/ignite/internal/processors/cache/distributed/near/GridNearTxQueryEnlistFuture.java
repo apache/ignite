@@ -135,7 +135,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
 
             if (map.isEmpty())
                 throw new ClusterTopologyServerNotFoundException("Failed to find data nodes for cache (all partition " +
-                    "nodes left the grid). [fut=" + toString() + ']');
+                    "nodes left the grid). [fut=" + this + ']');
 
             int idx = 0; boolean first = true, clientFirst = false;
 
