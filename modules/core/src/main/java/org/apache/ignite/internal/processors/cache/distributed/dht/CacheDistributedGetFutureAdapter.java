@@ -75,7 +75,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
     public static final int DFLT_MAX_REMAP_CNT = 3;
 
     /** Maximum number of attempts to remap key to the same primary node. */
-    protected static final int MAX_REMAP_CNT = getInteger(IGNITE_NEAR_GET_MAX_REMAPS, DFLT_MAX_REMAP_CNT);
+    private static final int MAX_REMAP_CNT = getInteger(IGNITE_NEAR_GET_MAX_REMAPS, DFLT_MAX_REMAP_CNT);
 
     /** Remap count updater. */
     protected static final AtomicIntegerFieldUpdater<CacheDistributedGetFutureAdapter> REMAP_CNT_UPD =
