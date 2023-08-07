@@ -1277,6 +1277,14 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                 break;
             }
+
+            case PREPARING:
+            case MARKED_ROLLBACK:
+            case PREPARED:
+            case COMMITTING:
+            case ROLLING_BACK:
+            case UNKNOWN:
+                break;
         }
     }
 
