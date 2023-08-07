@@ -86,10 +86,10 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     private final UpdateSourceIterator<?> it;
 
     /** Batch size. */
-    private int batchSize;
+    private final int batchSize;
 
     /** */
-    private AtomicInteger batchCntr = new AtomicInteger();
+    private final AtomicInteger batchCntr = new AtomicInteger();
 
     /** */
     @SuppressWarnings("unused")
@@ -543,7 +543,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
     /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
-        if (batches.keySet().contains(nodeId)) {
+        if (batches.containsKey(nodeId)) {
             if (log.isDebugEnabled())
                 log.debug("Found unacknowledged batch for left node [nodeId=" + nodeId + ", fut=" +
                     this + ']');
@@ -624,7 +624,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         private final ClusterNode node;
 
         /** Rows. */
-        private List<Object> rows = new ArrayList<>();
+        private final List<Object> rows = new ArrayList<>();
 
         /** Local backup rows. */
         private List<Object> locBkpRows;
