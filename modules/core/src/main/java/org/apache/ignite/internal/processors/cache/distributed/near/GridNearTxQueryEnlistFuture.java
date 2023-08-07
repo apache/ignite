@@ -302,10 +302,9 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
     }
 
     /**
-     * @param nodeId Sender node id.
      * @param res Response.
      */
-    public void onResult(UUID nodeId, GridNearTxQueryEnlistResponse res) {
+    public void onResult(GridNearTxQueryEnlistResponse res) {
         MiniFuture mini = miniFuture(res.miniId());
 
         if (mini != null)
