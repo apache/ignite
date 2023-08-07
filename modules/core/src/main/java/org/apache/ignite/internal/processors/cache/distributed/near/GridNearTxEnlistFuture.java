@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxAbstractEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
@@ -49,11 +48,9 @@ import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -503,22 +500,20 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
         updateLocalFuture(fut);
 
-        fut.listen(new CI1<IgniteInternalFuture<GridCacheReturn>>() {
-            @Override public void apply(IgniteInternalFuture<GridCacheReturn> fut) {
-                try {
-                    clearLocalFuture((GridDhtTxAbstractEnlistFuture)fut);
+        fut.listen((IgniteInternalFuture<GridCacheReturn> fut0) -> {
+            try {
+                clearLocalFuture(fut);
 
-                    GridNearTxEnlistResponse res = fut.error() == null ? createResponse(fut) : null;
+                GridNearTxEnlistResponse res = fut.error() == null ? createResponse(fut) : null;
 
-                    if (checkResponse(nodeId, res, fut.error()))
-                        sendNextBatches(nodeId);
-                }
-                catch (IgniteCheckedException e) {
-                    checkResponse(nodeId, null, e);
-                }
-                finally {
-                    CU.unwindEvicts(cctx);
-                }
+                if (checkResponse(nodeId, res, fut.error()))
+                    sendNextBatches(nodeId);
+            }
+            catch (IgniteCheckedException e) {
+                checkResponse(nodeId, null, e);
+            }
+            finally {
+                CU.unwindEvicts(cctx);
             }
         });
 
