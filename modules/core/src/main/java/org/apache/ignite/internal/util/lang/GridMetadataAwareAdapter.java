@@ -36,10 +36,7 @@ public class GridMetadataAwareAdapter {
         CACHE_STORE_MANAGER_KEY(0),
 
         /** Predefined key. */
-        CACHE_EVICTABLE_ENTRY_KEY(1),
-
-        /** Predefined key. */
-        CACHE_EVICTION_MANAGER_KEY(2);
+        CACHE_EVICTABLE_ENTRY_KEY(1);
 
         /** key. */
         private final int key;
@@ -287,7 +284,7 @@ public class GridMetadataAwareAdapter {
         synchronized (this) {
             V v = meta(key);
 
-            if (v == null && c != null)
+            if (v == null)
                 try {
                     addMeta(key, v = c.call());
                 }
