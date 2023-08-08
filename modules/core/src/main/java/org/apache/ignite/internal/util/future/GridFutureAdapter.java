@@ -374,7 +374,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteInternalFuture<T> chain(final IgniteOutClosure<T> doneCb) {
+    @Override public <T> IgniteInternalFuture<T> chain(IgniteOutClosure<T> doneCb) {
         return chain(ignored -> doneCb.apply());
     }
 
