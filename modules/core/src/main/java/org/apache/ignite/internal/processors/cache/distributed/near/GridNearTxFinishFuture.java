@@ -475,13 +475,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         if (mapping != null) {
                             assert !hasFutures() || isDone() : futures();
 
-                            finish(1, mapping, commit, !clearThreadMap);
+                            finish(1, mapping, commit);
                         }
                     }
                     else {
                         assert !hasFutures() || isDone() : futures();
 
-                        finish(mappings.mappings(), commit, !clearThreadMap);
+                        finish(mappings.mappings(), commit);
                     }
                 }
 
@@ -740,23 +740,21 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     /**
      * @param mappings Mappings.
      * @param commit Commit flag.
-     * @param useCompletedVer {@code True} if need to add completed version on finish.
      */
-    private void finish(Iterable<GridDistributedTxMapping> mappings, boolean commit, boolean useCompletedVer) {
+    private void finish(Iterable<GridDistributedTxMapping> mappings, boolean commit) {
         int miniId = 0;
 
         // Create mini futures.
         for (GridDistributedTxMapping m : mappings)
-            finish(++miniId, m, commit, useCompletedVer);
+            finish(++miniId, m, commit);
     }
 
     /**
      * @param miniId Mini future ID.
      * @param m Mapping.
      * @param commit Commit flag.
-     * @param useCompletedVer {@code True} if need to add completed version on finish.
      */
-    private void finish(int miniId, GridDistributedTxMapping m, boolean commit, boolean useCompletedVer) {
+    private void finish(int miniId, GridDistributedTxMapping m, boolean commit) {
         ClusterNode n = m.primary();
 
         assert !m.empty() || m.queryUpdate() : m + " " + tx.state();
