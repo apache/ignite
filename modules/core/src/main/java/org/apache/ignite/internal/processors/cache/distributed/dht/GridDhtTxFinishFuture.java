@@ -32,7 +32,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
-import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
@@ -63,7 +62,7 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTING;
  *
  */
 public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentityFuture<IgniteInternalTx>
-    implements GridCacheFuture<IgniteInternalTx>, IgniteDiagnosticAware {
+    implements IgniteDiagnosticAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -84,27 +83,27 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     private static IgniteLogger msgLog;
 
     /** Context. */
-    private GridCacheSharedContext<K, V> cctx;
+    private final GridCacheSharedContext<K, V> cctx;
 
     /** Future ID. */
     private final IgniteUuid futId;
 
     /** Transaction. */
     @GridToStringExclude
-    private GridDhtTxLocalAdapter tx;
+    private final GridDhtTxLocalAdapter tx;
 
     /** Commit flag. */
-    private boolean commit;
+    private final boolean commit;
 
     /** Error. */
     @GridToStringExclude
     private volatile Throwable err;
 
     /** DHT mappings. */
-    private Map<UUID, GridDistributedTxMapping> dhtMap;
+    private final Map<UUID, GridDistributedTxMapping> dhtMap;
 
     /** Near mappings. */
-    private Map<UUID, GridDistributedTxMapping> nearMap;
+    private final Map<UUID, GridDistributedTxMapping> nearMap;
 
     /**
      * @param cctx Context.
@@ -112,7 +111,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
      * @param commit Commit flag.
      */
     public GridDhtTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridDhtTxLocalAdapter tx, boolean commit) {
-        super(F.<IgniteInternalTx>identityReducer(tx));
+        super(F.identityReducer(tx));
 
         this.cctx = cctx;
         this.tx = tx;
@@ -619,7 +618,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         if (!isDone()) {
             for (IgniteInternalFuture fut : futures()) {
                 if (!fut.isDone()) {
-                    if (MiniFuture.class.isInstance(fut)) {
+                    if (fut instanceof GridDhtTxFinishFuture.MiniFuture) {
                         MiniFuture f = (MiniFuture)fut;
 
                         if (!f.node().isLocal()) {
