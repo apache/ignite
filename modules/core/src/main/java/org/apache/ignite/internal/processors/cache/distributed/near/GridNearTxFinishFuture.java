@@ -279,7 +279,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                     CheckRemoteTxMiniFuture f = (CheckRemoteTxMiniFuture)fut;
 
                     if (f.futureId() == res.miniId())
-                        f.onDhtFinishResponse(nodeId, false);
+                        f.onDhtFinishResponse(nodeId);
                 }
             }
 
@@ -1037,7 +1037,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
                                         fut.listen(new CI1<IgniteInternalFuture<?>>() {
                                             @Override public void apply(IgniteInternalFuture<?> fut) {
-                                                mini.onDhtFinishResponse(cctx.localNodeId(), true);
+                                                mini.onDhtFinishResponse(cctx.localNodeId());
                                             }
                                         });
                                     }
@@ -1054,7 +1054,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                                     }
                                 }
                                 else
-                                    mini.onDhtFinishResponse(backupId, true);
+                                    mini.onDhtFinishResponse(backupId);
                             }
                         }
                     }
@@ -1193,9 +1193,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
         /**
          * @param nodeId Node ID.
-         * @param discoThread {@code True} if executed from discovery thread.
          */
-        void onDhtFinishResponse(UUID nodeId, boolean discoThread) {
+        void onDhtFinishResponse(UUID nodeId) {
             onResponse(nodeId);
         }
 
