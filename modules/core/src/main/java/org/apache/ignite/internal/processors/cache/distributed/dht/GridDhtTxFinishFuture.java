@@ -315,7 +315,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
      *
      * @param commit Commit flag.
      */
-    @SuppressWarnings({"SimplifiableIfStatement"})
     public void finish(boolean commit) {
         try (MTC.TraceSurroundings ignored =
                  MTC.supportContinual(span = cctx.kernalContext().tracing().create(TX_DHT_FINISH, MTC.span()))) {
@@ -408,7 +407,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             catch (IgniteCheckedException e) {
                 // Fail the whole thing.
                 if (e instanceof ClusterTopologyCheckedException)
-                    fut.onNodeLeft((ClusterTopologyCheckedException)e);
+                    fut.onNodeLeft();
                 else {
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("DHT finish fut, failed to send request lock tx [txId=" + tx.nearXidVersion() +
@@ -504,8 +503,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 if (isNull(cctx.discovery().getAlive(n.id()))) {
                     log.error("Unable to send message (node left topology): " + n);
 
-                    fut.onNodeLeft(new ClusterTopologyCheckedException("Node left grid while sending message to: "
-                        + n.id()));
+                    fut.onNodeLeft();
                 }
                 else {
                     cctx.tm().sendTransactionMessage(n, req, tx, tx.ioPolicy());
@@ -525,7 +523,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             catch (IgniteCheckedException e) {
                 // Fail the whole thing.
                 if (e instanceof ClusterTopologyCheckedException)
-                    fut.onNodeLeft((ClusterTopologyCheckedException)e);
+                    fut.onNodeLeft();
                 else {
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("DHT finish fut, failed to send request dht [txId=" + tx.nearXidVersion() +
@@ -595,7 +593,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyCheckedException)
-                        fut.onNodeLeft((ClusterTopologyCheckedException)e);
+                        fut.onNodeLeft();
                     else {
                         if (msgLog.isDebugEnabled()) {
                             msgLog.debug("DHT finish fut, failed to send request near [txId=" + tx.nearXidVersion() +
@@ -745,13 +743,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
             // Fail.
             onDone(e);
-        }
-
-        /**
-         * @param e Node failure.
-         */
-        void onNodeLeft(ClusterTopologyCheckedException e) {
-            onNodeLeft();
         }
 
         /**
