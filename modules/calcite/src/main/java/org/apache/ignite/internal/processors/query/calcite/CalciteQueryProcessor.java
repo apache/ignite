@@ -564,6 +564,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             params,
             qryCtx,
             fldsQry != null && fldsQry.isLocal(),
+            fldsQry != null ? fldsQry.getPartitions() : null,
             exchangeSvc,
             (q, ex) -> qryReg.unregister(q.id(), ex),
             log,

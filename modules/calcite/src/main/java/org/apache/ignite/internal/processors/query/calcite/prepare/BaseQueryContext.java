@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import com.google.common.collect.Multimap;
@@ -159,6 +160,9 @@ public final class BaseQueryContext extends AbstractQueryContext {
     /** */
     private final boolean isLocal;
 
+    /** */
+    private final int[] parts;
+
     /**
      * Private constructor, used by a builder.
      */
@@ -166,7 +170,8 @@ public final class BaseQueryContext extends AbstractQueryContext {
         FrameworkConfig cfg,
         Context parentCtx,
         IgniteLogger log,
-        boolean isLocal
+        boolean isLocal,
+        int[] parts
     ) {
         super(Contexts.chain(parentCtx, cfg.getContext()));
 
@@ -176,6 +181,8 @@ public final class BaseQueryContext extends AbstractQueryContext {
         this.log = log;
 
         this.isLocal = isLocal;
+
+        this.parts = parts;
 
         qryCancel = unwrap(GridQueryCancel.class);
 
@@ -276,6 +283,14 @@ public final class BaseQueryContext extends AbstractQueryContext {
         return isLocal;
     }
 
+    /** */
+    public int[] partitions() {
+        if (parts != null)
+            return Arrays.copyOf(parts, parts.length);
+
+        return null;
+    }
+
     /**
      * Query context builder.
      */
@@ -298,6 +313,9 @@ public final class BaseQueryContext extends AbstractQueryContext {
 
         /** */
         private boolean isLocal = false;
+
+        /** */
+        private int[] parts = null;
 
         /**
          * @param frameworkCfg Framework config.
@@ -336,12 +354,23 @@ public final class BaseQueryContext extends AbstractQueryContext {
         }
 
         /**
+         * @param parts Array of partitions' numbers.
+         * @return Builder for chaining.
+         */
+        public Builder partitions(int[] parts) {
+            if (parts != null)
+                this.parts = Arrays.copyOf(parts, parts.length);
+
+            return this;
+        }
+
+        /**
          * Builds planner context.
          *
          * @return Planner context.
          */
         public BaseQueryContext build() {
-            return new BaseQueryContext(frameworkCfg, parentCtx, log, isLocal);
+            return new BaseQueryContext(frameworkCfg, parentCtx, log, isLocal, parts);
         }
     }
 }
