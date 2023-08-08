@@ -1519,7 +1519,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
                     IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx, keys);
 
-                    fut.listen((IgniteInternalFuture<TxDeadlock> fut) -> {
+                    fut.listen((IgniteInternalFuture<TxDeadlock> fut0) -> {
                         try {
                             TxDeadlock deadlock = fut.get();
 
