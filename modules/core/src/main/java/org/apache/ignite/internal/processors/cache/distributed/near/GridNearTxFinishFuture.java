@@ -537,13 +537,12 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                 ClusterNode backup = cctx.discovery().node(backupId);
 
                 // Nothing to do if backup has left the grid.
-                if (backup == null) {
-                    // No-op.
+                if (backup != null) {
+                    if (backup.isLocal())
+                        cctx.tm().removeTxReturn(tx.xidVersion());
+                    else
+                        cctx.tm().sendDeferredAckResponse(backupId, tx.xidVersion());
                 }
-                else if (backup.isLocal())
-                    cctx.tm().removeTxReturn(tx.xidVersion());
-                else
-                    cctx.tm().sendDeferredAckResponse(backupId, tx.xidVersion());
             }
         }
     }
@@ -928,7 +927,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     /**
      *
      */
-    private abstract class MinFuture extends GridFutureAdapter<IgniteInternalTx> {
+    private abstract static class MinFuture extends GridFutureAdapter<IgniteInternalTx> {
         /** */
         private final int futId;
 
