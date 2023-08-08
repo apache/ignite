@@ -93,7 +93,6 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
      * @param failedNodeIds IDs of failed nodes started transaction.
      * @param txNodes Transaction mapping.
      */
-    @SuppressWarnings("ConstantConditions")
     public GridCacheTxRecoveryFuture(GridCacheSharedContext<?, ?> cctx,
         IgniteInternalTx tx,
         Set<UUID> failedNodeIds,
