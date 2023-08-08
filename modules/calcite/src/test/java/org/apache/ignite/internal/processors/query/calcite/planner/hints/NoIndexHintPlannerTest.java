@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.TestTable;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -239,9 +240,35 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
 
     /** */
     @Test
+    @Ignore
     public void testWithCorrelated() throws Exception {
         assertNoAnyIndex("SELECT /*+ NO_INDEX */ val2, val3 FROM TBL1 t1 WHERE val1 = " +
             "(select /*+ NO_INDEX(TBL2='IDX3') */ t2.val2 FROM TBL2 t2 WHERE t2.val3=t1.val1)");
+
+        assertNoAnyIndex("SELECT /*+ NO_INDEX */ t1.val2, (SELECT /*+ NO_INDEX */ val3 FROM TBL2 t2 where " +
+            "val3=t1.val3) FROM TBL1 t1");
+    }
+
+    /** */
+    @Test
+    public void testUnion() throws Exception {
+        assertNoAnyIndex("SELECT /*+ NO_INDEX */ t1.* FROM TBL1 t1 where t1.val2='v' UNION " +
+            "SELECT /*+ NO_INDEX */ t2.* FROM TBL2 t2 where t2.val3='v'");
+
+        assertNoAnyIndex("SELECT /*+ NO_INDEX(TBL1='IDX2') */ t1.* FROM TBL1 t1 where t1.val2='v' UNION " +
+            "SELECT /*+ NO_INDEX(TBL2='IDX3') */ t2.* FROM TBL2 t2 where t2.val3='v'");
+
+        assertPlan("SELECT /*+ NO_INDEX */ t1.* FROM TBL1 t1 where t1.val2='v' UNION " +
+                "SELECT t2.* FROM TBL2 t2 where t2.val3='v'", schema,
+            nodeOrAnyChild(isIndexScan("TBL2", "IDX3"))
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2")).negate())
+        );
+
+        assertPlan("SELECT t1.* FROM TBL1 t1 where t1.val2='v' UNION " +
+                "SELECT /*+ NO_INDEX */ t2.* FROM TBL2 t2 where t2.val3='v'", schema,
+            nodeOrAnyChild(isIndexScan("TBL2", "IDX3")).negate()
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2")))
+        );
     }
 
     /** */

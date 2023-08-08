@@ -79,7 +79,7 @@ public enum HintDefinition {
         @Override public HintPredicate predicate() {
             return new HintPredicate() {
                 @Override public boolean apply(RelHint hint, RelNode rel) {
-                    return rel instanceof IgniteLogicalTableScan || rel instanceof Filter;
+                    return rel instanceof IgniteLogicalTableScan;
                 }
             };
         }
