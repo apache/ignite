@@ -187,7 +187,7 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
             }
         }).when(mockTm).
             newTx(locTx.implicit(), locTx.implicitSingle(), null, locTx.concurrency(),
-                locTx.isolation(), locTx.timeout(), locTx.storeEnabled(), null, locTx.size(), locTx.label(), false);
+                locTx.isolation(), locTx.timeout(), locTx.storeEnabled(), null, locTx.size(), locTx.label());
 
         ctx.setTxManager(mockTm);
     }

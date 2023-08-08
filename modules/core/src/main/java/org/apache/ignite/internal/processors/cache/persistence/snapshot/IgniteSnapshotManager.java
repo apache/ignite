@@ -1834,6 +1834,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
 
+        if (log.isInfoEnabled()) {
+            log.info("The check snapshot procedure started [snpName=" + name + ", snpPath=" + snpPath +
+                ", incIdx=" + incIdx + ", grps=" + grps + ']');
+        }
+
         GridKernalContext kctx0 = cctx.kernalContext();
 
         Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
@@ -1951,6 +1956,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     res.onDone(f0.error());
             }
         });
+
+        if (log.isInfoEnabled()) {
+            res.listen(f -> log.info("The check snapshot procedure finished [snpName=" + name +
+                ", snpPath=" + snpPath + ", incIdx=" + incIdx + ", grps=" + grps + ']'));
+        }
 
         return res;
     }
