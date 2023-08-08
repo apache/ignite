@@ -2168,7 +2168,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             if (log.isDebugEnabled())
                 log.debug("Found near transaction, will wait for completion: " + tx);
 
-            tx.finishFuture().listen((IgniteInternalFuture<IgniteInternalTx> fut) -> {
+            tx.finishFuture().listen(() -> {
                     TransactionState state = tx.state();
 
                     if (log.isDebugEnabled())
@@ -2247,7 +2247,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     final Collection<GridCacheVersion> processedVers0 = processedVers;
 
-                    prepFut.listen((IgniteInternalFuture<?> ignored) -> {
+                    prepFut.listen(() -> {
                         if (log.isDebugEnabled())
                             log.debug("Transaction prepare future finished: " + tx);
 

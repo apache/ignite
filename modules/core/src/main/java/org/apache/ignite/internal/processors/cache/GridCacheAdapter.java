@@ -4922,9 +4922,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         GridFutureAdapter<R> fut = new GridFutureAdapter<>();
 
-        orig.listen((f) -> {
+        orig.listen(() -> {
             try {
-                fut.onDone(f.get());
+                fut.onDone(orig.get());
             }
             catch (IgniteConsistencyViolationException e1) {
                 repair.apply(e1).listen((repFut) -> {

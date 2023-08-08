@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -123,6 +124,13 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
         assert lsnr != null;
 
         lsnr.apply(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void listen(IgniteRunnable lsnr) {
+        assert lsnr != null;
+
+        lsnr.run();
     }
 
     /** {@inheritDoc} */

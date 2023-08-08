@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.Nullable;
 
@@ -353,6 +354,12 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     @Override public void listen(IgniteInClosure<? super IgniteInternalFuture<R>> lsnr) {
         if (!registerWaiter(lsnr))
             notifyListener(lsnr);
+    }
+
+    /** {@inheritDoc} */
+    @Async.Schedule
+    @Override public void listen(IgniteRunnable lsnr) {
+        listen(ignored -> lsnr.run());
     }
 
     /** {@inheritDoc} */
