@@ -206,7 +206,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
                 boolean prepared;
 
                 try {
-                    prepared = fut == null ? true : fut.get();
+                    prepared = fut == null || fut.get();
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Check prepared transaction future failed: " + e, e);
@@ -549,7 +549,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 
         /** Node ID. */
-        private UUID nodeId;
+        private final UUID nodeId;
 
         /**
          * @param nodeId Node ID.
