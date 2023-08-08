@@ -50,17 +50,6 @@ public class HintsConfig {
     };
 
     /** */
-    static final HintOptionChecker OPTS_CHECK_EMPTY_OR_PLAIN = new HintOptionChecker() {
-        @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
-            return errorHandler.check(
-                F.isEmpty(hint.kvOptions),
-                "Hint '{}' can have no options or plain options.",
-                hint.hintName
-            );
-        }
-    };
-
-    /** */
     static final HintOptionChecker OPTS_CHECK_ONE_PLAIN = new HintOptionChecker() {
         @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
             return errorHandler.check(
@@ -68,6 +57,13 @@ public class HintsConfig {
                 "Hint '{}' must have exactly one plain option.",
                 hint.hintName
             );
+        }
+    };
+
+    /** */
+    static final HintOptionChecker OPTS_CHECK_ANY = new HintOptionChecker() {
+        @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
+            return errorHandler.succeed();
         }
     };
 

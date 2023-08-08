@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
@@ -29,6 +27,7 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
@@ -36,8 +35,11 @@ import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.immutables.value.Value;
+
+import static org.apache.calcite.util.Util.last;
 
 /**
  *
@@ -98,15 +100,35 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
      * exists, every index is disabled.
      */
     private void disableIndexes(IgniteLogicalTableScan scan, List<IgniteLogicalIndexScan> indexes) {
-        Collection<String> hintOptions = HintUtils.plainOptions(scan, HintDefinition.NO_INDEX);
+        RelHint hint = HintUtils.hint(scan, HintDefinition.NO_INDEX);
 
-        if (hintOptions == null)
+        if (hint == null)
             return;
 
-        if (F.isEmpty(hintOptions))
+        if (F.isEmpty(hint.listOptions) && F.isEmpty(hint.kvOptions)) {
             indexes.clear();
-        else
-            indexes.removeIf(idxScan -> hintOptions.contains(idxScan.indexName()));
+
+            return;
+        }
+
+        if (!F.isEmpty(hint.listOptions)) {
+            indexes.removeIf(idxScan -> hint.listOptions.contains(idxScan.indexName()));
+
+            assert F.isEmpty(hint.kvOptions);
+
+            return;
+        }
+
+        hint.kvOptions.forEach((tblName, idxName) -> {
+            String[] fullTblName = Commons.qualifiedName(tblName);
+
+            List<String> qname = scan.getTable().getQualifiedName();
+
+            assert qname.size() > 1;
+
+            indexes.removeIf(idxScan -> idxScan.indexName().equals(idxName) && fullTblName[1].equals(last(qname)) &&
+                (F.isEmpty(fullTblName[0]) || fullTblName[0].equals(F.first(qname))));
+        });
     }
 
     /** */

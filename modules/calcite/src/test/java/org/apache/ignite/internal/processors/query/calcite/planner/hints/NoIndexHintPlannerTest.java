@@ -30,7 +30,7 @@ import org.junit.Test;
  */
 public class NoIndexHintPlannerTest extends AbstractPlannerTest {
     /** */
-    private IgniteSchema publicSchema;
+    private IgniteSchema schema;
 
     /** */
     private TestTable tbl1;
@@ -43,20 +43,22 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
         super.setup();
 
         tbl1 = createTable("TBL1", 100, IgniteDistributions.single(), "ID", Integer.class,
-            "VAL1", String.class, "VAL2", String.class)
+            "VAL1", String.class, "VAL2", String.class, "VAL3", String.class)
             .addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0)
             .addIndex("idx1", 1)
             .addIndex("IDX1", 1)
-            .addIndex("IDX2", 2);
+            .addIndex("IDX2", 2)
+            .addIndex("IDX3", 3);
 
         tbl2 = createTable("TBL2", 100, IgniteDistributions.single(), "ID", Integer.class,
-            "VAL1", String.class, "VAL2", String.class)
+            "VAL1", String.class, "VAL2", String.class, "VAL3", String.class)
             .addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0)
             .addIndex("idx1", 1)
             .addIndex("IDX1", 1)
-            .addIndex("IDX2", 2);
+            .addIndex("IDX2_2", 2)
+            .addIndex("IDX3", 3);
 
-        publicSchema = createSchema(tbl1, tbl2);
+        schema = createSchema(tbl1, tbl2);
     }
 
     /** */
@@ -70,6 +72,24 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
 
         assertNoAnyIndex("SELECT /*+ NO_INDEX */ t1.val1, t2.val1 FROM TBL1 t1, TBL2 t2 WHERE " +
             "t1.val2 = 'testVal' AND t2.val1 = 'testVal'");
+    }
+
+    /** */
+    @Test
+    public void testWithTableName() throws Exception {
+        assertNoAnyIndex("SELECT /*+ NO_INDEX(TBL1='IDX2') */ * FROM TBL1 WHERE val2 = 'testVal'");
+
+        assertPlan("SELECT /*+ NO_INDEX(TBL1='idx1') */ * FROM TBL1 WHERE val1 = 'testVal'",
+            schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX1"))
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "idx1")).negate())
+        );
+
+        assertPlan("SELECT /*+ NO_INDEX(TBL1='idx1') */ t1.val1, t2.val1 FROM TBL1 t1, TBL2 t2 WHERE " +
+                "t1.val1 = 'testVal' and t2.val1 = 'testVal'", schema,
+            nodeOrAnyChild(isIndexScan("TBL2", "idx1").or(isIndexScan("TBL2", "IDX1")))
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "idx1")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX1")))
+        );
     }
 
     /** */
@@ -99,24 +119,39 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testCertainIndexOtherTable() throws Exception {
-        assertNoCertainIndex("SELECT /*+ NO_INDEX('idx1') */ * FROM TBL1 WHERE val1 = 'testVal'", "TBL1",
-            "idx1");
+        assertPlan("SELECT /*+ NO_INDEX('idx1') */ t1.val1, t2.val1 FROM TBL1 t1, TBL2 t2 WHERE " +
+                "t1.val1 = 'testVal' and t2.val1 = 'testVal'", schema,
+            nodeOrAnyChild(isIndexScan("TBL1", "idx1")).negate()
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "idx1")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX1")))
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX1")))
+        );
+
+        assertPlan("SELECT /*+ NO_INDEX('IDX2') */ t1.val2, t2.val2 FROM TBL1 t1, TBL2 t2 WHERE " +
+                "t1.val2 = 'testVal' and t2.val2 = 'testVal'", schema,
+            nodeOrAnyChild(isIndexScan("TBL1", "IDX2")).negate()
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2")))
+        );
+
+        assertPlan("SELECT /*+ NO_INDEX(TBL1='IDX3') */ t1.val3, t2.val3 FROM TBL1 t1, TBL2 t2 WHERE " +
+                "t1.val3 = 'testVal' and t2.val3 = 'testVal'", schema,
+            nodeOrAnyChild(isIndexScan("TBL1", "IDX3")).negate()
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX3")))
+        );
     }
 
     /** */
     private void assertNoAnyIndex(String sql) throws Exception {
-        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)).negate());
+        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)).negate());
     }
 
     /** */
-    private void assertNoCertainIndex(String sql, String tblName, String... idxNames) throws Exception {
-        for(String idx : idxNames)
-            assertPlan(sql, publicSchema, nodeOrAnyChild(isIndexScan(tblName, idx)).negate());
+    private void assertNoCertainIndex(String sql, String tblName, String idxName) throws Exception {
+        assertPlan(sql, schema, nodeOrAnyChild(isIndexScan(tblName, idxName)).negate());
     }
 
     /** */
-    private void assertCertainIndex(String sql, String tblName, String... idxNames) throws Exception {
-        for(String idx : idxNames)
-            assertPlan(sql, publicSchema, nodeOrAnyChild(isIndexScan(tblName, idx)));
+    private void assertCertainIndex(String sql, String tblName, String idxName) throws Exception {
+        assertPlan(sql, schema, nodeOrAnyChild(isIndexScan(tblName, idxName)));
     }
 }

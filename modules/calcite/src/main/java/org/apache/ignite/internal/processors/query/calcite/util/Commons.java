@@ -451,4 +451,11 @@ public final class Commons {
     public static MappingQueryContext mapContext(UUID locNodeId, AffinityTopologyVersion topVer, boolean isLocal) {
         return new MappingQueryContext(locNodeId, topVer, isLocal);
     }
+
+    /** */
+    public static String[] qualifiedName(String name) {
+        int idx = name.lastIndexOf('.');
+
+        return new String[] {idx > 0 ? name.substring(0, idx) : null, idx > 0 ? name.substring(idx + 1) : name};
+    }
 }

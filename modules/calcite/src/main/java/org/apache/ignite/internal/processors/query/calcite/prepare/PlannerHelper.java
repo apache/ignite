@@ -19,9 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import com.google.common.collect.ImmutableSet;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
@@ -35,6 +33,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -47,7 +46,6 @@ import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescript
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
 
 /** */
 public class PlannerHelper {
@@ -104,7 +102,7 @@ public class PlannerHelper {
             if (sqlNode.isA(ImmutableSet.of(SqlKind.INSERT, SqlKind.UPDATE, SqlKind.MERGE)))
                 igniteRel = new FixDependentModifyNodeShuttle().visit(igniteRel);
 
-//            log.error("TEST | plan: " + RelOptUtil.toString(igniteRel));
+//            log.info("TEST | plan: " + RelOptUtil.toString(igniteRel));
 
             return igniteRel;
         }
