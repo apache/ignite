@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.concurrent.Callable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -278,9 +279,7 @@ public class GridMetadataAwareAdapter {
      * @param <V> Type of the value.
      * @return The value of the metadata after execution of this method.
      */
-    @Nullable public <V> V addMetaIfAbsent(int key, @Nullable Callable<V> c) {
-        assert c != null;
-
+    @Nullable public <V> V addMetaIfAbsent(int key, @NotNull Callable<V> c) {
         synchronized (this) {
             V v = meta(key);
 
