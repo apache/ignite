@@ -147,13 +147,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         return commit;
     }
 
-    /**
-     * @return Cache context.
-     */
-    GridCacheSharedContext<K, V> context() {
-        return cctx;
-    }
-
     /** {@inheritDoc} */
     @Override public IgniteUuid futureId() {
         return futId;
@@ -976,13 +969,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
          */
         ClusterNode primary() {
             return m.primary();
-        }
-
-        /**
-         * @return Keys.
-         */
-        public GridDistributedTxMapping mapping() {
-            return m;
         }
 
         /** {@inheritDoc} */
