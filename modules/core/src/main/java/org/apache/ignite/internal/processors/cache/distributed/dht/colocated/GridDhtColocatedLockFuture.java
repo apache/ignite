@@ -1296,7 +1296,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
                 if (log.isDebugEnabled())
                     log.debug("Acquired lock for local DHT mapping [locId=" + cctx.nodeId() +
-                        ", mappedKeys=" + keys + ", fut=" + GridDhtColocatedLockFuture.this + ']');
+                        ", mappedKeys=" + keys + ", fut=" + this + ']');
 
                 if (inTx()) {
                     for (KeyCacheObject key : keys)
