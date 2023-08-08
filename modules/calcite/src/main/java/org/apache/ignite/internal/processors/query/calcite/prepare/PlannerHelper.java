@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptUtil;
@@ -74,7 +75,7 @@ public class PlannerHelper {
             // Transformation chain
             rel = planner.transform(PlannerPhase.HEP_DECORRELATE, rel.getTraitSet(), rel);
 
-            rel = planner.replaceCorrelatesCollisions(rel);
+//            rel = planner.replaceCorrelatesCollisions(rel);
 
             rel = planner.trimUnusedFields(root.withRel(rel)).rel;
 
@@ -97,7 +98,8 @@ public class PlannerHelper {
                 for (int field : Pair.left(root.fields))
                     projects.add(rexBuilder.makeInputRef(igniteRel, field));
 
-                igniteRel = new IgniteProject(igniteRel.getCluster(), desired, igniteRel, projects, root.validatedRowType);
+                igniteRel = new IgniteProject(igniteRel.getCluster(), desired, igniteRel, projects,
+                    root.validatedRowType, Collections.emptyList());
             }
 
             if (sqlNode.isA(ImmutableSet.of(SqlKind.INSERT, SqlKind.UPDATE, SqlKind.MERGE)))

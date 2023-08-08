@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import java.util.Collection;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
@@ -28,6 +29,7 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
@@ -44,11 +46,12 @@ public abstract class IgniteAggregate extends Aggregate implements IgniteRel {
         RelOptCluster cluster,
         RelTraitSet traitSet,
         RelNode input,
+        Iterable<? extends RelHint> hints,
         ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets,
         List<AggregateCall> aggCalls
     ) {
-        super(cluster, traitSet, ImmutableList.of(), input, groupSet, groupSets, aggCalls);
+        super(cluster, traitSet, ImmutableList.copyOf(hints), input, groupSet, groupSets, aggCalls);
     }
 
     /** */

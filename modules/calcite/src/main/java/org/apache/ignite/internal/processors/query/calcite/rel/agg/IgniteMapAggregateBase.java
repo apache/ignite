@@ -24,6 +24,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
@@ -43,9 +44,10 @@ public abstract class IgniteMapAggregateBase extends IgniteAggregate implements 
         RelNode input,
         ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets,
-        List<AggregateCall> aggCalls
+        List<AggregateCall> aggCalls,
+        Iterable<? extends RelHint> hints
     ) {
-        super(cluster, traitSet, input, groupSet, groupSets, aggCalls);
+        super(cluster, traitSet, input, hints, groupSet, groupSets, aggCalls);
     }
 
     /** */

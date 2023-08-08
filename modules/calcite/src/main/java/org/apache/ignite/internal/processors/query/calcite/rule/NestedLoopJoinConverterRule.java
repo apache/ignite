@@ -51,6 +51,7 @@ public class NestedLoopJoinConverterRule extends AbstractIgniteConverterRule<Log
         RelNode left = convert(rel.getLeft(), leftInTraits);
         RelNode right = convert(rel.getRight(), rightInTraits);
 
-        return new IgniteNestedLoopJoin(cluster, outTraits, left, right, rel.getCondition(), rel.getVariablesSet(), rel.getJoinType());
+        return new IgniteNestedLoopJoin(cluster, outTraits, left, right, rel.getCondition(), rel.getVariablesSet(),
+            rel.getJoinType(), rel.getHints());
     }
 }

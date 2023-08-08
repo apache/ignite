@@ -238,6 +238,13 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
     }
 
     /** */
+    @Test
+    public void testWithCorrelated() throws Exception {
+        assertNoAnyIndex("SELECT /*+ NO_INDEX */ val2, val3 FROM TBL1 t1 WHERE val1 = (select t2.val2 FROM " +
+            "TBL2 t2 WHERE t2.val3=t1.val1)");
+    }
+
+    /** */
     private void assertNoAnyIndex(String sql) throws Exception {
         assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)).negate());
     }

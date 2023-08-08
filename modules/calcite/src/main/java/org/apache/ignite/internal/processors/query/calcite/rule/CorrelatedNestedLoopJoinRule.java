@@ -136,7 +136,8 @@ public class CorrelatedNestedLoopJoinRule extends AbstractIgniteConverterRule<Lo
                 right,
                 rel.getCondition(),
                 correlationIds,
-                joinType
+                joinType,
+                rel.getHints()
             );
     }
 

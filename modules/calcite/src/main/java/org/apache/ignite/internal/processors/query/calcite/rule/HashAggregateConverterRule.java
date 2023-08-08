@@ -79,7 +79,8 @@ public class HashAggregateConverterRule {
                 input,
                 agg.getGroupSet(),
                 agg.getGroupSets(),
-                agg.getAggCallList()
+                agg.getAggCallList(),
+                agg.getHints()
             );
         }
     }
@@ -108,7 +109,8 @@ public class HashAggregateConverterRule {
                 input,
                 agg.getGroupSet(),
                 agg.getGroupSets(),
-                agg.getAggCallList()
+                agg.getAggCallList(),
+                agg.getHints()
             );
 
             return new IgniteReduceHashAggregate(

@@ -30,6 +30,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -51,9 +52,10 @@ public class IgniteColocatedSortAggregate extends IgniteColocatedAggregateBase i
         ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets,
         List<AggregateCall> aggCalls,
-        RelCollation collation
+        RelCollation collation,
+        Iterable<? extends RelHint> hints
     ) {
-        super(cluster, traitSet, input, groupSet, groupSets, aggCalls);
+        super(cluster, traitSet, input, groupSet, groupSets, aggCalls, hints);
 
         assert Objects.nonNull(collation);
         assert !collation.isDefault();
@@ -75,13 +77,13 @@ public class IgniteColocatedSortAggregate extends IgniteColocatedAggregateBase i
     @Override public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
         return new IgniteColocatedSortAggregate(
-            getCluster(), traitSet, input, groupSet, groupSets, aggCalls, TraitUtils.collation(traitSet));
+            getCluster(), traitSet, input, groupSet, groupSets, aggCalls, TraitUtils.collation(traitSet), getHints());
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteColocatedSortAggregate(cluster, getTraitSet().replace(collation), sole(inputs),
-            getGroupSet(), getGroupSets(), getAggCallList(), collation);
+            getGroupSet(), getGroupSets(), getAggCallList(), collation, getHints());
     }
 
     /** {@inheritDoc} */

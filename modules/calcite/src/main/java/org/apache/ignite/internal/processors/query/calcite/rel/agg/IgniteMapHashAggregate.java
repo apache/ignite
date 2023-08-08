@@ -27,6 +27,7 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -49,9 +50,10 @@ public class IgniteMapHashAggregate extends IgniteMapAggregateBase implements Ig
         RelNode input,
         ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets,
-        List<AggregateCall> aggCalls
+        List<AggregateCall> aggCalls,
+        Iterable<? extends RelHint> hints
     ) {
-        super(cluster, traitSet, input, groupSet, groupSets, aggCalls);
+        super(cluster, traitSet, input, groupSet, groupSets, aggCalls, hints);
     }
 
     /** */
@@ -62,13 +64,13 @@ public class IgniteMapHashAggregate extends IgniteMapAggregateBase implements Ig
     /** {@inheritDoc} */
     @Override public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
-        return new IgniteMapHashAggregate(getCluster(), traitSet, input, groupSet, groupSets, aggCalls);
+        return new IgniteMapHashAggregate(getCluster(), traitSet, input, groupSet, groupSets, aggCalls, getHints());
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteMapHashAggregate(cluster, getTraitSet(), sole(inputs),
-            getGroupSet(), getGroupSets(), getAggCallList());
+            getGroupSet(), getGroupSets(), getAggCallList(), getHints());
     }
 
     /** {@inheritDoc} */
