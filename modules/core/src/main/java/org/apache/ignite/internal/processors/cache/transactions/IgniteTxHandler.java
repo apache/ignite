@@ -335,9 +335,9 @@ public class IgniteTxHandler {
 
         IgniteInternalFuture<GridNearTxPrepareResponse> fut = locTx.prepareAsyncLocal(req);
 
-        return fut.chain((IgniteInternalFuture<GridNearTxPrepareResponse> f) -> {
+        return fut.chain(() -> {
             try {
-                return f.get();
+                return fut.get();
             }
             catch (Exception e) {
                 locTx.setRollbackOnly(); // Just in case.

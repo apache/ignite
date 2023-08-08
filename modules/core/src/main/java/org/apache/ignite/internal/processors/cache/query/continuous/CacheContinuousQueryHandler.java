@@ -380,9 +380,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         initLocalListener(locLsnr, ctx);
 
         if (initFut == null) {
-            initFut = p2pUnmarshalFut.chain((fut) -> {
+            initFut = p2pUnmarshalFut.chain(() -> {
                 try {
-                    fut.get();
+                    p2pUnmarshalFut.get();
 
                     initRemoteFilter(getEventFilter0(), ctx);
 

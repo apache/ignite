@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.Nullable;
@@ -363,15 +364,18 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteInternalFuture<T> chain(
-        IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb
-    ) {
+    @Override public <T> IgniteInternalFuture<T> chain(IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb) {
         ChainFuture<R, T> fut = new ChainFuture<>(this, doneCb, null);
 
         if (ignoreInterrupts)
             fut.ignoreInterrupts();
 
         return fut;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteInternalFuture<T> chain(final IgniteOutClosure<T> doneCb) {
+        return chain(ignored -> doneCb.apply());
     }
 
     /** {@inheritDoc} */
@@ -407,9 +411,8 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
         listen(fut -> {
             if (exec == null)
                 applyChainComposeCallback(doneCb, fut, res);
-            else {
+            else
                 exec.execute(() -> applyChainComposeCallback(doneCb, fut, res));
-            }
         });
 
         return res;

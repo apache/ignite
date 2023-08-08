@@ -3109,7 +3109,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     expiryPlc0,
                     skipVals,
                     needVer)
-                .chain((IgniteInternalFuture<Map<Object, Object>> f) -> {
+                .chain(f -> {
                     try {
                         Map<Object, Object> map = f.get();
 
@@ -3142,7 +3142,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     true,
                     this)
                     .multi()
-                    .chain((fut) -> {
+                    .chain(fut -> {
                         try {
                             Map<Object, Object> map = fut.get();
 
@@ -3181,7 +3181,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     recovery,
                     null,
                     label()
-                ).chain((IgniteInternalFuture<Object> f) -> {
+                ).chain(f -> {
                     try {
                         Object val = f.get();
 
@@ -3211,7 +3211,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     /*keepCacheObject*/true,
                     label(),
                     null
-                ).chain((IgniteInternalFuture<Map<Object, Object>> f) -> {
+                ).chain(f -> {
                     try {
                         Map<Object, Object> map = f.get();
 

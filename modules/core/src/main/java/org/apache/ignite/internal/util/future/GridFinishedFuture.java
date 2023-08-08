@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 
@@ -144,6 +145,11 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
         catch (RuntimeException | Error e) {
             return new GridFinishedFuture<>(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> IgniteInternalFuture<R> chain(final IgniteOutClosure<R> doneCb) {
+        return chain(ignored -> doneCb.apply());
     }
 
     /** {@inheritDoc} */
