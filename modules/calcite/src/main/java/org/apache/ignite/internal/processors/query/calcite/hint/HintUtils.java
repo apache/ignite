@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.hint;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.Hintable;
@@ -38,7 +36,7 @@ public final class HintUtils {
      * @return Hints if found by {@code hintDef} in {@code hints}. Empty collection if hints are not found.
      */
     public static Collection<RelHint> hint(Collection<RelHint> hints, HintDefinition hintDef) {
-        return hints.stream().filter(h->h.hintName.equals(hintDef.name())).collect(Collectors.toList());
+        return hints.stream().filter(h -> h.hintName.equals(hintDef.name())).collect(Collectors.toList());
     }
 
     /**
@@ -61,25 +59,6 @@ public final class HintUtils {
      * collection.
      */
     public static Collection<String> plainOptions(RelNode rel, HintDefinition hintDef) {
-        return F.flatCollections(hint(rel, hintDef).stream().map(h->h.listOptions).collect(Collectors.toList()));
-    }
-
-    /**
-     * @return Combined plain options of all the {@code hints}.
-     */
-    public static Collection<String> plainOptions(Collection<RelHint> hints) {
-        return F.flatCollections(hints.stream().map(h->h.listOptions).collect(Collectors.toList()));
-    }
-
-    /**
-     * @return Map of combined key-value options of all the {@code hints}. Last entries can overwrite the preceding.
-     */
-    public static Map<String, String> kvOptions(Collection<RelHint> hints) {
-        Map<String, String> res = new HashMap<>();
-
-        F.flatCollections(hints.stream().map(h -> h.kvOptions.entrySet()).collect(Collectors.toList()))
-            .forEach(e -> res.put(e.getKey(), e.getValue()));
-
-        return res;
+        return F.flatCollections(hint(rel, hintDef).stream().map(h -> h.listOptions).collect(Collectors.toList()));
     }
 }

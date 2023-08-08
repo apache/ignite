@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,11 +27,9 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
-import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintOptions;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -102,34 +98,28 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
      * exists, every index is disabled.
      */
     private void disableIndexes(IgniteLogicalTableScan scan, List<IgniteLogicalIndexScan> indexes) {
-        Collection<RelHint> hints = HintUtils.hint(scan, HintDefinition.NO_INDEX);
+        HintOptions opts = HintOptions.collect(scan.getHints());
 
-        if (F.isEmpty(hints))
+        if (opts.notFound())
             return;
 
-        List<String> plainOptions = new ArrayList<>();
-        Map<String, String> kvOptions = HintUtils.kvOptions(hints);
-
-        Collection<String> plainOptions = HintUtils.plainOptions(hints);
-        Map<String, String> kvOptions = HintUtils.kvOptions(hints);
-
-        if (F.isEmpty(plainOptions) && F.isEmpty(kvOptions)) {
+        if (opts.emptyNum() > 0) {
             indexes.clear();
 
             return;
         }
 
-        if (!F.isEmpty(plainOptions))
-            indexes.removeIf(idxScan -> plainOptions.contains(idxScan.indexName()));
+        if (!F.isEmpty(opts.plain()))
+            indexes.removeIf(idxScan -> opts.plain().contains(idxScan.indexName()));
 
-        kvOptions.forEach((tblName, idxName) -> {
+        opts.kv().forEach((tblName, idxNames) -> {
             String[] fullTblName = Commons.qualifiedName(tblName);
 
             List<String> qname = scan.getTable().getQualifiedName();
 
             assert qname.size() > 1;
 
-            indexes.removeIf(idxScan -> idxScan.indexName().equals(idxName) && fullTblName[1].equals(last(qname)) &&
+            indexes.removeIf(idxScan -> idxNames.contains(idxScan.indexName()) && fullTblName[1].equals(last(qname)) &&
                 (F.isEmpty(fullTblName[0]) || fullTblName[0].equals(F.first(qname))));
         });
     }

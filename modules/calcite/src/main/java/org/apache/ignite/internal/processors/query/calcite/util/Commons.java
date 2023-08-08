@@ -452,7 +452,10 @@ public final class Commons {
         return new MappingQueryContext(locNodeId, topVer, isLocal);
     }
 
-    /** */
+    /**
+     * @return Dot-separated, two-component name with preceding domain/schema. If there is no domain/schema name,
+     * first value is {@code null}.
+     */
     public static String[] qualifiedName(String name) {
         int idx = name.lastIndexOf('.');
 
