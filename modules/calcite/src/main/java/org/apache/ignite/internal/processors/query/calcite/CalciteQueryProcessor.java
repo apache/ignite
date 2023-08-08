@@ -138,14 +138,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             .withDecorrelationEnabled(true)
             .withExpand(false)
             .withHintStrategyTable(HintsConfig.buildHintTable())
-//            .withHintStrategyTable(
-//                HintStrategyTable.builder()
-//                    .hintStrategy("DISABLE_RULE", (hint, rel) -> true)
-//                    .hintStrategy("EXPAND_DISTINCT_AGG", (hint, rel) -> rel instanceof Aggregate)
-//                    // QUERY_ENGINE hint preprocessed by regexp, but to avoid warnings should be also in HintStrategyTable.
-//                    .hintStrategy("QUERY_ENGINE", (hint, rel) -> true)
-//                    .build()
-//            )
         )
         .convertletTable(IgniteConvertletTable.INSTANCE)
         .parserConfig(

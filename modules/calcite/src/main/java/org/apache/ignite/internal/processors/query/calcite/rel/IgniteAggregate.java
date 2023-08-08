@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.Collection;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
@@ -46,17 +45,20 @@ public abstract class IgniteAggregate extends Aggregate implements IgniteRel {
         RelOptCluster cluster,
         RelTraitSet traitSet,
         RelNode input,
-        Iterable<? extends RelHint> hints,
         ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets,
         List<AggregateCall> aggCalls
     ) {
-        super(cluster, traitSet, ImmutableList.copyOf(hints), input, groupSet, groupSets, aggCalls);
+        super(cluster, traitSet, ImmutableList.of(), input, groupSet, groupSets, aggCalls);
     }
 
     /** */
     protected IgniteAggregate(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
+    }
+
+    @Override public RelNode withHints(List<RelHint> hintList) {
+        return super.withHints(hintList);
     }
 
     /** {@inheritDoc} */

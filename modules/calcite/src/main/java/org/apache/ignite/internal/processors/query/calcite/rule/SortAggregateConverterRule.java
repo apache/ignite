@@ -86,8 +86,7 @@ public class SortAggregateConverterRule {
                 agg.getGroupSet(),
                 agg.getGroupSets(),
                 agg.getAggCallList(),
-                collation,
-                agg.getHints()
+                collation
             );
         }
     }
@@ -124,8 +123,7 @@ public class SortAggregateConverterRule {
                 agg.getGroupSet(),
                 agg.getGroupSets(),
                 agg.getAggCallList(),
-                collation,
-                agg.getHints()
+                collation
             );
 
             return new IgniteReduceSortAggregate(

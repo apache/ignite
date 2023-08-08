@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
@@ -35,7 +36,6 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlExplainLevel;
@@ -64,14 +64,13 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDi
 public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgniteRel {
     /** */
     protected AbstractIgniteJoin(RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right,
-        RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType, Iterable<? extends RelHint> hints) {
-        super(cluster, traitSet, ImmutableList.copyOf(hints), left, right, condition, variablesSet, joinType);
+        RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType) {
+        super(cluster, traitSet, ImmutableList.of(), left, right, condition, variablesSet, joinType);
     }
 
     /** {@inheritDoc} */
     @Override public RelWriter explainTerms(RelWriter pw) {
         return super.explainTerms(pw)
-            .itemIf("hints", hints, !F.isEmpty(hints))
             .itemIf("variablesSet", Commons.transform(variablesSet.asList(), CorrelationId::getId),
                 pw.getDetailLevel() == SqlExplainLevel.ALL_ATTRIBUTES);
     }

@@ -64,6 +64,6 @@ public class ProjectConverterRule extends AbstractIgniteConverterRule<LogicalPro
 
         RelNode input = convert(rel.getInput(), traits);
 
-        return new IgniteProject(cluster, traits, input, rel.getProjects(), rel.getRowType(), rel.getHints());
+        return new IgniteProject(cluster, traits, input, rel.getProjects(), rel.getRowType());
     }
 }

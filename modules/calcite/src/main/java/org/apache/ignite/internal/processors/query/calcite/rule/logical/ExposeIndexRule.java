@@ -83,7 +83,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
 
         disableIndexes(scan, indexes);
 
-        if(indexes.isEmpty())
+        if (indexes.isEmpty())
             return;
 
         Map<RelNode, RelNode> equivMap = new HashMap<>(indexes.size());

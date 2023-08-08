@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
@@ -109,7 +108,7 @@ public class CacheIndexImpl implements IgniteIndex {
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        return IgniteLogicalIndexScan.create(cluster, cluster.traitSet(), relOptTbl, idxName, ImmutableList.of(),
+        return IgniteLogicalIndexScan.create(cluster, cluster.traitSet(), relOptTbl, idxName,
             proj, cond, requiredColumns);
     }
 

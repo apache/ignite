@@ -25,9 +25,11 @@ import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.util.Litmus;
 import org.apache.ignite.internal.util.typedef.F;
 
-/** */
+/**
+ * Provides configuration of the supported hints.
+ */
 public class HintsConfig {
-    /** */
+    /** Allows only empty hint options. */
     static final HintOptionChecker OPTS_CHECK_EMPTY = new HintOptionChecker() {
         @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
             return errorHandler.check(
@@ -38,7 +40,7 @@ public class HintsConfig {
         }
     };
 
-    /** */
+    /** Allows only plain options. */
     static final HintOptionChecker OPTS_CHECK_PLAIN = new HintOptionChecker() {
         @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
             return errorHandler.check(
@@ -49,7 +51,7 @@ public class HintsConfig {
         }
     };
 
-    /** */
+    /** Allows exactly one plain option. */
     static final HintOptionChecker OPTS_CHECK_ONE_PLAIN = new HintOptionChecker() {
         @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
             return errorHandler.check(
@@ -60,14 +62,16 @@ public class HintsConfig {
         }
     };
 
-    /** */
+    /** Allows any hint options. */
     static final HintOptionChecker OPTS_CHECK_ANY = new HintOptionChecker() {
         @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
             return errorHandler.succeed();
         }
     };
 
-    /** */
+    /**
+     * @return Configuration of all the supported hints.
+     */
     public static HintStrategyTable buildHintTable() {
         HintStrategyTable.Builder b = HintStrategyTable.builder().errorHandler(Litmus.THROW);
 

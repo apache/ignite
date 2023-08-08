@@ -30,7 +30,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
@@ -60,8 +59,8 @@ public class IgniteNestedLoopJoin extends AbstractIgniteJoin {
      *                         nodes above this Join in the tree
      */
     public IgniteNestedLoopJoin(RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right,
-        RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType, Iterable<? extends RelHint> hints) {
-        super(cluster, traitSet, left, right, condition, variablesSet, joinType, hints);
+        RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType) {
+        super(cluster, traitSet, left, right, condition, variablesSet, joinType);
     }
 
     /** */
@@ -72,8 +71,7 @@ public class IgniteNestedLoopJoin extends AbstractIgniteJoin {
             input.getInputs().get(1),
             input.getExpression("condition"),
             ImmutableSet.copyOf(Commons.transform(input.getIntegerList("variablesSet"), CorrelationId::new)),
-            input.getEnum("joinType", JoinRelType.class),
-            (Iterable<? extends RelHint>)input.get("hints"));
+            input.getEnum("joinType", JoinRelType.class));
     }
 
     /** {@inheritDoc} */
@@ -101,8 +99,7 @@ public class IgniteNestedLoopJoin extends AbstractIgniteJoin {
     /** {@inheritDoc} */
     @Override public Join copy(RelTraitSet traitSet, RexNode condition, RelNode left, RelNode right, JoinRelType joinType,
         boolean semiJoinDone) {
-        return new IgniteNestedLoopJoin(getCluster(), traitSet, left, right, condition, variablesSet, joinType,
-            getHints());
+        return new IgniteNestedLoopJoin(getCluster(), traitSet, left, right, condition, variablesSet, joinType);
     }
 
     /** {@inheritDoc} */
@@ -113,6 +110,6 @@ public class IgniteNestedLoopJoin extends AbstractIgniteJoin {
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteNestedLoopJoin(cluster, getTraitSet(), inputs.get(0), inputs.get(1), getCondition(),
-            getVariablesSet(), getJoinType(), getHints());
+            getVariablesSet(), getJoinType());
     }
 }

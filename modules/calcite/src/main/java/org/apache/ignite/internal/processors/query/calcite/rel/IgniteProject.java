@@ -36,7 +36,6 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexInputRef;
@@ -65,16 +64,14 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
     /**
      * Creates a Project.
      *
-     * @param cluster  Cluster that this relational expression belongs to.
-     * @param traits   Traits of this relational expression.
-     * @param input    Input relational expression.
-     * @param projects List of expressions for the input columns.
-     * @param rowType  Output row type.
-     * @param hints    Hints.
+     * @param cluster  Cluster that this relational expression belongs to
+     * @param traits   Traits of this relational expression
+     * @param input    Input relational expression
+     * @param projects List of expressions for the input columns
+     * @param rowType  Output row type
      */
-    public IgniteProject(RelOptCluster cluster, RelTraitSet traits, RelNode input, List<? extends RexNode> projects,
-        RelDataType rowType, List<RelHint> hints) {
-        super(cluster, traits, hints, input, projects, rowType);
+    public IgniteProject(RelOptCluster cluster, RelTraitSet traits, RelNode input, List<? extends RexNode> projects, RelDataType rowType) {
+        super(cluster, traits, ImmutableList.of(), input, projects, rowType);
     }
 
     /** */
@@ -84,7 +81,7 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
 
     /** {@inheritDoc} */
     @Override public Project copy(RelTraitSet traitSet, RelNode input, List<RexNode> projects, RelDataType rowType) {
-        return new IgniteProject(getCluster(), traitSet, input, projects, rowType, getHints());
+        return new IgniteProject(getCluster(), traitSet, input, projects, rowType);
     }
 
     /** {@inheritDoc} */
@@ -220,6 +217,6 @@ public class IgniteProject extends Project implements TraitsAwareIgniteRel {
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteProject(cluster, getTraitSet(), sole(inputs), getProjects(), getRowType(), getHints());
+        return new IgniteProject(cluster, getTraitSet(), sole(inputs), getProjects(), getRowType());
     }
 }

@@ -36,7 +36,6 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -73,11 +72,10 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
         RelNode right,
         RexNode condition,
         Set<CorrelationId> variablesSet,
-        JoinRelType joinType,
-        Iterable<? extends RelHint> hints
+        JoinRelType joinType
     ) {
         this(cluster, traitSet, left, right, condition, variablesSet, joinType,
-            left.getTraitSet().getCollation(), right.getTraitSet().getCollation(), hints);
+            left.getTraitSet().getCollation(), right.getTraitSet().getCollation());
     }
 
     /** */
@@ -91,8 +89,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
             ImmutableSet.copyOf(Commons.transform(input.getIntegerList("variablesSet"), CorrelationId::new)),
             input.getEnum("joinType", JoinRelType.class),
             ((RelInputEx)input).getCollation("leftCollation"),
-            ((RelInputEx)input).getCollation("rightCollation"),
-            (Iterable<? extends RelHint>)input.get("hints")
+            ((RelInputEx)input).getCollation("rightCollation")
         );
     }
 
@@ -106,10 +103,9 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
         Set<CorrelationId> variablesSet,
         JoinRelType joinType,
         RelCollation leftCollation,
-        RelCollation rightCollation,
-        Iterable<? extends RelHint> hints
+        RelCollation rightCollation
     ) {
-        super(cluster, traitSet, left, right, condition, variablesSet, joinType, hints);
+        super(cluster, traitSet, left, right, condition, variablesSet, joinType);
 
         this.leftCollation = leftCollation;
         this.rightCollation = rightCollation;
@@ -119,7 +115,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
     @Override public Join copy(RelTraitSet traitSet, RexNode condition, RelNode left, RelNode right,
         JoinRelType joinType, boolean semiJoinDone) {
         return new IgniteMergeJoin(getCluster(), traitSet, left, right, condition, variablesSet, joinType,
-            left.getTraitSet().getCollation(), right.getTraitSet().getCollation(), getHints());
+            left.getTraitSet().getCollation(), right.getTraitSet().getCollation());
     }
 
     /** {@inheritDoc} */
@@ -130,7 +126,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteMergeJoin(cluster, getTraitSet(), inputs.get(0), inputs.get(1), getCondition(),
-            getVariablesSet(), getJoinType(), leftCollation, rightCollation, getHints());
+            getVariablesSet(), getJoinType(), leftCollation, rightCollation);
     }
 
     /** {@inheritDoc} */

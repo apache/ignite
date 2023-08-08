@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptUtil;
@@ -28,6 +27,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
@@ -75,13 +75,15 @@ public class PlannerHelper {
             // Transformation chain
             rel = planner.transform(PlannerPhase.HEP_DECORRELATE, rel.getTraitSet(), rel);
 
-//            rel = planner.replaceCorrelatesCollisions(rel);
+            rel = planner.replaceCorrelatesCollisions(rel);
 
             rel = planner.trimUnusedFields(root.withRel(rel)).rel;
 
             rel = planner.transform(PlannerPhase.HEP_FILTER_PUSH_DOWN, rel.getTraitSet(), rel);
 
             rel = planner.transform(PlannerPhase.HEP_PROJECT_PUSH_DOWN, rel.getTraitSet(), rel);
+
+            ((Hintable)rel).attachHints(root.hints);
 
             RelTraitSet desired = rel.getCluster().traitSet()
                 .replace(IgniteConvention.INSTANCE)
@@ -98,14 +100,13 @@ public class PlannerHelper {
                 for (int field : Pair.left(root.fields))
                     projects.add(rexBuilder.makeInputRef(igniteRel, field));
 
-                igniteRel = new IgniteProject(igniteRel.getCluster(), desired, igniteRel, projects,
-                    root.validatedRowType, Collections.emptyList());
+                igniteRel = new IgniteProject(igniteRel.getCluster(), desired, igniteRel, projects, root.validatedRowType);
             }
 
             if (sqlNode.isA(ImmutableSet.of(SqlKind.INSERT, SqlKind.UPDATE, SqlKind.MERGE)))
                 igniteRel = new FixDependentModifyNodeShuttle().visit(igniteRel);
 
-            log.info("TEST | plan: " + RelOptUtil.toString(igniteRel));
+            log.info("TEST | plan7: " + RelOptUtil.toString(igniteRel));
 
             return igniteRel;
         }

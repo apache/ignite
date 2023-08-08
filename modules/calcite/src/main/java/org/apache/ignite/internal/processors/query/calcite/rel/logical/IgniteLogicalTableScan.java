@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 public class IgniteLogicalTableScan extends ProjectableFilterableTableScan {
-    /** Creates a IgniteTableScan. */
+    /** Creates a IgniteLogicalTableScan. */
     public static IgniteLogicalTableScan create(
         RelOptCluster cluster,
         RelTraitSet traits,
@@ -63,5 +63,11 @@ public class IgniteLogicalTableScan extends ProjectableFilterableTableScan {
         @Nullable ImmutableBitSet requiredColunms
     ) {
         super(cluster, traits, hints, tbl, proj, cond, requiredColunms);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogicalTableScan withHints(List<RelHint> hints) {
+        return new IgniteLogicalTableScan(getCluster(), getTraitSet(), getTable(), hints, projects(), condition(),
+            requiredColumns());
     }
 }

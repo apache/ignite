@@ -79,7 +79,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetada
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -487,7 +486,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** */
     public void setDisabledRules(Collection<String> disabledRuleNames) {
-        if (F.isEmpty(disabledRuleNames))
+        if (disabledRuleNames.isEmpty())
             return;
 
         ctx.rulesFilter(rulesSet -> {

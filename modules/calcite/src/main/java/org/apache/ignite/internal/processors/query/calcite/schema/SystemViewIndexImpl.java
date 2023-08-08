@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.List;
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
@@ -74,7 +73,7 @@ public class SystemViewIndexImpl implements IgniteIndex {
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        return IgniteLogicalIndexScan.create(cluster, cluster.traitSet(), relOptTbl, idxName, ImmutableList.of(), proj,
+        return IgniteLogicalIndexScan.create(cluster, cluster.traitSet(), relOptTbl, idxName, proj,
             cond, requiredColumns);
     }
 

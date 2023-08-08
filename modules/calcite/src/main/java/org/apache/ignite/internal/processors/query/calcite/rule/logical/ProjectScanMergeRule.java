@@ -170,7 +170,7 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
             List<RexNode> projections,
             RexNode cond,
             ImmutableBitSet requiredColumns
-            ) {
+        ) {
             return IgniteLogicalTableScan.create(
                 cluster,
                 traits,
@@ -202,7 +202,7 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
             List<RexNode> projections,
             RexNode cond,
             ImmutableBitSet requiredColumns
-            ) {
+        ) {
             if (scan.getTable().unwrap(IgniteTable.class).isIndexRebuildInProgress()) {
                 cluster.getPlanner().prune(scan);
 
@@ -214,7 +214,6 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
                 traits,
                 scan.getTable(),
                 scan.indexName(),
-                scan.getHints(),
                 projections,
                 cond, requiredColumns
             );

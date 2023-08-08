@@ -39,8 +39,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 public class IgniteColocatedHashAggregate extends IgniteColocatedAggregateBase implements IgniteHashAggregateBase {
     /** */
     public IgniteColocatedHashAggregate(RelOptCluster cluster, RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet,
-        List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls, Iterable<? extends RelHint> hints) {
-        super(cluster, traitSet, input, groupSet, groupSets, aggCalls, hints);
+        List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
+        super(cluster, traitSet, input, groupSet, groupSets, aggCalls);
     }
 
     /** */
@@ -51,13 +51,13 @@ public class IgniteColocatedHashAggregate extends IgniteColocatedAggregateBase i
     /** {@inheritDoc} */
     @Override public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
-        return new IgniteColocatedHashAggregate(getCluster(), traitSet, input, groupSet, groupSets, aggCalls, getHints());
+        return new IgniteColocatedHashAggregate(getCluster(), traitSet, input, groupSet, groupSets, aggCalls);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteColocatedHashAggregate(cluster, getTraitSet(), sole(inputs),
-            getGroupSet(), getGroupSets(), getAggCallList(), getHints());
+            getGroupSet(), getGroupSets(), getAggCallList());
     }
 
     /** {@inheritDoc} */
@@ -68,5 +68,9 @@ public class IgniteColocatedHashAggregate extends IgniteColocatedAggregateBase i
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         return computeSelfCostHash(planner, mq);
+    }
+
+    @Override public RelNode withHints(List<RelHint> hintList) {
+        return super.withHints(hintList);
     }
 }

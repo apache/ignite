@@ -29,7 +29,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -57,10 +56,9 @@ public class IgniteMapSortAggregate extends IgniteMapAggregateBase implements Ig
         ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets,
         List<AggregateCall> aggCalls,
-        RelCollation collation,
-        Iterable<? extends RelHint> hints
+        RelCollation collation
     ) {
-        super(cluster, traitSet, input, groupSet, groupSets, aggCalls, hints);
+        super(cluster, traitSet, input, groupSet, groupSets, aggCalls);
 
         assert Objects.nonNull(collation);
         assert !collation.isDefault();
@@ -86,7 +84,7 @@ public class IgniteMapSortAggregate extends IgniteMapAggregateBase implements Ig
         List<ImmutableBitSet> groupSets,
         List<AggregateCall> aggCalls) {
         return new IgniteMapSortAggregate(
-            getCluster(), traitSet, input, groupSet, groupSets, aggCalls, TraitUtils.collation(traitSet), getHints());
+            getCluster(), traitSet, input, groupSet, groupSets, aggCalls, TraitUtils.collation(traitSet));
     }
 
     /** {@inheritDoc} */
@@ -98,8 +96,7 @@ public class IgniteMapSortAggregate extends IgniteMapAggregateBase implements Ig
             getGroupSet(),
             getGroupSets(),
             getAggCallList(),
-            collation,
-            getHints()
+            collation
         );
     }
 

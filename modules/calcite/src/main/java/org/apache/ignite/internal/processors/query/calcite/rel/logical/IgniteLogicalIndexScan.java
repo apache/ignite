@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite.rel.logical;
 
 import java.util.List;
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -39,7 +39,6 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
         RelTraitSet traits,
         RelOptTable table,
         String idxName,
-        ImmutableList<RelHint> hints,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns
@@ -54,7 +53,6 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
             traits,
             table,
             idxName,
-            hints,
             proj,
             cond,
             searchBounds,
@@ -67,7 +65,6 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
      * @param traits Traits of this relational expression
      * @param tbl Table definition.
      * @param idxName Index name.
-     * @param hints Hints.
      * @param proj Projects.
      * @param cond Filters.
      * @param searchBounds Index search bounds.
@@ -78,12 +75,15 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
         RelTraitSet traits,
         RelOptTable tbl,
         String idxName,
-        ImmutableList<RelHint> hints,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable List<SearchBounds> searchBounds,
         @Nullable ImmutableBitSet requiredCols
     ) {
-        super(cluster, traits, hints, tbl, idxName, proj, cond, searchBounds, requiredCols);
+        super(cluster, traits, tbl, idxName, proj, cond, searchBounds, requiredCols);
+    }
+
+    @Override public RelNode withHints(List<RelHint> hintList) {
+        return super.withHints(hintList);
     }
 }
