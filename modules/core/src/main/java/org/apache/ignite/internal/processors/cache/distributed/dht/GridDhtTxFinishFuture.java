@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -653,23 +652,21 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
-            @Override public String apply(IgniteInternalFuture<?> f) {
-                if (f.getClass() == MiniFuture.class) {
-                    return "[node=" + ((MiniFuture)f).node().id() +
-                        ", loc=" + ((MiniFuture)f).node().isLocal() +
-                        ", done=" + f.isDone() + "]";
-                }
-                else if (f instanceof MvccFuture) {
-                    MvccFuture crdFut = (MvccFuture)f;
-
-                    return "[mvccCrdNode=" + crdFut.coordinatorNodeId() +
-                        ", loc=" + crdFut.coordinatorNodeId().equals(cctx.localNodeId()) +
-                        ", done=" + f.isDone() + "]";
-                }
-                else
-                    return f.toString();
+        Collection<String> futs = F.viewReadOnly(futures(), (IgniteInternalFuture<?> f) -> {
+            if (f.getClass() == MiniFuture.class) {
+                return "[node=" + ((MiniFuture)f).node().id() +
+                    ", loc=" + ((MiniFuture)f).node().isLocal() +
+                    ", done=" + f.isDone() + "]";
             }
+            else if (f instanceof MvccFuture) {
+                MvccFuture crdFut = (MvccFuture)f;
+
+                return "[mvccCrdNode=" + crdFut.coordinatorNodeId() +
+                    ", loc=" + crdFut.coordinatorNodeId().equals(cctx.localNodeId()) +
+                    ", done=" + f.isDone() + "]";
+            }
+            else
+                return f.toString();
         });
 
         return S.toString(GridDhtTxFinishFuture.class, this,
