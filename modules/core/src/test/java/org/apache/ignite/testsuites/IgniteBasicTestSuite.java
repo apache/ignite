@@ -27,6 +27,7 @@ import org.apache.ignite.internal.GridMBeansTest;
 import org.apache.ignite.internal.GridMbeansMiscTest;
 import org.apache.ignite.internal.GridNodeMetricsLogSelfTest;
 import org.apache.ignite.internal.GridProjectionForCachesSelfTest;
+import org.apache.ignite.internal.GridReduceSelfTest;
 import org.apache.ignite.internal.GridReleaseTypeSelfTest;
 import org.apache.ignite.internal.GridSelfTest;
 import org.apache.ignite.internal.GridStartStopSelfTest;
@@ -111,7 +112,7 @@ import org.junit.runners.Suite;
     GridLifecycleBeanSelfTest.class,
     GridStopWithCancelSelfTest.class,
     GridStopWithCollisionSpiTest.class,
-//    GridReduceSelfTest.class,
+    GridReduceSelfTest.class,
     GridEventConsumeSelfTest.class,
     GridSuppressedExceptionSelfTest.class,
     GridLifecycleAwareSelfTest.class,
