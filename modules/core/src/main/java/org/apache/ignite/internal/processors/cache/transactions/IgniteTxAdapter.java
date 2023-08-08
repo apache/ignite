@@ -326,7 +326,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         this.txSize = txSize;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
-        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
+        deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         nodeId = cctx.discovery().localNode().id();
 
@@ -384,7 +384,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         this.txSize = txSize;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
-        this.deploymentLdrId = null;
+        deploymentLdrId = null;
 
         implicit = false;
         loc = false;
@@ -706,13 +706,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         if (invalidParts == null)
             invalidParts = new HashMap<>();
 
-        Set<Integer> parts = invalidParts.get(cacheId);
-
-        if (parts == null) {
-            parts = new HashSet<>();
-
-            invalidParts.put(cacheId, parts);
-        }
+        Set<Integer> parts = invalidParts.computeIfAbsent(cacheId, k -> new HashSet<>());
 
         parts.add(part);
 
@@ -875,7 +869,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** {@inheritDoc} */
     @Override public boolean ownsLockUnsafe(GridCacheEntryEx entry) {
-        GridCacheContext cacheCtx = entry.context();
+        GridCacheContext<?, ?> cacheCtx = entry.context();
 
         IgniteTxEntry txEntry = entry(entry.txKey());
 
@@ -903,7 +897,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             state = MARKED_ROLLBACK;
 
             if (log.isDebugEnabled())
-                log.debug("Changed transaction state [prev=" + prev + ", new=" + this.state + ", tx=" + this + ']');
+                log.debug("Changed transaction state [prev=" + prev + ", new=" + state + ", tx=" + this + ']');
 
             notifyAll();
         }
@@ -1277,6 +1271,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                 break;
             }
+
+            default:
+                break;
         }
     }
 
@@ -1376,7 +1373,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected void sessionEnd(final Collection<CacheStoreManager> stores, boolean commit) throws IgniteCheckedException {
         Iterator<CacheStoreManager> it = stores.iterator();
 
-        Set<CacheStore> visited = new GridSetWrapper<>(new IdentityHashMap<CacheStore, Object>());
+        Set<CacheStore> visited = new GridSetWrapper<>(new IdentityHashMap<>());
 
         while (it.hasNext()) {
             CacheStoreManager store = it.next();
@@ -1441,7 +1438,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                         IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(e, false, null);
 
-                        GridCacheContext cacheCtx = e.context();
+                        GridCacheContext<?, ?> cacheCtx = e.context();
 
                         GridCacheOperation op = res.get1();
                         KeyCacheObject key = e.key();
@@ -1610,7 +1607,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         @Nullable GridCacheReturn ret) throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert txEntry.op() != TRANSFORM || !F.isEmpty(txEntry.entryProcessors()) : txEntry;
 
-        GridCacheContext cacheCtx = txEntry.context();
+        GridCacheContext<?, ?> cacheCtx = txEntry.context();
 
         assert cacheCtx != null;
 
@@ -1688,9 +1685,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 IgniteThread.onEntryProcessorEntered(true);
 
                 try {
-                    EntryProcessor<Object, Object, Object> processor = t.get1();
+                    EntryProcessor<Object, Object, Object> proc = t.get1();
 
-                    procRes = processor.process(invokeEntry, t.get2());
+                    procRes = proc.process(invokeEntry, t.get2());
 
                     val = invokeEntry.getValue();
 
@@ -1813,7 +1810,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         GridCacheVersionedEntryEx oldEntry = old.versionedEntry(txEntry.keepBinary());
 
         // Construct new entry info.
-        GridCacheContext entryCtx = txEntry.context();
+        GridCacheContext<?, ?> entryCtx = txEntry.context();
 
         GridCacheVersionedEntryEx newEntry = new GridCacheLazyPlainVersionedEntry(
             entryCtx,
@@ -1845,7 +1842,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @return {@code True} if entry is locally mapped as a primary or back up node.
      */
     protected boolean isNearLocallyMapped(IgniteTxEntry e, boolean primaryOnly) {
-        GridCacheContext cacheCtx = e.context();
+        GridCacheContext<?, ?> cacheCtx = e.context();
 
         if (!cacheCtx.isNear())
             return false;
