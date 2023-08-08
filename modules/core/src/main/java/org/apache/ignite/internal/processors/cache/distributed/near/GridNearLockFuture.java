@@ -63,15 +63,12 @@ import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.C2;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -783,16 +780,14 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
-            @Override public String apply(IgniteInternalFuture<?> f) {
-                if (isMini(f)) {
-                    MiniFuture m = (MiniFuture)f;
+        Collection<String> futs = F.viewReadOnly(futures(), (IgniteInternalFuture<?> f) -> {
+            if (isMini(f)) {
+                MiniFuture m = (MiniFuture)f;
 
-                    return "[node=" + m.node().id() + ", loc=" + m.node().isLocal() + ", done=" + f.isDone() + "]";
-                }
-                else
-                    return "[loc=true, done=" + f.isDone() + "]";
+                return "[node=" + m.node().id() + ", loc=" + m.node().isLocal() + ", done=" + f.isDone() + "]";
             }
+            else
+                return "[loc=true, done=" + f.isDone() + "]";
         });
 
         return S.toString(GridNearLockFuture.class, this,
@@ -915,19 +910,17 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                 markInitialized();
             }
             else {
-                fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                        try {
-                            fut.get();
+                fut.listen((IgniteInternalFuture<AffinityTopologyVersion> fut0) -> {
+                    try {
+                        fut.get();
 
-                            mapOnTopology(remap);
-                        }
-                        catch (IgniteCheckedException e) {
-                            onDone(e);
-                        }
-                        finally {
-                            cctx.shared().txContextReset();
-                        }
+                        mapOnTopology(remap);
+                    }
+                    catch (IgniteCheckedException e) {
+                        onDone(e);
+                    }
+                    finally {
+                        cctx.shared().txContextReset();
                     }
                 });
             }
@@ -1473,25 +1466,23 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
                     IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx, keys);
 
-                    fut.listen(new IgniteInClosure<IgniteInternalFuture<TxDeadlock>>() {
-                        @Override public void apply(IgniteInternalFuture<TxDeadlock> fut) {
-                            try {
-                                TxDeadlock deadlock = fut.get();
+                    fut.listen((IgniteInternalFuture<TxDeadlock> fut0) -> {
+                        try {
+                            TxDeadlock deadlock = fut.get();
 
-                                err = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided " +
-                                    "timeout for transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
-                                    deadlock != null ? new TransactionDeadlockException(deadlock.toString(cctx.shared())) :
-                                        null);
-                            }
-                            catch (IgniteCheckedException e) {
-                                err = e;
+                            err = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided " +
+                                "timeout for transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
+                                deadlock != null ? new TransactionDeadlockException(deadlock.toString(cctx.shared())) :
+                                    null);
+                        }
+                        catch (IgniteCheckedException e) {
+                            err = e;
 
-                                U.warn(log, "Failed to detect deadlock.", e);
-                            }
+                            U.warn(log, "Failed to detect deadlock.", e);
+                        }
 
-                            synchronized (LockTimeoutObject.this) {
-                                onComplete(false, true);
-                            }
+                        synchronized (LockTimeoutObject.this) {
+                            onComplete(false, true);
                         }
                     });
                 }
@@ -1562,13 +1553,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
          */
         public ClusterNode node() {
             return node;
-        }
-
-        /**
-         * @return Keys.
-         */
-        public Collection<KeyCacheObject> keys() {
-            return keys;
         }
 
         /**
@@ -1651,19 +1635,17 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
                     if (!affFut.isDone()) {
                         // TODO FIXME https://ggsystems.atlassian.net/browse/GG-23288
-                        affFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                            @Override public void apply(IgniteInternalFuture<?> fut) {
-                                try {
-                                    fut.get();
+                        affFut.listen((IgniteInternalFuture<?> fut) -> {
+                            try {
+                                fut.get();
 
-                                    remap();
-                                }
-                                catch (IgniteCheckedException e) {
-                                    onDone(e);
-                                }
-                                finally {
-                                    cctx.shared().txContextReset();
-                                }
+                                remap();
+                            }
+                            catch (IgniteCheckedException e) {
+                                onDone(e);
+                            }
+                            finally {
+                                cctx.shared().txContextReset();
                             }
                         });
                     }
