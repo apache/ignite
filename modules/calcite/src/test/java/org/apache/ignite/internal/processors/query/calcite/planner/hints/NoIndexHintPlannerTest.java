@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.planner.hints;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.TestTable;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.junit.Test;
@@ -33,66 +33,90 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
     private IgniteSchema publicSchema;
 
     /** */
-    private TestTable tbl;
+    private TestTable tbl1;
+
+    /** */
+    private TestTable tbl2;
 
     /** {@inheritDoc} */
     @Override public void setup() {
         super.setup();
 
-        tbl = createTable("TBL", 100, IgniteDistributions.single(), "ID", Integer.class,
-            "VAL1", String.class, "VAL2", String.class, "VAL3", Long.class, "VAL4", Double.class)
+        tbl1 = createTable("TBL1", 100, IgniteDistributions.single(), "ID", Integer.class,
+            "VAL1", String.class, "VAL2", String.class)
             .addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0)
             .addIndex("idx1", 1)
             .addIndex("IDX1", 1)
-            .addIndex("IDX2", 2)
-            .addIndex("IdX3", 3);
+            .addIndex("IDX2", 2);
 
-        publicSchema = createSchema(tbl);
+        tbl2 = createTable("TBL2", 100, IgniteDistributions.single(), "ID", Integer.class,
+            "VAL1", String.class, "VAL2", String.class)
+            .addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0)
+            .addIndex("idx1", 1)
+            .addIndex("IDX1", 1)
+            .addIndex("IDX2", 2);
+
+        publicSchema = createSchema(tbl1, tbl2);
     }
 
     /** */
     @Test
     public void testWithoutParams() throws Exception {
-        assertNoAnyIndex("SELECT /*+ NO_INDEX */ * FROM TBL WHERE id = 0");
-        assertNoAnyIndex("SELECT /*+ NO_INDEX */ * FROM TBL WHERE val1 = 'testVal'");
-        assertNoAnyIndex("SELECT /*+ NO_INDEX */ * FROM TBL WHERE val2 = 'testVal'");
-        assertNoAnyIndex("SELECT /*+ NO_INDEX */ * FROM TBL WHERE val3 = 'testVal'");
+        assertNoAnyIndex("SELECT /*+ NO_INDEX */ * FROM TBL1 WHERE id = 0");
+        assertNoAnyIndex("SELECT /*+ NO_INDEX */ * FROM TBL1 WHERE val1 = 'testVal'");
+        assertNoAnyIndex("SELECT /*+ NO_INDEX */ * FROM TBL1 WHERE val2 = 'testVal'");
 
-        assertNoAnyIndex("SELECT /*+ NO_INDEX */ * FROM TBL WHERE id = 0 and val3 = 'testVal'");
+        assertNoAnyIndex("SELECT /*+ NO_INDEX */ * FROM TBL1 WHERE id = 0 and val2 = 'testVal'");
+
+        assertNoAnyIndex("SELECT /*+ NO_INDEX */ t1.val1, t2.val1 FROM TBL1 t1, TBL2 t2 WHERE " +
+            "t1.val2 = 'testVal' AND t2.val1 = 'testVal'");
     }
 
     /** */
     @Test
     public void testCertainIndex() throws Exception {
-        assertNoCertainIndex("SELECT /*+ NO_INDEX('idx1') */ * FROM TBL WHERE val1 = 'testVal'", "idx1");
+        assertNoCertainIndex("SELECT /*+ NO_INDEX('idx1') */ * FROM TBL1 WHERE val1 = 'testVal'", "TBL1", "idx1");
 
-        assertNoCertainIndex("SELECT /*+ NO_INDEX('" + QueryUtils.PRIMARY_KEY_INDEX + "') */ * FROM TBL WHERE id = 0", QueryUtils.PRIMARY_KEY_INDEX);
+        assertNoCertainIndex("SELECT /*+ NO_INDEX('" + QueryUtils.PRIMARY_KEY_INDEX +
+            "') */ * FROM TBL1 WHERE id = 0", "TBL1", QueryUtils.PRIMARY_KEY_INDEX);
 
-        assertNoCertainIndex("SELECT /*+ NO_INDEX('IDX1') */ * FROM TBL WHERE val1 = 'testVal'", "IDX1");
-        assertCertainIndex("SELECT /*+ NO_INDEX('IDX1') */ * FROM TBL WHERE val1 = 'testVal'", "idx1");
+        assertNoCertainIndex("SELECT /*+ NO_INDEX('IDX1') */ * FROM TBL1 WHERE val1 = 'testVal'", "TBL1",
+            "IDX1");
+        assertCertainIndex("SELECT /*+ NO_INDEX('IDX1') */ * FROM TBL1 WHERE val1 = 'testVal'", "TBL1", "idx1");
 
-        assertNoCertainIndex("SELECT /*+ NO_INDEX('idx2') */ * FROM TBL WHERE val2 = 'testVal'", "idx2");
-        assertCertainIndex("SELECT /*+ NO_INDEX('idx2') */ * FROM TBL WHERE val2 = 'testVal'", "IDX2");
+        assertNoCertainIndex("SELECT /*+ NO_INDEX('idx2') */ * FROM TBL1 WHERE val2 = 'testVal'", "TBL1",
+            "idx2");
+        assertCertainIndex("SELECT /*+ NO_INDEX('idx2') */ * FROM TBL1 WHERE val2 = 'testVal'", "TBL1", "IDX2");
 
-        assertNoCertainIndex("SELECT /*+ NO_INDEX('idx1') */ * FROM TBL WHERE val1 = 'testVal' and val2 = 'testVal'", "idx1");
-        assertNoCertainIndex("SELECT /*+ NO_INDEX('IDX1') */ * FROM TBL WHERE val1 = 'testVal' and val2 = 'testVal'", "IDX1");
-        assertCertainIndex("SELECT /*+ NO_INDEX('idx1', 'IDX1') */ * FROM TBL WHERE val1 = 'testVal' and val2 = 'testVal'", "IDX2");
+        assertNoCertainIndex("SELECT /*+ NO_INDEX('idx1') */ * FROM TBL1 WHERE val1 = 'testVal' and " +
+            "val2 = 'testVal'", "TBL1", "idx1");
+        assertNoCertainIndex("SELECT /*+ NO_INDEX('idx1', 'IDX1') */ * FROM TBL1 WHERE val1 = 'testVal' and " +
+            "val2 = 'testVal'", "TBL1", "IDX1");
+        assertCertainIndex("SELECT /*+ NO_INDEX('idx1', 'IDX1') */ * FROM TBL1 WHERE val1 = 'testVal' and " +
+            "val2 = 'testVal'", "TBL1", "IDX2");
+    }
+
+    /** */
+    @Test
+    public void testCertainIndexOtherTable() throws Exception {
+        assertNoCertainIndex("SELECT /*+ NO_INDEX('idx1') */ * FROM TBL1 WHERE val1 = 'testVal'", "TBL1",
+            "idx1");
     }
 
     /** */
     private void assertNoAnyIndex(String sql) throws Exception {
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteTableScan.class));
+        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)).negate());
     }
 
     /** */
-    private void assertNoCertainIndex(String sql, String... idxNames) throws Exception {
+    private void assertNoCertainIndex(String sql, String tblName, String... idxNames) throws Exception {
         for(String idx : idxNames)
-            assertPlan(sql, publicSchema, isIndexScan("TBL", idx).negate());
+            assertPlan(sql, publicSchema, nodeOrAnyChild(isIndexScan(tblName, idx)).negate());
     }
 
     /** */
-    private void assertCertainIndex(String sql, String... idxNames) throws Exception {
+    private void assertCertainIndex(String sql, String tblName, String... idxNames) throws Exception {
         for(String idx : idxNames)
-            assertPlan(sql, publicSchema, isIndexScan("TBL", idx));
+            assertPlan(sql, publicSchema, nodeOrAnyChild(isIndexScan(tblName, idx)));
     }
 }
