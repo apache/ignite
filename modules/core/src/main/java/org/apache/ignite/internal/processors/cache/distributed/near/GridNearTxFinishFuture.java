@@ -33,7 +33,6 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
-import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -74,8 +73,7 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 /**
  *
  */
-public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentityFuture<IgniteInternalTx>
-    implements GridCacheFuture<IgniteInternalTx>, NearTxFinishFuture {
+public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentityFuture<IgniteInternalTx> implements NearTxFinishFuture {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -93,23 +91,23 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     private static IgniteLogger log;
 
     /** Logger. */
-    protected static IgniteLogger msgLog;
+    private static IgniteLogger msgLog;
 
     /** Context. */
-    private GridCacheSharedContext<K, V> cctx;
+    private final GridCacheSharedContext<K, V> cctx;
 
     /** Future ID. */
     private final IgniteUuid futId;
 
     /** Transaction. */
     @GridToStringInclude
-    private GridNearTxLocal tx;
+    private final GridNearTxLocal tx;
 
     /** Commit flag. This flag used only for one-phase commit transaction. */
-    private boolean commit;
+    private final boolean commit;
 
     /** Node mappings. */
-    private IgniteTxMappings mappings;
+    private final IgniteTxMappings mappings;
 
     /** Trackable flag. */
     private boolean trackable = true;
@@ -123,7 +121,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @param commit Commit flag.
      */
     public GridNearTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridNearTxLocal tx, boolean commit) {
-        super(F.<IgniteInternalTx>identityReducer(tx));
+        super(F.identityReducer(tx));
 
         this.cctx = cctx;
         this.tx = tx;
@@ -306,7 +304,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      *
      */
     void forceFinish() {
-        super.onDone(tx, null, false);
+        onDone(tx, null, false);
     }
 
     /** {@inheritDoc} */
@@ -733,9 +731,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             mapping.dhtVersion(xidVer, xidVer);
 
             tx.readyNearLocks(mapping,
-                Collections.<GridCacheVersion>emptyList(),
-                Collections.<GridCacheVersion>emptyList(),
-                Collections.<GridCacheVersion>emptyList());
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList());
         }
     }
 
@@ -964,7 +962,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     private class FinishMiniFuture extends MinFuture {
         /** Keys. */
         @GridToStringInclude
-        private GridDistributedTxMapping m;
+        private final GridDistributedTxMapping m;
 
         /**
          * @param futId Future ID.
@@ -1100,10 +1098,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     private class CheckBackupMiniFuture extends MinFuture {
         /** Keys. */
         @GridToStringInclude
-        private GridDistributedTxMapping m;
+        private final GridDistributedTxMapping m;
 
         /** Backup node to check. */
-        private ClusterNode backup;
+        private final ClusterNode backup;
 
         /**
          * @param futId Future ID.
@@ -1167,7 +1165,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      */
     private class CheckRemoteTxMiniFuture extends MinFuture {
         /** */
-        private Set<UUID> nodes;
+        private final Set<UUID> nodes;
 
         /**
          * @param futId Future ID.
