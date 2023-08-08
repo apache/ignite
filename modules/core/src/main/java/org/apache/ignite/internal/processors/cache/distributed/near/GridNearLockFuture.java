@@ -104,7 +104,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
     /** Lock owner thread. */
     @GridToStringInclude
-    private long threadId;
+    private final long threadId;
 
     /** Keys to lock. */
     @GridToStringInclude
@@ -117,7 +117,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     private final GridCacheVersion lockVer;
 
     /** Read flag. */
-    private boolean read;
+    private final boolean read;
 
     /** Flag to return value. */
     private final boolean retval;
@@ -153,13 +153,13 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
     /** Keys locked so far. */
     @GridToStringExclude
-    private List<GridDistributedCacheEntry> entries;
+    private final List<GridDistributedCacheEntry> entries;
 
     /** TTL for create operation. */
-    private long createTtl;
+    private final long createTtl;
 
     /** TTL for read operation. */
-    private long accessTtl;
+    private final long accessTtl;
 
     /** Skip store flag. */
     private final boolean skipStore;
@@ -208,7 +208,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         super(CU.boolReducer());
 
         assert keys != null;
-        assert (tx != null && timeout >= 0) || tx == null;
+        assert tx == null || timeout >= 0;
 
         this.cctx = cctx;
         this.keys = keys;
@@ -1526,11 +1526,11 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
         /** Node ID. */
         @GridToStringExclude
-        private ClusterNode node;
+        private final ClusterNode node;
 
         /** Keys. */
         @GridToStringInclude(sensitive = true)
-        private Collection<KeyCacheObject> keys;
+        private final Collection<KeyCacheObject> keys;
 
         /** */
         private boolean rcvRes;
