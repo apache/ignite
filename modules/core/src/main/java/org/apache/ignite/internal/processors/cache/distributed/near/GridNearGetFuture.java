@@ -297,7 +297,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyCheckedException)
-                        miniFut.onNodeLeft((ClusterTopologyCheckedException)e);
+                        miniFut.onNodeLeft();
                     else
                         miniFut.onResult(e);
                 }

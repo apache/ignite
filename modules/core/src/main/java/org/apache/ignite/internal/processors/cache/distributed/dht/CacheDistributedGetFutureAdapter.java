@@ -299,7 +299,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
                 if (f.node().id().equals(nodeId)) {
                     found = true;
 
-                    f.onNodeLeft(new ClusterTopologyCheckedException("Remote node left grid (will retry): " + nodeId));
+                    f.onNodeLeft();
                 }
             }
 
@@ -457,9 +457,9 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         }
 
         /**
-         * @param e Failure exception.
+         *
          */
-        public synchronized void onNodeLeft(ClusterTopologyCheckedException e) {
+        public synchronized void onNodeLeft() {
             if (remapped)
                 return;
 
@@ -472,7 +472,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
             if (!canRemap) {
                 map(keys.keySet(), F.t(node, keys), topVer);
 
-                onDone(Collections.emptyMap(), e);
+                onDone(Collections.emptyMap());
             }
             else {
                 long maxTopVer = Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion());
@@ -486,7 +486,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
                             // Remap.
                             map(keys.keySet(), F.t(node, keys), f.get());
 
-                            onDone(Collections.emptyMap(), e);
+                            onDone(Collections.emptyMap());
                         }
                         catch (IgniteCheckedException ex) {
                             CacheDistributedGetFutureAdapter.this.onDone(ex);
