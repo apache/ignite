@@ -23,6 +23,7 @@ import org.apache.calcite.rel.hint.HintPredicates;
 
 /** */
 public enum HintDefinition {
+    /** */
     QUERY_ENGINE {
         /** {@inheritDoc} */
         @Override public HintPredicate predicate() {
@@ -35,6 +36,7 @@ public enum HintDefinition {
         }
     },
 
+    /** */
     DISABLE_RULE {
         /** {@inheritDoc} */
         @Override public HintPredicate predicate() {
@@ -47,6 +49,7 @@ public enum HintDefinition {
         }
     },
 
+    /** */
     EXPAND_DISTINCT_AGG {
         /** {@inheritDoc} */
         @Override public HintPredicate predicate() {
@@ -59,6 +62,7 @@ public enum HintDefinition {
         }
     },
 
+    /** */
     NO_INDEX {
         /** {@inheritDoc} */
         @Override public HintPredicate predicate() {

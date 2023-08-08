@@ -19,62 +19,67 @@ package org.apache.ignite.internal.processors.query.calcite.hint;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.Nullable;
 
 /** */
-public class HintUtils {
+public final class HintUtils {
     /** */
     private HintUtils() {
         // No-op.
     }
 
     /**
-     * @return Hint if found by {@code hintDef} in {@code hints}. {@code Null} if hint is not found.
+     * @return Hints if found by {@code hintDef} in {@code hints}. Empty collection if hints are not found.
      */
-    public static @Nullable RelHint hint(Collection<RelHint> hints, HintDefinition hintDef) {
-        if (!F.isEmpty(hints)) {
-            for (RelHint h : hints) {
-                if (h.hintName.equals(hintDef.name()))
-                    return h;
-            }
-        }
-
-        return null;
+    public static Collection<RelHint> hint(Collection<RelHint> hints, HintDefinition hintDef) {
+        return hints.stream().filter(h->h.hintName.equals(hintDef.name())).collect(Collectors.toList());
     }
 
     /**
-     * @return Hint of {@code rel} if found by {@code hintDef}. {@code Null} if hint is not found.
+     * @return Hints of {@code rel} if found by {@code hintDef}. Empty collection if hints are not found or if
+     * {@code rel} is not {@code Hintable}.
      */
-    public static @Nullable RelHint hint(RelNode rel, HintDefinition hintDef) {
-        return rel instanceof Hintable ? hint(((Hintable)rel).getHints(), hintDef) : null;
+    public static Collection<RelHint> hint(RelNode rel, HintDefinition hintDef) {
+        return rel instanceof Hintable ? hint(((Hintable)rel).getHints(), hintDef) : Collections.emptyList();
     }
 
     /**
-     * @return {@code True} if {@code rel} contains hint {@code hintDef}. {@code False} otherwise.
+     * @return {@code True} if {@code rel} contains any hint named as {@code hintDef}. {@code False} otherwise.
      */
     public static boolean hasHint(RelNode rel, HintDefinition hintDef) {
-        return hint(rel, hintDef) != null;
+        return !F.isEmpty(hint(rel, hintDef));
     }
 
     /**
-     * @return {@code Null} if {@code rel} has no hint named as {@code hintDef}. Otherwise, plain options of the hint.
+     * @return Combined plain options of all the hints named as {@code hintDef} if any found. Otherwise, an empty
+     * collection.
      */
-    public static @Nullable Collection<String> plainOptions(RelNode rel, HintDefinition hintDef) {
-        RelHint hint = hint(rel, hintDef);
-
-        return hint == null ? null : hint.listOptions;
+    public static Collection<String> plainOptions(RelNode rel, HintDefinition hintDef) {
+        return F.flatCollections(hint(rel, hintDef).stream().map(h->h.listOptions).collect(Collectors.toList()));
     }
 
     /**
-     * @return Key-value options of {@code hint}. {@code Null} if {@code hint} is {@code null}. Emply map if hint
-     * exists but has no plain options.
+     * @return Combined plain options of all the {@code hints}.
      */
-    public static Map<String, String> kvOptions(RelHint hint) {
-        return hint == null ? null : (hint.kvOptions == null ? Collections.emptyMap() : hint.kvOptions);
+    public static Collection<String> plainOptions(Collection<RelHint> hints) {
+        return F.flatCollections(hints.stream().map(h->h.listOptions).collect(Collectors.toList()));
+    }
+
+    /**
+     * @return Map of combined key-value options of all the {@code hints}. Last entries can overwrite the preceding.
+     */
+    public static Map<String, String> kvOptions(Collection<RelHint> hints) {
+        Map<String, String> res = new HashMap<>();
+
+        F.flatCollections(hints.stream().map(h -> h.kvOptions.entrySet()).collect(Collectors.toList()))
+            .forEach(e -> res.put(e.getKey(), e.getValue()));
+
+        return res;
     }
 }

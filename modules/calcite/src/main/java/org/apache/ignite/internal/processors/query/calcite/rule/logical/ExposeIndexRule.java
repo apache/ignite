@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -100,26 +102,27 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
      * exists, every index is disabled.
      */
     private void disableIndexes(IgniteLogicalTableScan scan, List<IgniteLogicalIndexScan> indexes) {
-        RelHint hint = HintUtils.hint(scan, HintDefinition.NO_INDEX);
+        Collection<RelHint> hints = HintUtils.hint(scan, HintDefinition.NO_INDEX);
 
-        if (hint == null)
+        if (F.isEmpty(hints))
             return;
 
-        if (F.isEmpty(hint.listOptions) && F.isEmpty(hint.kvOptions)) {
+        List<String> plainOptions = new ArrayList<>();
+        Map<String, String> kvOptions = HintUtils.kvOptions(hints);
+
+        Collection<String> plainOptions = HintUtils.plainOptions(hints);
+        Map<String, String> kvOptions = HintUtils.kvOptions(hints);
+
+        if (F.isEmpty(plainOptions) && F.isEmpty(kvOptions)) {
             indexes.clear();
 
             return;
         }
 
-        if (!F.isEmpty(hint.listOptions)) {
-            indexes.removeIf(idxScan -> hint.listOptions.contains(idxScan.indexName()));
+        if (!F.isEmpty(plainOptions))
+            indexes.removeIf(idxScan -> plainOptions.contains(idxScan.indexName()));
 
-            assert F.isEmpty(hint.kvOptions);
-
-            return;
-        }
-
-        hint.kvOptions.forEach((tblName, idxName) -> {
+        kvOptions.forEach((tblName, idxName) -> {
             String[] fullTblName = Commons.qualifiedName(tblName);
 
             List<String> qname = scan.getTable().getQualifiedName();

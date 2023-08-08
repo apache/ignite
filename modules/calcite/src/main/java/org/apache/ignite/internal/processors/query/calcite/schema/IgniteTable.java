@@ -58,7 +58,7 @@ public interface IgniteTable extends TranslatableTable {
 
     /** {@inheritDoc} */
     @Override default TableScan toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
-        return toRel(context.getCluster(), relOptTable, context.getTableHints(),null, null, null);
+        return toRel(context.getCluster(), relOptTable, context.getTableHints(), null, null, null);
     }
 
     /**
