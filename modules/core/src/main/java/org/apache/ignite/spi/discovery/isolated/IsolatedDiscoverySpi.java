@@ -173,8 +173,8 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
                 msg,
                 null));
 
-            // Acknowledge message must be send after initial message processed.
-            fut.listen((f) -> {
+            // Acknowledge message must be sent after initial message processed.
+            fut.listen(ignored -> {
                 DiscoverySpiCustomMessage ack = msg.ackMessage();
 
                 if (ack != null) {

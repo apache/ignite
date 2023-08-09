@@ -192,7 +192,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             if (fut.initialVersion().after(topVer) || (fut.exchangeActions() != null && fut.exchangeActions().hasStop()))
                 fut = cctx.shared().exchange().lastFinishedFuture();
             else {
-                fut.listen((IgniteInternalFuture<AffinityTopologyVersion> fut0) -> {
+                fut.listen(fut0 -> {
                     if (fut0.error() != null)
                         onDone(fut0.error());
                     else

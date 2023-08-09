@@ -32,9 +32,7 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -83,7 +81,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
         try {
             final ComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridStopTestTask.class.getName(), null);
 
-            fut.listen((CI1<IgniteFuture>)gridFut -> {
+            fut.listen(ignored -> {
                 synchronized (mux) {
                     mux.notifyAll();
                 }

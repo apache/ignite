@@ -167,7 +167,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
 
                     updateLocalFuture(locFut);
 
-                    locFut.listen((IgniteInternalFuture<Long> fut) -> {
+                    locFut.listen(fut -> {
                         assert fut.error() != null || fut.result() != null : fut;
 
                         try {

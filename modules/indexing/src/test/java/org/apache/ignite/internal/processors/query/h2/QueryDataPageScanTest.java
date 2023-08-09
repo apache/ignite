@@ -288,8 +288,8 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
             }
         }, 2, "query");
 
-        qryFut.listen((f) -> cancel.set(true));
-        updFut.listen((f) -> cancel.set(true));
+        qryFut.listen(() -> cancel.set(true));
+        updFut.listen(() -> cancel.set(true));
 
         long start = U.currentTimeMillis();
 
