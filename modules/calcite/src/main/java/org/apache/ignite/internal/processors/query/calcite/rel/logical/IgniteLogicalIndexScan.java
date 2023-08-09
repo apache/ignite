@@ -21,8 +21,6 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
@@ -81,9 +79,5 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
         @Nullable ImmutableBitSet requiredCols
     ) {
         super(cluster, traits, tbl, idxName, proj, cond, searchBounds, requiredCols);
-    }
-
-    @Override public RelNode withHints(List<RelHint> hintList) {
-        return super.withHints(hintList);
     }
 }

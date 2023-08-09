@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -28,7 +27,6 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
@@ -55,10 +53,6 @@ public abstract class IgniteAggregate extends Aggregate implements IgniteRel {
     /** */
     protected IgniteAggregate(RelInput input) {
         super(changeTraits(input, IgniteConvention.INSTANCE));
-    }
-
-    @Override public RelNode withHints(List<RelHint> hintList) {
-        return super.withHints(hintList);
     }
 
     /** {@inheritDoc} */

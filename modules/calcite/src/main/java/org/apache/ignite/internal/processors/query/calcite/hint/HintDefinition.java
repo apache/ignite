@@ -17,17 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.hint;
 
-import com.sun.org.apache.xalan.internal.xsltc.compiler.util.NodeType;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.hint.HintOptionChecker;
 import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintPredicates;
-import org.apache.calcite.rel.hint.NodeTypeHintPredicate;
 import org.apache.calcite.rel.hint.RelHint;
-import org.apache.calcite.rel.logical.LogicalFilter;
-import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 
 /**
