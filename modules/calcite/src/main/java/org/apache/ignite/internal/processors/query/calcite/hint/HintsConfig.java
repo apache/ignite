@@ -26,9 +26,14 @@ import org.apache.calcite.util.Litmus;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * Provides configuration of the supported hints.
+ * Provides configuration of all the supported hints.
  */
-public class HintsConfig {
+public final class HintsConfig {
+    /** Ctor */
+    private HintsConfig(){
+        // No-op.
+    }
+
     /** Allows only empty hint options. */
     static final HintOptionChecker OPTS_CHECK_EMPTY = new HintOptionChecker() {
         @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {

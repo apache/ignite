@@ -339,7 +339,7 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testIndexDisabledByWint() {
+    public void testIndexDisabledByHint() {
         executeSql("CREATE TABLE t1(i1 INTEGER) WITH TEMPLATE=REPLICATED");
         executeSql("INSERT INTO t1 VALUES (1), (2), (30), (40)");
         executeSql("CREATE INDEX t1_idx ON t1(i1)");

@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Collects and holds hints' options.
+ * Collects and holds hints options.
  */
 public final class HintOptions {
     /** */

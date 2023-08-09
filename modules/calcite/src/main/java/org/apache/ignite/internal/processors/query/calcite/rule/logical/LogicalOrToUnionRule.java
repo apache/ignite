@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.List;
 import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.plan.RelOptCluster;
