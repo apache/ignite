@@ -32,10 +32,10 @@ import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxAbstractEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryEnlistFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -135,11 +135,11 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
 
             if (map.isEmpty())
                 throw new ClusterTopologyServerNotFoundException("Failed to find data nodes for cache (all partition " +
-                    "nodes left the grid). [fut=" + toString() + ']');
+                    "nodes left the grid). [fut=" + this + ']');
 
             int idx = 0; boolean first = true, clientFirst = false;
 
-            GridDhtTxQueryEnlistFuture localFut = null;
+            GridDhtTxQueryEnlistFuture locFut = null;
 
             for (Map.Entry<ClusterNode, IntArrayHolder> entry : map.entrySet()) {
                 MiniFuture mini; ClusterNode node = entry.getKey(); IntArrayHolder parts = entry.getValue();
@@ -147,7 +147,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
                 add(mini = new MiniFuture(node));
 
                 if (node.isLocal()) {
-                    localFut = new GridDhtTxQueryEnlistFuture(
+                    locFut = new GridDhtTxQueryEnlistFuture(
                         cctx.localNode().id(),
                         lockVer,
                         mvccSnapshot,
@@ -165,25 +165,23 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
                         remainingTime(),
                         cctx);
 
-                    updateLocalFuture(localFut);
+                    updateLocalFuture(locFut);
 
-                    localFut.listen(new CI1<IgniteInternalFuture<Long>>() {
-                        @Override public void apply(IgniteInternalFuture<Long> fut) {
-                            assert fut.error() != null || fut.result() != null : fut;
+                    locFut.listen((IgniteInternalFuture<Long> fut) -> {
+                        assert fut.error() != null || fut.result() != null : fut;
 
-                            try {
-                                clearLocalFuture((GridDhtTxQueryEnlistFuture)fut);
+                        try {
+                            clearLocalFuture((GridDhtTxAbstractEnlistFuture)fut);
 
-                                GridNearTxQueryEnlistResponse res = fut.error() == null ? createResponse(fut) : null;
+                            GridNearTxQueryEnlistResponse res = fut.error() == null ? createResponse(fut) : null;
 
-                                mini.onResult(res, fut.error());
-                            }
-                            catch (IgniteCheckedException e) {
-                                mini.onResult(null, e);
-                            }
-                            finally {
-                                CU.unwindEvicts(cctx);
-                            }
+                            mini.onResult(res, fut.error());
+                        }
+                        catch (IgniteCheckedException e) {
+                            mini.onResult(null, e);
+                        }
+                        finally {
+                            CU.unwindEvicts(cctx);
                         }
                     });
                 }
@@ -221,8 +219,8 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
 
             markInitialized();
 
-            if (localFut != null)
-                localFut.init();
+            if (locFut != null)
+                locFut.init();
         }
         catch (Throwable e) {
             onDone(e);
@@ -301,10 +299,9 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
     }
 
     /**
-     * @param nodeId Sender node id.
      * @param res Response.
      */
-    public void onResult(UUID nodeId, GridNearTxQueryEnlistResponse res) {
+    public void onResult(GridNearTxQueryEnlistResponse res) {
         MiniFuture mini = miniFuture(res.miniId());
 
         if (mini != null)
@@ -387,30 +384,30 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
     /** */
     private static class IntArrayHolder {
         /** */
-        private int[] array;
+        private int[] arr;
 
         /** */
         private int size;
 
         /** */
         void add(int i) {
-            if (array == null)
-                array = new int[4];
+            if (arr == null)
+                arr = new int[4];
 
-            if (array.length == size)
-                array = Arrays.copyOf(array, size << 1);
+            if (arr.length == size)
+                arr = Arrays.copyOf(arr, size << 1);
 
-            array[size++] = i;
+            arr[size++] = i;
         }
 
         /** */
         public int[] array() {
-            if (array == null)
+            if (arr == null)
                 return null;
-            else if (size == array.length)
-                return array;
+            else if (size == arr.length)
+                return arr;
             else
-                return Arrays.copyOf(array, size);
+                return Arrays.copyOf(arr, size);
         }
     }
 }

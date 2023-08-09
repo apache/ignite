@@ -424,13 +424,13 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
      *
      * @param doneCb Callback.
      * @param fut Future that should be passed to the callback as the argument.
-     * @param chainFuture Chained future.
+     * @param chainFut Chained future.
      * @param <T> Type parameter.
      */
     private <T> void applyChainComposeCallback(
         IgniteClosure<? super IgniteInternalFuture<R>, IgniteInternalFuture<T>> doneCb,
         IgniteInternalFuture<R> fut,
-        GridFutureAdapter<T> chainFuture
+        GridFutureAdapter<T> chainFut
     ) {
         IgniteInternalFuture<T> doneCbFut;
 
@@ -446,10 +446,10 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
 
         doneCbFut.listen(f -> {
             try {
-                chainFuture.onDone(f.get(), null);
+                chainFut.onDone(f.get(), null);
             }
             catch (Exception e) {
-                chainFuture.onDone(e);
+                chainFut.onDone(e);
             }
         });
     }
@@ -642,10 +642,10 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
      */
     private static class ChainFuture<R, T> extends GridFutureAdapter<T> {
         /** */
-        private GridFutureAdapter<R> fut;
+        private final GridFutureAdapter<R> fut;
 
         /** */
-        private IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb;
+        private final IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb;
 
         /**
          * @param fut Future.

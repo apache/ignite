@@ -2194,7 +2194,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         GridNearTxQueryEnlistFuture fut = (GridNearTxQueryEnlistFuture)ctx.mvcc().versionedFuture(res.version(), res.futureId());
 
         if (fut != null)
-            fut.onResult(nodeId, res);
+            fut.onResult(res);
     }
 
     /**
