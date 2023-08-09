@@ -1,0 +1,99 @@
+ #colorbox { z-index:1000; }
+ 
+.excel-table {
+    overflow: auto;
+}
+
+.excel-table table tr {
+    /*line-height: 35px*/
+}
+
+.excel-table table td {
+    border: #ccc 1px solid;
+    word-wrap: break-word;
+    word-break: break-all;
+    font-size: 12px;
+    white-space: pre;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 60px;
+    font-family: 寰蒋闆呴粦;
+}
+
+.excel-table table td:focus {
+    outline: 0;
+    border: 1px solid #5897fb;
+    box-shadow: 0 0 5px rgba(73, 177, 249, .5)
+}
+
+.td-chosen-css {
+}
+
+.td-chosen-muli-css {
+    background-color: rgba(0, 94, 255, 0.1);
+}
+
+.col-width-panel, .row-height-panel, .chosen-area-p, .rightmouse-panel-div, .chosen-area-p div {
+    position: absolute
+}
+
+.col-width-panel div {
+    width: 8px;
+    position: absolute;
+    cursor: col-resize;
+    z-index: 999;
+}
+
+.row-height-panel div {
+    height: 8px;
+    position: absolute;
+    cursor: row-resize;
+    z-index: 999;
+}
+
+.hr {
+    width: 100%;
+    height: 1px;
+    border-bottom: 1px solid #ccc;
+}
+
+
+
+
+.whiteSpaceTrue {
+    white-space: normal !important;
+}
+
+.selectBorderStyle {
+    position: absolute;
+    top: 30px;
+    background-color: #fff;
+    display: none;
+    z-index: 999;
+    width: 100px;
+    border: 1px solid #ccc;
+    left: -40px;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    user-select:none;
+    border-radius: 3px;
+    border-bottom: 0px;
+}
+
+.show {
+    display: block;
+}
+.borderStyleOption{
+    padding: 5px 20px;
+    border-bottom: 1px solid #ccc;
+    cursor: pointer;
+}
+
+.thead :nth-child(1) {
+    background-color:#fff !important;
+}
+
+
+
+	

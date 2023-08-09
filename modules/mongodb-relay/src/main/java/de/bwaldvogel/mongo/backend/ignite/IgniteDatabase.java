@@ -68,10 +68,9 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
         }
         else {
         	isGlobal = false;
-        }               
-        initializeNamespacesAndIndexes();
-        mvStore.binary().registerClass(id.LongID.class);
-        mvStore.binary().registerClass(id.StringID.class);
+        }
+        
+        initializeNamespacesAndIndexes();        
     }
     
     @Override
@@ -162,18 +161,24 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
     @Override
     protected Iterable<String> listCollectionNamespaces() {    	
     	return mvStore.cacheNames().stream().filter(c-> 
-    		!c.startsWith(INDEX_DB_PREFIX) && !c.startsWith("system."))
+    		!c.startsWith(INDEX_DB_PREFIX))
     	.collect(Collectors.toList());
     }
 
     @Override
     protected MongoCollection<Object> openOrCreateCollection(String collectionName, CollectionOptions options) {    	
-        String fullCollectionName = getCacheName(databaseName ,collectionName);
+        Ignite mvStore = this.getIgnite();
+        IgniteBackend backend = (IgniteBackend)this.backend;
+    	String fullCollectionName = getCacheName(databaseName ,collectionName);
+    	if(collectionName.equals(NAMESPACES_COLLECTION_NAME) || collectionName.equals(INDEXES_COLLECTION_NAME)) {
+    		if(!databaseName.equals("admin"))
+    			mvStore = ((IgniteDatabase)backend.adminDatabase()).getIgnite();
+    	}
         
         CacheConfiguration<Object, BinaryObject> cfg = new CacheConfiguration<>();
         cfg.setName(fullCollectionName);
-        cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        IgniteBackend backend = (IgniteBackend)this.backend;
+        cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);        
+        
         if(!this.isGlobal) {        	
 	       
 	        cfg.setCacheMode(CacheMode.PARTITIONED);	       

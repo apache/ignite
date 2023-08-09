@@ -33,7 +33,7 @@ public class MongoPlugin implements IgnitePlugin {
 	
 	public IgniteVectorIndex createVectorIndex(String collectionName,String field,Document options) {
 		IgniteBinaryCollection coll = this.collecion(collectionName);
-		String indexName = "vectorindex-"+collectionName+"-"+field;
+		String indexName = field+"_knnVector";
 		for(Index<Object> index: coll.getIndexes()) {
 			if(index.getName().equals(indexName)) {
 				return (IgniteVectorIndex)index;
@@ -56,7 +56,7 @@ public class MongoPlugin implements IgnitePlugin {
 	
 	public IgniteLuceneIndex createLuceneTextIndex(String collectionName,Document fieldsDesc) {
 		IgniteBinaryCollection coll = this.collecion(collectionName);
-		String indexName = "luceneindex-"+collectionName+"-"+String.join("-", fieldsDesc.keySet());
+		String indexName = String.join("_", fieldsDesc.keySet())+"_text";
 		for(Index<Object> index: coll.getIndexes()) {
 			if(index.getName().equals(indexName)) {
 				return (IgniteLuceneIndex)index;

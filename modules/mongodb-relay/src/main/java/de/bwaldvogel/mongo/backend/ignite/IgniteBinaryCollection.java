@@ -30,6 +30,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
@@ -79,15 +80,13 @@ import static de.bwaldvogel.mongo.backend.ignite.util.DocumentUtil.*;
 public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 
 	public final IgniteCache<Object, BinaryObject> dataMap;	
-	public final String idField;
-	private IgniteDatabase database;
+	public final String idField;	
     
     public IgniteBinaryCollection(IgniteDatabase database, String collectionName, CollectionOptions options,
             CursorRegistry cursorRegistry, IgniteCache<Object, BinaryObject> dataMap) {
         super(database, collectionName,options,cursorRegistry);
         this.dataMap = dataMap;
-        this.idField = options.getIdField();
-        this.database = database;        
+        this.idField = options.getIdField();             
     }
     
 
@@ -128,7 +127,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
         Object key = null;
         if (idField != null) {
             key = document.get(idField);
-        } 
+        }
         
         if(key==null || key==Missing.getInstance()) {
             key = UUID.randomUUID();
@@ -136,7 +135,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
         T2<String,String> t2 = typeNameAndKeyField(this.dataMap,document);
     	String typeName = t2.get1();	
     	String keyField = t2.get2();
-    	IgniteDatabase database = (IgniteDatabase)this.database;
+    	IgniteDatabase database = (IgniteDatabase)this.getDatabase();
     	try {
     		key = toBinaryKey(key);
     		BinaryObject obj = documentToBinaryObject(database.getIgnite().binary(),typeName,document,idField);
@@ -150,7 +149,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     	catch(BinaryObjectException e) {
     		throw new TypeMismatchException(e.getMessage());
     	}
-    	catch(Exception e) {
+    	catch(IgniteException e) {
     		throw new BadValueException(e.getMessage());
     	}
        
@@ -160,7 +159,8 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     @Override
     public int count() {
     	if(this.getCollectionName().equals("system.namespaces")) {
-    		return ((List)this.database.listCollectionNamespaces()).size();
+    		IgniteDatabase database = (IgniteDatabase)this.getDatabase();
+    		return ((List)database.listCollectionNamespaces()).size();
     	}
         return dataMap.size();
     }
@@ -252,7 +252,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     	T2<String,String> t2 = typeNameAndKeyField(this.dataMap,document);
     	String typeName = t2.get1();    	
     	String keyField = t2.get2();    
-    	IgniteDatabase database = (IgniteDatabase)this.database;
+    	IgniteDatabase database = (IgniteDatabase)this.getDatabase();
     	BinaryObject obj = documentToBinaryObject(database.getIgnite().binary(),typeName,document,idField);
         
         dataMap.put(toBinaryKey(key), obj);
