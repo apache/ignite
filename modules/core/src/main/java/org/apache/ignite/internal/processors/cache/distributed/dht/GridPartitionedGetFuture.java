@@ -47,12 +47,10 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -61,13 +59,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAdapter<K, V> {
     /** Transaction label. */
-    protected final String txLbl;
+    private final String txLbl;
 
     /** */
-    protected final MvccSnapshot mvccSnapshot;
+    private final MvccSnapshot mvccSnapshot;
 
     /** Explicit predefined single mapping (backup or primary). */
-    protected final ClusterNode affNode;
+    private final ClusterNode affNode;
 
     /**
      * @param cctx Context.
@@ -194,18 +192,11 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             if (fut.initialVersion().after(topVer) || (fut.exchangeActions() != null && fut.exchangeActions().hasStop()))
                 fut = cctx.shared().exchange().lastFinishedFuture();
             else {
-                fut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                        if (fut.error() != null)
-                            onDone(fut.error());
-                        else {
-                            cctx.closures().runLocalSafe(new GridPlainRunnable() {
-                                @Override public void run() {
-                                    map(keys, mapped, topVer);
-                                }
-                            }, true);
-                        }
-                    }
+                fut.listen((IgniteInternalFuture<AffinityTopologyVersion> fut0) -> {
+                    if (fut0.error() != null)
+                        onDone(fut0.error());
+                    else
+                        cctx.closures().runLocalSafe(() -> map(keys, mapped, topVer), true);
                 });
 
                 return;
@@ -322,7 +313,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyCheckedException)
-                        miniFut.onNodeLeft((ClusterTopologyCheckedException)e);
+                        miniFut.onNodeLeft();
                     else
                         miniFut.onResult(e);
                 }
@@ -409,10 +400,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         ClusterNode node,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings
     ) {
-        LinkedHashMap<KeyCacheObject, Boolean> old = mappings.get(node);
-
-        if (old == null)
-            mappings.put(node, old = new LinkedHashMap<>(3, 1f));
+        LinkedHashMap<KeyCacheObject, Boolean> old =
+            mappings.computeIfAbsent(node, k -> new LinkedHashMap<>(3, 1f));
 
         old.put(key, false);
     }
