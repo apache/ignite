@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.hamcrest.CoreMatchers;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -334,6 +335,47 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
 
             assertFalse(idx.isInlineScan());
         }
+    }
+
+    /** */
+    @Test
+    public void testIndexDisabledByWint() {
+        executeSql("CREATE TABLE t1(i1 INTEGER) WITH TEMPLATE=REPLICATED");
+        executeSql("INSERT INTO t1 VALUES (1), (2), (30), (40)");
+        executeSql("CREATE INDEX t1_idx ON t1(i1)");
+
+        executeSql("CREATE TABLE t2(i2 INTEGER, i3 INTEGER) WITH TEMPLATE=REPLICATED");
+        executeSql("INSERT INTO t2 VALUES (1, 1), (2, 2), (null, 3), (4, null)");
+        executeSql("CREATE INDEX t2_idx ON t2(i2)");
+
+        assertQuery("SELECT /*+ NO_INDEX */ i3 FROM t2 where i2=2")
+            .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX")))
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT /*+ NO_INDEX('T2_IDX') */ i3 FROM t2 where i2=2")
+            .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX")))
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT /*+ NO_INDEX(t2='T2_IDX') */ i3 FROM t2 where i2=2")
+            .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX")))
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT /*+ NO_INDEX */ i1, i3 FROM t1, t2 where i2=i1")
+            .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX")))
+            .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX")))
+            .returns(1, 1)
+            .returns(2, 2)
+            .check();
+
+        assertQuery("SELECT /*+ NO_INDEX('T1_IDX') */ i1, i3 FROM t1, t2 where i2=i1")
+            .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX")))
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX"))
+            .returns(1, 1)
+            .returns(2, 2)
+            .check();
     }
 
     /** */
