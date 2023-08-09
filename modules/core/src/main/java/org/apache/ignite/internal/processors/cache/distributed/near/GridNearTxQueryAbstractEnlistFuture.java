@@ -29,7 +29,7 @@ public abstract class GridNearTxQueryAbstractEnlistFuture extends GridNearTxAbst
      * @param tx Transaction.
      * @param timeout Timeout.
      */
-    public GridNearTxQueryAbstractEnlistFuture(
+    protected GridNearTxQueryAbstractEnlistFuture(
         GridCacheContext<?, ?> cctx, GridNearTxLocal tx, long timeout) {
         super(cctx, tx, timeout, CU.longReducer());
     }
