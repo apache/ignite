@@ -23,9 +23,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Collects and holds hints options.
@@ -51,7 +51,7 @@ public final class HintOptions {
     }
 
     /** */
-    public static @Nullable HintOptions collect(Collection<RelHint> hints) {
+    public static HintOptions collect(Collection<RelHint> hints) {
         if (F.isEmpty(hints))
             return EMPTY;
 
@@ -79,6 +79,11 @@ public final class HintOptions {
         }
 
         return new HintOptions(emptyNum, plainOptions, kvOptions);
+    }
+
+    /** */
+    public static HintOptions collect(RelNode rel, HintDefinition hintDef) {
+        return collect(HintDefinition.hints(rel, hintDef));
     }
 
     /** */

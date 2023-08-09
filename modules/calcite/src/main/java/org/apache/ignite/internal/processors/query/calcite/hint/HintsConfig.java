@@ -29,8 +29,8 @@ import org.apache.ignite.internal.util.typedef.F;
  * Provides configuration of all the supported hints.
  */
 public final class HintsConfig {
-    /** Ctor */
-    private HintsConfig(){
+    /** */
+    private HintsConfig() {
         // No-op.
     }
 

@@ -21,7 +21,6 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -485,10 +484,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     /** */
-    public void setDisabledRules(Collection<String> disabledRuleNames) {
-        if (disabledRuleNames.isEmpty())
-            return;
-
+    public void setDisabledRules(Set<String> disabledRuleNames) {
         ctx.rulesFilter(rulesSet -> {
             List<RelOptRule> newSet = new ArrayList<>();
 
