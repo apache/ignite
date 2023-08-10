@@ -21,6 +21,7 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -78,6 +79,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetada
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -478,13 +480,16 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     /** */
-    private SqlToRelConverter sqlToRelConverter(SqlValidator validator, CalciteCatalogReader reader,
+    public SqlToRelConverter sqlToRelConverter(SqlValidator validator, CalciteCatalogReader reader,
         SqlToRelConverter.Config config) {
         return new IgniteSqlToRelConvertor(this, validator, reader, cluster(), convertletTbl, config);
     }
 
     /** */
-    public void setDisabledRules(Set<String> disabledRuleNames) {
+    public void setDisabledRules(Collection<String> disabledRuleNames) {
+        if (F.isEmpty(disabledRuleNames))
+            return;
+
         ctx.rulesFilter(rulesSet -> {
             List<RelOptRule> newSet = new ArrayList<>();
 

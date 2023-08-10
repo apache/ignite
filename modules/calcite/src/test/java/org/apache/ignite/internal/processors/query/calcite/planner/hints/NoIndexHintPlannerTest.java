@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.query.calcite.planner.TestTable;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -43,7 +42,7 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
     @Override public void setup() {
         super.setup();
 
-        tbl1 = createTable("TBL1", 100, IgniteDistributions.single(), "ID", Integer.class,
+        tbl1 = createTable("TBL1", 10000, IgniteDistributions.single(), "ID", Integer.class,
             "VAL1", String.class, "VAL2", String.class, "VAL3", String.class)
             .addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0)
             .addIndex("idx1", 1)
@@ -51,7 +50,7 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
             .addIndex("IDX2", 2)
             .addIndex("IDX3", 3);
 
-        tbl2 = createTable("TBL2", 100, IgniteDistributions.single(), "ID", Integer.class,
+        tbl2 = createTable("TBL2", 10000, IgniteDistributions.single(), "ID", Integer.class,
             "VAL1", String.class, "VAL2", String.class, "VAL3", String.class)
             .addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0)
             .addIndex("idx1", 1)
@@ -142,18 +141,33 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
 
     /** */
     @Test
-    @Ignore
+    public void testCorrelatedSubquery() throws Exception {
+        testIndexDisabledInT2Val3("t1.val3");
+    }
+
+    /** */
+    @Test
     public void testSubquery() throws Exception {
-        assertNoAnyIndex("SELECT /*+ NO_INDEX */ val2, val3 FROM TBL1 t1 WHERE val1 = " +
-            "(select /*+ NO_INDEX(TBL2='IDX3') */ t2.val2 FROM TBL2 t2 WHERE t2.val3=t1.val1)");
+        testIndexDisabledInT2Val3("'v'");
+    }
 
-        assertNoAnyIndex("SELECT /*+ NO_INDEX */ t1.val2, (SELECT /*+ NO_INDEX */ val3 FROM TBL2 t2 where " +
-            "val3=t1.val3) FROM TBL1 t1");
+    /**
+     * Tests index 'IDX3' of table 'TBL2' in subquery of query to 'TBL1' is disabled.
+     *
+     * @param valueOfT2Val3 Value to use in 'WHERE TBL2.val2=' in the subquery. Can refer to 'TBL1'.
+     */
+    private void testIndexDisabledInT2Val3(String valueOfT2Val3) throws Exception {
+        assertCertainIndex("SELECT * FROM TBL1 t1 WHERE t1.val2 = (SELECT val2 from TBL2 WHERE val3=" +
+            valueOfT2Val3 + ')', "TBL2", "IDX3");
 
-        assertPlan("SELECT /*+ NO_INDEX('IDX2') */ * FROM TBL1 t1 WHERE t1.val2 in " +
-                "(SELECT /*+ NO_INDEX('IDX3') */ val2 from TBL2 WHERE val3='v')", schema,
-            nodeOrAnyChild(isIndexScan("TBL1", "IDX2"))
-                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX3")).negate()));
+        assertNoCertainIndex("SELECT /*+ NO_INDEX */ * FROM TBL1 t1 WHERE t1.val2 = " +
+            "(SELECT val2 from TBL2 WHERE val3=" + valueOfT2Val3 + ')', "TBL2", "IDX3");
+
+        assertNoCertainIndex("SELECT * FROM TBL1 t1 WHERE t1.val2 = " +
+            "(SELECT /*+ NO_INDEX */ val2 from TBL2 WHERE val3=" + valueOfT2Val3 + ')', "TBL2", "IDX3");
+
+        assertNoCertainIndex("SELECT /*+ NO_INDEX(TBL2='IDX3') */ * FROM TBL1 t1 WHERE t1.val2 = " +
+            "(SELECT val2 from TBL2 WHERE val3=" + valueOfT2Val3 + ')', "TBL2", "IDX3");
     }
 
     /** */

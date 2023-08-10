@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.hint;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -32,19 +31,19 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public final class HintOptions {
     /** */
-    public static final HintOptions EMPTY = new HintOptions(-1, Collections.emptySet(), Collections.emptyMap());
+    public static final HintOptions EMPTY = new HintOptions(-1, Collections.emptyList(), Collections.emptyMap());
 
     /** Number of hints having no any option. */
     private final int emptyNum;
 
     /** Plain options. */
-    private final Set<String> plain;
+    private final List<String> plain;
 
     /** Key-value options. */
-    private final Map<String, Set<String>> kv;
+    private final Map<String, List<String>> kv;
 
     /** Ctor. */
-    private HintOptions(int emptyNum, Set<String> plain, Map<String, Set<String>> kv) {
+    private HintOptions(int emptyNum, List<String> plain, Map<String, List<String>> kv) {
         this.emptyNum = emptyNum;
         this.plain = plain;
         this.kv = kv;
@@ -56,8 +55,8 @@ public final class HintOptions {
             return EMPTY;
 
         int emptyNum = 0;
-        Set<String> plainOptions = new HashSet<>();
-        Map<String, Set<String>> kvOptions = new HashMap<>();
+        List<String> plainOptions = new ArrayList<>();
+        Map<String, List<String>> kvOptions = new HashMap<>();
 
         for (RelHint h : hints) {
             if (F.isEmpty(h.listOptions) && F.isEmpty(h.kvOptions)) {
@@ -70,7 +69,7 @@ public final class HintOptions {
 
             h.kvOptions.forEach((key, value) -> kvOptions.compute(key, (key0, valSet) -> {
                 if (valSet == null)
-                    valSet = new HashSet<>();
+                    valSet = new ArrayList<>();
 
                 valSet.add(value);
 
@@ -79,11 +78,6 @@ public final class HintOptions {
         }
 
         return new HintOptions(emptyNum, plainOptions, kvOptions);
-    }
-
-    /** */
-    public static HintOptions collect(RelNode rel, HintDefinition hintDef) {
-        return collect(HintDefinition.hints(rel, hintDef));
     }
 
     /** */
@@ -97,12 +91,12 @@ public final class HintOptions {
     }
 
     /** */
-    public Set<String> plain() {
+    public List<String> plain() {
         return plain;
     }
 
     /** */
-    public Map<String, Set<String>> kv() {
+    public Map<String, List<String>> kv() {
         return kv;
     }
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 import java.util.ArrayList;
 import java.util.List;
 import com.google.common.collect.ImmutableSet;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
@@ -32,8 +33,8 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.query.calcite.hint.Hint;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
-import org.apache.ignite.internal.processors.query.calcite.hint.HintOptions;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -68,7 +69,7 @@ public class PlannerHelper {
 
             RelNode rel = root.rel;
 
-            planner.setDisabledRules(HintOptions.collect(root.rel, HintDefinition.DISABLE_RULE).plain());
+            planner.setDisabledRules(Hint.options(root.rel, HintDefinition.DISABLE_RULE).plain());
 
             // Transformation chain
             rel = planner.transform(PlannerPhase.HEP_DECORRELATE, rel.getTraitSet(), rel);
@@ -78,6 +79,8 @@ public class PlannerHelper {
             rel = planner.trimUnusedFields(root.withRel(rel)).rel;
 
             rel = planner.transform(PlannerPhase.HEP_FILTER_PUSH_DOWN, rel.getTraitSet(), rel);
+
+            rel = RelOptUtil.propagateRelHints(rel, false);
 
             rel = planner.transform(PlannerPhase.HEP_PROJECT_PUSH_DOWN, rel.getTraitSet(), rel);
 
