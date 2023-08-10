@@ -29,6 +29,8 @@ import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.hint.Hint;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintOptions;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
@@ -98,7 +100,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
      * exists, every index is disabled.
      */
     private void disableIndexes(IgniteLogicalTableScan scan, List<IgniteLogicalIndexScan> indexes) {
-        HintOptions opts = HintOptions.collect(scan.getHints());
+        HintOptions opts = Hint.options(scan, HintDefinition.NO_INDEX);
 
         if (opts.notFound())
             return;

@@ -19,10 +19,16 @@ package org.apache.ignite.internal.processors.query.calcite.hint;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.logical.LogicalAggregate;
+import org.apache.calcite.tools.Planner;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 
 /**
  * Base class for working with Calcite's SQL hints.
@@ -36,24 +42,47 @@ public final class Hint {
     /**
      * @return Hints if any is found by {@code hintDef} in {@code hints}. Empty collection if hints are not found.
      */
-    public static Collection<RelHint> hints(Collection<RelHint> hints, HintDefinition hintDef) {
+    public static List<RelHint> allHints(Collection<RelHint> hints, HintDefinition hintDef) {
         return hints.stream().filter(h -> h.hintName.equals(hintDef.name())).collect(Collectors.toList());
     }
 
     /**
-     * @return Hints of {@code rel} if any is found by {@code hintDef}. Empty collection if hints are not found or if
-     * {@code rel} is not {@code Hintable}.
+     * @return Distinct hints witout inherit paths of {@code rel} if any is found by {@code hintDef}.
+     * Empty collection if hints are not found or if{@code rel} is not {@code Hintable}.
      */
-    public static Collection<RelHint> hints(RelNode rel, HintDefinition hintDef) {
-        return rel instanceof Hintable ? hints(((Hintable)rel).getHints(), hintDef) : Collections.emptyList();
+    public static List<RelHint> distinctHints(RelNode rel, HintDefinition hintDef) {
+        if (!(rel instanceof Hintable))
+            return Collections.emptyList();
+
+        Planner planner = rel.getCluster().getPlanner().getContext().unwrap(PlanningContext.class).planner();
+
+        List<RelHint> rootHints = planner instanceof IgnitePlanner
+            ? rel.getCluster().getHintStrategies().apply(((IgnitePlanner)planner).rootHints(), rel)
+            : Collections.emptyList();
+
+        List<RelHint> relHints = allHints(((Hintable)rel).getHints(), hintDef);
+
+        return Stream.concat(rootHints.stream(), relHints.stream()).distinct().collect(Collectors.toList());
     }
 
     /**
-     * @return Collections of hints' options if any found by {@code hintDef} in {@code rel}. Empty options if no hint
-     * is found.
+     * @return Options collections of distinct hints if any hint is found by {@code hintDef} in {@code rel}.
+     * Empty options if no hint is found.
      * @see HintOptions#notFound()
      */
     public static HintOptions options(RelNode rel, HintDefinition hintDef) {
-        return HintOptions.collect(hints(rel, hintDef));
+        return HintOptions.collect(distinctHints(rel, hintDef));
+    }
+
+    /**
+     * @return {@code True} if {@code rel} has any hint defined by {@code hintDef}. {@code False} otherwise.
+     */
+    public static boolean hasHint(LogicalAggregate rel, HintDefinition hintDef) {
+        for (RelHint h : rel.getHints()) {
+            if (h.hintName.equals(hintDef.name()))
+                return true;
+        }
+
+        return false;
     }
 }
