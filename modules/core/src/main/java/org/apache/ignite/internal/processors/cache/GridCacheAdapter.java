@@ -4470,9 +4470,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 }
                             }
 
-                            fut0.listen((IgniteInClosure<IgniteInternalFuture>)fut01 -> {
+                            fut0.listen(() -> {
                                 try {
-                                    resFut.onDone(fut01.get());
+                                    resFut.onDone(fut0.get());
                                 }
                                 catch (Throwable ex) {
                                     resFut.onDone(ex);

@@ -431,9 +431,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             }
         }
 
-        curFut.listen((IgniteInternalFuture<?> fut) -> {
+        curFut.listen(() -> {
             try {
-                fut.get();
+                curFut.get();
 
                 rollbackAsyncSafe(onTimeout);
             }
@@ -599,7 +599,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
                                     IgniteInternalFuture<?> fut = cctx.tm().remoteTxFinishFuture(nearXidVer);
 
-                                    fut.listen((IgniteInternalFuture<?> fut0) -> mini.onDone(tx));
+                                    fut.listen(() -> mini.onDone(tx));
 
                                     return;
                                 }
@@ -1007,7 +1007,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                                     if (backup.isLocal()) {
                                         IgniteInternalFuture<?> fut = cctx.tm().remoteTxFinishFuture(tx.nearXidVersion());
 
-                                        fut.listen((IgniteInternalFuture<?> fut0) -> mini.onDhtFinishResponse(cctx.localNodeId()));
+                                        fut.listen(() -> mini.onDhtFinishResponse(cctx.localNodeId()));
                                     }
                                     else {
                                         try {
