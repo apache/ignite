@@ -934,7 +934,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             tx.threadId(),
             createTtl,
             accessTtl,
-            filter,
             skipStore,
             keepBinary);
 
@@ -1125,7 +1124,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         req.threadId(),
                         req.createTtl(),
                         req.accessTtl(),
-                        filter,
                         req.skipStore(),
                         req.keepBinary());
 
