@@ -287,9 +287,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 }
 
                 // Add new future.
-                add(fut0.chain(f -> {
+                add(fut0.chain(() -> {
                     try {
-                        return createResultMap(f.get());
+                        return createResultMap(fut0.get());
                     }
                     catch (Exception e) {
                         U.error(log, "Failed to get values from dht cache [fut=" + fut0 + "]", e);

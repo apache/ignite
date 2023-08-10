@@ -2898,8 +2898,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     key,
                     val,
                     false,
-                    filter).chain(
-                    (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, Boolean>)RET2FLAG);
+                    filter).chain(RET2FLAG);
             }
 
             @Override public String toString() {
@@ -3360,8 +3359,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     Collections.singletonList(key),
                     /*retval*/false,
                     filter,
-                    /*singleRmv*/true).chain(
-                    (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, Boolean>)RET2FLAG);
+                    /*singleRmv*/true).chain(RET2FLAG);
             }
 
             @Override public String toString() {

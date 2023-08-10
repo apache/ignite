@@ -210,12 +210,12 @@ public class CachePartitionDefragmentationManager {
             new LinkedBlockingQueue<>()
         );
 
-        completionFut.chain(future -> {
+        completionFut.chain(() -> {
             linkMapByPart.values().forEach(LinkMap::close);
 
             linkMapByPart.clear();
 
-            return future.result();
+            return completionFut.result();
         });
     }
 
@@ -421,7 +421,7 @@ public class CachePartitionDefragmentationManager {
 
                     PageStore oldIdxPageStore = filePageStoreMgr.getStore(grpId, INDEX_PARTITION);
 
-                    idxDfrgFut = idxDfrgFut.chain(fut -> {
+                    idxDfrgFut = idxDfrgFut.chain(() -> {
                         if (log.isDebugEnabled()) {
                             log.debug(S.toString(
                                 "Index partition defragmented",
@@ -628,7 +628,7 @@ public class CachePartitionDefragmentationManager {
 
     /** */
     public IgniteInternalFuture<?> completionFuture() {
-        return completionFut.chain(future -> null);
+        return completionFut.chain(() -> null);
     }
 
     /** */

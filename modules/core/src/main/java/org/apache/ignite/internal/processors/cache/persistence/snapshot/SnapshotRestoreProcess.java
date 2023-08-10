@@ -586,7 +586,7 @@ public class SnapshotRestoreProcess {
             interrupt(opCtx0, reason);
 
         return fut0 == null ? new IgniteFinishedFutureImpl<>(ctxStop) :
-            new IgniteFutureImpl<>(fut0.chain(f -> true));
+            new IgniteFutureImpl<>(fut0.chain(() -> true));
     }
 
     /**
@@ -973,7 +973,7 @@ public class SnapshotRestoreProcess {
             IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
 
             synchronized (this) {
-                opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
+                opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(() -> null));
             }
 
             if (log.isInfoEnabled()) {
@@ -1671,7 +1671,7 @@ public class SnapshotRestoreProcess {
         GridFutureAdapter<Boolean> retFut = new GridFutureAdapter<>();
 
         synchronized (this) {
-            opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
+            opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(() -> null));
         }
 
         try {

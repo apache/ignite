@@ -1644,7 +1644,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> cancelSnapshot(String name) {
-        return new IgniteFutureImpl<>(cancelSnapshot0(name).chain(f -> null));
+        return new IgniteFutureImpl<>(cancelSnapshot0(name).chain(() -> null));
     }
 
     /**
