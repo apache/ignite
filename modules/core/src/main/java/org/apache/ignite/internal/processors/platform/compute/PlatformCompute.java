@@ -510,6 +510,11 @@ public class PlatformCompute extends PlatformAbstractTarget {
         }
 
         /** {@inheritDoc} */
+        @Override public IgniteInternalFuture chain(IgniteOutClosure doneCb, Executor exec) {
+            throw new UnsupportedOperationException("Chain operation is not supported.");
+        }
+
+        /** {@inheritDoc} */
         @Override public IgniteInternalFuture chainCompose(IgniteClosure doneCb) {
             throw new UnsupportedOperationException("Chain compose operation is not supported.");
         }

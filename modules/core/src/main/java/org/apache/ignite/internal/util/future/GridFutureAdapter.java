@@ -365,12 +365,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
 
     /** {@inheritDoc} */
     @Override public <T> IgniteInternalFuture<T> chain(IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb) {
-        ChainFuture<R, T> fut = new ChainFuture<>(this, doneCb, null);
-
-        if (ignoreInterrupts)
-            fut.ignoreInterrupts();
-
-        return fut;
+        return chain(doneCb, null);
     }
 
     /** {@inheritDoc} */
@@ -389,6 +384,11 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
             fut.ignoreInterrupts();
 
         return fut;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteInternalFuture<T> chain(IgniteOutClosure<T> doneCb, Executor exec) {
+        return chain(ignored -> doneCb.apply(), exec);
     }
 
     /** {@inheritDoc} */
