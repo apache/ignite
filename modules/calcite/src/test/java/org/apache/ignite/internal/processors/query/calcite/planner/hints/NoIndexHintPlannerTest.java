@@ -174,15 +174,10 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
     @Test
     public void testUnion() throws Exception {
         assertNoAnyIndex("SELECT /*+ NO_INDEX */ t1.* FROM TBL1 t1 where t1.val2='v' UNION " +
-            "SELECT /*+ NO_INDEX */ t2.* FROM TBL2 t2 where t2.val3='v'");
+            "SELECT t2.* FROM TBL2 t2 where t2.val3='v'");
 
         assertNoAnyIndex("SELECT /*+ NO_INDEX(TBL1='IDX2') */ t1.* FROM TBL1 t1 where t1.val2='v' UNION " +
             "SELECT /*+ NO_INDEX(TBL2='IDX3') */ t2.* FROM TBL2 t2 where t2.val3='v'");
-
-        assertPlan("SELECT /*+ NO_INDEX */ t1.* FROM TBL1 t1 where t1.val2='v' UNION " +
-                "SELECT t2.* FROM TBL2 t2 where t2.val3='v'", schema,
-            nodeOrAnyChild(isIndexScan("TBL2", "IDX3"))
-                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2")).negate()));
 
         assertPlan("SELECT t1.* FROM TBL1 t1 where t1.val2='v' UNION " +
                 "SELECT /*+ NO_INDEX */ t2.* FROM TBL2 t2 where t2.val3='v'", schema,

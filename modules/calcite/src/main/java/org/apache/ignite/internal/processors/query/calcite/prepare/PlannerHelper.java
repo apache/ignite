@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptUtil;
@@ -25,8 +26,10 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
@@ -47,6 +50,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescript
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class PlannerHelper {
@@ -66,6 +70,8 @@ public class PlannerHelper {
         try {
             // Convert to Relational operators graph
             RelRoot root = planner.rel(sqlNode);
+
+            planner.cluster().getPlanner().getContext().unwrap(PlanningContext.class).queryHints(resolveQueryHints(root));
 
             RelNode rel = root.rel;
 
@@ -113,6 +119,17 @@ public class PlannerHelper {
 
             throw ex;
         }
+    }
+
+    /** */
+    private static List<RelHint> resolveQueryHints(RelRoot root) {
+        if (!F.isEmpty(root.hints))
+            return root.hints;
+
+        if (root.rel instanceof SetOp && !F.isEmpty(root.rel.getInputs()))
+            return resolveQueryHints(root.withHints(Hint.allHints(root.rel.getInput(0))).withRel(root.rel.getInput(0)));
+
+        return Collections.emptyList();
     }
 
     /**

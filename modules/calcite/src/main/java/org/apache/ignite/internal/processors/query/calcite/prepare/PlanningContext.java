@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.prepare.CalciteCatalogReader;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlOperatorTable;
@@ -61,6 +64,9 @@ public final class PlanningContext implements Context {
 
     /** */
     private final long plannerTimeout;
+
+    /** */
+    private List<RelHint> queryHints = Collections.emptyList();
 
     /**
      * Private constructor, used by a builder.
@@ -208,6 +214,20 @@ public final class PlanningContext implements Context {
     /** */
     public RexBuilder rexBuilder() {
         return unwrap(BaseQueryContext.class).rexBuilder();
+    }
+
+    /**
+     * @return Query hints. Empty if query starts concating expressions like UNION.
+     */
+    public List<RelHint> queryHints() {
+        return queryHints;
+    }
+
+    /** */
+    PlanningContext queryHints(List<RelHint> hints) {
+        queryHints = hints;
+
+        return this;
     }
 
     /**

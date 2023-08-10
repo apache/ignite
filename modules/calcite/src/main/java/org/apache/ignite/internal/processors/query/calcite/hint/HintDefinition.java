@@ -28,31 +28,11 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
  * Holds supported hints and their settings.
  */
 public enum HintDefinition {
-    /** */
-    QUERY_ENGINE {
-        /** {@inheritDoc} */
-        @Override public HintPredicate predicate() {
-            return HintPredicates.SET_VAR;
-        }
+    /** Selects query engine. */
+    QUERY_ENGINE,
 
-        /** {@inheritDoc} */
-        @Override public HintOptionChecker optionsChecker() {
-            return HintsConfig.OPTS_CHECK_ONE_PLAIN;
-        }
-    },
-
-    /** */
-    DISABLE_RULE {
-        /** {@inheritDoc} */
-        @Override public HintPredicate predicate() {
-            return HintPredicates.SET_VAR;
-        }
-
-        /** {@inheritDoc} */
-        @Override public HintOptionChecker optionsChecker() {
-            return HintsConfig.OPTS_CHECK_PLAIN;
-        }
-    },
+    /** Disables converter rules. */
+    DISABLE_RULE,
 
     /** */
     EXPAND_DISTINCT_AGG {
@@ -67,7 +47,7 @@ public enum HintDefinition {
         }
     },
 
-    /** */
+    /** Disables indexes. */
     NO_INDEX {
         /** {@inheritDoc} */
         @Override public HintPredicate predicate() {
@@ -84,9 +64,17 @@ public enum HintDefinition {
         }
     };
 
-    /** */
-    abstract HintPredicate predicate();
+    /**
+     * @return Hint predicate which limits redundant hint copying to reduce resources usage.
+     */
+    HintPredicate predicate() {
+        return HintPredicates.SET_VAR;
+    }
 
-    /** */
-    abstract HintOptionChecker optionsChecker();
+    /**
+     * @return Hint options validator.
+     */
+    HintOptionChecker optionsChecker() {
+        return HintsConfig.OPTS_CHECK_PLAIN;
+    }
 }
