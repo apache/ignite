@@ -1158,9 +1158,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
         }
 
-        return task0.chain(fut -> {
-            if (fut.error() != null)
-                throw F.wrap(fut.error());
+        return task0.chain(() -> {
+            if (task0.error() != null)
+                throw F.wrap(task0.error());
 
             try {
                 Set<String> blts = req.nodes().stream()
@@ -1171,7 +1171,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 snpDir.mkdirs();
 
-                SnapshotFutureTaskResult res = (SnapshotFutureTaskResult)fut.result();
+                SnapshotFutureTaskResult res = (SnapshotFutureTaskResult)task0.result();
 
                 SnapshotMetadata meta = new SnapshotMetadata(req.requestId(),
                     req.snapshotName(),
@@ -1374,7 +1374,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (cctx.kernalContext().clientNode())
             return (IgniteInternalFuture<SnapshotOperationResponse>)prepFut;
 
-        return prepFut.chain(r -> {
+        return prepFut.chain(() -> {
             try {
                 if (req.error() != null) {
                     snpReq.error(req.error());
