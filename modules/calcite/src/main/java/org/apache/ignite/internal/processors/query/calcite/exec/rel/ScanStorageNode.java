@@ -49,7 +49,7 @@ public class ScanStorageNode<Row> extends ScanNode<Row> {
     ) {
         super(ctx, rowType, src, filter, rowTransformer);
 
-        processedRowsCntr = context().ioTracker().processedRowsCounter("Scanned by " + storageName);
+        processedRowsCntr = context().ioTracker().processedRowsCounter("Scanned " + storageName);
     }
 
     /**

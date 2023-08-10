@@ -166,6 +166,8 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         IgniteRel igniteRel = optimize(sqlNode, planner, log);
 
+        String plan = planExtractor.extract(igniteRel);
+
         // Extract parameters meta.
         FieldsMetadata params = DynamicParamTypeExtractor.go(igniteRel);
 
@@ -174,7 +176,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         QueryTemplate template = new QueryTemplate(fragments);
 
-        return new MultiStepQueryPlan(ctx.query(), planExtractor.extract(igniteRel), template,
+        return new MultiStepQueryPlan(ctx.query(), plan, template,
             queryFieldsMetadata(ctx, validated.dataType(), validated.origins()), params);
     }
 
@@ -188,6 +190,8 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
         // Convert to Relational operators graph
         IgniteRel igniteRel = optimize(sqlNode, planner, log);
 
+        String plan = planExtractor.extract(igniteRel);
+
         // Extract parameters meta.
         FieldsMetadata params = DynamicParamTypeExtractor.go(igniteRel);
 
@@ -196,7 +200,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         QueryTemplate template = new QueryTemplate(fragments);
 
-        return new MultiStepDmlPlan(ctx.query(), planExtractor.extract(igniteRel), template,
+        return new MultiStepDmlPlan(ctx.query(), plan, template,
             queryFieldsMetadata(ctx, igniteRel.getRowType(), null), params);
     }
 
