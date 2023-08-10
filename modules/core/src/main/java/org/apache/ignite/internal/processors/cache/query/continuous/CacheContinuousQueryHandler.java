@@ -705,7 +705,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         RegisterStatus regStatus = mgr.registerListener(routineId, lsnr, internal);
 
         if (regStatus == RegisterStatus.REGISTERED)
-            initFut.listen(res -> sendQueryExecutedEvent());
+            initFut.listen(this::sendQueryExecutedEvent);
 
         return regStatus;
     }

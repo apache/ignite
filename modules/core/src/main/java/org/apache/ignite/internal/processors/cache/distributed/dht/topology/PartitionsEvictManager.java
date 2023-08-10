@@ -300,7 +300,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
 
             GridFutureAdapter<?> fut = task.finishFut;
 
-            fut.listen(f -> {
+            fut.listen(() -> {
                 synchronized (this) {
                     taskInProgress--;
 

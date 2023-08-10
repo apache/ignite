@@ -4249,7 +4249,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (fut.isDone())
                 cctx.tm().mvccFinish(this);
             else
-                fut.listen(f -> cctx.tm().mvccFinish(this));
+                fut.listen(() -> cctx.tm().mvccFinish(this));
 
             return fut;
         }

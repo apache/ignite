@@ -308,11 +308,11 @@ public class SnapshotRestoreProcess {
             return new IgniteFinishedFutureImpl<>(e);
         }
 
-        fut0.listen(f -> {
-            if (f.error() != null) {
+        fut0.listen(() -> {
+            if (fut0.error() != null) {
                 snpMgr.recordSnapshotEvent(
                     snpName,
-                    OP_FAILED_MSG + ": " + f.error().getMessage() + " [reqId=" + fut0.rqId + "].",
+                    OP_FAILED_MSG + ": " + fut0.error().getMessage() + " [reqId=" + fut0.rqId + "].",
                     EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED
                 );
             }

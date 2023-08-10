@@ -897,7 +897,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         final GridCompoundFuture finishAllTxsFut = new CacheObjectsReleaseFuture("AllTx", topVer);
 
         // After finishing all local updates, wait for finishing all tx updates on backups.
-        finishLocTxsFut.listen(future -> {
+        finishLocTxsFut.listen(() -> {
             finishAllTxsFut.add(cctx.mvcc().finishRemoteTxs(topVer));
             finishAllTxsFut.markInitialized();
         });
@@ -3249,7 +3249,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                                 IgniteInternalFuture<?> prepFut = tx.currentPrepareFuture();
 
                                 if (prepFut != null) {
-                                    prepFut.listen(fut -> {
+                                    prepFut.listen(() -> {
                                         if (tx.state() == PREPARED)
                                             processPrepared(tx, evtNodeId);
                                             // If we could not mark tx as rollback, it means that transaction is being committed.
@@ -3276,7 +3276,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 doneFut.markInitialized();
 
                 if (log.isInfoEnabled() && preparedTxCnt.get() > 0)
-                    doneFut.listen(fut -> finishAndRecordTimings());
+                    doneFut.listen(this::finishAndRecordTimings);
 
                 if (allTxFinFut == null)
                     return;
@@ -3284,7 +3284,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 allTxFinFut.markInitialized();
 
                 // Send vote to mvcc coordinator when all recovering transactions have finished.
-                allTxFinFut.listen(fut -> {
+                allTxFinFut.listen(() -> {
                     // If mvcc coordinator issued snapshot for recovering transaction has failed during recovery,
                     // then there is no need to send messages to new coordinator.
                     try {
@@ -3706,9 +3706,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             IgniteInternalFuture<?> recInitFut = cctx.kernalContext().closure().runLocalSafe(
                 new TxRecoveryInitRunnable(evt.eventNode(), cctx.coordinators().currentCoordinator()));
 
-            recInitFut.listen(future -> {
-                if (future.error() != null)
-                    cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, future.error()));
+            recInitFut.listen(() -> {
+                if (recInitFut.error() != null)
+                    cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, recInitFut.error()));
             });
         }
 

@@ -129,6 +129,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
+
 import static java.util.Collections.emptySet;
 import static java.util.stream.Stream.concat;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT;
@@ -2529,7 +2530,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         // Should execute this listener first, before any external listeners.
         // Listeners use stack as data structure.
-        listen(f -> {
+        listen(() -> {
             // Update last finished future in the first.
             cctx.exchange().lastFinishedFuture(this);
 

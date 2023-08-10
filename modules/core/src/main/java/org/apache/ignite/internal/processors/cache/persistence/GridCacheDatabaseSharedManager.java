@@ -1488,7 +1488,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 );
 
                 if (rebuildFut != null)
-                    rebuildFut.listen(fut -> rebuildIndexesCompleteCntr.countDown(true));
+                    rebuildFut.listen(() -> rebuildIndexesCompleteCntr.countDown(true));
                 else
                     rebuildIndexesCompleteCntr.countDown(false);
             }

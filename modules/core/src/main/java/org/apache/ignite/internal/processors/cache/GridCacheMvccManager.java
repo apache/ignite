@@ -352,7 +352,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      */
     private IgniteInternalFuture ignoreErrors(IgniteInternalFuture<?> f) {
         GridFutureAdapter<?> wrapper = new GridFutureAdapter();
-        f.listen(future -> wrapper.onDone());
+        f.listen(() -> wrapper.onDone());
         return wrapper;
     }
 
