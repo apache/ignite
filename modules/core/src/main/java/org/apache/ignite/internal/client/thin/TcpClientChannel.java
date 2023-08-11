@@ -686,12 +686,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         if (F.isEmpty(addrs))
             error = "At least one Ignite server node must be specified in the Ignite client configuration";
-        else {
-            for (InetSocketAddress addr : addrs) {
-                if (addr.getPort() < 1024 || addr.getPort() > 49151)
-                    error = String.format("Ignite client port %s is out of valid ports range 1024...49151", addr.getPort());
-            }
-        }
 
         if (error == null && cfg.getHeartbeatInterval() <= 0)
             error = "heartbeatInterval cannot be zero or less.";

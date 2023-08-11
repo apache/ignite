@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import com.google.common.collect.Multimap;
@@ -156,13 +157,21 @@ public final class BaseQueryContext extends AbstractQueryContext {
     /** */
     private final GridQueryCancel qryCancel;
 
+    /** */
+    private final boolean isLocal;
+
+    /** */
+    private final int[] parts;
+
     /**
      * Private constructor, used by a builder.
      */
     private BaseQueryContext(
         FrameworkConfig cfg,
         Context parentCtx,
-        IgniteLogger log
+        IgniteLogger log,
+        boolean isLocal,
+        int[] parts
     ) {
         super(Contexts.chain(parentCtx, cfg.getContext()));
 
@@ -170,6 +179,10 @@ public final class BaseQueryContext extends AbstractQueryContext {
         this.cfg = Frameworks.newConfigBuilder(cfg).context(this).build();
 
         this.log = log;
+
+        this.isLocal = isLocal;
+
+        this.parts = parts;
 
         qryCancel = unwrap(GridQueryCancel.class);
 
@@ -265,6 +278,19 @@ public final class BaseQueryContext extends AbstractQueryContext {
         return EMPTY_CONTEXT;
     }
 
+    /** */
+    public boolean isLocal() {
+        return isLocal;
+    }
+
+    /** */
+    public int[] partitions() {
+        if (parts != null)
+            return Arrays.copyOf(parts, parts.length);
+
+        return null;
+    }
+
     /**
      * Query context builder.
      */
@@ -284,6 +310,12 @@ public final class BaseQueryContext extends AbstractQueryContext {
 
         /** */
         private IgniteLogger log = new NullLogger();
+
+        /** */
+        private boolean isLocal = false;
+
+        /** */
+        private int[] parts = null;
 
         /**
          * @param frameworkCfg Framework config.
@@ -313,12 +345,32 @@ public final class BaseQueryContext extends AbstractQueryContext {
         }
 
         /**
+         * @param isLocal Local execution flag.
+         * @return Builder for chaining.
+         */
+        public Builder local(boolean isLocal) {
+            this.isLocal = isLocal;
+            return this;
+        }
+
+        /**
+         * @param parts Array of partitions' numbers.
+         * @return Builder for chaining.
+         */
+        public Builder partitions(int[] parts) {
+            if (parts != null)
+                this.parts = Arrays.copyOf(parts, parts.length);
+
+            return this;
+        }
+
+        /**
          * Builds planner context.
          *
          * @return Planner context.
          */
         public BaseQueryContext build() {
-            return new BaseQueryContext(frameworkCfg, parentCtx, log);
+            return new BaseQueryContext(frameworkCfg, parentCtx, log, isLocal, parts);
         }
     }
 }

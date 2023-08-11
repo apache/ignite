@@ -65,7 +65,11 @@
                     <property name="{{ name | snake_to_camel }}">
                         <list>
                             {% for v in value %}
-                                <value>{{ v }}</value>
+                                {% if v is string or v is number or v is boolean %}
+                                    <value>{{ v }}</value>
+                                {% else %}
+                                    {{ bean(v) }}
+                                {% endif %}
                             {% endfor %}
                         </list>
                     </property>

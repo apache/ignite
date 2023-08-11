@@ -141,17 +141,7 @@ In the above connection string, replace `[host]`, `[port]`, and `[sessionToken]`
 [WARNING]
 ====
 Either user credentials or a session token is required when authentication is enabled on the server.
-Failure to provide either a `sessionToken` or `user` & `password` parameters in the REST connection string results in an error:
-
-[source, json]
-----
-{
-    "successStatus":2,
-    "sessionToken":null,
-    "error":"Failed to handle request - session token not found or invalid",
-    "response":null
-}
-----
+Failure to provide either a `sessionToken` or `user` & `password` parameters in the REST connection string results in an error.
 ====
 
 
@@ -160,17 +150,7 @@ Failure to provide either a `sessionToken` or `user` & `password` parameters in 
 [discrete]
 === Session Token Expiration
 
-A session token is valid only for 30 seconds. Using an expired session token results in an error, like the one below:
-
-[source, json]
-----
-{
-    "successStatus":1,
-    "error":"Failed to handle request - unknown session token (maybe expired session) [sesTok=12FFFD4827D149068E9FFF59700E5FDA]",
-    "sessionToken":null,
-    "response":null
-}
-----
+A session token is valid only for 30 seconds. Using an expired session token results in an error.
 
 To set a custom expire time, set the system variable: `IGNITE_REST_SESSION_TIMEOUT` (in seconds).
 
@@ -293,9 +273,9 @@ link:/docs/data-modeling/data-modeling#binary-object-format[binary object] forma
 * If the `Person` class is not available on the server’s classpath, but there is a `QueryEntity` object that defines
 the `Person`, then the JSON object is resolved to a binary object of that `Person` type:
 +
-[%header, cols="2"]
+[%header, cols="1"]
 |===
-|Query entity|Binary Object (Person)
+|Query entity
 a|
 [source,xml]
 ----
@@ -313,6 +293,11 @@ a|
 </property>
 </bean>
 ----
+|===
++
+[%header, cols="1"]
+|===
+|Binary Object (Person)
 a|
 [source,javascript]
 ----

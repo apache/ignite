@@ -225,6 +225,7 @@ import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBina
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
@@ -1874,6 +1875,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
 
+        if (log.isInfoEnabled()) {
+            log.info("The check snapshot procedure started [snpName=" + name + ", snpPath=" + snpPath +
+                ", incIdx=" + incIdx + ", grps=" + grps + ']');
+        }
+
         GridKernalContext kctx0 = cctx.kernalContext();
 
         Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
@@ -1991,6 +1997,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     res.onDone(f0.error());
             }
         });
+
+        if (log.isInfoEnabled()) {
+            res.listen(f -> log.info("The check snapshot procedure finished [snpName=" + name +
+                ", snpPath=" + snpPath + ", incIdx=" + incIdx + ", grps=" + grps + ']'));
+        }
 
         return res;
     }
@@ -4088,8 +4099,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 sndr.send(part, 0, len, transmissionParams(rqId, cacheDirName, pair), TransmissionPolicy.FILE);
 
                 if (log.isInfoEnabled()) {
-                    log.info("Partition file has been send [part=" + part.getName() + ", pair=" + pair +
-                        ", length=" + len + ']');
+                    log.info("Partition file has been sent [part=" + part.getName() + ", pair=" + pair +
+                        ", grpName=" + cacheGroupName(new File(cacheDirName)) + ", length=" + len + ']');
                 }
             }
             catch (TransmissionCancelledException e) {

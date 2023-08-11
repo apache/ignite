@@ -281,7 +281,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 tx = new GridDhtTxRemote(
                                     ctx.shared(),
                                     req.nodeId(),
-                                    req.futureId(),
                                     nodeId,
                                     req.nearXidVersion(),
                                     req.topologyVersion(),
@@ -935,7 +934,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             tx.threadId(),
             createTtl,
             accessTtl,
-            filter,
             skipStore,
             keepBinary);
 
@@ -1126,7 +1124,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         req.threadId(),
                         req.createTtl(),
                         req.accessTtl(),
-                        filter,
                         req.skipStore(),
                         req.keepBinary());
 
@@ -2195,7 +2192,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         GridNearTxQueryEnlistFuture fut = (GridNearTxQueryEnlistFuture)ctx.mvcc().versionedFuture(res.version(), res.futureId());
 
         if (fut != null)
-            fut.onResult(nodeId, res);
+            fut.onResult(res);
     }
 
     /**
@@ -2230,7 +2227,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 tx = new GridDhtTxRemote(ctx.shared(),
                     req0.nearNodeId(),
-                    req0.dhtFutureId(),
                     primary,
                     req0.nearXidVersion(),
                     req0.topologyVersion(),

@@ -136,6 +136,12 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
             catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);
             }
+            finally {
+                if (log.isInfoEnabled()) {
+                    log.info("Verify snapshot partitions procedure has been finished " +
+                        "[snpName=" + snpName + ", consId=" + consId + ']');
+                }
+            }
         }
 
         /** {@inheritDoc} */

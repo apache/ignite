@@ -31,7 +31,6 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.channels.Channel;
 import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
 import java.time.Instant;
@@ -2917,7 +2916,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         ReceiverContext rcvCtx,
         ObjectInputStream in,
         ObjectOutputStream out,
-        ReadableByteChannel ch
+        SocketChannel ch
     ) throws NodeStoppingException, InterruptedException {
         try {
             while (true) {
@@ -2964,9 +2963,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     rcvCtx.rcv.close();
 
                     U.log(log, "File has been received " +
-                        "[name=" + rcvCtx.rcv.state().name() + ", transferred=" + rcvCtx.rcv.transferred() +
+                        "[name=" + rcvCtx.rcv.state().name() +
+                        ", transferred=" + rcvCtx.rcv.transferred() +
                         ", time=" + (double)((U.currentTimeMillis() - startTime) / 1000) + " sec" +
-                        ", rmtId=" + rcvCtx.rmtNodeId + ']');
+                        ", rmtId=" + rcvCtx.rmtNodeId +
+                        ", rmtAddr=" + ch.getRemoteAddress() + ']');
 
                     rcvCtx.rcv = null;
                 }
@@ -3218,7 +3219,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         private T2<UUID, IgniteUuid> sesKey;
 
         /** Instance of opened writable channel to work with. */
-        private WritableByteChannel channel;
+        private SocketChannel channel;
 
         /** Decorated with data operations socket of output channel. */
         private ObjectOutput out;
@@ -3252,7 +3253,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             configureChannel(channel, netTimeoutMs);
 
-            this.channel = (WritableByteChannel)channel;
+            this.channel = channel;
             out = new ObjectOutputStream(channel.socket().getOutputStream());
             in = new ObjectInputStream(channel.socket().getInputStream());
 
@@ -3381,8 +3382,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 U.log(log, "File has been sent to remote node [name=" + file.getName() +
                     ", uploadTime=" + (double)((U.currentTimeMillis() - startTime) / 1000) + " sec, retries=" + retries +
-                    ", transferred=" + snd.transferred() + ", rmtId=" + rmtId + ']');
-
+                    ", transferred=" + snd.transferred() + ", rmtId=" + rmtId +
+                    ", rmtAddr=" + channel.getRemoteAddress() + ']');
             }
             catch (InterruptedException e) {
                 closeChannelQuiet();

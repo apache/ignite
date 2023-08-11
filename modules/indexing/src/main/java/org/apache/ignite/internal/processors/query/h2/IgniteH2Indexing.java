@@ -264,7 +264,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private GridMessageListener qryLsnr;
 
     /** Distributed config. */
-    private DistributedSqlConfiguration distrCfg;
+    private DistributedIndexingConfiguration distrCfg;
 
     /** Functions manager. */
     private FunctionsManager funcMgr;
@@ -1893,7 +1893,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         JdbcUtils.serializer = h2Serializer();
 
-        distrCfg = new DistributedSqlConfiguration(ctx, log);
+        distrCfg = new DistributedIndexingConfiguration(ctx, log);
 
         funcMgr = new FunctionsManager(distrCfg);
 
@@ -2785,7 +2785,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * @return Distributed SQL configuration.
      */
-    public DistributedSqlConfiguration distributedConfiguration() {
+    public DistributedIndexingConfiguration distributedConfiguration() {
         return distrCfg;
     }
 }

@@ -46,7 +46,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
-import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.DEADLOCK_MAX_ITERS;
 
 /**
  * Transactions deadlock detection.
@@ -285,7 +284,7 @@ public class TxDeadlockDetection {
 
             assert set;
 
-            if (nodeId == null || itersCnt++ >= DEADLOCK_MAX_ITERS || timedOut)
+            if (nodeId == null || itersCnt++ >= cctx.tm().deadlockMaxIters || timedOut)
                 onDone();
             else {
                 final Set<IgniteTxKey> txKeys = pendingKeys.get(nodeId);

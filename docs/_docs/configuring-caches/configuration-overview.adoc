@@ -123,9 +123,9 @@ tab:C++[unsupported]
 == Cache Templates
 A cache template is an instance of `CacheConfiguration` that can be registered in the cluster and used later as a basis for creating new caches or SQL tables. A cache or table created from a template inherits all the properties of the template.
 
-Templates are useful when creating a table using the link:sql-reference/ddl#create-table[CREATE TABLE] command, because the command does not support all available cache parameters.
+A cache template is an instance of `CacheConfiguration` that can be registered in the cluster and used later as a basis for creating new caches or SQL tables. A cache or table created from a template inherits all the properties of the template.
 
-NOTE: Currently, templates are supported for the CREATE TABLE and REST commands.
+Templates can be used in many contexts: on servers, clients (thin and thick), in SQL (e.g., CREATE TABLE), in commands such as `createCache` and `getOrCreateCache`, as well as in the REST API calls. For example, thin clients and SQL do not support some cache configuration properties, and cache templates can be used to work around this limitation.
 
 To create a template, define a cache configuration and add it to the `Ignite` instance, as shown below. If you want do define a cache template in the XML configuration file, you must add an asterisk to the template's name. This is required to indicate that the configuration is a template and not an actual cache.
 

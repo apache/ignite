@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Predicate;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
@@ -100,10 +99,9 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
     public Iterable<Row> scan(
         ExecutionContext<Row> ectx,
         RelDataType rowType,
-        Predicate<Row> filter,
         RangeIterable<Row> ranges
     ) {
-        return new IndexScan(rowType, this, filter, ranges);
+        return new IndexScan(rowType, this, ranges);
     }
 
     /**
@@ -190,16 +188,14 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
         /**
          * @param rowType Row type.
          * @param idx Physical index.
-         * @param filter Additional filters.
          * @param ranges Index scan bounds.
          */
         IndexScan(
             RelDataType rowType,
             TreeIndex<Row> idx,
-            Predicate<Row> filter,
             RangeIterable<Row> ranges
         ) {
-            super(RuntimeSortedIndex.this.ectx, rowType, idx, filter, ranges, null);
+            super(RuntimeSortedIndex.this.ectx, rowType, idx, ranges);
         }
 
         /** {@inheritDoc} */

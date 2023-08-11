@@ -656,6 +656,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
                 true,
                 () -> true,
                 new DataRegionMetricsImpl(igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration(), kernalCtx),
+                igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration(),
                 throttlingPlc,
                 noThrottle
             ) :
@@ -669,6 +670,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
                 true,
                 () -> true,
                 new DataRegionMetricsImpl(igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration(), kernalCtx),
+                igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration(),
                 throttlingPlc,
                 noThrottle
             ) {
