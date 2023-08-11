@@ -108,7 +108,7 @@ public interface IgniteInternalFuture<R> {
     /**
      * Registers listener closure to be asynchronously notified whenever future completes.
      *
-     * @param lsnr Listener closure to register. If not provided - this method is no-op.
+     * @param lsnr Listener closure to register.
      */
     @Async.Schedule
     public void listen(IgniteInClosure<? super IgniteInternalFuture<R>> lsnr);
@@ -116,7 +116,7 @@ public interface IgniteInternalFuture<R> {
     /**
      * Registers listener closure to be asynchronously notified whenever future completes.
      *
-     * @param lsnr Listener closure to register. If not provided - this method is no-op.
+     * @param lsnr Listener closure to register.
      */
     @Async.Schedule
     public void listen(IgniteRunnable lsnr);
