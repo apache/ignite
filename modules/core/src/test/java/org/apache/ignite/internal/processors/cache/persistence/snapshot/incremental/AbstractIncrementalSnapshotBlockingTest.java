@@ -326,7 +326,7 @@ public abstract class AbstractIncrementalSnapshotBlockingTest extends AbstractIn
             if (latch == null)
                 return;
 
-            snpFut.listen(ignored -> latch.countDown());
+            snpFut.listen((f) -> latch.countDown());
 
             if (beforeStartLatch != null)
                 U.awaitQuiet(latch);
