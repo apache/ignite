@@ -57,7 +57,7 @@ public final class Hint {
      * @return Combined distinct query (root) hints and hints of {@code rel} witout hint inherit pathes.
      * Empty collection if hints are not found or if {@code rel} is not {@code Hintable}.
      * @see PlanningContext#queryHints()
-     * @see #removeInheritPath(RelHint) 
+     * @see #removeInheritPath(RelHint)
      */
     public static List<RelHint> queryAndNodeHints(RelNode rel, HintDefinition hintDef) {
         if (!(rel instanceof Hintable))
