@@ -33,7 +33,6 @@
     "gulp-eslint": "^2.0.0",
     "del": "^2.2.0"
   },
-  "dependencies": {
-    "bpmn-js-properties-panel": "^0.31.0"
+  "dependencies": {    
   }
 }

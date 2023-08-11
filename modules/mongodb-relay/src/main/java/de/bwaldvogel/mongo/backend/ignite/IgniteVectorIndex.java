@@ -4,6 +4,7 @@ import static org.apache.ignite.ml.knn.utils.PointWithDistanceUtil.transformToLi
 import static org.apache.ignite.ml.knn.utils.PointWithDistanceUtil.tryToAddIntoHeap;
 
 import java.io.Serializable;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -19,10 +20,12 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -93,6 +96,12 @@ public class IgniteVectorIndex extends Index<Object> {
 	
 	private int dimensions = 1024;
 	
+	private String embeddingModelName = "text2vec-base-chinese-paraphrase";
+	
+	private String tokenizerModelName = "tokenizers/perceiver-ar-xlnet-large";
+	
+	private String modelUrl = null;
+	
 	
 	static class EmbeddingIntCoordObjectLabelVectorizer implements FeatureLabelExtractor<Object,Vector,Object>{
 		
@@ -149,7 +158,31 @@ public class IgniteVectorIndex extends Index<Object> {
 			if(!indexType.isBlank()) {
 				idxType = SpatialIndexType.valueOf(indexType.toUpperCase());
 			}
-			
+			// 句向量模型
+			embeddingModelName = (String)options.getOrDefault("modelId", "chinese");
+			if(embeddingModelName.equals("chinese")) {
+				embeddingModelName = "text2vec-base-chinese-paraphrase";
+			}
+			else if(embeddingModelName.equals("multilingual")) {
+				embeddingModelName = "paraphrase-xlm-r-multilingual";
+			}	
+			// IDF词典模型
+			tokenizerModelName = (String)options.getOrDefault("tokenizerId", tokenizerModelName);
+		}
+		
+		String igniteHome = ctx.grid().configuration().getIgniteHome();
+		
+		try {
+			IgniteFileSystem fs = ctx.grid().fileSystem("models");
+			if(fs.exists(new IgfsPath(embeddingModelName))) {
+				modelUrl = "s3://models/" + (sparse?tokenizerModelName:embeddingModelName);
+			}
+			else {
+				modelUrl = igniteHome+"/models/"+(sparse?tokenizerModelName:embeddingModelName);
+			}
+		}
+		catch(IllegalArgumentException e) {			
+			modelUrl = igniteHome+"/models/"+(sparse?tokenizerModelName:embeddingModelName);
 		}
 		
 		 
@@ -231,12 +264,12 @@ public class IgniteVectorIndex extends Index<Object> {
 			vec = new DenseVector(data);
 		}
 		else if(val instanceof String) {
-			String igniteHome = ctx.grid().configuration().getIgniteHome();
+			
 			if(this.isSparse()) {
-				vec = EmbeddingUtil.textTwoGramVec(val.toString(),igniteHome);
+				vec = EmbeddingUtil.textTwoGramVec(val.toString(),modelUrl);
 			}
 			else {			
-				vec = EmbeddingUtil.textXlmVec(val.toString(),igniteHome);
+				vec = EmbeddingUtil.textXlmVec(val.toString(),modelUrl);
 			}
 		}
 		return vec;

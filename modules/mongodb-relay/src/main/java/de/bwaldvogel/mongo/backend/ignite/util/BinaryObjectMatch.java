@@ -2,6 +2,7 @@ package de.bwaldvogel.mongo.backend.ignite.util;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -44,7 +45,7 @@ public class BinaryObjectMatch extends DefaultQueryMatcher implements IgniteBiPr
     public boolean matches(BinaryObject document, Document query) {
         for (String key : query.keySet()) {
             Object queryValue = query.get(key);
-            validateQueryValue(queryValue, key);
+            //-validateQueryValue(queryValue, key);
             List<String> keys = splitKey(key);
             if(keys.size()!=1) {
             	return true;
@@ -77,6 +78,9 @@ public class BinaryObjectMatch extends DefaultQueryMatcher implements IgniteBiPr
                 } else if (checkMatchesAnyValue(queryValue, documentValues)) {
                     return true;
                 }
+            }
+            else if (documentValue instanceof Map && !(documentValue instanceof Document)) {
+            	documentValue = new Document(documentValue);
             }
 
             return checkMatchesValue(queryValue, documentValue);

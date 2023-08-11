@@ -1,18 +1,20 @@
-package org.shaofan.controllers;
+package org.shaofan.servlet;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URLConnection;
 import java.net.URLDecoder;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,14 +22,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -46,30 +48,20 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.beanutils.BeanUtils;
-import org.apache.commons.beanutils.PropertyUtils;
+
+
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteFileSystem;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.igfs.IgfsFile;
-import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteKernal;
-import org.shaofan.utils.IgfsUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-
 
 /**
  * This servlet serve angular-filemanager call<br>
@@ -119,9 +111,9 @@ import com.alibaba.fastjson.JSONObject;
  *
  * @author Paolo Biavati https://github.com/paolobiavati
  */
-public class AngularIgfsFileManagerServlet extends HttpServlet {
+public class AngularFileManagerServlet extends HttpServlet {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AngularIgfsFileManagerServlet.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AngularFileManagerServlet.class);
 
     private static final long serialVersionUID = -8453502699403909016L;
 
@@ -136,15 +128,13 @@ public class AngularIgfsFileManagerServlet extends HttpServlet {
     private String DATE_FORMAT = "yyyy-MM-dd hh:mm:ss"; // (2001-07-04 12:08:56)
     //private String DATE_FORMAT = "EEE, d MMM yyyy HH:mm:ss z"; // (Wed, 4 Jul 2001 12:08:56)
 
-    private Ignite ignite;    
-    
-
     @Override
     public void init() throws ServletException {
         super.init();
-        
-        REPOSITORY_BASE_PATH = System.getProperty("ava.io.tmpdir");
-        String configValue = getInitParameter("date.format");
+        String configValue = this.getServletContext().getInitParameter("repository.base.path");
+        REPOSITORY_BASE_PATH = configValue == null ? System.getProperty("ava.io.tmpdir")
+                : configValue.trim();
+        configValue = getInitParameter("date.format");
         if (configValue != null) {
             if (new SimpleDateFormat(DATE_FORMAT).format(new Date()) == null) {
                 // Invalid date format
@@ -170,73 +160,16 @@ public class AngularIgfsFileManagerServlet extends HttpServlet {
             enabledAction.put(Mode.copy, enabledActions.contains("copy"));
             enabledAction.put(Mode.upload, enabledActions.contains("upload"));
         }
-        
-        GridKernalContext ctx = (GridKernalContext) this.getServletContext().getAttribute("gridKernalContext");
-        if(ctx==null) {
-        	String configFile = getInitParameter("ignite.cfg.path");
-        	if(configFile==null) {
-        		throw new ServletException("Must set ignite.cfg.path");
-        	}
-        	String instanceName = getInitParameter("ignite.igfs.instanceName");
-        	ignite = Ignition.start(configFile);
-        	if(instanceName !=null && Ignition.allGrids().size()>0) {
-        		ignite = Ignition.ignite(instanceName);
-        	}
-        }
-        else {
-        	ignite = ctx.grid();
-        }
     }
-    
-    /**
-     *  获取fs，使用单一的fs存储所有的buckets
-     * @param bucketName
-     * @return
-     */
-    protected IgniteFileSystem fs(String bucketName) {    		
-    	IgniteFileSystem igfs = ignite.fileSystem(bucketName);
-        return igfs;
-
-    }    
 
     /**
     *
     * @param webjarsResourceURI
     * @return
     */
-   private String[] getFileToken(String webjarsResourceURI) {
-	   if(webjarsResourceURI.startsWith("/")) {
-		   webjarsResourceURI = webjarsResourceURI.substring(1);
-	   }
-       String[] tokens = webjarsResourceURI.split("/",2);
-       if(tokens.length==1) {
-    	   return new String[] { tokens[0], "/" };
-       }
-       tokens[1] = "/" + tokens[1];
-       return tokens;
-   }
-   
-   private IgfsFile getFile(String webjarsResourceURI) {
-	   if(webjarsResourceURI.startsWith("/")) {
-		   webjarsResourceURI = webjarsResourceURI.substring(1);
-	   }
-       String[] tokens = webjarsResourceURI.split("/",2);
-       IgniteFileSystem fs = fs(tokens[0]);
-       if(tokens.length==1) {
-    	   return fs.info(new IgfsPath("/"));
-       }
-       return fs.info(new IgfsPath("/" + tokens[1]));
-   }
-   
-   private IgfsPath getPath(String webjarsResourceURI) {
-	   if(webjarsResourceURI.startsWith("/")) {
-		   webjarsResourceURI = webjarsResourceURI.substring(1);
-	   }
-       String[] tokens = webjarsResourceURI.split("/",2);       
-       if(tokens.length==1) {
-    	   return new IgfsPath("/");
-       }
-       return new IgfsPath("/" + tokens[1]);
+   private String getFileName(String webjarsResourceURI) {
+       String[] tokens = webjarsResourceURI.split("/");
+       return tokens[tokens.length - 1];
    }
 
    
@@ -245,66 +178,65 @@ public class AngularIgfsFileManagerServlet extends HttpServlet {
     	String action = request.getParameter("action");
     	String pathName = request.getParameter("path");
     	// Catch download requests    	
-    	if(action==null) { // view
+    	if(action==null) { //view
     		action = "download";
     		String uri = request.getRequestURI().replaceFirst(request.getContextPath(), "");  
     		pathName = uri.substring(6);
     	}
     	
     	pathName = URLDecoder.decode(pathName,"UTF-8");
-
         // [$config.downloadFileUrl]?mode=download&preview=true&path=/public_html/image.jpg
-        String[] tokens = getFileToken(pathName);
-        IgniteFileSystem fs = fs(tokens[0]);
-        pathName = tokens[1];
+        
         if ("download".equals(action)) {
-        	IgfsPath fspath = new IgfsPath(pathName);
-            IgfsFile file = fs.info(fspath);
-            if (file==null || !file.isFile()) {
+            
+            File file = new File(REPOSITORY_BASE_PATH, pathName);
+            if (!file.isFile()) {
                 // if not a file, it is a folder, show this error.  
                 response.sendError(HttpServletResponse.SC_NOT_FOUND, "Resource Not Found");
                 return;
             }
 
             //获取mimeType
-            String mimeType = new MimetypesFileTypeMap().getContentType(fspath.name());
+            String mimeType = new MimetypesFileTypeMap().getContentType(file.getName());
             if (mimeType == null) {
                 mimeType = "application/octet-stream";
             }
 
             response.setContentType(mimeType);            
             //response.setHeader("Content-Type", "application/force-download");
-            response.setHeader("Content-Disposition", "inline; filename=\"" + MimeUtility.encodeWord(fspath.name()) + "\"");
+            response.setHeader("Content-Disposition", "inline; filename=\"" + MimeUtility.encodeWord(file.getName()) + "\"");
             
-            
-            try {
-            	IgfsUtils.pipe(fs, fspath, response.getOutputStream());
+            try (SeekableByteChannel channel = Files.newByteChannel(file.toPath())) {
+                byte[] buffer = new byte[256 * 1024];
+                ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+                for (int length = 0; (length = channel.read(byteBuffer)) != -1;) {
+                    response.getOutputStream().write(buffer, 0, length);
+                    byteBuffer.clear();
+                }
             } catch (IOException ex) {
                 LOG.error(ex.getMessage(), ex);
                 throw ex;
             } finally {
                 response.getOutputStream().flush();
             }
-        } 
-        else if ("downloadMultiple".equals(action)) {
+        } else if ("downloadMultiple".equals(action)) {
         	
             String toFilename = request.getParameter("toFilename");
             String[] items = request.getParameterValues("items[]");
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(baos))) {
                 for (String item : items) {
-                	IgfsPath fspath = new IgfsPath(item);
-                	IgfsFile file = fs.info(fspath);                   
-                    if (file.isFile()) {
-                        ZipEntry zipEntry = new ZipEntry(fspath.name());
-                        zos.putNextEntry(zipEntry);                       
-                        try {
-                        	IgfsUtils.pipe(fs, fspath,zos);                       
-	                    } catch (IOException ex) {
-	                        LOG.error(ex.getMessage(), ex);
-	                        throw ex;
-	                    }
-                        finally {
+                    Path path = Paths.get(REPOSITORY_BASE_PATH, item);
+                    if (Files.exists(path)) {
+                        ZipEntry zipEntry = new ZipEntry(path.getFileName().toString());
+                        zos.putNextEntry(zipEntry);
+                        byte buffer[] = new byte[2048];
+                        try (BufferedInputStream bis = new BufferedInputStream(Files.newInputStream(path))) {
+                            int bytesRead = 0;
+                            while ((bytesRead = bis.read(buffer)) != -1) {
+                                zos.write(buffer, 0, bytesRead);
+                            }
+                        } finally {
                             zos.closeEntry();
                         }
                     }
@@ -390,18 +322,12 @@ public class AngularIgfsFileManagerServlet extends HttpServlet {
                     throw new Exception("file size  = 0");
                 } else {
                     for (Map.Entry<String, InputStream> fileEntry : files.entrySet()) {
-                    	String[] tokens = getFileToken(destination);
-                        IgniteFileSystem fs = fs(tokens[0]);
-                        String pathName = tokens[1];
-                        if(pathName.equals("/"))
-                        	pathName = "";
-                        IgfsPath igpath = new IgfsPath(pathName+"/"+ fileEntry.getKey());
-                        if (!IgfsUtils.create(fs, igpath, fileEntry.getValue())) {
+                        Path path = Paths.get(REPOSITORY_BASE_PATH + destination, fileEntry.getKey());
+                        if (!write(fileEntry.getValue(), path)) {
                             LOG.debug("write error");
                             throw new Exception("write error");
                         }
                         fileEntry.getValue().close();
-                        
                     }
 
                     JSONObject responseJsonObject = null;
@@ -425,7 +351,16 @@ public class AngularIgfsFileManagerServlet extends HttpServlet {
             throw new ServletException(notSupportFeature(Mode.upload).getString("error"));
         }
     }
-   
+
+    private boolean write(InputStream inputStream, Path path) {
+        try {
+            Files.copy(inputStream, path, StandardCopyOption.REPLACE_EXISTING);
+            return true;
+        } catch (IOException ex) {
+            LOG.error(ex.getMessage(), ex);
+            return false;
+        }
+    }
 
     private void fileOperation(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         JSONObject responseJsonObject = null;
@@ -497,57 +432,29 @@ public class AngularIgfsFileManagerServlet extends HttpServlet {
             LOG.debug("list path: Paths.get('{}', '{}'), onlyFolders: {}", REPOSITORY_BASE_PATH, path, onlyFolders);
 
             List<JSONObject> resultList = new ArrayList<>();
-            String[] tokens = getFileToken(path);
-            Collection<IgniteFileSystem> fsList = new ArrayList<>();
-            if(tokens[0].isEmpty()) {
-            	fsList = ignite.fileSystems();            	
-            	SimpleDateFormat dt = new SimpleDateFormat(DATE_FORMAT);
-                for(IgniteFileSystem fs : fsList) {
-    	            try {
-    	            	String fsName = fs.name();    	                
-    	                JSONObject el = new JSONObject();
-	                    el.put("name", fsName);
-	                    el.put("rights", getPermissions(null));
-	                    el.put("date", dt.format(new Date(ignite.version().revisionTimestamp())));
-	                    el.put("size", fs.metrics().filesCount());
-	                    el.put("type", "dir");
-	                    resultList.add(el);
-    	            } catch (IOException ex) {
-    	            	ex.printStackTrace();
-    	            }
+            try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Paths.get(REPOSITORY_BASE_PATH, path))) {
+                SimpleDateFormat dt = new SimpleDateFormat(DATE_FORMAT);
+                // Calendar cal = Calendar.getInstance();
+                for (Path pathObj : directoryStream) {
+                	if(pathObj.getFileName().toString().startsWith(".")) {
+                		continue;
+                	}
+                    BasicFileAttributes attrs = Files.readAttributes(pathObj, BasicFileAttributes.class);
+
+                    if (onlyFolders && !attrs.isDirectory()) {
+                        continue;
+                    }
+                    JSONObject el = new JSONObject();
+                    el.put("name", pathObj.getFileName().toString());
+                    el.put("rights", getPermissions(pathObj));
+                    el.put("date", dt.format(new Date(attrs.lastModifiedTime().toMillis())));
+                    el.put("size", attrs.size());
+                    el.put("type", attrs.isDirectory() ? "dir" : "file");
+                    resultList.add(el);
                 }
+            } catch (IOException ex) {
+            	ex.printStackTrace();
             }
-            else {
-            	IgniteFileSystem fs = fs(tokens[0]);
-            	String pathName = tokens[1];
-                IgfsPath igpath = new IgfsPath(pathName);
-            	try {
-	            	//-String fsName = "/" + fs.name() + "/";
-	            	Collection<IgfsPath> directoryStream = fs.listPaths(igpath);
-	                SimpleDateFormat dt = new SimpleDateFormat(DATE_FORMAT);
-	                // Calendar cal = Calendar.getInstance();
-	                for (IgfsPath pathObj : directoryStream) {
-	                	if(pathObj.name().startsWith(".")) {
-	                		continue;
-	                	}
-	                	IgfsFile file = fs.info(pathObj);
-	
-	                    if (onlyFolders && !file.isDirectory()) {
-	                        continue;
-	                    }
-	                    JSONObject el = new JSONObject();
-	                    el.put("name", pathObj.name());
-	                    el.put("rights", getPermissions(file));
-	                    el.put("date", dt.format(new Date(file.modificationTime())));
-	                    el.put("size", file.length());
-	                    el.put("type", file.isDirectory() ? "dir" : "file");
-	                    resultList.add(el);
-	                }
-	            } catch (IOException ex) {
-	            	ex.printStackTrace();
-	            }
-            }
-            
             JSONObject json = new JSONObject();
             json.put("result", resultList);
             return json;
@@ -560,26 +467,19 @@ public class AngularIgfsFileManagerServlet extends HttpServlet {
     private JSONObject move(JSONObject params) throws ServletException {
         try {
             JSONArray paths =  params.getJSONArray("items");
-            //Path newpath = Paths.get(REPOSITORY_BASE_PATH, params.getString("newPath"));
-            String[] tokens = getFileToken(params.getString("newPath"));
-            IgniteFileSystem fs = fs(tokens[0]);
-            String pathName = tokens[1];
-            IgfsPath newpath = new IgfsPath(pathName);
-            
+            Path newpath = Paths.get(REPOSITORY_BASE_PATH, params.getString("newPath"));
             for (Object obj : paths) {
-            	IgfsPath path = getPath(obj.toString());
-                IgfsPath mpath = new IgfsPath(newpath + "/" + path.name());
-                
-                if (fs.exists(mpath)) {
+                Path path = Paths.get(REPOSITORY_BASE_PATH, obj.toString());
+                Path mpath = newpath.resolve(path.getFileName());
+                LOG.debug("mv {} to {} exists? {}", path, mpath, Files.exists(mpath));
+                if (Files.exists(mpath)) {
                     return error(mpath.toString() + " already exits!");
                 }
-                LOG.debug("mv {} to {} exists? {}", path, mpath, fs.exists(mpath));
             }
             for (Object obj : paths) {
-                IgfsPath path = getPath(obj.toString());
-                IgfsPath mpath = new IgfsPath(newpath + "/" + path.name());
-                IgfsUtils.move(fs, path, mpath, StandardCopyOption.REPLACE_EXISTING);
-                
+                Path path = Paths.get(REPOSITORY_BASE_PATH, obj.toString());
+                Path mpath = newpath.resolve(path.getFileName());
+                Files.move(path, mpath, StandardCopyOption.REPLACE_EXISTING);
             }
             return success(params);
         } catch (IOException e) {
@@ -593,14 +493,13 @@ public class AngularIgfsFileManagerServlet extends HttpServlet {
             String path = params.getString("item");
             String newpath = params.getString("newItemPath");
             LOG.debug("rename from: {} to: {}", path, newpath);
-            String[] tokens = getFileToken(path);
-            IgniteFileSystem fs = fs(tokens[0]);
-            IgfsFile srcFile = getFile(path);
-            IgfsPath destFile = getPath(newpath);
+
+            File srcFile = new File(REPOSITORY_BASE_PATH, path);
+            File destFile = new File(REPOSITORY_BASE_PATH, newpath);
             if (srcFile.isFile()) {
-            	IgfsUtils.move(fs, srcFile.path(), destFile, StandardCopyOption.ATOMIC_MOVE);
+                FileUtils.moveFile(srcFile, destFile);
             } else {
-            	IgfsUtils.move(fs, srcFile.path(), destFile, StandardCopyOption.ATOMIC_MOVE);
+                FileUtils.moveDirectory(srcFile, destFile);
             }
             return success(params);
         } catch (IOException e) {
@@ -612,26 +511,22 @@ public class AngularIgfsFileManagerServlet extends HttpServlet {
     private JSONObject copy(JSONObject params) throws ServletException {
         try {
             JSONArray paths = ((JSONArray) params.get("items"));
-            String newpath = params.getString("newPath");
-            String[] tokens = getFileToken(newpath);
-            IgniteFileSystem fs = fs(tokens[0]);            
-            IgfsPath destPath = getPath(newpath);            
-            
+            Path newpath = Paths.get(REPOSITORY_BASE_PATH, params.getString("newPath"));
             String newFileName = params.getString("singleFilename");
             for (Object obj : paths) {
-            	// from file
-            	String tofile = newFileName == null ? FilenameUtils.getName(obj.toString()) : newFileName;
-            	IgfsPath mpath = new IgfsPath(destPath+"/"+tofile);
-                LOG.debug("mv {} to {} exists? {}", obj, mpath, fs.exists(mpath));
-                if (fs.exists(mpath)) {
+                Path path = newFileName == null ? Paths.get(REPOSITORY_BASE_PATH,
+                        obj.toString()) : Paths.get(".", newFileName);
+                Path mpath = newpath.resolve(path.getFileName());
+                LOG.debug("mv {} to {} exists? {}", path, mpath, Files.exists(mpath));
+                if (Files.exists(mpath)) {
                     return error(mpath.toString() + " already exits!");
                 }
             }
             for (Object obj : paths) {
-            	String tofile = newFileName == null ? FilenameUtils.getName(obj.toString()) : newFileName;
-            	IgfsPath mpath = new IgfsPath(destPath+"/"+tofile);
-            	IgfsPath path = getPath(obj.toString());
-                IgfsUtils.copy(fs, path, mpath, StandardCopyOption.REPLACE_EXISTING);
+                Path path = Paths.get(REPOSITORY_BASE_PATH, obj.toString());
+                Path mpath = newpath.resolve(newFileName == null
+                        ? path.getFileName() : Paths.get(".", newFileName).getFileName());
+                Files.copy(path, mpath, StandardCopyOption.REPLACE_EXISTING);
             }
             return success(params);
         } catch (IOException e) {
@@ -644,18 +539,14 @@ public class AngularIgfsFileManagerServlet extends HttpServlet {
         JSONArray paths = ((JSONArray) params.get("items"));
         StringBuilder error = new StringBuilder();
         StringBuilder success = new StringBuilder();
-        for (Object path : paths) {
-        	String[] tokens = getFileToken(path.toString());
-            IgniteFileSystem fs = fs(tokens[0]);
-            String pathName = tokens[1];
-            IgfsPath igpath = new IgfsPath(pathName);
-            
-            if (!IgfsUtils.delete(fs,igpath)) {
+        for (Object obj : paths) {
+            Path path = Paths.get(REPOSITORY_BASE_PATH, obj.toString());
+            if (!FileUtils.deleteQuietly(path.toFile())) {
                 error.append(error.length() > 0 ? "\n" : "Can't remove: \n/")
-                        .append(path.toString());
+                        .append(path.subpath(1, path.getNameCount()).toString());
             } else {
                 success.append(error.length() > 0 ? "\n" : "\nBut remove remove: \n/")
-                        .append(path.toString());
+                        .append(path.subpath(1, path.getNameCount()).toString());
                 LOG.debug("remove {}", path);
             }
         }
@@ -672,18 +563,8 @@ public class AngularIgfsFileManagerServlet extends HttpServlet {
     private JSONObject getContent(JSONObject params) throws ServletException {
         try {
             JSONObject json = new JSONObject();
-            String[] tokens = getFileToken(params.getString("item"));
-            IgniteFileSystem fs = fs(tokens[0]);
-            String pathName = tokens[1];
-            IgfsPath igpath = new IgfsPath(pathName);
-            
-            if(fs.info(igpath).length()>1024*1024*64) {
-            	return error("file size is longer than 64M，can not get content use json!");
-            }
-            
-            byte[] content = IgfsUtils.read(fs, igpath);
-            String text = new String(content,"UTF-8");
-            json.put("result", text);
+            json.put("result", FileUtils.readFileToString(Paths.get(REPOSITORY_BASE_PATH,
+                    params.getString("item")).toFile()));
             return json;
         } catch (IOException ex) {
             LOG.error("getContent:" + ex.getMessage(), ex);
@@ -693,15 +574,13 @@ public class AngularIgfsFileManagerServlet extends HttpServlet {
 
     private JSONObject editFile(JSONObject params) throws ServletException {
         // get content
-        try {          
-                   
+        try {
+            String path = params.getString("item");
+            LOG.debug("editFile path: {}", path);
+
+            File srcFile = new File(REPOSITORY_BASE_PATH, path);
             String content = params.getString("content");
-            String[] tokens = getFileToken(params.getString("item"));
-            IgniteFileSystem fs = fs(tokens[0]);
-            String pathName = tokens[1];
-            IgfsPath igpath = new IgfsPath(pathName);
-            LOG.debug("editFile path: {}", igpath);    
-            IgfsUtils.create(fs,igpath, content.getBytes("UTF-8"));
+            FileUtils.writeStringToFile(srcFile, content);
             return success(params);
         } catch (IOException e) {
             LOG.error("editFile:" + e.getMessage(), e);
@@ -711,15 +590,13 @@ public class AngularIgfsFileManagerServlet extends HttpServlet {
 
     private JSONObject createFolder(JSONObject params) throws ServletException {
         try {
-            
-            String[] tokens = getFileToken(params.getString("newPath"));
-            IgniteFileSystem fs = fs(tokens[0]);
-            String pathName = tokens[1];
-            IgfsPath igpath = new IgfsPath(pathName);
-            LOG.debug("createFolder path: {} name: {}", pathName);
-            IgfsUtils.mkdirs(fs, igpath);
+            Path path = Paths.get(REPOSITORY_BASE_PATH, params.getString("newPath"));
+            LOG.debug("createFolder path: {} name: {}", path);
+            Files.createDirectories(path);
             return success(params);
-        } catch (IgniteException e) {
+        } catch (FileAlreadyExistsException ex) {
+            return success(params);
+        } catch (IOException e) {
             LOG.error("createFolder:" + e.getMessage(), e);
             return error(e.getMessage());
         }
@@ -733,13 +610,8 @@ public class AngularIgfsFileManagerServlet extends HttpServlet {
             boolean recursive = "true".equalsIgnoreCase(params.getString("recursive"));
             for (Object path : paths) {
                 LOG.debug("changepermissions path: {} perms: {} permsCode: {} recursive: {}", path, perms, permsCode, recursive);
-                
-                String[] tokens = getFileToken(path.toString());
-                IgniteFileSystem fs = fs(tokens[0]);
-                String pathName = tokens[1];
-                IgfsPath igpath = new IgfsPath(pathName);
-                IgfsFile file = fs.info(igpath);
-                setPermissions(file, perms, recursive);
+                File f = Paths.get(REPOSITORY_BASE_PATH, path.toString()).toFile();
+                setPermissions(f, perms, recursive);
             }
             return success(params);
         } catch (IOException e) {
@@ -854,18 +726,30 @@ public class AngularIgfsFileManagerServlet extends HttpServlet {
         }
     }
 
-    private String getPermissions(IgfsFile file) throws IOException {
-    	
-        // http://www.programcreek.com/java-api-examples/index.php?api=java.nio.file.attribute.PosixFileAttributes       
-        Set<PosixFilePermission> permissions = new HashSet<>();
-        permissions.add(PosixFilePermission.OWNER_READ);
-        permissions.add(PosixFilePermission.OWNER_WRITE);
-        permissions.add(PosixFilePermission.OTHERS_READ);
+    private String getPermissions(Path path) throws IOException {
+        // http://www.programcreek.com/java-api-examples/index.php?api=java.nio.file.attribute.PosixFileAttributes
+        PosixFileAttributeView fileAttributeView = Files.getFileAttributeView(path, PosixFileAttributeView.class);
+        if(fileAttributeView==null) {
+        	Set<PosixFilePermission> permissions = new HashSet<>();
+            permissions.add(PosixFilePermission.OWNER_READ);
+            permissions.add(PosixFilePermission.OWNER_WRITE);
+            permissions.add(PosixFilePermission.OTHERS_READ);
+            return PosixFilePermissions.toString(permissions);
+        }
+        PosixFileAttributes readAttributes = fileAttributeView.readAttributes();
+        Set<PosixFilePermission> permissions = readAttributes.permissions();
         return PosixFilePermissions.toString(permissions);
     }
 
-    private String setPermissions(IgfsFile file, String permsCode, boolean recursive) throws IOException {
-       
+    private String setPermissions(File file, String permsCode, boolean recursive) throws IOException {
+        // http://www.programcreek.com/java-api-examples/index.php?api=java.nio.file.attribute.PosixFileAttributes
+        PosixFileAttributeView fileAttributeView = Files.getFileAttributeView(file.toPath(), PosixFileAttributeView.class);
+        fileAttributeView.setPermissions(PosixFilePermissions.fromString(permsCode));
+        if (file.isDirectory() && recursive && file.listFiles() != null) {
+            for (File f : file.listFiles()) {
+                setPermissions(f, permsCode, recursive);
+            }
+        }
         return permsCode;
     }
 

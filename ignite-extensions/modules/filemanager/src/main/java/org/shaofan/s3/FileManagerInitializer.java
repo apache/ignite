@@ -1,0 +1,43 @@
+package org.shaofan.s3;
+
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.internal.GridKernalContext;
+import org.shaofan.s3.config.SystemConfig;
+import org.shaofan.s3.service.Impl.IgfsDatasetPersistenceProvider;
+import org.shaofan.s3.service.Impl.S3IgfsServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationContext;
+import org.springframework.stereotype.Component;
+import org.springframework.web.WebApplicationInitializer;
+import org.springframework.web.context.support.WebApplicationContextUtils;
+
+@Component
+public class FileManagerInitializer implements WebApplicationInitializer {
+	public static Ignite ignite;
+	
+	@Override
+	public void onStartup(ServletContext contenx) throws ServletException {
+		GridKernalContext ctx = (GridKernalContext) contenx.getAttribute("gridKernalContext");
+        if(ctx==null) {
+        	String configFile = contenx.getInitParameter("ignite.cfg.path");
+        	if(configFile==null) {
+        		throw new ServletException("Must set ignite.cfg.path on contenx parameter");
+        	}
+        	String instanceName = contenx.getInitParameter("ignite.igfs.instanceName");
+        	ignite = Ignition.start(configFile);
+        	if(instanceName !=null && Ignition.allGrids().size()>0) {
+        		ignite = Ignition.ignite(instanceName);
+        	}
+        }
+        else {
+        	ignite = ctx.grid();
+        }
+        
+	}
+
+}

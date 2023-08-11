@@ -20,19 +20,27 @@
 	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
 	version="3.0">
 
- <display-name>zeppelin-filemanager-web</display-name>
+ <display-name>s3-filemanager-web</display-name>
+ 
+ 	<context-param>  
+		<param-name>ignite.cfg.path</param-name>  
+		<param-value>config/igfs-ignite.xml</param-value>  
+	</context-param>
 	
-   <!-- Spring MVC Configuration Section start -->
-
+	<context-param>  
+		<param-name>ignite.igfs.instanceName</param-name>  
+		<param-value>igfs</param-value>  
+	</context-param>
+	
+	<context-param>  
+		<param-name>repository.base.path</param-name>  
+		<param-value>./work/log</param-value>  
+	</context-param> 
    
-    <!-- Spring Security Configuration Section end 
+    
     <servlet>
         <servlet-name>AngularFileManagerServlet</servlet-name>
-        <servlet-class>org.shaofan.controllers.AngularFileManagerServlet</servlet-class>
-        <init-param>
-            <param-name>repository.base.path</param-name>
-            <param-value>./data</param-value>
-        </init-param>
+        <servlet-class>org.shaofan.servlet.AngularFileManagerServlet</servlet-class>       
         <init-param>
             <param-name>date.format</param-name>
             <param-value>yyyy-MM-dd hh:mm:ss</param-value>
@@ -45,25 +53,12 @@
     </servlet>
     <servlet-mapping>
         <servlet-name>AngularFileManagerServlet</servlet-name>
-        <url-pattern>/file/*</url-pattern>
-    </servlet-mapping>
-     <servlet-mapping>
-        <servlet-name>AngularFileManagerServlet</servlet-name>
-        <url-pattern>/view/*</url-pattern>
-    </servlet-mapping>
-    -->
-    <!-- Spring Security Configuration Section end -->
+        <url-pattern>/logs/*</url-pattern>
+    </servlet-mapping>    
+    
     <servlet>
         <servlet-name>AngularIgfsFileManagerServlet</servlet-name>
-        <servlet-class>org.shaofan.controllers.AngularIgfsFileManagerServlet</servlet-class>
-        <init-param>
-            <param-name>ignite.cfg.path</param-name>
-            <param-value>config/igfs-ignite.xml</param-value>
-        </init-param>
-        <init-param>
-            <param-name>ignite.igfs.instanceName</param-name>
-            <param-value>igfs</param-value>
-        </init-param>
+        <servlet-class>org.shaofan.servlet.AngularIgfsFileManagerServlet</servlet-class>       
         <init-param>
             <param-name>date.format</param-name>
             <param-value>yyyy-MM-dd hh:mm:ss</param-value>
@@ -86,7 +81,7 @@
     
     <servlet>
         <servlet-name>WebjarsServlet</servlet-name>
-        <servlet-class>org.shaofan.controllers.WebjarsServlet</servlet-class>
+        <servlet-class>org.shaofan.servlet.WebjarsServlet</servlet-class>
         <init-param>
             <param-name>disableCache</param-name>
             <param-value>true</param-value>
@@ -104,6 +99,38 @@
     <welcome-file-list>
         <welcome-file>index.html</welcome-file>
     </welcome-file-list>
+    
+    <!-- 配置前端控制器DispatcherServlet -->
+  <servlet>
+      <servlet-name>springmvc</servlet-name>
+      <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>      
+      <init-param>
+	      <!-- 配置spring文件 -->
+	      <param-name>contextConfigLocation</param-name>
+	      <param-value>classpath:springmvc-servlet.xml</param-value>
+      </init-param>
+      <load-on-startup>1</load-on-startup>
+  </servlet>
+  
+  <filter> 
+     <filter-name>setcharacter</filter-name> 
+     <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class> 
+     <init-param> 
+       <param-name>encoding</param-name> 
+       <param-value>utf-8</param-value> 
+     </init-param> 
+  </filter>
+	 <filter-mapping> 
+	    <filter-name>setcharacter</filter-name> 
+	    <url-pattern>/*</url-pattern> 
+	 </filter-mapping>
+
+  <!-- 配置请求地址拦截url -->
+  <servlet-mapping>
+      <servlet-name>springmvc</servlet-name>
+      <url-pattern>/*</url-pattern>
+  </servlet-mapping>
+
 	
 
   <session-config>
@@ -268,7 +295,7 @@
     </locale-encoding-mapping>
     <locale-encoding-mapping>
       <locale>zh_TW</locale>
-      <encoding>Big5</encoding>
+      <encoding>UTF-8</encoding>
     </locale-encoding-mapping>
   </locale-encoding-mapping-list>
   

@@ -114,6 +114,7 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
     @Override
     protected Index<Object> openOrCreateSecondaryIndex(String collectionName, String indexName, List<IndexKey> keys, boolean sparse) {
     	IgniteBinaryCollection collection = (IgniteBinaryCollection)resolveCollection(collectionName,true);
+    	
     	if(keys.size()>0 && keys.get(0).isText() ) {
     		String indexType = (String)keys.get(0).textOptions().get("type");
     		if("knnVector".equalsIgnoreCase(indexType)) { // rnnVector

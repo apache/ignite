@@ -124,6 +124,12 @@
 			    <artifactId>sentence-encoder-100-sdk</artifactId>
 			    <version>0.23.0</version>
 		</dependency>
+		
+		<dependency>
+			    <groupId>aias</groupId>
+			    <artifactId>sentence-encoder-15-sdk</artifactId>
+			    <version>0.23.0</version>
+		</dependency>
 
 		<dependency>
 			<groupId>ai.djl.huggingface</groupId>

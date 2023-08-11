@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.server.AbstractNetworkConnector;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
@@ -52,7 +53,12 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.webapp.FragmentConfiguration;
+import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.WebInfConfiguration;
+import org.eclipse.jetty.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.jetbrains.annotations.Nullable;
 import org.xml.sax.SAXException;
@@ -359,7 +365,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 		List<Handler> plugins = new ArrayList<>();
 		File webPlugins = new File(webAppDirs);
 		if(webPlugins.isDirectory()) {
-			
+					    
 			for(File warFile: webPlugins.listFiles()) {
 			    String warPath = warFile.getPath();
 			    int pos = warFile.getName().indexOf('.');
@@ -367,6 +373,11 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 			    WebAppContext webApp = new WebAppContext();
 			    webApp.setContextPath("/"+contextPath);
 			    webApp.setConfigurationDiscovered(true);
+			    
+			    webApp.setConfigurations(new Configuration[]{
+			            new AnnotationConfiguration(), new WebXmlConfiguration(),
+			            new WebInfConfiguration(), new MetaInfConfiguration(), new FragmentConfiguration()		            
+			        });			    
 			    
 			    if (warFile.isDirectory()) {
 			        // Development mode, read from FS

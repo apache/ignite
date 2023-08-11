@@ -3,7 +3,7 @@
 <head>
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
     <meta charset="utf-8">
-    <title>igfs-filemanager</title>
+    <title>logs-filemanager</title>
 
     <!-- 第三方插件 -->
     <script src="webjars/angularjs/1.5.0/angular.min.js"></script>
@@ -39,19 +39,19 @@
 				ticket: ticket,
                 appName: 'File Manager',
                 defaultLang: 'zh',
-                listUrl: 'file/list/',
-                uploadUrl: 'file/upload/',
-                downloadFileUrl: 'file/preview/',
-                createFolderUrl: 'file/createFolder/',
-                permissionsUrl: 'file/changePermissions/',
-                copyUrl: 'file/copy/',
-                moveUrl: 'file/move/',
-                removeUrl: 'file/remove/',
-                renameUrl: 'file/rename/',
-                getContentUrl: 'file/getContent/',
-                editUrl: 'file/edit/',
-                compressUrl: 'file/compress/',
-                extractUrl: 'file/extract/',
+                listUrl: 'logs/list/',
+                uploadUrl: 'logs/upload/',
+                downloadFileUrl: 'logs/preview/',
+                createFolderUrl: 'logs/createFolder/',
+                permissionsUrl: 'logs/changePermissions/',
+                copyUrl: 'logs/copy/',
+                moveUrl: 'logs/move/',
+                removeUrl: 'logs/remove/',
+                renameUrl: 'logs/rename/',
+                getContentUrl: 'logs/getContent/',
+                editUrl: 'logs/edit/',
+                compressUrl: 'logs/compress/',
+                extractUrl: 'logs/extract/',
                 documentViewUrl: 'office/',
                 pickCallback: function (item) {
 				    if(item.type!='file')
@@ -62,21 +62,14 @@
 					  var paphid = item.name.substring(pos+1,item.name.length-5);
 					  window.location='/#/notebook/'+paphid;
 					  return ;
-					}
-					else if(item.name.endsWith('.ipynb') ){
-					  var msg = 'Use %s "filemanager/file%s" as url for import external jupiter nodebook to zeppelin'
-                            .replace('%s', item.type)
-                            .replace('%s', item.fullPath());
-					  window.alert(msg);
-					  return false;
-					}
+					}					
 					else if(item.name.endsWith('.sheet') || item.name.endsWith('.csv') || item.name.endsWith('.tsv') ){
-					  window.location='dist/xspreadsheet/?ref=/filemanager/file'+item.fullPath();
+					  window.location='dist/xspreadsheet/?ref=/filemanager/logs'+item.fullPath();
 					  return false;
 					}
 					
 					
-					var msg = 'Picked %s "filemanager/file%s" for external use'
+					var msg = 'Picked %s "filemanager/logs%s" for external use'
                             .replace('%s', item.type)
                             .replace('%s', item.fullPath());
                     window.alert(msg);

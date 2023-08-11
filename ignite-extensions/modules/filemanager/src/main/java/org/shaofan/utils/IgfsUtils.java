@@ -96,6 +96,35 @@ public class IgfsUtils {
 	
 
     /**
+     * Append file and writes provided data to it.
+     *
+     * @param fs IGFS.
+     * @param path File path.
+     * @param data Data.
+     * @throws IgniteException If file can't be created.
+     * @throws IOException If data can't be written.
+     */
+	public static boolean append(IgniteFileSystem fs, IgfsPath path, InputStream in)  {
+        assert fs != null;
+        assert path != null;
+        byte[] data = new byte[fs.configuration().getBlockSize()]; // 1M    
+        try (OutputStream out = fs.create(path, false)) {            
+        	LOGGER.info(">>> Created file: " + path);
+        	int w = 0;
+        	while((w=in.read(data))>0) {        		
+        		out.write(data,0,w);        		
+        	}
+            LOGGER.info(">>> Wrote data to file: " + path);
+            return true;
+        } catch (IOException e) {			
+			e.printStackTrace();
+			return false;
+		}
+        
+    }
+	
+
+    /**
      * Creates file and writes provided data to it.
      *
      * @param fs IGFS.
@@ -107,7 +136,7 @@ public class IgfsUtils {
 	public static boolean create(IgniteFileSystem fs, IgfsPath path, InputStream in)  {
         assert fs != null;
         assert path != null;
-        byte[] data = new byte[1024*64]; // 1M    
+        byte[] data = new byte[fs.configuration().getBlockSize()]; // 1M    
         try (OutputStream out = fs.create(path, true)) {            
         	LOGGER.info(">>> Created file: " + path);
         	int w = 0;
@@ -172,7 +201,7 @@ public class IgfsUtils {
         assert path != null;
         assert fs.info(path).isFile();
 
-        byte[] data = new byte[1024*64];
+        byte[] data = new byte[fs.configuration().getBlockSize()];
         int len = 0;
         try (IgfsInputStream in = fs.open(path)) {        	
         	int w = 0;
@@ -190,7 +219,7 @@ public class IgfsUtils {
         assert path != null;
         assert fs.info(path).isFile();
 
-        byte[] data = new byte[1024*64];
+        byte[] data = new byte[fs.configuration().getBlockSize()];
         int len = 0;
         try (IgfsInputStream in = fs.open(path);
         	OutputStream out = fs.create(to, true)) {        	

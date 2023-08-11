@@ -1,6 +1,5 @@
 package org.shaofan.utils;
 
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -54,11 +53,11 @@ public class FileUtils {
             );
 
     public static String getExtension(String fileName) {
-        if (StringUtils.INDEX_NOT_FOUND == StringUtils.indexOf(fileName, "."))
-            return StringUtils.EMPTY;
-        String ext = StringUtils.substring(fileName,
-                StringUtils.lastIndexOf(fileName, "."));
-        return StringUtils.trimToEmpty(ext).toLowerCase();
+    	int pos = fileName.lastIndexOf('.');
+        if (pos<0)
+            return "";
+        String ext = fileName.substring(pos);
+        return ext.toLowerCase();
     }
 
     public static String getFileName(String header) {

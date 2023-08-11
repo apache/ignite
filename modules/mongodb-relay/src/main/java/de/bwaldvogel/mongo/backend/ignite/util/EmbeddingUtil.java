@@ -23,6 +23,7 @@ import ai.djl.repository.zoo.ZooModel;
 import ai.djl.sentencepiece.SpTextEmbedding;
 import ai.djl.sentencepiece.SpTokenizer;
 import ai.djl.translate.TranslateException;
+import me.aias.example.utils.ParaphraseSentenceEncoder;
 import me.aias.example.utils.SentenceEncoder;
 
 public class EmbeddingUtil {	
@@ -59,28 +60,89 @@ public class EmbeddingUtil {
 		return tokenizer;
 	}
 	
-	public static <I,O> Predictor<I,O> predictor(Path name, Tokenizer tokenizer) {
+	public static Predictor<String, float[]> predictor(Path name) {
 		
-		Predictor<I,O> predictor = predictorCache.get(name.toString());
+		Predictor<String, float[]> predictor = predictorCache.get(name.toString());
 		if(predictor!=null) {
 			return predictor;
 		}
-		
-		if(name.toString().endsWith(".zip") || name.toString().endsWith(".pt")) {
-			SentenceEncoder sentenceEncoder = new SentenceEncoder();			
-			
-			try {
-				if(tokenizer==null) {
-					tokenizer = tokenizer(name);
-				}
+		Tokenizer spTokenizer = null;
+		Path modelPath = name;		
+		Path sentencepieceModelFile = modelPath.resolve("sentencepiece.bpe.model");
+		if(sentencepieceModelFile.toFile().exists()) {
+			spTokenizer = tokenizer(sentencepieceModelFile);			
+		}
 				
-				SpTextEmbedding processor = SpTextEmbedding.from((SpTokenizer)tokenizer);
+		if(spTokenizer!=null && spTokenizer instanceof SpTokenizer) {
+			SentenceEncoder sentenceEncoder = new SentenceEncoder();
+			try {
+				
+				SpTextEmbedding processor = SpTextEmbedding.from((SpTokenizer)spTokenizer);
 				
 				ZooModel<String, float[]> model = ModelZoo.loadModel(sentenceEncoder.criteria(processor,name.toString()));
 			            		  
 				Predictor<String, float[]> predictorNew = model.newPredictor();
 				
-				predictor = (Predictor)predictorNew;
+				predictor = predictorNew;
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (ModelNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (MalformedModelException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}			
+		}
+		else {
+			ParaphraseSentenceEncoder sentenceEncoder = new ParaphraseSentenceEncoder();
+			try {		
+				
+				ZooModel<String, float[]> model = ModelZoo.loadModel(sentenceEncoder.criteria(name));
+			            		  
+				Predictor<String, float[]> predictorNew = model.newPredictor();
+				
+				predictor = predictorNew;
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (ModelNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (MalformedModelException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}		    
+		
+		predictorCache.put(name.toString(), predictor);
+		return predictor;
+	}
+	
+	/**
+	 *  remote or local zip model	
+	 * @param name
+	 * @return
+	 */
+	public static Predictor<String, float[]> predictor(String name) {
+		
+		Predictor<String, float[]> predictor = predictorCache.get(name.toString());
+		if(predictor!=null) {
+			return predictor;
+		}
+		
+		if(name.toString().endsWith(".zip")) {
+			ParaphraseSentenceEncoder sentenceEncoder = new ParaphraseSentenceEncoder();
+			try {		
+				
+				ZooModel<String, float[]> model = ModelZoo.loadModel(sentenceEncoder.criteria(name));
+			            		  
+				Predictor<String, float[]> predictorNew = model.newPredictor();
+				
+				predictor = predictorNew;
 				
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -97,24 +159,25 @@ public class EmbeddingUtil {
 			predictor = null;
 		}		    
 		
-		predictorCache.put(name.toString(), predictor);
+		predictorCache.put(name, predictor);
 		return predictor;
 	}
 	
-	public static Vector textTwoGramVec(String sentence,String home) {
+	public static Vector textTwoGramVec(String sentence,String modelId) {
 		SparseVector vec = new SparseVector(61580*3);
-		Path file = Paths.get(home,"models/tokenizers/perceiver-ar-xlnet-large");
+		Path file = Paths.get(modelId);
 		HuggingFaceTokenizer tokenizer = (HuggingFaceTokenizer)tokenizer(file);
+		int vocbSize = 61580;
 		
 		Encoding tokens = tokenizer.encode(sentence,false);
 		int last = 0;
 		for(long id: tokens.getIds()) {
 			vec.set((int)id, 1.0);
 			if(last>0) {
-				vec.set((int)(61580+last+id), 0.5);
+				vec.set((int)(vocbSize+last+id), 0.5);
 			}	
-			// 是标点符号
-			if(id>=59274 && id<59307) {
+			// 是标点符号，特殊字符
+			if(id>=59274) {
 				last = 0;
 			}
 			else {
@@ -126,12 +189,15 @@ public class EmbeddingUtil {
 		
 	}
 	
-	public static Vector textXlmVec(String sentence,String home) {		
-		Path file = Paths.get(home,"models/sentence_encoder/paraphrase-xlm-r-multilingual-v1.pt");		
-		Path sentencepieceModelFile = Paths.get(home, "models/sentence_encoder/sentencepiece.bpe.model");
-		
-		Tokenizer spTokenizer = tokenizer(sentencepieceModelFile);
-		Predictor<String,float[]> predictor = predictor(file,spTokenizer);
+	public static Vector textXlmVec(String sentence,String modelId) {
+		Predictor<String,float[]> predictor;
+		if(modelId.indexOf("://")>1) {
+			predictor = predictor(modelId);
+		}
+		else {
+			Path modelPath = Paths.get(modelId);		
+			predictor = predictor(modelPath);
+		}
 		
 		try {
 			float[] embedding = predictor.predict(sentence);
