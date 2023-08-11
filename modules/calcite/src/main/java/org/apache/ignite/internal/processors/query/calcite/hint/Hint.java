@@ -73,7 +73,7 @@ public final class Hint {
     }
 
     /**
-     * @return Combined options of {@code rel} and of the query hints if any is found bu {@code hintDef}.
+     * @return Combined options of {@code rel}'s hints and of the query hints if any is found bu {@code hintDef}.
      * Empty options if no hint is found.
      * @see HintOptions#notFound()
      * @see PlanningContext#queryHints()
