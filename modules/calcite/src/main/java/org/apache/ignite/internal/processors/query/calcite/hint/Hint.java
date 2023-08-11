@@ -73,9 +73,10 @@ public final class Hint {
     }
 
     /**
-     * @return Options collections of distinct hints if any hint is found by {@code hintDef} in {@code rel}.
+     * @return Collections of combined options of {@code rel} and of the query hints if any is found bu {@code hintDef}.
      * Empty options if no hint is found.
      * @see HintOptions#notFound()
+     * @see PlanningContext#queryHints()
      */
     public static HintOptions options(RelNode rel, HintDefinition hintDef) {
         return HintOptions.collect(queryAndNodeHints(rel, hintDef));
