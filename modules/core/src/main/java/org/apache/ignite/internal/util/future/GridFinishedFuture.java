@@ -154,6 +154,8 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
 
     /** {@inheritDoc} */
     @Override public <T1> IgniteInternalFuture<T1> chain(final IgniteClosure<? super IgniteInternalFuture<T>, T1> doneCb, Executor exec) {
+        assert doneCb != null;
+
         final GridFutureAdapter<T1> fut = new GridFutureAdapter<>();
 
         exec.execute(() -> {
