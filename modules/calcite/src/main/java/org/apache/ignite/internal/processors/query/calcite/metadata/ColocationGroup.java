@@ -82,7 +82,7 @@ public class ColocationGroup implements MarshalableMessage {
         List<List<UUID>> localAssignments = null;
         if (assignments != null) {
             localAssignments = assignments.stream()
-                    .map(l -> nodeId.equals(l.get(0)) ? l : Collections.<UUID>emptyList())
+                    .map(l -> !l.isEmpty() && nodeId.equals(l.get(0)) ? l : Collections.<UUID>emptyList())
                     .collect(Collectors.toList());
         }
 
