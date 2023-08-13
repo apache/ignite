@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner.hints;
 
-import org.apache.ignite.internal.processors.query.calcite.planner.hints.CommonHintsPlannerTest;
-import org.apache.ignite.internal.processors.query.calcite.planner.hints.NoIndexHintPlannerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
