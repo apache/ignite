@@ -27,7 +27,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
-import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -75,8 +74,8 @@ public final class Hint {
     /**
      * @return {@code True} if {@code rel} has any hint defined by {@code hintDef}. {@code False} otherwise.
      */
-    public static boolean hasHint(LogicalAggregate rel, HintDefinition hintDef) {
-        for (RelHint h : rel.getHints()) {
+    public static boolean hasHint(RelNode rel, HintDefinition hintDef) {
+        for (RelHint h : hints(rel)) {
             if (h.hintName.equals(hintDef.name()))
                 return true;
         }
