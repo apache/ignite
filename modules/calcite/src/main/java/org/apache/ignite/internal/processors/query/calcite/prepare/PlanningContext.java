@@ -217,13 +217,15 @@ public final class PlanningContext implements Context {
     }
 
     /**
-     * @return Query hints. Empty if query starts concating expressions like UNION.
+     * @return Hints of the root node or it's children if root node is not a primary select node.
      */
     public List<RelHint> queryHints() {
         return queryHints;
     }
 
-    /** */
+    /**
+     * @see #queryHints()
+     */
     PlanningContext queryHints(List<RelHint> hints) {
         queryHints = hints;
 

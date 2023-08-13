@@ -96,11 +96,10 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
     }
 
     /**
-     * Disables indexes if requred by {@code SqlHintDefinition.NO_INDEX)}. If no hint options are present but the hint
-     * exists, every index is disabled.
+     * Disables indexes if requred by {@code SqlHintDefinition.NO_INDEX}.
      */
     private void disableIndexes(IgniteLogicalTableScan scan, List<IgniteLogicalIndexScan> indexes) {
-        HintOptions opts = Hint.options(scan, HintDefinition.NO_INDEX);
+        HintOptions opts = Hint.relAndQueryHintOptions(scan, HintDefinition.NO_INDEX);
 
         if (opts.notFound())
             return;
@@ -115,14 +114,12 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
             indexes.removeIf(idxScan -> opts.plain().contains(idxScan.indexName()));
 
         opts.kv().forEach((tblName, idxNames) -> {
-            String[] fullTblName = Commons.qualifiedName(tblName);
+            List<String> fullTblName = Commons.qualifiedName(tblName);
 
             List<String> qname = scan.getTable().getQualifiedName();
 
-            assert qname.size() > 1;
-
-            indexes.removeIf(idxScan -> idxNames.contains(idxScan.indexName()) && fullTblName[1].equals(last(qname)) &&
-                (F.isEmpty(fullTblName[0]) || fullTblName[0].equals(F.first(qname))));
+            indexes.removeIf(idxScan -> idxNames.contains(idxScan.indexName()) && (last(fullTblName).equals(last(qname))
+                && fullTblName.size() == 1 || F.eq(fullTblName, qname)));
         });
     }
 

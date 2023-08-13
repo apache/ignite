@@ -42,7 +42,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.TableDmlPlann
 import org.apache.ignite.internal.processors.query.calcite.planner.TableFunctionPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.TableSpoolPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.UnionPlannerTest;
-import org.apache.ignite.internal.processors.query.calcite.planner.hints.NoIndexHintPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.hints.HintsTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -73,10 +73,11 @@ import org.junit.runners.Suite;
     JoinWithUsingPlannerTest.class,
     ProjectFilterScanMergePlannerTest.class,
     IndexRebuildPlannerTest.class,
-    NoIndexHintPlannerTest.class,
     PlannerTimeoutTest.class,
     IndexSearchBoundsPlannerTest.class,
-    InlineIndexScanPlannerTest.class
+    InlineIndexScanPlannerTest.class,
+
+    HintsTestSuite.class
 })
 public class PlannerTestSuite {
 }

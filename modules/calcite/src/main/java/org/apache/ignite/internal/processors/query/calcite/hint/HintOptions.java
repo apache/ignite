@@ -31,7 +31,8 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public final class HintOptions {
     /** */
-    public static final HintOptions EMPTY = new HintOptions(-1, Collections.emptySet(), Collections.emptyMap());
+    private static final HintOptions EMPTY = new HintOptions(-1, Collections.emptySet(),
+        Collections.emptyMap());
 
     /** Number of hints having no any option. */
     private final int emptyNum;
@@ -50,7 +51,7 @@ public final class HintOptions {
     }
 
     /** */
-    public static HintOptions collect(Collection<RelHint> hints) {
+    static HintOptions collect(Collection<RelHint> hints) {
         if (F.isEmpty(hints))
             return EMPTY;
 

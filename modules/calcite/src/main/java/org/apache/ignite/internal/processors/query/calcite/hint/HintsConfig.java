@@ -26,7 +26,7 @@ import org.apache.calcite.util.Litmus;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * Provides configuration of all the supported hints.
+ * Provides configuration of all the supported SQL hints.
  */
 public final class HintsConfig {
     /** */
@@ -34,7 +34,7 @@ public final class HintsConfig {
         // No-op.
     }
 
-    /** Allows only empty hint options. */
+    /** Allows no option. */
     static final HintOptionChecker OPTS_CHECK_EMPTY = new HintOptionChecker() {
         @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
             return errorHandler.check(
@@ -50,18 +50,7 @@ public final class HintsConfig {
         @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
             return errorHandler.check(
                 F.isEmpty(hint.kvOptions) && !F.isEmpty(hint.listOptions),
-                "Hint '{}' must have at least one plain option.",
-                hint.hintName
-            );
-        }
-    };
-
-    /** Allows exactly one plain option. */
-    static final HintOptionChecker OPTS_CHECK_ONE_PLAIN = new HintOptionChecker() {
-        @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
-            return errorHandler.check(
-                F.isEmpty(hint.kvOptions) && !F.isEmpty(hint.listOptions) && hint.listOptions.size() == 1,
-                "Hint '{}' must have exactly one plain option.",
+                "Hint '{}' must have at least one plain option and no any key-value option.",
                 hint.hintName
             );
         }

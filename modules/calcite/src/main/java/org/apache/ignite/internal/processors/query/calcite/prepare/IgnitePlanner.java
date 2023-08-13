@@ -48,7 +48,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelShuttle;
 import org.apache.calcite.rel.core.CorrelationId;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalCorrelate;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
@@ -132,9 +131,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** */
     private RelOptCluster cluster;
-
-    /** */
-    private ImmutableList<RelHint> rootHints = ImmutableList.of();
 
     /**
      * @param ctx Planner context.
@@ -230,18 +226,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     @Override public RelRoot rel(SqlNode sql) {
         SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator(), catalogReader, sqlToRelConverterCfg);
 
-        RelRoot rootRel = sqlToRelConverter.convertQuery(sql, false, true);
-
-        rootHints = rootRel.hints;
-
-        return rootRel;
-    }
-
-    /**
-     * @return Hints of last {@code RelRoot} formed in {@link #rel(SqlNode)}
-     */
-    public ImmutableList<RelHint> rootHints() {
-        return rootHints;
+        return sqlToRelConverter.convertQuery(sql, false, true);
     }
 
     /** {@inheritDoc} */
@@ -495,7 +480,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     /** */
-    public SqlToRelConverter sqlToRelConverter(SqlValidator validator, CalciteCatalogReader reader,
+    private SqlToRelConverter sqlToRelConverter(SqlValidator validator, CalciteCatalogReader reader,
         SqlToRelConverter.Config config) {
         return new IgniteSqlToRelConvertor(this, validator, reader, cluster(), convertletTbl, config);
     }

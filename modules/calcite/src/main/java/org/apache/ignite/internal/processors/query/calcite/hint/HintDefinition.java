@@ -25,10 +25,10 @@ import org.apache.calcite.rel.hint.RelHint;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 
 /**
- * Holds supported hints and their settings.
+ * Holds supported SQL hints and their settings.
  */
 public enum HintDefinition {
-    /** Selects query engine. */
+    /** Sets the query engine. */
     QUERY_ENGINE,
 
     /** Disables converter rules. */
@@ -65,7 +65,7 @@ public enum HintDefinition {
     };
 
     /**
-     * @return Hint predicate which limits redundant hint copying to reduce resources usage.
+     * @return Hint predicate which limits redundant hint copying and reduces mem/cpu consumption.
      */
     HintPredicate predicate() {
         return HintPredicates.SET_VAR;

@@ -44,7 +44,7 @@ public class IgniteLogicalTableScan extends ProjectableFilterableTableScan {
     }
 
     /**
-     * Creates a TableScan.
+     * Creates a IgniteLogicalTableScan.
      * @param cluster Cluster that this relational expression belongs to.
      * @param traits Traits of this relational expression.
      * @param tbl Table definition.

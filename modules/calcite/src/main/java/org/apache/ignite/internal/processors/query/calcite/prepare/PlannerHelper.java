@@ -71,11 +71,13 @@ public class PlannerHelper {
             // Convert to Relational operators graph
             RelRoot root = planner.rel(sqlNode);
 
-            planner.cluster().getPlanner().getContext().unwrap(PlanningContext.class).queryHints(resolveQueryHints(root));
+            PlanningContext ctx = planner.cluster().getPlanner().getContext().unwrap(PlanningContext.class);
+
+            ctx.queryHints(resolveQueryHints(root));
 
             RelNode rel = root.rel;
 
-            planner.setDisabledRules(Hint.options(root.rel, HintDefinition.DISABLE_RULE).plain());
+            planner.setDisabledRules(Hint.hintOptions(ctx.queryHints(), HintDefinition.DISABLE_RULE).plain());
 
             // Transformation chain
             rel = planner.transform(PlannerPhase.HEP_DECORRELATE, rel.getTraitSet(), rel);
@@ -86,6 +88,7 @@ public class PlannerHelper {
 
             rel = planner.transform(PlannerPhase.HEP_FILTER_PUSH_DOWN, rel.getTraitSet(), rel);
 
+            // CALCITE-5915 : Hints are not set for not-expanded subqueries, for nodes which are not other nodes' inputs.
             rel = RelOptUtil.propagateRelHints(rel, false);
 
             rel = planner.transform(PlannerPhase.HEP_PROJECT_PUSH_DOWN, rel.getTraitSet(), rel);
@@ -121,13 +124,19 @@ public class PlannerHelper {
         }
     }
 
-    /** */
+    /**
+     * @return Hints resolved as top-node or 'query' hints which are not set by Calcite to the root node.
+     */
     private static List<RelHint> resolveQueryHints(RelRoot root) {
         if (!F.isEmpty(root.hints))
             return root.hints;
 
-        if (root.rel instanceof SetOp && !F.isEmpty(root.rel.getInputs()))
-            return resolveQueryHints(root.withHints(Hint.allHints(root.rel.getInput(0))).withRel(root.rel.getInput(0)));
+        if (!F.isEmpty(Hint.relHints(root.rel)))
+            return Hint.relHints(root.rel);
+
+        if (root.rel instanceof SetOp && !F.isEmpty(root.rel.getInputs())) {
+            return resolveQueryHints(root.withRel(root.rel.getInput(0)));
+        }
 
         return Collections.emptyList();
     }

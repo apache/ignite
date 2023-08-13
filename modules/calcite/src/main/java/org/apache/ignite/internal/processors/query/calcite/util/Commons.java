@@ -453,12 +453,12 @@ public final class Commons {
     }
 
     /**
-     * @return Dot-separated, two-component name with preceding domain/schema. If there is no domain/schema name,
-     * first value is {@code null}.
+     * @return Dot-separated, name with preceding domain/schema. If there is no domain/schema name, first values are
+     * {@code null}.
      */
-    public static String[] qualifiedName(String name) {
-        int idx = name.lastIndexOf('.');
-
-        return new String[] {idx > 0 ? name.substring(0, idx) : null, idx > 0 ? name.substring(idx + 1) : name};
+    public static List<String> qualifiedName(String name) {
+        return name.indexOf('.') > 0
+            ? Arrays.stream(name.split("\\.")).collect(Collectors.toList())
+            : Collections.singletonList(name);
     }
 }
