@@ -66,7 +66,7 @@ public final class PlanningContext implements Context {
     private final long plannerTimeout;
 
     /** */
-    private List<RelHint> queryHints = Collections.emptyList();
+    private List<RelHint> hints = Collections.emptyList();
 
     /**
      * Private constructor, used by a builder.
@@ -219,15 +219,15 @@ public final class PlanningContext implements Context {
     /**
      * @return Hints of the root node or it's children if root node is not a primary select node.
      */
-    public List<RelHint> queryHints() {
-        return queryHints;
+    public List<RelHint> hints() {
+        return hints;
     }
 
     /**
-     * @see #queryHints()
+     * @see #hints()
      */
     PlanningContext queryHints(List<RelHint> hints) {
-        queryHints = hints;
+        this.hints = hints;
 
         return this;
     }

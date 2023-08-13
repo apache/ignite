@@ -99,7 +99,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
      * Disables indexes if requred by {@code SqlHintDefinition.NO_INDEX}.
      */
     private void disableIndexes(IgniteLogicalTableScan scan, List<IgniteLogicalIndexScan> indexes) {
-        HintOptions opts = Hint.relAndQueryHintOptions(scan, HintDefinition.NO_INDEX);
+        HintOptions opts = Hint.options(scan, HintDefinition.NO_INDEX);
 
         if (opts.notFound())
             return;

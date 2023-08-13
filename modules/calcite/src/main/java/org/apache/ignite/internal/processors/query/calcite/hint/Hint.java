@@ -21,13 +21,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
-import org.apache.calcite.rel.logical.LogicalAggregate;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -41,6 +40,47 @@ public final class Hint {
     }
 
     /**
+     * @return Hints filtered with {@code hintDef} and suitable for {@code rel}.
+     * @see HintStrategyTable#apply(List, RelNode)
+     * @see PlanningContext#hints()
+     */
+    static List<RelHint> hints(RelNode rel, HintDefinition hintDef) {
+        if (!(rel instanceof Hintable))
+            return Collections.emptyList();
+
+        RelOptCluster cl = rel.getCluster();
+
+        return cl.getHintStrategies().apply(filterHints(PlannerHelper.context(cl).hints(), hintDef), rel);
+    }
+
+    /**
+     * @return {@code True} if the query has a suitable hint for {@code rel} defined by {@code hintDef}.
+     * {@code False} otherwise.
+     */
+    public static boolean hasHint(RelNode rel, HintDefinition hintDef) {
+        return !F.isEmpty(hints(rel, hintDef));
+    }
+
+    /**
+     * @return Options of suitable for {@code rel} hints filtered with {@code hintDef}.
+     * @see HintStrategyTable#apply(List, RelNode)
+     * @see PlanningContext#hints()
+     * @see HintOptions#notFound()
+     */
+    public static HintOptions options(RelNode rel, HintDefinition hintDef) {
+        return HintOptions.collect(hints(rel, hintDef));
+    }
+
+    /**
+     * @return Options of {@code hints} filtered with {@code hintDef}.
+     * @see PlanningContext#hints()
+     * @see HintOptions#notFound()
+     */
+    public static HintOptions options(Collection<RelHint> hints, HintDefinition hintDef) {
+        return HintOptions.collect(filterHints(hints, hintDef));
+    }
+
+    /**
      * @return All hints of {@code rel}.
      */
     public static List<RelHint> relHints(RelNode rel) {
@@ -50,68 +90,7 @@ public final class Hint {
     /**
      * @return Hints within {@code hints} filtered with {@code hintDef}.
      */
-    public static List<RelHint> filterHints(Collection<RelHint> hints, HintDefinition hintDef) {
+    private static List<RelHint> filterHints(Collection<RelHint> hints, HintDefinition hintDef) {
         return hints.stream().filter(h -> h.hintName.equalsIgnoreCase(hintDef.name())).collect(Collectors.toList());
-    }
-
-    /**
-     * @return Options of combined suitable {@code rel}'s and query's hints filtered with {@code hintDef}.
-     * @see HintOptions#notFound()
-     * @see PlanningContext#queryHints()
-     * @see HintStrategyTable#apply(List, RelNode)
-     */
-    public static HintOptions relAndQueryHintOptions(RelNode rel, HintDefinition hintDef) {
-        return HintOptions.collect(queryAndNodeHints(rel, hintDef));
-    }
-
-    /**
-     * @return Options of {@code hints} filtered with {@code hintDef}.
-     * @see HintOptions#notFound()
-     */
-    public static HintOptions hintOptions(List<RelHint> hints, HintDefinition hintDef) {
-        return HintOptions.collect(filterHints(hints, hintDef));
-    }
-
-    /**
-     * @return {@code True} if {@code rel} has any hint defined by {@code hintDef}. {@code False} otherwise.
-     */
-    public static boolean hasHint(LogicalAggregate rel, HintDefinition hintDef) {
-        for (RelHint h : rel.getHints()) {
-            if (h.hintName.equals(hintDef.name()))
-                return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @return Combined hints of {@code rel} and the query hints witout hint inherit pathes.
-     * @see PlanningContext#queryHints()
-     * @see RelHint#inheritPath
-     */
-    static List<RelHint> queryAndNodeHints(RelNode rel, HintDefinition hintDef) {
-        if (!(rel instanceof Hintable))
-            return Collections.emptyList();
-
-        RelOptCluster cl = rel.getCluster();
-
-        List<RelHint> finteredQueryHints = cl.getHintStrategies()
-            .apply(filterHints(cl.getPlanner().getContext().unwrap(PlanningContext.class).queryHints(), hintDef), rel);
-
-        return Stream.concat(finteredQueryHints.stream(), filterHints(((Hintable)rel).getHints(), hintDef).stream())
-            .map(Hint::removeInheritPath).distinct().collect(Collectors.toList());
-    }
-
-    /**
-     * @return Hint witout hint inherit path.
-     * @see org.apache.calcite.rel.hint.RelHint#inheritPath
-     */
-    private static RelHint removeInheritPath(RelHint hint) {
-        RelHint.Builder b = RelHint.builder(hint.hintName).hintOptions(hint.listOptions);
-
-        if (!F.isEmpty(hint.kvOptions))
-            b = b.hintOptions(hint.kvOptions);
-
-        return b.build();
     }
 }

@@ -21,14 +21,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import com.google.common.collect.ImmutableSet;
-import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
@@ -71,13 +73,12 @@ public class PlannerHelper {
             // Convert to Relational operators graph
             RelRoot root = planner.rel(sqlNode);
 
-            PlanningContext ctx = planner.cluster().getPlanner().getContext().unwrap(PlanningContext.class);
-
-            ctx.queryHints(resolveQueryHints(root));
+            root = processHints(root);
 
             RelNode rel = root.rel;
 
-            planner.setDisabledRules(Hint.hintOptions(ctx.queryHints(), HintDefinition.DISABLE_RULE).plain());
+            planner.setDisabledRules(Hint.options(context(planner.cluster()).hints(),
+                HintDefinition.DISABLE_RULE).plain());
 
             // Transformation chain
             rel = planner.transform(PlannerPhase.HEP_DECORRELATE, rel.getTraitSet(), rel);
@@ -87,9 +88,6 @@ public class PlannerHelper {
             rel = planner.trimUnusedFields(root.withRel(rel)).rel;
 
             rel = planner.transform(PlannerPhase.HEP_FILTER_PUSH_DOWN, rel.getTraitSet(), rel);
-
-            // CALCITE-5915 : Hints are not set for not-expanded subqueries, for nodes which are not other nodes' inputs.
-            rel = RelOptUtil.propagateRelHints(rel, false);
 
             rel = planner.transform(PlannerPhase.HEP_PROJECT_PUSH_DOWN, rel.getTraitSet(), rel);
 
@@ -125,6 +123,31 @@ public class PlannerHelper {
     }
 
     /**
+     * Extracts SQL hints and stores them into the plan context. Removes any hints from the rel tree after.
+     *
+     * @return Root rel with no-hints rel tree.
+     * @see PlanningContext#hints()
+     */
+    private static RelRoot processHints(RelRoot rootRel) {
+        PlanningContext ctx = context(rootRel.rel.getCluster());
+
+        ctx.queryHints(resolveQueryHints(rootRel));
+
+        rootRel = rootRel.withHints(Collections.emptyList());
+
+        RelNode newRel = new RelShuttleImpl() {
+            @Override public RelNode visit(RelNode rel) {
+                if (rel instanceof Hintable && !F.isEmpty(((Hintable)rel).getHints()))
+                    rel = ((Hintable)rel).withHints(Collections.emptyList());
+
+                return super.visit(rel);
+            }
+        }.visit(rootRel.rel);
+
+        return rootRel.rel == newRel ? rootRel : rootRel.withRel(newRel);
+    }
+
+    /**
      * @return Hints resolved as top-node or 'query' hints which are not set by Calcite to the root node.
      */
     private static List<RelHint> resolveQueryHints(RelRoot root) {
@@ -139,6 +162,11 @@ public class PlannerHelper {
         }
 
         return Collections.emptyList();
+    }
+
+    /** */
+    public static PlanningContext context(RelOptCluster relOptCluster) {
+        return relOptCluster.getPlanner().getContext().unwrap(PlanningContext.class);
     }
 
     /**
