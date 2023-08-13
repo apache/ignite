@@ -43,7 +43,7 @@ public final class Hint {
     /**
      * @return All hints of {@code rel}.
      */
-    public static List<RelHint> relHints(RelNode rel) {
+    public static List<RelHint> hints(RelNode rel) {
         return rel instanceof Hintable ? ((Hintable)rel).getHints() : Collections.emptyList();
     }
 
@@ -60,15 +60,15 @@ public final class Hint {
      * @see PlanningContext#queryHints()
      * @see HintStrategyTable#apply(List, RelNode)
      */
-    public static HintOptions relAndQueryHintOptions(RelNode rel, HintDefinition hintDef) {
-        return HintOptions.collect(queryAndNodeHints(rel, hintDef));
+    public static HintOptions relAndQueryOptions(RelNode rel, HintDefinition hintDef) {
+        return HintOptions.collect(withRootHints(rel, hintDef));
     }
 
     /**
      * @return Options of {@code hints} filtered with {@code hintDef}.
      * @see HintOptions#notFound()
      */
-    public static HintOptions hintOptions(List<RelHint> hints, HintDefinition hintDef) {
+    public static HintOptions options(List<RelHint> hints, HintDefinition hintDef) {
         return HintOptions.collect(filterHints(hints, hintDef));
     }
 
@@ -89,7 +89,7 @@ public final class Hint {
      * @see PlanningContext#queryHints()
      * @see RelHint#inheritPath
      */
-    static List<RelHint> queryAndNodeHints(RelNode rel, HintDefinition hintDef) {
+    private static List<RelHint> withRootHints(RelNode rel, HintDefinition hintDef) {
         if (!(rel instanceof Hintable))
             return Collections.emptyList();
 

@@ -77,7 +77,7 @@ public class PlannerHelper {
 
             RelNode rel = root.rel;
 
-            planner.setDisabledRules(Hint.hintOptions(ctx.queryHints(), HintDefinition.DISABLE_RULE).plain());
+            planner.setDisabledRules(Hint.options(ctx.queryHints(), HintDefinition.DISABLE_RULE).plain());
 
             // Transformation chain
             rel = planner.transform(PlannerPhase.HEP_DECORRELATE, rel.getTraitSet(), rel);
@@ -131,8 +131,8 @@ public class PlannerHelper {
         if (!F.isEmpty(root.hints))
             return root.hints;
 
-        if (!F.isEmpty(Hint.relHints(root.rel)))
-            return Hint.relHints(root.rel);
+        if (!F.isEmpty(Hint.hints(root.rel)))
+            return Hint.hints(root.rel);
 
         if (root.rel instanceof SetOp && !F.isEmpty(root.rel.getInputs())) {
             return resolveQueryHints(root.withRel(root.rel.getInput(0)));
