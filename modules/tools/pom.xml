@@ -107,7 +107,7 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <excludes>
-                    <exclude>META-INF/services/org.apache.maven.surefire.providerapi.SurefireProvider</exclude>
+                    <exclude>META-INF/services/org.apache.maven.surefire.api.provider.SurefireProvider</exclude>
                 </excludes>
             </resource>
         </resources>
