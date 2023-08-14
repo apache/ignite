@@ -26,7 +26,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
@@ -286,28 +285,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistBatchFuture<
             else
                 sendNextBatches(nodeId);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean onNodeLeft(UUID nodeId) {
-        if (batches.containsKey(nodeId)) {
-            if (log.isDebugEnabled())
-                log.debug("Found unacknowledged batch for left node [nodeId=" + nodeId + ", fut=" +
-                    this + ']');
-
-            ClusterTopologyCheckedException topEx = new ClusterTopologyCheckedException("Failed to enlist keys " +
-                "(primary node left grid, retry transaction if possible) [node=" + nodeId + ']');
-
-            topEx.retryReadyFuture(cctx.shared().nextAffinityReadyFuture(topVer));
-
-            onDone(topEx);
-        }
-
-        if (log.isDebugEnabled())
-            log.debug("Future does not have mapping for left node (ignoring) [nodeId=" + nodeId +
-                ", fut=" + this + ']');
-
-        return false;
     }
 
     /**
