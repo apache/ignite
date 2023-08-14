@@ -2150,7 +2150,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param fut Enlist future.
      * @return Operation future.
      */
-    private IgniteInternalFuture<Long> updateAsync(GridNearTxQueryAbstractEnlistFuture fut) {
+    private IgniteInternalFuture<Long> updateAsync(GridNearTxAbstractEnlistFuture<Long> fut) {
         try {
             fut.init();
 

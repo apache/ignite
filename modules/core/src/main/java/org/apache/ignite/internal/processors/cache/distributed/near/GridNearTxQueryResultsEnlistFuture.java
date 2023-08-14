@@ -61,7 +61,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * A future tracking requests for remote nodes transaction enlisting and locking
  * of entries produced with complex DML queries requiring reduce step.
  */
-public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractEnlistFuture {
+public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlistBatchFuture<Long> {
     /** */
     public static final int DFLT_BATCH_SIZE = 1024;
 
@@ -121,7 +121,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
         UpdateSourceIterator<?> it,
         int batchSize,
         boolean sequential) {
-        super(cctx, tx, timeout);
+        super(cctx, tx, timeout, CU.longReducer());
 
         this.it = it;
         this.batchSize = batchSize > 0 ? batchSize : DFLT_BATCH_SIZE;

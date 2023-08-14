@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.NearTx
  * Cache lock future.
  */
 @SuppressWarnings("ForLoopReplaceableByForEach")
-public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFuture {
+public class GridNearTxQueryEnlistFuture extends GridNearTxAbstractEnlistFuture<Long> {
     /** Involved cache ids. */
     private final int[] cacheIds;
 
@@ -84,7 +84,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
     protected GridNearTxQueryEnlistFuture(
         GridCacheContext<?, ?> cctx, GridNearTxLocal tx, int[] cacheIds, int[] parts, String schema, String qry,
         Object[] params, int flags, int pageSize, long timeout) {
-        super(cctx, tx, timeout);
+        super(cctx, tx, timeout, CU.longReducer());
 
         this.cacheIds = cacheIds;
         this.parts = parts;
