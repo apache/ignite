@@ -21,15 +21,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
@@ -43,7 +40,6 @@ import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -72,10 +68,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistBatchFuture<
 
     /** Keep binary flag. */
     private final boolean keepBinary;
-
-    /** Future result. */
-    @GridToStringExclude
-    private volatile GridCacheReturn res;
 
     /**
      * @param cctx Cache context.
@@ -116,178 +108,14 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistBatchFuture<
         sendNextBatches(null);
     }
 
-    /**
-     * Continue iterating the data rows and form new batches.
-     *
-     * @param nodeId Node that is ready for a new batch.
-     */
-    private void sendNextBatches(@Nullable UUID nodeId) {
-        try {
-            Collection<Batch> next = continueLoop(nodeId);
-
-            if (next == null)
-                return;
-
-            boolean first = (nodeId != null);
-
-            for (Batch batch : next) {
-                ClusterNode node = batch.node();
-
-                sendBatch(node, batch, first);
-
-                if (!node.isLocal())
-                    first = false;
-            }
-        }
-        catch (Throwable e) {
-            onDone(e);
-
-            if (e instanceof Error)
-                throw (Error)e;
-        }
-    }
-
-    /**
-     * Iterate data rows and form batches.
-     *
-     * @param nodeId Id of node acknowledged the last batch.
-     * @return Collection of newly completed batches.
-     * @throws IgniteCheckedException If failed.
-     */
-    private Collection<Batch> continueLoop(@Nullable UUID nodeId) throws IgniteCheckedException {
-        if (nodeId != null)
-            batches.remove(nodeId);
-
-        // Accumulate number of batches released since we got here.
-        // Let only one thread do the looping.
-        if (isDone() || SKIP_UPD.getAndIncrement(this) != 0)
-            return null;
-
-        ArrayList<Batch> res = null;
-        Batch batch = null;
-
-        boolean flush = false;
-
-        EnlistOperation op = it.operation();
-
-        while (true) {
-            while (hasNext0()) {
-                checkCompleted();
-
-                Object cur = next0();
-
-                KeyCacheObject key = cctx.toCacheKeyObject(op.isDeleteOrLock() ? cur : ((Map.Entry<?, ?>)cur).getKey());
-
-                ClusterNode node = cctx.affinity().primaryByKey(key, topVer);
-
-                if (node == null)
-                    throw new ClusterTopologyServerNotFoundException("Failed to get primary node " +
-                        "[topVer=" + topVer + ", key=" + key + ']');
-
-                if (!sequential)
-                    batch = batches.get(node.id());
-                else if (batch != null && !batch.node().equals(node))
-                    res = markReady(res, batch);
-
-                if (batch == null)
-                    batches.put(node.id(), batch = new Batch(node));
-
-                if (batch.ready()) {
-                    // Can't advance further at the moment.
-                    batch = null;
-
-                    peek = cur;
-
-                    it.beforeDetach();
-
-                    flush = true;
-
-                    break;
-                }
-
-                batch.add(op.isDeleteOrLock() ? key : cur, !node.isLocal() && isLocalBackup(op, key));
-
-                if (batch.size() == batchSize)
-                    res = markReady(res, batch);
-            }
-
-            if (SKIP_UPD.decrementAndGet(this) == 0)
-                break;
-
-            skipCntr = 1;
-        }
-
-        if (flush)
-            return res;
-
-        // No data left - flush incomplete batches.
-        for (Batch batch0 : batches.values()) {
-            if (!batch0.ready()) {
-                if (res == null)
-                    res = new ArrayList<>();
-
-                batch0.ready(true);
-
-                res.add(batch0);
-            }
-        }
-
-        if (batches.isEmpty())
-            onDone(this.res);
-
-        return res;
-    }
-
     /** */
-    private Object next0() {
-        if (!hasNext0())
-            throw new NoSuchElementException();
-
-        Object cur;
-
-        if ((cur = peek) != null)
-            peek = null;
-        else
-            cur = it.next();
-
-        return cur;
-    }
-
-    /** */
-    private boolean hasNext0() {
-        if (peek == null && !it.hasNext())
-            peek = FINISHED;
-
-        return peek != FINISHED;
-    }
-
-    /** */
-    private boolean isLocalBackup(EnlistOperation op, KeyCacheObject key) {
+    @Override protected boolean isLocalBackup(EnlistOperation op, KeyCacheObject key) {
         if (!cctx.affinityNode() || op == EnlistOperation.LOCK)
             return false;
         else if (cctx.isReplicated())
             return true;
 
         return cctx.topology().nodes(key.partition(), tx.topologyVersion()).indexOf(cctx.localNode()) > 0;
-    }
-
-    /**
-     * Add batch to batch collection if it is ready.
-     *
-     * @param batches Collection of batches.
-     * @param batch Batch to be added.
-     */
-    private ArrayList<Batch> markReady(ArrayList<Batch> batches, Batch batch) {
-        if (!batch.ready()) {
-            batch.ready(true);
-
-            if (batches == null)
-                batches = new ArrayList<>();
-
-            batches.add(batch);
-        }
-
-        return batches;
     }
 
     /**
@@ -369,34 +197,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistBatchFuture<
         sendNextBatches(primaryId);
     }
 
-    /**
-     *
-     * @param node Node.
-     * @param batch Batch.
-     * @param first First mapping flag.
-     */
-    private void sendBatch(ClusterNode node, Batch batch, boolean first) throws IgniteCheckedException {
-        updateMappings(node);
-
-        boolean clientFirst = first && cctx.localNode().isClient() && !topLocked && !tx.hasRemoteLocks();
-
-        int batchId = batchCntr.incrementAndGet();
-
-        if (node.isLocal())
-            enlistLocal(batchId, node.id(), batch);
-        else
-            sendBatch(batchId, node.id(), batch, clientFirst);
-    }
-
-    /**
-     * Send batch request to remote data node.
-     *
-     * @param batchId Id of a batch mini-future.
-     * @param nodeId Node id.
-     * @param batchFut Mini-future for the batch.
-     * @param clientFirst {@code true} if originating node is client and it is a first request to any data node.
-     */
-    private void sendBatch(int batchId, UUID nodeId, Batch batchFut, boolean clientFirst) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override protected void sendBatch(int batchId, UUID nodeId, Batch batchFut, boolean clientFirst) throws IgniteCheckedException {
         assert batchFut != null;
 
         GridNearTxEnlistRequest req = new GridNearTxEnlistRequest(cctx.cacheId(),
@@ -429,14 +231,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistBatchFuture<
         cctx.io().send(nodeId, req, cctx.ioPolicy());
     }
 
-    /**
-     * Enlist batch of entries to the transaction on local node.
-     *
-     * @param batchId Id of a batch mini-future.
-     * @param nodeId Node id.
-     * @param batch Batch.
-     */
-    private void enlistLocal(int batchId, UUID nodeId, Batch batch) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override protected void enlistLocal(int batchId, UUID nodeId, Batch batch) throws IgniteCheckedException {
         Collection<Object> rows = batch.rows();
 
         GridDhtTxEnlistFuture fut = new GridDhtTxEnlistFuture(nodeId,
