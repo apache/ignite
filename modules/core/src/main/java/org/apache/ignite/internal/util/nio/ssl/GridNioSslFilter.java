@@ -252,7 +252,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
                 long startTime = System.nanoTime();
 
-                fut.listen(f -> handshakeDuration.value(U.nanosToMillis(System.nanoTime() - startTime)));
+                fut.listen(() -> handshakeDuration.value(U.nanosToMillis(System.nanoTime() - startTime)));
             }
 
             hnd.handshake();

@@ -269,9 +269,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 }
 
                 // Add new future.
-                add(fut.chain(f -> {
+                add(fut.chain(() -> {
                     try {
-                        return loadEntries(n.id(), mappedKeys.keySet(), f.get(), saved, topVer);
+                        return loadEntries(n.id(), mappedKeys.keySet(), fut.get(), saved, topVer);
                     }
                     catch (Exception e) {
                         U.error(log, "Failed to get values from dht cache [fut=" + fut + "]", e);
