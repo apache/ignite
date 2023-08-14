@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,17 +28,21 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.hint.Hint;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintOptions;
+import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.immutables.value.Value;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.util.Util.last;
 
@@ -83,7 +88,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
 
         assert !indexes.isEmpty();
 
-        disableIndexes(scan, indexes);
+        processHints(scan, indexes);
 
         if (indexes.isEmpty())
             return;
@@ -95,31 +100,84 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
         call.transformTo(F.first(indexes), equivMap);
     }
 
-    /**
-     * Disables indexes if requred by {@code SqlHintDefinition.NO_INDEX}.
-     */
-    private void disableIndexes(IgniteLogicalTableScan scan, List<IgniteLogicalIndexScan> indexes) {
-        HintOptions opts = Hint.options(scan, HintDefinition.NO_INDEX);
+    /** */
+    private void processHints(IgniteLogicalTableScan scan, List<IgniteLogicalIndexScan> indexes) {
+        Collection<RelHint> hints = Hint.hints(scan, HintDefinition.NO_INDEX, HintDefinition.USE_INDEX);
 
-        if (opts.notFound())
+        if(hints.isEmpty())
             return;
 
-        if (opts.emptyNum() > 0) {
+        // Whether the first hint is a forced index. Since there is possibility to pass several the same hints
+        // with various options, we recognize such hints as single hint with set of options and apply them with
+        // FIFO order.
+        boolean firstIsUse = !hints.iterator().next().hintName.equals(HintDefinition.NO_INDEX.name());
+
+        HintOptions useOpts = Hint.options(hints, HintDefinition.USE_INDEX);
+        HintOptions disableOpts = Hint.options(hints, HintDefinition.NO_INDEX);
+
+        if (firstIsUse) {
+            keepIndex(scan, indexes, useOpts);
+
+            removeIndexes(scan, indexes, disableOpts);
+        } else {
+            removeIndexes(scan, indexes, disableOpts);
+
+            keepIndex(scan, indexes, useOpts);
+        }
+    }
+
+    /** */
+    private void keepIndex(TableScan scan, List<? extends AbstractIndexScan> indexes, @Nullable HintOptions opts) {
+        if (opts == null)
+            return;
+
+        assert !opts.empty();
+
+        // If there is no index with passed name, no index should be removed.
+        if (indexes.stream().noneMatch(idx -> idx.indexName().equals(opts.plain().iterator().next())))
+            return;
+
+        if (!opts.plain().isEmpty()) {
+            indexes.removeIf(idx -> !opts.plain().contains(idx.indexName()));
+
+            return;
+        }
+
+        List<String> qtname = scan.getTable().getQualifiedName();
+
+        opts.kv().forEach((hintTblName, hintIdxNames) -> {
+            List<String> qHintTblName = Commons.qualifiedName(hintTblName);
+
+            indexes.removeIf(idx -> !hintIdxNames.contains(idx.indexName())
+                && (last(qHintTblName).equals(last(qtname)) && qHintTblName.size() == 1 || F.eq(qHintTblName, qtname)));
+
+        });
+    }
+
+    /** */
+    private void removeIndexes(TableScan scan, List<? extends AbstractIndexScan> indexes, @Nullable HintOptions opts) {
+        if (opts == null)
+            return;
+
+        if (opts.empty()) {
             indexes.clear();
 
             return;
         }
 
-        if (!F.isEmpty(opts.plain()))
-            indexes.removeIf(idxScan -> opts.plain().contains(idxScan.indexName()));
+        if (!opts.plain().isEmpty()) {
+            indexes.removeIf(idx -> opts.plain().contains(idx.indexName()));
 
-        opts.kv().forEach((tblName, idxNames) -> {
-            List<String> fullTblName = Commons.qualifiedName(tblName);
+            return;
+        }
 
-            List<String> qname = scan.getTable().getQualifiedName();
+        List<String> qtname = scan.getTable().getQualifiedName();
 
-            indexes.removeIf(idxScan -> idxNames.contains(idxScan.indexName()) && (last(fullTblName).equals(last(qname))
-                && fullTblName.size() == 1 || F.eq(fullTblName, qname)));
+        opts.kv().forEach((hintTblName, hintIdxNames) -> {
+            List<String> qHintTblName = Commons.qualifiedName(hintTblName);
+
+            indexes.removeIf(idx -> hintIdxNames.contains(idx.indexName())
+                && (last(qHintTblName).equals(last(qtname)) && qHintTblName.size() == 1) || F.eq(qHintTblName, qtname));
         });
     }
 

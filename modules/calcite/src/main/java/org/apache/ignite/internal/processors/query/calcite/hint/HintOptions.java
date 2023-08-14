@@ -24,19 +24,12 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.rel.hint.RelHint;
-import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Collects and holds hints options.
  */
 public final class HintOptions {
-    /** */
-    private static final HintOptions EMPTY = new HintOptions(-1, Collections.emptySet(),
-        Collections.emptyMap());
-
-    /** Number of hints having no any option. */
-    private final int emptyNum;
-
     /** Plain options. */
     private final Set<String> plain;
 
@@ -44,27 +37,24 @@ public final class HintOptions {
     private final Map<String, Set<String>> kv;
 
     /** Ctor. */
-    private HintOptions(int emptyNum, Set<String> plain, Map<String, Set<String>> kv) {
-        this.emptyNum = emptyNum;
-        this.plain = plain;
-        this.kv = kv;
+    private HintOptions(Set<String> plain, Map<String, Set<String>> kv) {
+        this.plain = Collections.unmodifiableSet(plain);
+        this.kv = Collections.unmodifiableMap(kv);
     }
 
-    /** */
-    static HintOptions collect(Collection<RelHint> hints) {
-        if (F.isEmpty(hints))
-            return EMPTY;
+    /**
+     * @return Combined options set of {@code hints} with natural order. {@code Null} if {@code hints} is empty.
+     */
+    static @Nullable HintOptions collect(Collection<RelHint> hints) {
+        if (hints.isEmpty())
+            return null;
 
-        int emptyNum = 0;
         Set<String> plainOptions = new LinkedHashSet<>();
         Map<String, Set<String>> kvOptions = new LinkedHashMap<>();
 
         for (RelHint h : hints) {
-            if (F.isEmpty(h.listOptions) && F.isEmpty(h.kvOptions)) {
-                ++emptyNum;
-
+            if (h.listOptions.isEmpty() && h.kvOptions.isEmpty())
                 continue;
-            }
 
             plainOptions.addAll(h.listOptions);
 
@@ -78,17 +68,12 @@ public final class HintOptions {
             }));
         }
 
-        return new HintOptions(emptyNum, plainOptions, kvOptions);
+        return new HintOptions(plainOptions, kvOptions);
     }
 
     /** */
-    public boolean notFound() {
-        return this == EMPTY;
-    }
-
-    /** */
-    public int emptyNum() {
-        return emptyNum;
+    public boolean empty() {
+        return plain.isEmpty() && kv.isEmpty();
     }
 
     /** */

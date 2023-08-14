@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.hint;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -29,6 +30,7 @@ import org.apache.calcite.rel.hint.RelHint;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Base class for working with Calcite's SQL hints.
@@ -44,13 +46,15 @@ public final class Hint {
      * @see HintStrategyTable#apply(List, RelNode)
      * @see PlanningContext#hints()
      */
-    static List<RelHint> hints(RelNode rel, HintDefinition hintDef) {
+    public static Collection<RelHint> hints(RelNode rel, HintDefinition... hintDef) {
         if (!(rel instanceof Hintable))
             return Collections.emptyList();
 
         RelOptCluster cl = rel.getCluster();
 
-        return cl.getHintStrategies().apply(filterHints(PlannerHelper.context(cl).hints(), hintDef), rel);
+        return F.flatCollections(Arrays.stream(hintDef)
+            .map(hd -> cl.getHintStrategies().apply(filterHints(PlannerHelper.context(cl).hints(), hd), rel))
+            .collect(Collectors.toList()));
     }
 
     /**
@@ -58,25 +62,15 @@ public final class Hint {
      * {@code False} otherwise.
      */
     public static boolean hasHint(RelNode rel, HintDefinition hintDef) {
-        return !F.isEmpty(hints(rel, hintDef));
+        return hints(rel, hintDef) != null;
     }
 
     /**
-     * @return Options of suitable for {@code rel} hints filtered with {@code hintDef}.
-     * @see HintStrategyTable#apply(List, RelNode)
+     * @return Combined options set of all {@code hints} filtered with {@code hintDef} with the natural order.
+     * {@code Null} if no hint is found by {@code hintDef}.
      * @see PlanningContext#hints()
-     * @see HintOptions#notFound()
      */
-    public static HintOptions options(RelNode rel, HintDefinition hintDef) {
-        return HintOptions.collect(hints(rel, hintDef));
-    }
-
-    /**
-     * @return Options of {@code hints} filtered with {@code hintDef}.
-     * @see PlanningContext#hints()
-     * @see HintOptions#notFound()
-     */
-    public static HintOptions options(Collection<RelHint> hints, HintDefinition hintDef) {
+    public static @Nullable HintOptions options(Collection<RelHint> hints, HintDefinition hintDef) {
         return HintOptions.collect(filterHints(hints, hintDef));
     }
 

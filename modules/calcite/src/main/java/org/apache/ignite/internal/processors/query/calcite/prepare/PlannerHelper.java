@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
@@ -40,6 +41,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.hint.Hint;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintOptions;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -77,8 +79,7 @@ public class PlannerHelper {
 
             RelNode rel = root.rel;
 
-            planner.setDisabledRules(Hint.options(context(planner.cluster()).hints(),
-                HintDefinition.DISABLE_RULE).plain());
+            setDisabledRules(planner);
 
             // Transformation chain
             rel = planner.transform(PlannerPhase.HEP_DECORRELATE, rel.getTraitSet(), rel);
@@ -112,6 +113,8 @@ public class PlannerHelper {
             if (sqlNode.isA(ImmutableSet.of(SqlKind.INSERT, SqlKind.UPDATE, SqlKind.MERGE)))
                 igniteRel = new FixDependentModifyNodeShuttle().visit(igniteRel);
 
+            log.warning("TEST | plan: \n" + RelOptUtil.toString(igniteRel));
+
             return igniteRel;
         }
         catch (Throwable ex) {
@@ -120,6 +123,15 @@ public class PlannerHelper {
 
             throw ex;
         }
+    }
+
+    /** */
+    private static void setDisabledRules(IgnitePlanner planner) {
+        HintOptions disabled = Hint.options(context(planner.cluster()).hints(),
+            HintDefinition.DISABLE_RULE);
+
+        if (disabled != null)
+            planner.setDisabledRules(disabled.plain());
     }
 
     /**

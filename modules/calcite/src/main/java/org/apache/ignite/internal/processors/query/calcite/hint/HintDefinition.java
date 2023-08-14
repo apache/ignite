@@ -65,7 +65,7 @@ public enum HintDefinition {
     },
 
     /** Forces to use index. */
-    INDEX {
+    USE_INDEX {
         /** {@inheritDoc} */
         @Override public HintPredicate predicate() {
             return NO_INDEX.predicate();
@@ -73,7 +73,7 @@ public enum HintDefinition {
 
         /** {@inheritDoc} */
         @Override public HintOptionChecker optionsChecker() {
-            return NO_INDEX.optionsChecker();
+            return HintsConfig.OPTS_CHECK_SINGLE;
         }
     };
 

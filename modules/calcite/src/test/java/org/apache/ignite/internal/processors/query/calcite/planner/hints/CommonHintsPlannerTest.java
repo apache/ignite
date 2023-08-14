@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner.hints;
 
+import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.TestTable;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
+import org.apache.ignite.internal.processors.query.calcite.sql.generated.ParseException;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.junit.Test;
 
@@ -88,6 +90,17 @@ public class CommonHintsPlannerTest extends AbstractPlannerTest {
             () -> assertPlan("SELECT /*+ EXPAND_DISTINCT_AGG(t='val') */ SUM(VAL) FROM TBL", schema, n -> true),
             Throwable.class,
             "Hint 'EXPAND_DISTINCT_AGG' can't have any option."
+        );
+
+        assertThrows(
+            null,
+            () -> {
+                assertPlan("SELECT /*+ EXPAND_DISTINCT_AGG(t='val','val2') */ SUM(VAL) FROM TBL", schema, n -> true);
+
+                return null;
+            },
+            SqlParseException.class,
+            "Encountered"
         );
     }
 }
