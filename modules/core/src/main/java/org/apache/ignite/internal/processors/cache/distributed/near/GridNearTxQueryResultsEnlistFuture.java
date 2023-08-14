@@ -153,7 +153,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
 
                 KeyCacheObject key = cctx.toCacheKeyObject(op.isDeleteOrLock() ? cur : ((Map.Entry<?, ?>)cur).getKey());
 
-                ClusterNode node = cctx.affinity().primaryByPartition(key.partition(), topVer);
+                ClusterNode node = cctx.affinity().primaryByKey(key, topVer);
 
                 if (node == null)
                     throw new ClusterTopologyServerNotFoundException("Failed to get primary node " +
