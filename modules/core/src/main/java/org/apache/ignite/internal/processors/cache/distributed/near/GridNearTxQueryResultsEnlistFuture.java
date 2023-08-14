@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -30,23 +28,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryResultsEnlistFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
-import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.NearTxQueryEnlistResultHandler.createResponse;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * A future tracking requests for remote nodes transaction enlisting and locking
@@ -89,85 +77,6 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
             return true;
 
         return cctx.topology().nodes(key.partition(), tx.topologyVersion()).contains(cctx.localNode());
-    }
-
-    /**
-     * @param primaryId Primary node id.
-     * @param rows Rows.
-     * @param dhtVer Dht version assigned at primary node.
-     * @param dhtFutId Dht future id assigned at primary node.
-     */
-    private void processBatchLocalBackupKeys(UUID primaryId, List<Object> rows, GridCacheVersion dhtVer,
-        IgniteUuid dhtFutId) {
-        assert dhtVer != null;
-        assert dhtFutId != null;
-
-        EnlistOperation op = it.operation();
-
-        assert op != EnlistOperation.LOCK;
-
-        boolean keysOnly = op.isDeleteOrLock();
-
-        final ArrayList<KeyCacheObject> keys = new ArrayList<>(rows.size());
-        final ArrayList<Message> vals = keysOnly ? null : new ArrayList<>(rows.size());
-
-        for (Object row : rows) {
-            if (keysOnly)
-                keys.add(cctx.toCacheKeyObject(row));
-            else {
-                keys.add(cctx.toCacheKeyObject(((Map.Entry<?, ?>)row).getKey()));
-
-                if (op.isInvoke())
-                    vals.add((Message)((Map.Entry<?, ?>)row).getValue());
-                else
-                    vals.add(cctx.toCacheObject(((Map.Entry<?, ?>)row).getValue()));
-            }
-        }
-
-        try {
-            GridDhtTxRemote dhtTx = cctx.tm().tx(dhtVer);
-
-            if (dhtTx == null) {
-                dhtTx = new GridDhtTxRemote(cctx.shared(),
-                    cctx.localNodeId(),
-                    primaryId,
-                    lockVer,
-                    topVer,
-                    dhtVer,
-                    null,
-                    cctx.systemTx(),
-                    cctx.ioPolicy(),
-                    PESSIMISTIC,
-                    REPEATABLE_READ,
-                    false,
-                    tx.remainingTime(),
-                    -1,
-                    SecurityUtils.securitySubjectId(cctx),
-                    tx.taskNameHash(),
-                    false,
-                    tx.label());
-
-                dhtTx.mvccSnapshot(new MvccSnapshotWithoutTxs(mvccSnapshot.coordinatorVersion(),
-                    mvccSnapshot.counter(), MVCC_OP_COUNTER_NA, mvccSnapshot.cleanupVersion()));
-
-                dhtTx = cctx.tm().onCreated(null, dhtTx);
-
-                if (dhtTx == null || !cctx.tm().onStarted(dhtTx)) {
-                    throw new IgniteTxRollbackCheckedException("Failed to update backup " +
-                        "(transaction has been completed): " + dhtVer);
-                }
-            }
-
-            cctx.tm().txHandler().mvccEnlistBatch(dhtTx, cctx, it.operation(), keys, vals,
-                mvccSnapshot.withoutActiveTransactions(), null, -1);
-        }
-        catch (IgniteCheckedException e) {
-            onDone(e);
-
-            return;
-        }
-
-        sendNextBatches(primaryId);
     }
 
     /** {@inheritDoc} */

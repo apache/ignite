@@ -32,11 +32,22 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.lang.IgniteReducer;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  *
@@ -246,6 +257,85 @@ public abstract class GridNearTxAbstractEnlistBatchFuture<T> extends GridNearTxA
             onDone(this.res);
 
         return res;
+    }
+
+    /**
+     * @param primaryId Primary node id.
+     * @param rows Rows.
+     * @param dhtVer Dht version assigned at primary node.
+     * @param dhtFutId Dht future id assigned at primary node.
+     */
+    protected void processBatchLocalBackupKeys(UUID primaryId, List<Object> rows, GridCacheVersion dhtVer,
+        IgniteUuid dhtFutId) {
+        assert dhtVer != null;
+        assert dhtFutId != null;
+
+        EnlistOperation op = it.operation();
+
+        assert op != EnlistOperation.LOCK;
+
+        boolean keysOnly = op.isDeleteOrLock();
+
+        final ArrayList<KeyCacheObject> keys = new ArrayList<>(rows.size());
+        final ArrayList<Message> vals = keysOnly ? null : new ArrayList<>(rows.size());
+
+        for (Object row : rows) {
+            if (keysOnly)
+                keys.add(cctx.toCacheKeyObject(row));
+            else {
+                keys.add(cctx.toCacheKeyObject(((Map.Entry<?, ?>)row).getKey()));
+
+                if (op.isInvoke())
+                    vals.add((Message)((Map.Entry<?, ?>)row).getValue());
+                else
+                    vals.add(cctx.toCacheObject(((Map.Entry<?, ?>)row).getValue()));
+            }
+        }
+
+        try {
+            GridDhtTxRemote dhtTx = cctx.tm().tx(dhtVer);
+
+            if (dhtTx == null) {
+                dhtTx = new GridDhtTxRemote(cctx.shared(),
+                    cctx.localNodeId(),
+                    primaryId,
+                    lockVer,
+                    topVer,
+                    dhtVer,
+                    null,
+                    cctx.systemTx(),
+                    cctx.ioPolicy(),
+                    PESSIMISTIC,
+                    REPEATABLE_READ,
+                    false,
+                    tx.remainingTime(),
+                    -1,
+                    SecurityUtils.securitySubjectId(cctx),
+                    tx.taskNameHash(),
+                    false,
+                    tx.label());
+
+                dhtTx.mvccSnapshot(new MvccSnapshotWithoutTxs(mvccSnapshot.coordinatorVersion(),
+                    mvccSnapshot.counter(), MVCC_OP_COUNTER_NA, mvccSnapshot.cleanupVersion()));
+
+                dhtTx = cctx.tm().onCreated(null, dhtTx);
+
+                if (dhtTx == null || !cctx.tm().onStarted(dhtTx)) {
+                    throw new IgniteTxRollbackCheckedException("Failed to update backup " +
+                        "(transaction has been completed): " + dhtVer);
+                }
+            }
+
+            cctx.tm().txHandler().mvccEnlistBatch(dhtTx, cctx, it.operation(), keys, vals,
+                mvccSnapshot.withoutActiveTransactions(), null, -1);
+        }
+        catch (IgniteCheckedException e) {
+            onDone(e);
+
+            return;
+        }
+
+        sendNextBatches(primaryId);
     }
 
     /** */
