@@ -21,10 +21,8 @@ import java.io.Serializable;
 import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedProperty;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 
 import static java.lang.String.format;
@@ -49,7 +47,7 @@ public final class DistributedConfigurationUtils {
         if (property.get() == null) {
             try {
                 property.propagateAsync(null, value)
-                    .listen((IgniteInClosure<IgniteInternalFuture<?>>)future -> {
+                    .listen(future -> {
                         if (future.error() != null)
                             log.error("Cannot set default value of '" + property.getName() + '\'', future.error());
                     });

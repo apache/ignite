@@ -26,9 +26,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
+
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
@@ -75,7 +75,7 @@ class IdleVerifyJob<ResultT> extends VisorJob<CacheIdleVerifyCommandArg, ResultT
                 if (!fut.isDone()) {
                     jobCtx.holdcc();
 
-                    fut.listen((IgniteInClosure<IgniteInternalFuture<ResultT>>)f -> jobCtx.callcc());
+                    fut.listen(() -> jobCtx.callcc());
 
                     return null;
                 }

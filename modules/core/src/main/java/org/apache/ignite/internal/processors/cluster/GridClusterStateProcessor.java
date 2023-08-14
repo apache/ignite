@@ -81,7 +81,6 @@ import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -333,7 +332,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                 if (fut != null) {
                     if (asyncWaitForTransition) {
-                        return new IgniteFutureImpl<>(fut.chain((C1<IgniteInternalFuture<Void>, ClusterState>)f -> {
+                        return new IgniteFutureImpl<>(fut.chain(() -> {
                             ClusterState res = globalState.transitionResult();
 
                             assert res != null;

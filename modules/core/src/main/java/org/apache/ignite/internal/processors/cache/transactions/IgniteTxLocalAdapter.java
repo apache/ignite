@@ -1710,7 +1710,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 setRollbackOnly();
 
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain((IgniteInternalFuture<IgniteInternalTx> f) -> {
+                    return rollbackAsync().chain(() -> {
                         throw new GridClosureException(e);
                     });
 
@@ -1727,7 +1727,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 );
 
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain((IgniteInternalFuture<IgniteInternalTx> f) -> {
+                    return rollbackAsync().chain(() -> {
                         throw ex;
                     });
 
@@ -1758,7 +1758,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             }
             catch (final IgniteCheckedException ex) {
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain((IgniteInternalFuture<IgniteInternalTx> f) -> {
+                    return rollbackAsync().chain(() -> {
                         throw new GridClosureException(ex);
                     });
 

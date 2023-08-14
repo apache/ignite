@@ -364,9 +364,9 @@ public class ConnectionClientPool {
 
             ConnectionRequestFuture triggerFut = new ConnectionRequestFuture();
 
-            triggerFut.listen(f -> {
+            triggerFut.listen(() -> {
                 try {
-                    fut0.onDone(f.get());
+                    fut0.onDone(triggerFut.get());
                 }
                 catch (Throwable t) {
                     fut0.onDone(t);

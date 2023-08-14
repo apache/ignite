@@ -335,9 +335,9 @@ public class IgniteTxHandler {
 
         IgniteInternalFuture<GridNearTxPrepareResponse> fut = locTx.prepareAsyncLocal(req);
 
-        return fut.chain((IgniteInternalFuture<GridNearTxPrepareResponse> f) -> {
+        return fut.chain(() -> {
             try {
-                return f.get();
+                return fut.get();
             }
             catch (Exception e) {
                 locTx.setRollbackOnly(); // Just in case.
@@ -618,9 +618,9 @@ public class IgniteTxHandler {
 
             final GridDhtTxLocal tx0 = tx;
 
-            fut.listen((IgniteInternalFuture<?> txFut) -> {
+            fut.listen(() -> {
                 try {
-                    txFut.get();
+                    fut.get();
                 }
                 catch (IgniteCheckedException e) {
                     tx0.setRollbackOnly(); // Just in case.
@@ -1284,7 +1284,7 @@ public class IgniteTxHandler {
                     final GridDhtTxRemote dhtTx0 = dhtTx;
                     final GridNearTxRemote nearTx0 = nearTx;
 
-                    completeFut.listen((IgniteInternalFuture<IgniteInternalTx> fut) ->
+                    completeFut.listen(() ->
                         sendReply(nodeId, req, res0, dhtTx0, nearTx0));
                 }
                 else
@@ -1360,7 +1360,7 @@ public class IgniteTxHandler {
                 else {
                     IgniteInternalFuture<?> fut = ctx.tm().remoteTxFinishFuture(req.version());
 
-                    fut.listen((IgniteInternalFuture<?> f) -> sendReply(nodeId, req, true, null));
+                    fut.listen(() -> sendReply(nodeId, req, true, null));
                 }
 
                 return;
@@ -1402,7 +1402,7 @@ public class IgniteTxHandler {
                 IgniteInternalFuture<IgniteInternalTx> completeFut = completeFuture(dhtTx, nearTx);
 
                 if (completeFut != null) {
-                    completeFut.listen((IgniteInternalFuture<IgniteInternalTx> fut) ->
+                    completeFut.listen(() ->
                         sendReply(nodeId, req, true, nearTxId));
                 }
                 else
@@ -2143,7 +2143,7 @@ public class IgniteTxHandler {
             sendCheckPreparedResponse(nodeId, req, prepared);
         }
         else {
-            fut.listen((IgniteInternalFuture<Boolean> f) -> {
+            fut.listen(() -> {
                 boolean prepared;
 
                 try {
