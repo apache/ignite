@@ -62,6 +62,19 @@ public enum HintDefinition {
         @Override public HintOptionChecker optionsChecker() {
             return HintsConfig.OPTS_CHECK_ANY;
         }
+    },
+
+    /** Forces to use index. */
+    INDEX {
+        /** {@inheritDoc} */
+        @Override public HintPredicate predicate() {
+            return NO_INDEX.predicate();
+        }
+
+        /** {@inheritDoc} */
+        @Override public HintOptionChecker optionsChecker() {
+            return NO_INDEX.optionsChecker();
+        }
     };
 
     /**
