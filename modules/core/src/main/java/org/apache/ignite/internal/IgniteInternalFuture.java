@@ -23,6 +23,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Async;
 
 /**
@@ -106,10 +108,18 @@ public interface IgniteInternalFuture<R> {
     /**
      * Registers listener closure to be asynchronously notified whenever future completes.
      *
-     * @param lsnr Listener closure to register. If not provided - this method is no-op.
+     * @param lsnr Listener closure to register.
      */
     @Async.Schedule
     public void listen(IgniteInClosure<? super IgniteInternalFuture<R>> lsnr);
+
+    /**
+     * Registers listener closure to be asynchronously notified whenever future completes.
+     *
+     * @param lsnr Listener closure to register.
+     */
+    @Async.Schedule
+    public void listen(IgniteRunnable lsnr);
 
     /**
      * Make a chained future to convert result of this future (when complete) into a new format.
@@ -126,11 +136,32 @@ public interface IgniteInternalFuture<R> {
      * It is guaranteed that done callback will be called only ONCE.
      *
      * @param doneCb Done callback that is applied to this future when it finishes to produce chained future result.
+     * @return Chained future that finishes after this future completes and done callback is called.
+     */
+    @Async.Schedule
+    public <T> IgniteInternalFuture<T> chain(IgniteOutClosure<T> doneCb);
+
+    /**
+     * Make a chained future to convert result of this future (when complete) into a new format.
+     * It is guaranteed that done callback will be called only ONCE.
+     *
+     * @param doneCb Done callback that is applied to this future when it finishes to produce chained future result.
      * @param exec Executor to run callback.
      * @return Chained future that finishes after this future completes and done callback is called.
      */
     @Async.Schedule
     public <T> IgniteInternalFuture<T> chain(IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb, Executor exec);
+
+    /**
+     * Make a chained future to convert result of this future (when complete) into a new format.
+     * It is guaranteed that done callback will be called only ONCE.
+     *
+     * @param doneCb Done callback that is applied to this future when it finishes to produce chained future result.
+     * @param exec Executor to run callback.
+     * @return Chained future that finishes after this future completes and done callback is called.
+     */
+    @Async.Schedule
+    public <T> IgniteInternalFuture<T> chain(IgniteOutClosure<T> doneCb, Executor exec);
 
     /**
      * Make a chained future that is completed when {@code doneCb} is executed. Callback is called with this future

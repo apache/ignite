@@ -293,7 +293,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<SnapshotFutureTaskRe
                     log);
             }
 
-            startedFut.listen(f ->
+            startedFut.listen(() ->
                 ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(this)
             );
 

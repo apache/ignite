@@ -1102,9 +1102,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         recovery,
                         expiryPlc);
 
-                    loadFut.listen((IgniteInternalFuture<Void> fut) -> {
+                    loadFut.listen(() -> {
                         try {
-                            fut.get();
+                            loadFut.get();
 
                             finishFuture(enlistFut, null, true);
                         }
@@ -1298,9 +1298,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         recovery,
                         expiryPlc);
 
-                    loadFut.listen((IgniteInternalFuture<Void> fut) -> {
+                    loadFut.listen(() -> {
                         try {
-                            fut.get();
+                            loadFut.get();
 
                             finishFuture(enlistFut, null, true);
                         }
@@ -3109,7 +3109,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     expiryPlc0,
                     skipVals,
                     needVer)
-                .chain((IgniteInternalFuture<Map<Object, Object>> f) -> {
+                .chain(f -> {
                     try {
                         Map<Object, Object> map = f.get();
 
@@ -3142,7 +3142,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     true,
                     this)
                     .multi()
-                    .chain((fut) -> {
+                    .chain(fut -> {
                         try {
                             Map<Object, Object> map = fut.get();
 
@@ -3181,7 +3181,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     recovery,
                     null,
                     label()
-                ).chain((IgniteInternalFuture<Object> f) -> {
+                ).chain(f -> {
                     try {
                         Object val = f.get();
 
@@ -3211,7 +3211,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     /*keepCacheObject*/true,
                     label(),
                     null
-                ).chain((IgniteInternalFuture<Map<Object, Object>> f) -> {
+                ).chain(f -> {
                     try {
                         Map<Object, Object> map = f.get();
 
@@ -3871,7 +3871,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 return prepFut;
 
             if (trackTimeout)
-                prepFut.listen((IgniteInternalFuture<?> f) -> removeTimeoutHandler());
+                prepFut.listen(this::removeTimeoutHandler);
 
             if (timeout == -1) {
                 fut.onDone(this, timeoutException());
@@ -3947,7 +3947,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 ((GridFutureAdapter<IgniteInternalTx>)prepFut).onDone(t);
             }
 
-            prepareFut.listen((IgniteInternalFuture<?> f) -> {
+            prepareFut.listen(f -> {
                 // These values should not be changed after set once.
                 prepareTime.compareAndSet(0, System.nanoTime() - prepareStartTime.get());
 
@@ -4113,7 +4113,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (!commit) {
                 final GridNearTxFinishFuture rollbackFut = new GridNearTxFinishFuture<>(cctx, this, false);
 
-                fut.listen((IgniteInternalFuture<IgniteInternalTx> fut0) -> {
+                fut.listen(() -> {
                     if (FINISH_FUT_UPD.compareAndSet(tx, fut, rollbackFut)) {
                         switch (tx.state()) {
                             case COMMITTED:
@@ -4134,9 +4134,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         }
                     }
                     else {
-                        finishFut.listen((IgniteInternalFuture<IgniteInternalTx> f) -> {
+                        finishFut.listen(() -> {
                             try {
-                                f.get();
+                                finishFut.get();
 
                                 rollbackFut.markInitialized();
                             }
@@ -4152,7 +4152,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             else {
                 final GridFutureAdapter<IgniteInternalTx> fut0 = new GridFutureAdapter<>();
 
-                fut.listen((IgniteInternalFuture<IgniteInternalTx> f) -> {
+                fut.listen(() -> {
                     if (timedOut())
                         fut0.onDone(new IgniteTxTimeoutCheckedException("Failed to commit transaction, " +
                             "transaction is concurrently rolled back on timeout: " + tx));
@@ -4249,7 +4249,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (fut.isDone())
                 cctx.tm().mvccFinish(this);
             else
-                fut.listen(f -> cctx.tm().mvccFinish(this));
+                fut.listen(() -> cctx.tm().mvccFinish(this));
 
             return fut;
         }

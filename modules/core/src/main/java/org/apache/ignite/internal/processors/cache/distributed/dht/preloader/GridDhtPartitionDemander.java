@@ -398,7 +398,7 @@ public class GridDhtPartitionDemander {
             final RebalanceFuture fut = new RebalanceFuture(grp, lastExchangeFut, assignments, log, rebalanceId, next, lastCancelledTime);
 
             if (oldFut.isInitial())
-                fut.listen(f -> oldFut.onDone(f.result()));
+                fut.listen(() -> oldFut.onDone(fut.result()));
 
             if (forcedRebFut != null)
                 forcedRebFut.add(fut);

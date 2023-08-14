@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -460,7 +459,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
 
         updateLocalFuture(fut);
 
-        fut.listen((IgniteInternalFuture<Long> fut0) -> {
+        fut.listen(() -> {
             assert fut.error() != null || fut.result() != null : fut;
 
             try {
