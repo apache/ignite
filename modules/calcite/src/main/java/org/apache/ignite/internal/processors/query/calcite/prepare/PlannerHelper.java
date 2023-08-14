@@ -82,14 +82,16 @@ public class PlannerHelper {
             // Transformation chain
             rel = planner.transform(PlannerPhase.HEP_DECORRELATE, rel.getTraitSet(), rel);
 
+            // Re-propagate hints after sub-queries extraction. RelOptUtil#propagateRelHints(RelNode, equiv) skips
+            // hints because current RelNode (like LogicalFilter) had no hints. But the hints may appear below, at the
+            // input nodes. In Calcite, RelDecorrelator#decorrelateQuery(...) can re-propagate hints.
+            rel = RelOptUtil.propagateRelHints(rel, false);
+
             rel = planner.replaceCorrelatesCollisions(rel);
 
             rel = planner.trimUnusedFields(root.withRel(rel)).rel;
 
             rel = planner.transform(PlannerPhase.HEP_FILTER_PUSH_DOWN, rel.getTraitSet(), rel);
-
-            // CALCITE-5915 : Hints are not set for not-expanded subqueries, for nodes which are not other nodes' inputs.
-            rel = RelOptUtil.propagateRelHints(rel, false);
 
             rel = planner.transform(PlannerPhase.HEP_PROJECT_PUSH_DOWN, rel.getTraitSet(), rel);
 
