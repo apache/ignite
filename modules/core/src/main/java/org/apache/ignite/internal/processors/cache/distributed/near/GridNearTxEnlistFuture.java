@@ -24,9 +24,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -63,50 +60,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * A future tracking requests for remote nodes transaction enlisting and locking produces by cache API operations.
  */
 public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistBatchFuture<GridCacheReturn> {
-    /** Default batch size. */
-    public static final int DFLT_BATCH_SIZE = 1024;
-
-    /** SkipCntr field updater. */
-    private static final AtomicIntegerFieldUpdater<GridNearTxEnlistFuture> SKIP_UPD =
-        AtomicIntegerFieldUpdater.newUpdater(GridNearTxEnlistFuture.class, "skipCntr");
-
     /** Res field updater. */
     private static final AtomicReferenceFieldUpdater<GridNearTxEnlistFuture, GridCacheReturn> RES_UPD =
         AtomicReferenceFieldUpdater.newUpdater(GridNearTxEnlistFuture.class, GridCacheReturn.class, "res");
-
-    /** Marker object. */
-    private static final Object FINISHED = new Object();
-
-    /** Source iterator. */
-    @GridToStringExclude
-    private final UpdateSourceIterator<?> it;
-
-    /** Batch size. */
-    private final int batchSize;
-
-    /** */
-    private final AtomicInteger batchCntr = new AtomicInteger();
-
-    /** */
-    @SuppressWarnings("unused")
-    @GridToStringExclude
-    private volatile int skipCntr;
-
-    /** Future result. */
-    @GridToStringExclude
-    private volatile GridCacheReturn res;
-
-    /** */
-    private final Map<UUID, Batch> batches = new ConcurrentHashMap<>();
-
-    /** Row extracted from iterator but not yet used. */
-    private Object peek;
-
-    /** Topology locked flag. */
-    private boolean topLocked;
-
-    /** Ordered batch sending flag. */
-    private final boolean sequential;
 
     /** Filter. */
     private final CacheEntryPredicate filter;
@@ -116,6 +72,10 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistBatchFuture<
 
     /** Keep binary flag. */
     private final boolean keepBinary;
+
+    /** Future result. */
+    @GridToStringExclude
+    private volatile GridCacheReturn res;
 
     /**
      * @param cctx Cache context.
@@ -137,11 +97,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistBatchFuture<
         @Nullable CacheEntryPredicate filter,
         boolean needRes,
         boolean keepBinary) {
-        super(cctx, tx, timeout, null);
+        super(cctx, tx, timeout, null, it, batchSize, sequential);
 
-        this.it = it;
-        this.batchSize = batchSize > 0 ? batchSize : DFLT_BATCH_SIZE;
-        this.sequential = sequential;
         this.filter = filter;
         this.needRes = needRes;
         this.keepBinary = keepBinary;

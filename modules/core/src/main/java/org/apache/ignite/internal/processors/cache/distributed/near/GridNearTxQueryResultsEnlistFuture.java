@@ -24,9 +24,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -62,50 +59,14 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * of entries produced with complex DML queries requiring reduce step.
  */
 public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlistBatchFuture<Long> {
-    /** */
-    public static final int DFLT_BATCH_SIZE = 1024;
-
     /** Res field updater. */
     private static final AtomicLongFieldUpdater<GridNearTxQueryResultsEnlistFuture> RES_UPD =
         AtomicLongFieldUpdater.newUpdater(GridNearTxQueryResultsEnlistFuture.class, "res");
-
-    /** SkipCntr field updater. */
-    private static final AtomicIntegerFieldUpdater<GridNearTxQueryResultsEnlistFuture> SKIP_UPD =
-        AtomicIntegerFieldUpdater.newUpdater(GridNearTxQueryResultsEnlistFuture.class, "skipCntr");
-
-    /** Marker object. */
-    private static final Object FINISHED = new Object();
-
-    /** */
-    private final UpdateSourceIterator<?> it;
-
-    /** */
-    private final int batchSize;
-
-    /** */
-    private final AtomicInteger batchCntr = new AtomicInteger();
-
-    /** */
-    @SuppressWarnings("unused")
-    @GridToStringExclude
-    private volatile int skipCntr;
 
     /** */
     @SuppressWarnings("unused")
     @GridToStringExclude
     private volatile long res;
-
-    /** */
-    private final Map<UUID, Batch> batches = new ConcurrentHashMap<>();
-
-    /** Row extracted from iterator but not yet used. */
-    private Object peek;
-
-    /** Topology locked flag. */
-    private boolean topLocked;
-
-    /** */
-    private final boolean sequential;
 
     /**
      * @param cctx Cache context.
@@ -121,11 +82,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
         UpdateSourceIterator<?> it,
         int batchSize,
         boolean sequential) {
-        super(cctx, tx, timeout, CU.longReducer());
-
-        this.it = it;
-        this.batchSize = batchSize > 0 ? batchSize : DFLT_BATCH_SIZE;
-        this.sequential = sequential;
+        super(cctx, tx, timeout, CU.longReducer(), it, batchSize, sequential);
     }
 
     /** {@inheritDoc} */
