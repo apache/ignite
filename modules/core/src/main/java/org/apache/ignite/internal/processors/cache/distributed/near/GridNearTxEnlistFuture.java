@@ -171,7 +171,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistBatchFuture<
                     SecurityUtils.securitySubjectId(cctx),
                     tx.taskNameHash(),
                     false,
-                    null);
+                    tx.label());
 
                 dhtTx.mvccSnapshot(new MvccSnapshotWithoutTxs(mvccSnapshot.coordinatorVersion(),
                     mvccSnapshot.counter(), MVCC_OP_COUNTER_NA, mvccSnapshot.cleanupVersion()));

@@ -64,6 +64,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
      * @param batchSize Batch size.
      * @param sequential Sequential locking flag.
      */
+
     public GridNearTxQueryResultsEnlistFuture(GridCacheContext<?, ?> cctx,
         GridNearTxLocal tx,
         long timeout,
@@ -115,7 +116,11 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
                 keys.add(cctx.toCacheKeyObject(row));
             else {
                 keys.add(cctx.toCacheKeyObject(((Map.Entry<?, ?>)row).getKey()));
-                vals.add(cctx.toCacheObject(((Map.Entry<?, ?>)row).getValue()));
+
+                if (op.isInvoke())
+                    vals.add((Message)((Map.Entry<?, ?>)row).getValue());
+                else
+                    vals.add(cctx.toCacheObject(((Map.Entry<?, ?>)row).getValue()));
             }
         }
 
