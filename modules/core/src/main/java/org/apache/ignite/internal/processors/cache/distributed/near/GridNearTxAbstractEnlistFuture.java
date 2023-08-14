@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -494,6 +497,92 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(LockTimeoutObject.class, this);
+        }
+    }
+
+    /**
+     * A batch of rows
+     */
+    protected static class Batch {
+        /** Node ID. */
+        @GridToStringExclude
+        private final ClusterNode node;
+
+        /** Rows. */
+        private final List<Object> rows = new ArrayList<>();
+
+        /** Local backup rows. */
+        private List<Object> locBkpRows;
+
+        /** Readiness flag. Set when batch is full or no new rows are expected. */
+        private boolean ready;
+
+        /**
+         * @param node Cluster node.
+         */
+        protected Batch(ClusterNode node) {
+            this.node = node;
+        }
+
+        /**
+         * @return Node.
+         */
+        public ClusterNode node() {
+            return node;
+        }
+
+        /**
+         * Adds a row.
+         *
+         * @param row Row.
+         * @param locBackup {@code true}, when the row key has local backup.
+         */
+        public void add(Object row, boolean locBackup) {
+            rows.add(row);
+
+            if (locBackup) {
+                if (locBkpRows == null)
+                    locBkpRows = new ArrayList<>();
+
+                locBkpRows.add(row);
+            }
+        }
+
+        /**
+         * @return number of rows.
+         */
+        public int size() {
+            return rows.size();
+        }
+
+        /**
+         * @return Collection of rows.
+         */
+        public Collection<Object> rows() {
+            return rows;
+        }
+
+        /**
+         * @return Collection of local backup rows.
+         */
+        public List<Object> localBackupRows() {
+            return locBkpRows;
+        }
+
+        /**
+         * @return Readiness flag.
+         */
+        public boolean ready() {
+            return ready;
+        }
+
+        /**
+         * Sets readiness flag.
+         *
+         * @param ready Flag value.
+         */
+        public void ready(boolean ready) {
+            this.ready = ready;
         }
     }
 }
