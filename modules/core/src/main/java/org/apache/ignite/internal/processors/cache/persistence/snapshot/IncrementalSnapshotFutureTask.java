@@ -131,9 +131,9 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
                 return false;
             }
 
-            highPtrFut.chain(fut -> {
-                if (fut.error() != null) {
-                    onDone(fut.error());
+            highPtrFut.chain(() -> {
+                if (highPtrFut.error() != null) {
+                    onDone(highPtrFut.error());
 
                     return null;
                 }
@@ -141,7 +141,7 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
                 try {
                     String folderName = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
 
-                    copyWal(incrementalSnapshotWalsDir(incSnpDir, folderName), fut.result());
+                    copyWal(incrementalSnapshotWalsDir(incSnpDir, folderName), highPtrFut.result());
 
                     copyFiles(
                         MarshallerContextImpl.mappingFileStoreWorkDir(cctx.gridConfig().getWorkDirectory()),

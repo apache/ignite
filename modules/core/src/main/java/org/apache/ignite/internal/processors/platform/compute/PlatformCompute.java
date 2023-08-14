@@ -44,6 +44,8 @@ import org.apache.ignite.internal.processors.task.TaskExecutionOptions;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils.getResult;
@@ -488,12 +490,27 @@ public class PlatformCompute extends PlatformAbstractTarget {
         }
 
         /** {@inheritDoc} */
+        @Override public void listen(final IgniteRunnable lsnr) {
+            listen(ignored -> lsnr.run());
+        }
+
+        /** {@inheritDoc} */
         @Override public IgniteInternalFuture chain(IgniteClosure doneCb) {
             throw new UnsupportedOperationException("Chain operation is not supported.");
         }
 
         /** {@inheritDoc} */
+        @Override public IgniteInternalFuture chain(IgniteOutClosure doneCb) {
+            throw new UnsupportedOperationException("Chain operation is not supported.");
+        }
+
+        /** {@inheritDoc} */
         @Override public IgniteInternalFuture chain(IgniteClosure doneCb, Executor exec) {
+            throw new UnsupportedOperationException("Chain operation is not supported.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture chain(IgniteOutClosure doneCb, Executor exec) {
             throw new UnsupportedOperationException("Chain operation is not supported.");
         }
 

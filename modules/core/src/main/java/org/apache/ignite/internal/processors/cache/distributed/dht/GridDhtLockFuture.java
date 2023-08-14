@@ -276,7 +276,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                         assert fut instanceof GridDhtColocatedLockFuture : fut;
 
                         // Terminate this future if parent(collocated) future is terminated by rollback.
-                        fut.listen((IgniteInternalFuture<?> fut0) -> {
+                        fut.listen(() -> {
                             try {
                                 fut.get();
                             }

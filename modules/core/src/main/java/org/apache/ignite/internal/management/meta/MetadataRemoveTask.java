@@ -31,12 +31,12 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.management.meta.MetadataInfoTask.typeId;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
@@ -125,8 +125,8 @@ public class MetadataRemoveTask extends VisorMultiNodeTask<MetaRemoveCommandArg,
 
                     jobCtx.holdcc();
 
-                    future.listen((IgniteInClosure<IgniteInternalFuture<?>>)f -> {
-                        if (f.isDone())
+                    future.listen(() -> {
+                        if (future.isDone())
                             jobCtx.callcc();
                     });
 

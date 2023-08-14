@@ -426,7 +426,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                      */
                     final IgniteInternalFuture finalPrepFut = prepFut;
 
-                    lockFut.listen((IgniteInternalFuture<?> ignored) -> finishTx(false, finalPrepFut, fut));
+                    lockFut.listen(() -> finishTx(false, finalPrepFut, fut));
 
                     return;
                 }
@@ -497,7 +497,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             if (prep.isDone())
                 finishTx(true, prep, fut);
             else
-                prep.listen((IgniteInternalFuture<?> f) -> finishTx(true, f, fut));
+                prep.listen(() -> finishTx(true, prep, fut));
         }
         else {
             assert optimistic();
@@ -540,12 +540,12 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
         cctx.mvcc().addFuture(fut, fut.futureId());
 
-        GridDhtTxPrepareFuture prepFut = this.prepFut;
+        GridDhtTxPrepareFuture prep = prepFut;
 
-        if (prepFut != null) {
-            prepFut.complete();
+        if (prep != null) {
+            prep.complete();
 
-            prepFut.listen((IgniteInternalFuture<?> f) -> finishTx(false, f, fut));
+            prep.listen(() -> finishTx(false, prep, fut));
         }
         else
             finishTx(false, null, fut);

@@ -413,12 +413,12 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
                 firstRbld = false;
 
             if (slowRebuildIdxFut) {
-                rebuildIdxFut.listen(fut -> {
+                rebuildIdxFut.listen(() -> {
                     try {
                         U.sleep(1_000);
                     }
                     catch (IgniteInterruptedCheckedException e) {
-                        log.error("Error while slow down " + fut, e);
+                        log.error("Error while slow down " + rebuildIdxFut, e);
                     }
                 });
             }

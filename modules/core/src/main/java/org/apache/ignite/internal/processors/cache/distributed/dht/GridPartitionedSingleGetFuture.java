@@ -315,9 +315,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 map(updTopVer);
             }
             else {
-                fut0.listen(f -> {
+                fut0.listen(() -> {
                     try {
-                        GridCacheEntryInfo info = f.get();
+                        GridCacheEntryInfo info = fut0.get();
 
                         setResult(info);
                     }
@@ -893,9 +893,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         IgniteInternalFuture<AffinityTopologyVersion> awaitTopologyVersionFuture =
             cctx.shared().exchange().affinityReadyFuture(topVer);
 
-        awaitTopologyVersionFuture.listen(f -> {
+        awaitTopologyVersionFuture.listen(() -> {
             try {
-                remap(f.get());
+                remap(awaitTopologyVersionFuture.get());
             }
             catch (IgniteCheckedException e) {
                 onDone(e);

@@ -383,8 +383,8 @@ public class IgniteStatisticsConfigurationManager {
 
             compoundFuture.markInitialized();
 
-            compoundFuture.listen(future -> {
-                if (future.error() == null && !future.result())
+            compoundFuture.listen(() -> {
+                if (compoundFuture.error() == null && !compoundFuture.result())
                     mgmtBusyExecutor.execute(this::updateAllLocalStatistics);
             });
         }

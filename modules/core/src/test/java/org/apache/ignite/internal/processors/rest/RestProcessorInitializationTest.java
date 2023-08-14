@@ -114,7 +114,7 @@ public class RestProcessorInitializationTest extends GridCommonAbstractTest {
         @Override protected IgniteInternalFuture<GridRestResponse> handleAsync0(GridRestRequest req) {
             IgniteInternalFuture<GridRestResponse> fut = super.handleAsync0(req);
 
-            fut.listen(f -> tuple.set(req, f));
+            fut.listen(() -> tuple.set(req, fut));
 
             return fut;
         }
