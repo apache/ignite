@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -104,7 +103,7 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
     }
 
     /** {@inheritDoc} */
-    @Override protected UpdateSourceIterator<?> createIterator() throws IgniteCheckedException {
+    @Override protected UpdateSourceIterator<?> createIterator() {
         return this;
     }
 
