@@ -28,9 +28,7 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxEnlistFuture;
-import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -101,15 +99,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistBatchFuture<
         sendNextBatches(null);
     }
 
-    /** */
-    @Override protected boolean isLocalBackup(EnlistOperation op, KeyCacheObject key) {
-        if (!cctx.affinityNode() || op == EnlistOperation.LOCK)
-            return false;
-        else if (cctx.isReplicated())
-            return true;
 
-        return cctx.topology().nodes(key.partition(), tx.topologyVersion()).indexOf(cctx.localNode()) > 0;
-    }
 
     /** {@inheritDoc} */
     @Override protected void complete() {

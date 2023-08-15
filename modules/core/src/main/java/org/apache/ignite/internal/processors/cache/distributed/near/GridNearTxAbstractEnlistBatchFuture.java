@@ -397,6 +397,16 @@ public abstract class GridNearTxAbstractEnlistBatchFuture<T> extends GridNearTxA
         return false;
     }
 
+    /** */
+    protected boolean isLocalBackup(EnlistOperation op, KeyCacheObject key) {
+        if (!cctx.affinityNode() || op == EnlistOperation.LOCK)
+            return false;
+        else if (cctx.isReplicated())
+            return true;
+
+        return cctx.topology().nodes(key.partition(), tx.topologyVersion()).indexOf(cctx.localNode()) > 0;
+    }
+
     /**
      * Enlist batch of entries to the transaction on local node.
      *
@@ -415,11 +425,6 @@ public abstract class GridNearTxAbstractEnlistBatchFuture<T> extends GridNearTxA
      * @param clientFirst {@code true} if originating node is client and it is a first request to any data node.
      */
     protected abstract void sendBatch(int batchId, UUID nodeId, Batch batchFut, boolean clientFirst) throws IgniteCheckedException;
-
-    /**
-     *
-     */
-    protected abstract boolean isLocalBackup(EnlistOperation op, KeyCacheObject key);
 
     /**
      *

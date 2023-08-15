@@ -26,9 +26,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryResultsEnlistFuture;
-import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -73,16 +71,6 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
         this.topLocked = topLocked;
 
         sendNextBatches(null);
-    }
-
-    /** */
-    @Override protected boolean isLocalBackup(EnlistOperation op, KeyCacheObject key) {
-        if (!cctx.affinityNode() || op == EnlistOperation.LOCK)
-            return false;
-        else if (cctx.isReplicated())
-            return true;
-
-        return cctx.topology().nodes(key.partition(), tx.topologyVersion()).contains(cctx.localNode());
     }
 
     /** {@inheritDoc} */
