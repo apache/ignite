@@ -22,10 +22,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -407,6 +409,14 @@ public abstract class GridNearTxAbstractEnlistBatchFuture<T> extends GridNearTxA
                 ", fut=" + this + ']');
 
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<UUID> pendingResponseNodes() {
+        return batches.entrySet().stream()
+            .filter(e -> e.getValue().ready())
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toSet());
     }
 
     /** */

@@ -18,11 +18,8 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -220,14 +217,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistBatchFuture<
         tx.hasRemoteLocks(true);
 
         return !isDone();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<UUID> pendingResponseNodes() {
-        return batches.entrySet().stream()
-            .filter(e -> e.getValue().ready())
-            .map(Map.Entry::getKey)
-            .collect(Collectors.toSet());
     }
 
     /** {@inheritDoc} */
