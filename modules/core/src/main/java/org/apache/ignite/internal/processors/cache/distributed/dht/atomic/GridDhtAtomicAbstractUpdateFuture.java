@@ -395,7 +395,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
         GridNearAtomicUpdateResponse updateRes,
         GridDhtAtomicCache.UpdateReplyClosure completionCb) {
         if (F.isEmpty(mappings)) {
-            updateRes.mapping(Collections.<UUID>emptyList());
+            updateRes.mapping(Collections.emptyList());
 
             completionCb.apply(updateReq, updateRes);
 
