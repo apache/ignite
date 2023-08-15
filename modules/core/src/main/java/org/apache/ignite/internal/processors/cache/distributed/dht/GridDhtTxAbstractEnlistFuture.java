@@ -712,7 +712,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @param key Key.
      * @param hist History rows.
      * @return History entries.
-     * @throws IgniteCheckedException, if failed.
      */
     private CacheEntryInfoCollection fetchHistoryInfo(KeyCacheObject key, List<MvccLinkAwareSearchRow> hist) {
         List<GridCacheEntryInfo> res = new ArrayList<>();
