@@ -22,7 +22,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryResultsEnlistFuture;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -87,16 +86,6 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
             it.operation());
 
         sendRequest(req, nodeId);
-    }
-
-    /**
-     *
-     * @param req Request.
-     * @param nodeId Remote node ID
-     * @throws IgniteCheckedException if failed to send.
-     */
-    private void sendRequest(GridCacheMessage req, UUID nodeId) throws IgniteCheckedException {
-        cctx.io().send(nodeId, req, cctx.ioPolicy());
     }
 
     /** {@inheritDoc} */

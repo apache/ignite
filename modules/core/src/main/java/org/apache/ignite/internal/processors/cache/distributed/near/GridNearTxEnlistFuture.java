@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxEnlistFuture;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
@@ -112,15 +111,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistBatchFuture<
         );
 
         sendRequest(req, nodeId);
-    }
-
-    /**
-     * @param req Request.
-     * @param nodeId Remote node ID
-     * @throws IgniteCheckedException if failed to send.
-     */
-    private void sendRequest(GridCacheMessage req, UUID nodeId) throws IgniteCheckedException {
-        cctx.io().send(nodeId, req, cctx.ioPolicy());
     }
 
     /** {@inheritDoc} */

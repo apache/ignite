@@ -33,6 +33,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
@@ -175,6 +176,16 @@ public abstract class GridNearTxAbstractEnlistBatchFuture<T> extends GridNearTxA
             enlistLocal(batchId, node.id(), batch);
         else
             sendBatch(batchId, node.id(), batch, clientFirst);
+    }
+
+    /**
+     *
+     * @param req Request.
+     * @param nodeId Remote node ID
+     * @throws IgniteCheckedException if failed to send.
+     */
+    protected void sendRequest(GridCacheMessage req, UUID nodeId) throws IgniteCheckedException {
+        cctx.io().send(nodeId, req, cctx.ioPolicy());
     }
 
     /**
