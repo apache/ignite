@@ -914,7 +914,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
     /**
      * Checks whether new coordinator was initialized after the snapshot is acquired.
-     *
+     * <p>
      * Need to fit invariant that all updates are finished before a new coordinator is initialized.
      *
      * @throws ClusterTopologyCheckedException If failed.
