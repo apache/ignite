@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
-import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.immutables.value.Value;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.util.Util.last;
 
@@ -88,7 +87,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
 
         assert !indexes.isEmpty();
 
-        processHints(scan, indexes);
+        indexes = processHints(scan, indexes);
 
         if (indexes.isEmpty())
             return;
@@ -101,39 +100,36 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
     }
 
     /** */
-    private void processHints(IgniteLogicalTableScan scan, List<IgniteLogicalIndexScan> indexes) {
-        Collection<RelHint> hints = Hint.hints(scan, HintDefinition.NO_INDEX, HintDefinition.USE_INDEX);
+    private List<IgniteLogicalIndexScan> processHints(IgniteLogicalTableScan scan, List<IgniteLogicalIndexScan> indexes) {
+        List<RelHint> hints = Hint.hints(scan, HintDefinition.NO_INDEX, HintDefinition.USE_INDEX);
 
-        if(hints.isEmpty())
-            return;
+        if (hints.isEmpty())
+            return indexes;
 
-        // Whether the first hint is a forced index. Since there is possibility to pass several the same hints
-        // with various options, we recognize such hints as single hint with set of options and apply them with
-        // FIFO order.
-        boolean firstIsUse = !hints.iterator().next().hintName.equals(HintDefinition.NO_INDEX.name());
+        boolean disabled = !hints.get(0).hintName.equals(HintDefinition.USE_INDEX.name());
 
-        HintOptions useOpts = Hint.options(hints, HintDefinition.USE_INDEX);
-        HintOptions disableOpts = Hint.options(hints, HintDefinition.NO_INDEX);
+        HintOptions opts = Hint.options(hints, disabled ? HintDefinition.NO_INDEX : HintDefinition.USE_INDEX);
 
-        if (firstIsUse) {
-            keepIndex(scan, indexes, useOpts);
+        if (opts == null)
+            return indexes;
 
-            removeIndexes(scan, indexes, disableOpts);
-        } else {
-            removeIndexes(scan, indexes, disableOpts);
+        if (disabled)
+            removeIndexes(scan, indexes, opts);
+        else if (indexes.size() > 1) {
+            keepIndex(scan, indexes, opts);
 
-            keepIndex(scan, indexes, useOpts);
+            if (indexes.size() == 1)
+                indexes = Collections.singletonList(indexes.get(0).setForced());
         }
+
+        return indexes;
     }
 
     /** */
-    private void keepIndex(TableScan scan, List<? extends AbstractIndexScan> indexes, @Nullable HintOptions opts) {
-        if (opts == null)
-            return;
-
+    private void keepIndex(TableScan scan, List<? extends AbstractIndexScan> indexes, HintOptions opts) {
         assert !opts.empty();
 
-        // If there is no index with passed name, no index should be removed.
+        // If there is no index with passed name, no other index should be removed.
         if (indexes.stream().noneMatch(idx -> idx.indexName().equals(opts.plain().iterator().next())))
             return;
 
@@ -150,15 +146,11 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
 
             indexes.removeIf(idx -> !hintIdxNames.contains(idx.indexName())
                 && (last(qHintTblName).equals(last(qtname)) && qHintTblName.size() == 1 || F.eq(qHintTblName, qtname)));
-
         });
     }
 
     /** */
-    private void removeIndexes(TableScan scan, List<? extends AbstractIndexScan> indexes, @Nullable HintOptions opts) {
-        if (opts == null)
-            return;
-
+    private void removeIndexes(TableScan scan, List<? extends AbstractIndexScan> indexes, HintOptions opts) {
         if (opts.empty()) {
             indexes.clear();
 

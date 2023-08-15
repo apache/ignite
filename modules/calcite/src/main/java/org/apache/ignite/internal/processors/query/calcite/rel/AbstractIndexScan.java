@@ -49,6 +49,9 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
 
     /** */
     protected final List<SearchBounds> searchBounds;
+    
+    /** */
+    protected final boolean forced;
 
     /**
      * Constructor used for deserialization.
@@ -59,6 +62,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
         super(input);
         idxName = input.getString("index");
         searchBounds = ((RelInputEx)input).getSearchBounds("searchBounds");
+        forced = input.getBoolean("forced", false);
     }
 
     /** */
@@ -67,6 +71,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
         RelTraitSet traitSet,
         RelOptTable table,
         String idxName,
+        boolean forced,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable List<SearchBounds> searchBounds,
@@ -76,6 +81,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
 
         this.idxName = idxName;
         this.searchBounds = searchBounds;
+        this.forced = forced;
     }
 
     /** {@inheritDoc} */
@@ -83,6 +89,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
         pw = pw.item("index", idxName);
         pw = super.explainTerms0(pw);
         pw = pw.itemIf("searchBounds", searchBounds, searchBounds != null);
+        pw = pw.item("forced", forced);
 
         if (pw.getDetailLevel() == SqlExplainLevel.ALL_ATTRIBUTES)
             pw = pw.item("inlineScan", isInlineScan());
@@ -90,9 +97,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
         return pw;
     }
 
-    /**
-     *
-     */
+    /** */
     public String indexName() {
         return idxName;
     }
@@ -110,6 +115,9 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        if (forced)
+            return planner.getCostFactory().makeTinyCost();
+        
         double rows = table.getRowCount();
 
         double cost;
@@ -151,5 +159,10 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
     /** */
     public List<SearchBounds> searchBounds() {
         return searchBounds;
+    }
+
+    /** */
+    public boolean forced(){
+        return forced;
     }
 }

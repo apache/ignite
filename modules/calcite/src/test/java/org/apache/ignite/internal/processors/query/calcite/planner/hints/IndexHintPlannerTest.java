@@ -106,49 +106,61 @@ public class IndexHintPlannerTest extends AbstractPlannerTest {
         assertPlan("SELECT /*+ USE_INDEX('IDX3'), USE_INDEX('IDX1') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
             schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX3")));
 
-        assertPlan("SELECT /*+ USE_INDEX('IDX2'), USE_INDEX('IDX1') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2")));
-
-        assertPlan("SELECT /*+ USE_INDEX('IDX1'), USE_INDEX('IDX3') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX1")));
+        assertPlan("SELECT /*+ USE_INDEX('UNEXISTING') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
+            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX2")))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX3"))));
     }
 
     /** */
     @Test
-    public void testWintNoIndex() throws Exception {
-        assertPlan("SELECT /*+ NO_INDEX('IDX1'), USE_INDEX('IDX3') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX3")));
+    public void testTwo() throws Exception {
+        assertPlan("SELECT /*+ USE_INDEX('IDX1'), USE_INDEX('IDX3') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
+            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX3"))));
 
-        assertPlan("SELECT /*+ NO_INDEX('IDX3'), USE_INDEX('IDX3') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX3")).negate()
-                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
-                    .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX2")))));
+        assertPlan("SELECT /*+ USE_INDEX('IDX1'), USE_INDEX('IDX2') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
+            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX2"))));
 
-        assertPlan("SELECT /*+ USE_INDEX('IDX3'), NO_INDEX('IDX3') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX3")).negate()
-                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
-                    .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX2")))));
-
-        assertPlan("SELECT /*+ USE_INDEX('IDX3'), USE_INDEX('IDX2') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX3")));
-
-        assertPlan("SELECT /*+ NO_INDEX, USE_INDEX('IDX3') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
-            schema, nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class).negate()));
-
-        assertPlan("SELECT /*+ USE_INDEX('IDX3'), NO_INDEX */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
-            schema, nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class).negate()));
+        assertPlan("SELECT /*+ USE_INDEX('IDX2'), USE_INDEX('IDX3') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
+            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2"))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX3"))));
     }
 
-//    /** */
-//    @Test
-//    public void testPrevailsOverTableScan() throws Exception {
-//        assertPlan("SELECT /*+ USE_INDEX('IDX3') */ * FROM TBL WHERE val3=1 and val1=2 and val2=3",
-//            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX3")));
-//
-//        assertPlan("SELECT /*+ USE_INDEX('IDX2') */ * FROM TBL WHERE val3=1 and val1=2 and val2=3",
-//            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2")));
-//
-//        assertPlan("SELECT /*+ USE_INDEX('IDX1') */ * FROM TBL WHERE val3=1 and val1=2 and val2=3",
-//            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX1")));
-//    }
+    /**
+     * Tests first hint prevails.
+     */
+    @Test
+    public void testWintNoIndex() throws Exception {
+        assertPlan("SELECT /*+ NO_INDEX, USE_INDEX('IDX3') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
+            schema, nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)).negate());
+
+        assertPlan("SELECT /*+ NO_INDEX('IDX1'), USE_INDEX('IDX1') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
+            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2"))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX3"))));
+
+        assertPlan("SELECT /*+ NO_INDEX('IDX3'), USE_INDEX('IDX1') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
+            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX2"))));
+
+        assertPlan("SELECT /*+ USE_INDEX('IDX3'), NO_INDEX */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
+            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX3")));
+    }
+
+    /** */
+    @Test
+    public void testPrevailsOverTinyTableScan() throws Exception {
+        assertPlan("SELECT * FROM TBL1 WHERE val3=1 and val1=2 and val2=3",
+            schema, nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)).negate());
+
+        assertPlan("SELECT /*+ USE_INDEX('IDX1') */ * FROM TBL1 WHERE val3=1 and val1=2 and val2=3",
+            schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX1")));
+
+        assertPlan("SELECT /*+ USE_INDEX('IDX2') */ * FROM TBL1 WHERE val3=1 and val1=2 and val2=3",
+            schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX2")));
+
+        assertPlan("SELECT /*+ USE_INDEX('IDX3') */ * FROM TBL1 WHERE val3=1 and val1=2 and val2=3",
+            schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX3")));
+    }
 }

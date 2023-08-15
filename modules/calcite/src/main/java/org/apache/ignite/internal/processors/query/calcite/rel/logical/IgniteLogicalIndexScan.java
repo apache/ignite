@@ -51,6 +51,7 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
             traits,
             table,
             idxName,
+            false,
             proj,
             cond,
             searchBounds,
@@ -63,6 +64,7 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
      * @param traits Traits of this relational expression
      * @param tbl Table definition.
      * @param idxName Index name.
+     * @param forced Forced flag.
      * @param proj Projects.
      * @param cond Filters.
      * @param searchBounds Index search bounds.
@@ -73,11 +75,18 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
         RelTraitSet traits,
         RelOptTable tbl,
         String idxName,
+        boolean forced,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable List<SearchBounds> searchBounds,
         @Nullable ImmutableBitSet requiredCols
     ) {
-        super(cluster, traits, tbl, idxName, proj, cond, searchBounds, requiredCols);
+        super(cluster, traits, tbl, idxName, forced, proj, cond, searchBounds, requiredCols);
+    }
+
+    /** */
+    public IgniteLogicalIndexScan setForced() {
+        return new IgniteLogicalIndexScan(getCluster(), traitSet, table, idxName, true, projects, condition,
+            searchBounds, requiredColumns);
     }
 }

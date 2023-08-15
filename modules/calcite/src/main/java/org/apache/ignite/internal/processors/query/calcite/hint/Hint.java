@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
@@ -29,7 +30,6 @@ import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
-import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -42,27 +42,25 @@ public final class Hint {
     }
 
     /**
-     * @return Hints filtered with {@code hintDef} and suitable for {@code rel}.
+     * @return Hints filtered with {@code hintDefs} and suitable for {@code rel}.
      * @see HintStrategyTable#apply(List, RelNode)
      * @see PlanningContext#hints()
      */
-    public static Collection<RelHint> hints(RelNode rel, HintDefinition... hintDef) {
+    public static List<RelHint> hints(RelNode rel, HintDefinition... hintDefs) {
         if (!(rel instanceof Hintable))
             return Collections.emptyList();
 
-        RelOptCluster cl = rel.getCluster();
+        RelOptCluster c = rel.getCluster();
 
-        return F.flatCollections(Arrays.stream(hintDef)
-            .map(hd -> cl.getHintStrategies().apply(filterHints(PlannerHelper.context(cl).hints(), hd), rel))
-            .collect(Collectors.toList()));
+        return c.getHintStrategies().apply(filterHints(PlannerHelper.context(c).hints(), Arrays.asList(hintDefs)), rel);
     }
 
     /**
-     * @return {@code True} if the query has a suitable hint for {@code rel} defined by {@code hintDef}.
+     * @return {@code True} if the query has a suitable hint for {@code rel} defined by {@code hintDefs}.
      * {@code False} otherwise.
      */
-    public static boolean hasHint(RelNode rel, HintDefinition hintDef) {
-        return hints(rel, hintDef) != null;
+    public static boolean hasHint(RelNode rel, HintDefinition... hintDefs) {
+        return !hints(rel, hintDefs).isEmpty();
     }
 
     /**
@@ -71,7 +69,7 @@ public final class Hint {
      * @see PlanningContext#hints()
      */
     public static @Nullable HintOptions options(Collection<RelHint> hints, HintDefinition hintDef) {
-        return HintOptions.collect(filterHints(hints, hintDef));
+        return HintOptions.collect(filterHints(hints, Collections.singletonList(hintDef)));
     }
 
     /**
@@ -82,9 +80,11 @@ public final class Hint {
     }
 
     /**
-     * @return Hints within {@code hints} filtered with {@code hintDef}.
+     * @return Hints within {@code hints} filtered with {@code hintDefs}.
      */
-    private static List<RelHint> filterHints(Collection<RelHint> hints, HintDefinition hintDef) {
-        return hints.stream().filter(h -> h.hintName.equalsIgnoreCase(hintDef.name())).collect(Collectors.toList());
+    private static List<RelHint> filterHints(Collection<RelHint> hints, Collection<HintDefinition> hintDefs) {
+        Set<String> hintNames = hintDefs.stream().map(Enum::name).collect(Collectors.toSet());
+
+        return hints.stream().filter(h -> hintNames.contains(h.hintName)).collect(Collectors.toList());
     }
 }

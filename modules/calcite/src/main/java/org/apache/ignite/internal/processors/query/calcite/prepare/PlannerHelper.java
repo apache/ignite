@@ -127,11 +127,10 @@ public class PlannerHelper {
 
     /** */
     private static void setDisabledRules(IgnitePlanner planner) {
-        HintOptions disabled = Hint.options(context(planner.cluster()).hints(),
-            HintDefinition.DISABLE_RULE);
+        HintOptions opts = Hint.options(context(planner.cluster()).hints(), HintDefinition.DISABLE_RULE);
 
-        if (disabled != null)
-            planner.setDisabledRules(disabled.plain());
+        if (opts != null)
+            planner.setDisabledRules(opts.plain());
     }
 
     /**
