@@ -135,27 +135,10 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
     }
 
     /**
-     * @param clsr Continuous query closure.
-     * @param sync Synchronous continuous query flag.
-     */
-    public final void addContinuousQueryClosure(CI1<Boolean> clsr, boolean sync) {
-        assert !isDone() : this;
-
-        if (sync)
-            clsr.apply(true);
-        else {
-            if (cntQryClsrs == null)
-                cntQryClsrs = new ArrayList<>(10);
-
-            cntQryClsrs.add(clsr);
-        }
-    }
-
-    /**
      * @param affAssignment Affinity assignment.
      * @param entry Entry to map.
      * @param val Value to write.
-     * @param entryProcessor Entry processor.
+     * @param entryProc Entry processor.
      * @param ttl TTL (optional).
      * @param conflictExpireTime Conflict expire time (optional).
      * @param conflictVer Conflict version (optional).
@@ -170,7 +153,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
         AffinityAssignment affAssignment,
         GridDhtCacheEntry entry,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProcessor,
+        EntryProcessor<Object, Object, Object> entryProc,
         long ttl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer,
@@ -222,7 +205,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
 
                 updateReq.addWriteValue(entry.key(),
                     val,
-                    entryProcessor,
+                    entryProc,
                     ttl,
                     conflictExpireTime,
                     conflictVer,
@@ -251,7 +234,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
      * @param readers Entry readers.
      * @param entry Entry.
      * @param val Value.
-     * @param entryProcessor Entry processor..
+     * @param entryProc Entry processor..
      * @param ttl TTL for near cache update (optional).
      * @param expireTime Expire time for near cache update (optional).
      * @param readRepairRecovery Recovery on Read Repair.
@@ -261,7 +244,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
         GridDhtCacheEntry.ReaderId[] readers,
         GridDhtCacheEntry entry,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProcessor,
+        EntryProcessor<Object, Object, Object> entryProc,
         long ttl,
         long expireTime,
         boolean readRepairRecovery) {
@@ -314,7 +297,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
 
             updateReq.addNearWriteValue(entry.key(),
                 val,
-                entryProcessor,
+                entryProc,
                 ttl,
                 expireTime);
         }
