@@ -217,7 +217,7 @@ public final class PlanningContext implements Context {
     }
 
     /**
-     * @return Hints of the root node or it's children if root node is not a primary select node.
+     * @return Hints of the root node or it's children if root node is not a primary selecting node.
      */
     public List<RelHint> hints() {
         return hints;
@@ -226,7 +226,7 @@ public final class PlanningContext implements Context {
     /**
      * @see #hints()
      */
-    PlanningContext queryHints(List<RelHint> hints) {
+    PlanningContext hints(List<RelHint> hints) {
         this.hints = hints;
 
         return this;

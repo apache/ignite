@@ -23,7 +23,6 @@ import org.apache.calcite.rel.hint.HintStrategy;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.util.Litmus;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Provides configuration of all the supported SQL hints.
@@ -38,7 +37,7 @@ public final class HintsConfig {
     static final HintOptionChecker OPTS_CHECK_EMPTY = new HintOptionChecker() {
         @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
             return errorHandler.check(
-                F.isEmpty(hint.kvOptions) && F.isEmpty(hint.listOptions),
+                hint.kvOptions.isEmpty() && hint.listOptions.isEmpty(),
                 "Hint '{}' can't have any option.",
                 hint.hintName
             );
@@ -49,7 +48,7 @@ public final class HintsConfig {
     static final HintOptionChecker OPTS_CHECK_PLAIN = new HintOptionChecker() {
         @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
             return errorHandler.check(
-                F.isEmpty(hint.kvOptions) && !F.isEmpty(hint.listOptions),
+                hint.kvOptions.isEmpty() && !hint.listOptions.isEmpty(),
                 "Hint '{}' must have at least one plain option and no any key-value option.",
                 hint.hintName
             );
