@@ -68,8 +68,8 @@ public final class Hint {
      * {@code Null} if no hint is found by {@code hintDef}.
      * @see PlanningContext#hints()
      */
-    public static @Nullable HintOptions options(Collection<RelHint> hints, HintDefinition hintDef) {
-        return HintOptions.collect(filterHints(hints, Collections.singletonList(hintDef)));
+    public static @Nullable HintOptions options(Collection<RelHint> hints, HintDefinition hintDef, boolean reverse) {
+        return HintOptions.collect(filterHints(hints, Collections.singletonList(hintDef)), reverse);
     }
 
     /**

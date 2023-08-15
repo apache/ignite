@@ -45,7 +45,7 @@ public final class HintOptions {
     /**
      * @return Combined options set of {@code hints} with natural order. {@code Null} if {@code hints} is empty.
      */
-    static @Nullable HintOptions collect(Collection<RelHint> hints) {
+    static @Nullable HintOptions collect(Collection<RelHint> hints, boolean reverse) {
         if (hints.isEmpty())
             return null;
 
@@ -67,6 +67,19 @@ public final class HintOptions {
                 return valSet;
             }));
         }
+
+        if(reverse){
+            Collections.reverse(plainOptions);
+
+            kvOptions.keySet().forEach(k->{
+                kvOptions.compute(k, (key, values)->{
+                    Collections.reverse(values);
+
+                    return values;
+                });
+            });
+        }
+
 
         return new HintOptions(plainOptions, kvOptions);
     }

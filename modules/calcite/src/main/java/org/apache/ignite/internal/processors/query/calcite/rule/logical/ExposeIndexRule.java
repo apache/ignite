@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -110,7 +108,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
 
         boolean disabled = !last(hints).hintName.equals(HintDefinition.USE_INDEX.name());
 
-        HintOptions opts = Hint.options(hints, disabled ? HintDefinition.NO_INDEX : HintDefinition.USE_INDEX);
+        HintOptions opts = Hint.options(hints, disabled ? HintDefinition.NO_INDEX : HintDefinition.USE_INDEX, true);
 
         if (opts == null)
             return;
@@ -130,11 +128,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
         assert !opts.empty();
 
         if (!opts.plain().isEmpty()) {
-            ArrayList<String> hintIdxNames = new ArrayList<>(opts.plain());
-
-            Collections.reverse(hintIdxNames);
-
-            for (String hintIdxname : hintIdxNames) {
+            for (String hintIdxname : opts.plain()) {
                 // If all indexes don't match, skip hint param.
                 if (indexes.stream().filter(idx -> !idx.indexName().equals(hintIdxname)).count() == indexes.size())
                     continue;
@@ -153,11 +147,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
         opts.kv().forEach((hintTblName, hintIdxNames) -> {
             List<String> qHintTblName = Commons.qualifiedName(hintTblName);
 
-            ArrayList<String> rHintIdxNames = new ArrayList<>(hintIdxNames);
-
-            Collections.reverse(rHintIdxNames);
-
-            for (String idxToKeep : rHintIdxNames) {
+            for (String idxToKeep : hintIdxNames) {
                 if (indexes.stream().filter(idx -> !idx.indexName().equals(idxToKeep)).count() != indexes.size()
                     && qHintTblName.size() == 1 && last(qHintTblName).equals(last(qtname))
                     || F.eq(qHintTblName, qtname)) {
