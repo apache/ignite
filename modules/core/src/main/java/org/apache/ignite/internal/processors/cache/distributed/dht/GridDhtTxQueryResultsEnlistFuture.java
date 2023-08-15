@@ -44,7 +44,6 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstr
      * @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
      * @param mvccSnapshot Mvcc snapshot.
-     * @param threadId Thread ID.
      * @param nearFutId Near future id.
      * @param nearMiniId Near mini future id.
      * @param tx Transaction.
@@ -56,7 +55,6 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstr
     public GridDhtTxQueryResultsEnlistFuture(UUID nearNodeId,
         GridCacheVersion nearLockVer,
         MvccSnapshot mvccSnapshot,
-        long threadId,
         IgniteUuid nearFutId,
         int nearMiniId,
         GridDhtTxLocalAdapter tx,
@@ -67,7 +65,6 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstr
         super(nearNodeId,
             nearLockVer,
             mvccSnapshot,
-            threadId,
             nearFutId,
             nearMiniId,
             tx,
