@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +44,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheE
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -86,9 +84,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
     /** Mappings. */
     @GridToStringExclude
     protected Map<UUID, GridDhtAtomicAbstractUpdateRequest> mappings;
-
-    /** Continuous query closures. */
-    private Collection<CI1<Boolean>> cntQryClsrs;
 
     /** Response count. */
     private volatile int resCnt;
@@ -453,9 +448,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
                         req.hasResult(true);
                 }
 
-                if (cntQryClsrs != null)
-                    req.replyWithoutDelay(true);
-
                 cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
 
                 if (msgLog.isDebugEnabled()) {
@@ -545,11 +537,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
             cctx.mvcc().removeAtomicFuture(futId);
 
             boolean suc = err == null;
-
-            if (cntQryClsrs != null) {
-                for (CI1<Boolean> clsr : cntQryClsrs)
-                    clsr.apply(suc);
-            }
 
             return true;
         }
