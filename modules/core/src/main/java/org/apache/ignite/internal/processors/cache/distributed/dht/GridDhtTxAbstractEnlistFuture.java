@@ -68,7 +68,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -410,7 +409,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                     assert !entry.detached();
 
                     CacheObject val = op.isDeleteOrLock() || op.isInvoke()
-                        ? null : cctx.toCacheObject(((IgniteBiTuple<?, ?>)cur).getValue());
+                        ? null : cctx.toCacheObject(((Map.Entry<?, ?>)cur).getValue());
 
                     GridInvokeValue invokeVal = null;
                     EntryProcessor entryProc = null;
@@ -419,7 +418,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                     if (op.isInvoke()) {
                         assert needResult();
 
-                        invokeVal = (GridInvokeValue)((IgniteBiTuple<?, ?>)cur).getValue();
+                        invokeVal = (GridInvokeValue)((Map.Entry<?, ?>)cur).getValue();
 
                         entryProc = invokeVal.entryProcessor();
                         invokeArgs = invokeVal.invokeArgs();
@@ -599,7 +598,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
     /** */
     private KeyCacheObject toKey(EnlistOperation op, Object cur) {
-        KeyCacheObject key = cctx.toCacheKeyObject(op.isDeleteOrLock() ? cur : ((IgniteBiTuple<?, ?>)cur).getKey());
+        KeyCacheObject key = cctx.toCacheKeyObject(op.isDeleteOrLock() ? cur : ((Map.Entry<?, ?>)cur).getKey());
 
         if (key.partition() == -1)
             key.partition(cctx.affinity().partition(key));
