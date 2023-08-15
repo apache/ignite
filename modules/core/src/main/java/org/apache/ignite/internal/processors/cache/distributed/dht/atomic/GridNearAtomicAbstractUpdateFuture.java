@@ -298,13 +298,11 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     final void sendSingleRequest(UUID nodeId, GridNearAtomicAbstractUpdateRequest req) {
         if (cctx.localNodeId().equals(nodeId)) {
             cache.updateAllAsyncInternal(cctx.localNode(), req,
-                new GridDhtAtomicCache.UpdateReplyClosure() {
-                    @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
-                        if (syncMode != FULL_ASYNC)
-                            onPrimaryResponse(res.nodeId(), res, false);
-                        else if (res.remapTopologyVersion() != null)
-                            ((GridDhtAtomicCache)cctx.cache()).remapToNewPrimary(req);
-                    }
+                (ignored, res) -> {
+                    if (syncMode != FULL_ASYNC)
+                        onPrimaryResponse(res.nodeId(), res, false);
+                    else if (res.remapTopologyVersion() != null)
+                        ((GridDhtAtomicCache<?, ?>)cctx.cache()).remapToNewPrimary(req);
                 });
         }
         else {
