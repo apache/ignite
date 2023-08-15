@@ -134,7 +134,6 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
      */
     public void onResult(UUID nodeId, GridNearTxQueryResultsEnlistResponse res) {
         if (checkResponse(nodeId, res, res.error())) {
-
             Batch batch = batches.get(nodeId);
 
             if (batch != null && !F.isEmpty(batch.localBackupRows()) && res.dhtFutureId() != null)
