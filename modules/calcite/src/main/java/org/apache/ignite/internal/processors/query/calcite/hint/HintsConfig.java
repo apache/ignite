@@ -44,23 +44,23 @@ public final class HintsConfig {
         }
     };
 
+    /** Allows any hint options. */
+    static final HintOptionChecker OPTS_CHECK_NON_EMPTY = new HintOptionChecker() {
+        @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
+            return errorHandler.check(
+                !hint.listOptions.isEmpty() || !hint.kvOptions.isEmpty(),
+                "Hint '{}' must have at least one plain or key-value option.",
+                hint.hintName
+            );
+        }
+    };
+
     /** Allows only plain options. */
     static final HintOptionChecker OPTS_CHECK_PLAIN = new HintOptionChecker() {
         @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
             return errorHandler.check(
                 hint.kvOptions.isEmpty() && !hint.listOptions.isEmpty(),
                 "Hint '{}' must have at least one plain option and no any key-value option.",
-                hint.hintName
-            );
-        }
-    };
-
-    /** Allows any hint options. */
-    static final HintOptionChecker OPTS_CHECK_SINGLE = new HintOptionChecker() {
-        @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
-            return errorHandler.check(
-                hint.listOptions.size() == 1 || hint.kvOptions.size() == 1,
-                "Hint '{}' must have exactly one plain or key-value option.",
                 hint.hintName
             );
         }

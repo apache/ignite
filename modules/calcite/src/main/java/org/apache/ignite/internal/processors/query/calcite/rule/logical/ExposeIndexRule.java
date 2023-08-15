@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
@@ -87,7 +88,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
 
         assert !indexes.isEmpty();
 
-        indexes = processHints(scan, indexes);
+        indexes = processHints(cluster.getPlanner(), scan, indexes);
 
         if (indexes.isEmpty())
             return;
@@ -100,7 +101,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
     }
 
     /** */
-    private List<IgniteLogicalIndexScan> processHints(IgniteLogicalTableScan scan, List<IgniteLogicalIndexScan> indexes) {
+    private List<IgniteLogicalIndexScan> processHints(RelOptPlanner planner, IgniteLogicalTableScan scan, List<IgniteLogicalIndexScan> indexes) {
         List<RelHint> hints = Hint.hints(scan, HintDefinition.NO_INDEX, HintDefinition.USE_INDEX);
 
         if (hints.isEmpty())
@@ -118,8 +119,11 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
         else if (indexes.size() > 1) {
             keepIndex(scan, indexes, opts);
 
-            if (indexes.size() == 1)
+            if (indexes.size() == 1){
                 indexes = Collections.singletonList(indexes.get(0).setForced());
+
+                planner.prune(scan);
+            }
         }
 
         return indexes;
@@ -129,14 +133,19 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
     private void keepIndex(TableScan scan, List<? extends AbstractIndexScan> indexes, HintOptions opts) {
         assert !opts.empty();
 
-        // If there is no index with passed name, no other index should be removed.
-        if (indexes.stream().noneMatch(idx -> idx.indexName().equals(opts.plain().iterator().next())))
-            return;
-
         if (!opts.plain().isEmpty()) {
-            indexes.removeIf(idx -> !opts.plain().contains(idx.indexName()));
+            for (String hintIdxname : opts.plain()) {
+                // If all indexes don't match, skip hint param.
+                if (indexes.stream().filter(idx -> !idx.indexName().equals(hintIdxname)).count() == indexes.size())
+                    continue;
 
-            return;
+                // Retain only the suggested index.
+                indexes.removeIf(idx -> !idx.indexName().equals(hintIdxname));
+
+                assert indexes.size() == 1;
+
+                return;
+            }
         }
 
         List<String> qtname = scan.getTable().getQualifiedName();
@@ -144,8 +153,15 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
         opts.kv().forEach((hintTblName, hintIdxNames) -> {
             List<String> qHintTblName = Commons.qualifiedName(hintTblName);
 
-            indexes.removeIf(idx -> !hintIdxNames.contains(idx.indexName())
-                && (last(qHintTblName).equals(last(qtname)) && qHintTblName.size() == 1 || F.eq(qHintTblName, qtname)));
+            for (String idxToKeep : hintIdxNames) {
+                if (indexes.stream().filter(idx -> !idx.indexName().equals(idxToKeep)).count() != indexes.size()
+                    && qHintTblName.size() == 1 && last(qHintTblName).equals(last(qtname))
+                    || F.eq(qHintTblName, qtname)) {
+                    indexes.removeIf(idx -> !idxToKeep.equals(idx.indexName()));
+
+                    return;
+                }
+            }
         });
     }
 

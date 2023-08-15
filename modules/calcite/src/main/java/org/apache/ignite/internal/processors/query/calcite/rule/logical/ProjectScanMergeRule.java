@@ -214,6 +214,7 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
                 traits,
                 scan.getTable(),
                 scan.indexName(),
+                scan.forced(),
                 projections,
                 cond, requiredColumns
             );

@@ -52,11 +52,11 @@ public class IndexHintPlannerTest extends AbstractPlannerTest {
             .addIndex("IDX3", 3);
 
         tbl2 = createTable("TBL2", 1_000_000, IgniteDistributions.single(), "ID", Integer.class,
-            "VAL1", Integer.class, "VAL2", Integer.class, "VAL3", Integer.class)
+            "VAL21", Integer.class, "VAL22", Integer.class, "VAL23", Integer.class)
             .addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0)
             .addIndex("IDX1", 1)
-            .addIndex("IDX2", 2)
-            .addIndex("IDX3", 3);
+            .addIndex("IDX22", 2)
+            .addIndex("IDX23", 3);
 
         schema = createSchema(tbl1, tbl2);
     }
@@ -68,64 +68,38 @@ public class IndexHintPlannerTest extends AbstractPlannerTest {
     public void testWrongParams() {
         assertThrows(
             null,
-            () -> assertPlan("SELECT /*+ USE_INDEX */ * FROM TBL2 where val1=1 and val2=2 and val3=3", schema,
+            () -> assertPlan("SELECT /*+ USE_INDEX */ * FROM TBL2 where val21=1 and val22=2 and val23=3", schema,
                 n -> true),
             Throwable.class,
-            "Hint 'USE_INDEX' must have exactly one plain or key-value option."
-        );
-
-        assertThrows(
-            null,
-            () -> assertPlan("SELECT /*+ USE_INDEX('IDX3','IDX1') */ * FROM TBL2 where val1=1 and val2=2 and val3=3",
-                schema, n -> true),
-            Throwable.class,
-            "Hint 'USE_INDEX' must have exactly one plain or key-value option."
-        );
-
-        assertThrows(
-            null,
-            () -> assertPlan("SELECT /*+ USE_INDEX(TBL2='IDX3',TBL1='IDX1') */ t1.val1 FROM TBL1 t1, TBL2 t2 " +
-                "where t1.val1=1 and t2.val2=2 and t1.val3=t2.val3", schema, n -> true),
-            Throwable.class,
-            "Hint 'USE_INDEX' must have exactly one plain or key-value option."
+            "Hint 'USE_INDEX' must have at least one plain or key-value option."
         );
     }
 
     /** */
     @Test
     public void testBasicIndexSelection() throws Exception {
-        assertPlan("SELECT /*+ USE_INDEX('IDX3') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX3")));
+        assertPlan("SELECT /*+ USE_INDEX('IDX23') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
+            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX23")));
 
-        assertPlan("SELECT /*+ USE_INDEX('IDX2') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2")));
+        assertPlan("SELECT /*+ USE_INDEX('IDX22') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
+            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX22")));
 
-        assertPlan("SELECT /*+ USE_INDEX('IDX1') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
+        assertPlan("SELECT /*+ USE_INDEX('IDX1') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
             schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX1")));
 
-        assertPlan("SELECT /*+ USE_INDEX('IDX3'), USE_INDEX('IDX1') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX3")));
+        assertPlan("SELECT /*+ USE_INDEX('IDX23'), USE_INDEX('IDX1') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
+            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX23")));
 
-        assertPlan("SELECT /*+ USE_INDEX('UNEXISTING') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
+        assertPlan("SELECT /*+ USE_INDEX('IDX23', 'IDX1') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
+            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX23")));
+
+        assertPlan("SELECT /*+ USE_INDEX('UNEXISTING', 'IDX23', 'IDX1') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
+            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX23")));
+
+        assertPlan("SELECT /*+ USE_INDEX('UNEXISTING') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
             schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
-                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX2")))
-                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX3"))));
-    }
-
-    /** */
-    @Test
-    public void testTwo() throws Exception {
-        assertPlan("SELECT /*+ USE_INDEX('IDX1'), USE_INDEX('IDX3') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
-                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX3"))));
-
-        assertPlan("SELECT /*+ USE_INDEX('IDX1'), USE_INDEX('IDX2') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
-                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX2"))));
-
-        assertPlan("SELECT /*+ USE_INDEX('IDX2'), USE_INDEX('IDX3') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2"))
-                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX3"))));
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX22")))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX23"))));
     }
 
     /**
@@ -133,19 +107,19 @@ public class IndexHintPlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testWintNoIndex() throws Exception {
-        assertPlan("SELECT /*+ NO_INDEX, USE_INDEX('IDX3') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
+        assertPlan("SELECT /*+ NO_INDEX, USE_INDEX('IDX23') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
             schema, nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)).negate());
 
-        assertPlan("SELECT /*+ NO_INDEX('IDX1'), USE_INDEX('IDX1') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2"))
-                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX3"))));
+        assertPlan("SELECT /*+ NO_INDEX('IDX1'), USE_INDEX('IDX1') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
+            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX22"))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX23"))));
 
-        assertPlan("SELECT /*+ NO_INDEX('IDX3'), USE_INDEX('IDX1') */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
+        assertPlan("SELECT /*+ NO_INDEX('IDX23'), USE_INDEX('IDX1') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
             schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
-                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX2"))));
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX22"))));
 
-        assertPlan("SELECT /*+ USE_INDEX('IDX3'), NO_INDEX */ * FROM TBL2 WHERE val3=1 and val1=2 and val2=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX3")));
+        assertPlan("SELECT /*+ USE_INDEX('IDX23'), NO_INDEX */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
+            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX23")));
     }
 
     /** */
@@ -162,5 +136,21 @@ public class IndexHintPlannerTest extends AbstractPlannerTest {
 
         assertPlan("SELECT /*+ USE_INDEX('IDX3') */ * FROM TBL1 WHERE val3=1 and val1=2 and val2=3",
             schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX3")));
+    }
+
+    /** */
+    @Test
+    public void testTwoTables() throws Exception {
+//        assertPlan("SELECT val1 FROM TBL1, TBL2 WHERE val1=val21 and val2=val22 and val3=val23",
+//            schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX1")).negate()
+//                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2")).negate())
+//                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX3")).negate())
+//                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
+//                    .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX22")))
+//                    .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX23")))));
+
+        assertPlan("SELECT /*+ USE_INDEX('IDX1') */ val1 FROM TBL1, TBL2 WHERE val1=val21 and val2=val22 and val3=val23",
+            schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX1"))
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))));
     }
 }

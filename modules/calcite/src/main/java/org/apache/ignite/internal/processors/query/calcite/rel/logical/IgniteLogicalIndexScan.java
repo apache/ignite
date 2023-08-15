@@ -37,6 +37,7 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
         RelTraitSet traits,
         RelOptTable table,
         String idxName,
+        boolean forced,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns
@@ -51,7 +52,7 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
             traits,
             table,
             idxName,
-            false,
+            forced,
             proj,
             cond,
             searchBounds,

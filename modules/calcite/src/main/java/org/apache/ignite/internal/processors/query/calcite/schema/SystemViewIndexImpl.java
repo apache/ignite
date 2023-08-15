@@ -73,7 +73,7 @@ public class SystemViewIndexImpl implements IgniteIndex {
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        return IgniteLogicalIndexScan.create(cluster, cluster.traitSet(), relOptTbl, idxName, proj,
+        return IgniteLogicalIndexScan.create(cluster, cluster.traitSet(), relOptTbl, idxName, false, proj,
             cond, requiredColumns);
     }
 

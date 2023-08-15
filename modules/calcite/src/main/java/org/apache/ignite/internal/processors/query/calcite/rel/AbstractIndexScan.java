@@ -115,8 +115,8 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        if (forced)
-            return planner.getCostFactory().makeTinyCost();
+//        if (forced)
+//            return planner.getCostFactory().makeCost(1, 1, 1);
         
         double rows = table.getRowCount();
 
