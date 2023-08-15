@@ -86,11 +86,6 @@ public abstract class GridNearTxAbstractEnlistBatchFuture<T> extends GridNearTxA
     /** Topology locked flag. */
     protected boolean topLocked;
 
-    /** */
-    @SuppressWarnings("unused")
-    @GridToStringExclude
-    protected volatile T res;
-
     /** Row extracted from iterator but not yet used. */
     protected Object peek;
 
@@ -254,7 +249,7 @@ public abstract class GridNearTxAbstractEnlistBatchFuture<T> extends GridNearTxA
         }
 
         if (batches.isEmpty())
-            onDone(this.res);
+            complete();
 
         return res;
     }
@@ -425,6 +420,11 @@ public abstract class GridNearTxAbstractEnlistBatchFuture<T> extends GridNearTxA
      *
      */
     protected abstract boolean isLocalBackup(EnlistOperation op, KeyCacheObject key);
+
+    /**
+     *
+     */
+    protected abstract void complete();
 
     /**
      * A batch of rows

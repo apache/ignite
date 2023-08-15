@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryResultsEnlistFuture;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -44,6 +45,11 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
     /** Res field updater. */
     private static final AtomicLongFieldUpdater<GridNearTxQueryResultsEnlistFuture> RES_UPD =
         AtomicLongFieldUpdater.newUpdater(GridNearTxQueryResultsEnlistFuture.class, "res");
+
+    /** */
+    @SuppressWarnings("unused")
+    @GridToStringExclude
+    protected volatile long res;
     /**
      * @param cctx Cache context.
      * @param tx Transaction.
@@ -77,6 +83,11 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
             return true;
 
         return cctx.topology().nodes(key.partition(), tx.topologyVersion()).contains(cctx.localNode());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void complete() {
+        onDone(res);
     }
 
     /** {@inheritDoc} */
