@@ -771,7 +771,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
                 nodeRes.rcvd = true;
 
-                rcvdCnt++;
             }
             else {
                 if (!hasRes) // Do not finish future until primary response received and mapping is known.
@@ -779,8 +778,9 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
                 mappedNodes.put(nodeId, new NodeResult(true));
 
-                rcvdCnt++;
             }
+
+            rcvdCnt++;
 
             return finished();
         }
