@@ -41,16 +41,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<GridCacheReturn> implements UpdateSourceIterator<Object> {
     /** Enlist operation. */
-    private EnlistOperation op;
+    private final EnlistOperation op;
 
     /** Source iterator. */
-    private Iterator<Object> it;
+    private final Iterator<Object> it;
 
     /** Future result. */
-    private GridCacheReturn res;
+    private final GridCacheReturn res;
 
     /** Need result flag. If {@code True} previous value should be returned as well. */
-    private boolean needRes;
+    private final boolean needRes;
 
     /**
      * Constructor.
