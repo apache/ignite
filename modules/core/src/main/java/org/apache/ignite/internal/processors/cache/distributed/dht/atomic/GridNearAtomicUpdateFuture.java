@@ -69,16 +69,16 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
  */
 public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFuture {
     /** Keys */
-    private Collection<?> keys;
+    private final Collection<?> keys;
 
     /** Values. */
-    private Collection<?> vals;
+    private final Collection<?> vals;
 
     /** Conflict put values. */
-    private Collection<GridCacheDrInfo> conflictPutVals;
+    private final Collection<GridCacheDrInfo> conflictPutVals;
 
     /** Conflict remove values. */
-    private Collection<GridCacheVersion> conflictRmvVals;
+    private final Collection<GridCacheVersion> conflictRmvVals;
 
     /** Mappings if operations is mapped to more than one node. */
     @GridToStringInclude
