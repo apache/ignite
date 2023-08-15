@@ -703,9 +703,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (invalidParts) {
             addNodeAsInvalid(cctx.node(nodeId));
 
-            if (canRemap) {
+            if (canRemap)
                 awaitVersionAndRemap(rmtTopVer);
-            }
             else
                 map(topVer);
 
@@ -826,7 +825,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
             onDone(new ClusterTopologyCheckedException("Failed to remap key to a new node after " +
                 MAX_REMAP_CNT + " attempts (key got remapped to the same node) [key=" + key + ", node=" +
-                (node0 != null ? U.toShortString(node0) : node0) + ", invalidNodes=" + invalidNodes + ']'));
+                (node0 != null ? U.toShortString(node0) : null) + ", invalidNodes=" + invalidNodes + ']'));
 
             return false;
         }
@@ -890,12 +889,11 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param topVer Topology version.
      */
     private void awaitVersionAndRemap(AffinityTopologyVersion topVer) {
-        IgniteInternalFuture<AffinityTopologyVersion> awaitTopologyVersionFuture =
-            cctx.shared().exchange().affinityReadyFuture(topVer);
+        IgniteInternalFuture<AffinityTopologyVersion> awaitTopVerFut = cctx.shared().exchange().affinityReadyFuture(topVer);
 
-        awaitTopologyVersionFuture.listen(() -> {
+        awaitTopVerFut.listen(() -> {
             try {
-                remap(awaitTopologyVersionFuture.get());
+                remap(awaitTopVerFut.get());
             }
             catch (IgniteCheckedException e) {
                 onDone(e);
