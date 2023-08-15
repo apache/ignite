@@ -64,11 +64,9 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.NotNull;
@@ -294,11 +292,9 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
                 // Terminate this future if parent future is terminated by rollback.
                 if (!fut.isDone()) {
-                    fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
-                        @Override public void apply(IgniteInternalFuture fut) {
-                            if (fut.error() != null)
-                                onDone(fut.error());
-                        }
+                    fut.listen(() -> {
+                        if (fut.error() != null)
+                            onDone(fut.error());
                     });
                 }
                 else if (fut.error() != null)
@@ -506,18 +502,16 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
                             it.beforeDetach();
 
-                            updateFut.listen(new CI1<IgniteInternalFuture<GridCacheUpdateTxResult>>() {
-                                @Override public void apply(IgniteInternalFuture<GridCacheUpdateTxResult> fut) {
-                                    try {
-                                        tx.incrementLockCounter();
+                            updateFut.listen(() -> {
+                                try {
+                                    tx.incrementLockCounter();
 
-                                        processEntry(entry0, op, fut.get(), val0, backups0);
+                                    processEntry(entry0, op, updateFut.get(), val0, backups0);
 
-                                        continueLoop(true);
-                                    }
-                                    catch (Throwable e) {
-                                        onDone(e);
-                                    }
+                                    continueLoop(true);
+                                }
+                                catch (Throwable e) {
+                                    onDone(e);
                                 }
                             });
 
