@@ -520,8 +520,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             remapTopVer0 = remapTopVer;
         }
         else {
-            if (err != null &&
-                X.hasCause(err, CachePartialUpdateCheckedException.class) &&
+            if (X.hasCause(err, CachePartialUpdateCheckedException.class) &&
                 X.hasCause(err, ClusterTopologyCheckedException.class) &&
                 storeFuture() &&
                 --remapCnt > 0) {

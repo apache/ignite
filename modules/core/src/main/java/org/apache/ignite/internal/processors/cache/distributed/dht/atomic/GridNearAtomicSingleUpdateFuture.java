@@ -303,8 +303,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         AffinityTopologyVersion remapTopVer0 = null;
 
         if (remapTopVer == null) {
-            if (err != null &&
-                X.hasCause(err, CachePartialUpdateCheckedException.class) &&
+            if (X.hasCause(err, CachePartialUpdateCheckedException.class) &&
                 X.hasCause(err, ClusterTopologyCheckedException.class) &&
                 storeFuture() &&
                 --remapCnt > 0) {
