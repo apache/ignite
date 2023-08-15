@@ -35,10 +35,10 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstractEnlistFuture implements UpdateSourceIterator<Object> {
     /** Enlist operation. */
-    private EnlistOperation op;
+    private final EnlistOperation op;
 
     /** Source iterator. */
-    private Iterator<Object> it;
+    private final Iterator<Object> it;
 
     /**
      * @param nearNodeId Near node ID.
