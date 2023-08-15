@@ -108,7 +108,7 @@ public class CacheIndexImpl implements IgniteIndex {
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        return IgniteLogicalIndexScan.create(cluster, cluster.traitSet(), relOptTbl, idxName,false,  proj, cond,
+        return IgniteLogicalIndexScan.create(cluster, cluster.traitSet(), relOptTbl, idxName,  proj, cond,
             requiredColumns);
     }
 

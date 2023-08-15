@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -88,7 +89,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
 
         assert !indexes.isEmpty();
 
-        indexes = processHints(cluster.getPlanner(), scan, indexes);
+        processHints(cluster.getPlanner(), scan, indexes);
 
         if (indexes.isEmpty())
             return;
@@ -101,32 +102,27 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
     }
 
     /** */
-    private List<IgniteLogicalIndexScan> processHints(RelOptPlanner planner, IgniteLogicalTableScan scan, List<IgniteLogicalIndexScan> indexes) {
+    private void processHints(RelOptPlanner planner, IgniteLogicalTableScan scan, List<IgniteLogicalIndexScan> indexes) {
         List<RelHint> hints = Hint.hints(scan, HintDefinition.NO_INDEX, HintDefinition.USE_INDEX);
 
         if (hints.isEmpty())
-            return indexes;
+            return;
 
-        boolean disabled = !hints.get(0).hintName.equals(HintDefinition.USE_INDEX.name());
+        boolean disabled = !last(hints).hintName.equals(HintDefinition.USE_INDEX.name());
 
         HintOptions opts = Hint.options(hints, disabled ? HintDefinition.NO_INDEX : HintDefinition.USE_INDEX);
 
         if (opts == null)
-            return indexes;
+            return;
 
         if (disabled)
             removeIndexes(scan, indexes, opts);
         else if (indexes.size() > 1) {
             keepIndex(scan, indexes, opts);
 
-            if (indexes.size() == 1){
-                indexes = Collections.singletonList(indexes.get(0).setForced());
-
+            if (indexes.size() == 1)
                 planner.prune(scan);
-            }
         }
-
-        return indexes;
     }
 
     /** */
@@ -134,7 +130,11 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
         assert !opts.empty();
 
         if (!opts.plain().isEmpty()) {
-            for (String hintIdxname : opts.plain()) {
+            ArrayList<String> hintIdxNames = new ArrayList<>(opts.plain());
+
+            Collections.reverse(hintIdxNames);
+
+            for (String hintIdxname : hintIdxNames) {
                 // If all indexes don't match, skip hint param.
                 if (indexes.stream().filter(idx -> !idx.indexName().equals(hintIdxname)).count() == indexes.size())
                     continue;
@@ -153,7 +153,11 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
         opts.kv().forEach((hintTblName, hintIdxNames) -> {
             List<String> qHintTblName = Commons.qualifiedName(hintTblName);
 
-            for (String idxToKeep : hintIdxNames) {
+            ArrayList<String> rHintIdxNames = new ArrayList<>(hintIdxNames);
+
+            Collections.reverse(rHintIdxNames);
+
+            for (String idxToKeep : rHintIdxNames) {
                 if (indexes.stream().filter(idx -> !idx.indexName().equals(idxToKeep)).count() != indexes.size()
                     && qHintTblName.size() == 1 && last(qHintTblName).equals(last(qtname))
                     || F.eq(qHintTblName, qtname)) {

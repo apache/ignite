@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.hint;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.apache.calcite.rel.hint.RelHint;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,14 +31,14 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class HintOptions {
     /** Plain options. */
-    private final Set<String> plain;
+    private final List<String> plain;
 
     /** Key-value options. */
-    private final Map<String, Set<String>> kv;
+    private final Map<String, List<String>> kv;
 
     /** Ctor. */
-    private HintOptions(Set<String> plain, Map<String, Set<String>> kv) {
-        this.plain = Collections.unmodifiableSet(plain);
+    private HintOptions(List<String> plain, Map<String, List<String>> kv) {
+        this.plain = Collections.unmodifiableList(plain);
         this.kv = Collections.unmodifiableMap(kv);
     }
 
@@ -49,8 +49,8 @@ public final class HintOptions {
         if (hints.isEmpty())
             return null;
 
-        Set<String> plainOptions = new LinkedHashSet<>();
-        Map<String, Set<String>> kvOptions = new LinkedHashMap<>();
+        List<String> plainOptions = new ArrayList<>();
+        Map<String, List<String>> kvOptions = new LinkedHashMap<>();
 
         for (RelHint h : hints) {
             if (h.listOptions.isEmpty() && h.kvOptions.isEmpty())
@@ -60,7 +60,7 @@ public final class HintOptions {
 
             h.kvOptions.forEach((key, value) -> kvOptions.compute(key, (key0, valSet) -> {
                 if (valSet == null)
-                    valSet = new LinkedHashSet<>();
+                    valSet = new ArrayList<>();
 
                 valSet.add(value);
 
@@ -77,12 +77,12 @@ public final class HintOptions {
     }
 
     /** */
-    public Set<String> plain() {
+    public List<String> plain() {
         return plain;
     }
 
     /** */
-    public Map<String, Set<String>> kv() {
+    public Map<String, List<String>> kv() {
         return kv;
     }
 }

@@ -81,22 +81,36 @@ public class IndexHintPlannerTest extends AbstractPlannerTest {
         assertPlan("SELECT /*+ USE_INDEX('IDX23') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
             schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX23")));
 
+        assertPlan("SELECT /*+ USE_INDEX(TBL1='IDX23', TBL2='IDX23') */ * FROM TBL2 WHERE val23=1 and val21=2 " +
+            "and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX23")));
+
         assertPlan("SELECT /*+ USE_INDEX('IDX22') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
             schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX22")));
+
+        assertPlan("SELECT /*+ USE_INDEX(TBL2='IDX22') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
+            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX22")));
+
+        assertPlan("SELECT /*+ USE_INDEX('PUB.TBL2'='IDX1', 'PUBLIC.TBL2'='IDX22') */ * FROM TBL2 WHERE val23=1 " +
+                "and val21=2 and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX22")));
+
+        assertPlan("SELECT /*+ USE_INDEX(TBL2='IDX23', TBL3='IDX22') */ * FROM TBL2 WHERE val23=1 and val21=2 " +
+            "and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX23")));
 
         assertPlan("SELECT /*+ USE_INDEX('IDX1') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
             schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX1")));
 
-        assertPlan("SELECT /*+ USE_INDEX('IDX23'), USE_INDEX('IDX1') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
+        assertPlan("SELECT /*+ USE_INDEX('IDX1', 'IDX23') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
             schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX23")));
 
-        assertPlan("SELECT /*+ USE_INDEX('IDX23', 'IDX1') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX23")));
-
-        assertPlan("SELECT /*+ USE_INDEX('UNEXISTING', 'IDX23', 'IDX1') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX23")));
+        assertPlan("SELECT /*+ USE_INDEX('IDX1', 'IDX23', 'UNEXISTING') */ * FROM TBL2 WHERE val23=1 and " +
+            "val21=2 and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX23")));
 
         assertPlan("SELECT /*+ USE_INDEX('UNEXISTING') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
+            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX22")))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX23"))));
+
+        assertPlan("SELECT /*+ USE_INDEX(TBL2='UNEXISTING') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
             schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
                 .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX22")))
                 .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX23"))));
@@ -107,18 +121,18 @@ public class IndexHintPlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testWintNoIndex() throws Exception {
-        assertPlan("SELECT /*+ NO_INDEX, USE_INDEX('IDX23') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
+        assertPlan("SELECT /*+ USE_INDEX('IDX23'), NO_INDEX */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
             schema, nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)).negate());
 
-        assertPlan("SELECT /*+ NO_INDEX('IDX1'), USE_INDEX('IDX1') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
+        assertPlan("SELECT /*+ USE_INDEX('IDX1'), NO_INDEX('IDX1') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
             schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX22"))
                 .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX23"))));
 
-        assertPlan("SELECT /*+ NO_INDEX('IDX23'), USE_INDEX('IDX1') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
+        assertPlan("SELECT /*+ USE_INDEX('IDX1'), NO_INDEX('IDX23') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
             schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
                 .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX22"))));
 
-        assertPlan("SELECT /*+ USE_INDEX('IDX23'), NO_INDEX */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
+        assertPlan("SELECT /*+ NO_INDEX, USE_INDEX('IDX23') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
             schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX23")));
     }
 
@@ -141,16 +155,34 @@ public class IndexHintPlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testTwoTables() throws Exception {
-//        assertPlan("SELECT val1 FROM TBL1, TBL2 WHERE val1=val21 and val2=val22 and val3=val23",
-//            schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX1")).negate()
-//                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2")).negate())
-//                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX3")).negate())
-//                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
-//                    .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX22")))
-//                    .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX23")))));
+        assertPlan("SELECT val1 FROM TBL1, TBL2 WHERE val1=val21 and val2=val22 and val3=val23",
+            schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX1")).negate()
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX3")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
+                    .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX22")))
+                    .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX23")))));
 
-        assertPlan("SELECT /*+ USE_INDEX('IDX1') */ val1 FROM TBL1, TBL2 WHERE val1=val21 and val2=val22 and val3=val23",
-            schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX1"))
-                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))));
+        assertPlan("SELECT /*+ USE_INDEX('IDX1') */ val1 FROM TBL1, TBL2 WHERE val1=val21 and val2=val22 and " +
+            "val3=val23", schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX1"))
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))));
+
+        assertPlan("SELECT /*+ USE_INDEX('IDX2', 'IDX23') */ val1 FROM TBL1, TBL2 WHERE val1=val21 and " +
+            "val2=val22 and val3=val23", schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX2"))
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX23"))));
+
+        assertPlan("SELECT /*+ USE_INDEX(TBL1='IDX2', TBL2='IDX23') */ val1 FROM TBL1, TBL2 WHERE val1=val21 " +
+            "and  val2=val22 and val3=val23", schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX2"))
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX23"))));
+
+        assertPlan("SELECT /*+ USE_INDEX(TBL1='UNEXISTING', TBL1='IDX2', TBL2='IDX23') */ val1 FROM TBL1, TBL2 " +
+                "WHERE val1=val21 and val2=val22 and val3=val23", schema,
+            nodeOrAnyChild(isIndexScan("TBL1", "IDX2"))
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX23"))));
+
+        assertPlan("SELECT /*+ USE_INDEX(TBL1='IDX1', TBL1='IDX2', TBL2='IDX23') */ val1 FROM TBL1, TBL2 " +
+                "WHERE val1=val21 and val2=val22 and val3=val23", schema,
+            nodeOrAnyChild(isIndexScan("TBL1", "IDX2"))
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX23"))));
     }
 }
