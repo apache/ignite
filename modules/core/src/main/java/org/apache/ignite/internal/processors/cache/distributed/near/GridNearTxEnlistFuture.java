@@ -88,20 +88,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistBatchFuture<
     }
 
     /** {@inheritDoc} */
-    @Override protected void map(boolean topLocked) {
-        this.topLocked = topLocked;
-
-        // Update write version to match current topology, otherwise version can lag behind local node's init version.
-        // Reproduced by IgniteCacheEntryProcessorNodeJoinTest.testAllEntryProcessorNodeJoin.
-        if (tx.local() && !topLocked)
-            tx.writeVersion(cctx.versions().next(tx.topologyVersion().topologyVersion()));
-
-        sendNextBatches(null);
-    }
-
-
-
-    /** {@inheritDoc} */
     @Override protected void complete() {
         onDone(res);
     }

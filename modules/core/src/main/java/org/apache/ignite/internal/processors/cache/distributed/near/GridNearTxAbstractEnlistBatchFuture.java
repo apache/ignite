@@ -113,6 +113,18 @@ public abstract class GridNearTxAbstractEnlistBatchFuture<T> extends GridNearTxA
         this.sequential = sequential;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void map(boolean topLocked) {
+        this.topLocked = topLocked;
+
+        // Update write version to match current topology, otherwise version can lag behind local node's init version.
+        // Reproduced by IgniteCacheEntryProcessorNodeJoinTest.testAllEntryProcessorNodeJoin.
+        if (tx.local() && !topLocked)
+            tx.writeVersion(cctx.versions().next(tx.topologyVersion().topologyVersion()));
+
+        sendNextBatches(null);
+    }
+
     /**
      * Continue iterating the data rows and form new batches.
      *

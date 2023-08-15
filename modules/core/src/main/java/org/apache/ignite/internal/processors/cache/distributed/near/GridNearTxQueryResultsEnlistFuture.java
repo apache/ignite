@@ -67,13 +67,6 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
     }
 
     /** {@inheritDoc} */
-    @Override protected void map(boolean topLocked) {
-        this.topLocked = topLocked;
-
-        sendNextBatches(null);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void complete() {
         onDone(res);
     }
