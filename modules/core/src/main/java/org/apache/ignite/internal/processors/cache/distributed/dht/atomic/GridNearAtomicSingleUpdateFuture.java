@@ -60,10 +60,10 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
  */
 public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpdateFuture {
     /** Keys */
-    private Object key;
+    private final Object key;
 
     /** Values. */
-    private Object val;
+    private final Object val;
 
     /** */
     private PrimaryRequestState reqState;
