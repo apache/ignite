@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import com.google.common.collect.ImmutableSet;
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
@@ -124,7 +123,7 @@ public class PlannerHelper {
 
     /** */
     private static void setDisabledRules(IgnitePlanner planner) {
-        HintOptions opts = Hint.options(context(planner.cluster()).hints(), HintDefinition.DISABLE_RULE);
+        HintOptions opts = Hint.options(Commons.planContext(planner.cluster()).hints(), HintDefinition.DISABLE_RULE);
 
         if (opts != null)
             planner.setDisabledRules(opts.plain());
@@ -137,9 +136,9 @@ public class PlannerHelper {
      * @see PlanningContext#hints()
      */
     private static RelRoot processHints(RelRoot rootRel) {
-        PlanningContext ctx = context(rootRel.rel.getCluster());
+        PlanningContext ctx = Commons.planContext(rootRel.rel.getCluster());
 
-        ctx.queryHints(resolveQueryHints(rootRel));
+        ctx.hints(resolveQueryHints(rootRel));
 
         rootRel = rootRel.withHints(Collections.emptyList());
 
@@ -170,11 +169,6 @@ public class PlannerHelper {
         }
 
         return Collections.emptyList();
-    }
-
-    /** */
-    public static PlanningContext context(RelOptCluster relOptCluster) {
-        return relOptCluster.getPlanner().getContext().unwrap(PlanningContext.class);
     }
 
     /**

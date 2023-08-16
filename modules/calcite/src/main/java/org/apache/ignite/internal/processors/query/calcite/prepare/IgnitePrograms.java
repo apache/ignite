@@ -50,8 +50,8 @@ public class IgnitePrograms {
 
             builder.addRuleCollection(ruleList);
 
-            final HepPlanner hepPlanner = new HepPlanner(builder.build(), Commons.context(rel), true,
-                null, Commons.context(rel).config().getCostFactory());
+            final HepPlanner hepPlanner = new HepPlanner(builder.build(), Commons.queryContext(rel), true,
+                null, Commons.queryContext(rel).config().getCostFactory());
 
             hepPlanner.setExecutor(planner.getExecutor());
 

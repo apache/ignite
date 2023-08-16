@@ -123,6 +123,16 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
         doTestDisabledInTable2Val3("'v'");
     }
 
+    /** */
+    @Test
+    public void testOrderBy() throws Exception {
+        assertCertainIndex("SELECT * FROM TBL1 t1 order by val1", "TBL1", "IDX1");
+
+        assertNoAnyIndex("SELECT /*+ NO_INDEX */ * FROM TBL1 t1 order by val1");
+        assertNoAnyIndex("SELECT /*+ NO_INDEX('IDX1') */ * FROM TBL1 t1 order by val1");
+        assertNoAnyIndex("SELECT /*+ NO_INDEX(TBL1='IDX1') */ * FROM TBL1 t1 order by val1");
+    }
+
     @Test
     /** */
     public void testJoins() throws Exception {

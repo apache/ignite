@@ -28,8 +28,8 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -52,7 +52,7 @@ public final class Hint {
 
         RelOptCluster c = rel.getCluster();
 
-        return c.getHintStrategies().apply(filterHints(PlannerHelper.context(c).hints(), Arrays.asList(hintDefs)), rel);
+        return c.getHintStrategies().apply(filterHints(Commons.planContext(c).hints(), Arrays.asList(hintDefs)), rel);
     }
 
     /**
