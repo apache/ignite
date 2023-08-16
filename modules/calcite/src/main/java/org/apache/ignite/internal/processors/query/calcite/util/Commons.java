@@ -201,6 +201,13 @@ public final class Commons {
     }
 
     /**
+     * @return PlanningContext context.
+     */
+    public static PlanningContext planContext(RelNode rel) {
+        return planContext(rel.getCluster());
+    }
+
+    /**
      * Parses a SQL statement.
      *
      * @param qry Query string.
