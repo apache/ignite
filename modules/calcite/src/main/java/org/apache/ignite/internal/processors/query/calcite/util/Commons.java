@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -179,17 +180,24 @@ public final class Commons {
     }
 
     /**
-     * Extracts query context.
+     * @return Query context.
      */
-    public static BaseQueryContext context(RelNode rel) {
-        return context(rel.getCluster());
+    public static BaseQueryContext queryContext(RelNode rel) {
+        return queryContext(rel.getCluster());
     }
 
     /**
-     * Extracts query context.
+     * @return Query context.
      */
-    public static BaseQueryContext context(RelOptCluster cluster) {
+    public static BaseQueryContext queryContext(RelOptCluster cluster) {
         return Objects.requireNonNull(cluster.getPlanner().getContext().unwrap(BaseQueryContext.class));
+    }
+
+    /**
+     * @return PlanningContext context.
+     */
+    public static PlanningContext planContext(RelOptCluster relOptCluster) {
+        return relOptCluster.getPlanner().getContext().unwrap(PlanningContext.class);
     }
 
     /**

@@ -83,7 +83,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
 
         assert !indexes.isEmpty();
 
-        disableIndexes(scan, indexes);
+        processHints(scan, indexes);
 
         if (indexes.isEmpty())
             return;
@@ -95,31 +95,32 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
         call.transformTo(F.first(indexes), equivMap);
     }
 
-    /**
-     * Disables indexes if requred by {@code SqlHintDefinition.NO_INDEX}.
-     */
-    private void disableIndexes(IgniteLogicalTableScan scan, List<IgniteLogicalIndexScan> indexes) {
-        HintOptions opts = Hint.relAndQueryOptions(scan, HintDefinition.NO_INDEX);
+    /** */
+    private void processHints(IgniteLogicalTableScan scan, List<IgniteLogicalIndexScan> indexes) {
+        HintOptions opts = Hint.options(Hint.hints(scan, HintDefinition.NO_INDEX), HintDefinition.NO_INDEX);
 
-        if (opts.notFound())
+        if (opts == null)
             return;
 
-        if (opts.emptyNum() > 0) {
+        if (opts.empty()) {
             indexes.clear();
 
             return;
         }
 
-        if (!F.isEmpty(opts.plain()))
-            indexes.removeIf(idxScan -> opts.plain().contains(idxScan.indexName()));
+        if (!opts.plain().isEmpty()) {
+            indexes.removeIf(idx -> opts.plain().contains(idx.indexName()));
 
-        opts.kv().forEach((tblName, idxNames) -> {
-            List<String> fullTblName = Commons.qualifiedName(tblName);
+            return;
+        }
 
-            List<String> qname = scan.getTable().getQualifiedName();
+        List<String> qtname = scan.getTable().getQualifiedName();
 
-            indexes.removeIf(idxScan -> idxNames.contains(idxScan.indexName()) && (last(fullTblName).equals(last(qname))
-                && fullTblName.size() == 1 || F.eq(fullTblName, qname)));
+        opts.kv().forEach((hintTblName, hintIdxNames) -> {
+            List<String> qHintTblName = Commons.qualifiedName(hintTblName);
+
+            indexes.removeIf(idx -> hintIdxNames.contains(idx.indexName())
+                && (last(qHintTblName).equals(last(qtname)) && qHintTblName.size() == 1) || F.eq(qHintTblName, qtname));
         });
     }
 

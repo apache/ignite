@@ -38,6 +38,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.hint.Hint;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintOptions;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -71,13 +72,13 @@ public class PlannerHelper {
             // Convert to Relational operators graph
             RelRoot root = planner.rel(sqlNode);
 
-            PlanningContext ctx = planner.cluster().getPlanner().getContext().unwrap(PlanningContext.class);
+            PlanningContext ctx = Commons.planContext(root.rel.getCluster());
 
-            ctx.queryHints(resolveQueryHints(root));
+            ctx.hints(resolveQueryHints(root));
 
             RelNode rel = root.rel;
 
-            planner.setDisabledRules(Hint.options(ctx.queryHints(), HintDefinition.DISABLE_RULE).plain());
+            setDisabledRules(planner);
 
             // Transformation chain
             rel = planner.transform(PlannerPhase.HEP_DECORRELATE, rel.getTraitSet(), rel);
@@ -126,6 +127,14 @@ public class PlannerHelper {
         }
     }
 
+    /** */
+    private static void setDisabledRules(IgnitePlanner planner) {
+        HintOptions opts = Hint.options(Commons.planContext(planner.cluster()).hints(), HintDefinition.DISABLE_RULE);
+
+        if (opts != null)
+            planner.setDisabledRules(opts.plain());
+    }
+
     /**
      * @return Hints resolved as top-node or 'query' hints which are not set by Calcite to the root node.
      */
@@ -133,8 +142,8 @@ public class PlannerHelper {
         if (!F.isEmpty(root.hints))
             return root.hints;
 
-        if (!F.isEmpty(Hint.hints(root.rel)))
-            return Hint.hints(root.rel);
+        if (!F.isEmpty(Hint.relHints(root.rel)))
+            return Hint.relHints(root.rel);
 
         if (root.rel instanceof SetOp && !F.isEmpty(root.rel.getInputs())) {
             return resolveQueryHints(root.withRel(root.rel.getInput(0)));

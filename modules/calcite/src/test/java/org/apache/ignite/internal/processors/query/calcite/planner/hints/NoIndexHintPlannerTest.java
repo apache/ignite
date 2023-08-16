@@ -101,17 +101,10 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
         assertNoAnyIndex("SELECT /*+ NO_INDEX */ * FROM TBL1 t1, (select * FROM TBL2 WHERE val3='v') t2" +
             " WHERE t1.val2='v'");
 
-        assertNoAnyIndex("SELECT /*+ NO_INDEX */ * FROM TBL1 t1, (select /*+ NO_INDEX(TBL2='IDX2_2') */ * FROM " +
-            "TBL2 WHERE val3='v') t2 WHERE t1.val2='v'");
-
         assertPlan("SELECT /*+ NO_INDEX(TBL1='IDX2') */ * FROM TBL1 t1, (select * FROM TBL2 WHERE " +
                 "val2='v') t2 WHERE t1.val2='v'", schema,
             nodeOrAnyChild(isIndexScan("TBL1", "IDX2")).negate()
                 .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2"))));
-
-        assertPlan("SELECT * FROM TBL1 t1, (select /*+ NO_INDEX(TBL1='IDX2') */ * FROM TBL2 WHERE " +
-            "val3='v') t2 WHERE t1.val2='v'", schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX2"))
-            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX3"))));
 
         assertPlan("SELECT /*+ NO_INDEX(TBL2='IDX3') */ * FROM TBL1 t1, (select * FROM TBL2 WHERE " +
             "val3='v') t2 WHERE t1.val2='v'", schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX2"))
@@ -130,29 +123,41 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
         doTestDisabledInTable2Val3("'v'");
     }
 
+    @Test
+    /** */
+    public void testJoins() throws Exception {
+        assertNoAnyIndex("SELECT /*+ NO_INDEX */ t1.val1, t2.val2 FROM TBL1 t1, TBL2 t2 where t2.val3=t1.val3");
+
+        assertNoAnyIndex("SELECT /*+ NO_INDEX */ t1.val1, t2.val2 FROM TBL1 t1 LEFT JOIN TBL2 t2 on t1.val3=t2.val3");
+
+        assertNoAnyIndex("SELECT /*+ NO_INDEX */ t1.val1, t2.val2 FROM TBL1 t1 RIGHT JOIN TBL2 t2 on t1.val3=t2.val3");
+
+        assertNoAnyIndex("SELECT /*+ NO_INDEX */ t1.val1, t2.val2 FROM TBL1 t1 INNER JOIN TBL2 t2 on t1.val3=t2.val3");
+    }
+
     /** */
     @Test
-    public void testJoins() throws Exception {
-        assertNoAnyIndex("SELECT /*+ NO_INDEX */ t1.*, t2.* FROM TBL1 t1, TBL2 t2 where t1.val2='v' and " +
+    public void testJoinsWithOtherFilters() throws Exception {
+        assertNoAnyIndex("SELECT /*+ NO_INDEX */ t1.val1, t2.val2 FROM TBL1 t1, TBL2 t2 where t1.val2='v' and " +
             "t2.val3=t1.val3 and t2.val2='v'");
 
-        assertNoAnyIndex("SELECT /*+ NO_INDEX(IDX3) */ t1.*, t2.* FROM TBL1 t1, TBL2 t2 where t1.val3='v' and " +
-            "t2.val3=t1.val3 and t2.val3='v'");
+        assertNoAnyIndex("SELECT /*+ NO_INDEX(IDX3) */ t1.val1, t2.val2 FROM TBL1 t1, TBL2 t2 where t1.val3='v' " +
+            "and t2.val3=t1.val3 and t2.val3='v'");
 
-        assertPlan("SELECT /*+ NO_INDEX('IDX2_2') */ t1.*, t2.* FROM TBL1 t1, TBL2 t2 where t1.val2='v' and " +
-            "t2.val2=t1.val2", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2")).negate()
+        assertPlan("SELECT /*+ NO_INDEX('IDX2_2') */ t1.val1, t2.val2 FROM TBL1 t1, TBL2 t2 where t1.val2='v' " +
+            "and t2.val2=t1.val2", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX2_2")).negate()
             .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2"))));
 
-        assertPlan("SELECT /*+ NO_INDEX('IDX2') */ t1.*, t2.* FROM TBL1 t1 LEFT JOIN TBL2 t2 on t1.val2=t2.val3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX3"))
-                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2")).negate()));
+        assertPlan("SELECT /*+ NO_INDEX('IDX2') */ t1.val1, t2.val2 FROM TBL1 t1 LEFT JOIN TBL2 t2 on " +
+            "t1.val2=t2.val3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX3"))
+            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2")).negate()));
 
-        assertPlan("SELECT /*+ NO_INDEX('IDX3') */ t1.*, t2.* FROM TBL1 t1 RIGHT JOIN TBL2 t2 on t1.val2=t2.val3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX3")).negate()
-                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2"))));
+        assertPlan("SELECT /*+ NO_INDEX('IDX3') */ t1.val1, t2.val2 FROM TBL1 t1 RIGHT JOIN TBL2 t2 on " +
+            "t1.val2=t2.val3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX3")).negate()
+            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2"))));
 
-        assertNoAnyIndex("SELECT /*+ NO_INDEX('IDX2', 'IDX3') */ t1.*, t2.* FROM TBL1 t1 INNER JOIN TBL2 t2 on " +
-            "t1.val2=t2.val3");
+        assertNoAnyIndex("SELECT /*+ NO_INDEX('IDX2', 'IDX3') */ t1.val1, t2.val2 FROM TBL1 t1 INNER JOIN " +
+            "TBL2 t2 on  t1.val2=t2.val3");
     }
 
     /** */
@@ -172,11 +177,8 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
         assertNoAnyIndex(String.format("SELECT /*+ NO_INDEX */ t1.* FROM TBL1 t1 where t1.val2='v' %s " +
             "SELECT t2.* FROM TBL2 t2 where t2.val3='v'", operation));
 
-        assertNoAnyIndex(String.format("SELECT /*+ NO_INDEX(TBL1='IDX2') */ t1.* FROM TBL1 t1 where t1.val2='v' %s " +
-            "SELECT /*+ NO_INDEX(TBL2='IDX3') */ t2.* FROM TBL2 t2 where t2.val3='v'", operation));
-
-        assertPlan(String.format("SELECT t1.* FROM TBL1 t1 where t1.val2='v' %s " +
-                "SELECT /*+ NO_INDEX */ t2.* FROM TBL2 t2 where t2.val3='v'", operation), schema,
+        assertPlan(String.format("SELECT /*+ NO_INDEX('IDX3') */ t1.* FROM TBL1 t1 where t1.val2='v' %s " +
+                "SELECT t2.* FROM TBL2 t2 where t2.val3='v'", operation), schema,
             nodeOrAnyChild(isIndexScan("TBL2", "IDX3")).negate()
                 .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2"))));
     }
@@ -193,11 +195,14 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
         assertNoCertainIndex("SELECT /*+ NO_INDEX */ * FROM TBL1 t1 WHERE t1.val2 = " +
             "(SELECT val2 from TBL2 WHERE val3=" + valueOfT2Val3 + ')', "TBL2", "IDX3");
 
-        assertNoCertainIndex("SELECT * FROM TBL1 t1 WHERE t1.val2 = " +
-            "(SELECT /*+ NO_INDEX */ val2 from TBL2 WHERE val3=" + valueOfT2Val3 + ')', "TBL2", "IDX3");
+        assertNoCertainIndex("SELECT /*+ NO_INDEX(TBL1='IDX2') */ * FROM TBL1 t1 WHERE t1.val2 = " +
+            "(SELECT val2 from TBL2 WHERE val3=" + valueOfT2Val3 + ')', "TBL1", "IDX2");
 
         assertNoCertainIndex("SELECT /*+ NO_INDEX(TBL2='IDX3') */ * FROM TBL1 t1 WHERE t1.val2 = " +
             "(SELECT val2 from TBL2 WHERE val3=" + valueOfT2Val3 + ')', "TBL2", "IDX3");
+
+        assertNoAnyIndex("SELECT /*+ NO_INDEX('IDX3') */ * FROM TBL1 t1 WHERE t1.val3 = " +
+            "(SELECT val2 from TBL2 WHERE val3=" + valueOfT2Val3 + ')');
     }
 
     /** */

@@ -17,60 +17,50 @@
 
 package org.apache.ignite.internal.processors.query.calcite.hint;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.apache.calcite.rel.hint.RelHint;
-import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Collects and holds hints options.
  */
 public final class HintOptions {
-    /** */
-    private static final HintOptions EMPTY = new HintOptions(-1, Collections.emptySet(),
-        Collections.emptyMap());
-
-    /** Number of hints having no any option. */
-    private final int emptyNum;
-
     /** Plain options. */
-    private final Set<String> plain;
+    private final List<String> plain;
 
     /** Key-value options. */
-    private final Map<String, Set<String>> kv;
+    private final Map<String, List<String>> kv;
 
     /** Ctor. */
-    private HintOptions(int emptyNum, Set<String> plain, Map<String, Set<String>> kv) {
-        this.emptyNum = emptyNum;
-        this.plain = plain;
-        this.kv = kv;
+    private HintOptions(List<String> plain, Map<String, List<String>> kv) {
+        this.plain = Collections.unmodifiableList(plain);
+        this.kv = Collections.unmodifiableMap(kv);
     }
 
-    /** */
-    static HintOptions collect(Collection<RelHint> hints) {
-        if (F.isEmpty(hints))
-            return EMPTY;
+    /**
+     * @return Combined options set of {@code hints} with natural order. {@code Null} if {@code hints} is empty.
+     */
+    static @Nullable HintOptions collect(Collection<RelHint> hints) {
+        if (hints.isEmpty())
+            return null;
 
-        int emptyNum = 0;
-        Set<String> plainOptions = new LinkedHashSet<>();
-        Map<String, Set<String>> kvOptions = new LinkedHashMap<>();
+        List<String> plainOptions = new ArrayList<>();
+        Map<String, List<String>> kvOptions = new LinkedHashMap<>();
 
         for (RelHint h : hints) {
-            if (F.isEmpty(h.listOptions) && F.isEmpty(h.kvOptions)) {
-                ++emptyNum;
-
+            if (h.listOptions.isEmpty() && h.kvOptions.isEmpty())
                 continue;
-            }
 
             plainOptions.addAll(h.listOptions);
 
             h.kvOptions.forEach((key, value) -> kvOptions.compute(key, (key0, valSet) -> {
                 if (valSet == null)
-                    valSet = new LinkedHashSet<>();
+                    valSet = new ArrayList<>();
 
                 valSet.add(value);
 
@@ -78,26 +68,21 @@ public final class HintOptions {
             }));
         }
 
-        return new HintOptions(emptyNum, plainOptions, kvOptions);
+        return new HintOptions(plainOptions, kvOptions);
     }
 
     /** */
-    public boolean notFound() {
-        return this == EMPTY;
+    public boolean empty() {
+        return plain.isEmpty() && kv.isEmpty();
     }
 
     /** */
-    public int emptyNum() {
-        return emptyNum;
-    }
-
-    /** */
-    public Set<String> plain() {
+    public List<String> plain() {
         return plain;
     }
 
     /** */
-    public Map<String, Set<String>> kv() {
+    public Map<String, List<String>> kv() {
         return kv;
     }
 }
