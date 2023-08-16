@@ -64,12 +64,24 @@ public final class Hint {
     }
 
     /**
-     * @return Combined options set of all {@code hints} filtered with {@code hintDef} with the natural order.
-     * {@code Null} if no hint is found by {@code hintDef}.
-     * @see PlanningContext#hints()
+     * @return Options of {@code hint}.
      */
-    public static @Nullable HintOptions options(Collection<RelHint> hints, HintDefinition hintDef) {
-        return HintOptions.collect(filterHints(hints, Collections.singletonList(hintDef)));
+    public static HintOptions options(RelHint hint) {
+        return HintOptions.collect(Collections.singletonList(hint));
+    }
+
+    /**
+     * @return Combined options of all {@code hints} with natural order.
+     */
+    public static HintOptions options(Collection<RelHint> hints) {
+        return HintOptions.collect(hints);
+    }
+
+    /**
+     * @return Combined options of all {@code hints} filtered with {@code hintDef} with natural order.
+     */
+    public static HintOptions options(Collection<RelHint> hints, HintDefinition hintDef) {
+        return options(filterHints(hints, Collections.singletonList(hintDef)));
     }
 
     /**
@@ -80,7 +92,7 @@ public final class Hint {
     }
 
     /**
-     * @return Hints within {@code hints} filtered with {@code hintDefs}.
+     * @return Filtered with {@code hintDefs} {@code hints}.
      */
     private static List<RelHint> filterHints(Collection<RelHint> hints, Collection<HintDefinition> hintDefs) {
         Set<String> hintNames = hintDefs.stream().map(Enum::name).collect(Collectors.toSet());

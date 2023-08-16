@@ -44,6 +44,17 @@ public final class HintsConfig {
         }
     };
 
+    /** Requires at least one option. */
+    static final HintOptionChecker OPTS_CHECK_NOT_EMPTY = new HintOptionChecker() {
+        @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
+            return errorHandler.check(
+                !hint.kvOptions.isEmpty() || !hint.listOptions.isEmpty(),
+                "Hint '{}' needs at least one option.",
+                hint.hintName
+            );
+        }
+    };
+
     /** Allows only plain options. */
     static final HintOptionChecker OPTS_CHECK_PLAIN = new HintOptionChecker() {
         @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {

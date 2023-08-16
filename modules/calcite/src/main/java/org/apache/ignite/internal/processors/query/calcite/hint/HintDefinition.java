@@ -60,7 +60,7 @@ public enum HintDefinition {
 
         /** {@inheritDoc} */
         @Override public HintOptionChecker optionsChecker() {
-            return HintsConfig.OPTS_CHECK_ANY;
+            return HintsConfig.OPTS_CHECK_NOT_EMPTY;
         }
     };
 

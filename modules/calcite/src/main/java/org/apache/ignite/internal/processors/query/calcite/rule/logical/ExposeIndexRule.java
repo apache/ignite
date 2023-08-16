@@ -18,20 +18,26 @@
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.hint.Hint;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintOptions;
+import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -83,7 +89,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
 
         assert !indexes.isEmpty();
 
-        processHints(scan, indexes);
+        indexes = processHints(scan, indexes);
 
         if (indexes.isEmpty())
             return;
@@ -96,32 +102,66 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
     }
 
     /** */
-    private void processHints(IgniteLogicalTableScan scan, List<IgniteLogicalIndexScan> indexes) {
-        HintOptions opts = Hint.options(Hint.hints(scan, HintDefinition.NO_INDEX), HintDefinition.NO_INDEX);
+    private List<IgniteLogicalIndexScan> processHints(TableScan scan, List<IgniteLogicalIndexScan> indexes) {
+        assert !F.isEmpty(indexes);
 
-        if (opts == null)
-            return;
+        List<String> qTblName = scan.getTable().getQualifiedName();
+        Set<String> tblIdxNames = indexes.stream().map(AbstractIndexScan::indexName).collect(Collectors.toSet());
+        Set<String> idxToSkip = new HashSet<>();
 
-        if (opts.empty()) {
-            indexes.clear();
+        for (RelHint hint : Hint.hints(scan, HintDefinition.NO_INDEX)) {
+            if (idxToSkip.size() == indexes.size()) {
+                Commons.planContext(scan).skippedHint(scan, hint, "Any index of table '" + last(qTblName) +
+                    "' has already been skipped by the hints before.");
 
-            return;
+                continue;
+            }
+
+            HintOptions opts = Hint.options(hint);
+
+            if (!opts.plain().isEmpty()) {
+                storeIdxNamesToSkip(scan, hint, tblIdxNames, idxToSkip, null, opts.plain());
+
+                assert opts.kv().isEmpty();
+
+                continue;
+            }
+
+            opts.kv().forEach((hintTblName, hintIdxNames) -> {
+                List<String> hintTblQName = Commons.qualifiedName(hintTblName);
+
+                if (checkTblName(qTblName, hintTblQName))
+                    storeIdxNamesToSkip(scan, hint, tblIdxNames, idxToSkip, hintTblName, hintIdxNames);
+                else {
+                    Commons.planContext(scan).skippedHint(scan, hint, hintTblName, "Incorrect table name: '"
+                        + hintTblName + "'.");
+                }
+            });
         }
 
-        if (!opts.plain().isEmpty()) {
-            indexes.removeIf(idx -> opts.plain().contains(idx.indexName()));
+        return indexes.stream().filter(idx -> !idxToSkip.contains(idx.indexName())).collect(Collectors.toList());
+    }
 
-            return;
+    /** */
+    private void storeIdxNamesToSkip(TableScan scan, RelHint hint, Set<String> tblIdxNames, Set<String> idxToSkip,
+        @Nullable String hintTableName, List<String> hintIdxNames) {
+        for (String hintIdxName : hintIdxNames) {
+            if (!tblIdxNames.contains(hintIdxName)) {
+                Commons.planContext(scan).skippedHint(scan, hint, hintTableName, hintIdxName, "Table '" +
+                    last(scan.getTable().getQualifiedName()) + "' has no index '" + hintIdxName + "'.");
+
+                continue;
+            }
+
+            idxToSkip.add(hintIdxName);
         }
+    }
 
-        List<String> qtname = scan.getTable().getQualifiedName();
+    /** */
+    private static boolean checkTblName(List<String> tblQName, List<String> hintTblQName) {
+        assert !hintTblQName.isEmpty();
 
-        opts.kv().forEach((hintTblName, hintIdxNames) -> {
-            List<String> qHintTblName = Commons.qualifiedName(hintTblName);
-
-            indexes.removeIf(idx -> hintIdxNames.contains(idx.indexName())
-                && (last(qHintTblName).equals(last(qtname)) && qHintTblName.size() == 1) || F.eq(qHintTblName, qtname));
-        });
+        return hintTblQName.size() == 1 && last(tblQName).equals(hintTblQName.get(0)) || F.eq(tblQName, hintTblQName);
     }
 
     /** */

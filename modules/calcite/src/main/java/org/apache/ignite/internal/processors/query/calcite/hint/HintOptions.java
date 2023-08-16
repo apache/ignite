@@ -18,16 +18,20 @@
 package org.apache.ignite.internal.processors.query.calcite.hint;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Collects and holds hints options.
+ * Collects and holds hints options. Recognizes dot-sepatated entries of quoted {@code RelHint.listOptions} and values
+ * of {@code RelHint.kvOptions}.
  */
 public final class HintOptions {
     /** Plain options. */
@@ -56,13 +60,17 @@ public final class HintOptions {
             if (h.listOptions.isEmpty() && h.kvOptions.isEmpty())
                 continue;
 
-            plainOptions.addAll(h.listOptions);
+            // Splits plain options by dot.
+            plainOptions.addAll(F.flatCollections(h.listOptions.stream().map(opt -> Arrays.stream(opt.split(","))
+                .collect(Collectors.toList())).collect(Collectors.toList())));
 
             h.kvOptions.forEach((key, value) -> kvOptions.compute(key, (key0, valSet) -> {
                 if (valSet == null)
                     valSet = new ArrayList<>();
 
-                valSet.add(value);
+                // Splits quoted key-value options by dot.
+                valSet.addAll(Arrays.stream(value.split(",")).filter(opt -> !opt.trim().isEmpty())
+                    .collect(Collectors.toList()));
 
                 return valSet;
             }));
