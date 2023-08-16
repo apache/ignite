@@ -1179,9 +1179,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
         }
 
-        return task0.chain(fut -> {
-            if (fut.error() != null)
-                throw F.wrap(fut.error());
+        return task0.chain(() -> {
+            if (task0.error() != null)
+                throw F.wrap(task0.error());
 
             try {
                 Set<String> blts = req.nodes().stream()
@@ -1192,7 +1192,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 snpDir.mkdirs();
 
-                SnapshotFutureTaskResult res = (SnapshotFutureTaskResult)fut.result();
+                SnapshotFutureTaskResult res = (SnapshotFutureTaskResult)task0.result();
 
                 SnapshotMetadata meta = new SnapshotMetadata(req.requestId(),
                     req.snapshotName(),
@@ -1248,7 +1248,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             activeTxsFut.markInitialized();
 
-            activeTxsFut.listen(f -> wrapMsgsFut.onDone());
+            activeTxsFut.listen(() -> wrapMsgsFut.onDone());
         }
 
         if (cctx.kernalContext().clientNode())
@@ -1398,7 +1398,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (cctx.kernalContext().clientNode())
             return (IgniteInternalFuture<SnapshotOperationResponse>)prepFut;
 
-        return prepFut.chain(r -> {
+        return prepFut.chain(() -> {
             try {
                 if (req.error() != null) {
                     snpReq.error(req.error());
@@ -1679,7 +1679,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> cancelSnapshot(String name) {
-        return new IgniteFutureImpl<>(cancelSnapshot0(name).chain(f -> null));
+        return new IgniteFutureImpl<>(cancelSnapshot0(name).chain(() -> null));
     }
 
     /**
@@ -1999,7 +1999,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         });
 
         if (log.isInfoEnabled()) {
-            res.listen(f -> log.info("The check snapshot procedure finished [snpName=" + name +
+            res.listen(() -> log.info("The check snapshot procedure finished [snpName=" + name +
                 ", snpPath=" + snpPath + ", incIdx=" + incIdx + ", grps=" + grps + ']'));
         }
 
@@ -2294,14 +2294,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             List<ClusterNode> srvNodes = cctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
 
-            snpFut0.listen(f -> {
-                if (f.error() == null)
+            snpFut0.listen(() -> {
+                if (snpFut0.error() == null)
                     recordSnapshotEvent(name, snpMsg(SNAPSHOT_FINISHED_MSG + grps, dump), EVT_CLUSTER_SNAPSHOT_FINISHED);
                 else {
-                    String errMsgPref = f.error() instanceof SnapshotWarningException ? SNAPSHOT_FINISHED_WRN_MSG
+                    String errMsgPref = snpFut0.error() instanceof SnapshotWarningException ? SNAPSHOT_FINISHED_WRN_MSG
                         : SNAPSHOT_FAILED_MSG;
 
-                    recordSnapshotEvent(name, snpMsg(errMsgPref, dump) + f.error().getMessage(), EVT_CLUSTER_SNAPSHOT_FAILED);
+                    recordSnapshotEvent(name, snpMsg(errMsgPref + snpFut0.error().getMessage(), dump), EVT_CLUSTER_SNAPSHOT_FAILED);
                 }
             });
 
@@ -2771,7 +2771,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
             }
 
-            task.listen(f -> locSnpTasks.remove(rqId));
+            task.listen(() -> locSnpTasks.remove(rqId));
 
             return task;
         }
@@ -3774,7 +3774,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             RemoteSnapshotFilesRecevier curr = active;
 
             if (curr == null || curr.isDone()) {
-                next.listen(f -> scheduleNext());
+                next.listen(this::scheduleNext);
 
                 active = next;
 
@@ -3881,17 +3881,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                 rmtSndrFactory.apply(rqId, nodeId),
                                 reqMsg0.parts()));
 
-                        task.listen(f -> {
-                            if (f.error() == null)
+                        task.listen(() -> {
+                            if (task.error() == null)
                                 return;
 
                             U.error(log, "Failed to process request of creating a snapshot " +
-                                "[from=" + nodeId + ", msg=" + reqMsg0 + ']', f.error());
+                                "[from=" + nodeId + ", msg=" + reqMsg0 + ']', task.error());
 
                             try {
                                 cctx.gridIO().sendToCustomTopic(nodeId,
                                     DFLT_INITIAL_SNAPSHOT_TOPIC,
-                                    new SnapshotFilesFailureMessage(reqMsg0.id(), f.error().getMessage()),
+                                    new SnapshotFilesFailureMessage(reqMsg0.id(), task.error().getMessage()),
                                     SYSTEM_POOL);
                             }
                             catch (IgniteCheckedException ex0) {

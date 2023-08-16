@@ -742,7 +742,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 = ctx.cache().context().deadlockDetectionMgr().initDelayedComputation(waiterVer, blockerVer);
 
             if (delayedComputation != null)
-                fut.listen(fut0 -> delayedComputation.cancel());
+                fut.listen(delayedComputation::cancel);
         }
 
         return fut;
@@ -1330,11 +1330,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                                 res0.markInitialized();
 
-                                res0.listen(future -> {
+                                res0.listen(() -> {
                                     VacuumMetrics metrics = null; Throwable ex = null;
 
                                     try {
-                                        metrics = future.get();
+                                        metrics = res0.get();
 
                                         txLog.removeUntil(snapshot.coordinatorVersion(), snapshot.cleanupVersion());
 
@@ -2216,7 +2216,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                             break;
                         case MOVING:
-                            task.part().group().preloader().rebalanceFuture().listen(f -> cleanupQueue.add(task));
+                            task.part().group().preloader().rebalanceFuture().listen(() -> cleanupQueue.add(task));
 
                             break;
                         case OWNING:

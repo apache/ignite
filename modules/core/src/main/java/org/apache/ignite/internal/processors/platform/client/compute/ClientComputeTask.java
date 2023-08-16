@@ -123,21 +123,21 @@ class ClientComputeTask implements ClientCloseableResource {
     void onResponseSent() {
         // Listener should be registered only after response for this task was sent, to ensure that client doesn't
         // receive notification before response for the task.
-        taskFut.listen(f -> {
+        taskFut.listen(() -> {
             try {
                 ClientNotification notification;
 
-                if (f.error() != null) {
+                if (taskFut.error() != null) {
                     String msg = ctx.kernalContext().clientListener().sendServerExceptionStackTraceToClient()
-                            ? f.error().getMessage() + U.nl() + X.getFullStackTrace(f.error())
-                            : f.error().getMessage();
+                            ? taskFut.error().getMessage() + U.nl() + X.getFullStackTrace(taskFut.error())
+                            : taskFut.error().getMessage();
 
                     notification = new ClientNotification(OP_COMPUTE_TASK_FINISHED, taskId, msg);
                 }
-                else if (f.isCancelled())
+                else if (taskFut.isCancelled())
                     notification = new ClientNotification(OP_COMPUTE_TASK_FINISHED, taskId, "Task was cancelled");
                 else
-                    notification = new ClientObjectNotification(OP_COMPUTE_TASK_FINISHED, taskId, f.result());
+                    notification = new ClientObjectNotification(OP_COMPUTE_TASK_FINISHED, taskId, taskFut.result());
 
                 ctx.notifyClient(notification);
             }

@@ -276,7 +276,7 @@ class SnapshotFutureTask extends AbstractCreateBackupFutureTask implements Check
                     log);
             }
 
-            startedFut.listen(f ->
+            startedFut.listen(() ->
                 ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(this)
             );
 

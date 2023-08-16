@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -500,7 +499,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
         updateLocalFuture(fut);
 
-        fut.listen((IgniteInternalFuture<GridCacheReturn> fut0) -> {
+        fut.listen(() -> {
             try {
                 clearLocalFuture(fut);
 

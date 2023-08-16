@@ -439,9 +439,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         ClientOperation op = pendingReq.operation;
         long startTimeNanos = pendingReq.startTimeNanos;
 
-        pendingReq.listen(payloadFut -> asyncContinuationExecutor.execute(() -> {
+        pendingReq.listen(() -> asyncContinuationExecutor.execute(() -> {
             try {
-                ByteBuffer payload = payloadFut.get();
+                ByteBuffer payload = pendingReq.get();
 
                 T res = null;
                 if (payload != null && payloadReader != null)

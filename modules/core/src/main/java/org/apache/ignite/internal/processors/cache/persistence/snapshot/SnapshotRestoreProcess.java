@@ -308,11 +308,11 @@ public class SnapshotRestoreProcess {
             return new IgniteFinishedFutureImpl<>(e);
         }
 
-        fut0.listen(f -> {
-            if (f.error() != null) {
+        fut0.listen(() -> {
+            if (fut0.error() != null) {
                 snpMgr.recordSnapshotEvent(
                     snpName,
-                    OP_FAILED_MSG + ": " + f.error().getMessage() + " [reqId=" + fut0.rqId + "].",
+                    OP_FAILED_MSG + ": " + fut0.error().getMessage() + " [reqId=" + fut0.rqId + "].",
                     EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED
                 );
             }
@@ -587,7 +587,7 @@ public class SnapshotRestoreProcess {
             interrupt(opCtx0, reason);
 
         return fut0 == null ? new IgniteFinishedFutureImpl<>(ctxStop) :
-            new IgniteFutureImpl<>(fut0.chain(f -> true));
+            new IgniteFutureImpl<>(fut0.chain(() -> true));
     }
 
     /**
@@ -974,7 +974,7 @@ public class SnapshotRestoreProcess {
             IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
 
             synchronized (this) {
-                opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
+                opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(() -> null));
             }
 
             if (log.isInfoEnabled()) {
@@ -1672,7 +1672,7 @@ public class SnapshotRestoreProcess {
         GridFutureAdapter<Boolean> retFut = new GridFutureAdapter<>();
 
         synchronized (this) {
-            opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
+            opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(() -> null));
         }
 
         try {
