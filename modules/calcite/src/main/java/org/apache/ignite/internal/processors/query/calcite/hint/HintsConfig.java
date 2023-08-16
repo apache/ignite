@@ -45,7 +45,7 @@ public final class HintsConfig {
     };
 
     /** Requires at least one option. */
-    static final HintOptionChecker OPTS_CHECK_NOT_EMPTY = new HintOptionChecker() {
+    static final HintOptionChecker OPTS_CHECK_NON_EMPTY = new HintOptionChecker() {
         @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
             return errorHandler.check(
                 !hint.kvOptions.isEmpty() || !hint.listOptions.isEmpty(),

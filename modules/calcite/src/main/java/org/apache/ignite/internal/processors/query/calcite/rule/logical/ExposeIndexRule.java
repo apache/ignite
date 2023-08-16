@@ -111,13 +111,15 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
 
         for (RelHint hint : Hint.hints(scan, HintDefinition.NO_INDEX)) {
             if (idxToSkip.size() == indexes.size()) {
-                Commons.planContext(scan).skippedHint(scan, hint, "Any index of table '" + last(qTblName) +
-                    "' has already been skipped by the hints before.");
+                Commons.planContext(scan).skippedHint(scan, hint, null, null,
+                    "Any index of table '" + last(qTblName) + "' has already been skipped by the hints before.");
 
                 continue;
             }
 
             HintOptions opts = Hint.options(hint);
+
+            assert !opts.empty();
 
             if (!opts.plain().isEmpty()) {
                 storeIdxNamesToSkip(scan, hint, tblIdxNames, idxToSkip, null, opts.plain());
@@ -133,8 +135,8 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
                 if (checkTblName(qTblName, hintTblQName))
                     storeIdxNamesToSkip(scan, hint, tblIdxNames, idxToSkip, hintTblName, hintIdxNames);
                 else {
-                    Commons.planContext(scan).skippedHint(scan, hint, hintTblName, "Incorrect table name: '"
-                        + hintTblName + "'.");
+                    Commons.planContext(scan).skippedHint(scan, hint, hintTblName, null,
+                        "Incorrect table name: '" + hintTblName + "'.");
                 }
             });
         }

@@ -47,7 +47,7 @@ public final class HintOptions {
     }
 
     /**
-     * @return Combined options set of {@code hints} with natural order. {@code Null} if {@code hints} is empty.
+     * @return Combined options of {@code hints} with natural order. {@code Null} if {@code hints} is empty.
      */
     static @Nullable HintOptions collect(Collection<RelHint> hints) {
         if (hints.isEmpty())

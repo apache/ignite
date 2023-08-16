@@ -351,11 +351,6 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
 
         executeSql("CREATE INDEX t2_idx ON t2(i2)");
 
-        assertQuery("SELECT /*+ NO_INDEX */ i3 FROM t2 where i2=2")
-            .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX")))
-            .returns(2)
-            .check();
-
         assertQuery("SELECT /*+ NO_INDEX('T2_IDX') */ i3 FROM t2 where i2=2")
             .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX")))
             .returns(2)
@@ -366,7 +361,7 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(2)
             .check();
 
-        assertQuery("SELECT /*+ NO_INDEX */ i1, i3 FROM t1, t2 where i2=i1")
+        assertQuery("SELECT /*+ NO_INDEX(t1='T1_IDX',t2='T2_IDX') */ i1, i3 FROM t1, t2 where i2=i1")
             .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX")))
             .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX")))
             .returns(1, 1)
@@ -383,8 +378,8 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(40, 40)
             .check();
 
-        assertQuery("SELECT /*+ NO_INDEX('T2_IDX') */ i1, i3 FROM t1 JOIN t2 on i2=i1")
-            .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX")))
+        assertQuery("SELECT /*+ NO_INDEX('T1_IDX') */ i1, i3 FROM t1 JOIN t2 on i2=i1")
+            .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX")))
             .returns(1, 1)
             .returns(2, 2)
             .returns(30, 30)

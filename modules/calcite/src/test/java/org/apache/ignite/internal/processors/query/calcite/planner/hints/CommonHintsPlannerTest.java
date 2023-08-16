@@ -42,14 +42,14 @@ public class CommonHintsPlannerTest extends AbstractPlannerTest {
     @Override public void setup() {
         super.setup();
 
-        tbl = createTable("TBL", 100, IgniteDistributions.single(), "ID", Integer.class, "VAL",
+        tbl = createTable("TBL", 100, IgniteDistributions.random(), "ID", Integer.class, "VAL",
             Integer.class).addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0).addIndex("IDX", 1);
 
         schema = createSchema(tbl);
     }
 
     /**
-     * Tests hint 'DOSABLE_RULE' works for whole query despite it is not set for the root node.
+     * Tests hint 'DISABLE_RULE' works for whole query despite it is not set for the all the root nodes.
      */
     @Test
     public void testDisableRuleInHeader() throws Exception {
@@ -58,7 +58,7 @@ public class CommonHintsPlannerTest extends AbstractPlannerTest {
     }
 
     /**
-     * Tests incorrect hint params are not passed.
+     * Tests incorrect hint params can't pass.
      */
     @Test
     public void testWrongHintParams() {

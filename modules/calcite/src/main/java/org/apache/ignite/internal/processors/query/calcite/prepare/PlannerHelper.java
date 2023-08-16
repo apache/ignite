@@ -125,12 +125,12 @@ public class PlannerHelper {
     private static void setDisabledRules(IgnitePlanner planner) {
         HintOptions opts = Hint.options(Commons.planContext(planner.cluster()).hints(), HintDefinition.DISABLE_RULE);
 
-        if (opts != null)
+        if (opts != null && !opts.empty())
             planner.setDisabledRules(opts.plain());
     }
 
     /**
-     * Extracts SQL hints and stores them into the plan context. Removes any hints from the rel tree after.
+     * Extracts SQL hints and stores them into the plan context. After, removes any hints from the rel tree.
      *
      * @return Root rel with no-hints rel tree.
      * @see PlanningContext#hints()

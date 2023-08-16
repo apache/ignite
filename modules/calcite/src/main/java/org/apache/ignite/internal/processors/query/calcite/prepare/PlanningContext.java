@@ -67,7 +67,7 @@ public final class PlanningContext implements Context {
     /** */
     private final long plannerTimeout;
 
-    /** */
+    /** Root hints of the current query. */
     private List<RelHint> hints = Collections.emptyList();
 
     /**
@@ -219,13 +219,14 @@ public final class PlanningContext implements Context {
     }
 
     /**
-     * @return Hints of the root node or it's children if root node is not a primary selecting node.
+     * @return Query hints, hints of the root node or it's children if root node is not a primary selecting node.
      */
     public List<RelHint> hints() {
         return hints;
     }
 
     /**
+     * Stores the query hints.
      * @see #hints()
      */
     PlanningContext hints(List<RelHint> hints) {
@@ -235,21 +236,7 @@ public final class PlanningContext implements Context {
     }
 
     /**
-     * Stores skipped hint reason.
-     */
-    public void skippedHint(RelNode rel, RelHint hint, String reason) {
-        skippedHint(rel, hint, null, reason);
-    }
-
-    /**
-     * Stores skipped hint reason.
-     */
-    public void skippedHint(RelNode rel, RelHint hint, @Nullable String hintOption, String reason) {
-        skippedHint(rel, hint, hintOption, null, reason);
-    }
-
-    /**
-     * Stores skipped hint reason.
+     * Stores skipped hint and the reason.
      */
     public void skippedHint(RelNode rel, RelHint hint, @Nullable String optionKey, @Nullable String optionValue,
         String reason) {

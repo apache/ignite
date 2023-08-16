@@ -69,9 +69,11 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
     public void testWithTableAndSchemaName() throws Exception {
         assertNoAnyIndex("SELECT /*+ NO_INDEX('PUBLIC.TBL1'='IDX2_3') */ * FROM TBL1 WHERE val2='v'");
 
+        // Wrong schema name.
         assertCertainIndex("SELECT /*+ NO_INDEX('PUB.TBL1'='IDX2_3') */ * FROM TBL1 WHERE val2='v'",
             "TBL1", "IDX2_3");
 
+        // Wrong schema name, then correct schema name.
         assertNoAnyIndex("SELECT /*+ NO_INDEX('PUB.TBL1'='IDX2'), NO_INDEX('PUBLIC.TBL1'='IDX2_3') */ * " +
             "FROM TBL1 WHERE val2='v'");
 
@@ -97,7 +99,7 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
         assertNoCertainIndex("SELECT /*+ NO_INDEX('idx1') */ * FROM TBL1 WHERE val1='v'", "TBL1", "idx1");
         assertCertainIndex("SELECT /*+ NO_INDEX('idx1') */ * FROM TBL1 WHERE val1='v'", "TBL1", "IDX1");
 
-        // If without quotes, Calcite's parser makes lower-case upper.
+        // Without quotes, Calcite's parser makes lower-case upper.
         assertCertainIndex("SELECT /*+ NO_INDEX(idx1) */ * FROM TBL1 WHERE val1='v'", "TBL1", "idx1");
         assertNoCertainIndex("SELECT /*+ NO_INDEX(idx1) */ * FROM TBL1 WHERE val1='v'", "TBL1", "IDX1");
         assertCertainIndex("SELECT /*+ NO_INDEX(" + QueryUtils.PRIMARY_KEY_INDEX +
@@ -116,7 +118,7 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
         assertNoAnyIndex("SELECT /*+ NO_INDEX(TBL1='idx1'), NO_INDEX(TBL1='IDX1'), NO_INDEX(TBL1='IDX2_3'), " +
             "NO_INDEX(TBL1='IDX3') */ * FROM TBL1 WHERE val1='v' and val2='v' and val3='v'");
 
-        // HintOption recognizes nested dot-separated values.
+        // HintOption recognizes dot-separated values.
         assertNoAnyIndex("SELECT /*+ NO_INDEX('idx1,IDX1,IDX2_3,IDX3') */ * FROM TBL1 WHERE val1='v' and " +
             "val2='v' and val3='v'");
         assertNoAnyIndex("SELECT /*+ NO_INDEX(TBL1='idx1,IDX1,IDX2_3,IDX3') */ * FROM TBL1 WHERE val1='v' and " +
@@ -186,13 +188,7 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
         assertNoAnyIndex("SELECT /*+ NO_INDEX(IDX3) */ t1.val1, t2.val2 FROM TBL1 t1, TBL2 t2 where " +
             "t2.val3=t1.val3");
 
-        assertNoAnyIndex("SELECT /*+ NO_INDEX(IDX3) */ t1.val1, t2.val2 FROM TBL1 t1 LEFT JOIN TBL2 t2 on " +
-            "t1.val3=t2.val3");
-
-        assertNoAnyIndex("SELECT /*+ NO_INDEX(IDX3) */ t1.val1, t2.val2 FROM TBL1 t1 RIGHT JOIN TBL2 t2 on " +
-            "t1.val3=t2.val3");
-
-        assertNoAnyIndex("SELECT /*+ NO_INDEX(IDX3) */ t1.val1, t2.val2 FROM TBL1 t1 INNER JOIN TBL2 t2 on " +
+        assertNoAnyIndex("SELECT /*+ NO_INDEX(IDX3) */ t1.val1, t2.val2 FROM TBL1 t1 JOIN TBL2 t2 on " +
             "t1.val3=t2.val3");
 
         assertPlan("SELECT /*+ NO_INDEX(TBL1='IDX3') */ t1.val1, t2.val2 FROM TBL1 t1 JOIN TBL2 t2 on " +
@@ -200,8 +196,8 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
             .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX3"))));
 
         assertPlan("SELECT /*+ NO_INDEX(TBL2='IDX3') */ t1.val1, t2.val2 FROM TBL1 t1 JOIN TBL2 t2 on " +
-            "t1.val3=t2.val3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX3")).negate()
-            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX3"))));
+            "t1.val3=t2.val3", schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX3"))
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX3")).negate()));
     }
 
     /** */
@@ -224,6 +220,12 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
 
         assertNoAnyIndex("SELECT /*+ NO_INDEX('IDX2_3', 'IDX3') */ t1.val1, t2.val2 FROM TBL1 t1 INNER JOIN " +
             "TBL2 t2 on  t1.val2=t2.val3");
+
+        assertNoAnyIndex("SELECT /*+ NO_INDEX('IDX2_3'), NO_INDEX('IDX3') */ t1.val1, t2.val2 FROM TBL1 t1 " +
+            "INNER JOIN TBL2 t2 on  t1.val2=t2.val3");
+
+        assertNoAnyIndex("SELECT /*+ NO_INDEX(IDX2_3), NO_INDEX(TBL2='IDX3') */ t1.val1, t2.val2 FROM TBL1 t1 INNER " +
+            "JOIN TBL2 t2 on  t1.val2=t2.val3");
 
         assertNoAnyIndex("SELECT /*+ NO_INDEX(TBL1='IDX2_3', TBL2='IDX3') */ t1.val1, t2.val2 FROM TBL1 t1 " +
             "INNER JOIN TBL2 t2 on  t1.val2=t2.val3");

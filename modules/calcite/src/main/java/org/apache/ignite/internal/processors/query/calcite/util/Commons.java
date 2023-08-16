@@ -468,8 +468,7 @@ public final class Commons {
     }
 
     /**
-     * @return Dot-separated, name with preceding domain/schema. If there is no domain/schema name, first values are
-     * {@code null}.
+     * @return Dot-separated, name with preceding domain/schema.
      */
     public static List<String> qualifiedName(String name) {
         return name.indexOf('.') > 0

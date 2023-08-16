@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
  * Holds supported SQL hints and their settings.
  */
 public enum HintDefinition {
-    /** Sets the query engine. */
+    /** Chooses the query engine like H2 or Calcite. */
     QUERY_ENGINE,
 
     /** Disables converter rules. */
@@ -60,7 +60,7 @@ public enum HintDefinition {
 
         /** {@inheritDoc} */
         @Override public HintOptionChecker optionsChecker() {
-            return HintsConfig.OPTS_CHECK_NOT_EMPTY;
+            return HintsConfig.OPTS_CHECK_NON_EMPTY;
         }
     };
 

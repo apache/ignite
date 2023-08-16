@@ -85,14 +85,14 @@ public final class Hint {
     }
 
     /**
-     * @return All hints of {@code rel}.
+     * @return Hints of {@code rel} if it is a {@code Hintable}. If is not or has no hints, empty collection.
      */
     public static List<RelHint> relHints(RelNode rel) {
         return rel instanceof Hintable ? ((Hintable)rel).getHints() : Collections.emptyList();
     }
 
     /**
-     * @return Filtered with {@code hintDefs} {@code hints}.
+     * @return Hints within {@code hints} filtered with {@code hintDefs}.
      */
     private static List<RelHint> filterHints(Collection<RelHint> hints, Collection<HintDefinition> hintDefs) {
         Set<String> hintNames = hintDefs.stream().map(Enum::name).collect(Collectors.toSet());
