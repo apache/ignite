@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -41,16 +40,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<GridCacheReturn> implements UpdateSourceIterator<Object> {
     /** Enlist operation. */
-    private EnlistOperation op;
+    private final EnlistOperation op;
 
     /** Source iterator. */
-    private Iterator<Object> it;
+    private final Iterator<Object> it;
 
     /** Future result. */
-    private GridCacheReturn res;
+    private final GridCacheReturn res;
 
     /** Need result flag. If {@code True} previous value should be returned as well. */
-    private boolean needRes;
+    private final boolean needRes;
 
     /**
      * Constructor.
@@ -58,7 +57,6 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
      * @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
      * @param mvccSnapshot Mvcc snapshot.
-     * @param threadId Thread ID.
      * @param nearFutId Near future id.
      * @param nearMiniId Near mini future id.
      * @param tx Transaction.
@@ -73,7 +71,6 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
     public GridDhtTxEnlistFuture(UUID nearNodeId,
         GridCacheVersion nearLockVer,
         MvccSnapshot mvccSnapshot,
-        long threadId,
         IgniteUuid nearFutId,
         int nearMiniId,
         GridDhtTxLocalAdapter tx,
@@ -87,7 +84,6 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
         super(nearNodeId,
             nearLockVer,
             mvccSnapshot,
-            threadId,
             nearFutId,
             nearMiniId,
             tx,
@@ -107,7 +103,7 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
     }
 
     /** {@inheritDoc} */
-    @Override protected UpdateSourceIterator<?> createIterator() throws IgniteCheckedException {
+    @Override protected UpdateSourceIterator<?> createIterator() {
         return this;
     }
 

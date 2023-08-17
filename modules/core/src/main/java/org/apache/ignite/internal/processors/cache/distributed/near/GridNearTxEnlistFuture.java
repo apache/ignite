@@ -485,7 +485,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         GridDhtTxEnlistFuture fut = new GridDhtTxEnlistFuture(nodeId,
             lockVer,
             mvccSnapshot,
-            threadId,
             futId,
             batchId,
             tx,
