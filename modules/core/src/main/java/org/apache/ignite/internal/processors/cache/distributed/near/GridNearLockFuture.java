@@ -1223,7 +1223,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
             if (log.isDebugEnabled())
                 log.debug("Before locally locking near request: " + req);
 
-            IgniteInternalFuture<GridNearLockResponse> fut = dht().lockAllAsync(cctx, cctx.localNode(), req, filter);
+            IgniteInternalFuture<GridNearLockResponse> fut = dht().lockAllAsync(cctx, cctx.localNode(), req);
 
             // Add new future.
             add(new GridEmbeddedFuture<>(
