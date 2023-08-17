@@ -707,7 +707,7 @@ public class CommandUtils {
                 .collect(Collectors.toList());
 
             if (!connectable.isEmpty())
-                compute = compute.projection(nodes);
+                compute = compute.projection(connectable);
 
             return compute.execute(
                 taskCls.getName(),
