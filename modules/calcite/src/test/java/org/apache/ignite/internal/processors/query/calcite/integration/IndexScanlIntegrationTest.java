@@ -399,6 +399,7 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
         executeSql("CREATE INDEX t1_idx3 ON t1(i2)");
 
         assertQuery("SELECT i1 FROM t1 where i1=1 and i2=2 and i3=3")
+            .matches(QueryChecker.containsTableScan("PUBLIC", "T1"))
             .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX1")))
             .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX2")))
             .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T1", "T2_IDX3")))
@@ -410,12 +411,14 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
             executeSql(String.format("INSERT INTO t1 VALUES (%d, %d, %d)", i + 1, i + 2, i + 3));
 
         assertQuery("SELECT i1 FROM t1 where i1=1 and i2=2 and i3=3")
+            .matches(QueryChecker.containsTableScan("PUBLIC", "T1"))
             .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX1")))
             .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX2")))
             .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T1", "T2_IDX3")))
             .check();
 
         assertQuery("SELECT i1 FROM t1 where i1=1 and i2=2")
+            .matches(CoreMatchers.not(QueryChecker.containsTableScan("PUBLIC", "T1")))
             .matches(CoreMatchers.anyOf(
                 QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX1"),
                 QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX2")))
@@ -433,70 +436,88 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
         executeSql("CREATE INDEX t2_idx3 ON t2(i23)");
 
         assertQuery("SELECT i1, i22 FROM t1, t2 where i2=i22 and i3=i23 + 1")
+            .matches(QueryChecker.containsTableScan("PUBLIC", "T1"))
+            .matches(QueryChecker.containsTableScan("PUBLIC", "T2"))
             .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX2")))
             .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX2")))
             .check();
 
-        assertQuery("SELECT /*+ USE_INDEX('T1_IDX2') */ i1, i22 FROM t1, t2 where i2=i22 and i3=i23 + 1")
+        assertQuery("SELECT /*+ FORCE_INDEX(T1_IDX2) */ i1, i22 FROM t1, t2 where i2=i22 and i3=i23 + 1")
+            .matches(CoreMatchers.not(QueryChecker.containsTableScan("PUBLIC", "T1")))
+            .matches(QueryChecker.containsTableScan("PUBLIC", "T2"))
             .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX2"))
             .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX2")))
             .check();
 
-        assertQuery("SELECT /*+ USE_INDEX('T1_IDX2'), USE_INDEX('T2_IDX2') */ i1, i22 FROM t1, t2 where i2=i22 " +
+        assertQuery("SELECT /*+ FORCE_INDEX(T1_IDX2), FORCE_INDEX(T2_IDX2) */ i1, i22 FROM t1, t2 where i2=i22 " +
             "and i3=i23 + 1")
+            .matches(CoreMatchers.not(QueryChecker.containsTableScan("PUBLIC", "T1")))
+            .matches(CoreMatchers.not(QueryChecker.containsTableScan("PUBLIC", "T2")))
             .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX2"))
             .matches(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX2"))
             .check();
 
-        assertQuery("SELECT /*+ USE_INDEX('T1_IDX2') */ i1, i22 FROM t1 LEFT JOIN t2 on " +
+        assertQuery("SELECT /*+ FORCE_INDEX(T1='T1_IDX2',T2='T2_IDX2') */ i1, i22 FROM t1, t2 where i2=i22 " +
+            "and i3=i23 + 1")
+            .matches(CoreMatchers.not(QueryChecker.containsTableScan("PUBLIC", "T1")))
+            .matches(CoreMatchers.not(QueryChecker.containsTableScan("PUBLIC", "T2")))
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX2"))
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX2"))
+            .check();
+
+        assertQuery("SELECT /*+ FORCE_INDEX(T1_IDX2) */ i1, i22 FROM t1 LEFT JOIN t2 on " +
             "i2=i22 and i3=i23 + 1")
+            .matches(CoreMatchers.not(QueryChecker.containsTableScan("PUBLIC", "T1")))
+            .matches(QueryChecker.containsTableScan("PUBLIC", "T2"))
             .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX2"))
             .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX2")))
             .check();
 
-        assertQuery("SELECT /*+ USE_INDEX('T1_IDX2'), USE_INDEX('T2_IDX2') */ i1, i22 FROM t1 LEFT JOIN t2 on " +
+        assertQuery("SELECT /*+ FORCE_INDEX(T1_IDX2), FORCE_INDEX(T2_IDX2) */ i1, i22 FROM t1 RIGHT JOIN t2 on " +
             "i2=i22 and i3=i23 + 1")
+            .matches(CoreMatchers.not(QueryChecker.containsTableScan("PUBLIC", "T1")))
+            .matches(CoreMatchers.not(QueryChecker.containsTableScan("PUBLIC", "T2")))
             .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX2"))
             .matches(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX2"))
             .check();
 
-        assertQuery("SELECT /*+ USE_INDEX('T1_IDX2'), USE_INDEX('T2_IDX2') */ i1, i22 FROM t1 RIGHT JOIN t2 on " +
+        assertQuery("SELECT /*+ FORCE_INDEX(T1_IDX2) */ i1, i22 FROM t1 RIGHT JOIN t2 on " +
             "i2=i22 and i3=i23 + 1")
-            .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX2"))
-            .matches(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX2"))
-            .check();
-
-        assertQuery("SELECT /*+ USE_INDEX('T1_IDX2') */ i1, i22 FROM t1 RIGHT JOIN t2 on " +
-            "i2=i22 and i3=i23 + 1")
+            .matches(CoreMatchers.not(QueryChecker.containsTableScan("PUBLIC", "T1")))
+            .matches(QueryChecker.containsTableScan("PUBLIC", "T2"))
             .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX2"))
             .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX2")))
             .check();
 
-        assertQuery("SELECT /*+ USE_INDEX('T1_IDX2'), USE_INDEX('T2_IDX2') */ i1, i22 FROM t1 INNER JOIN t2 on " +
+        assertQuery("SELECT /*+ FORCE_INDEX(T1_IDX2), FORCE_INDEX(T2_IDX2) */ i1, i22 FROM t1 INNER JOIN t2 on " +
             "i2=i22 and i3=i23 + 1")
+            .matches(CoreMatchers.not(QueryChecker.containsTableScan("PUBLIC", "T1")))
+            .matches(CoreMatchers.not(QueryChecker.containsTableScan("PUBLIC", "T2")))
             .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX2"))
             .matches(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX2"))
             .check();
 
-        assertQuery("SELECT /*+ USE_INDEX('T2_IDX2') */ i1, i22 FROM t1 INNER JOIN t2 on " +
+        assertQuery("SELECT /*+ FORCE_INDEX(T2_IDX2) */ i1, i22 FROM t1 INNER JOIN t2 on " +
             "i2=i22 and i3=i23 + 1")
+            .matches(QueryChecker.containsTableScan("PUBLIC", "T1"))
+            .matches(CoreMatchers.not(QueryChecker.containsTableScan("PUBLIC", "T2")))
             .matches(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX2"))
             .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX2")))
             .check();
     }
 
     private void testIdxUsedOnTable1() {
-        assertQuery("SELECT /*+ USE_INDEX('T1_IDX1') */ i1 FROM t1 where i1=1 and i2=2 and i3=3")
+        assertQuery("SELECT /*+ FORCE_INDEX(T1_IDX1) */ i1 FROM t1 where i1=1 and i2=2 and i3=3")
             .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX1"))
             .returns(1)
             .check();
 
-        assertQuery("SELECT /*+ USE_INDEX('T1_IDX2') */ i1 FROM t1 where i1=1 and i2=2 and i3=3")
+        assertQuery("SELECT /*+ FORCE_INDEX(T1_IDX2) */ i1 FROM t1 where i1=1 and i2=2 and i3=3")
             .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX2"))
             .returns(1)
             .check();
 
-        assertQuery("SELECT /*+ USE_INDEX('T1_IDX3') */ i1 FROM t1 where i1=1 and i2=2 and i3=3")
+        assertQuery("SELECT /*+ FORCE_INDEX(T1_IDX3) */ i1 FROM t1 where i1=1 and i2=2 and i3=3")
             .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX3"))
             .returns(1)
             .check();

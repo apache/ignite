@@ -120,6 +120,51 @@ public class IndexHintPlannerTest extends AbstractPlannerTest {
                 .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX23")))));
     }
 
+    @Test
+    /** */
+    public void testAggregates() throws Exception {
+        doTestAggregates("sum");
+        doTestAggregates("avg");
+        doTestAggregates("min");
+        doTestAggregates("max");
+    }
+    
+    /** */
+    private void doTestAggregates(String op) throws Exception {
+        assertPlan("SELECT avg(val1) FROM TBL1 group by val2", schema,
+            nodeOrAnyChild(isTableScan("TBL1"))
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2")).negate()));
+
+        assertPlan("SELECT " + op + "(val1) FROM TBL1 where val1=1 group by val2", schema,
+            nodeOrAnyChild(isTableScan("TBL1"))
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX1")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2")).negate()));
+
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX2) */ " + op + "(val1) FROM TBL1 where val1=1 group by val2", schema,
+            nodeOrAnyChild(isTableScan("TBL1")).negate()
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX1")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2"))));
+
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX2) */ " + op + "(val1) FROM TBL1 group by val2", schema,
+            nodeOrAnyChild(isTableScan("TBL1")).negate()
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2"))));
+
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX2) */ " + op + "(val1) FROM TBL1 where val1=1 group by val2", schema,
+            nodeOrAnyChild(isTableScan("TBL1")).negate()
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX1")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2"))));
+
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX1) */ " + op + "(val1) FROM TBL1 where val1=1 group by val2", schema,
+            nodeOrAnyChild(isTableScan("TBL1")).negate()
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX1"))));
+
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX1,IDX2) */ " + op + "(val1) FROM TBL1 where val1=1 group by val2",
+            schema, nodeOrAnyChild(isTableScan("TBL1")).negate()
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2"))
+                    .or(nodeOrAnyChild(isIndexScan("TBL1", "IDX1")))));
+    }
+
     /** */
     @Test
     public void testOverridesOverTinyTableScan() throws Exception {
