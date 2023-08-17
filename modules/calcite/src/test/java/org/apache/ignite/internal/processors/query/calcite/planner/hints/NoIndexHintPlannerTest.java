@@ -170,16 +170,24 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
         assertNoCertainIndex("SELECT /*+ NO_INDEX(IDX2_3) */ val3 FROM TBL1 order by val2, val3", "TBL1", "IDX2_3");
     }
 
-    /** */
     @Test
-    public void testGroupBy() throws Exception {
-        assertCertainIndex("SELECT sum(val1) FROM TBL2 group by val3", "TBL2", "IDX3");
-        assertNoAnyIndex("SELECT /*+ NO_INDEX(IDX3) */ sum(val1) FROM TBL2 group by val3");
-        assertNoAnyIndex("SELECT /*+ NO_INDEX(TBL2='IDX3') */ sum(val1) FROM TBL2 group by val3");
+    /** */
+    public void testAggregates() throws Exception {
+        doTestAggregate("sum");
+        doTestAggregate("avg");
+        doTestAggregate("min");
+        doTestAggregate("max");
+    }
 
-        assertCertainIndex("SELECT sum(val1) FROM TBL1 group by val2, val3", "TBL1", "IDX2_3");
-        assertNoAnyIndex("SELECT /*+ NO_INDEX(IDX2_3) */ sum(val1) FROM TBL1 group by val2, val3");
-        assertNoAnyIndex("SELECT /*+ NO_INDEX(TBL1='IDX2_3') */ sum(val1) FROM TBL1 group by val2, val3");
+    /** */
+    private void doTestAggregate(String op) throws Exception {
+        assertCertainIndex("SELECT " + op + "(val1) FROM TBL2 group by val3", "TBL2", "IDX3");
+        assertNoAnyIndex("SELECT /*+ NO_INDEX(IDX3) */ " + op + "(val1) FROM TBL2 group by val3");
+        assertNoAnyIndex("SELECT /*+ NO_INDEX(TBL2='IDX3') */ " + op + "(val1) FROM TBL2 group by val3");
+
+        assertCertainIndex("SELECT " + op + "(val1) FROM TBL1 group by val2, val3", "TBL1", "IDX2_3");
+        assertNoAnyIndex("SELECT /*+ NO_INDEX(IDX2_3) */ " + op + "(val1) FROM TBL1 group by val2, val3");
+        assertNoAnyIndex("SELECT /*+ NO_INDEX(TBL1='IDX2_3') */ " + op + "(val1) FROM TBL1 group by val2, val3");
     }
 
     @Test
