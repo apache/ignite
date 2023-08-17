@@ -28,8 +28,8 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -52,7 +52,7 @@ public final class Hint {
 
         RelOptCluster c = rel.getCluster();
 
-        return c.getHintStrategies().apply(filterHints(PlannerHelper.context(c).hints(), Arrays.asList(hintDefs)), rel);
+        return c.getHintStrategies().apply(filterHints(Commons.planContext(c).hints(), Arrays.asList(hintDefs)), rel);
     }
 
     /**
@@ -64,16 +64,28 @@ public final class Hint {
     }
 
     /**
-     * @return Combined options set of all {@code hints} filtered with {@code hintDef} with the natural order.
-     * {@code Null} if no hint is found by {@code hintDef}.
-     * @see PlanningContext#hints()
+     * @return Options of {@code hint}.
      */
-    public static @Nullable HintOptions options(Collection<RelHint> hints, HintDefinition hintDef, boolean reverse) {
-        return HintOptions.collect(filterHints(hints, Collections.singletonList(hintDef)), reverse);
+    public static HintOptions options(RelHint hint) {
+        return HintOptions.collect(Collections.singletonList(hint));
     }
 
     /**
-     * @return All hints of {@code rel}.
+     * @return Combined options of all {@code hints} with natural order.
+     */
+    public static HintOptions options(Collection<RelHint> hints) {
+        return HintOptions.collect(hints);
+    }
+
+    /**
+     * @return Combined options of all {@code hints} filtered with {@code hintDef} with natural order.
+     */
+    public static HintOptions options(Collection<RelHint> hints, HintDefinition hintDef) {
+        return options(filterHints(hints, Collections.singletonList(hintDef)));
+    }
+
+    /**
+     * @return Hints of {@code rel} if it is a {@code Hintable}. If is not or has no hints, empty collection.
      */
     public static List<RelHint> relHints(RelNode rel) {
         return rel instanceof Hintable ? ((Hintable)rel).getHints() : Collections.emptyList();

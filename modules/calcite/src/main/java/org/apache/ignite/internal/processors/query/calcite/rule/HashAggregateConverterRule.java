@@ -52,8 +52,8 @@ public class HashAggregateConverterRule {
 
     /** */
     static boolean isExpandedDistinct(LogicalAggregate rel) {
-        return Hint.hasHint(rel, EXPAND_DISTINCT_AGG) &&
-            rel.getAggCallList().stream().anyMatch(AggregateCall::isDistinct);
+        return Hint.hasHint(rel, EXPAND_DISTINCT_AGG)
+            && rel.getAggCallList().stream().anyMatch(AggregateCall::isDistinct);
     }
 
     /** */

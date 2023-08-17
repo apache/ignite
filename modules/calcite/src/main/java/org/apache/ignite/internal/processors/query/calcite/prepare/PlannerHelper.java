@@ -21,8 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import com.google.common.collect.ImmutableSet;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
@@ -125,22 +123,22 @@ public class PlannerHelper {
 
     /** */
     private static void setDisabledRules(IgnitePlanner planner) {
-        HintOptions opts = Hint.options(context(planner.cluster()).hints(), HintDefinition.DISABLE_RULE, false);
+        HintOptions opts = Hint.options(Commons.planContext(planner.cluster()).hints(), HintDefinition.DISABLE_RULE);
 
-        if (opts != null)
+        if (opts != null && !opts.empty())
             planner.setDisabledRules(opts.plain());
     }
 
     /**
-     * Extracts SQL hints and stores them into the plan context. Removes any hints from the rel tree after.
+     * Extracts SQL hints and stores them into the plan context. After, removes any hints from the rel tree.
      *
      * @return Root rel with no-hints rel tree.
      * @see PlanningContext#hints()
      */
     private static RelRoot processHints(RelRoot rootRel) {
-        PlanningContext ctx = context(rootRel.rel.getCluster());
+        PlanningContext ctx = Commons.planContext(rootRel.rel.getCluster());
 
-        ctx.queryHints(resolveQueryHints(rootRel));
+        ctx.hints(resolveQueryHints(rootRel));
 
         rootRel = rootRel.withHints(Collections.emptyList());
 
@@ -171,11 +169,6 @@ public class PlannerHelper {
         }
 
         return Collections.emptyList();
-    }
-
-    /** */
-    public static PlanningContext context(RelOptCluster relOptCluster) {
-        return relOptCluster.getPlanner().getContext().unwrap(PlanningContext.class);
     }
 
     /**

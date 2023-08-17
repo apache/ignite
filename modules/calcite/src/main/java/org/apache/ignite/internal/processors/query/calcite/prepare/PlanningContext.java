@@ -25,6 +25,7 @@ import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.prepare.CalciteCatalogReader;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.SchemaPlus;
@@ -36,6 +37,7 @@ import org.apache.calcite.util.CancelFlag;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Planning context.
@@ -65,7 +67,7 @@ public final class PlanningContext implements Context {
     /** */
     private final long plannerTimeout;
 
-    /** */
+    /** Root hints of the current query. */
     private List<RelHint> hints = Collections.emptyList();
 
     /**
@@ -217,19 +219,28 @@ public final class PlanningContext implements Context {
     }
 
     /**
-     * @return Hints of the root node or it's children if root node is not a primary select node.
+     * @return Query hints, hints of the root node or it's children if root node is not a primary selecting node.
      */
     public List<RelHint> hints() {
         return hints;
     }
 
     /**
+     * Stores the query hints.
      * @see #hints()
      */
-    PlanningContext queryHints(List<RelHint> hints) {
-        this.hints = hints;
+    PlanningContext hints(List<RelHint> hints) {
+        this.hints = Collections.unmodifiableList(hints);
 
         return this;
+    }
+
+    /**
+     * Stores skipped hint and the reason.
+     */
+    public void skippedHint(RelNode rel, RelHint hint, @Nullable String optionKey, @Nullable String optionValue,
+        String reason) {
+        // No-op.
     }
 
     /**
