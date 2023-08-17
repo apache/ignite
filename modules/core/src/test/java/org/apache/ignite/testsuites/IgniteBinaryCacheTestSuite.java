@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityRoutingSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryMemorySizeSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheMvccSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.CacheKeepBinaryWithInterceptorTest;
 import org.apache.ignite.internal.processors.cache.binary.GridBinaryCacheEntryMemorySizeSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.datastreaming.DataStreamProcessorBinarySelfTest;
@@ -64,8 +63,6 @@ public class IgniteBinaryCacheTestSuite {
         GridTestUtils.addTestIfNeeded(suite, GridCacheEntryMemorySizeSelfTest.class, ignoredTests);
 
         // Tests that are not ready to be used with BinaryMarshaller
-        GridTestUtils.addTestIfNeeded(suite, GridCacheMvccSelfTest.class, ignoredTests);
-
         GridTestUtils.addTestIfNeeded(suite, GridCacheBinariesPartitionedOnlyByteArrayValuesSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheBinariesNearPartitionedByteArrayValuesSelfTest.class, ignoredTests);
 
