@@ -17,13 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.io.StringWriter;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.RelHint;
@@ -35,6 +39,7 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.util.CancelFlag;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -67,8 +72,11 @@ public final class PlanningContext implements Context {
     /** */
     private final long plannerTimeout;
 
-    /** Root hints of the current query. */
+    /** Current query's hints. */
     private List<RelHint> hints = Collections.emptyList();
+
+    /** */
+    private List<SkippedHint> skippedHints;
 
     /**
      * Private constructor, used by a builder.
@@ -240,7 +248,83 @@ public final class PlanningContext implements Context {
      */
     public void skippedHint(RelNode rel, RelHint hint, @Nullable String optionKey, @Nullable String optionValue,
         String reason) {
-        // No-op.
+
+        if (skippedHints == null) {
+            synchronized (parentCtx) {
+                if (skippedHints == null)
+                    skippedHints = new CopyOnWriteArrayList<>();
+            }
+        }
+
+        skippedHints.add(new SkippedHint(rel, hint.hintName, optionKey, optionValue, reason));
+    }
+
+    /** */
+    public void dumpHints(StringWriter w, @Nullable Consumer<StringWriter> header) {
+        List<RelHint> hints = this.hints;
+        List<SkippedHint> skippedHints = this.skippedHints;
+
+        if(F.isEmpty(hints))
+            return;
+
+        if (header != null)
+            header.accept(w);
+
+        w.append("Query hints:");
+
+        hints.forEach(h -> w.append(U.nl()).append("\t").append(h.toString()));
+
+        if (F.isEmpty(skippedHints))
+            return;
+
+        w.append(U.nl()).append(U.nl())
+            .append("Skipped hints:");
+
+        skippedHints.forEach(sh -> {
+            w.append(U.nl())
+                .append("\t- '").append(sh.hintName).append('\'');
+
+            if (sh.option != null && sh.value != null)
+                w.append(" with option '").append(sh.option).append('=').append(sh.value).append('\'');
+            else if (sh.option != null)
+                w.append(" with option '").append(sh.option).append('\'');
+
+            w.append(" for node `").append(RelOptUtil.toString(sh.rel).trim()).append("`.")
+                .append(U.nl()).append("\t\t").append("Reason: ").append(sh.reason);
+
+            if (!sh.reason.endsWith("."))
+                w.append('.');
+        });
+    }
+
+    /**
+     * Holds skipped hint description.
+     */
+    private static class SkippedHint {
+        /** */
+        private final RelNode rel;
+
+        /** */
+        private final String hintName;
+
+        /** Hint option or hint option key.  */
+        private final @Nullable String option;
+
+        /** Hint option value. */
+        private final @Nullable String value;
+
+        /** */
+        private final String reason;
+
+        /** */
+        private SkippedHint(RelNode rel, String hintName, @Nullable  String hintOption,
+            @Nullable String hintOptionValue, String reason) {
+            this.rel = rel;
+            this.hintName = hintName;
+            this.option = hintOption;
+            this.value = hintOptionValue;
+            this.reason = reason;
+        }
     }
 
     /**

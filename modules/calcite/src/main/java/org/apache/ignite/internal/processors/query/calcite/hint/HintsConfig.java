@@ -25,7 +25,7 @@ import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.util.Litmus;
 
 /**
- * Provides configuration of all the supported SQL hints.
+ * Provides configuration of the supported SQL hints.
  */
 public final class HintsConfig {
     /** */
@@ -63,13 +63,6 @@ public final class HintsConfig {
                 "Hint '{}' must have at least one plain option and no any key-value option.",
                 hint.hintName
             );
-        }
-    };
-
-    /** Allows any hint options. */
-    static final HintOptionChecker OPTS_CHECK_ANY = new HintOptionChecker() {
-        @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
-            return errorHandler.succeed();
         }
     };
 

@@ -75,9 +75,9 @@ public class PlannerHelper {
 
             root = processHints(root);
 
-            RelNode rel = root.rel;
-
             setDisabledRules(planner);
+
+            RelNode rel = root.rel;
 
             // Transformation chain
             rel = planner.transform(PlannerPhase.HEP_DECORRELATE, rel.getTraitSet(), rel);
@@ -125,7 +125,7 @@ public class PlannerHelper {
     private static void setDisabledRules(IgnitePlanner planner) {
         HintOptions opts = Hint.options(Commons.planContext(planner.cluster()).hints(), HintDefinition.DISABLE_RULE);
 
-        if (opts != null && !opts.empty())
+        if (opts != null)
             planner.setDisabledRules(opts.plain());
     }
 
@@ -164,9 +164,8 @@ public class PlannerHelper {
         if (!F.isEmpty(Hint.relHints(root.rel)))
             return Hint.relHints(root.rel);
 
-        if (root.rel instanceof SetOp && !F.isEmpty(root.rel.getInputs())) {
+        if (root.rel instanceof SetOp && !F.isEmpty(root.rel.getInputs()))
             return resolveQueryHints(root.withRel(root.rel.getInput(0)));
-        }
 
         return Collections.emptyList();
     }

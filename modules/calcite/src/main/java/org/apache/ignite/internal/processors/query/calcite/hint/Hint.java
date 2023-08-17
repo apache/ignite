@@ -79,13 +79,16 @@ public final class Hint {
 
     /**
      * @return Combined options of all {@code hints} filtered with {@code hintDef} with natural order.
+     * {@code Null} if no hint found by {@code hintDef}.
+     * @see #filterHints(Collection, Collection)
      */
-    public static HintOptions options(Collection<RelHint> hints, HintDefinition hintDef) {
+    public static @Nullable HintOptions options(Collection<RelHint> hints, HintDefinition hintDef) {
         return options(filterHints(hints, Collections.singletonList(hintDef)));
     }
 
     /**
      * @return Hints of {@code rel} if it is a {@code Hintable}. If is not or has no hints, empty collection.
+     * @see Hintable#getHints()
      */
     public static List<RelHint> relHints(RelNode rel) {
         return rel instanceof Hintable ? ((Hintable)rel).getHints() : Collections.emptyList();
