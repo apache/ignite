@@ -68,121 +68,119 @@ public class IndexHintPlannerTest extends AbstractPlannerTest {
     public void testWrongParams() {
         assertThrows(
             null,
-            () -> assertPlan("SELECT /*+ USE_INDEX */ * FROM TBL2 where val21=1 and val22=2 and val23=3", schema,
+            () -> assertPlan("SELECT /*+ FORCE_INDEX */ * FROM TBL2 where val21=1 and val22=2 and val23=3", schema,
                 n -> true),
             Throwable.class,
-            "Hint 'USE_INDEX' must have at least one plain or key-value option."
+            "Hint 'FORCE_INDEX' needs at least one option."
         );
     }
 
     /** */
     @Test
     public void testBasicIndexSelection() throws Exception {
-        assertPlan("SELECT /*+ USE_INDEX('IDX23') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX23")));
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX23) */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
+            schema, nodeOrAnyChild(isTableScan("TBL2")).negate()
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX1")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX22")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX23"))));
 
-        assertPlan("SELECT /*+ USE_INDEX(TBL1='IDX23', TBL2='IDX23') */ * FROM TBL2 WHERE val23=1 and val21=2 " +
-            "and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX23")));
+        assertPlan("SELECT /*+ FORCE_INDEX(UNEXISTING,IDX23,UNEXISTING) */ * FROM TBL2 WHERE val23=1 and val21=2 " +
+            "and val22=3", schema, nodeOrAnyChild(isTableScan("TBL2")).negate()
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX1")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX22")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX23"))));
 
-        assertPlan("SELECT /*+ USE_INDEX('IDX22') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX22")));
+        assertPlan("SELECT /*+ FORCE_INDEX(TBL2='IDX23') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
+            schema, nodeOrAnyChild(isTableScan("TBL2")).negate()
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX1")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX22")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX23"))));
 
-        assertPlan("SELECT /*+ USE_INDEX(TBL2='IDX22') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX22")));
+        assertPlan("SELECT /*+ FORCE_INDEX(TBL2='IDX23',TBL2='IDX1') */ * FROM TBL2 WHERE val23=1 and val21=2 " +
+            "and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX22")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX23"))).negate());
 
-        assertPlan("SELECT /*+ USE_INDEX('PUB.TBL2'='IDX1', 'PUBLIC.TBL2'='IDX22') */ * FROM TBL2 WHERE val23=1 " +
-                "and val21=2 and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX22")));
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX22,IDX23) */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
+            schema, nodeOrAnyChild(isTableScan("TBL2")).negate()
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX1")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX22"))
+                    .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX23")))));
 
-        assertPlan("SELECT /*+ USE_INDEX(TBL2='IDX23', TBL3='IDX22') */ * FROM TBL2 WHERE val23=1 and val21=2 " +
-            "and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX23")));
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX23), FORCE_INDEX(IDX23) */ * FROM TBL2 WHERE val23=1 and val21=2 " +
+            "and val22=3", schema, nodeOrAnyChild(isTableScan("TBL2")).negate()
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX1")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX22"))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX23")))));
 
-        assertPlan("SELECT /*+ USE_INDEX('IDX1') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX1")));
-
-        assertPlan("SELECT /*+ USE_INDEX('IDX1', 'IDX23') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX23")));
-
-        assertPlan("SELECT /*+ USE_INDEX('IDX1', 'IDX23', 'UNEXISTING') */ * FROM TBL2 WHERE val23=1 and " +
-            "val21=2 and val22=3", schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX23")));
-
-        assertPlan("SELECT /*+ USE_INDEX('UNEXISTING') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
-                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX22")))
-                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX23"))));
-
-        assertPlan("SELECT /*+ USE_INDEX(TBL2='UNEXISTING') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
-                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX22")))
-                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX23"))));
-    }
-
-    /**
-     * Tests first hint prevails.
-     */
-    @Test
-    public void testWintNoIndex() throws Exception {
-        assertPlan("SELECT /*+ USE_INDEX('IDX23'), NO_INDEX */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
-            schema, nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)).negate());
-
-        assertPlan("SELECT /*+ USE_INDEX('IDX1'), NO_INDEX('IDX1') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX22"))
-                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX23"))));
-
-        assertPlan("SELECT /*+ USE_INDEX('IDX1'), NO_INDEX('IDX23') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
-                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX22"))));
-
-        assertPlan("SELECT /*+ NO_INDEX, USE_INDEX('IDX23') */ * FROM TBL2 WHERE val23=1 and val21=2 and val22=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL2", "IDX23")));
+        assertPlan("SELECT /*+ FORCE_INDEX(TBL2='IDX22,IDX23') */ * FROM TBL2 WHERE val23=1 and val21=2 and " +
+            "val22=3", schema, nodeOrAnyChild(isTableScan("TBL2")).negate()
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX1")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX22"))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX23")))));
     }
 
     /** */
     @Test
-    public void testPrevailsOverTinyTableScan() throws Exception {
+    public void testOverridesOverTinyTableScan() throws Exception {
         assertPlan("SELECT * FROM TBL1 WHERE val3=1 and val1=2 and val2=3",
             schema, nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)).negate());
 
-        assertPlan("SELECT /*+ USE_INDEX('IDX1') */ * FROM TBL1 WHERE val3=1 and val1=2 and val2=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX1")));
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX1) */ * FROM TBL1 WHERE val3=1 and val1=2 and val2=3",
+            schema, nodeOrAnyChild(isTableScan("TBL1")).negate()
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX1"))));
 
-        assertPlan("SELECT /*+ USE_INDEX('IDX2') */ * FROM TBL1 WHERE val3=1 and val1=2 and val2=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX2")));
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX2) */ * FROM TBL1 WHERE val3=1 and val1=2 and val2=3",
+            schema, nodeOrAnyChild(isTableScan("TBL1")).negate()
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2"))));
 
-        assertPlan("SELECT /*+ USE_INDEX('IDX3') */ * FROM TBL1 WHERE val3=1 and val1=2 and val2=3",
-            schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX3")));
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX3) */ * FROM TBL1 WHERE val3=1 and val1=2 and val2=3",
+            schema, nodeOrAnyChild(isTableScan("TBL1")).negate()
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX3"))));
     }
 
     /** */
     @Test
     public void testTwoTables() throws Exception {
         assertPlan("SELECT val1 FROM TBL1, TBL2 WHERE val1=val21 and val2=val22 and val3=val23",
-            schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX1")).negate()
+            schema, nodeOrAnyChild(isTableScan("TBL1"))
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX1")).negate())
                 .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2")).negate())
                 .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX3")).negate())
                 .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
                     .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX22")))
                     .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX23")))));
 
-        assertPlan("SELECT /*+ USE_INDEX('IDX1') */ val1 FROM TBL1, TBL2 WHERE val1=val21 and val2=val22 and " +
-            "val3=val23", schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX1"))
-            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))));
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX1,IDX22) */ val1 FROM TBL1, TBL2 WHERE val1=val21 and " +
+            "val2=val22 and val3=val23", schema, nodeOrAnyChild(isTableScan("TBL1")).negate()
+            .and(nodeOrAnyChild(isTableScan("TBL2")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX1")))
+            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX3")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX22")))
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX23")).negate())));
 
-        assertPlan("SELECT /*+ USE_INDEX('IDX2', 'IDX23') */ val1 FROM TBL1, TBL2 WHERE val1=val21 and " +
-            "val2=val22 and val3=val23", schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX2"))
-            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX23"))));
+        assertPlan("SELECT /*+ FORCE_INDEX(TBL1='IDX1',TBL2='IDX1,IDX22') */ val1 FROM TBL1, TBL2 WHERE " +
+                "val1=val21 and val2=val22 and val3=val23", schema,
+            nodeOrAnyChild(isTableScan("TBL1")).negate()
+                .and(nodeOrAnyChild(isTableScan("TBL2")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX1")))
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX3")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX1"))
+                    .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX22")))
+                    .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX23")).negate())));
 
-        assertPlan("SELECT /*+ USE_INDEX(TBL1='IDX2', TBL2='IDX23') */ val1 FROM TBL1, TBL2 WHERE val1=val21 " +
-            "and  val2=val22 and val3=val23", schema, nodeOrAnyChild(isIndexScan("TBL1", "IDX2"))
-            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX23"))));
-
-        assertPlan("SELECT /*+ USE_INDEX(TBL1='UNEXISTING', TBL1='IDX2', TBL2='IDX23') */ val1 FROM TBL1, TBL2 " +
-                "WHERE val1=val21 and val2=val22 and val3=val23", schema,
-            nodeOrAnyChild(isIndexScan("TBL1", "IDX2"))
-                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX23"))));
-
-        assertPlan("SELECT /*+ USE_INDEX(TBL1='IDX1', TBL1='IDX2', TBL2='IDX23') */ val1 FROM TBL1, TBL2 " +
-                "WHERE val1=val21 and val2=val22 and val3=val23", schema,
-            nodeOrAnyChild(isIndexScan("TBL1", "IDX2"))
-                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX23"))));
+        assertPlan("SELECT /*+ FORCE_INDEX(TBL1='IDX1',TBL2='IDX22') */ val1 FROM TBL1, TBL2 WHERE " +
+                "val1=val21 and val2=val22 and val3=val23", schema,
+            nodeOrAnyChild(isTableScan("TBL1")).negate()
+                .and(nodeOrAnyChild(isTableScan("TBL2")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX1")))
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX3")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX1")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX22")))
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX23")).negate()));
     }
 }

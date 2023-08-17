@@ -94,6 +94,14 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
         if (indexes.isEmpty())
             return;
 
+        for (IgniteLogicalIndexScan idx : indexes) {
+            if (idx.forced()) {
+                cluster.getPlanner().prune(scan);
+
+                break;
+            }
+        }
+
         Map<RelNode, RelNode> equivMap = new HashMap<>(indexes.size());
         for (int i = 1; i < indexes.size(); i++)
             equivMap.put(indexes.get(i), scan);
@@ -108,8 +116,11 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
         List<String> qTblName = scan.getTable().getQualifiedName();
         Set<String> tblIdxNames = indexes.stream().map(AbstractIndexScan::indexName).collect(Collectors.toSet());
         Set<String> idxToSkip = new HashSet<>();
+        Set<String> idxToUse = new HashSet<>();
 
-        for (RelHint hint : Hint.hints(scan, HintDefinition.NO_INDEX)) {
+        for (RelHint hint : Hint.hints(scan, HintDefinition.NO_INDEX, HintDefinition.FORCE_INDEX)) {
+            boolean skip = !hint.hintName.equals(HintDefinition.FORCE_INDEX.name());
+
             if (idxToSkip.size() == indexes.size()) {
                 Commons.planContext(scan).skippedHint(scan, hint, null, null,
                     "Any index of table '" + last(qTblName) + "' has already been skipped by the hints before.");
@@ -122,7 +133,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
             assert !opts.empty();
 
             if (!opts.plain().isEmpty()) {
-                storeIdxNamesToSkip(scan, hint, tblIdxNames, idxToSkip, null, opts.plain());
+                processIdx(scan, hint, skip, tblIdxNames, idxToSkip, idxToUse, null, opts.plain());
 
                 assert opts.kv().isEmpty();
 
@@ -133,7 +144,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
                 List<String> hintTblQName = Commons.qualifiedName(hintTblName);
 
                 if (checkTblName(qTblName, hintTblQName))
-                    storeIdxNamesToSkip(scan, hint, tblIdxNames, idxToSkip, hintTblName, hintIdxNames);
+                    processIdx(scan, hint, skip, tblIdxNames, idxToSkip, idxToUse, hintTblName, hintIdxNames);
                 else {
                     Commons.planContext(scan).skippedHint(scan, hint, hintTblName, null,
                         "Incorrect table name: '" + hintTblName + "'.");
@@ -141,12 +152,14 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
             });
         }
 
-        return indexes.stream().filter(idx -> !idxToSkip.contains(idx.indexName())).collect(Collectors.toList());
+        return indexes.stream().filter(idx -> !idxToSkip.contains(idx.indexName())
+                && (idxToUse.isEmpty() || idxToUse.contains(idx.indexName())))
+            .map(idx -> idxToUse.contains(idx.indexName()) ? idx.withForced() : idx).collect(Collectors.toList());
     }
 
     /** */
-    private void storeIdxNamesToSkip(TableScan scan, RelHint hint, Set<String> tblIdxNames, Set<String> idxToSkip,
-        @Nullable String hintTableName, List<String> hintIdxNames) {
+    private void processIdx(TableScan scan, RelHint hint, boolean skip, Set<String> tblIdxNames, Set<String> idxToSkip,
+        Set<String> idxToUse, @Nullable String hintTableName, List<String> hintIdxNames) {
         for (String hintIdxName : hintIdxNames) {
             if (!tblIdxNames.contains(hintIdxName)) {
                 Commons.planContext(scan).skippedHint(scan, hint, hintTableName, hintIdxName, "Table '" +
@@ -155,7 +168,18 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
                 continue;
             }
 
-            idxToSkip.add(hintIdxName);
+            if (idxToUse.contains(hintIdxName) || idxToSkip.contains(hintIdxName)) {
+                Commons.planContext(scan).skippedHint(scan, hint, hintTableName, hintIdxName,
+                    "Index '" + hintIdxName + "' of table '" + last(scan.getTable().getQualifiedName())
+                        + "' is already set as ignored or forces by the previous hints or hint options.");
+
+                continue;
+            }
+
+            if (skip)
+                idxToSkip.add(hintIdxName);
+            else
+                idxToUse.add(hintIdxName);
         }
     }
 

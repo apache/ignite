@@ -94,6 +94,23 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
 
     /** */
     @Test
+    public void testWithForceIndex() throws Exception {
+        assertNoCertainIndex("SELECT /*+ NO_INDEX('idx1'), FORCE_INDEX('idx1') */ * FROM TBL1 WHERE val1='v'",
+            "TBL1", "idx1");
+
+        assertCertainIndex("SELECT /*+ FORCE_INDEX(IDX2_3), NO_INDEX(IDX2_3) */ * FROM TBL1 WHERE val2='v'",
+            "TBL1", "IDX2_3");
+
+        // IDX3 is skipped too.
+        assertPlan("SELECT /*+ NO_INDEX(IDX1,IDX2_3), FORCE_INDEX('idx1') */ * FROM TBL1 t1 WHERE val1='v' and " +
+            "val2='v' and val3='v'", schema, nodeOrAnyChild(isIndexScan("TBL1", "idx1"))
+            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX1")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2_3")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX3")).negate()));
+    }
+
+    /** */
+    @Test
     public void testCertainIndex() throws Exception {
         // Checks lower-case idx name.
         assertNoCertainIndex("SELECT /*+ NO_INDEX('idx1') */ * FROM TBL1 WHERE val1='v'", "TBL1", "idx1");

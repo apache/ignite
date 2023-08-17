@@ -387,23 +387,6 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
             .check();
     }
 
-    private void testIdxUsedOnTable1() {
-        assertQuery("SELECT /*+ USE_INDEX('T1_IDX1') */ i1 FROM t1 where i1=1 and i2=2 and i3=3")
-            .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX1"))
-            .returns(1)
-            .check();
-
-        assertQuery("SELECT /*+ USE_INDEX('T1_IDX2') */ i1 FROM t1 where i1=1 and i2=2 and i3=3")
-            .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX2"))
-            .returns(1)
-            .check();
-
-        assertQuery("SELECT /*+ USE_INDEX('T1_IDX3') */ i1 FROM t1 where i1=1 and i2=2 and i3=3")
-            .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX3"))
-            .returns(1)
-            .check();
-    }
-
     /** */
     @Test
     public void testUseIndexHint() {

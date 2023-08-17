@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel.logical;
 
 import java.util.List;
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
@@ -32,6 +31,9 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 public class IgniteLogicalIndexScan extends AbstractIndexScan {
+    /** If {@code true}, should remove other index scans over this table of table scans. */
+    private boolean forced;
+
     /** Creates a IgniteLogicalIndexScan. */
     public static IgniteLogicalIndexScan create(
         RelOptCluster cluster,
@@ -80,5 +82,17 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
         @Nullable ImmutableBitSet requiredCols
     ) {
         super(cluster, traits, tbl, idxName, proj, cond, searchBounds, requiredCols);
+    }
+
+    /** */
+    public IgniteLogicalIndexScan withForced() {
+        forced = true;
+
+        return this;
+    }
+
+    /** */
+    public boolean forced(){
+        return forced;
     }
 }

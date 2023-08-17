@@ -64,8 +64,8 @@ public enum HintDefinition {
         }
     },
 
-    /** Forces to use index. */
-    USE_INDEX {
+    /** Forces index usage. */
+    FORCE_INDEX {
         /** {@inheritDoc} */
         @Override public HintPredicate predicate() {
             return NO_INDEX.predicate();
