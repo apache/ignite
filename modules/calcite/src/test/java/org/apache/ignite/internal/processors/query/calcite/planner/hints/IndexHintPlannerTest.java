@@ -44,6 +44,7 @@ public class IndexHintPlannerTest extends AbstractPlannerTest {
     @Override public void setup() {
         super.setup();
 
+        // A tiny table.
         tbl1 = createTable("TBL1", 1, IgniteDistributions.single(), "ID", Integer.class,
             "VAL1", Integer.class, "VAL2", Integer.class, "VAL3", Integer.class)
             .addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0)
@@ -51,7 +52,8 @@ public class IndexHintPlannerTest extends AbstractPlannerTest {
             .addIndex("IDX2", 2)
             .addIndex("IDX3", 3);
 
-        tbl2 = createTable("TBL2", 1_000_000, IgniteDistributions.single(), "ID", Integer.class,
+        // A large table. Has the same first inndex name 'IDX1' as of TBL1.
+        tbl2 = createTable("TBL2", 10_000, IgniteDistributions.single(), "ID", Integer.class,
             "VAL21", Integer.class, "VAL22", Integer.class, "VAL23", Integer.class)
             .addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0)
             .addIndex("IDX1", 1)
@@ -119,9 +121,101 @@ public class IndexHintPlannerTest extends AbstractPlannerTest {
             .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX22"))
                 .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX23")))));
     }
-
-    @Test
+    
     /** */
+    @Test
+    public void testJoins() throws Exception {
+        // Make sure there is no full tnl scan on TBL2 for INNER and LEFT.
+        assertPlan("SELECT t1.val1, t2.val22 FROM TBL1 t1 LEFT JOIN TBL2 t2 on t1.val3=t2.val23 and " +
+            "t1.val1=t2.val22", schema, nodeOrAnyChild(isTableScan("TBL1"))
+            .and(nodeOrAnyChild(isTableScan("TBL2")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX3")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX1"))).negate()
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX22"))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX23")))));
+
+        assertPlan("SELECT t1.val1, t2.val22 FROM TBL1 t1 INNER JOIN TBL2 t2 on t1.val3=t2.val23 and " +
+            "t1.val1=t2.val22", schema, nodeOrAnyChild(isTableScan("TBL1"))
+            .and(nodeOrAnyChild(isTableScan("TBL2")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX3")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX1"))).negate()
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX22"))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX23")))));
+
+        doTestJoins("LEFT");
+        doTestJoins("RIGHT");
+        doTestJoins("INNER");
+    }
+
+    /** */
+    private void doTestJoins(String jt) throws Exception {
+        assertPlan("SELECT /*+ FORCE_INDEX(TBL2='IDX22') */ t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 " +
+            "t2 on t1.val3=t2.val23 and t1.val1=t2.val22", schema, nodeOrAnyChild(isTableScan("TBL1"))
+            .and(nodeOrAnyChild(isTableScan("TBL2")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX3")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX1")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX22")))
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX23")).negate()));
+
+        assertPlan("SELECT /*+ FORCE_INDEX(TBL2='IDX23') */ t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 " +
+            "t2 on t1.val3=t2.val23 and t1.val1=t2.val22", schema, nodeOrAnyChild(isTableScan("TBL1"))
+            .and(nodeOrAnyChild(isTableScan("TBL2")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX3")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX1")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX23")))
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX22")).negate()));
+
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX22,IDX23) */ t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 " +
+            "t2 on t1.val3=t2.val23 and t1.val1=t2.val22", schema, nodeOrAnyChild(isTableScan("TBL1"))
+            .and(nodeOrAnyChild(isTableScan("TBL2")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX3")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX1"))).negate()
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX22"))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX23")))));
+
+        // With additional filter.
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX22,IDX23) */ t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 " +
+            "t2 on t1.val3=t2.val23 and t1.val1=t2.val22 where t2.val22=2 and t1.val3=3 and t2.val21=1", schema,
+            nodeOrAnyChild(isTableScan("TBL1"))
+            .and(nodeOrAnyChild(isTableScan("TBL2")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX3")).negate())
+            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX1"))).negate()
+            .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX22"))
+                .or(nodeOrAnyChild(isIndexScan("TBL2", "IDX23")))));
+
+        assertPlan("SELECT /*+ FORCE_INDEX(TBL2='IDX1') */ t1.val1, t2.val22 FROM TBL1 t1 " + jt + " JOIN TBL2 " +
+                "t2 on t1.val3=t2.val23 and t1.val1=t2.val22 where t2.val22=2 and t1.val3=3 and t2.val21=1", schema,
+            nodeOrAnyChild(isTableScan("TBL1"))
+                .and(nodeOrAnyChild(isTableScan("TBL2")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX3")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX1"))).negate()
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX1")))
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX23")).negate())
+                .and(nodeOrAnyChild(isIndexScan("TBL2", "IDX22")).negate()));
+    }
+
+    /** */
+    @Test
+    public void testOrderBy() throws Exception {
+        assertPlan("SELECT val2, val3 FROM TBL1 ORDER by val2, val1, val3", schema,
+            nodeOrAnyChild(isTableScan("TBL1"))
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2")).negate()));
+
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX3) */ val2, val3 FROM TBL1 ORDER by val2, val1, val3", schema,
+            nodeOrAnyChild(isTableScan("TBL1")).negate()
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX3"))));
+
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX2) */ val2, val3 FROM TBL1 ORDER by val2, val1, val3", schema,
+            nodeOrAnyChild(isTableScan("TBL1")).negate()
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2"))));
+
+        assertPlan("SELECT /*+ FORCE_INDEX(IDX1) */ val2, val3 FROM TBL1 ORDER by val2, val1, val3", schema,
+            nodeOrAnyChild(isTableScan("TBL1")).negate()
+                .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX1"))));
+    }
+
+    /** */
+    @Test
     public void testAggregates() throws Exception {
         doTestAggregates("sum");
         doTestAggregates("avg");
