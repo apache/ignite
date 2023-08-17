@@ -92,7 +92,7 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
     }
 
     /** */
-    public boolean forced(){
+    public boolean forced() {
         return forced;
     }
 }

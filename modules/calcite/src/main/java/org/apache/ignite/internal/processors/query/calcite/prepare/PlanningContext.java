@@ -264,7 +264,7 @@ public final class PlanningContext implements Context {
         List<RelHint> hints = this.hints;
         List<SkippedHint> skippedHints = this.skippedHints;
 
-        if(F.isEmpty(hints))
+        if (F.isEmpty(hints))
             return;
 
         if (header != null)
@@ -317,8 +317,8 @@ public final class PlanningContext implements Context {
         private final String reason;
 
         /** */
-        private SkippedHint(RelNode rel, String hintName, @Nullable  String hintOption,
-            @Nullable String hintOptionValue, String reason) {
+        private SkippedHint(RelNode rel, String hintName, @Nullable String hintOption, @Nullable String hintOptionValue,
+            String reason) {
             this.rel = rel;
             this.hintName = hintName;
             this.option = hintOption;
