@@ -37,7 +37,7 @@ jobs:
           ref: "refs/pull/${{ github.event.number }}/merge"
           fetch-depth: 0
 
-      - name: Set up JDK11 and JDK17
+      - name: Set up JDK11 and JDK17 (dummy)
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
