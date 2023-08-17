@@ -180,8 +180,8 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
         assertNoCertainIndex("SELECT /*+ NO_INDEX(IDX2_3) */ val3 FROM TBL1 order by val2, val3", "TBL1", "IDX2_3");
     }
 
-    @Test
     /** */
+    @Test
     public void testAggregates() throws Exception {
         doTestAggregate("sum");
         doTestAggregate("avg");
@@ -200,8 +200,8 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
         assertNoAnyIndex("SELECT /*+ NO_INDEX(TBL1='IDX2_3') */ " + op + "(val1) FROM TBL1 group by val2, val3");
     }
 
-    @Test
     /** */
+    @Test
     public void testJoins() throws Exception {
         assertNoAnyIndex("SELECT /*+ NO_INDEX(IDX3) */ t1.val1, t2.val2 FROM TBL1 t1, TBL2 t2 where " +
             "t2.val3=t1.val3");
