@@ -72,7 +72,7 @@ public final class PlanningContext implements Context {
     /** */
     private final long plannerTimeout;
 
-    /** Root hints of the current query. */
+    /** Current query's hints. */
     private List<RelHint> hints = Collections.emptyList();
 
     /** */
