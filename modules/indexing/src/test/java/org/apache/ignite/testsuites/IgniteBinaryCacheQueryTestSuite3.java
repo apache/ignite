@@ -95,6 +95,7 @@ import org.apache.ignite.internal.processors.cache.index.LongIndexNameTest;
 import org.apache.ignite.internal.processors.cache.index.OptimizedMarshallerIndexNameTest;
 import org.apache.ignite.internal.processors.cache.index.PojoIndexLocalQueryTest;
 import org.apache.ignite.internal.processors.cache.index.SqlPartitionEvictionTest;
+import org.apache.ignite.internal.processors.cache.index.SqlTransactionCommandsWithMvccDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.index.SqlTransactionsSelfTest;
 import org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest;
 import org.apache.ignite.internal.processors.cache.query.IgniteCacheQueryCacheDestroySelfTest;
@@ -270,6 +271,7 @@ import org.junit.runners.Suite;
     GridIndexRebuildTest.class,
     CheckIndexesInlineSizeOnNodeJoinMultiJvmTest.class,
 
+    SqlTransactionCommandsWithMvccDisabledSelfTest.class,
     SqlTransactionsSelfTest.class,
 
     IgniteSqlDefaultValueTest.class,
