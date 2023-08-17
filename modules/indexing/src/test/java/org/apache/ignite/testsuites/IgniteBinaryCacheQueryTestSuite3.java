@@ -95,7 +95,6 @@ import org.apache.ignite.internal.processors.cache.index.LongIndexNameTest;
 import org.apache.ignite.internal.processors.cache.index.OptimizedMarshallerIndexNameTest;
 import org.apache.ignite.internal.processors.cache.index.PojoIndexLocalQueryTest;
 import org.apache.ignite.internal.processors.cache.index.SqlPartitionEvictionTest;
-import org.apache.ignite.internal.processors.cache.index.SqlTransactionCommandsWithMvccDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.index.SqlTransactionsSelfTest;
 import org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest;
 import org.apache.ignite.internal.processors.cache.query.IgniteCacheQueryCacheDestroySelfTest;
@@ -152,7 +151,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.DmlSelectPartition
 import org.apache.ignite.internal.processors.query.h2.twostep.InOperationExtractPartitionSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.JoinPartitionPruningSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.JoinQueryEntityPartitionPruningSelfTest;
-import org.apache.ignite.internal.processors.query.h2.twostep.MvccDmlPartitionPruningSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.SqlDataTypeConversionTest;
 import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedAtomicColumnConstraintsTest;
 import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedTransactionalColumnConstraintsTest;
@@ -272,7 +270,6 @@ import org.junit.runners.Suite;
     GridIndexRebuildTest.class,
     CheckIndexesInlineSizeOnNodeJoinMultiJvmTest.class,
 
-    SqlTransactionCommandsWithMvccDisabledSelfTest.class,
     SqlTransactionsSelfTest.class,
 
     IgniteSqlDefaultValueTest.class,
@@ -332,7 +329,6 @@ import org.junit.runners.Suite;
     JoinPartitionPruningSelfTest.class,
     JoinQueryEntityPartitionPruningSelfTest.class,
     DmlSelectPartitionPruningSelfTest.class,
-    MvccDmlPartitionPruningSelfTest.class,
 
     GridCacheDynamicLoadOnClientTest.class,
     GridCacheDynamicLoadOnClientPersistentTest.class,

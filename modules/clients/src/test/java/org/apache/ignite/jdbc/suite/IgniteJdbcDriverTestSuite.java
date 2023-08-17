@@ -39,7 +39,6 @@ import org.apache.ignite.jdbc.thin.JdbcThinComplexDmlDdlSkipReducerOnUpdateSelfT
 import org.apache.ignite.jdbc.thin.JdbcThinComplexQuerySelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionAdditionalSecurityTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionMultipleAddressesTest;
-import org.apache.ignite.jdbc.thin.JdbcThinConnectionMvccEnabledSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionPropertiesTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionSSLTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionSelfTest;
@@ -82,7 +81,6 @@ import org.apache.ignite.jdbc.thin.JdbcThinStreamingResetStreamTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTcpIoTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsClientAutoCommitComplexSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsClientNoAutoCommitComplexSelfTest;
-import org.apache.ignite.jdbc.thin.JdbcThinTransactionsLeaksMvccTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsServerAutoCommitComplexSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsServerNoAutoCommitComplexSelfTest;
@@ -150,7 +148,6 @@ import org.junit.runners.Suite;
 
     // New thin JDBC
     JdbcThinConnectionSelfTest.class,
-    JdbcThinConnectionMvccEnabledSelfTest.class,
     JdbcThinConnectionMultipleAddressesTest.class,
     JdbcThinTcpIoTest.class,
     JdbcThinConnectionAdditionalSecurityTest.class,
@@ -220,7 +217,6 @@ import org.junit.runners.Suite;
     JdbcThinAuthenticateConnectionSelfTest.class,
 
     JdbcThinPreparedStatementLeakTest.class,
-    JdbcThinTransactionsLeaksMvccTest.class,
     JdbcThinSqlMergeTest.class,
 
     // Data types coverage.
