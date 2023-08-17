@@ -108,12 +108,20 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
 
         assertNoAnyIndex("SELECT /*+ NO_INDEX('idx1','IDX1','IDX2_3','IDX3') */ * FROM TBL1 WHERE val1='v' and " +
             "val2='v' and val3='v'");
+
+        // Wrong names should be just skipped.
+        assertNoAnyIndex("SELECT " +
+            "/*+ NO_INDEX('UNEXISTING','idx1','UNEXISTING2','IDX1','UNEXISTING3','IDX2_3','IDX3') */ * " +
+            "FROM TBL1 WHERE val1='v' and val2='v' and val3='v'");
+
         // Mixed with no-tbl-name hint.
         assertNoAnyIndex("SELECT /*+ NO_INDEX('idx1'), NO_INDEX(IDX1,IDX2_3,IDX3) */ * FROM TBL1 WHERE val1='v' " +
             "and val2='v' and val3='v'");
+
         // Dedicated hint for each index.
         assertNoAnyIndex("SELECT /*+ NO_INDEX('idx1'), NO_INDEX(IDX1), NO_INDEX(IDX2_3), NO_INDEX(IDX3) */ * " +
             "FROM TBL1 WHERE val1='v' and val2='v' and val3='v'");
+
         // Dedicated hint for each index with table name.
         assertNoAnyIndex("SELECT /*+ NO_INDEX(TBL1='idx1'), NO_INDEX(TBL1='IDX1'), NO_INDEX(TBL1='IDX2_3'), " +
             "NO_INDEX(TBL1='IDX3') */ * FROM TBL1 WHERE val1='v' and val2='v' and val3='v'");
@@ -123,6 +131,8 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
             "val2='v' and val3='v'");
         assertNoAnyIndex("SELECT /*+ NO_INDEX(TBL1='idx1,IDX1,IDX2_3,IDX3') */ * FROM TBL1 WHERE val1='v' and " +
             "val2='v' and val3='v'");
+        assertNoAnyIndex("SELECT /*+ NO_INDEX(TBL1='UNEXISTING,idx1,UNEXISTING2,IDX1,IDX2_3,IDX3') */ * FROM TBL1 " +
+            "WHERE val1='v'and val2='v' and val3='v'");
         assertNoAnyIndex("SELECT /*+ NO_INDEX(TBL1='idx1,IDX1'), NO_INDEX('IDX2_3,IDX3') */ * FROM TBL1 WHERE " +
             "val1='v' and val2='v' and val3='v'");
 
