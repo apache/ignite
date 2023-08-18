@@ -426,7 +426,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
         if (find(name, HitRateMetric.class) == null) {
-            throw new IgniteException("Filed to update Hit Rate Metric configuration. No metric with specified name" +
+            throw new IgniteException("Failed to update Hit Rate Metric configuration. No metric with specified name" +
                 " was registered [metricName=" + name + ']');
         }
 
@@ -449,7 +449,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
         if (find(name, HistogramMetric.class) == null) {
-            throw new IgniteException("Filed to update Histogram Metric configuration. No metric with specified name" +
+            throw new IgniteException("Failed to update Histogram Metric configuration. No metric with specified name" +
                 " was registered [metricName=" + name + ']');
         }
 

@@ -87,7 +87,7 @@ public class MetricConfigurationTest extends GridCommonAbstractTest {
                 return null;
             },
             IgniteException.class,
-            "Filed to update Histogram Metric configuration. No metric with specified name" +
+            "Failed to update Histogram Metric configuration. No metric with specified name" +
                 " was registered [metricName=" + name + ']'
         );
 
@@ -99,7 +99,7 @@ public class MetricConfigurationTest extends GridCommonAbstractTest {
                 return null;
             },
             IgniteException.class,
-            "Filed to update Hit Rate Metric configuration. No metric with specified name" +
+            "Failed to update Hit Rate Metric configuration. No metric with specified name" +
                 " was registered [metricName=" + name + ']'
         );
     }
