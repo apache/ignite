@@ -230,7 +230,7 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends IgniteCacheClusterRe
                     }
                 }
             },
-            TX_CACHES_PRED.or(MVCC_CACHES_PRED)
+            TX_CACHES_PRED
         );
     }
 
@@ -273,7 +273,7 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends IgniteCacheClusterRe
                     }
                 }
             },
-            TX_CACHES_PRED.or(MVCC_CACHES_PRED)
+            TX_CACHES_PRED
         );
     }
 
