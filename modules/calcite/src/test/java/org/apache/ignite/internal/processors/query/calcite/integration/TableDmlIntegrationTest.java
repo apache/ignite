@@ -494,6 +494,34 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
+    public void testInsertMultipleDefaults() {
+        sql("CREATE TABLE integers(i INTEGER PRIMARY KEY, col1 INTEGER DEFAULT 200, col2 INTEGER DEFAULT 300)");
+
+        sql("INSERT INTO integers (i) VALUES (0)");
+        sql("INSERT INTO integers VALUES (1, DEFAULT, DEFAULT)");
+        sql("INSERT INTO integers(i, col2) VALUES (2, DEFAULT), (3, 4), (4, DEFAULT)");
+        sql("INSERT INTO integers VALUES (5, DEFAULT, DEFAULT)");
+        sql("INSERT INTO integers VALUES (6, 4, DEFAULT)");
+        sql("INSERT INTO integers VALUES (7, 5, 5)");
+        sql("INSERT INTO integers(col1, i) VALUES (DEFAULT, 8)");
+        sql("INSERT INTO integers(i, col1) VALUES (9, DEFAULT)");
+
+        assertQuery("SELECT i, col1, col2 FROM integers ORDER BY i")
+                .returns(0, 200, 300)
+                .returns(1, 200, 300)
+                .returns(2, 200, 300)
+                .returns(3, 200, 4)
+                .returns(4, 200, 300)
+                .returns(5, 200, 300)
+                .returns(6, 4, 300)
+                .returns(7, 5, 5)
+                .returns(8, 200, 300)
+                .returns(9, 200, 300)
+                .check();
+    }
+
+    /** */
+    @Test
     public void testInsertDefaultValue() {
         checkDefaultValue("BOOLEAN", "TRUE", Boolean.TRUE);
         checkDefaultValue("BOOLEAN NOT NULL", "TRUE", Boolean.TRUE);
