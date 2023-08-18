@@ -34,7 +34,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -190,8 +189,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
             ", concurrency=" + concurrency +
             ", isolation=" + isolation + "]");
 
-        int expCallCntOnGet = cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL_SNAPSHOT ?
-            1 : expCallCnt;
+        int expCallCntOnGet = expCallCnt;
 
         Transaction tx;
         TestReturnValue retVal;
