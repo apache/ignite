@@ -425,10 +425,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
-        if (find(name, HitRateMetric.class) == null) {
-            throw new IgniteException("Failed to update Hit Rate Metric configuration. No metric with specified name" +
-                " was registered [metricName=" + name + ']');
-        }
+        ensureMetricRegistered(name, HitRateMetric.class);
 
         metastorage.write(metricName(HITRATE_CFG_PREFIX, name), rateTimeInterval);
     }
@@ -448,10 +445,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
-        if (find(name, HistogramMetric.class) == null) {
-            throw new IgniteException("Failed to update Histogram Metric configuration. No metric with specified name" +
-                " was registered [metricName=" + name + ']');
-        }
+        ensureMetricRegistered(name, HistogramMetric.class);
 
         metastorage.write(metricName(HISTOGRAM_CFG_PREFIX, name), bounds);
     }
@@ -573,6 +567,12 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         catch (IllegalArgumentException ignored) {
             return new MemoryUsage(0, 0, 0, 0);
         }
+    }
+
+    /** */
+    private <T extends Metric> void ensureMetricRegistered(String name, Class<T> cls) {
+        if (find(name, cls) == null)
+            throw new IgniteException("Failed to find registered metric with specified name [metricName=" + name + ']');
     }
 
     /**
