@@ -110,7 +110,7 @@ public class Luncher {
 		// 设置work dir,war包将解压到该目录,jsp编译后的文件也将放入其中。
 	
 		String warFile = location.toExternalForm(); 
-		warFile = "target/elasticsearch-relay/"; 
+		warFile = "target/es-relay/"; 
 		contextPath = "/";
 		WebAppContext context = new	WebAppContext(warFile, contextPath); 
 		context.setServer(server);

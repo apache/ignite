@@ -54,6 +54,7 @@
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec</artifactId>
 			<version>1.10</version>
+			<scope>provided</scope> 
 		</dependency>
 		<dependency>
 			<groupId>org.jsoup</groupId>

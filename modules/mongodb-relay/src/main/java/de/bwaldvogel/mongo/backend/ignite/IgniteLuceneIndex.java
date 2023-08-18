@@ -96,9 +96,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 		this.ctx = ctx;
 		this.cacheName = collection.getCollectionName();
 		this.keyField = collection.idField;
-
 		init();
-
 	}
 
 	public void init() {
@@ -698,7 +696,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 				Object k = unmarshalKeyField(doc.getBinaryValue(KEY_FIELD_NAME), cache, ldr);
 				String v = doc.get(field);
 
-				result.add(KeyValue.valueOf(v,score,k));
+				result.add(KeyValue.valueOf(k,score,v));
 
 			}
 		} catch (Exception e) {

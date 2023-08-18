@@ -22,10 +22,11 @@ public class CommonUtil {
         ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         HttpServletRequest request = requestAttributes.getRequest();
         String requestURL = request.getRequestURL().toString();
+        String contextPath = request.getContextPath();
         String scheme = request.getScheme();
         String servaerName = request.getServerName();
         int port = request.getServerPort();
-        String rootPageURL = scheme + ":" + "//" + servaerName + ":" + port + "/" ;
+        String rootPageURL = scheme + ":" + "//" + servaerName + ":" + port + contextPath+"/";
         return rootPageURL;
     }
 }

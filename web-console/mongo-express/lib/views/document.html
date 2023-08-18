@@ -1,0 +1,158 @@
+{% extends 'layout.html' %}
+
+{% block title %}{{ document._id|stringDocIDs|to_string }}{% endblock %}
+
+
+{% block styles %}
+  <link href="{{ baseHref }}public/css/codemirror.css" rel="stylesheet">
+  {% if editorTheme != "default" %}
+  <link href="{{ baseHref }}public/css/theme/{{ editorTheme }}.css" rel="stylesheet">
+  {% endif %}
+
+  <style type="text/css">
+    .CodeMirror-scroll {
+      height: auto;
+      overflow-y: hidden;
+      overflow-x: auto;
+      width: 100%;
+    }
+    .CodeMirror {
+      height: auto;
+    }
+  </style>
+{% endblock %}
+
+
+{% block breadcrumb %}
+  <li>
+    <a href="{{ dbUrl }}">Database:</a>
+  </li>
+  <li class="dropdown">
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{{ dbName }}<span class="caret"></span></a>
+    <ul class="dropdown-menu">
+      {% for db in databases %}
+      <li><a href="{{ baseHref }}db/{{ db }}/">{{ db }}</a></li>
+      {% endfor %}
+    </ul>
+  </li>
+  <li>
+    <a href="{{ dbUrl }}"><span class="glyphicon glyphicon-chevron-right"></span></a>
+  </li>
+  <li>
+    <a href="{{ collectionUrl }}">Collection:</a>
+  </li>
+  <li class="dropdown">
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{{ collectionName }}<span class="caret"></span></a>
+    <ul class="dropdown-menu">
+      {% for collection in collections %}
+      <li><a href="{{ dbUrl }}/{{ collection | url_encode }}">{{ collection }}</a></li>
+      {% endfor %}
+    </ul>
+  </li>
+  <li>
+    <a href="{{ collectionUrl }}">
+      <span class="glyphicon glyphicon-chevron-right"></span>
+    </a>
+  </li>
+  <li><a>Document {{ document._id|stringDocIDs }}</a></li>
+{% endblock %}
+
+{% block content %}
+
+{% if document._id._bsontype == 'Binary' %}
+<form method="POST"
+  id="documentEditForm"
+  action="{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}?subtype={{ document._id.sub_type }}&skip={{skip}}"
+>
+{% else %}
+<form method="POST"
+  id="documentEditForm"
+  action="{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}?skip={{skip}}"
+>
+{% endif %}
+
+  {% if docLength > 10 %}
+    <div>
+      {% if !settings.read_only %}
+        <input type="hidden" name="_method" value="put">
+        <button onclick="return onBackClick()" class="backButton btn btn-warning btn-large">
+         <span class="glyphicon glyphicon-arrow-left"></span>
+          Back
+        </button>
+        <button type="submit" class="btn btn-success btn-large pull-right" onclick="return onSubmitClick()">
+          <span class="glyphicon glyphicon-pencil"></span>
+          Save
+        </button>
+      {% else %}
+        <button onclick="return history.back()" class="btn btn-warning btn-large btn-block">
+         <span class="glyphicon glyphicon-arrow-left"></span>
+          Back
+        </button>
+      {% endif %}
+    </div>
+  <br />
+  {% endif %}
+
+  <textarea class="col-md-12" id="document" name="document"{% if settings.read_only %} readonly="readonly"{% endif %}>{{ docString }}</textarea>
+  <br />
+
+  <div>
+    {% if !settings.read_only %}
+      <input type="hidden" name="_method" value="put">
+      <button onclick="return onBackClick()" class="backButton btn btn-warning btn-large">
+       <span class="glyphicon glyphicon-arrow-left"></span>
+        Back
+      </button>
+
+      <button type="submit" class="btn btn-success btn-large pull-right" onclick="return onSubmitClick()">
+        <span class="glyphicon glyphicon-pencil"></span>
+        Save
+      </button>
+    {% else %}
+      <button onclick="return history.back()" class="btn btn-warning btn-large btn-block">
+       <span class="glyphicon glyphicon-arrow-left"></span>
+        Back
+      </button>
+    {% endif %}
+  </div>
+</form>
+
+{% if !settings.read_only && !settings.no_delete %}
+  <br>
+
+  {% if document._id._bsontype == 'Binary' %}
+  <form method="POST" action="{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}?subtype={{ document._id.sub_type }}">
+  {% else %}
+  <form method="POST" action="{{ collectionUrl }}/{{ document._id | json | safe | url_encode }}">
+  {% endif %}
+    <input type="hidden" name="_method" value="delete">
+    <input type="submit" class="hidden" />
+    <button class="btn btn-danger deleteButtonDocument">
+      <span class="glyphicon glyphicon-trash"></span>
+      Delete
+    </button>
+  </form>
+
+  <div id="confirm-document-delete" class="modal fade" role="dialog" aria-labelledby="confirmDeletionDocumentLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-body">
+          Are you sure?
+        </div>
+        <div class="modal-footer">
+          <button type="button" data-dismiss="modal" class="btn btn-danger" id="delete">Delete</button>
+          <button type="button" data-dismiss="modal" class="btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block scripts %}
+<script src="{{ baseHref }}{{ assets.codemirror.js }}"></script>
+<script src="{{ baseHref }}{{ assets.document.js }}"></script>
+{% endblock %}

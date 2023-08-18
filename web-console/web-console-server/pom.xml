@@ -148,6 +148,24 @@
             <version>${web-console.ignite.version}</version>
         </dependency>
         
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-zookeeper</artifactId>
+            <version>${web-console.ignite.version}</version>
+        </dependency>
+        
+         <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-indexing</artifactId>
+            <version>${web-console.ignite.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-log4j2</artifactId>
+            <version>${web-console.ignite.version}</version>
+        </dependency>
+        
 
         <dependency>
             <groupId>org.apache.ignite</groupId>

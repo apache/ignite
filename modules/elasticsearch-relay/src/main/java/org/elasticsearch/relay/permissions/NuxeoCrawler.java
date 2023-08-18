@@ -98,8 +98,7 @@ public class NuxeoCrawler implements IPermCrawler {
 			// TODO: is this reasonable?
 			groups.add(EVERYONE_GROUP);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			fLogger.log(Level.WARNING,e.getMessage());	
 		}
 
 		return perms;

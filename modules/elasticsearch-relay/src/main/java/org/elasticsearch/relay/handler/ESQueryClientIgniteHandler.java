@@ -35,13 +35,13 @@ import org.elasticsearch.relay.util.HttpUtil;
  * handling query filtering, sending requests, post-processing and merging
  * results.
  */
-public class ESQueryClientIgniteHandler extends ESQueryKernelIgniteHandler{
+public class ESQueryClientIgniteHandler extends ESQueryHandler{
 	
 	
 	IgniteClient[] igniteClient;
 	
 	public ESQueryClientIgniteHandler(ESRelayConfig config) throws Exception{
-		super(config,null);		
+		super(config);		
 		
 		igniteClient = new IgniteClient[2];
 		

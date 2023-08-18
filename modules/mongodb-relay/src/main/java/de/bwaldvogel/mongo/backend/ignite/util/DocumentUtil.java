@@ -9,6 +9,7 @@ import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -16,6 +17,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,8 +30,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
-
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 
@@ -44,7 +47,9 @@ import com.fasterxml.jackson.databind.util.LRUMap;
 
 import de.bwaldvogel.mongo.backend.Missing;
 import de.bwaldvogel.mongo.backend.Utils;
+import de.bwaldvogel.mongo.bson.BinData;
 import de.bwaldvogel.mongo.bson.Document;
+import de.bwaldvogel.mongo.wire.BsonConstants;
 import de.bwaldvogel.mongo.wire.bson.BsonEncoder;
 
 
@@ -73,10 +78,31 @@ public class DocumentUtil {
 	            	  }
 	            	  try {
 	            		  byte t = BsonEncoder.determineType(result);
+	            		  if(t==BsonConstants.TYPE_EMBEDDED_DOCUMENT) {
+	            			  final Document embed = new Document();
+	            			  Map map = (Map)result;
+	            			  map.forEach((k,v)->{
+	            				try {
+	            					byte t2 = BsonEncoder.determineType(v);
+	            					embed.put(k.toString(),v);
+	            				}
+	            				catch(Exception e2) {
+	            					Document json = toKeyValuePairs(v);
+	      	            		  	json.append("_class", v.getClass().getName());
+	      							embed.put(k.toString(),json);
+	            				}
+	      						
+	      					  });
+	            			  result = embed;
+	            		  }
+	            		  
 	            		  doc.append(field.getName(), result); 
+	            		  
 	            	  }
 	            	  catch(Exception e) {
-	            		  doc.append(field.getName(), new Document(result));
+	            		  Document json = new Document(result);
+	            		  json.append("_class", result.getClass().getName());
+	            		  doc.append(field.getName(), json);
 	            	  }	            	 
 	              }
 	             
@@ -97,7 +123,7 @@ public class DocumentUtil {
 		Document doc = new Document();
 		doc = objectToDocumentForClass(doc,instance,instance.getClass());
 		Class<?> p = instance.getClass().getSuperclass();
-		while(p!=Object.class) {
+		while(p!=null && p!=Object.class) {
 			doc = objectToDocumentForClass(doc,instance,p);
 			p = p.getSuperclass();
 		}
@@ -106,7 +132,7 @@ public class DocumentUtil {
 
 	
 	public static Document objectToDocument(Object key,Object obj,String idField){
-		if(obj instanceof byte[] || obj instanceof Number || obj instanceof CharSequence || obj.getClass().isArray()) {
+		if(obj instanceof byte[] || obj instanceof Number || obj instanceof UUID || obj instanceof CharSequence || obj.getClass().isArray()) {
 			key = toDocumentKey(key,idField);
 			Document doc = new Document();
 			doc.append(idField, key);
@@ -117,6 +143,21 @@ public class DocumentUtil {
 			BinaryObject bobj = (BinaryObject) obj;
 			return binaryObjectToDocument(key,bobj,idField);
 		}
+		else if(obj instanceof Collection) {
+			key = toDocumentKey(key,idField);
+			Document doc = new Document();
+			doc.append(idField, key);
+			Collection coll = (Collection)obj;
+			doc.append("_data", coll);
+			return doc;
+		}
+		else if(obj instanceof Map) {
+			key = toDocumentKey(key,idField);
+			Map coll = (Map)obj;
+			Document doc = new Document(coll);
+			doc.append(idField, key);			
+			return doc;
+		}
 		else if(obj instanceof Vector) {
 			Vector bobj = (Vector) obj;
 			Document doc = new Document();
@@ -126,13 +167,54 @@ public class DocumentUtil {
 			return doc;
 		}
 		else {
-			key = toDocumentKey(key,idField);
-			Document doc = new Document();			
-			Map<String, Object> kv = toKeyValuePairs(obj);
-			doc.putAll(kv);
+			key = toDocumentKey(key,idField);						
+			Document doc = toKeyValuePairs(obj);
 			doc.append(idField, key);
 			return doc;
 		}
+		
+	}
+	
+
+	public static Object bsonObjectToJavaObject(Object $value){
+		if($value instanceof List){
+			List<Object> $arr = (List)$value;
+			if(!$arr.isEmpty()) {
+				Object item = $arr.get(0);
+				if(item instanceof Number || item instanceof CharSequence) {
+					
+				}
+				else if(false) {
+					List<Object> list = new ArrayList<>($arr.size());
+					for(int i=0;i<$arr.size();i++) {
+						item = $arr.get(i);
+						list.add(bsonObjectToJavaObject(item));
+					}			
+					$value = list;
+				}
+			}
+			
+		}
+		else if($value instanceof Collection){
+			Collection $arr = (Collection)$value;			
+			$value = ($arr);
+		}
+		else if($value instanceof Document){
+			Document doc = (Document)$value;					
+			Map<String,Object> result = new LinkedHashMap<>(doc.size());
+			Set<Map.Entry<String,Object>> ents = doc.entrySet();
+		    for(Map.Entry<String,Object> ent: ents){	    	
+		    	String $key =  ent.getKey();
+		    	Object $val = bsonObjectToJavaObject(ent.getValue());		    	
+		    	result.put($key, $val);
+		    }
+		    $value = result;
+		}			
+		else if($value instanceof BinData){
+			BinData $arr = (BinData)$value;					
+			$value = $arr.getData();
+		}		
+		return $value;
 		
 	}
 	
@@ -171,18 +253,14 @@ public class DocumentUtil {
     		if(key instanceof BinaryObject){
 				BinaryObject $arr = (BinaryObject)key;
 				key = binaryObjectToDocument($arr);
-				if(key instanceof Map) {
-					Map fileds = (Map) key;
-					if(fileds.containsKey(idField)) {
-						key = $arr.field(idField);
-					}
-					else if(fileds.containsKey("id")) {
-						key = $arr.field("id");
-					}					
+				try {
+					byte t2 = BsonEncoder.determineType(key);					
 				}
-				byte[] buff = Base64.getEncoder().encode(key.toString().getBytes(StandardCharsets.UTF_8));
-				keyDict.put(new BytesRef(buff), $arr);
-				return buff;
+				catch(Exception e) {
+					byte[] buff = Base64.getEncoder().encode(key.toString().getBytes(StandardCharsets.UTF_8));
+					keyDict.put(new BytesRef(buff), $arr);
+					return buff;
+				}
 			}
     	}
 	    return key;
@@ -192,6 +270,9 @@ public class DocumentUtil {
 		if (key == null) {
             return Missing.getInstance();
         }
+		if(key instanceof BinData){
+			key = ((BinData)key).getData();
+		}
 		if(key instanceof byte[]){
 			Object bKey = keyDict.get(new BytesRef((byte[])key));
 			if(bKey!=null) {
@@ -205,14 +286,34 @@ public class DocumentUtil {
 	}
 
     public static Object binaryObjectToDocument(BinaryObject bobj){
-    	Collection<String> fields = bobj.type().fieldNames();
+    	Collection<String> fields = null;
     	try {    		
-        	if(fields.size()==0) {
-        		return bobj.deserialize();
-        	}
+    		if(bobj instanceof BinaryObjectImpl) {
+	    		BinaryObjectImpl bin = (BinaryObjectImpl)bobj;
+	    		if(!bin.hasSchema()) {
+	    			return bin.deserialize();
+	    		}
+    		}
+    		else if(bobj instanceof BinaryArray) {
+    			BinaryArray bin = (BinaryArray)bobj;
+	    		if(bin.componentClassName().startsWith("java.")) {
+	    			return bin.deserialize();
+	    		}
+	    		return bin.deserialize();
+    		}
+    		String typeName = bobj.type().typeName();
+    		if(typeName.equals("Document") || typeName.equals("SerializationProxy") || typeName.startsWith("Bson")) {
+    			return bobj.deserialize();
+    		}
+    		
+    		fields = bobj.type().fieldNames();
+    		if(fields==null || fields.size()<=2) {
+    			return bobj.deserialize();
+    		}
+    		
     	}
     	catch(Exception e) {
-    		e.printStackTrace();    		
+    		fields = bobj.type().fieldNames();	
     	}
     	
     	Document doc = new Document();
@@ -229,7 +330,11 @@ public class DocumentUtil {
 						if($valueSlice instanceof BinaryObject){
 							BinaryObject $arrSlice = (BinaryObject)$valueSlice;					
 							$valueSlice = binaryObjectToDocument($arrSlice);
-						}	
+						}
+						else if($valueSlice instanceof Map && $valueSlice.getClass()!=Document.class){
+							Map $map = (Map)$valueSlice;
+							$valueSlice = new Document($map);
+						}
 						$arr2.add($valueSlice);
 					}
 					$value = ($arr2);
@@ -249,22 +354,34 @@ public class DocumentUtil {
 					$value = ($arr2);
 				}
 				else if($value instanceof Map){
-					Map $arr = (Map)$value;
-					final Document docItem = new Document();
-					$arr.forEach((k,v)->{
+					Map<String, Object> $arr = (Map)$value;
+					final Document docItem = new Document($arr);
+					for(Map.Entry<String, Object> ent: $arr.entrySet()) {
+						Object v = ent.getValue();
 						if(v instanceof BinaryObject) {
 							BinaryObject $arrSlice = (BinaryObject)v;					
 							v = binaryObjectToDocument($arrSlice);
+							ent.setValue(v);
+						}	
+						else if(v instanceof Map && v.getClass()!=Document.class){
+							Map $map = (Map)v;
+							v = new Document($map);
+							ent.setValue(v);
 						}
-						docItem.put(k.toString(),v);
-					});
+					}
 					$value = docItem;
 					
 				}
-				if($value instanceof BinaryObject){
+				else if($value instanceof BinaryObject){
 					BinaryObject $arr = (BinaryObject)$value;					
 					$value = binaryObjectToDocument($arr);
-				}	
+				}
+				
+				if($value instanceof Duration){
+					Duration $arr = (Duration)$value;					
+					$value = $arr.toString();
+				}
+				
 				if($value!=null) {
 					doc.append($key, $value);
 				}
@@ -337,8 +454,7 @@ public class DocumentUtil {
         switch (hdr) {
             case GridBinaryMarshaller.BOOLEAN:
             	val = buf.getClass()==Boolean.class? buf: Utils.isTrue(buf);
-                break;
-            
+                break;            
 
             case GridBinaryMarshaller.CHAR:
             	val = buf.getClass()==Character.class? buf: buf.toString().charAt(0);
@@ -352,17 +468,20 @@ public class DocumentUtil {
             case GridBinaryMarshaller.DATE: {
             	val = buf.getClass()==Date.class? buf: null;
             	if(val==null) {
-            		DateFormat dateFormatSecond = new SimpleDateFormat("yyyy-mm-dd hh:ss");
-            		DateFormat dateFormatDay = new SimpleDateFormat("yyyy-mm-dd");
-            		try {
-            			val = dateFormatSecond.parse(buf.toString());
-            		}catch(ParseException e) {
-            			try {
-            				val = dateFormatDay.parse(buf.toString());
-            			}catch(ParseException e2) {
-            				long time = Long.parseLong(buf.toString());
-                    		val = new Date(time);
-            			}
+            		
+            		DateFormat[] dateFormats = {
+            				new SimpleDateFormat("yyyy-MM-dd\\'T\\'HH:mm:ss.SSS"), 
+            				new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"), 
+            				new SimpleDateFormat("yyyy-MM-dd HH:mm"),
+            				new SimpleDateFormat("yyyy-MM-dd")
+            			};
+            		for(int i=0;i<dateFormats.length;i++) {
+	            		try {
+	            			val = dateFormats[i].parse(buf.toString());
+	            			break;
+	            		}catch(ParseException e) {
+	            			
+	            		}
             		}
             	}
                 break;
@@ -379,23 +498,20 @@ public class DocumentUtil {
 
             case GridBinaryMarshaller.TIME: {
             	val = buf.getClass()==Time.class? buf: null;
-            	if(val==null) {
-            		long time = Long.parseLong(buf.toString());
-            		val = new Time(time);
+            	if(val==null) {            		
+            		val = Time.valueOf(buf.toString());
             	} 
                 break;
             }
 
             case GridBinaryMarshaller.UUID: {
             	val = buf.getClass()==UUID.class? buf: UUID.fromString(buf.toString());
-
                 break;
             }
 
 
             case GridBinaryMarshaller.NULL:
                 val = null;
-
                 break;
 
             default:
@@ -426,27 +542,10 @@ public class DocumentUtil {
 	    	String $key =  ent.getKey();
 	    	Object $value = ent.getValue();
 	    	
-			try {			
-				if($value instanceof List){
-					List $arr = (List)$value;
-					//-$value = $arr.toArray();
-					$value = ($arr);
-				}
-				else if($value instanceof Set){
-					Set $arr = (Set)$value;
-					//-$value = $arr.toArray();
-					$value = ($arr);
-				}
-				else if($value instanceof Document){
-					Document $arr = (Document)$value;					
-					$value = $arr.asMap();
-				}
-				else if($value instanceof Map){
-					Map $arr = (Map)$value;
-					//$value = new HashMap($arr);
-					//$value = ($arr);
-				}
-				else if(type!=null && $value instanceof Number) {
+			try {	
+				$value = bsonObjectToJavaObject($value);
+			
+				if(type!=null && $value instanceof Number) {
 					BinaryFieldMetadata field = type.metadata().fieldsMap().get($key);
 					if(field!=null) {
 						$value = readNumberBinaryField((Number)$value,field.typeId());
@@ -467,7 +566,7 @@ public class DocumentUtil {
 						return (BinaryObject)bValue;
 					}
 				}
-				else {
+				else if($value!=null) {
 					Object bValue = igniteBinary.toBinary($value);
 					bb.setField($key, bValue);
 				}

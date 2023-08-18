@@ -27,7 +27,7 @@ public class S3LocalFileServiceImpl implements S3Service {
         }
         Bucket bucket = new Bucket();
         bucket.setName(bucketName);
-        bucket.setCreationDate(DateUtil.getDateFormatToSecond(new Date()));
+        bucket.setCreationDate(DateUtil.getDateGMTFormat(new Date()));
         return bucket;
     }
 

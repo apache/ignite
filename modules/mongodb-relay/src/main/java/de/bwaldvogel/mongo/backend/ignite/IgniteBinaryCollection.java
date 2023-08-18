@@ -1,77 +1,40 @@
 package de.bwaldvogel.mongo.backend.ignite;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import javax.cache.Cache;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.binary.BinaryFieldEx;
-import org.apache.ignite.internal.binary.BinaryFieldMetadata;
-import org.apache.ignite.internal.binary.BinaryTypeImpl;
-import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.streams.BinaryByteBufferInputStream;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.stream.StreamVisitor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import de.bwaldvogel.mongo.MongoDatabase;
 import de.bwaldvogel.mongo.backend.AbstractMongoCollection;
-import de.bwaldvogel.mongo.backend.Assert;
 import de.bwaldvogel.mongo.backend.CollectionOptions;
 import de.bwaldvogel.mongo.backend.ComposeKeyValue;
 import de.bwaldvogel.mongo.backend.CursorRegistry;
 import de.bwaldvogel.mongo.backend.DocumentComparator;
 import de.bwaldvogel.mongo.backend.DocumentWithPosition;
 import de.bwaldvogel.mongo.backend.Index;
-import de.bwaldvogel.mongo.backend.KeyValue;
 import de.bwaldvogel.mongo.backend.Missing;
 import de.bwaldvogel.mongo.backend.QueryResult;
-import de.bwaldvogel.mongo.backend.Utils;
 import de.bwaldvogel.mongo.backend.ignite.util.BinaryObjectMatch;
 import de.bwaldvogel.mongo.bson.Document;
 import de.bwaldvogel.mongo.exception.BadValueException;
 import de.bwaldvogel.mongo.exception.DuplicateKeyError;
-import de.bwaldvogel.mongo.exception.MongoServerError;
+import de.bwaldvogel.mongo.exception.IllegalOperationException;
 import de.bwaldvogel.mongo.exception.TypeMismatchException;
 import io.netty.util.internal.StringUtil;
 
@@ -80,13 +43,20 @@ import static de.bwaldvogel.mongo.backend.ignite.util.DocumentUtil.*;
 public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 
 	public final IgniteCache<Object, BinaryObject> dataMap;	
-	public final String idField;	
+	public final String idField;
+	private boolean readOnly = false;
     
     public IgniteBinaryCollection(IgniteDatabase database, String collectionName, CollectionOptions options,
             CursorRegistry cursorRegistry, IgniteCache<Object, BinaryObject> dataMap) {
         super(database, collectionName,options,cursorRegistry);
         this.dataMap = dataMap;
-        this.idField = options.getIdField();             
+        this.idField = options.getIdField();
+        if(collectionName.startsWith("igfs-internal-")) { // igfs
+        	this.readOnly = true;
+        }
+        if(collectionName.startsWith("wc_")) { // web-console
+        	this.readOnly = true;
+        }
     }
     
 
@@ -101,7 +71,13 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     	for (Index<Object> idx : this.getIndexes()) {
 			if (idx instanceof IgniteLuceneIndex) {
 				IgniteLuceneIndex igniteIndex = (IgniteLuceneIndex) idx;
-				igniteIndex.init();
+				if(op.equals("reIndex"))
+					igniteIndex.init();
+			}
+			if (idx instanceof IgniteVectorIndex) {
+				IgniteVectorIndex igniteIndex = (IgniteVectorIndex) idx;
+				if(op.equals("reIndex"))
+					igniteIndex.init();
 			}
     	}
     }
@@ -124,6 +100,9 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 
     @Override
     protected Object addDocumentInternal(Document document) {
+    	if(readOnly) {
+    		throw new IllegalOperationException("This collection is read only!");
+    	}
         Object key = null;
         if (idField != null) {
             key = document.get(idField);
@@ -185,6 +164,9 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 
     @Override
     protected void removeDocument(Object position) {
+    	if(readOnly) {
+    		throw new IllegalOperationException("This collection is read only!");
+    	}
         boolean remove = dataMap.remove(position);
         if (!remove) {
             throw new NoSuchElementException("No document with key " + position);
@@ -214,13 +196,13 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     protected Iterable<Document> matchDocuments(Document query, Document orderBy, int numberToSkip, int numberToReturn) {
         List<Document> matchedDocuments = new ArrayList<>();
         
-        IgniteBiPredicate<Object, BinaryObject> filter = new BinaryObjectMatch(query,this.idField);
+        IgniteBiPredicate<Object, Object> filter = new BinaryObjectMatch(query,this.idField);
         
-        ScanQuery<Object, BinaryObject> scan = new ScanQuery<>(query.isEmpty()? null: filter);
+        ScanQuery<Object, Object> scan = new ScanQuery<>(query.isEmpty()? null: filter);
 	 
-		QueryCursor<Cache.Entry<Object, BinaryObject>>  cursor = dataMap.query(scan);
+		QueryCursor<Cache.Entry<Object, Object>>  cursor = dataMap.query(scan);
 		//Iterator<Cache.Entry<Object, BinaryObject>> it = cursor.iterator();
-	    for (Cache.Entry<Object, BinaryObject> entry: cursor) {	 	    	
+	    for (Cache.Entry<Object, Object> entry: cursor) {	 	    	
 	    	Document document = objectToDocument(entry.getKey(),entry.getValue(),this.idField);	    	
 	    	matchedDocuments.add(document);
 	    }
@@ -241,6 +223,9 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     
     @Override
     public void drop() {
+    	if(readOnly) {
+    		throw new IllegalOperationException("This collection is read only!");
+    	}
     	dataMap.clear();
     	if(!this.getCollectionName().startsWith("system.")) {    		
     		dataMap.destroy();
@@ -249,6 +234,9 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 
     @Override
     protected void handleUpdate(Object key, Document oldDocument,Document document) {
+    	if(readOnly) {
+    		throw new IllegalOperationException("This collection is read only!");
+    	}
     	T2<String,String> t2 = typeNameAndKeyField(this.dataMap,document);
     	String typeName = t2.get1();    	
     	String keyField = t2.get2();    

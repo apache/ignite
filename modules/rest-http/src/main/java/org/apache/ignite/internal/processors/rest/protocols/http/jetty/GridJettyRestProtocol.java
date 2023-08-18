@@ -383,7 +383,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 			        // Development mode, read from FS
 			    	webApp.setResourceBase(warFile.getPath());
 			        webApp.setDescriptor(warPath+"/WEB-INF/web.xml");
-			        webApp.setExtraClasspath(warPath+"/WEB-INF/classes/");		        
+			        //-webApp.setExtraClasspath(warPath+"/WEB-INF/classes/");		        
 			       
 		        } else if(warFile.getName().endsWith(".war")) {
 			        // use packaged WAR

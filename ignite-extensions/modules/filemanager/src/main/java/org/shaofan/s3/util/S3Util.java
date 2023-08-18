@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.ResponseBytes;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -119,6 +120,44 @@ public class S3Util {
         }
         return headInfo;
     }
+    
+    
+    public String putObjectACL(String bucketName, String key, String acl, AccessControlPolicy policy) {
+        
+        S3Client s3Client = getClient();
+        try {
+        	
+        	PutObjectAclRequest objectRequest = PutObjectAclRequest.builder()
+                    .key(key)
+                    .bucket(bucketName)
+                    .acl(acl)
+                    .accessControlPolicy(policy)
+                    .build();
+            PutObjectAclResponse objectHead = s3Client.putObjectAcl(objectRequest);
+            s3Client.close();
+            return objectHead.requestChargedAsString();
+            
+        } catch (NoSuchKeyException e) {
+            return e.getMessage();
+        }        
+    }
+    
+    public List<Grant> getObjectACL(String bucketName, String key) {        
+        S3Client s3Client = getClient();
+        try {
+        	
+        	GetObjectAclRequest objectRequest = GetObjectAclRequest.builder()
+                    .key(key)
+                    .bucket(bucketName)             
+                    .build();
+            GetObjectAclResponse objectHead = s3Client.getObjectAcl(objectRequest);
+            s3Client.close();            
+            return objectHead.grants();
+            
+        } catch (NoSuchKeyException e) {
+            return null;
+        }        
+    }
 
     public void upload(String bucketName, String key, InputStream inputStream) throws Exception {
         S3Client s3Client = getClient();
@@ -139,6 +178,16 @@ public class S3Util {
         s3Client.close();
         return data;
     }
+    
+    public InputStream getFileInputStream(String bucketName, String key) {
+        S3Client s3Client = getClient();
+        GetObjectRequest request = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .build();
+        ResponseInputStream<GetObjectResponse> stream = s3Client.getObject(request);       
+        return stream;
+    }
 
     public String getDownLoadUrl(String bucketName, String key) {
         S3Presigner s3Presigner = getPresigner();
@@ -146,7 +195,7 @@ public class S3Util {
         GetObjectPresignRequest getObjectPresignRequest = GetObjectPresignRequest.builder().signatureDuration(Duration.ofMinutes(5)).getObjectRequest(getObjectRequest).build();
         PresignedGetObjectRequest presignedGetObjectRequest = s3Presigner.presignGetObject(getObjectPresignRequest);
         String url = presignedGetObjectRequest.url().toString();
-        ;
+       
         s3Presigner.close();
         return url;
     }

@@ -29,7 +29,7 @@ public class LiferayCrawler implements IPermCrawler {
 	private final String fUser;
 	private final String fPassword;
 
-	private final Logger fLogger;
+	private final Logger fLogger = Logger.getLogger(this.getClass().getName());
 
 	/**
 	 * Creates a new liferay crawler using the given Liferay URL, company ID and
@@ -48,9 +48,7 @@ public class LiferayCrawler implements IPermCrawler {
 		fLrUrl = url;
 		fCompany = company;
 		fUser = user;
-		fPassword = pass;
-
-		fLogger = Logger.getLogger(this.getClass().getName());
+		fPassword = pass;		
 	}
 
 	@Override

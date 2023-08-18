@@ -152,29 +152,32 @@ public class PermissionCrawler implements IPermCrawler, Runnable {
 
 		Map<String, String> tempMails = new HashMap<String, String>();
 		Map<String, String> tempLrIds = new HashMap<String, String>();
-
-		// retrieve list of users from configured source (shindig)
-		String response = HttpUtil.getText(fShindigUrl);
-
-		ObjectNode resObj = (ObjectNode)ESRelay.objectMapper.readTree(response);
-		
-		ArrayNode list = resObj.withArray(SHIND_LIST_FIELD);
-		if (list != null) {
-			JsonNode entry = null;
-			for (int i = 0; i < list.size(); ++i) {
-				entry = list.get(i);
-
-				// register user
-				String userId = entry.get(SHIND_ID_FIELD).asText();
-				fUsers.add(userId);
-
-				// register all mail addresses
-				ArrayNode mailAdds = entry.withArray(SHIND_EMAILS_FIELD);
-				for (int j = 0; j < mailAdds.size(); ++j) {
-					String mail = mailAdds.get(j).get(SHIND_VALUE_FIELD).asText();
-					tempMails.put(mail, userId);
+		try {
+			// retrieve list of users from configured source (shindig)
+			String response = HttpUtil.getText(fShindigUrl);
+	
+			ObjectNode resObj = (ObjectNode)ESRelay.objectMapper.readTree(response);
+			
+			ArrayNode list = resObj.withArray(SHIND_LIST_FIELD);
+			if (list != null) {
+				JsonNode entry = null;
+				for (int i = 0; i < list.size(); ++i) {
+					entry = list.get(i);
+	
+					// register user
+					String userId = entry.get(SHIND_ID_FIELD).asText();
+					fUsers.add(userId);
+	
+					// register all mail addresses
+					ArrayNode mailAdds = entry.withArray(SHIND_EMAILS_FIELD);
+					for (int j = 0; j < mailAdds.size(); ++j) {
+						String mail = mailAdds.get(j).get(SHIND_VALUE_FIELD).asText();
+						tempMails.put(mail, userId);
+					}
 				}
 			}
+		} catch(Exception e) {
+			fLogger.log(Level.WARNING,e.getMessage());	
 		}
 
 		// crawl all permissions for all users

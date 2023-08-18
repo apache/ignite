@@ -14,27 +14,7 @@ import java.util.*;
 
 public final class IgniteUtil{
 	public static IgniteUtil MODULE$ = new IgniteUtil();
-	/**
-	 *  只使用key的前面冒号开头的字符串前缀
-	 * @author admin
-	 *
-	 */
-	public static class KeyPrefixAffinityKeyMapper extends GridCacheDefaultAffinityKeyMapper{		
-		private static final long serialVersionUID = 1L;
-
-		@Override public Object affinityKey(Object key) {
-			 if(key instanceof String) {
-				 String strKey = key.toString();
-				 int pos = strKey.indexOf(':');
-				 if(pos>0) {
-					 return strKey.substring(0,pos);
-				 }
-				 return key;
-			 }
-			 return super.affinityKey(key);
-		 }
-				
-	}
+	
     
     public void createCacheIfNotExists(final Ignite ignite, final String table, final CacheConfiguration<String, BinaryObject> cfg) {
         final boolean exists = ignite.cacheNames().contains(table);

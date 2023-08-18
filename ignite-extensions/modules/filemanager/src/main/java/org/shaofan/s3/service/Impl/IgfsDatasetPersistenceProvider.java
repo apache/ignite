@@ -132,7 +132,7 @@ public class IgfsDatasetPersistenceProvider{
 			if(b.isDirectory()) {
 				Bucket bucket = new Bucket();
 				bucket.setName(b.path().toString());
-				bucket.setCreationDate(DateUtil.getDateFormatToSecond(new Date(b.modificationTime())));				
+				bucket.setCreationDate(DateUtil.getDateGMTFormat(new Date(b.modificationTime())));				
 				buckets.add(bucket);
 			}
 		}
@@ -317,6 +317,9 @@ public class IgfsDatasetPersistenceProvider{
     		if(pos>=0) {
     			pathName = pathName.substring(0,pos);
     		}
+    		else {
+    			pathName = "";
+    		}
     	}
         final String bundlePrefix = getDatasetPath(bucketId, pathName, null);        
         return bundlePrefix;
@@ -355,6 +358,9 @@ public class IgfsDatasetPersistenceProvider{
 		String key = getDatasetPath(bucketName,s3KeyPrefix==null? "": s3KeyPrefix,null);
 		IgfsPath root = new IgfsPath(key);
 		List<S3Object>  flows = new ArrayList<>();
+		if(!fs.exists(root)) {
+			return flows;
+		}
 		Collection<IgfsFile> datasets = fs.listFiles(root);
 		for(IgfsFile dataset: datasets) {
 			S3Object flow = new S3Object();
@@ -366,6 +372,7 @@ public class IgfsDatasetPersistenceProvider{
 			}
 			else {
 				flow.setKey(getObjectKey(dataset.path(),bucketName)+"/");
+				flow.setMetadata(getObjectMetadata(dataset));
 			}
 			flows.add(flow);
 		}		

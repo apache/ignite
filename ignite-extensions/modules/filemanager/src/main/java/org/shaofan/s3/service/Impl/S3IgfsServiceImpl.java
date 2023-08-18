@@ -32,7 +32,7 @@ public class S3IgfsServiceImpl implements S3Service {
     public Bucket createBucket(String bucketName) {       
         Bucket bucket = new Bucket();
         bucket.setName(bucketName);
-        bucket.setCreationDate(DateUtil.getDateFormatToSecond(new Date()));
+        bucket.setCreationDate(DateUtil.getDateGMTFormat(new Date()));
         
         return provider.createBucket(bucket, null);        
     }
@@ -62,10 +62,10 @@ public class S3IgfsServiceImpl implements S3Service {
     @Override
     public List<S3Object> listObjects(String bucketName, String prefix) {
         if (StringUtils.isEmpty(prefix)) {
-            prefix = "/";
+            prefix = "";
         } else {
-            if (!prefix.startsWith("/")) {
-                prefix = "/" + prefix;
+            if (prefix.startsWith("/")) {
+                prefix = prefix.substring(1);
             }
         }
         List<S3Object> s3ObjectList = provider.getObjectsAndMetadata(bucketName,prefix);        
@@ -82,7 +82,7 @@ public class S3IgfsServiceImpl implements S3Service {
                 headInfo.put("Content-Disposition", "filename=" + URLEncoder.encode(file.getFileName(), "utf-8"));
                 headInfo.put("Content-Length", file.getContentLength() + "");
                 headInfo.put("Content-Type", file.getContentType());
-                headInfo.put("Last-Modified", DateUtil.getDateFormatToSecond(file.getLastModified()));
+                headInfo.put("Last-Modified", DateUtil.getDateGMTFormat(file.getLastModified()));
             } catch (Exception e) {
                 e.printStackTrace();
             }

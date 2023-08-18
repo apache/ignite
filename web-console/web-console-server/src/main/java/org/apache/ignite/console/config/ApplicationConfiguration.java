@@ -87,9 +87,12 @@ public class ApplicationConfiguration  {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**")
+                		.maxAge(3600)
                         .allowedOriginPatterns("*")
                         .allowCredentials(true)
-                        .allowedMethods("GET", "POST", "PUT", "DELETE");
+                        .allowedHeaders("*")
+                        .exposedHeaders("*")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS");
             }
             
             @Override

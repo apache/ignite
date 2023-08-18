@@ -100,8 +100,7 @@ public class IgniteVectorIndex extends Index<Object> {
 	
 	private String tokenizerModelName = "tokenizers/perceiver-ar-xlnet-large";
 	
-	private String modelUrl = null;
-	
+	private String modelUrl = null;	
 	
 	static class EmbeddingIntCoordObjectLabelVectorizer implements FeatureLabelExtractor<Object,Vector,Object>{
 		
@@ -185,20 +184,20 @@ public class IgniteVectorIndex extends Index<Object> {
 			modelUrl = igniteHome+"/models/"+(sparse?tokenizerModelName:embeddingModelName);
 		}
 		
-		 
 		CacheConfiguration<Object, Vector> cfg = new CacheConfiguration<>();        	
         cfg.setCacheMode(CacheMode.PARTITIONED);
         cfg.setName(IgniteDatabase.getIndexCacheName(collection.getDatabaseName(),this.cacheName,this.getName()));
         cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC); 
         cfg.setBackups(0);
-       
+        
         vecIndex = ctx.grid().getOrCreateCache(cfg);
         
-		init();
+        init();
 	}
 	
 
-	public void init() {
+	public void init() {		
+		
 		if (this.knnDataset == null) {
 			try {
 				CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl) ctx.cacheObjects();				

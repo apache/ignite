@@ -11,14 +11,7 @@ public class SystemConfig {
     private String accessKey = "root";
     private String secretAccessKey = "123456";
     
-    //  单个数据大小
-    int maxFileSize = 2*1024*1024*1024; // 2G
-    
-	/// 总上传数据大小
-    int maxRequestSize = 64*1024*1024; // 64M
-    
-    int fileSizeThreshold = 64*1024*1024*1024; // 64G
-    
+        
 
     public String getEndpointOverride() {
 		return endpointOverride;
@@ -58,32 +51,8 @@ public class SystemConfig {
 
     public void setSecretAccessKey(String password) {
         this.secretAccessKey = password;
-    }
-    
-    public int getMaxFileSize() {
-		return maxFileSize;
-	}
-
-	public void setMaxFileSize(int maxFileSize) {
-		this.maxFileSize = maxFileSize;
-	}
-
-	public int getMaxRequestSize() {
-		return maxRequestSize;
-	}
-
-	public void setMaxRequestSize(int maxRequestSize) {
-		this.maxRequestSize = maxRequestSize;
-	}
-
-	public int getFileSizeThreshold() {
-		return fileSizeThreshold;
-	}
-
-	public void setFileSizeThreshold(int fileSizeThreshold) {
-		this.fileSizeThreshold = fileSizeThreshold;
-	}
-
+    }    
+   
 	public String getS3BucketName() {
 		return s3BucketName;
 	}

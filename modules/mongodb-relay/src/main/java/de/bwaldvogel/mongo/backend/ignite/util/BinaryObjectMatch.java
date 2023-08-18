@@ -7,16 +7,11 @@ import java.util.Map;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
-import de.bwaldvogel.mongo.backend.Constants;
 import de.bwaldvogel.mongo.backend.DefaultQueryMatcher;
 import de.bwaldvogel.mongo.backend.QueryFilter;
-import de.bwaldvogel.mongo.backend.QueryMatcher;
-import de.bwaldvogel.mongo.backend.QueryOperator;
-import de.bwaldvogel.mongo.bson.BsonRegularExpression;
 import de.bwaldvogel.mongo.bson.Document;
-import de.bwaldvogel.mongo.exception.FailedToParseException;
 
-public class BinaryObjectMatch extends DefaultQueryMatcher implements IgniteBiPredicate<Object, BinaryObject>{
+public class BinaryObjectMatch extends DefaultQueryMatcher implements IgniteBiPredicate<Object, Object>{
 	private static final long serialVersionUID = 1L;	
 	
 	private final Document query;
@@ -28,12 +23,15 @@ public class BinaryObjectMatch extends DefaultQueryMatcher implements IgniteBiPr
 	}
 
 	@Override 
-	public boolean apply(Object key, BinaryObject other) {		
-     	// Document document = DocumentUtil.binaryObjectToDocument(key,other,idField,query.keySet());     	
-     	if (this.matches(other, query)) {
-            return true;
-         }
-     	return false;
+	public boolean apply(Object key, Object other) {		
+     	// Document document = DocumentUtil.binaryObjectToDocument(key,other,idField,query.keySet());
+		if(other instanceof BinaryObject) {
+			if (this.matches((BinaryObject)other, query)) {
+	            return true;
+	        }
+			return false;
+		}
+     	return true;
      }
 	
 	/**
@@ -80,7 +78,7 @@ public class BinaryObjectMatch extends DefaultQueryMatcher implements IgniteBiPr
                 }
             }
             else if (documentValue instanceof Map && !(documentValue instanceof Document)) {
-            	documentValue = new Document(documentValue);
+            	documentValue = new Document((Map)documentValue);
             }
 
             return checkMatchesValue(queryValue, documentValue);

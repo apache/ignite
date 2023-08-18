@@ -1,5 +1,6 @@
 package de.bwaldvogel.mongo.backend.ignite;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -21,6 +22,7 @@ import de.bwaldvogel.mongo.backend.AbstractMongoCollection;
 import de.bwaldvogel.mongo.backend.AbstractUniqueIndex;
 import de.bwaldvogel.mongo.backend.IndexKey;
 import de.bwaldvogel.mongo.backend.KeyValue;
+import de.bwaldvogel.mongo.backend.ignite.util.DocumentUtil;
 import de.bwaldvogel.mongo.bson.Document;
 
 
@@ -56,7 +58,7 @@ public class PrimaryKeyIndex<P> extends AbstractUniqueIndex<P> {
 
     @Override
     protected P removeDocument(KeyValue keyValue) {
-        return (P)keyValue.get(0);
+        return (P)DocumentUtil.toBinaryKey(keyValue.get(0));
     }
 
     @Override
@@ -66,8 +68,9 @@ public class PrimaryKeyIndex<P> extends AbstractUniqueIndex<P> {
 
 
     @Override
-    protected P getPosition(KeyValue keyValue) {    	
-    	return (P)keyValue.get(0);
+    protected P getPosition(KeyValue keyValue) {
+    	Object id = keyValue.get(0);    	
+    	return (P)DocumentUtil.toBinaryKey(id);
     }
 
     @Override

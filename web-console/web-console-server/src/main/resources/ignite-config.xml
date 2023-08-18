@@ -4,16 +4,29 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
     <bean class="org.apache.ignite.configuration.IgniteConfiguration">
+    	<property name="igniteInstanceName" value="admin" />	
         <property name="consistentId" value="web-console-data"/>
+        <property name="peerClassLoadingEnabled" value="true"/>
         <property name="metricsLogFrequency" value="0"/>
         <property name="queryThreadPoolSize" value="8"/>
         <property name="failureDetectionTimeout" value="10000"/>
         <property name="networkTimeout" value="10000"/>
+        
+        <property name="binaryConfiguration">
+	        <bean class="org.apache.ignite.configuration.BinaryConfiguration">
+	            <property name="nameMapper">
+	                <bean class="org.apache.ignite.binary.BinaryBasicNameMapper">
+	                    <property name="simpleName" value="true"/>
+	                </bean>
+	            </property>
+				<property name="compactFooter" value="false"/>
+	        </bean>
+	    </property>
 
-        <!-- Disable all clients. -->
+        <!-- Disable all clients. 
         <property name="connectorConfiguration"><null/></property>
         <property name="clientConnectorConfiguration"><null/></property>
-
+		-->
         <!-- Recommended by CS team. -->
         <property name="transactionConfiguration">
             <bean class="org.apache.ignite.configuration.TransactionConfiguration">
@@ -44,12 +57,12 @@
 
         <property name="failureHandler">
             <bean class="org.apache.ignite.failure.NoOpFailureHandler"/>
-        </property>
-
-        
+        </property>        
 
         <property name="discoverySpi">
-            <bean class="org.apache.ignite.spi.discovery.isolated.IsolatedDiscoverySpi"/>
+            <bean class="org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi">
+                <property name="zkConnectionString" value="localhost:2181" />                
+            </bean>
         </property>
     </bean>
 </beans>

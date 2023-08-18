@@ -121,6 +121,11 @@
 		</dependency>
 
 		<dependency>
+			<groupId>com.github.junrar</groupId>
+			<artifactId>junrar</artifactId>
+			<version>7.5.5</version>
+		</dependency>        
+		<dependency>
 			<groupId>org.webjars</groupId>
 			<artifactId>angularjs</artifactId>
 			<version>1.5.0</version>

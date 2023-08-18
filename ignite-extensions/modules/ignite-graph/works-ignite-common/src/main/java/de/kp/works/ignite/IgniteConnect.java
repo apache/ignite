@@ -2,6 +2,7 @@ package de.kp.works.ignite;
 
 
 import org.apache.ignite.binary.*;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 import java.util.Optional;
 
@@ -67,8 +68,14 @@ public class IgniteConnect
     		return ignite;
     	}
     	catch(Exception e) {
+    		
     		try {
-    			ignite = Ignition.getOrStart(cfg.fromConfig());
+    			IgniteConfiguration config = cfg.fromConfig();
+    			if(config==null) {
+    				IgniteConf.logger.error("Can not find cfg for "+ cfg.igniteName +", use default ignite");
+    				return defaultIgnite;
+    			}
+    			ignite = Ignition.getOrStart(config);
     			return ignite;
     		}
     		catch(Exception e2) {

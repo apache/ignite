@@ -17,6 +17,7 @@
 package org.apache.ignite.console.web.controller;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,6 +29,7 @@ import org.apache.ignite.console.services.AccountsService;
 import org.apache.ignite.console.web.model.ChangeUserRequest;
 import org.apache.ignite.console.web.model.EmailRequest;
 import org.apache.ignite.console.web.model.ResetPasswordRequest;
+import org.apache.ignite.console.web.model.SignInRequest;
 import org.apache.ignite.console.web.model.SignUpRequest;
 import org.apache.ignite.console.web.model.UserResponse;
 import org.springframework.http.ResponseEntity;
@@ -59,6 +61,8 @@ public class AccountController {
 
     /** Accounts service. */
     private final AccountsService accountsSrvc;
+    
+    private String rolePrefix = null;
 
     /**
      * @param authMgr Authentication manager.
@@ -78,6 +82,40 @@ public class AccountController {
         Account acc = accountsSrvc.loadUserByUsername(req.getUserPrincipal().getName());
 
         return ResponseEntity.ok(new UserResponse(acc, req.isUserInRole(ROLE_PREVIOUS_ADMINISTRATOR)));
+    }
+    
+    /**
+     * @param params SignUp params.
+     */
+    @Operation(summary = "Login user.")
+    @PostMapping(path = "/api/v1/login")
+    public ResponseEntity<UserResponse> signin(@Valid @RequestBody SignInRequest params) {        
+
+        Authentication auth = authMgr.authenticate(
+            new UsernamePasswordAuthenticationToken(
+                params.getEmail(),
+                params.getPassword())
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(auth);
+        
+        Account acc = accountsSrvc.loadUserByUsername(params.getEmail());
+        
+        String role = ROLE_PREVIOUS_ADMINISTRATOR;
+        if (this.rolePrefix != null && role != null && !role.startsWith(this.rolePrefix)) {
+			role = this.rolePrefix + role;
+		}
+		boolean isUserInRole = false;
+		Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
+		if (authorities != null) {
+			for (GrantedAuthority grantedAuthority : authorities) {
+				if (role.equals(grantedAuthority.getAuthority())) {
+					isUserInRole = true;
+				}
+			}
+		}
+
+        return ResponseEntity.ok(new UserResponse(acc, isUserInRole));
     }
 
     /**

@@ -121,7 +121,7 @@ public class S3Controller {
             key.setText(s3Object.getKey());
             if (!StringUtils.isEmpty(s3Object.getMetadata().getLastModified())) {
                 Element lastModified = contents.addElement("LastModified");
-                lastModified.setText(DateUtil.getDateFormatToSecond(s3Object.getMetadata().getLastModified()));
+                lastModified.setText(DateUtil.getDateGMTFormat(s3Object.getMetadata().getLastModified()));
                 Element size = contents.addElement("Size");
                 size.setText(s3Object.getMetadata().getContentLength() + "");
             }
@@ -166,7 +166,10 @@ public class S3Controller {
             pageUrl = pageUrl.split("\\?")[0];
         }
         String objectKey = pageUrl.replace(request.getContextPath() + "/s3/" + bucketName + "/", "");
-        String copySource = URLDecoder.decode(request.getHeader("x-amz-copy-source"), "utf-8");
+        String copySource = request.getHeader("x-amz-copy-source");
+        if(copySource!=null) {
+        	copySource = URLDecoder.decode(copySource, "utf-8");
+        }
         if (StringUtils.isEmpty(copySource)) {
             s3Service.putObject(bucketName, objectKey, request.getInputStream());
             return ResponseEntity.ok().build();

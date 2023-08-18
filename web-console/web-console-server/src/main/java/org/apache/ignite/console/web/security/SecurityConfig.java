@@ -67,6 +67,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     /** Sign in route. */
     public static final String SIGN_IN_ROUTE = "/api/v1/signin";
+    
+    /** Login route. same as signin but return user info */
+    public static final String LOGIN_ROUTE = "/api/v1/login";
 
     /** Sign up route. */
     public static final String SIGN_UP_ROUTE = "/api/v1/signup";
@@ -92,7 +95,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     /** Public routes. */
     private static final String[] PUBLIC_ROUTES = new String[] {
         AGENTS_PATH,
-        SIGN_IN_ROUTE, SIGN_UP_ROUTE,
+        SIGN_IN_ROUTE, SIGN_UP_ROUTE, LOGIN_ROUTE,
         FORGOT_PASSWORD_ROUTE, RESET_PASSWORD_ROUTE, ACTIVATION_RESEND
     };
 
@@ -144,7 +147,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .and()
             .addFilterAt(authenticationFilter(), UsernamePasswordAuthenticationFilter.class)
             .addFilterAfter(switchUserFilter(), FilterSecurityInterceptor.class)
-            .addFilterAt(authenticationTokenFilter(), UsernamePasswordAuthenticationFilter.class)
+            .addFilterAt(authenticationTokenFilter(), FilterSecurityInterceptor.class)
             .logout()
             .logoutUrl(LOGOUT_ROUTE)
             .deleteCookies("SESSION")
