@@ -34,8 +34,6 @@ import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.toMap;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 
 /**
  * Tests most of public API methods of {@link IgniteCache} when cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
@@ -200,11 +198,6 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends IgniteCacheClusterRe
                     for (TransactionIsolation isolation : TransactionIsolation.values()) {
                         CacheConfiguration cfg = cache.getConfiguration(CacheConfiguration.class);
 
-                        if (level == OPTIMISTIC && cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
-                            // Only pessimistic transactions are supported when MVCC is enabled.
-                            continue;
-                        }
-
                         Transaction tx = node.transactions().txStart(level, isolation);
 
                         try {
@@ -242,11 +235,6 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends IgniteCacheClusterRe
                 for (TransactionConcurrency level : TransactionConcurrency.values()) {
                     for (TransactionIsolation isolation : TransactionIsolation.values()) {
                         CacheConfiguration cfg = cache.getConfiguration(CacheConfiguration.class);
-
-                        if (level == OPTIMISTIC && cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
-                            // Only pessimistic transactions are supported when MVCC is enabled.
-                            continue;
-                        }
 
                         Transaction tx = node.transactions().txStart(level, isolation);
 
