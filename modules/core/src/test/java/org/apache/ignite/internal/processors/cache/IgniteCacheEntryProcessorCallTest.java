@@ -124,30 +124,6 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testEntryProcessorCallOnMvccCache() throws Exception {
-        {
-            CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-            ccfg.setBackups(1);
-            ccfg.setWriteSynchronizationMode(FULL_SYNC);
-            ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-
-            checkEntryProcessorCallCount(ccfg, 2);
-        }
-
-        {
-            CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-            ccfg.setBackups(0);
-            ccfg.setWriteSynchronizationMode(FULL_SYNC);
-            ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-
-            checkEntryProcessorCallCount(ccfg, 1);
-        }
-    }
-
-    /**
      * @param ccfg Cache configuration.
      * @param expCallCnt Expected entry processor calls count.
      * @throws Exception If failed.
