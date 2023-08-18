@@ -118,10 +118,18 @@ public class Query<RowT> {
     }
 
     /** */
+    public void onError(Throwable failure) {
+        tryClose(failure);
+    }
+
+    /** */
     protected void tryClose(@Nullable Throwable failure) {
         List<RunningFragment<RowT>> fragments = new ArrayList<>(this.fragments);
 
         AtomicInteger cntDown = new AtomicInteger(fragments.size());
+
+        if (cntDown.get() == 0)
+            unregister.accept(this, failure);
 
         for (RunningFragment<RowT> frag : fragments) {
             frag.context().execute(() -> {
@@ -147,8 +155,6 @@ public class Query<RowT> {
 
             if (state == QueryState.INITED) {
                 state = QueryState.CLOSING;
-
-                assert memoryTracker == null;
 
                 try {
                     exch.closeQuery(initNodeId, id);

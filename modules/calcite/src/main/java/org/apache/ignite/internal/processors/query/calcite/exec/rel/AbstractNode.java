@@ -146,10 +146,7 @@ public abstract class AbstractNode<Row> implements Node<Row> {
      * @param e Exception.
      */
     public void onError(Throwable e) {
-        if (e instanceof QueryCancelledException)
-            U.warn(context().logger(), "Execution is cancelled.", e);
-        else
-            onErrorInternal(e);
+        onErrorInternal(e);
     }
 
     /** */
@@ -185,6 +182,8 @@ public abstract class AbstractNode<Row> implements Node<Row> {
     protected void checkState() throws Exception {
         if (context().isCancelled())
             throw new QueryCancelledException();
+        if (context().isTimedOut())
+            throw new QueryCancelledException("The query was timed out.");
         if (Thread.interrupted())
             throw new IgniteInterruptedCheckedException("Thread was interrupted.");
         if (!U.assertionsEnabled())

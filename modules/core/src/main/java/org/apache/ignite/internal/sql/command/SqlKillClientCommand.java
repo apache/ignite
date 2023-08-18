@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.sql.command;
 
+import org.apache.ignite.internal.management.kill.ClientConnectionDropTask;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.sql.SqlParserUtils;
@@ -25,7 +26,7 @@ import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 /**
  * KILL CLIENT command.
  *
- * @see org.apache.ignite.internal.visor.client.VisorClientConnectionDropTask
+ * @see ClientConnectionDropTask
  * @see ClientConnectionView#connectionId()
  */
 public class SqlKillClientCommand implements SqlCommand {

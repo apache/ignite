@@ -458,8 +458,7 @@ public final class GridTestUtils {
      * @param log Logger (optional).
      * @param run Runnable.
      * @param cls Exception class.
-     * @param msg Exception message (optional). If provided exception message
-     *      and this message should be equal.
+     * @param msg Exception message (optional). Check that raised exception message contains this substring.
      * @return Thrown throwable.
      */
     public static Throwable assertThrows(
@@ -1053,9 +1052,9 @@ public final class GridTestUtils {
             }
         };
 
-        runFut.listen(fut -> {
+        runFut.listen(() -> {
             try {
-                resFut.onDone(fut.get());
+                resFut.onDone(runFut.get());
             }
             catch (IgniteFutureCancelledCheckedException e) {
                 resFut.onCancelled();

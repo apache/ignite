@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.management.kill;
 
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.query.VisorContinuousQueryCancelTask;
 
 /** */
 public class KillContinuousCommand implements ComputeCommand<KillContinuousCommandArg, Void> {
@@ -33,7 +32,7 @@ public class KillContinuousCommand implements ComputeCommand<KillContinuousComma
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorContinuousQueryCancelTask> taskClass() {
-        return VisorContinuousQueryCancelTask.class;
+    @Override public Class<ContinuousQueryCancelTask> taskClass() {
+        return ContinuousQueryCancelTask.class;
     }
 }

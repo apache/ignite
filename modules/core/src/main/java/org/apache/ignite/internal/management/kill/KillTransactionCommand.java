@@ -22,12 +22,11 @@ import java.util.Map;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.tx.KillTransactionTask;
-import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
+import org.apache.ignite.internal.management.tx.TxTaskResult;
 
 /** */
 public class KillTransactionCommand
-    implements ComputeCommand<KillTransactionCommandArg, Map<ClusterNode, VisorTxTaskResult>> {
+    implements ComputeCommand<KillTransactionCommandArg, Map<ClusterNode, TxTaskResult>> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Kill transaction by xid";

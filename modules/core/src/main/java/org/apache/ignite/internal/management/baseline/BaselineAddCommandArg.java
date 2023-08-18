@@ -23,12 +23,12 @@ import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliConfirmArgument;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
+import org.apache.ignite.internal.management.baseline.BaselineCommand.BaselineTaskArg;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @CliConfirmArgument
-public class BaselineAddCommandArg extends VisorBaselineTaskArg {
+public class BaselineAddCommandArg extends BaselineTaskArg {
     /** */
     private static final long serialVersionUID = 0;
 

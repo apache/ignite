@@ -24,18 +24,17 @@ import java.util.function.Consumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.encryption.VisorCacheGroupEncryptionTaskResult;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 
 /** */
 abstract class CacheGroupEncryptionCommand<T>
-    implements ComputeCommand<EncryptionCacheGroupArg, VisorCacheGroupEncryptionTaskResult<T>> {
+    implements ComputeCommand<EncryptionCacheGroupArg, CacheGroupEncryptionTaskResult<T>> {
     /** {@inheritDoc} */
     @Override public void printResult(
         EncryptionCacheGroupArg arg,
-        VisorCacheGroupEncryptionTaskResult<T> res,
+        CacheGroupEncryptionTaskResult<T> res,
         Consumer<String> printer
     ) {
         Map<UUID, IgniteException> exceptions = res.exceptions();

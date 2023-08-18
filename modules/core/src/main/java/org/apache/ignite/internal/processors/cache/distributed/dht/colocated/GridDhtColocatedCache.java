@@ -1111,7 +1111,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 threadId,
                 createTtl,
                 accessTtl,
-                filter,
                 skipStore,
                 keepBinary);
 

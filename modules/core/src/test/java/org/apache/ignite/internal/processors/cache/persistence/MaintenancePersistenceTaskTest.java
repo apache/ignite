@@ -28,11 +28,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.persistence.PersistenceCleanCachesTaskArg;
 import org.apache.ignite.internal.management.persistence.PersistenceCommand;
+import org.apache.ignite.internal.management.persistence.PersistenceTask;
+import org.apache.ignite.internal.management.persistence.PersistenceTaskResult;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.persistence.PersistenceTask;
-import org.apache.ignite.internal.visor.persistence.PersistenceTaskResult;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
 import static org.apache.ignite.testframework.GridTestUtils.deleteLastCheckpointEndMarker;
 
 /**

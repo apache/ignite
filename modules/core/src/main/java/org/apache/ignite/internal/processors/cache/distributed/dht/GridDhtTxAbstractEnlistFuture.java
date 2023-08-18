@@ -64,12 +64,9 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.NotNull;
@@ -111,9 +108,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     @GridToStringExclude
     protected final IgniteLogger log;
 
-    /** Thread. */
-    protected final long threadId;
-
     /** Future ID. */
     protected final IgniteUuid nearFutId;
 
@@ -130,7 +124,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     protected final MvccSnapshot mvccSnapshot;
 
     /** New DHT nodes. */
-    protected Set<UUID> newDhtNodes = new HashSet<>();
+    protected final Set<UUID> newDhtNodes = new HashSet<>();
 
     /** Near node ID. */
     protected final UUID nearNodeId;
@@ -196,7 +190,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
      * @param mvccSnapshot Mvcc snapshot.
-     * @param threadId Thread ID.
      * @param nearFutId Near future id.
      * @param nearMiniId Near mini future id.
      * @param tx Transaction.
@@ -208,7 +201,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     protected GridDhtTxAbstractEnlistFuture(UUID nearNodeId,
         GridCacheVersion nearLockVer,
         MvccSnapshot mvccSnapshot,
-        long threadId,
         IgniteUuid nearFutId,
         int nearMiniId,
         GridDhtTxLocalAdapter tx,
@@ -221,7 +213,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         assert nearNodeId != null;
         assert nearLockVer != null;
 
-        this.threadId = threadId;
         this.cctx = cctx;
         this.nearNodeId = nearNodeId;
         this.nearLockVer = nearLockVer;
@@ -232,7 +223,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         this.tx = tx;
         this.filter = filter;
         this.keepBinary = keepBinary;
-        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
+        deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         lockVer = tx.xidVersion();
 
@@ -301,11 +292,9 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
                 // Terminate this future if parent future is terminated by rollback.
                 if (!fut.isDone()) {
-                    fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
-                        @Override public void apply(IgniteInternalFuture fut) {
-                            if (fut.error() != null)
-                                onDone(fut.error());
-                        }
+                    fut.listen(() -> {
+                        if (fut.error() != null)
+                            onDone(fut.error());
                     });
                 }
                 else if (fut.error() != null)
@@ -416,7 +405,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                     assert !entry.detached();
 
                     CacheObject val = op.isDeleteOrLock() || op.isInvoke()
-                        ? null : cctx.toCacheObject(((IgniteBiTuple)cur).getValue());
+                        ? null : cctx.toCacheObject(((Map.Entry<?, ?>)cur).getValue());
 
                     GridInvokeValue invokeVal = null;
                     EntryProcessor entryProc = null;
@@ -425,7 +414,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                     if (op.isInvoke()) {
                         assert needResult();
 
-                        invokeVal = (GridInvokeValue)((IgniteBiTuple)cur).getValue();
+                        invokeVal = (GridInvokeValue)((Map.Entry<?, ?>)cur).getValue();
 
                         entryProc = invokeVal.entryProcessor();
                         invokeArgs = invokeVal.invokeArgs();
@@ -513,18 +502,16 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
                             it.beforeDetach();
 
-                            updateFut.listen(new CI1<IgniteInternalFuture<GridCacheUpdateTxResult>>() {
-                                @Override public void apply(IgniteInternalFuture<GridCacheUpdateTxResult> fut) {
-                                    try {
-                                        tx.incrementLockCounter();
+                            updateFut.listen(() -> {
+                                try {
+                                    tx.incrementLockCounter();
 
-                                        processEntry(entry0, op, fut.get(), val0, backups0);
+                                    processEntry(entry0, op, updateFut.get(), val0, backups0);
 
-                                        continueLoop(true);
-                                    }
-                                    catch (Throwable e) {
-                                        onDone(e);
-                                    }
+                                    continueLoop(true);
+                                }
+                                catch (Throwable e) {
+                                    onDone(e);
                                 }
                             });
 
@@ -605,7 +592,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
     /** */
     private KeyCacheObject toKey(EnlistOperation op, Object cur) {
-        KeyCacheObject key = cctx.toCacheKeyObject(op.isDeleteOrLock() ? cur : ((IgniteBiTuple)cur).getKey());
+        KeyCacheObject key = cctx.toCacheKeyObject(op.isDeleteOrLock() ? cur : ((Map.Entry<?, ?>)cur).getKey());
 
         if (key.partition() == -1)
             key.partition(cctx.affinity().partition(key));
@@ -725,7 +712,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @param key Key.
      * @param hist History rows.
      * @return History entries.
-     * @throws IgniteCheckedException, if failed.
      */
     private CacheEntryInfoCollection fetchHistoryInfo(KeyCacheObject key, List<MvccLinkAwareSearchRow> hist) {
         List<GridCacheEntryInfo> res = new ArrayList<>();
@@ -928,7 +914,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
     /**
      * Checks whether new coordinator was initialized after the snapshot is acquired.
-     *
+     * <p>
      * Need to fit invariant that all updates are finished before a new coordinator is initialized.
      *
      * @throws ClusterTopologyCheckedException If failed.

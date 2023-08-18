@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.metric.VisorMetricTask;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.nodeOrNull;
 
@@ -38,8 +37,8 @@ public class MetricConfigureHistogramCommand implements ComputeCommand<MetricCom
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorMetricTask> taskClass() {
-        return VisorMetricTask.class;
+    @Override public Class<MetricTask> taskClass() {
+        return MetricTask.class;
     }
 
     /** {@inheritDoc} */

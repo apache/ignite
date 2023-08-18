@@ -177,7 +177,7 @@ class ControlUtility:
         """
         data = self.__run("--cache idle_verify --dump", node=node)
 
-        assert ('VisorIdleVerifyDumpTask successfully' in data), data
+        assert ('IdleVerifyDumpTask successfully' in data), data
 
         return re.search(r'/.*.txt', data).group(0)
 
@@ -259,6 +259,15 @@ class ControlUtility:
         assert "Enabled." in output or "Disabled." in output
 
         return "Enabled." in output
+
+    def run(self, cmd, node=None):
+        """
+        Run arbitrary control.sh subcommand.
+        :param cmd: Command line parameters for the control.sh.
+        :param node: Node to run the control.sh on.
+        :return: Output of the commands as a string.
+        """
+        return self.__run(cmd, node)
 
     def __performance_statistics_cmd(self, sub_command):
         return self.__run(f"--performance-statistics {sub_command}")

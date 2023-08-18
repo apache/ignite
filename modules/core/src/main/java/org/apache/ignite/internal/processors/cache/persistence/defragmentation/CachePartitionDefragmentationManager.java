@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapM
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.GridCacheDataStore;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointTimeoutLock;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightweightCheckpointManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
@@ -209,10 +210,12 @@ public class CachePartitionDefragmentationManager {
             new LinkedBlockingQueue<>()
         );
 
-        completionFut.listen(future -> {
+        completionFut.chain(() -> {
             linkMapByPart.values().forEach(LinkMap::close);
 
             linkMapByPart.clear();
+
+            return completionFut.result();
         });
     }
 
@@ -224,6 +227,19 @@ public class CachePartitionDefragmentationManager {
         dbMgr.onStateRestored(null);
 
         nodeCheckpoint.forceCheckpoint("beforeDefragmentation", null).futureFor(FINISHED).get();
+
+        // The concurrent default checkpointer has various listeners, interferes with new dedicated
+        // CacheGroupContext for defragmentation and at least clears shared CheckpointProgress#clearCounters().
+        // Should be properly reconfigured and restarted after the defragmentation task to have ability launch
+        // other maintenance tasks after.
+        Checkpointer defaultCheckpointer = nodeCheckpoint.getCheckpointer();
+
+        if (defaultCheckpointer != null && !defaultCheckpointer.isDone()) {
+            if (log.isDebugEnabled())
+                log.debug("Stopping default checkpointer.");
+
+            defaultCheckpointer.shutdownNow();
+        }
 
         dbMgr.preserveWalTailPointer();
 
@@ -322,8 +338,6 @@ public class CachePartitionDefragmentationManager {
                             cacheDataStores.put(store.partId(), store);
                     }
 
-                    dbMgr.checkpointedDataRegions().remove(oldGrpCtx.dataRegion());
-
                     // Another cheat. Ttl cleanup manager knows too much shit.
                     oldGrpCtx.caches().stream()
                         .filter(cacheCtx -> cacheCtx.groupId() == grpId)
@@ -407,7 +421,7 @@ public class CachePartitionDefragmentationManager {
 
                     PageStore oldIdxPageStore = filePageStoreMgr.getStore(grpId, INDEX_PARTITION);
 
-                    idxDfrgFut = idxDfrgFut.chain(fut -> {
+                    idxDfrgFut = idxDfrgFut.chain(() -> {
                         if (log.isDebugEnabled()) {
                             log.debug(S.toString(
                                 "Index partition defragmented",
@@ -614,7 +628,7 @@ public class CachePartitionDefragmentationManager {
 
     /** */
     public IgniteInternalFuture<?> completionFuture() {
-        return completionFut.chain(future -> null);
+        return completionFut.chain(() -> null);
     }
 
     /** */

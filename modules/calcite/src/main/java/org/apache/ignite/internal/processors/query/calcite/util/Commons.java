@@ -444,6 +444,11 @@ public final class Commons {
 
     /** */
     public static MappingQueryContext mapContext(UUID locNodeId, AffinityTopologyVersion topVer) {
-        return new MappingQueryContext(locNodeId, topVer);
+        return mapContext(locNodeId, topVer, false);
+    }
+
+    /** */
+    public static MappingQueryContext mapContext(UUID locNodeId, AffinityTopologyVersion topVer, boolean isLocal) {
+        return new MappingQueryContext(locNodeId, topVer, isLocal);
     }
 }

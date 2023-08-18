@@ -125,7 +125,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -1083,8 +1082,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             ctx.kernalContext().continuous().onCacheStop(ctx);
-
-            ctx.kernalContext().cache().context().snapshot().onCacheStop(ctx, callDestroy);
 
             ctx.kernalContext().coordinators().onCacheStop(ctx);
 
@@ -3071,11 +3068,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (snapshotMgr == null)
             snapshotMgr = new IgniteSnapshotManager(ctx);
 
-        IgniteCacheSnapshotManager snpMgr = ctx.plugins().createComponent(IgniteCacheSnapshotManager.class);
-
-        if (snpMgr == null)
-            snpMgr = new IgniteCacheSnapshotManager();
-
         CacheObjectTransformerManager transMgr = ctx.plugins().createComponent(CacheObjectTransformerManager.class);
 
         GridCacheIoManager ioMgr = new GridCacheIoManager();
@@ -3101,7 +3093,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             walStateMgr,
             dbMgr,
             snapshotMgr,
-            snpMgr,
             depMgr,
             exchMgr,
             topMgr,

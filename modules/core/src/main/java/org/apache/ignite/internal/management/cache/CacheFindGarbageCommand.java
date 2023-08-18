@@ -22,14 +22,12 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceJobResult;
-import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTask;
-import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskResult;
+
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 
 /** Find and remove garbage. */
 public class CacheFindGarbageCommand
-    implements ComputeCommand<CacheFindGarbageCommandArg, VisorFindAndDeleteGarbageInPersistenceTaskResult> {
+    implements ComputeCommand<CacheFindGarbageCommandArg, FindAndDeleteGarbageInPersistenceTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Find and optionally delete garbage from shared cache groups which could be left after cache destroy";
@@ -41,19 +39,19 @@ public class CacheFindGarbageCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorFindAndDeleteGarbageInPersistenceTask> taskClass() {
-        return VisorFindAndDeleteGarbageInPersistenceTask.class;
+    @Override public Class<FindAndDeleteGarbageInPersistenceTask> taskClass() {
+        return FindAndDeleteGarbageInPersistenceTask.class;
     }
 
     /** {@inheritDoc} */
     @Override public void printResult(
         CacheFindGarbageCommandArg arg,
-        VisorFindAndDeleteGarbageInPersistenceTaskResult res,
+        FindAndDeleteGarbageInPersistenceTaskResult res,
         Consumer<String> printer
     ) {
         CommandUtils.printErrors(res.exceptions(), "Scanning for garbage failed on nodes:", printer);
 
-        for (Map.Entry<UUID, VisorFindAndDeleteGarbageInPersistenceJobResult> nodeEntry : res.result().entrySet()) {
+        for (Map.Entry<UUID, FindAndDeleteGarbageInPersistenceJobResult> nodeEntry : res.result().entrySet()) {
             if (!nodeEntry.getValue().hasGarbage()) {
                 printer.accept("Node " + nodeEntry.getKey() + " - garbage not found.");
 
@@ -62,7 +60,7 @@ public class CacheFindGarbageCommand
 
             printer.accept("Garbage found on node " + nodeEntry.getKey() + ":");
 
-            VisorFindAndDeleteGarbageInPersistenceJobResult value = nodeEntry.getValue();
+            FindAndDeleteGarbageInPersistenceJobResult value = nodeEntry.getValue();
 
             Map<Integer, Map<Integer, Long>> grpPartErrorsCount = value.checkResult();
 

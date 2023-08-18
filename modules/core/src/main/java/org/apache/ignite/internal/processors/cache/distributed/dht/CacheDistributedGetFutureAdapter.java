@@ -45,10 +45,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -75,10 +73,10 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
     public static final int DFLT_MAX_REMAP_CNT = 3;
 
     /** Maximum number of attempts to remap key to the same primary node. */
-    protected static final int MAX_REMAP_CNT = getInteger(IGNITE_NEAR_GET_MAX_REMAPS, DFLT_MAX_REMAP_CNT);
+    private static final int MAX_REMAP_CNT = getInteger(IGNITE_NEAR_GET_MAX_REMAPS, DFLT_MAX_REMAP_CNT);
 
     /** Remap count updater. */
-    protected static final AtomicIntegerFieldUpdater<CacheDistributedGetFutureAdapter> REMAP_CNT_UPD =
+    private static final AtomicIntegerFieldUpdater<CacheDistributedGetFutureAdapter> REMAP_CNT_UPD =
         AtomicIntegerFieldUpdater.newUpdater(CacheDistributedGetFutureAdapter.class, "remapCnt");
 
     /** Context. */
@@ -159,7 +157,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         boolean keepCacheObjects,
         boolean recovery
     ) {
-        super(CU.<K, V>mapsReducer(keys.size()));
+        super(CU.mapsReducer(keys.size()));
 
         assert !F.isEmpty(keys);
 
@@ -174,7 +172,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         this.needVer = needVer;
         this.keepCacheObjects = keepCacheObjects;
         this.recovery = recovery;
-        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
+        deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         futId = IgniteUuid.randomUuid();
     }
@@ -237,15 +235,9 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         if (invalidNodes == Collections.<AffinityTopologyVersion, Map<Integer, Set<ClusterNode>>>emptyMap())
             invalidNodes = new HashMap<>();
 
-        Map<Integer, Set<ClusterNode>> invalidNodeMap = invalidNodes.get(topVer);
+        Map<Integer, Set<ClusterNode>> invalidNodeMap = invalidNodes.computeIfAbsent(topVer, k -> new HashMap<>());
 
-        if (invalidNodeMap == null)
-            invalidNodes.put(topVer, invalidNodeMap = new HashMap<>());
-
-        Set<ClusterNode> invalidNodeSet = invalidNodeMap.get(part);
-
-        if (invalidNodeSet == null)
-            invalidNodeMap.put(part, invalidNodeSet = new HashSet<>());
+        Set<ClusterNode> invalidNodeSet = invalidNodeMap.computeIfAbsent(part, k -> new HashSet<>());
 
         invalidNodeSet.add(node);
     }
@@ -307,7 +299,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
                 if (f.node().id().equals(nodeId)) {
                     found = true;
 
-                    f.onNodeLeft(new ClusterTopologyCheckedException("Remote node left grid (will retry): " + nodeId));
+                    f.onNodeLeft();
                 }
             }
 
@@ -358,18 +350,16 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        Collection<String> futuresStrings = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
-            @Override public String apply(IgniteInternalFuture<?> f) {
-                if (isMini(f)) {
-                    AbstractMiniFuture mini = (AbstractMiniFuture)f;
+        Collection<String> futuresStrings = F.viewReadOnly(futures(), (IgniteInternalFuture<?> f) -> {
+            if (isMini(f)) {
+                AbstractMiniFuture mini = (AbstractMiniFuture)f;
 
-                    return "miniFuture([futId=" + mini.futureId() + ", node=" + mini.node().id() +
-                        ", loc=" + mini.node().isLocal() +
-                        ", done=" + f.isDone() + "])";
-                }
-                else
-                    return f.getClass().getSimpleName() + " [loc=true, done=" + f.isDone() + "]";
+                return "miniFuture([futId=" + mini.futureId() + ", node=" + mini.node().id() +
+                    ", loc=" + mini.node().isLocal() +
+                    ", done=" + f.isDone() + "])";
             }
+            else
+                return f.getClass().getSimpleName() + " [loc=true, done=" + f.isDone() + "]";
         });
 
         return S.toString(CacheDistributedGetFutureAdapter.class, this,
@@ -414,7 +404,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
             this.node = node;
             this.keys = keys;
             this.topVer = topVer;
-            this.postProcessingClos = CU.createBackupPostProcessingClosure(
+            postProcessingClos = CU.createBackupPostProcessingClosure(
                 topVer, log, cctx, null, expiryPlc, readThrough && cctx.readThroughConfigured(), skipVals);
         }
 
@@ -430,13 +420,6 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
          */
         public ClusterNode node() {
             return node;
-        }
-
-        /**
-         * @return Keys.
-         */
-        public Collection<KeyCacheObject> keys() {
-            return keys.keySet();
         }
 
         /**
@@ -474,9 +457,9 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         }
 
         /**
-         * @param e Failure exception.
+         *
          */
-        public synchronized void onNodeLeft(ClusterTopologyCheckedException e) {
+        public synchronized void onNodeLeft() {
             if (remapped)
                 return;
 
@@ -489,7 +472,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
             if (!canRemap) {
                 map(keys.keySet(), F.t(node, keys), topVer);
 
-                onDone(Collections.<K, V>emptyMap());
+                onDone(Collections.emptyMap());
             }
             else {
                 long maxTopVer = Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion());
@@ -498,12 +481,12 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
 
                 cctx.shared().exchange()
                     .affinityReadyFuture(awaitTopVer)
-                    .listen((f) -> {
+                    .listen(f -> {
                         try {
                             // Remap.
                             map(keys.keySet(), F.t(node, keys), f.get());
 
-                            onDone(Collections.<K, V>emptyMap());
+                            onDone(Collections.emptyMap());
                         }
                         catch (IgniteCheckedException ex) {
                             CacheDistributedGetFutureAdapter.this.onDone(ex);
@@ -536,11 +519,8 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
                     log.debug("Remapping mini get future [invalidParts=" + invalidParts + ", fut=" + this + ']');
 
                 if (!canRemap) {
-                    map(F.view(keys.keySet(), new P1<KeyCacheObject>() {
-                        @Override public boolean apply(KeyCacheObject key) {
-                            return invalidParts.contains(cctx.affinity().partition(key));
-                        }
-                    }), F.t(node, keys), topVer);
+                    map(F.view(keys.keySet(), (KeyCacheObject key) -> invalidParts.contains(cctx.affinity().partition(key))),
+                        F.t(node, keys), topVer);
 
                     postProcessResult(res);
 
@@ -558,11 +538,8 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
                             AffinityTopologyVersion topVer = fut.get();
 
                             // This will append new futures to compound list.
-                            map(F.view(keys.keySet(), new P1<KeyCacheObject>() {
-                                @Override public boolean apply(KeyCacheObject key) {
-                                    return invalidParts.contains(cctx.affinity().partition(key));
-                                }
-                            }), F.t(node, keys), topVer);
+                            map(F.view(keys.keySet(), (KeyCacheObject key) -> invalidParts.contains(cctx.affinity().partition(key))),
+                                F.t(node, keys), topVer);
 
                             postProcessResult(res);
 

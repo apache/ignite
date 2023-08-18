@@ -59,12 +59,16 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteVersionUtils;
+import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.commandline.ArgumentParser;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
@@ -74,6 +78,8 @@ import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.cache.CacheClearCommand;
 import org.apache.ignite.internal.management.cache.CacheCommand;
 import org.apache.ignite.internal.management.cache.CacheDestroyCommand;
+import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
+import org.apache.ignite.internal.management.tx.TxTaskResult;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -87,7 +93,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
@@ -722,6 +727,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             assertContains(log, dumpWithZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=0]");
             assertContains(log, dumpWithZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
             assertContains(log, dumpWithZeros, "no conflicts have been found");
+            assertCompactFooterStat(dumpWithZeros, 0, 0, 0, keysCount);
 
             assertSort(parts, dumpWithZeros);
         }
@@ -740,11 +746,57 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             assertNotContains(log, dumpWithoutZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
 
             assertContains(log, dumpWithoutZeros, "no conflicts have been found");
+            assertCompactFooterStat(dumpWithoutZeros, 0, 0, 0, keysCount);
 
             assertSort(keysCount, dumpWithoutZeros);
         }
         else
             fail("Should be found both files");
+
+        for (int i = 0; i < keysCount / 2; i++)
+            ignite.cache(DEFAULT_CACHE_NAME).put(new TestClass(i, String.valueOf(i)), i);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", DEFAULT_CACHE_NAME));
+
+        fileNameMatcher = dumpFileNameMatcher();
+
+        assertTrue(fileNameMatcher.find());
+
+        String report = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+        assertCompactFooterStat(report, keysCount / 2, 0, keysCount / 2, keysCount);
+
+        ClientConfiguration cliCfg = new ClientConfiguration()
+            .setAddresses("127.0.0.1:10800")
+            .setAutoBinaryConfigurationEnabled(false)
+            .setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
+
+        try (IgniteClient cli = TcpIgniteClient.start(cliCfg)) {
+            for (int i = keysCount; i < keysCount * 3; i++)
+                cli.cache(DEFAULT_CACHE_NAME).put(new TestClass(i, String.valueOf(i)), i);
+        }
+
+        for (int i = 0; i < keysCount; i++)
+            ignite.cache(DEFAULT_CACHE_NAME).put(String.valueOf(i), i);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", DEFAULT_CACHE_NAME));
+
+        fileNameMatcher = dumpFileNameMatcher();
+
+        assertTrue(fileNameMatcher.find());
+
+        report = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+        assertCompactFooterStat(report, keysCount / 2, keysCount * 2, keysCount / 2 + keysCount * 2, keysCount * 2);
+    }
+
+    /** */
+    private static void assertCompactFooterStat(String report, long cf, long noCf, long binary, long regular) {
+        assertContains(log, report, "CompactFooter statistic for keys [" +
+            "compactFooter=" + cf + ", " +
+            "noCompactFooter=" + noCf + ", " +
+            "binary=" + binary + ", " +
+            "regular=" + regular + "]");
     }
 
     /**
@@ -1166,8 +1218,8 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      * @return Build matcher for dump file name.
      */
     @NotNull private Matcher dumpFileNameMatcher() {
-        Pattern fileNamePattern = Pattern.compile(".*VisorIdleVerifyDumpTask successfully written output to '(.*)'");
-
+        Pattern fileNamePattern = Pattern.compile(".*" + IdleVerifyDumpTask.class.getSimpleName()
+            + " successfully written output to '(.*)'");
         return fileNamePattern.matcher(testOut.toString());
     }
 
@@ -1774,7 +1826,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      * @param validateClo Validate clo.
      * @param args Args.
      */
-    private void validate(TestCommandHandler h, IgniteInClosure<Map<ClusterNode, VisorTxTaskResult>> validateClo,
+    private void validate(TestCommandHandler h, IgniteInClosure<Map<ClusterNode, TxTaskResult>> validateClo,
                           String... args) {
         assertEquals(EXIT_CODE_OK, execute(h, args));
 

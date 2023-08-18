@@ -75,8 +75,10 @@ import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
@@ -558,10 +560,22 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     ) {
         qry.mapping();
 
-        MappingQueryContext mapCtx = Commons.mapContext(locNodeId, topologyVersion());
+        MappingQueryContext mapCtx = Commons.mapContext(locNodeId, topologyVersion(), qry.context().isLocal());
+
         plan.init(mappingSvc, mapCtx);
 
         List<Fragment> fragments = plan.fragments();
+
+        if (!F.isEmpty(qry.context().partitions())) {
+            fragments = Commons.transform(fragments, f -> {
+                try {
+                    return f.filterByPartitions(qry.context().partitions());
+                }
+                catch (ColocationMappingException e) {
+                    throw new FragmentMappingException("Failed to calculate physical distribution", f, f.root(), e);
+                }
+            });
+        }
 
         // Local execution
         Fragment fragment = F.first(fragments);
@@ -575,7 +589,15 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             List<UUID> nodes = mapping.nodeIds();
 
-            assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(localNodeId());
+            assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(localNodeId())
+                    : "nodes=" + nodes + ", localNode=" + localNodeId();
+        }
+
+        long timeout = qry.remainingTime();
+
+        if (timeout == 0) {
+            throw new IgniteSQLException("The query was cancelled due to timeout", IgniteQueryErrorCode.QUERY_CANCELED,
+                new QueryCancelledException());
         }
 
         FragmentDescription fragmentDesc = new FragmentDescription(
@@ -595,6 +617,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             handler,
             qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
             createIoTracker(locNodeId, qry.localQueryId()),
+            timeout,
             Commons.parametersMap(qry.parameters()));
 
         Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
@@ -633,7 +656,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                             fragmentDesc,
                             fragmentsPerNode.get(nodeId).intValue(),
                             qry.parameters(),
-                            parametersMarshalled
+                            parametersMarshalled,
+                            timeout
                         );
 
                         messageService().send(nodeId, req);
@@ -776,6 +800,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 handler,
                 qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
                 createIoTracker(nodeId, msg.originatingQryId()),
+                msg.timeout(),
                 Commons.parametersMap(msg.parameters())
             );
 
@@ -794,19 +819,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Error occurred during send error message: " + X.getFullStackTrace(e));
-
-                IgniteException wrpEx = new IgniteException("Error occurred during send error message", e);
-
-                e.addSuppressed(ex);
-
-                Query<Row> qry = (Query<Row>)qryReg.query(msg.queryId());
-
-                qry.cancel();
-
-                throw wrpEx;
             }
-
-            throw ex;
+            finally {
+                qryReg.query(msg.queryId()).onError(ex);
+            }
         }
     }
 
@@ -842,7 +858,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 );
             }
 
-            ((RootQuery<Row>)qry).onError(e);
+            qry.onError(e);
         }
     }
 

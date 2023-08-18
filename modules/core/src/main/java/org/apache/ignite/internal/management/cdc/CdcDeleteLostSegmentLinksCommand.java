@@ -22,7 +22,6 @@ import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.cdc.VisorCdcDeleteLostSegmentsTask;
 import org.apache.ignite.lang.IgniteExperimental;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.node;
@@ -44,8 +43,8 @@ public class CdcDeleteLostSegmentLinksCommand implements ComputeCommand<CdcDelet
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorCdcDeleteLostSegmentsTask> taskClass() {
-        return VisorCdcDeleteLostSegmentsTask.class;
+    @Override public Class<CdcDeleteLostSegmentsTask> taskClass() {
+        return CdcDeleteLostSegmentsTask.class;
     }
 
     /** {@inheritDoc} */

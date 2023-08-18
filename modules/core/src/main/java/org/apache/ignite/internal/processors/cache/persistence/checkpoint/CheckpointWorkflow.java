@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
@@ -72,7 +71,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.WorkProgressDispatcher;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -129,9 +127,6 @@ public class CheckpointWorkflow {
     /** Write ahead log. */
     private final IgniteWriteAheadLogManager wal;
 
-    /** Snapshot manager. */
-    private final IgniteCacheSnapshotManager snapshotMgr;
-
     /** Checkpoint lock. */
     private final CheckpointReadWriteLock checkpointReadWriteLock;
 
@@ -165,7 +160,6 @@ public class CheckpointWorkflow {
     /**
      * @param logger Logger.
      * @param wal WAL manager.
-     * @param snapshotManager Snapshot manager.
      * @param checkpointMarkersStorage Checkpoint mark storage.
      * @param checkpointReadWriteLock Checkpoint read write lock.
      * @param checkpointWriteOrder Checkpoint write order.
@@ -177,7 +171,6 @@ public class CheckpointWorkflow {
     CheckpointWorkflow(
         Function<Class<?>, IgniteLogger> logger,
         IgniteWriteAheadLogManager wal,
-        IgniteCacheSnapshotManager snapshotManager,
         CheckpointMarkersStorage checkpointMarkersStorage,
         CheckpointReadWriteLock checkpointReadWriteLock,
         CheckpointWriteOrder checkpointWriteOrder,
@@ -187,7 +180,6 @@ public class CheckpointWorkflow {
         String igniteInstanceName
     ) {
         this.wal = wal;
-        this.snapshotMgr = snapshotManager;
         this.checkpointReadWriteLock = checkpointReadWriteLock;
         this.dataRegions = dataRegions;
         this.cacheGroupsContexts = cacheGroupContexts;
@@ -240,8 +232,6 @@ public class CheckpointWorkflow {
 
         memoryRecoveryRecordPtr = null;
 
-        IgniteFuture snapFut = null;
-
         CheckpointPagesInfoHolder cpPagesHolder;
 
         int dirtyPagesCount;
@@ -283,9 +273,6 @@ public class CheckpointWorkflow {
 
             tracker.onListenersExecuteEnd();
 
-            if (curr.nextSnapshot())
-                snapFut = snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation(), ctx0.partitionStatMap());
-
             fillCacheGroupState(cpRec);
 
             //There are allowable to replace pages only after checkpoint entry was stored to disk.
@@ -297,7 +284,7 @@ public class CheckpointWorkflow {
 
             hasPartitionsToDestroy = !curr.getDestroyQueue().pendingReqs().isEmpty();
 
-            if (dirtyPagesCount > 0 || curr.nextSnapshot() || hasPartitionsToDestroy) {
+            if (dirtyPagesCount > 0 || hasPartitionsToDestroy) {
                 // No page updates for this checkpoint are allowed from now on.
                 if (wal != null)
                     cpPtr = wal.log(cpRec);
@@ -318,16 +305,6 @@ public class CheckpointWorkflow {
 
         for (CheckpointListener lsnr : dbLsnrs)
             lsnr.onCheckpointBegin(ctx0);
-
-        if (snapFut != null) {
-            try {
-                snapFut.get();
-            }
-            catch (IgniteException e) {
-                U.error(log, "Failed to wait for snapshot operation initialization: " +
-                    curr.snapshotOperation(), e);
-            }
-        }
 
         if (dirtyPagesCount > 0 || hasPartitionsToDestroy) {
             tracker.onWalCpRecordFsyncStart();

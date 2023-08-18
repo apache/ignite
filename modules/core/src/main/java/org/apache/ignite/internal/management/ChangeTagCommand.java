@@ -19,11 +19,9 @@ package org.apache.ignite.internal.management;
 
 import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.misc.VisorClusterChangeTagTask;
-import org.apache.ignite.internal.visor.misc.VisorClusterChangeTagTaskResult;
 
 /** Change Cluster tag command. */
-public class ChangeTagCommand implements ComputeCommand<ChangeTagCommandArg, VisorClusterChangeTagTaskResult> {
+public class ChangeTagCommand implements ComputeCommand<ChangeTagCommandArg, ClusterChangeTagTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Change cluster tag to new value";
@@ -35,14 +33,14 @@ public class ChangeTagCommand implements ComputeCommand<ChangeTagCommandArg, Vis
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorClusterChangeTagTask> taskClass() {
-        return VisorClusterChangeTagTask.class;
+    @Override public Class<ClusterChangeTagTask> taskClass() {
+        return ClusterChangeTagTask.class;
     }
 
     /** {@inheritDoc} */
     @Override public void printResult(
         ChangeTagCommandArg arg,
-        VisorClusterChangeTagTaskResult res,
+        ClusterChangeTagTaskResult res,
         Consumer<String> printer
     ) {
         if (res.success())

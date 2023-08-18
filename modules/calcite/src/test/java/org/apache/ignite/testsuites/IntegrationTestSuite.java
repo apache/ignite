@@ -42,10 +42,12 @@ import org.apache.ignite.internal.processors.query.calcite.integration.KillComma
 import org.apache.ignite.internal.processors.query.calcite.integration.KillQueryCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.LimitOffsetIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.LocalDateTimeSupportTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.LocalQueryIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.MemoryQuotasIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.MetadataIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryEngineConfigurationIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryMetadataIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.QueryWithPartitionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.RunningQueriesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SearchSargOnIndexIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ServerStatisticsIntegrationTest;
@@ -57,6 +59,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.StdSqlOpe
 import org.apache.ignite.internal.processors.query.calcite.integration.SystemViewsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDmlIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.TimeoutIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcCrossEngineTest;
@@ -114,11 +117,14 @@ import org.junit.runners.Suite;
     QueryEngineConfigurationIntegrationTest.class,
     SearchSargOnIndexIntegrationTest.class,
     KeepBinaryIntegrationTest.class,
+    LocalQueryIntegrationTest.class,
+    QueryWithPartitionsIntegrationTest.class,
     QueryMetadataIntegrationTest.class,
     MemoryQuotasIntegrationTest.class,
     LocalDateTimeSupportTest.class,
     DynamicParametersIntegrationTest.class,
     ExpiredEntriesIntegrationTest.class,
+    TimeoutIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }
