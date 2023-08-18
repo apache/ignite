@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMe
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -322,6 +323,8 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @return Registered metric.
      */
     private <T extends Metric> T addMetric(String name, T metric) {
+        assert !F.isEmpty(name);
+
         T old = (T)metrics.putIfAbsent(name, metric);
 
         if (old != null)
