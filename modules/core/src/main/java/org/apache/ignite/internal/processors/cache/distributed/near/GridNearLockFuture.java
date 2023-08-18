@@ -910,7 +910,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                 markInitialized();
             }
             else {
-                fut.listen((IgniteInternalFuture<AffinityTopologyVersion> fut0) -> {
+                fut.listen(() -> {
                     try {
                         fut.get();
 
@@ -1223,7 +1223,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
             if (log.isDebugEnabled())
                 log.debug("Before locally locking near request: " + req);
 
-            IgniteInternalFuture<GridNearLockResponse> fut = dht().lockAllAsync(cctx, cctx.localNode(), req, filter);
+            IgniteInternalFuture<GridNearLockResponse> fut = dht().lockAllAsync(cctx, cctx.localNode(), req);
 
             // Add new future.
             add(new GridEmbeddedFuture<>(
@@ -1466,7 +1466,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
                     IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx, keys);
 
-                    fut.listen((IgniteInternalFuture<TxDeadlock> fut0) -> {
+                    fut.listen(() -> {
                         try {
                             TxDeadlock deadlock = fut.get();
 
@@ -1635,9 +1635,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
                     if (!affFut.isDone()) {
                         // TODO FIXME https://ggsystems.atlassian.net/browse/GG-23288
-                        affFut.listen((IgniteInternalFuture<?> fut) -> {
+                        affFut.listen(() -> {
                             try {
-                                fut.get();
+                                affFut.get();
 
                                 remap();
                             }

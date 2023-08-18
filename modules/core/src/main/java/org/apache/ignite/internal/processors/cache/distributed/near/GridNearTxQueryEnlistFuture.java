@@ -151,7 +151,6 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
                         cctx.localNode().id(),
                         lockVer,
                         mvccSnapshot,
-                        threadId,
                         futId,
                         -(++idx), // The common tx logic expects non-zero mini-future ids (negative local and positive non-local).
                         tx,
@@ -167,7 +166,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
 
                     updateLocalFuture(locFut);
 
-                    locFut.listen((IgniteInternalFuture<Long> fut) -> {
+                    locFut.listen(fut -> {
                         assert fut.error() != null || fut.result() != null : fut;
 
                         try {

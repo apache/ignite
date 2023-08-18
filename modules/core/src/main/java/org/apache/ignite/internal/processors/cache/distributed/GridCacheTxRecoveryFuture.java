@@ -139,7 +139,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
             if (cctx.localNodeId().equals(nearNodeId)) {
                 IgniteInternalFuture<Boolean> fut = cctx.tm().txCommitted(tx.nearXidVersion());
 
-                fut.listen((IgniteInternalFuture<Boolean> fut0) -> {
+                fut.listen(() -> {
                     try {
                         onDone(fut.get());
                     }
@@ -217,7 +217,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
                 }
             }
             else {
-                fut.listen((IgniteInternalFuture<Boolean> fut0) -> {
+                fut.listen(() -> {
                     boolean prepared;
 
                     try {

@@ -103,7 +103,7 @@ public class CheckpointContextImpl implements CheckpointListener.Context {
             try {
                 GridFutureAdapter<?> res = new GridFutureAdapter<>();
 
-                res.listen(fut -> heartbeatUpdater.updateHeartbeat());
+                res.listen(heartbeatUpdater::updateHeartbeat);
 
                 asyncRunner.execute(U.wrapIgniteFuture(cmd, res));
 

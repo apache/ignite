@@ -1052,9 +1052,9 @@ public final class GridTestUtils {
             }
         };
 
-        runFut.listen(fut -> {
+        runFut.listen(() -> {
             try {
-                resFut.onDone(fut.get());
+                resFut.onDone(runFut.get());
             }
             catch (IgniteFutureCancelledCheckedException e) {
                 resFut.onCancelled();

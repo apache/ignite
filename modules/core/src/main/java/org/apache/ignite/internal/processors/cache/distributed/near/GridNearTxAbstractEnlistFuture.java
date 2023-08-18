@@ -157,9 +157,9 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
 
                 // Terminate this future if parent future is terminated by rollback.
                 if (!fut.isDone()) {
-                    fut.listen((IgniteInternalFuture fut0) -> {
-                        if (fut0.error() != null)
-                            onDone(fut0.error());
+                    fut.listen(() -> {
+                        if (fut.error() != null)
+                            onDone(fut.error());
                     });
                 }
                 else if (fut.error() != null)

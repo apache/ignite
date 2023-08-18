@@ -481,7 +481,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
 
                 cctx.shared().exchange()
                     .affinityReadyFuture(awaitTopVer)
-                    .listen((f) -> {
+                    .listen(f -> {
                         try {
                             // Remap.
                             map(keys.keySet(), F.t(node, keys), f.get());

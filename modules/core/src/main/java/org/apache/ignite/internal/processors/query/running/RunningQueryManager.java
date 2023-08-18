@@ -720,7 +720,7 @@ public class RunningQueryManager {
             }
 
             if (!msg.asyncResponse())
-                runningQryInfo.runningFuture().listen((f) -> sendKillResponse(msg, node, f.result()));
+                runningQryInfo.runningFuture().listen(f -> sendKillResponse(msg, node, f.result()));
         }
     }
 
