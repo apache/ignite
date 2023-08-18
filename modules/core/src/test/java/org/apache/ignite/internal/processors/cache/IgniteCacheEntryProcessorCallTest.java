@@ -152,8 +152,6 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
             checkEntryProcessCall(key++, clientCache1, OPTIMISTIC, SERIALIZABLE, expCallCnt + 1);
             checkEntryProcessCall(key++, clientCache1, PESSIMISTIC, REPEATABLE_READ, expCallCnt + 1);
         }
-        else if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
-            checkEntryProcessCall(key++, clientCache1, PESSIMISTIC, REPEATABLE_READ, expCallCnt);
 
         for (int i = 100; i < 110; i++) {
             checkEntryProcessCall(key++, srvCache, null, null, expCallCnt);
@@ -163,8 +161,6 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
                 checkEntryProcessCall(key++, clientCache1, OPTIMISTIC, SERIALIZABLE, expCallCnt + 1);
                 checkEntryProcessCall(key++, clientCache1, PESSIMISTIC, REPEATABLE_READ, expCallCnt + 1);
             }
-            else if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
-                checkEntryProcessCall(key++, clientCache1, PESSIMISTIC, REPEATABLE_READ, expCallCnt);
         }
 
         for (int i = 0; i < NODES; i++)
