@@ -78,7 +78,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
             left.getTraitSet().getCollation(), right.getTraitSet().getCollation());
     }
 
-    /** */
+     /** */
     public IgniteMergeJoin(RelInput input) {
         this(
             input.getCluster(),

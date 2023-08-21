@@ -19,8 +19,13 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
+import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
@@ -111,6 +116,8 @@ public class PlannerHelper {
             if (sqlNode.isA(ImmutableSet.of(SqlKind.INSERT, SqlKind.UPDATE, SqlKind.MERGE)))
                 igniteRel = new FixDependentModifyNodeShuttle().visit(igniteRel);
 
+            log.warning("TEST | plan:\n" + RelOptUtil.toString(igniteRel));
+
             return igniteRel;
         }
         catch (Throwable ex) {
@@ -121,12 +128,29 @@ public class PlannerHelper {
         }
     }
 
-    /** */
+    /**
+     * Assigns disabled rules to {@code planner}.
+     *
+     * @see HintDefinition#DISABLE_RULE
+     * @see HintDefinition#disabledRules()
+     * @see PlanningContext#hints()
+     */
     private static void setDisabledRules(IgnitePlanner planner) {
-        HintOptions opts = Hint.options(Commons.planContext(planner.cluster()).hints(), HintDefinition.DISABLE_RULE);
+        Set<String> disabled = new LinkedHashSet<>();
 
-        if (opts != null)
-            planner.setDisabledRules(opts.plain());
+        for (RelHint hint : Commons.planContext(planner.cluster()).hints()) {
+            HintOptions disableRuleOpts = Hint.options(hint, HintDefinition.DISABLE_RULE);
+
+            if (disableRuleOpts != null)
+                disabled.addAll(disableRuleOpts.plain());
+
+            HintDefinition hintDef = HintDefinition.valueOf(hint.hintName);
+
+            if (!F.isEmpty(hintDef.disabledRules()))
+                disabled.addAll(hintDef.disabledRules().stream().map(RelOptRule::toString).collect(Collectors.toList()));
+        }
+
+        planner.setDisabledRules(disabled);
     }
 
     /**

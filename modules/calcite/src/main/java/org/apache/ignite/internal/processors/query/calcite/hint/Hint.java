@@ -87,6 +87,13 @@ public final class Hint {
     }
 
     /**
+     * @return Options of {@code hint} if it is {@code hintDef}. {@code Null} otherwise.
+     */
+    public static @Nullable HintOptions options(RelHint hint, HintDefinition hintDef) {
+        return options(filterHints(Collections.singletonList(hint), Collections.singletonList(hintDef)));
+    }
+
+    /**
      * @return Hints of {@code rel} if it is a {@code Hintable}. If is not or has no hints, empty collection.
      * @see Hintable#getHints()
      */

@@ -207,8 +207,8 @@ public enum PlannerPhase {
                     CoreRules.MINUS_MERGE,
                     CoreRules.INTERSECT_MERGE,
                     CoreRules.UNION_REMOVE,
-                    CoreRules.JOIN_COMMUTE,
                     CoreRules.AGGREGATE_REMOVE,
+                    /** Works also as {@link CoreRules#JOIN_COMMUTE_OUTER} and overrides it if defined after. */
                     CoreRules.JOIN_COMMUTE_OUTER,
 
                     // Useful of this rule is not clear now.

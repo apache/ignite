@@ -17,24 +17,29 @@
 
 package org.apache.ignite.internal.processors.query.calcite.hint;
 
-import org.apache.calcite.rel.RelNode;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.rel.hint.HintOptionChecker;
 import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintPredicates;
-import org.apache.calcite.rel.hint.RelHint;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
+import org.apache.calcite.rel.rules.CoreRules;
+import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
 
 /**
  * Holds supported SQL hints and their settings.
  */
 public enum HintDefinition {
-    /** Chooses the query engine like H2 or Calcite. */
+    /** Sets the query engine like H2 or Calcite. */
     QUERY_ENGINE,
 
-    /** Disables converter rules. */
+    /** Disables certain converter rules. */
     DISABLE_RULE,
 
-    /** */
+    /** Forces expanding of distinct aggregates to join. */
     EXPAND_DISTINCT_AGG {
         /** {@inheritDoc} */
         @Override public HintPredicate predicate() {
@@ -47,20 +52,16 @@ public enum HintDefinition {
         }
     },
 
-    /** Disables indexes. */
-    NO_INDEX {
-        /** {@inheritDoc} */
-        @Override public HintPredicate predicate() {
-            return new HintPredicate() {
-                @Override public boolean apply(RelHint hint, RelNode rel) {
-                    return rel instanceof IgniteLogicalTableScan;
-                }
-            };
+    /** Forces join order as appears in the query. Fastens building of joins plan. */
+    ORDERED_JOIN {
+        @Override public HintOptionChecker optionsChecker() {
+            return HintsConfig.OPTS_CHECK_EMPTY;
         }
 
         /** {@inheritDoc} */
-        @Override public HintOptionChecker optionsChecker() {
-            return HintsConfig.OPTS_CHECK_NON_EMPTY;
+        @Override public Collection<RelOptRule> disabledRules() {
+            // CoreRules#JOIN_COMMUTE also disables the same CoreRules.JOIN_COMMUTE_OUTER.
+            return Arrays.asList(CoreRules.JOIN_COMMUTE, JoinPushThroughJoinRule.LEFT, JoinPushThroughJoinRule.RIGHT);
         }
     };
 
@@ -76,5 +77,12 @@ public enum HintDefinition {
      */
     HintOptionChecker optionsChecker() {
         return HintsConfig.OPTS_CHECK_PLAIN;
+    }
+
+    /**
+     * @return Excluded by this hint rules.
+     */
+    public Collection<RelOptRule> disabledRules() {
+        return Collections.emptyList();
     }
 }
