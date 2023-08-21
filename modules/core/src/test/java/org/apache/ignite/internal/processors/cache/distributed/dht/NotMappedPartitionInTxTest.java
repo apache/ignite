@@ -107,25 +107,6 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    public void testOneServerMvcc() throws Exception {
-        try {
-            atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-
-            startGrid(0);
-
-            final IgniteEx client = startClientGrid(1);
-
-            checkNotMapped(client, PESSIMISTIC, REPEATABLE_READ);
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     *
-     */
-    @Test
     public void testFourServersTx() throws Exception {
         try {
             startGridsMultiThreaded(4);
@@ -144,36 +125,12 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
-     */
-    @Test
-    public void testFourServersMvcc() throws Exception {
-        try {
-            atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-
-            startGridsMultiThreaded(4);
-
-            final IgniteEx client = startClientGrid(4);
-
-            checkNotMapped(client, PESSIMISTIC, REPEATABLE_READ);
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
      * @param client Ignite client.
      */
     private void checkNotMapped(final IgniteEx client, final TransactionConcurrency concurrency,
         final TransactionIsolation isolation) {
-        String msg;
-
-        if (atomicityMode == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
-            msg = "Failed to get primary node ";
-        else
-            msg = concurrency == PESSIMISTIC ? "Failed to lock keys (all partition nodes left the grid)" :
-                "Failed to map keys to nodes (partition is not mapped to any node";
+        String msg = concurrency == PESSIMISTIC ? "Failed to lock keys (all partition nodes left the grid)" :
+            "Failed to map keys to nodes (partition is not mapped to any node";
 
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() {
