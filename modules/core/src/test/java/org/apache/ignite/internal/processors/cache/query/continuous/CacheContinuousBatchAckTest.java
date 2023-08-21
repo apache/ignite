@@ -41,7 +41,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -188,62 +187,6 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
         filterOn.set(true);
 
         checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, TRANSACTIONAL, true));
-    }
-
-    // MVCC tests.
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPartitionMvccTx() throws Exception {
-        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL_SNAPSHOT, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPartitionMvccTxWithFilter() throws Exception {
-        filterOn.set(true);
-
-        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL_SNAPSHOT, true));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPartitionMvccTxNoBackup() throws Exception {
-        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL_SNAPSHOT, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPartitionMvccTxNoBackupWithFilter() throws Exception {
-        filterOn.set(true);
-
-        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL_SNAPSHOT, true));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testReplicatedMvccTx() throws Exception {
-        checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, TRANSACTIONAL_SNAPSHOT, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testReplicatedMvccTxWithFilter() throws Exception {
-        filterOn.set(true);
-
-        checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, TRANSACTIONAL_SNAPSHOT, true));
     }
 
     /**
