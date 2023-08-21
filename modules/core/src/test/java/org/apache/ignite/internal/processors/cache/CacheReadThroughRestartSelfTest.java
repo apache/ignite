@@ -115,9 +115,6 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
 
         for (TransactionConcurrency txConcurrency : TransactionConcurrency.values()) {
             for (TransactionIsolation txIsolation : TransactionIsolation.values()) {
-                if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(txConcurrency, txIsolation))
-                    continue;
-
                 try (Transaction tx = ignite.transactions().txStart(txConcurrency, txIsolation, 100000, 1000)) {
                     for (int k = 0; k < 1000; k++) {
                         String key = "key" + k;

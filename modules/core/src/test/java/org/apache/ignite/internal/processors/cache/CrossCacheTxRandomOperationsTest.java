@@ -189,16 +189,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
      * @param crossCacheTx If {@code true} uses cross cache transaction.
      * @throws Exception If failed.
      */
-    private void txOperations(CacheMode cacheMode,
-        CacheWriteSynchronizationMode writeSync,
-        boolean crossCacheTx) throws Exception {
-        if (MvccFeatureChecker.forcedMvcc()) {
-            assert !nearCacheEnabled();
-
-            if (writeSync != CacheWriteSynchronizationMode.FULL_SYNC)
-                return;
-        }
-
+    private void txOperations(CacheMode cacheMode, CacheWriteSynchronizationMode writeSync, boolean crossCacheTx) throws Exception {
         Ignite ignite = ignite(0);
 
         try {
@@ -208,14 +199,12 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
             txOperations(PESSIMISTIC, REPEATABLE_READ, crossCacheTx, false);
             txOperations(PESSIMISTIC, REPEATABLE_READ, crossCacheTx, true);
 
-            if (!MvccFeatureChecker.forcedMvcc()) {
-                txOperations(OPTIMISTIC, REPEATABLE_READ, crossCacheTx, false);
-                txOperations(OPTIMISTIC, REPEATABLE_READ, crossCacheTx, true);
+            txOperations(OPTIMISTIC, REPEATABLE_READ, crossCacheTx, false);
+            txOperations(OPTIMISTIC, REPEATABLE_READ, crossCacheTx, true);
 
-                if (writeSync == FULL_SYNC) {
-                    txOperations(OPTIMISTIC, SERIALIZABLE, crossCacheTx, false);
-                    txOperations(OPTIMISTIC, SERIALIZABLE, crossCacheTx, true);
-                }
+            if (writeSync == FULL_SYNC) {
+                txOperations(OPTIMISTIC, SERIALIZABLE, crossCacheTx, false);
+                txOperations(OPTIMISTIC, SERIALIZABLE, crossCacheTx, true);
             }
         }
         finally {
