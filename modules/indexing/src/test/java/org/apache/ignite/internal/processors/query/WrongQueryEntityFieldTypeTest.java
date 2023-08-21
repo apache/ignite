@@ -49,9 +49,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
-import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 
 /** */
 @RunWith(Parameterized.class)
@@ -149,10 +147,7 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
 
         withThinClient((cli, cache) -> {
             for (TransactionConcurrency conc : TransactionConcurrency.values()) {
-                for (TransactionIsolation iso: TransactionIsolation.values()) {
-                    if (conc == OPTIMISTIC && mode == TRANSACTIONAL_SNAPSHOT)
-                        continue;
-
+                for (TransactionIsolation iso : TransactionIsolation.values()) {
                     assertThrowsWithCause(() -> {
                         try (ClientTransaction tx = cli.transactions().txStart(conc, iso)) {
                             cache.put(1, val.get());
@@ -176,16 +171,13 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
         withNode((ign, cache) -> {
             for (TransactionConcurrency conc : TransactionConcurrency.values()) {
                 for (TransactionIsolation iso : TransactionIsolation.values()) {
-                    if (conc == OPTIMISTIC && mode == TRANSACTIONAL_SNAPSHOT)
-                        continue;
-
                     assertThrowsWithCause(() -> {
                         try (Transaction tx = ign.transactions().txStart(conc, iso)) {
                             cache.put(1, val.get());
 
                             tx.commit();
                         }
-                    }, mode == TRANSACTIONAL_SNAPSHOT ? CacheException.class : IgniteSQLException.class);
+                    }, IgniteSQLException.class);
 
                     assertNull(cache.withKeepBinary().get(1));
                 }
