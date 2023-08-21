@@ -44,7 +44,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheAtomicityMode.values;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -378,9 +377,8 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
 
         cfgs.addAll(cacheConfigurations(null, ATOMIC));
         cfgs.addAll(cacheConfigurations(null, TRANSACTIONAL));
-        cfgs.addAll(cacheConfigurations(null, TRANSACTIONAL_SNAPSHOT));
 
-        assertEquals(9, cfgs.size());
+        assertEquals(6, cfgs.size());
 
         Collection<IgniteCache> caches = client.getOrCreateCaches(cfgs);
 
