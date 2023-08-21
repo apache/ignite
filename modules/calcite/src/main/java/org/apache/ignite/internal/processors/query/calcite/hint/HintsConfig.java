@@ -70,7 +70,7 @@ public final class HintsConfig {
      * @return Configuration of all the supported hints.
      */
     public static HintStrategyTable buildHintTable() {
-        HintStrategyTable.Builder b = HintStrategyTable.builder().errorHandler(Litmus.THROW);
+        HintStrategyTable.Builder b = HintStrategyTable.builder().errorHandler(Litmus.IGNORE);
 
         Arrays.stream(HintDefinition.values()).forEach(hintDef ->
             b.hintStrategy(hintDef.name(), HintStrategy.builder(hintDef.predicate())
