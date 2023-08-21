@@ -102,14 +102,6 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     @Test
-    public void testReplicatedMvccTx() throws Exception {
-        testRegistration(cacheConfiguration(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, 1));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testRestartReplicated() throws Exception {
         testRestartRegistration(cacheConfiguration(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC, 2));
     }
@@ -134,14 +126,6 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     @Test
-    public void testRestartPartitionMvccTx() throws Exception {
-        testRestartRegistration(cacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, 2));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testReplicatedAtomic() throws Exception {
         testRegistration(cacheConfiguration(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC, 2));
     }
@@ -152,14 +136,6 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
     @Test
     public void testPartitionTx() throws Exception {
         testRegistration(cacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, 2));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPartitionMvccTx() throws Exception {
-        testRegistration(cacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, 2));
     }
 
     /**
