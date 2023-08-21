@@ -68,18 +68,18 @@ public class MetricUtils {
      * @return Array consist of registry name and metric name.
      */
     public static T2<String, String> fromFullName(String name) {
-        int metricNameSeparatorPosition = name.lastIndexOf(SEPARATOR);
+        int metricNamePos = name.lastIndexOf(SEPARATOR);
 
         String regName;
         String metricName;
 
-        if (metricNameSeparatorPosition == -1) {
+        if (metricNamePos == -1) {
             regName = name;
             metricName = "";
         }
         else {
-            regName = name.substring(0, metricNameSeparatorPosition);
-            metricName = name.substring(metricNameSeparatorPosition + 1);
+            regName = name.substring(0, metricNamePos);
+            metricName = name.substring(metricNamePos + 1);
         }
 
         return new T2<>(regName, metricName);
