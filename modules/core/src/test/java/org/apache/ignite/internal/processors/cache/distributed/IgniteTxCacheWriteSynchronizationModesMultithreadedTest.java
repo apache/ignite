@@ -183,14 +183,6 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
         boolean store,
         boolean nearCache,
         boolean restart) throws Exception {
-        if (MvccFeatureChecker.forcedMvcc()) {
-            if (store && !MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE))
-                return;
-
-            if (nearCache && !MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE))
-                return;
-        }
-
         final Ignite ignite = ignite(0);
 
         createCache(ignite, cacheConfiguration(DEFAULT_CACHE_NAME, syncMode, backups, store), nearCache);

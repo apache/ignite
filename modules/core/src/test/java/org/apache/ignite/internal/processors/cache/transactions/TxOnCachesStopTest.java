@@ -52,7 +52,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -261,9 +260,6 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
         Ignite ig,
         boolean runConc
     ) throws Exception {
-        if ((conc == TransactionConcurrency.OPTIMISTIC) && (MvccFeatureChecker.forcedMvcc()))
-            return;
-
         if (log.isInfoEnabled()) {
             log.info("Starting runTxOnCacheStop " +
                 "[concurrency=" + conc + ", isolation=" + iso + ", blockPrepareRequests=" + !runConc + ']');
@@ -510,9 +506,6 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void runCacheStopInMidTx(TransactionConcurrency conc, TransactionIsolation iso, Ignite ig) throws Exception {
-        if ((conc == TransactionConcurrency.OPTIMISTIC) && (MvccFeatureChecker.forcedMvcc()))
-            return;
-
         if (log.isInfoEnabled())
             log.info("Starting runCacheStopInMidTx [concurrency=" + conc + ", isolation=" + iso + ']');
 

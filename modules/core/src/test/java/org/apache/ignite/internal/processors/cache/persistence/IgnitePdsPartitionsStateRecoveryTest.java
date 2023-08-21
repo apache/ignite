@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -66,10 +65,7 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
             .setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT));
 
         // Disable rebalance to prevent owning MOVING partitions.
-        if (MvccFeatureChecker.forcedMvcc())
-            ccfg.setRebalanceDelay(Long.MAX_VALUE);
-        else
-            ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
+        ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
 
         cfg.setCacheConfiguration(ccfg);
 

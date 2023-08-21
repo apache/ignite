@@ -56,8 +56,6 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
-import org.apache.ignite.testframework.MvccFeatureChecker.Feature;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -140,16 +138,6 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void singleKeyCommitFromPrimary(CacheConfiguration<Object, Object> ccfg) throws Exception {
-        if (MvccFeatureChecker.forcedMvcc()) {
-            if (ccfg.getCacheStoreFactory() != null &&
-                !MvccFeatureChecker.isSupported(Feature.CACHE_STORE))
-                return;
-
-            if (ccfg.getNearConfiguration() != null &&
-                !MvccFeatureChecker.isSupported(Feature.NEAR_CACHE))
-                return;
-        }
-
         Ignite ignite = ignite(0);
 
         IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
@@ -169,9 +157,6 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
                 for (final TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                     for (final TransactionIsolation isolation : TransactionIsolation.values()) {
-                        if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
-                            continue;
-
                         singleKeyCommitFromPrimary(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
                             @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
                                 Ignite ignite = cache.unwrap(Ignite.class);
@@ -276,12 +261,6 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void singleKeyPrimaryNodeLeft(CacheConfiguration<Object, Object> ccfg) throws Exception {
-        if (MvccFeatureChecker.forcedMvcc()) {
-            if (ccfg.getCacheStoreFactory() != null &&
-                !MvccFeatureChecker.isSupported(Feature.CACHE_STORE))
-                return;
-        }
-
         Ignite ignite = ignite(0);
 
         IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
@@ -302,9 +281,6 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
                 for (final TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                     for (final TransactionIsolation isolation : TransactionIsolation.values()) {
-                        if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
-                            continue;
-
                         singleKeyPrimaryNodeLeft(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
                             @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
                                 Ignite ignite = cache.unwrap(Ignite.class);
@@ -408,16 +384,6 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void singleKeyCommit(CacheConfiguration<Object, Object> ccfg) throws Exception {
-        if (MvccFeatureChecker.forcedMvcc()) {
-            if (ccfg.getCacheStoreFactory() != null &&
-                !MvccFeatureChecker.isSupported(Feature.CACHE_STORE))
-                return;
-
-            if (ccfg.getNearConfiguration() != null &&
-                !MvccFeatureChecker.isSupported(Feature.NEAR_CACHE))
-                return;
-        }
-
         Ignite ignite = ignite(0);
 
         IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
@@ -440,9 +406,6 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
                 for (final TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                     for (final TransactionIsolation isolation : TransactionIsolation.values()) {
-                        if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
-                            continue;
-
                         singleKeyCommit(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
                             @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
                                 Ignite ignite = cache.unwrap(Ignite.class);
@@ -566,16 +529,6 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkWaitPrimaryResponse(CacheConfiguration<Object, Object> ccfg) throws Exception {
-        if (MvccFeatureChecker.forcedMvcc()) {
-            if (ccfg.getCacheStoreFactory() != null &&
-                !MvccFeatureChecker.isSupported(Feature.CACHE_STORE))
-                return;
-
-            if (ccfg.getNearConfiguration() != null &&
-                !MvccFeatureChecker.isSupported(Feature.NEAR_CACHE))
-                return;
-        }
-
         Ignite ignite = ignite(0);
 
         IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
@@ -611,9 +564,6 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
                 for (final TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                     for (final TransactionIsolation isolation : TransactionIsolation.values()) {
-                        if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
-                            continue;
-
                         checkWaitPrimaryResponse(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
                             @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
                                 Ignite ignite = cache.unwrap(Ignite.class);
@@ -706,9 +656,6 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOnePhaseMessages() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            return; // Not supported. Commit flow differs for Mvcc mode.
-
         checkOnePhaseMessages(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, false, false));
     }
 
@@ -738,9 +685,6 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
                 for (final TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                     for (final TransactionIsolation isolation : TransactionIsolation.values()) {
-                        if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
-                            continue;
-
                         checkOnePhaseMessages(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
                             @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
                                 Ignite ignite = cache.unwrap(Ignite.class);
@@ -929,9 +873,6 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
             for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                 for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                    if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
-                        continue;
-
                     try (Transaction tx = txs.txStart(concurrency, isolation)) {
                         fullSync1.put(key++, 1);
 

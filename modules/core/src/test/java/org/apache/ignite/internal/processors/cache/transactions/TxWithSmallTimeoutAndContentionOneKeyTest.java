@@ -38,7 +38,6 @@ import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -107,9 +106,6 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
      * @return Random transaction type.
      */
     protected TransactionConcurrency transactionConcurrency() {
-        if (MvccFeatureChecker.forcedMvcc())
-            return PESSIMISTIC;
-
         ThreadLocalRandom random = ThreadLocalRandom.current();
 
         return random.nextBoolean() ? OPTIMISTIC : PESSIMISTIC;
@@ -119,9 +115,6 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
      * @return Random transaction isolation level.
      */
     protected TransactionIsolation transactionIsolation() {
-        if (MvccFeatureChecker.forcedMvcc())
-            return REPEATABLE_READ;
-
         ThreadLocalRandom random = ThreadLocalRandom.current();
 
         switch (random.nextInt(3)) {

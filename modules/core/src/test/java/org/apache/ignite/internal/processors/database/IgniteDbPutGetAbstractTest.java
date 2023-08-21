@@ -51,7 +51,6 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -922,7 +921,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
 
         long seed = System.currentTimeMillis();
 
-        int iterations = SF.apply(MvccFeatureChecker.forcedMvcc() ? 30_000 : 90_000);
+        int iterations = SF.apply(90_000);
 
         X.println("Seed: " + seed);
 
