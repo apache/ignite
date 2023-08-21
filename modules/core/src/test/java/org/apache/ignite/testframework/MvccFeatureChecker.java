@@ -20,10 +20,9 @@ package org.apache.ignite.testframework;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Assume;
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS;
 import static org.junit.Assert.fail;
 
@@ -91,18 +90,6 @@ public class MvccFeatureChecker {
      */
     public static boolean isSupported(Feature f) {
         return unsupportedReason(f) == null;
-    }
-
-    /**
-     * Check if Tx mode is supported.
-     *
-     * @param conc Transaction concurrency.
-     * @param iso Transaction isolation.
-     * @return {@code True} if feature is supported, {@code False} otherwise.
-     */
-    public static boolean isSupported(TransactionConcurrency conc, TransactionIsolation iso) {
-        return conc == TransactionConcurrency.PESSIMISTIC &&
-            iso == TransactionIsolation.REPEATABLE_READ;
     }
 
     /**
