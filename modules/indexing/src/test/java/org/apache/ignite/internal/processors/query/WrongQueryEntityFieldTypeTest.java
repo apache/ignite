@@ -89,10 +89,7 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
 
         Collection<Object[]> params = new ArrayList<>();
 
-        for (CacheAtomicityMode cacheMode : CacheAtomicityMode.values()) {
-            if (cacheMode == TRANSACTIONAL_SNAPSHOT)
-                continue;
-
+        for (CacheAtomicityMode cacheMode : CacheAtomicityMode._values()) {
             for (int backups = 0; backups < 4; backups++) {
                 for (int gridCnt = 1; gridCnt < 4; gridCnt++) {
                     params.add(new Object[] {cacheMode, backups, person, "field", String.class, gridCnt});

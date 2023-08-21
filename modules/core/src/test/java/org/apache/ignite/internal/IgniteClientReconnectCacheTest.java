@@ -848,7 +848,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         int cnt = 0;
 
-        for (CacheAtomicityMode atomicityMode : CacheAtomicityMode.values()) {
+        for (CacheAtomicityMode atomicityMode : CacheAtomicityMode._values()) {
             for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
                 CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
