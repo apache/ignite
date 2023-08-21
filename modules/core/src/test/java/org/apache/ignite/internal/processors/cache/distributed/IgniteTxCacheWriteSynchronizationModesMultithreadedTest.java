@@ -288,38 +288,36 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
                 }
             });
 
-            if (!MvccFeatureChecker.forcedMvcc()) {
-                commitMultithreaded(new IgniteBiInClosure<Ignite, IgniteCache<Integer, Integer>>() {
-                    @Override public void apply(Ignite ignite, IgniteCache<Integer, Integer> cache) {
-                        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+            commitMultithreaded(new IgniteBiInClosure<Ignite, IgniteCache<Integer, Integer>>() {
+                @Override public void apply(Ignite ignite, IgniteCache<Integer, Integer> cache) {
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                        Map<Integer, Integer> map = new LinkedHashMap<>();
+                    Map<Integer, Integer> map = new LinkedHashMap<>();
 
-                        for (int i = 0; i < 10; i++) {
-                            Integer key = rnd.nextInt(MULTITHREADED_TEST_KEYS);
+                    for (int i = 0; i < 10; i++) {
+                        Integer key = rnd.nextInt(MULTITHREADED_TEST_KEYS);
 
-                            map.put(key, rnd.nextInt());
+                        map.put(key, rnd.nextInt());
+                    }
+
+                    while (true) {
+                        try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+                            for (Map.Entry<Integer, Integer> e : map.entrySet())
+                                cache.put(e.getKey(), e.getValue());
+
+                            tx.commit();
+
+                            break;
                         }
-
-                        while (true) {
-                            try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-                                for (Map.Entry<Integer, Integer> e : map.entrySet())
-                                    cache.put(e.getKey(), e.getValue());
-
-                                tx.commit();
-
-                                break;
-                            }
-                            catch (TransactionOptimisticException ignored) {
-                                // Retry.
-                            }
-                            catch (CacheException | IgniteException ignored) {
-                                break;
-                            }
+                        catch (TransactionOptimisticException ignored) {
+                            // Retry.
+                        }
+                        catch (CacheException | IgniteException ignored) {
+                            break;
                         }
                     }
-                });
-            }
+                }
+            });
         }
         finally {
             stop.set(true);

@@ -89,10 +89,8 @@ public class GridEvictionPolicyMBeansTest extends GridCommonAbstractTest {
         lep.setMaxSize(40);
         ncf.setNearEvictionPolicy(lep);
 
-        if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE)) {
-            cache1.setNearConfiguration(ncf);
-            cache2.setNearConfiguration(ncf);
-        }
+        cache1.setNearConfiguration(ncf);
+        cache2.setNearConfiguration(ncf);
 
         cfg.setCacheConfiguration(cache1, cache2);
 
@@ -106,21 +104,17 @@ public class GridEvictionPolicyMBeansTest extends GridCommonAbstractTest {
         checkBean("cache1", "org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy", "BatchSize", 10);
         checkBean("cache1", "org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy", "MaxMemorySize", 20L);
 
-        if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE)) {
-            checkBean("cache1-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxSize", 40);
-            checkBean("cache1-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "BatchSize", 10);
-            checkBean("cache1-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxMemorySize", 500L);
-        }
+        checkBean("cache1-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxSize", 40);
+        checkBean("cache1-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "BatchSize", 10);
+        checkBean("cache1-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxMemorySize", 500L);
 
         checkBean("cache2", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxSize", 30);
         checkBean("cache2", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "BatchSize", 10);
         checkBean("cache2", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxMemorySize", 125L);
 
-        if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE)) {
-            checkBean("cache2-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxSize", 40);
-            checkBean("cache2-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "BatchSize", 10);
-            checkBean("cache2-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxMemorySize", 500L);
-        }
+        checkBean("cache2-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxSize", 40);
+        checkBean("cache2-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "BatchSize", 10);
+        checkBean("cache2-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxMemorySize", 500L);
     }
 
     /** Checks that a bean with the specified group and name is available and has the expected attribute */
