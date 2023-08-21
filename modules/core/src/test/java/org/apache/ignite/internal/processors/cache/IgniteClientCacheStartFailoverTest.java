@@ -98,14 +98,6 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testClientStartCoordinatorFailsMvccTx() throws Exception {
-        clientStartCoordinatorFails(TRANSACTIONAL_SNAPSHOT);
-    }
-
-    /**
      * @param atomicityMode Cache atomicity mode.
      * @throws Exception If failed.
      */
@@ -162,14 +154,6 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     @Test
     public void testClientStartLastServerFailsTx() throws Exception {
         clientStartLastServerFails(TRANSACTIONAL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testClientStartLastServerFailsMvccTx() throws Exception {
-        clientStartLastServerFails(TRANSACTIONAL_SNAPSHOT);
     }
 
     /**
