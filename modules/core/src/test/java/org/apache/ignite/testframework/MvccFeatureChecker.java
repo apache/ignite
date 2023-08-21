@@ -63,24 +63,6 @@ public class MvccFeatureChecker {
     }
 
     /**
-     * Fails if feature is not supported.
-     *
-     * @param f feature.
-     * @throws AssertionError If failed.
-     * @deprecated Use {@link #skipIfNotSupported(Feature)} instead.
-     */
-    @Deprecated
-    public static void failIfNotSupported(Feature f) {
-        if (!forcedMvcc())
-            return;
-
-        String reason = unsupportedReason(f);
-
-        if (reason != null)
-            fail(reason);
-    }
-
-    /**
      * Skips test if feature is not supported.
      *
      * @param f feature.
