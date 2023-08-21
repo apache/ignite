@@ -25,6 +25,9 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 public class DumpCreateTask extends VisorOneNodeTask<DumpCreateCommandArg, Void> {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorJob<DumpCreateCommandArg, Void> job(DumpCreateCommandArg arg) {
         return new DumpCreateJob(arg);
@@ -32,6 +35,9 @@ public class DumpCreateTask extends VisorOneNodeTask<DumpCreateCommandArg, Void>
 
     /** */
     private static class DumpCreateJob extends VisorJob<DumpCreateCommandArg, Void> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
         /** */
         protected DumpCreateJob(@Nullable DumpCreateCommandArg arg) {
             super(arg, false);
