@@ -33,11 +33,13 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.util.CancelFlag;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -78,6 +80,9 @@ public final class PlanningContext implements Context {
     /** */
     private List<SkippedHint> skippedHints;
 
+    /** */
+    private final @Nullable IgniteLogger log;
+
     /**
      * Private constructor, used by a builder.
      */
@@ -85,7 +90,8 @@ public final class PlanningContext implements Context {
         Context parentCtx,
         String qry,
         Object[] parameters,
-        long plannerTimeout
+        long plannerTimeout,
+        @Nullable IgniteLogger log
     ) {
         this.qry = qry;
         this.parameters = parameters;
@@ -93,6 +99,8 @@ public final class PlanningContext implements Context {
         this.parentCtx = parentCtx;
         startTs = U.currentTimeMillis();
         this.plannerTimeout = plannerTimeout;
+
+        this.log = log;
     }
 
     /**
@@ -249,6 +257,11 @@ public final class PlanningContext implements Context {
     public void skippedHint(RelNode rel, RelHint hint, @Nullable String optionKey, @Nullable String optionValue,
         String reason) {
 
+        if (log != null) {
+            log.warning(String.format("Hint '%s' skipped for '%s'. Reason: %s", hint.hintName,
+                RelOptUtil.toString(rel, SqlExplainLevel.NO_ATTRIBUTES).trim(), reason));
+        }
+
         if (skippedHints == null) {
             synchronized (parentCtx) {
                 if (skippedHints == null)
@@ -270,7 +283,7 @@ public final class PlanningContext implements Context {
         if (header != null)
             header.accept(w);
 
-        w.append("Query hints:");
+        w.append("Accepted hints:");
 
         hints.forEach(h -> w.append(U.nl()).append("\t").append(h.toString()));
 
@@ -317,8 +330,8 @@ public final class PlanningContext implements Context {
         private final String reason;
 
         /** */
-        private SkippedHint(RelNode rel, String hintName, @Nullable String hintOption, @Nullable String hintOptionValue,
-            String reason) {
+        private SkippedHint(RelNode rel, String hintName, @Nullable String hintOption,
+            @Nullable String hintOptionValue, String reason) {
             this.rel = rel;
             this.hintName = hintName;
             this.option = hintOption;
@@ -343,6 +356,9 @@ public final class PlanningContext implements Context {
 
         /** */
         private long plannerTimeout;
+
+        /** */
+        private IgniteLogger log;
 
         /**
          * @param parentCtx Parent context.
@@ -383,12 +399,22 @@ public final class PlanningContext implements Context {
         }
 
         /**
+         * @param log Logger.
+         *
+         * @return Builder for chaining.
+         */
+        public Builder log(IgniteLogger log) {
+            this.log = log;
+            return this;
+        }
+
+        /**
          * Builds planner context.
          *
          * @return Planner context.
          */
         public PlanningContext build() {
-            return new PlanningContext(parentCtx, qry, parameters, plannerTimeout);
+            return new PlanningContext(parentCtx, qry, parameters, plannerTimeout, log);
         }
     }
 }

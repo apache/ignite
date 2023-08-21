@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner.hints;
 
-import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.TestTable;
@@ -55,51 +54,5 @@ public class CommonHintsPlannerTest extends AbstractPlannerTest {
     public void testDisableRuleInHeader() throws Exception {
         assertPlan("SELECT /*+ DISABLE_RULE('ExposeIndexRule') */ VAL FROM TBL where val=1 UNION ALL " +
             "SELECT VAL FROM TBL where ID=1", schema, nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)).negate());
-    }
-
-    /**
-     * Tests incorrect hint params can't pass.
-     */
-    @Test
-    public void testWrongHintParams() {
-        assertThrows(
-            null,
-            () -> assertPlan("SELECT /*+ DISABLE_RULE(rule='ExposeIndexRule') */ VAL FROM TBL where val=1", schema,
-                n -> true),
-            Throwable.class,
-            "Hint 'DISABLE_RULE' must have at least one plain option and no any key-value option."
-        );
-
-        assertThrows(
-            null,
-            () -> assertPlan("SELECT /*+ DISABLE_RULE */ VAL FROM TBL where val=1", schema, n -> true),
-            Throwable.class,
-            "Hint 'DISABLE_RULE' must have at least one plain option and no any key-value option."
-        );
-
-        assertThrows(
-            null,
-            () -> assertPlan("SELECT /*+ EXPAND_DISTINCT_AGG(val) */ SUM(VAL) FROM TBL", schema, n -> true),
-            Throwable.class,
-            "Hint 'EXPAND_DISTINCT_AGG' can't have any option."
-        );
-
-        assertThrows(
-            null,
-            () -> assertPlan("SELECT /*+ EXPAND_DISTINCT_AGG(t='val') */ SUM(VAL) FROM TBL", schema, n -> true),
-            Throwable.class,
-            "Hint 'EXPAND_DISTINCT_AGG' can't have any option."
-        );
-
-        assertThrows(
-            null,
-            () -> {
-                assertPlan("SELECT /*+ EXPAND_DISTINCT_AGG(t='val','val2') */ SUM(VAL) FROM TBL", schema, n -> true);
-
-                return null;
-            },
-            SqlParseException.class,
-            "Encountered"
-        );
     }
 }

@@ -63,20 +63,6 @@ public class IndexHintPlannerTest extends AbstractPlannerTest {
         schema = createSchema(tbl1, tbl2);
     }
 
-    /**
-     * Tests incorrect hint params are not passed.
-     */
-    @Test
-    public void testWrongParams() {
-        assertThrows(
-            null,
-            () -> assertPlan("SELECT /*+ FORCE_INDEX */ * FROM TBL2 where val21=1 and val22=2 and val23=3", schema,
-                n -> true),
-            Throwable.class,
-            "Hint 'FORCE_INDEX' needs at least one option."
-        );
-    }
-
     /** */
     @Test
     public void testBasicIndexSelection() throws Exception {

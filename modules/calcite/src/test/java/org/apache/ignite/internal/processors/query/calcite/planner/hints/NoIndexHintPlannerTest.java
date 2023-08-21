@@ -18,15 +18,14 @@
 package org.apache.ignite.internal.processors.query.calcite.planner.hints;
 
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.TestTable;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
-
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Planner test for index hints.
@@ -40,6 +39,9 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
 
     /** */
     private TestTable tbl2;
+
+    /** */
+    private ListeningTestLogger lsnrLog = new ListeningTestLogger(log);
 
     /** {@inheritDoc} */
     @Override public void setup() {
@@ -83,30 +85,27 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
 
     /** */
     @Test
-    public void testWrongParams() {
-        assertThrows(
-            null,
-            () -> assertPlan("SELECT /*+ NO_INDEX */ * FROM TBL1 WHERE val1='v'", schema, n -> true),
-            Throwable.class,
-            "Hint '" + HintDefinition.NO_INDEX.name() + "' needs at least one option."
-        );
-    }
+    public void testWrongParams() throws Exception {
+        assertCertainIndex("SELECT /*+ NO_INDEX */ * FROM TBL2 WHERE val2='v'", "TBL2", "IDX2_2");
 
-    /** */
-    @Test
-    public void testWithForceIndex() throws Exception {
-        assertNoCertainIndex("SELECT /*+ NO_INDEX('idx1'), FORCE_INDEX('idx1') */ * FROM TBL1 WHERE val1='v'",
-            "TBL1", "idx1");
+        LogListener lsnr = LogListener.matches("Hint 'NO_INDEX' skipped for 'IgniteLogicalTableScan'. " +
+            "Reason: Table 'TBL2' has no index 'UNEXISTING'").times(1).build();
 
-        assertCertainIndex("SELECT /*+ FORCE_INDEX(IDX2_3), NO_INDEX(IDX2_3) */ * FROM TBL1 WHERE val2='v'",
-            "TBL1", "IDX2_3");
+        lsnrLog.registerListener(lsnr);
 
-        // IDX3 is skipped too.
-        assertPlan("SELECT /*+ NO_INDEX(IDX1,IDX2_3), FORCE_INDEX('idx1') */ * FROM TBL1 t1 WHERE val1='v' and " +
-            "val2='v' and val3='v'", schema, nodeOrAnyChild(isIndexScan("TBL1", "idx1"))
-            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX1")).negate())
-            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX2_3")).negate())
-            .and(nodeOrAnyChild(isIndexScan("TBL1", "IDX3")).negate()));
+        assertCertainIndex("SELECT /*+ NO_INDEX(TBL2='UNEXISTING') */ * FROM TBL2 WHERE val2='v'", "TBL2", "IDX2_2");
+
+        lsnr.check();
+
+        lsnr = LogListener.matches("Hint 'NO_INDEX' skipped for 'IgniteLogicalTableScan'. " +
+            "Reason: Table 'TBL2' has no index 'UNEXISTING'").times(1).build();
+
+        lsnrLog.clearListeners();
+        lsnrLog.registerListener(lsnr);
+
+        assertCertainIndex("SELECT /*+ NO_INDEX(UNEXISTING) */ * FROM TBL2 WHERE val2='v'", "TBL2", "IDX2_2");
+
+        lsnr.check();
     }
 
     /** */
