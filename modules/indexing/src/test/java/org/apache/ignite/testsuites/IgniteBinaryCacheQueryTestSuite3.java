@@ -157,7 +157,6 @@ import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedTransacti
 import org.apache.ignite.internal.processors.sql.IgniteCacheReplicatedAtomicColumnConstraintsTest;
 import org.apache.ignite.internal.processors.sql.IgniteCacheReplicatedTransactionalColumnConstraintsTest;
 import org.apache.ignite.internal.processors.sql.IgniteSQLColumnConstraintsTest;
-import org.apache.ignite.internal.processors.sql.IgniteTransactionSQLColumnConstraintTest;
 import org.apache.ignite.internal.sql.SqlParserUserSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridOrderedMessageCancelSelfTest;
 import org.apache.ignite.spi.communication.tcp.H2CommunicationMessageSerializationTest;
@@ -273,7 +272,6 @@ import org.junit.runners.Suite;
     IgniteSqlDefaultValueTest.class,
     IgniteDecimalSelfTest.class,
     IgniteSQLColumnConstraintsTest.class,
-    IgniteTransactionSQLColumnConstraintTest.class,
 
     IgniteSqlDefaultSchemaTest.class,
     IgniteSqlCustomSchemaTest.class,
