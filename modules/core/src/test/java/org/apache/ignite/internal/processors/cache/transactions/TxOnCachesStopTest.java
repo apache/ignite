@@ -58,7 +58,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -200,8 +199,6 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOptimisticTxMappedOnPMETopology() throws Exception {
-        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc());
-
         startGridsMultiThreaded(1);
 
         Ignite client = startClientGrid("client");
@@ -343,8 +340,6 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOptimisticTransactionsOnCacheDestroy() throws Exception {
-        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc());
-
         startGridsMultiThreaded(3);
 
         ArrayList<Ignite> clients = new ArrayList<>();

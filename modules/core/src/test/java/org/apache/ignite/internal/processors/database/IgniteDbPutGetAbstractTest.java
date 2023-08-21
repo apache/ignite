@@ -53,7 +53,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_SEGMENT_SIZE;
@@ -556,8 +555,6 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      */
     @Test
     public void testSizeClear() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7952", MvccFeatureChecker.forcedMvcc());
-
         final IgniteCache<Integer, DbValue> cache = cache(DEFAULT_CACHE_NAME);
 
         GridCacheAdapter<Integer, DbValue> internalCache = internalCache(cache);

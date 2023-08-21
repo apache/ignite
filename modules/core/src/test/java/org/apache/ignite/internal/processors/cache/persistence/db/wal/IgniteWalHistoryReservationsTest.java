@@ -287,8 +287,6 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRemovesArePreloadedIfHistoryIsAvailable() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10551", MvccFeatureChecker.forcedMvcc());
-
         int entryCnt = 10_000;
 
         IgniteEx ig0 = (IgniteEx)startGrids(2);
@@ -339,8 +337,6 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNodeIsClearedIfHistoryIsUnavailable() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10551", MvccFeatureChecker.forcedMvcc());
-
         int entryCnt = 10_000;
 
         IgniteEx ig0 = (IgniteEx)startGrids(2);
@@ -402,7 +398,6 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testWalHistoryPartiallyRemoved() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10551", MvccFeatureChecker.forcedMvcc());
         Assume.assumeTrue(
             "https://issues.apache.org/jira/browse/IGNITE-16891",
             IgniteSystemProperties.getString(IGNITE_DEFAULT_DISK_PAGE_COMPRESSION) == null

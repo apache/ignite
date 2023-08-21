@@ -63,7 +63,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -127,8 +126,6 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSingleKeyCommitFromPrimary() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10518", MvccFeatureChecker.forcedMvcc());
-
         singleKeyCommitFromPrimary(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
         singleKeyCommitFromPrimary(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, false, false));
@@ -399,8 +396,6 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSingleKeyCommit() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10518", MvccFeatureChecker.forcedMvcc());
-
         singleKeyCommit(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
         singleKeyCommit(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, false, false));

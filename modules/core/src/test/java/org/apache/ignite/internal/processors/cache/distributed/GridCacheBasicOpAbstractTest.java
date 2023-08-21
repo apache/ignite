@@ -33,7 +33,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -80,8 +79,6 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7952", MvccFeatureChecker.forcedMvcc());
 
         for (Ignite g : G.allGrids())
             g.cache(DEFAULT_CACHE_NAME).clear();

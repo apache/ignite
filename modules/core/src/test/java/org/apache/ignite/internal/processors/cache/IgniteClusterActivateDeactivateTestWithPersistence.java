@@ -46,9 +46,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -654,8 +652,6 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      */
     @Test
     public void testDeactivateDuringEvictionAndRebalance() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7384", MvccFeatureChecker.forcedMvcc());
-
         IgniteEx srv = startGrids(3);
 
         srv.cluster().state(ACTIVE);

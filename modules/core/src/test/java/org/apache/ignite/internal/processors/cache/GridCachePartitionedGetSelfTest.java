@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -116,8 +115,6 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testGetFromBackupNode() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10274", MvccFeatureChecker.forcedMvcc());
-
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
 
         for (int i = 0; i < GRID_CNT; i++) {
