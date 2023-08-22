@@ -33,7 +33,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -333,9 +332,6 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
     private void doTestInvokeTest(CacheConfiguration ccfg, TransactionConcurrency txConcurrency,
         TransactionIsolation txIsolation) {
-        if (ccfg.getNearConfiguration() != null)
-            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
         IgniteEx cln = grid(getServerNodeCount());
 
         grid(0).createCache(ccfg);

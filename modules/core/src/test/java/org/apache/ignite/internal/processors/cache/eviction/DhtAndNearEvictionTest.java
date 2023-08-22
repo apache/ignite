@@ -36,7 +36,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -51,8 +50,6 @@ public class DhtAndNearEvictionTest extends GridCommonAbstractTest {
 
     /** */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
-
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setGridLogger(strLog);
@@ -62,13 +59,6 @@ public class DhtAndNearEvictionTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder));
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
-
-        super.beforeTestsStarted();
     }
 
     /** */
@@ -98,8 +88,6 @@ public class DhtAndNearEvictionTest extends GridCommonAbstractTest {
      */
     @Test
     public void testConcurrentWritesAndReadsWithReadThrough() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
         startGrid(0);
         startGrid(1);
 
