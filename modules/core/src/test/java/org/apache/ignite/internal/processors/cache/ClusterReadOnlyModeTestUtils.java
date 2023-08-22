@@ -51,23 +51,17 @@ public class ClusterReadOnlyModeTestUtils {
     /** Replicated transactional cache. */
     private static final String REPL_TX_CACHE = "repl_tx_cache";
 
-    /** Replicated transactional cache. */
-    private static final String REPL_MVCC_CACHE = "repl_mvcc_cache";
-
     /** Partitioned atomic cache. */
     public static final String PART_ATOMIC_CACHE = "part_atomic_cache";
 
     /** Partitioned transactional cache. */
     private static final String PART_TX_CACHE = "part_tx_cache";
 
-    /** Partitioned mvcc transactional cache. */
-    private static final String PART_MVCC_CACHE = "part_mvcc_cache";
-
     /**
      * @return Configured cache names.
      */
     public static Collection<String> cacheNames() {
-        return F.asList(REPL_ATOMIC_CACHE, REPL_TX_CACHE, REPL_MVCC_CACHE, PART_ATOMIC_CACHE, PART_TX_CACHE, PART_MVCC_CACHE);
+        return F.asList(REPL_ATOMIC_CACHE, REPL_TX_CACHE, PART_ATOMIC_CACHE, PART_TX_CACHE);
     }
 
     /**
