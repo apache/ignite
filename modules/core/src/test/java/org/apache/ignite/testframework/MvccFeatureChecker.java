@@ -17,12 +17,6 @@
 
 package org.apache.ignite.testframework;
 
-import javax.cache.CacheException;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.transactions.TransactionSerializationException;
-
-import static org.junit.Assert.fail;
-
 /**
  * Provides checks for features supported when FORCE_MVCC mode is on.
  */
@@ -62,20 +56,6 @@ public class MvccFeatureChecker {
      */
     public static boolean isSupported(Feature f) {
         return unsupportedReason(f) == null;
-    }
-
-    /**
-     * Checks if given exception was caused by MVCC write conflict.
-     *
-     * @param e Exception.
-     */
-    public static void assertMvccWriteConflict(Exception e) {
-        assert e != null;
-
-        if (e instanceof CacheException && e.getCause() instanceof TransactionSerializationException)
-            return;
-
-        fail("Unexpected exception: " + X.getFullStackTrace(e));
     }
 
     /**
