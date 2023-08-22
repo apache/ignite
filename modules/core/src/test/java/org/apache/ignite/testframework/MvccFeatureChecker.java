@@ -18,22 +18,15 @@
 package org.apache.ignite.testframework;
 
 import javax.cache.CacheException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.transactions.TransactionSerializationException;
-import org.junit.Assume;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS;
 import static org.junit.Assert.fail;
 
 /**
  * Provides checks for features supported when FORCE_MVCC mode is on.
  */
 public class MvccFeatureChecker {
-    /** */
-    private static final boolean FORCE_MVCC =
-        IgniteSystemProperties.getBoolean(IGNITE_FORCE_MVCC_MODE_IN_TESTS, false);
-
     /** */
     public enum Feature {
         /** */
@@ -59,27 +52,6 @@ public class MvccFeatureChecker {
 
         /** */
         INTERCEPTOR
-    }
-
-    /**
-     * Skips test if feature is not supported.
-     *
-     * @param f feature.
-     */
-    public static void skipIfNotSupported(Feature f) {
-        if (!forcedMvcc())
-            return;
-
-        String reason = unsupportedReason(f);
-
-        Assume.assumeTrue(reason, reason == null);
-    }
-
-    /**
-     * @return {@code True} if Mvcc mode is forced.
-     */
-    public static boolean forcedMvcc() {
-        return FORCE_MVCC;
     }
 
     /**
