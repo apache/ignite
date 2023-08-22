@@ -145,7 +145,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
         assertEquals(0, l.value());
 
         assertThrowsWithCause(() -> mreg.register(new AtomicLongMetric(mName, "")),
-            StringIndexOutOfBoundsException.class);
+            AssertionError.class);
 
         assertThrowsWithCause(() -> mreg.register(new AtomicLongMetric(metricName("mreg", mName), "")),
             AssertionError.class);
