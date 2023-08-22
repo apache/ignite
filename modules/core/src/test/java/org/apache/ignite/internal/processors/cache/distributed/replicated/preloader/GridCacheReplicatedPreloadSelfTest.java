@@ -53,7 +53,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -550,8 +549,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testExternalClassesAtEventP2pDisabled() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
         testExternalClassesAtEvent0(true);
     }
 
@@ -560,8 +557,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testExternalClassesAtEvent() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
         testExternalClassesAtEvent0(false);
     }
 
