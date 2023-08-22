@@ -454,52 +454,52 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends IgniteCacheClusterRe
     /** */
     @Test
     public void testClearDenied() {
-        performActionReadOnlyExceptionExpected(IgniteCache::clear, NO_MVCC_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(IgniteCache::clear, ANY_CACHES_PRED);
     }
 
     /** */
     @Test
     public void testClearAsyncDenied() {
-        performActionReadOnlyExceptionExpected(cache -> cache.clearAsync().get(), NO_MVCC_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.clearAsync().get(), ANY_CACHES_PRED);
     }
 
     /** */
     @Test
     public void testClearWithKeyDenied() {
-        performActionReadOnlyExceptionExpected(cache -> cache.clear(KEY), NO_MVCC_CACHES_PRED);
-        performActionReadOnlyExceptionExpected(cache -> cache.clear(UNKNOWN_KEY), NO_MVCC_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.clear(KEY), ANY_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.clear(UNKNOWN_KEY), ANY_CACHES_PRED);
     }
 
     /** */
     @Test
     public void testClearWithKeyAsyncDenied() {
-        performActionReadOnlyExceptionExpected(cache -> cache.clearAsync(KEY).get(), NO_MVCC_CACHES_PRED);
-        performActionReadOnlyExceptionExpected(cache -> cache.clearAsync(UNKNOWN_KEY).get(), NO_MVCC_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.clearAsync(KEY).get(), ANY_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.clearAsync(UNKNOWN_KEY).get(), ANY_CACHES_PRED);
     }
 
     /** */
     @Test
     public void testClearAllDenied() {
-        performActionReadOnlyExceptionExpected(cache -> cache.clearAll(kvMap.keySet()), NO_MVCC_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.clearAll(kvMap.keySet()), ANY_CACHES_PRED);
     }
 
     /** */
     @Test
     public void testClearAllAsyncDenied() {
-        performActionReadOnlyExceptionExpected(cache -> cache.clearAllAsync(kvMap.keySet()).get(), NO_MVCC_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.clearAllAsync(kvMap.keySet()).get(), ANY_CACHES_PRED);
     }
 
     /** */
     @Test
     public void testLocalClearDenied() {
-        performActionReadOnlyExceptionExpected(cache -> cache.localClear(KEY), NO_MVCC_CACHES_PRED);
-        performActionReadOnlyExceptionExpected(cache -> cache.localClear(UNKNOWN_KEY), NO_MVCC_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.localClear(KEY), ANY_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.localClear(UNKNOWN_KEY), ANY_CACHES_PRED);
     }
 
     /** */
     @Test
     public void testLocalClearAllDenied() {
-        performActionReadOnlyExceptionExpected(cache -> cache.localClearAll(kvMap.keySet()), NO_MVCC_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.localClearAll(kvMap.keySet()), ANY_CACHES_PRED);
     }
 
     /** */

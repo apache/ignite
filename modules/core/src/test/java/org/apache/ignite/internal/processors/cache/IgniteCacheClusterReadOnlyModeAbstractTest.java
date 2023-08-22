@@ -78,7 +78,7 @@ public abstract class IgniteCacheClusterReadOnlyModeAbstractTest extends GridCom
     protected static final Predicate<CacheConfiguration> TX_CACHES_PRED = cfg -> cfg.getAtomicityMode() == TRANSACTIONAL;
 
     /** */
-    protected static final Predicate<CacheConfiguration> NO_MVCC_CACHES_PRED = ATOMIC_CACHES_PRED.or(TX_CACHES_PRED);
+    protected static final Predicate<CacheConfiguration> ANY_CACHES_PRED = ATOMIC_CACHES_PRED.or(TX_CACHES_PRED);
 
     /** Started cache configurations. */
     protected static Collection<CacheConfiguration<?, ?>> cacheConfigurations;
