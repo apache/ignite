@@ -56,9 +56,9 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -257,7 +257,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
                     tx.commit();
                 }
                 catch (CacheException e) {
-                    MvccFeatureChecker.assertMvccWriteConflict(e);
+                    assertTrue(e.getCause() instanceof TransactionSerializationException);
 
                     if (!e.getMessage().contains(
                         "Cannot serialize transaction due to write conflict (transaction is marked for rollback)"))
