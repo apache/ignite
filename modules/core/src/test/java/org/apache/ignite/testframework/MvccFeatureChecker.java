@@ -49,16 +49,6 @@ public class MvccFeatureChecker {
     }
 
     /**
-     * Check if feature is supported.
-     *
-     * @param f Feature.
-     * @return {@code True} if feature is supported, {@code False} otherwise.
-     */
-    public static boolean isSupported(Feature f) {
-        return unsupportedReason(f) == null;
-    }
-
-    /**
      * Fails if feature is not supported in Mvcc mode.
      *
      * @param feature Mvcc feature.
