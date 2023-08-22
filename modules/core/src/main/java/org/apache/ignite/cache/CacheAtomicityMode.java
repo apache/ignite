@@ -146,6 +146,6 @@ public enum CacheAtomicityMode {
      * @return Values.
      */
     public static CacheAtomicityMode[] _values() {
-        return new CacheAtomicityMode[] {ATOMIC, TRANSACTIONAL};
+        return new CacheAtomicityMode[] {TRANSACTIONAL, ATOMIC};
     }
 }
