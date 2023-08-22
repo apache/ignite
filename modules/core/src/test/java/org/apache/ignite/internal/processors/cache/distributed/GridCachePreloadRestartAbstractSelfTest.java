@@ -24,7 +24,6 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -125,9 +124,6 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        if (nearEnabled())
-            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
         backups = DFLT_BACKUPS;
         partitions = DFLT_PARTITIONS;
         preloadMode = ASYNC;
