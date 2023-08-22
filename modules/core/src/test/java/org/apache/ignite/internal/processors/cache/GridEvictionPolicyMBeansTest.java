@@ -25,7 +25,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -36,13 +35,6 @@ public class GridEvictionPolicyMBeansTest extends GridCommonAbstractTest {
     /** Create test and auto-start the grid */
     public GridEvictionPolicyMBeansTest() {
         super(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
-
-        super.beforeTestsStarted();
     }
 
     /**

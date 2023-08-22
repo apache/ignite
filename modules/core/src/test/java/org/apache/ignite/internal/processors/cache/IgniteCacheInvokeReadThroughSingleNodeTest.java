@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -29,13 +28,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  *
  */
 public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvokeReadThroughAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.beforeTest();
-    }
-
     /** {@inheritDoc} */
     @Override protected void startNodes() throws Exception {
         startGrid(0);
