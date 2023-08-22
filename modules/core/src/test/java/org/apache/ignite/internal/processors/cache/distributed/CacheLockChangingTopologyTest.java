@@ -37,6 +37,11 @@ import org.junit.Test;
  *
  */
 public class CacheLockChangingTopologyTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        stopAllGrids();
+    }
+
     /**
      * @throws Exception If failed.
      */
