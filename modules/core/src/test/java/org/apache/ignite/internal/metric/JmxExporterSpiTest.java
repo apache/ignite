@@ -48,7 +48,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteJdbcThinDriver;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -733,10 +732,6 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             assertFalse((boolean)txv.get("internal"));
             assertEquals(0L, txv.get("timeout"));
             assertTrue(((long)txv.get("startTime")) <= System.currentTimeMillis());
-
-            //Only pessimistic transactions are supported when MVCC is enabled.
-            if (Objects.equals(System.getProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS), "true"))
-                return;
 
             GridTestUtils.runMultiThreadedAsync(() -> {
                 try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {

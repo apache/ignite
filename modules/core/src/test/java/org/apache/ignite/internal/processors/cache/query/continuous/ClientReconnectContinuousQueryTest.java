@@ -79,11 +79,6 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
             CacheConfiguration ccfg = defaultCacheConfiguration();
 
             ccfg.setAtomicityMode(atomicityMode());
-
-            // TODO IGNITE-9530 Remove this clause.
-            if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
-                ccfg.setNearConfiguration(null);
-
             cfg.setCacheConfiguration(ccfg);
         }
 

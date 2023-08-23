@@ -1294,7 +1294,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception if failed.
      */
     @Test
-    public void testBeginFailsWhenMvccIsDisabled() throws Exception {
+    public void testBeginFails() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             conn.createStatement().execute("BEGIN");
 
@@ -1309,7 +1309,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception if failed.
      */
     @Test
-    public void testCommitIgnoredWhenMvccIsDisabled() throws Exception {
+    public void testCommitIgnored() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             conn.setAutoCommit(false);
             conn.createStatement().execute("COMMIT");
@@ -1323,7 +1323,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception if failed.
      */
     @Test
-    public void testRollbackIgnoredWhenMvccIsDisabled() throws Exception {
+    public void testRollbackIgnored() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             conn.setAutoCommit(false);
 

@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
@@ -271,19 +270,6 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
-     */
-    @Test
-    public void testRecoveryWithMvccCaches() throws Exception {
-        List<CacheConfiguration> dynamicCaches = Lists.newArrayList(
-            cacheConfiguration(DYNAMIC_CACHE_PREFIX + 0, CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT),
-            cacheConfiguration(DYNAMIC_CACHE_PREFIX + 1, CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
-        );
-
-        doTestWithDynamicCaches(dynamicCaches);
-    }
-
-    /**
      * @param dynamicCaches Dynamic caches.
      */
     private void doTestWithDynamicCaches(List<CacheConfiguration> dynamicCaches) throws Exception {
@@ -472,18 +458,10 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         for (final Ignite node : nodes) {
             TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(node);
 
-            Set<Integer> mvccCaches = ((IgniteEx)node).context().cache().cacheGroups().stream()
-                .flatMap(group -> group.caches().stream())
-                .filter(cache -> cache.config().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
-                .map(GridCacheContext::groupId)
-                .collect(Collectors.toSet());
-
             List<Integer> rebalancedGroups = spi.recordedMessages(true).stream()
                 .map(msg -> (GridDhtPartitionDemandMessage)msg)
                 .map(GridCacheGroupIdMessage::groupId)
                 .filter(grpId -> grpId != sysCacheGroupId)
-                //TODO: remove following filter when failover for MVCC will be fixed.
-                .filter(grpId -> !mvccCaches.contains(grpId))
                 .distinct()
                 .collect(Collectors.toList());
 

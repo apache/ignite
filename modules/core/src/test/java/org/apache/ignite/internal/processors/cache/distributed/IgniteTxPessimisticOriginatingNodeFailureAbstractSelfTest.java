@@ -63,7 +63,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 
 /**
@@ -278,10 +277,8 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
                         assertNotNull(cache);
 
-                        if (atomicityMode() != TRANSACTIONAL_SNAPSHOT) {
-                            assertEquals("Failed to check entry value on node: " + checkNodeId,
-                                fullFailure ? initVal : val, cache.localPeek(key));
-                        }
+                        assertEquals("Failed to check entry value on node: " + checkNodeId,
+                            fullFailure ? initVal : val, cache.localPeek(key));
 
                         return null;
                     }
@@ -429,9 +426,6 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
             final String val = map.get(key);
 
             assertFalse(e.getValue().isEmpty());
-
-            if (atomicityMode() == TRANSACTIONAL_SNAPSHOT)
-                continue;
 
             for (ClusterNode node : e.getValue()) {
                 final UUID checkNodeId = node.id();

@@ -81,7 +81,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.wal.record.RecordUtils;
@@ -89,7 +88,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static java.util.Arrays.fill;
@@ -1013,8 +1011,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRemoveOperationPresentedForDataEntryForAtomic() throws Exception {
-        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc());
-
         runRemoveOperationTest(CacheAtomicityMode.ATOMIC);
     }
 
