@@ -34,8 +34,6 @@ import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.toMap;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 
 /**
  * Tests most of public API methods of {@link IgniteCache} when cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
@@ -200,11 +198,6 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends IgniteCacheClusterRe
                     for (TransactionIsolation isolation : TransactionIsolation.values()) {
                         CacheConfiguration cfg = cache.getConfiguration(CacheConfiguration.class);
 
-                        if (level == OPTIMISTIC && cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
-                            // Only pessimistic transactions are supported when MVCC is enabled.
-                            continue;
-                        }
-
                         Transaction tx = node.transactions().txStart(level, isolation);
 
                         try {
@@ -230,7 +223,7 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends IgniteCacheClusterRe
                     }
                 }
             },
-            TX_CACHES_PRED.or(MVCC_CACHES_PRED)
+            TX_CACHES_PRED
         );
     }
 
@@ -242,11 +235,6 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends IgniteCacheClusterRe
                 for (TransactionConcurrency level : TransactionConcurrency.values()) {
                     for (TransactionIsolation isolation : TransactionIsolation.values()) {
                         CacheConfiguration cfg = cache.getConfiguration(CacheConfiguration.class);
-
-                        if (level == OPTIMISTIC && cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
-                            // Only pessimistic transactions are supported when MVCC is enabled.
-                            continue;
-                        }
 
                         Transaction tx = node.transactions().txStart(level, isolation);
 
@@ -273,7 +261,7 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends IgniteCacheClusterRe
                     }
                 }
             },
-            TX_CACHES_PRED.or(MVCC_CACHES_PRED)
+            TX_CACHES_PRED
         );
     }
 
@@ -466,52 +454,52 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends IgniteCacheClusterRe
     /** */
     @Test
     public void testClearDenied() {
-        performActionReadOnlyExceptionExpected(IgniteCache::clear, NO_MVCC_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(IgniteCache::clear, ANY_CACHES_PRED);
     }
 
     /** */
     @Test
     public void testClearAsyncDenied() {
-        performActionReadOnlyExceptionExpected(cache -> cache.clearAsync().get(), NO_MVCC_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.clearAsync().get(), ANY_CACHES_PRED);
     }
 
     /** */
     @Test
     public void testClearWithKeyDenied() {
-        performActionReadOnlyExceptionExpected(cache -> cache.clear(KEY), NO_MVCC_CACHES_PRED);
-        performActionReadOnlyExceptionExpected(cache -> cache.clear(UNKNOWN_KEY), NO_MVCC_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.clear(KEY), ANY_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.clear(UNKNOWN_KEY), ANY_CACHES_PRED);
     }
 
     /** */
     @Test
     public void testClearWithKeyAsyncDenied() {
-        performActionReadOnlyExceptionExpected(cache -> cache.clearAsync(KEY).get(), NO_MVCC_CACHES_PRED);
-        performActionReadOnlyExceptionExpected(cache -> cache.clearAsync(UNKNOWN_KEY).get(), NO_MVCC_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.clearAsync(KEY).get(), ANY_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.clearAsync(UNKNOWN_KEY).get(), ANY_CACHES_PRED);
     }
 
     /** */
     @Test
     public void testClearAllDenied() {
-        performActionReadOnlyExceptionExpected(cache -> cache.clearAll(kvMap.keySet()), NO_MVCC_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.clearAll(kvMap.keySet()), ANY_CACHES_PRED);
     }
 
     /** */
     @Test
     public void testClearAllAsyncDenied() {
-        performActionReadOnlyExceptionExpected(cache -> cache.clearAllAsync(kvMap.keySet()).get(), NO_MVCC_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.clearAllAsync(kvMap.keySet()).get(), ANY_CACHES_PRED);
     }
 
     /** */
     @Test
     public void testLocalClearDenied() {
-        performActionReadOnlyExceptionExpected(cache -> cache.localClear(KEY), NO_MVCC_CACHES_PRED);
-        performActionReadOnlyExceptionExpected(cache -> cache.localClear(UNKNOWN_KEY), NO_MVCC_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.localClear(KEY), ANY_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.localClear(UNKNOWN_KEY), ANY_CACHES_PRED);
     }
 
     /** */
     @Test
     public void testLocalClearAllDenied() {
-        performActionReadOnlyExceptionExpected(cache -> cache.localClearAll(kvMap.keySet()), NO_MVCC_CACHES_PRED);
+        performActionReadOnlyExceptionExpected(cache -> cache.localClearAll(kvMap.keySet()), ANY_CACHES_PRED);
     }
 
     /** */
