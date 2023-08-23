@@ -141,6 +141,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpCacheFutureTask;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -912,8 +913,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         // Executed inside discovery notifier thread, prior to firing discovery custom event,
         // so it is safe to set new snapshot task inside this method without synchronization.
         if (clusterSnpReq != null) {
-            return new GridFinishedFuture<>(new IgniteCheckedException(snpMsg("Snapshot operation has been rejected. " +
-                "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpReq + ']', req.dump())));
+            return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. " +
+                "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpReq + ']'));
         }
 
         clusterSnpReq = req;
@@ -921,7 +922,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (req.incremental())
             handleIncrementalSnapshotId(req.requestId(), cctx.discovery().topologyVersion());
 
-        if (!CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()) && !req.dump())
+        if (!CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
             return new GridFinishedFuture<>();
 
         Set<UUID> leftNodes = new HashSet<>(req.nodes());
@@ -929,18 +930,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             F.node2id()));
 
         if (!leftNodes.isEmpty()) {
-            return new GridFinishedFuture<>(new IgniteCheckedException(snpMsg("Some of baseline nodes left the cluster " +
-                "prior to snapshot operation start: " + leftNodes, req.dump())));
+            return new GridFinishedFuture<>(new IgniteCheckedException("Some of baseline nodes left the cluster " +
+                "prior to snapshot operation start: " + leftNodes));
         }
 
         if (cctx.kernalContext().encryption().isMasterKeyChangeInProgress()) {
-            return new GridFinishedFuture<>(new IgniteCheckedException(snpMsg("Snapshot operation has been rejected. Master " +
-                "key changing process is not finished yet.", req.dump())));
+            return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. Master " +
+                "key changing process is not finished yet."));
         }
 
         if (cctx.kernalContext().encryption().reencryptionInProgress()) {
-            return new GridFinishedFuture<>(new IgniteCheckedException(snpMsg("Snapshot operation has been rejected. Caches " +
-                "re-encryption process is not finished yet.", req.dump())));
+            return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. Caches " +
+                "re-encryption process is not finished yet."));
         }
 
         List<Integer> grpIds = new ArrayList<>(F.viewReadOnly(req.groups(), CU::cacheId));
@@ -1222,7 +1223,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
 
-                return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
+                return new SnapshotOperationResponse(ctx.metadata().dump() ? null : handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
             }
             catch (IgniteCheckedException e) {
                 throw F.wrap(e);
@@ -1519,8 +1520,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     if (!F.isEmpty(snpReq.warnings())) {
                         String wrnsLst = U.nl() + "\t- " + String.join(U.nl() + "\t- ", snpReq.warnings());
 
-                        SnapshotWarningException wrn = new SnapshotWarningException(snpMsg("Snapshot task '" +
-                            snpReq.snapshotName() + "' completed with the warnings:" + wrnsLst, snpReq.dump()));
+                        SnapshotWarningException wrn = new SnapshotWarningException("Snapshot task '" +
+                            snpReq.snapshotName() + "' completed with the warnings:" + wrnsLst);
 
                         clusterSnpFut.onDone(wrn);
 
@@ -1530,13 +1531,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         clusterSnpFut.onDone();
 
                         if (log.isInfoEnabled())
-                            log.info(snpMsg(SNAPSHOT_FINISHED_MSG + snpReq, snpReq.dump()));
+                            log.info(SNAPSHOT_FINISHED_MSG + snpReq);
                     }
                 }
                 else if (snpReq.error() == null) {
-                    clusterSnpFut.onDone(new IgniteCheckedException(snpMsg("Snapshot creation has been finished with an error. " +
+                    clusterSnpFut.onDone(new IgniteCheckedException("Snapshot creation has been finished with an error. " +
                         "Local snapshot tasks may not finished completely or finalizing results fails " +
-                        "[fail=" + endFail + ", err=" + err + ']', snpReq.dump())));
+                        "[fail=" + endFail + ", err=" + err + ']'));
                 }
                 else
                     clusterSnpFut.onDone(snpReq.error());
@@ -2194,8 +2195,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean dump,
         @Nullable Collection<String> cacheGroupNames
     ) {
-        A.notNullOrEmpty(name, snpMsg("Snapshot name cannot be null or empty.", dump));
-        A.ensure(U.alphanumericUnderscore(name), snpMsg("Snapshot name must satisfy the following name pattern: a-zA-Z0-9_", dump));
+        A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
+        A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
         A.ensure(!(incremental && onlyPrimary), "Only primary not supported for incremental snapshots");
         A.ensure(dump && !(incremental || onlyPrimary), "Dump not supported onlyPrimary and incremental flags");
 
@@ -2203,18 +2204,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
             if (!IgniteFeatures.allNodesSupports(cctx.discovery().aliveServerNodes(), PERSISTENCE_CACHE_SNAPSHOT))
-                throw new IgniteException(snpMsg("Not all nodes in the cluster support a snapshot operation.", dump));
+                throw new IgniteException("Not all nodes in the cluster support a snapshot operation.");
 
             if (!cctx.kernalContext().state().clusterState().state().active())
-                throw new IgniteException(snpMsg("Snapshot operation has been rejected. The cluster is inactive.", dump));
+                throw new IgniteException("Snapshot operation has been rejected. The cluster is inactive.");
 
             DiscoveryDataClusterState clusterState = cctx.kernalContext().state().clusterState();
 
-            if (!clusterState.hasBaselineTopology()) {
-                throw new IgniteException(
-                    snpMsg("Snapshot operation has been rejected. The baseline topology is not configured for cluster.", dump)
-                );
-            }
+            if (!clusterState.hasBaselineTopology())
+                throw new IgniteException("Snapshot operation has been rejected. The baseline topology is not configured for cluster.");
 
             if (cctx.kernalContext().clientNode()) {
                 ClusterNode crd = U.oldest(cctx.kernalContext().discovery().aliveServerNodes(), null);
@@ -2236,21 +2234,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             synchronized (snpOpMux) {
                 if (clusterSnpFut != null && !clusterSnpFut.isDone()) {
                     throw new IgniteException(
-                        snpMsg("Create snapshot request has been rejected. The previous operation was not completed.", dump)
+                        "Create snapshot request has been rejected. The previous snapshot operation was not completed."
                     );
                 }
 
-                if (clusterSnpReq != null) {
-                    throw new IgniteException(
-                        snpMsg("Create snapshot request has been rejected. Parallel snapshot processes are not allowed.", dump)
-                    );
-                }
+                if (clusterSnpReq != null)
+                    throw new IgniteException("Create snapshot request has been rejected. Parallel snapshot processes are not allowed.");
 
                 boolean snpExists = localSnapshotNames(snpPath).contains(name);
 
                 if (!incremental && snpExists) {
-                    throw new IgniteException(snpMsg("Create snapshot request has been rejected. " +
-                        "Snapshot with given name already exists on local node.", dump));
+                    throw new IgniteException("Create snapshot request has been rejected. " +
+                        "Snapshot with given name already exists on local node.");
                 }
 
                 if (incremental) {
@@ -2269,7 +2264,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 if (isRestoring()) {
                     throw new IgniteException(
-                        snpMsg("Snapshot operation has been rejected. Cache group restore operation is currently in progress.", dump)
+                        "Snapshot operation has been rejected. Cache group restore operation is currently in progress."
                     );
                 }
 
@@ -2296,12 +2291,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             snpFut0.listen(() -> {
                 if (snpFut0.error() == null)
-                    recordSnapshotEvent(name, snpMsg(SNAPSHOT_FINISHED_MSG + grps, dump), EVT_CLUSTER_SNAPSHOT_FINISHED);
+                    recordSnapshotEvent(name, SNAPSHOT_FINISHED_MSG + grps, EVT_CLUSTER_SNAPSHOT_FINISHED);
                 else {
                     String errMsgPref = snpFut0.error() instanceof SnapshotWarningException ? SNAPSHOT_FINISHED_WRN_MSG
                         : SNAPSHOT_FAILED_MSG;
 
-                    recordSnapshotEvent(name, snpMsg(errMsgPref + snpFut0.error().getMessage(), dump), EVT_CLUSTER_SNAPSHOT_FAILED);
+                    recordSnapshotEvent(name, errMsgPref + snpFut0.error().getMessage(), EVT_CLUSTER_SNAPSHOT_FAILED);
                 }
             });
 
@@ -2322,9 +2317,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             ));
 
             String msg =
-                snpMsg("Cluster-wide snapshot operation started [name=" + name + ", grps=" + grps +
+                "Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps +
                     (incremental ? "" : (", incremental=true, incrementIndex=" + incIdx)) +
-                ']', dump);
+                ']';
 
             recordSnapshotEvent(name, msg, EVT_CLUSTER_SNAPSHOT_STARTED);
 
@@ -2334,9 +2329,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return new IgniteFutureImpl<>(snpFut0);
         }
         catch (Exception e) {
-            recordSnapshotEvent(name, snpMsg(SNAPSHOT_FAILED_MSG + e.getMessage(), dump), EVT_CLUSTER_SNAPSHOT_FAILED);
+            recordSnapshotEvent(name, SNAPSHOT_FAILED_MSG + e.getMessage(), EVT_CLUSTER_SNAPSHOT_FAILED);
 
-            U.error(log, snpMsg(SNAPSHOT_FAILED_MSG, dump), e);
+            U.error(log, SNAPSHOT_FAILED_MSG, e);
 
             ClusterSnapshotFuture errSnpFut = new ClusterSnapshotFuture(name, e);
 
@@ -2720,7 +2715,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotSender snpSndr
     ) {
         AbstractSnapshotFutureTask<?> createTask = dump
-            ? new DumpCacheFutureTask(cctx, srcNodeId, requestId, snpName, snapshotLocalDir(snpName, null, locDumpDir), snpSndr, parts)
+            ? new DumpCacheFutureTask(cctx, srcNodeId, requestId, snpName, snapshotLocalDir(snpName, null, locDumpDir),
+                ioFactory, snpSndr, parts)
             : new SnapshotFutureTask(cctx, srcNodeId, requestId, snpName, tmpWorkDir, ioFactory, snpSndr, parts, withMetaStorage, locBuff);
 
         AbstractSnapshotFutureTask<?> task = registerTask(snpName, createTask);
@@ -4754,13 +4750,5 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private interface Factory<E1, E2, R> {
         /** @return An instance of {@link R}. */
         R create(E1 e1, E2 e2) throws IOException;
-    }
-
-    /** */
-    private static String snpMsg(String msg, boolean dump) {
-        if (!dump)
-            return msg;
-
-        return msg.replaceAll("Snapshot", "Dump").replaceAll("snapshot", "dump");
     }
 }

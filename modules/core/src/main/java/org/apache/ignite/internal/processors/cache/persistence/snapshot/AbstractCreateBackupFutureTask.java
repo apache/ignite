@@ -50,7 +50,7 @@ public abstract class AbstractCreateBackupFutureTask extends AbstractSnapshotFut
      * For full snapshot additional checkpoint write lock required.
      * @see SnapshotFutureTask#onMarkCheckpointBegin(CheckpointListener.Context)
      */
-    final Map<Integer, Set<Integer>> processed = new HashMap<>();
+    protected final Map<Integer, Set<Integer>> processed = new HashMap<>();
 
     /** Future which will be completed when task requested to be closed. Will be executed on system pool. */
     protected volatile CompletableFuture<Void> closeFut;
@@ -110,7 +110,7 @@ public abstract class AbstractCreateBackupFutureTask extends AbstractSnapshotFut
     }
 
     /** */
-    void processPartitions() throws IgniteCheckedException {
+    protected void processPartitions() throws IgniteCheckedException {
         for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
             int grpId = e.getKey();
             Set<Integer> grpParts = e.getValue();
@@ -215,7 +215,7 @@ public abstract class AbstractCreateBackupFutureTask extends AbstractSnapshotFut
      * @param exec Runnable task to execute.
      * @return Wrapped task.
      */
-    Runnable wrapExceptionIfStarted(IgniteThrowableRunner exec) {
+    public Runnable wrapExceptionIfStarted(IgniteThrowableRunner exec) {
         return () -> {
             if (stopping())
                 return;

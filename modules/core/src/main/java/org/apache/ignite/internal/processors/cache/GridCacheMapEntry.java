@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntryChangeListener;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -107,6 +108,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_EXPIRED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;
@@ -1546,6 +1548,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             assert ttl >= 0 : ttl;
             assert expireTime >= 0 : expireTime;
 
+            DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
+
+            if (dumpLsnr != null)
+                dumpLsnr.beforeChange(cctx, key, oldValPresent ? oldVal : null, extras.expireTime());
+
             // Detach value before index update.
             val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
@@ -1738,6 +1745,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     return new GridCacheUpdateTxResult(false, logPtr);
                 }
             }
+
+            DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
+
+            if (dumpLsnr != null)
+                dumpLsnr.beforeChange(cctx, key, oldValPresent ? oldVal : null, extras.expireTime());
 
             removeValue();
 
@@ -6147,6 +6159,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
             }
 
+            DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
+
+            if (dumpLsnr != null)
+                dumpLsnr.beforeChange(cctx, entry.key, oldVal, entry.extras.expireTime());
+
             updated = cctx.kernalContext().cacheObjects().prepareForCache(updated, cctx);
 
             if (writeThrough)
@@ -6249,6 +6266,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     return;
                 }
             }
+
+            DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
+
+            if (dumpLsnr != null)
+                dumpLsnr.beforeChange(cctx, entry.key, oldVal, entry.extras.expireTime());
 
             if (writeThrough)
                 // Must persist inside synchronization in non-tx mode.
