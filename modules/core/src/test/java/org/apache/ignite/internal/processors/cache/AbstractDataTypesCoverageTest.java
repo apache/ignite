@@ -166,9 +166,7 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
 
         Object[] paramLine = null;
 
-        CacheAtomicityMode[] modes = {CacheAtomicityMode.TRANSACTIONAL, CacheAtomicityMode.ATOMIC};
-
-        for (CacheAtomicityMode atomicityMode : modes) {
+        for (CacheAtomicityMode atomicityMode : CacheAtomicityMode._values()) {
             paramLine = Arrays.copyOf(baseParamLine, baseParamLine.length);
 
             paramLine[1] = atomicityMode;
