@@ -14,6 +14,7 @@ public class JiebaIndexAnalyzerTest extends TestCase
     public void testCreateComponents() throws Exception
     {
         String text = "中华人民共和国很辽阔";
+        text = "运动抽筋有哪些原因？如何处理>";
         for (int i = 0; i < text.length(); ++i)
         {
             System.out.print(text.charAt(i) + "" + i + " ");

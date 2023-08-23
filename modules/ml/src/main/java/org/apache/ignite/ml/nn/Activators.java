@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.nn;
 
+import org.apache.commons.math3.util.FastMath;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableDoubleToDoubleFunction;
 
 /**
@@ -34,8 +35,8 @@ public class Activators {
         }
 
         /** {@inheritDoc} */
-        @Override public Double apply(double val) {
-            return 1 / (1 + Math.exp(-val));
+        @Override public double apply(double val) {
+            return 1 / (1 + FastMath.exp(-val));
         }
     };
 
@@ -54,7 +55,7 @@ public class Activators {
         }
 
         /** {@inheritDoc} */
-        @Override public Double apply(double val) {
+        @Override public double apply(double val) {
             return Math.max(val, 0);
         }
     };
@@ -74,7 +75,7 @@ public class Activators {
          * @param pnt Point to differentiate at.
          * @return Differential at pnt.
          */
-        @Override public Double apply(double pnt) {
+        @Override public double apply(double pnt) {
             return pnt;
         }
     };

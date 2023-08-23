@@ -18,9 +18,11 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneDirectory;
+import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneIndex;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -49,6 +51,8 @@ public class LuceneIndexAccess {
 	public static ApplicationContext springCtx = null;
     
     private static final Map<String, LuceneIndexAccess> INDEX_ACCESS = new ConcurrentHashMap<>();
+    
+    private static long lastCommitTime = System.currentTimeMillis();
 
 	 /** */
     private final AtomicLong updateCntr = new GridAtomicLong();
@@ -265,41 +269,53 @@ public class LuceneIndexAccess {
     /**
      * Commit all changes to the Lucene index.
      */
-    public void commitIndex() throws IOException {    	
-        writer.commit();
-        //writer.close();
-        // recreate Searcher with the IndexWriter's reader.
-        if(true) {
-        	boolean applyAllDeletes = true;     
-        	//reader = DirectoryReader.open(indexDir);
-        	reader = DirectoryReader.openIfChanged(reader, writer, applyAllDeletes);	        
-	        searcher = new IndexSearcher(reader);
+    public void commitIndex(boolean applyAllDeletes) throws IOException {
+    	writer.commit();
+        try {
+             // recreate Searcher with the IndexWriter's reader.        	
+        	
+        	DirectoryReader readerNew = DirectoryReader.openIfChanged(reader, writer, applyAllDeletes);
+        	if(readerNew!=null) {
+        		this.reader = readerNew;
+        		searcher = new IndexSearcher(this.reader);
+        	}
+        	else {
+        		reader = DirectoryReader.open(writer);
+        		searcher = new IndexSearcher(reader);  
+        	}
+        }
+        catch(IOException e) {
+            //see http://wiki.apache.org/lucene-java/NearRealtimeSearch        	
+            reader = DirectoryReader.open(writer);
+            searcher = new IndexSearcher(reader);      	
         }
     }
     
     public void close() throws IOException{      
     	 searcher = null;
-    	 reader.close();
-    	 writer.close();
+    	 U.closeQuiet(reader);
+    	 U.closeQuiet(writer);
+    	 U.close(writer.getDirectory(), ctx.log(GridLuceneIndex.class));
     }
     
     public void increment(){
     	updateCntr.incrementAndGet();
     }
     
-    public void flush() throws IgniteCheckedException{
-    	  try {
-              long updates = updateCntr.get();
+    public void flush() throws IOException{
+    	long updates = updateCntr.get();
 
-              if (updates != 0) {
-              	  commitIndex();
-
-                  updateCntr.addAndGet(-updates);
-              }
-          }
-          catch (Exception e) {
-              throw new IgniteCheckedException(e);
-          }
+        if (updates != 0) {
+      	  updateCntr.addAndGet(-updates);
+      	  long current = System.currentTimeMillis();
+      	  if(updates>=1024 || current-lastCommitTime>=60*1000) {
+      		  commitIndex(true); 
+      		  lastCommitTime = current;
+      	  }
+      	  else {
+      		  commitIndex(false);   
+      	  }
+        }
     }
     
 

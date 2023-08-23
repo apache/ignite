@@ -34,6 +34,14 @@ public class JiebaIndexAnalyzer extends Analyzer
     {
         this.pstemming = pstemming;
     }
+    
+    /**
+     * @param JiebaTokenizerFactory
+     */
+    public JiebaIndexAnalyzer(JiebaTokenizerFactory jiebaTokenizerFactory)
+    {
+        this.jiebaTokenizerFactory = jiebaTokenizerFactory;        
+    }
 
     public JiebaIndexAnalyzer()
     {

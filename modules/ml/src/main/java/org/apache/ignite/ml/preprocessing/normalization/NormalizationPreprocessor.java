@@ -19,6 +19,8 @@ package org.apache.ignite.ml.preprocessing.normalization;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.function.DoubleBinaryOperator;
+
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -87,9 +89,9 @@ public final class NormalizationPreprocessor<K, V> implements Preprocessor<K, V>
      * @param zero Zero value for fold operation.
      * @return Folded value of this vector.
      */
-    private double foldMap(Vector vec, IgniteBiFunction<Double, Double, Double> foldFun, IgniteDoubleFunction<Double> mapFun, double zero) {
+    private double foldMap(Vector vec, DoubleBinaryOperator foldFun, IgniteDoubleFunction<Double> mapFun, double zero) {
         for (int i = 0; i < vec.size(); i++)
-            zero = foldFun.apply(zero, mapFun.apply(vec.get(i)));
+            zero = foldFun.applyAsDouble(zero, mapFun.apply(vec.get(i)));
 
         return zero;
     }

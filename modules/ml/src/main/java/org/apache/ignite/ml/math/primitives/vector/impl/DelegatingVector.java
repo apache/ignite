@@ -24,8 +24,10 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Spliterator;
+import java.util.TreeMap;
+import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntToDoubleFunction;
-import org.apache.ignite.lang.IgniteUuid;
+
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteIntDoubleToDoubleBiFunction;
@@ -42,10 +44,8 @@ public class DelegatingVector implements Vector {
     private Vector dlg;
 
     /** Meta attribute storage. */
-    private Map<String, Object> meta = new HashMap<>();
-
-    /** GUID. */
-    private IgniteUuid guid = IgniteUuid.randomUuid();
+    private Map<String, Object> meta = null;
+   
 
     /** */
     public DelegatingVector() {
@@ -70,19 +70,19 @@ public class DelegatingVector implements Vector {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(dlg);
         out.writeObject(meta);
-        out.writeObject(guid);
+        
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         dlg = (Vector)in.readObject();
-        meta = (Map<String, Object>)in.readObject();
-        guid = (IgniteUuid)in.readObject();
+        meta = (Map<String, Object>)in.readObject();        
     }
 
     /** {@inheritDoc} */
     @Override public Map<String, Object> getMetaStorage() {
+    	if(meta==null) meta = new TreeMap<>(dlg.getMetaStorage());
         return meta;
     }
 
@@ -192,12 +192,12 @@ public class DelegatingVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector map(Vector vec, IgniteBiFunction<Double, Double, Double> fun) {
+    @Override public Vector map(Vector vec, DoubleBinaryOperator fun) {
         return dlg.map(vec, fun);
     }
 
     /** {@inheritDoc} */
-    @Override public Vector map(IgniteBiFunction<Double, Double, Double> fun, double y) {
+    @Override public Vector map(DoubleBinaryOperator fun, double y) {
         return dlg.map(fun, y);
     }
 
@@ -352,6 +352,12 @@ public class DelegatingVector implements Vector {
     }
 
     /** {@inheritDoc} */
+    @Override public double foldMap(DoubleBinaryOperator foldFun, IgniteDoubleFunction<Double> mapFun,
+        double zeroVal) {
+    	return dlg.foldMap(foldFun, mapFun, zeroVal);
+    }
+    
+    /** {@inheritDoc} */
     @Override public <T> T foldMap(IgniteBiFunction<T, Double, T> foldFun, IgniteDoubleFunction<Double> mapFun,
         T zeroVal) {
         return dlg.foldMap(foldFun, mapFun, zeroVal);
@@ -359,7 +365,7 @@ public class DelegatingVector implements Vector {
 
     /** {@inheritDoc} */
     @Override public <T> T foldMap(Vector vec, IgniteBiFunction<T, Double, T> foldFun,
-        IgniteBiFunction<Double, Double, Double> combFun, T zeroVal) {
+    		DoubleBinaryOperator combFun, T zeroVal) {
         return dlg.foldMap(vec, foldFun, combFun, zeroVal);
     }
 

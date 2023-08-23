@@ -26,12 +26,12 @@ import org.apache.ignite.ml.structures.LabeledVectorSet;
  *
  * @see ANNClassificationModel
  */
-public class ANNModelFormat extends KNNModelFormat {
+public class ANNModelFormat<L> extends KNNModelFormat {
     /** Centroid statistics. */
-    private final ANNClassificationTrainer.CentroidStat candidatesStat;
+    private final ANNClassificationTrainer.CentroidStat<L> candidatesStat;
 
     /** The labeled set of candidates. */
-    private LabeledVectorSet<LabeledVector> candidates;
+    private LabeledVectorSet<LabeledVector<ProbableLabel<L>>> candidates;
 
     /**
      * Creates an instance.
@@ -43,8 +43,8 @@ public class ANNModelFormat extends KNNModelFormat {
     public ANNModelFormat(int k,
         DistanceMeasure measure,
         boolean weighted,
-        LabeledVectorSet<LabeledVector> candidates,
-        ANNClassificationTrainer.CentroidStat candidatesStat) {
+        LabeledVectorSet<LabeledVector<ProbableLabel<L>>> candidates,
+        ANNClassificationTrainer.CentroidStat<L> candidatesStat) {
         this.k = k;
         this.distanceMeasure = measure;
         this.weighted = weighted;
@@ -53,7 +53,7 @@ public class ANNModelFormat extends KNNModelFormat {
     }
 
     /** */
-    public LabeledVectorSet<LabeledVector> getCandidates() {
+    public LabeledVectorSet<LabeledVector<ProbableLabel<L>>> getCandidates() {
         return candidates;
     }
 
@@ -77,7 +77,7 @@ public class ANNModelFormat extends KNNModelFormat {
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        ANNModelFormat that = (ANNModelFormat)obj;
+        ANNModelFormat<L> that = (ANNModelFormat<L>)obj;
 
         return k == that.k
             && distanceMeasure.equals(that.distanceMeasure)

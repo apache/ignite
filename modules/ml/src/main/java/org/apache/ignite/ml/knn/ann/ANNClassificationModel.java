@@ -27,13 +27,18 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.inference.json.JSONModel;
@@ -49,23 +54,23 @@ import org.apache.ignite.ml.util.ModelTrace;
 /**
  * ANN model to predict labels in multi-class classification task.
  */
-public final class ANNClassificationModel extends NNClassificationModel implements JSONWritable, DeployableObject {
+public final class ANNClassificationModel<L> extends NNClassificationModel<L> implements JSONWritable, DeployableObject {
     /** */
     private static final long serialVersionUID = -127312378991350345L;
 
     /** The labeled set of candidates. */
-    private LabeledVectorSet<LabeledVector> candidates;
+    private LabeledVectorSet<LabeledVector<ProbableLabel<L>>> candidates;
 
     /** Centroid statistics. */
-    private ANNClassificationTrainer.CentroidStat centroindsStat;
+    private ANNClassificationTrainer.CentroidStat<L> centroindsStat;
 
     /**
      * Build the model based on a candidates set.
      * @param centers The candidates set.
      * @param centroindsStat The stat about centroids.
      */
-    public ANNClassificationModel(LabeledVectorSet<LabeledVector> centers,
-        ANNClassificationTrainer.CentroidStat centroindsStat) {
+    public ANNClassificationModel(LabeledVectorSet<LabeledVector<ProbableLabel<L>>> centers,
+        ANNClassificationTrainer.CentroidStat<L> centroindsStat) {
         this.candidates = centers;
         this.centroindsStat = centroindsStat;
     }
@@ -75,24 +80,63 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
     }
     
     /** */
-    public LabeledVectorSet<LabeledVector> getCandidates() {
+    public LabeledVectorSet<LabeledVector<ProbableLabel<L>>> getCandidates() {
         return candidates;
     }
 
     /** */
-    public ANNClassificationTrainer.CentroidStat getCentroindsStat() {
+    public ANNClassificationTrainer.CentroidStat<L> getCentroindsStat() {
         return centroindsStat;
     }
 
     /** {@inheritDoc} */
-    @Override public Double predict(Vector v) {
-        List<LabeledVector> neighbors = findKNearestNeighbors(v);
+    @Override public L predict(Vector v) {
+        List<LabeledVector<ProbableLabel<L>>> neighbors = findKNearestNeighbors(v);
         return classify(neighbors, v, weighted);
+    }
+    
+    /**
+     * Iterates along entries in distance map and fill the resulting k-element array.
+     * @param distanceIdxPairs The distance map.
+     * @return K-nearest neighbors.
+     */
+    public List<LabeledVector<L>> findKClosestLabels(int k, Vector v, IgniteCache<Object, Vector> dataset) {
+    	List<LabeledVector<ProbableLabel<L>>> neighbors = findKNearestNeighbors(v);    	
+    	Map<L, Double> clsVotes = new HashMap<>();
+    	
+        for (LabeledVector<ProbableLabel<L>> neighbor : neighbors) {
+            TreeMap<L, Double> probableClsLb = (neighbor.label()).clsLbls;
+
+            double distance = distanceMeasure.compute(v, neighbor.features());
+
+            // we predict class label, not the probability vector (it need here another math with counting of votes)
+            probableClsLb.forEach((label, probability) -> {                
+                if(probability>0) {
+                	double cnt = clsVotes.containsKey(label) ? clsVotes.get(label) : 0;
+                	clsVotes.put(label, cnt + probability * getClassVoteForVector(weighted, distance));
+                }
+            });
+        }
+        
+        List<Entry<L,Double>> res = clsVotes.entrySet().stream().sorted(Map.Entry.comparingByValue()).limit(4*k)
+        		.collect(Collectors.toList());
+        
+        return res.parallelStream().map(e->{
+        		Vector vec = dataset.get(e.getKey());
+        		double distance = distanceMeasure.compute(v, vec);
+        		LabeledVector<L> elm = new LabeledVector<>(vec,e.getKey(),(float)distance);
+        		return elm;
+        	})
+    		.sorted((a,b)-> {     			
+    			return a.weight()-b.weight()>=0 ? 1 : -1;
+    		})
+    		.limit(k)
+    		.collect(Collectors.toList());        
     }
 
     /** */
     @Override public <P> void saveModel(Exporter<KNNModelFormat, P> exporter, P path) {
-        ANNModelFormat mdlData = new ANNModelFormat(k, distanceMeasure, weighted, candidates, centroindsStat);
+        ANNModelFormat<L> mdlData = new ANNModelFormat<>(k, distanceMeasure, weighted, candidates, centroindsStat);
         exporter.save(mdlData, path);
     }
 
@@ -103,7 +147,7 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
      * @param v The given vector.
      * @return K-nearest neighbors.
      */
-    private List<LabeledVector> findKNearestNeighbors(Vector v) {
+    private List<LabeledVector<ProbableLabel<L>>> findKNearestNeighbors(Vector v) {
         return Arrays.asList(getKClosestVectors(getDistances(v)));
     }
 
@@ -112,9 +156,9 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
      * @param distanceIdxPairs The distance map.
      * @return K-nearest neighbors.
      */
-    private LabeledVector[] getKClosestVectors(
+    private LabeledVector<ProbableLabel<L>>[] getKClosestVectors(
         TreeMap<Double, Set<Integer>> distanceIdxPairs) {
-        LabeledVector[] res;
+        LabeledVector<ProbableLabel<L>>[] res;
 
         if (candidates.rowSize() <= k) {
             res = new LabeledVector[candidates.rowSize()];
@@ -152,7 +196,7 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
 
         for (int i = 0; i < candidates.rowSize(); i++) {
 
-            LabeledVector labeledVector = candidates.getRow(i);
+            LabeledVector<ProbableLabel<L>> labeledVector = candidates.getRow(i);
             if (labeledVector != null) {
                 double distance = distanceMeasure.compute(v, labeledVector.features());
                 putDistanceIdxPair(distanceIdxPairs, i, distance);
@@ -162,18 +206,20 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
     }
 
     /** */
-    private double classify(List<LabeledVector> neighbors, Vector v, boolean weighted) {
-        Map<Double, Double> clsVotes = new HashMap<>();
+    private L classify(List<LabeledVector<ProbableLabel<L>>> neighbors, Vector v, boolean weighted) {
+        Map<L, Double> clsVotes = new HashMap<>();
 
-        for (LabeledVector neighbor : neighbors) {
-            TreeMap<Double, Double> probableClsLb = ((ProbableLabel)neighbor.label()).clsLbls;
+        for (LabeledVector<ProbableLabel<L>> neighbor : neighbors) {
+            TreeMap<L, Double> probableClsLb = (neighbor.label()).clsLbls;
 
             double distance = distanceMeasure.compute(v, neighbor.features());
 
             // we predict class label, not the probability vector (it need here another math with counting of votes)
             probableClsLb.forEach((label, probability) -> {
-                double cnt = clsVotes.containsKey(label) ? clsVotes.get(label) : 0;
-                clsVotes.put(label, cnt + probability * getClassVoteForVector(weighted, distance));
+            	if(probability>0) {
+            		double cnt = clsVotes.containsKey(label) ? clsVotes.get(label) : 0;
+            		clsVotes.put(label, cnt + probability * getClassVoteForVector(weighted, distance));
+            	}
             });
         }
         return getClassWithMaxVotes(clsVotes);
@@ -199,7 +245,7 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        ANNClassificationModel that = (ANNClassificationModel)obj;
+        ANNClassificationModel<L> that = (ANNClassificationModel)obj;
 
         return k == that.k
             && distanceMeasure.equals(that.distanceMeasure)
@@ -229,10 +275,10 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
     }
 
     /** Loads ANNClassificationModel from JSON file. */
-    public static ANNClassificationModel fromJSON(Path path) {
+    public static <L> ANNClassificationModel<L> fromJSON(Path path) {
         ObjectMapper mapper = new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 
-        ANNJSONExportModel exportModel;
+        ANNJSONExportModel<L> exportModel;
         try {
             exportModel = mapper
                 .readValue(new File(path.toAbsolutePath().toString()), ANNJSONExportModel.class);
@@ -250,13 +296,13 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
         ObjectMapper mapper = new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 
         try {
-            ANNJSONExportModel exportModel = new ANNJSONExportModel(
+            ANNJSONExportModel<L> exportModel = new ANNJSONExportModel<>(
                 System.currentTimeMillis(),
                 "ann_" + UUID.randomUUID(),
                 ANNClassificationModel.class.getSimpleName()
             );
             List<double[]> listOfCandidates = new ArrayList<>();
-            ProbableLabel[] labels = new ProbableLabel[candidates.rowSize()];
+            ProbableLabel<L>[] labels = new ProbableLabel[candidates.rowSize()];
             for (int i = 0; i < candidates.rowSize(); i++) {
                 labels[i] = (ProbableLabel)candidates.getRow(i).getLb();
                 listOfCandidates.add(candidates.features(i).asArray());
@@ -278,12 +324,12 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
     }
 
     /** */
-    public static class ANNJSONExportModel extends JSONModel {
+    public static class ANNJSONExportModel<L> extends JSONModel {
         /** Centers of clusters. */
         public List<double[]> candidateFeatures;
 
         /** */
-        public ProbableLabel[] candidateLabels;
+        public ProbableLabel<L>[] candidateLabels;
 
         /** Distance measure. */
         public DistanceMeasure distanceMeasure;
@@ -295,7 +341,7 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
         public boolean weighted;
 
         /** Centroid statistics. */
-        public ANNClassificationTrainer.CentroidStat centroindsStat;
+        public ANNClassificationTrainer.CentroidStat<L> centroindsStat;
 
         /** */
         public ANNJSONExportModel(Long timestamp, String uid, String modelClass) {
@@ -308,19 +354,19 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
         }
 
         /** {@inheritDoc} */
-        @Override public ANNClassificationModel convert() {
+        @Override public ANNClassificationModel<L> convert() {
             if (candidateFeatures == null || candidateFeatures.isEmpty())
                 throw new IllegalArgumentException("Loaded list of candidates is empty. It should be not empty.");
 
             double[] firstRow = candidateFeatures.get(0);
-            LabeledVectorSet<LabeledVector> candidatesForANN = new LabeledVectorSet<>(candidateFeatures.size(), firstRow.length);
-            LabeledVector<Double>[] data = new LabeledVector[candidateFeatures.size()];
+            LabeledVectorSet<LabeledVector<ProbableLabel<L>>> candidatesForANN = new LabeledVectorSet<>(candidateFeatures.size(), firstRow.length);
+            LabeledVector<ProbableLabel<L>>[] data = new LabeledVector[candidateFeatures.size()];
             for (int i = 0; i < candidateFeatures.size(); i++) {
-                data[i] = new LabeledVector(VectorUtils.of(candidateFeatures.get(i)), candidateLabels[i]);
+                data[i] = new LabeledVector<>(VectorUtils.of(candidateFeatures.get(i)), candidateLabels[i]);
             }
             candidatesForANN.setData(data);
 
-            ANNClassificationModel mdl = new ANNClassificationModel(candidatesForANN, centroindsStat);
+            ANNClassificationModel<L> mdl = new ANNClassificationModel<>(candidatesForANN, centroindsStat);
 
             mdl.withDistanceMeasure(distanceMeasure);
             mdl.withK(k);

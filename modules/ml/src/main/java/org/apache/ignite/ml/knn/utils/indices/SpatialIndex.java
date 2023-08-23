@@ -17,7 +17,10 @@
 
 package org.apache.ignite.ml.knn.utils.indices;
 
+import java.util.Collection;
 import java.util.List;
+
+import org.apache.ignite.ml.knn.utils.PointWithDistance;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 
@@ -34,7 +37,7 @@ public interface SpatialIndex<L> extends AutoCloseable {
      * @param pnt Point to be used to calculate distance to other points.
      * @return An array of the {@code k} closest elements to the specified point.
      */
-    public List<LabeledVector<L>> findKClosest(int k, Vector pnt);
+    public Collection<PointWithDistance<L>> findKClosest(int k, Vector pnt);
 
     /** {@inheritDoc} */
     @Override public default void close() {

@@ -16,9 +16,11 @@
  */
 package org.apache.ignite.ml.math.distances;
 
+import org.apache.commons.math3.util.FastMath;
 import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.util.MatrixUtil;
+
 
 /**
  * Calculates the {@code A * B } (DotProduct similarity) distance between two points.
@@ -26,10 +28,12 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
 public class DotProductSimilarity implements DistanceMeasure {
     /** {@inheritDoc} */
     @Override public double compute(Vector a, Vector b) throws CardinalityException {
-        return a.dot(b);
+        double ip = a.dot(b);
+        double d = 2.0d - 2.0d/(1.0d + FastMath.exp(-1.0*ip));
+        return d;
     }
     
-    public boolean isSimilarity() {
+    @Override public boolean isSimilarity() {
 		return true;
 	}
 }

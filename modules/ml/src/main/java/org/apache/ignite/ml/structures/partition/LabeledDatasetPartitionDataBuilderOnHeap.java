@@ -57,29 +57,25 @@ public class LabeledDatasetPartitionDataBuilderOnHeap<K, V, C extends Serializab
         Iterator<UpstreamEntry<K, V>> upstreamData,
         long upstreamDataSize, C ctx) {
         int xCols = -1;
-        double[][] x = null;
-        double[] y = new double[Math.toIntExact(upstreamDataSize)];
+        
+        LabeledVector[] y = new LabeledVector[Math.toIntExact(upstreamDataSize)];
 
         int ptr = 0;
 
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
-            LabeledVector<Double> labeledVector = preprocessor.apply(entry.getKey(), entry.getValue());
+            LabeledVector labeledVector = preprocessor.apply(entry.getKey(), entry.getValue());
             Vector row = labeledVector.features();
-
-            if (xCols < 0) {
-                xCols = row.size();
-                x = new double[Math.toIntExact(upstreamDataSize)][xCols];
+            if (xCols < 0) {            	
+                xCols = row.size();                
             }
             else
-                assert row.size() == xCols : "X extractor must return exactly " + xCols + " columns";
+                assert row.size() == xCols : "X extractor must return exactly " + xCols + " columns";            
 
-            x[ptr] = row.asArray();
-
-            y[ptr] = labeledVector.label();
+            y[ptr] = labeledVector;
 
             ptr++;
         }
-        return new LabeledVectorSet<>(x, y);
+        return new LabeledVectorSet<>(y,xCols);
     }
 }

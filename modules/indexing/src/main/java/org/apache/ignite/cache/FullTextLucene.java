@@ -684,7 +684,7 @@ public class FullTextLucene {
         
         try{
         	LuceneIndexAccess access = LuceneIndexAccess.getIndexAccess(ctx, cacheName);
-        	access.commitIndex();
+        	access.flush();
         }
         catch(IOException e){
         	 throw convertException(e);
@@ -1128,7 +1128,7 @@ public class FullTextLucene {
             	
                 indexAccess.writer.addDocument(doc);
                 if (commitIndex) {
-                	indexAccess.commitIndex();
+                	indexAccess.flush();
                 }
                 else{
                 	indexAccess.increment();
@@ -1150,7 +1150,7 @@ public class FullTextLucene {
                 Term term = new Term(FIELD_KEY, query);
                 indexAccess.writer.deleteDocuments(term);
                 if (commitIndex) {
-                	indexAccess.commitIndex();
+                	indexAccess.flush();
                 }
             } catch (IOException e) {
                 throw convertException(e);

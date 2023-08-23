@@ -89,7 +89,10 @@ public class IgniteBackend extends AbstractMongoBackend {
     public void close() {
         log.info("closing {}", this);
         
-        //Ignition.stopAll(false);
+        for (String name : super.listDatabaseNames()) {
+        	IgniteDatabase db = (IgniteDatabase)this.resolveDatabase(name);
+        	db.close();
+        }
     }
 
     public boolean isInMemory() {

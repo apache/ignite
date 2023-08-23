@@ -62,7 +62,7 @@ public class VectorFoldMapTest {
     public void foldMapVectorTest() {
         toDoubleTest(
             ref -> 2.0 * Arrays.stream(ref).sum(),
-            (v) -> v.foldMap(v, Functions.PLUS, Functions.PLUS, 0.0));
+            (v) -> v.foldMap(v, (x,y)->Functions.PLUS.applyAsDouble(x, y), Functions.PLUS, 0.0));
 
     }
 

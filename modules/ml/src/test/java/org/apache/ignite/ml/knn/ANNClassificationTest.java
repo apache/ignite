@@ -42,7 +42,7 @@ public class ANNClassificationTest extends TrainerTest {
         for (int i = 0; i < twoClusters.length; i++)
             cacheMock.put(i, twoClusters[i]);
 
-        ANNClassificationTrainer trainer = new ANNClassificationTrainer()
+        ANNClassificationTrainer<Double> trainer = new ANNClassificationTrainer<Double>()
             .withK(10)
             .withMaxIterations(10)
             .withEpsilon(1e-4)
@@ -53,7 +53,7 @@ public class ANNClassificationTest extends TrainerTest {
         TestUtils.assertEquals(1e-4, trainer.getEpsilon(), PRECISION);
         Assert.assertEquals(new EuclideanDistance(), trainer.getDistance());
 
-        NNClassificationModel mdl = trainer.fit(
+        NNClassificationModel<Double> mdl = trainer.fit(
             cacheMock,
             parts,
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
@@ -76,7 +76,7 @@ public class ANNClassificationTest extends TrainerTest {
         for (int i = 0; i < twoClusters.length; i++)
             cacheMock.put(i, twoClusters[i]);
 
-        ANNClassificationTrainer trainer = new ANNClassificationTrainer()
+        ANNClassificationTrainer<Double> trainer = new ANNClassificationTrainer<Double>()
             .withK(10)
             .withMaxIterations(10)
             .withEpsilon(1e-4)

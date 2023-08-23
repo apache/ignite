@@ -91,6 +91,41 @@ public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> im
     public LabeledVectorSet(double[][] mtx, double[] lbs) {
         this(mtx, lbs, null);
     }
+    
+    /**
+     * Creates new local Labeled Dataset by matrix and vector of labels.
+     *
+     * @param mtx Given matrix with rows as observations.
+     * @param lbs Labels of observations.
+     */
+    public <L> LabeledVectorSet(double[][] mtx, L[] lbs) {
+    	assert mtx != null;
+        assert lbs != null;
+
+        if (mtx.length != lbs.length)
+            throw new CardinalityException(lbs.length, mtx.length);
+
+        if (mtx[0] == null)
+            throw new NoDataException("Pass filled array, the first vector is empty");
+
+        this.rowSize = lbs.length;
+        this.colSize = mtx[0].length;
+
+        generateFeatureNames();
+
+        data = (Row[])new LabeledVector[rowSize];
+        for (int i = 0; i < rowSize; i++) {
+            data[i] = (Row)new LabeledVector<L>(emptyVector(colSize), lbs[i]);
+            for (int j = 0; j < colSize; j++) {
+                try {
+                    data[i].features().set(j, mtx[i][j]);
+                }
+                catch (ArrayIndexOutOfBoundsException e) {
+                    throw new NoDataException("No data in given matrix by coordinates (" + i + "," + j + ")");
+                }
+            }
+        }
+    }
 
     /**
      * Creates new Labeled Dataset by matrix and vector of labels.
@@ -144,6 +179,18 @@ public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> im
 
         return labeledVector != null ? (double)labeledVector.label() : Double.NaN;
     }
+    
+    /**
+     * Returns label if label is attached or null if label is missed.
+     *
+     * @param idx Index of observation.
+     * @return Label.
+     */
+    public Object objectLabel(int idx) {
+        LabeledVector labeledVector = data[idx];
+
+        return labeledVector != null ? labeledVector.label() : null;
+    }
 
     /**
      * Returns new copy of labels of all labeled vectors NOTE: This method is useful for copying labels from test
@@ -184,12 +231,9 @@ public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> im
     }
 
     /** Makes copy with new Label objects and old features and Metadata objects. */
-    public LabeledVectorSet copy() {
-        LabeledVectorSet res = new LabeledVectorSet(this.data, this.colSize);
+    public LabeledVectorSet<Row> copy() {
+        LabeledVectorSet<Row> res = new LabeledVectorSet<>(this.data, this.colSize);
         res.meta = this.meta;
-        for (int i = 0; i < rowSize; i++)
-            res.setLabel(i, this.label(i));
-
         return res;
     }
 

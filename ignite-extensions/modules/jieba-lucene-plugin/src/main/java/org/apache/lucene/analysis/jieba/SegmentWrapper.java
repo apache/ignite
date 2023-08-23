@@ -63,22 +63,25 @@ public class SegmentWrapper
     /**
      * 句子分隔符
      */
-    private static final Set<Character> delimiterCharSet = new HashSet<Character>()
-    {{
-        add('\r');
-        add('\n');
-        add(';');
-        add('；');
-        add('。');
-        add('!');
-        add('！');
-    }};
+    private static final Set<Character> delimiterCharSet = new HashSet<Character>();
+    static{
+    	delimiterCharSet.add('\r');
+    	delimiterCharSet.add('\n');
+    	delimiterCharSet.add(';');
+    	delimiterCharSet.add('；');
+    	delimiterCharSet.add('。');
+    	delimiterCharSet.add('!');
+    	delimiterCharSet.add('！');
+    	delimiterCharSet.add('?');
+    	delimiterCharSet.add('？');    	
+    };
 
     public SegmentWrapper(Reader reader, JiebaSegmenter segment, JiebaSegmenter.SegMode segMode)
     {
         this.input = reader;
         this.segment = segment;
-        this.segMode = segMode;
+        this.segMode = segMode;        
+        
     }
 
     /**
@@ -95,13 +98,33 @@ public class SegmentWrapper
 
     public SegToken next() throws IOException
     {
-        if (iterator != null && iterator.hasNext()) return iterator.next();
-        String line = readLine();
-        if (line == null) return null;
-        List<SegToken> termList = segment.process(line,segMode);
-        if (termList.size() == 0) return null;        
-        iterator = termList.iterator();
-        return iterator.next();
+    	if (iterator == null) {
+    		String line = readAllLines();
+    		List<SegToken> termList = segment.process(line,segMode);
+    		iterator = termList.iterator();
+    	}
+    		
+        if (iterator.hasNext()) {
+        	SegToken tok = iterator.next();
+        	this.offset += tok.length();
+        	return tok;
+        }        
+        return null;        
+    }
+   
+    private String readAllLines() throws IOException
+    {
+        StringBuilder buf = new StringBuilder();
+        while(true) {
+	        int n = input.read(buffer);
+	        if (n <= 0)
+	        {
+	            break;
+	        }	        
+	        buf.append(buffer,0,n);
+        }
+        
+        return buf.toString();
     }
 
     private String readLine() throws IOException

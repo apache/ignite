@@ -17,7 +17,9 @@
 
 package org.apache.ignite.ml.knn.utils.indices;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -54,11 +56,11 @@ public class ArraySpatialIndex<L> implements SpatialIndex<L> {
     }
 
     /** {@inheritDoc} */
-    @Override public List<LabeledVector<L>> findKClosest(int k, Vector pnt) {
+    @Override public Collection<PointWithDistance<L>> findKClosest(int k, Vector pnt) {
         if (k <= 0)
             throw new IllegalArgumentException("Number of neighbours should be positive.");
 
-        Queue<PointWithDistance<L>> heap = new PriorityQueue<>(k, distanceMeasure.isSimilarity()?Collections.reverseOrder():null);
+        Queue<PointWithDistance<L>> heap = new PriorityQueue<>(k,Comparator.reverseOrder());
 
         for (LabeledVector<L> dataPnt : data) {
             double distance = distanceMeasure.compute(pnt, dataPnt.features());
@@ -67,6 +69,6 @@ public class ArraySpatialIndex<L> implements SpatialIndex<L> {
             }
         }
 
-        return transformToListOrdered(heap);
+        return heap;
     }
 }

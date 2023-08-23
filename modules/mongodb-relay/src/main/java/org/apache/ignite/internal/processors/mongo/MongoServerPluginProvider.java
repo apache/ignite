@@ -138,22 +138,31 @@ public class MongoServerPluginProvider implements PluginProvider<MongoPluginConf
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) {
+    @Override public synchronized void stop(boolean cancel) {
     	if(mongoServer!=null) {
-      	   log.info("mongoServer","shutting down "+ mongoServer.toString());
-      	   mongoServer.shutdownNow();
-      	   mongoServer = null;
+    		synchronized(MongoServerPluginProvider.class) {
+    			if(mongoServer!=null) {
+		      	   log.info("mongoServer","shutting down "+ mongoServer.toString());
+		      	   mongoServer.shutdownNow();
+		      	   mongoServer = null;
+    			}
+    		}
       	}
     }
 
     /** {@inheritDoc} */
     @Override public void onIgniteStart() {
+    	
     	 // start mongodb singerton when admin grid start
     	if(cfg!=null && mongoServer==null) {    		      
  	       try {
- 	    	   mongoServer = new MongoServer(backend);
- 	    	   mongoServer.bind(cfg.getHost(),cfg.getPort());
- 	    	   log.info("mongoServer","listern on "+cfg.getHost()+":"+cfg.getPort());
+ 	    	   synchronized(MongoServerPluginProvider.class) {
+ 	    		  if(mongoServer==null) {
+			    	   mongoServer = new MongoServer(backend);
+			    	   mongoServer.bind(cfg.getHost(),cfg.getPort());
+			    	   log.info("mongoServer","listern on "+cfg.getHost()+":"+cfg.getPort());
+ 	    		  }
+ 	    	   }
  	    	   
  	       }catch(Exception e) {
  	    	   log.error("mongoServer bind fail.",e);

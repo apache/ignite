@@ -53,7 +53,7 @@ public class PrimaryKeyIndex<P> extends AbstractUniqueIndex<P> {
 
     @Override
     public long getDataSize() {
-        return collection.size()*1024; // TODO
+        return collection.metrics().getCachePuts();
     }
 
     @Override

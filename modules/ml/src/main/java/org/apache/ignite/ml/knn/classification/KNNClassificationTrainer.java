@@ -27,11 +27,11 @@ import org.apache.ignite.ml.knn.utils.indices.SpatialIndex;
  * linked with cluster environment it's been built on and can't be saved or used in other places. Under the hood it
  * keeps {@link Dataset} that consists of a set of resources allocated across the cluster.
  */
-public class KNNClassificationTrainer extends KNNTrainer<KNNClassificationModel, KNNClassificationTrainer> {
+public class KNNClassificationTrainer extends KNNTrainer<KNNClassificationModel<Double>, KNNClassificationTrainer> {
     /** {@inheritDoc} */
-    @Override protected KNNClassificationModel convertDatasetIntoModel(
+    @Override protected KNNClassificationModel<Double> convertDatasetIntoModel(
         Dataset<EmptyContext, SpatialIndex<Double>> dataset) {
-        return new KNNClassificationModel(dataset, distanceMeasure, k, weighted);
+        return new KNNClassificationModel<>(dataset, distanceMeasure, k, weighted);
     }
 
     /** {@inheritDoc} */

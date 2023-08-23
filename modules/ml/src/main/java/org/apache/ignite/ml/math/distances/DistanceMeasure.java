@@ -40,6 +40,7 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
     @JsonSubTypes.Type(value = ChebyshevDistance.class, name = "ChebyshevDistance"),
     @JsonSubTypes.Type(value = CosineSimilarity.class, name = "CosineSimilarity"),
     @JsonSubTypes.Type(value = DotProductSimilarity.class, name = "DotProductSimilarity"),
+    @JsonSubTypes.Type(value = TwoHeadCosineSimilarity.class, name = "TwoHeadCosineSimilarity"),
     @JsonSubTypes.Type(value = EuclideanDistance.class, name = "EuclideanDistance"),
     @JsonSubTypes.Type(value = HammingDistance.class, name = "HammingDistance"),
     @JsonSubTypes.Type(value = JaccardIndex.class, name = "JaccardIndex"),
@@ -49,6 +50,10 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
     @JsonSubTypes.Type(value = WeightedMinkowskiDistance.class, name = "WeightedMinkowskiDistance"),
 })
 public interface DistanceMeasure extends Externalizable {
+	/**
+	 * 返回的距离是由相似度转换而来，值域为[0,2]
+	 * @return
+	 */	
 	default boolean isSimilarity() {
 		return false;
 	}

@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.functions;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.BiFunction;
+
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
@@ -54,28 +55,28 @@ public final class Functions {
     public static final IgniteDoubleFunction<Double> SIGMOIDGRADIENT = (a) -> a * (1.0 - a);
 
     /** Function that returns {@code a % b}. */
-    public static final IgniteBiFunction<Double, Double, Double> MOD = (a, b) -> a % b;
+    public static final IgniteDoubleBinaryOperator MOD = (a, b) -> a % b;
 
     /** Function that returns {@code a * b}. */
-    public static final IgniteBiFunction<Double, Double, Double> MULT = (a, b) -> a * b;
+    public static final IgniteDoubleBinaryOperator MULT = (a, b) -> a * b;
 
     /** Function that returns {@code Math.log(a) / Math.log(b)}. */
-    public static final IgniteBiFunction<Double, Double, Double> LG = (a, b) -> Math.log(a) / Math.log(b);
+    public static final IgniteDoubleBinaryOperator LG = (a, b) -> Math.log(a) / Math.log(b);
 
     /** Function that returns {@code a + b}. */
-    public static final IgniteBiFunction<Double, Double, Double> PLUS = (a, b) -> a + b;
+    public static final IgniteDoubleBinaryOperator PLUS = (a, b) -> a + b;
 
     /** Function that returns {@code a - b}. */
-    public static final IgniteBiFunction<Double, Double, Double> MINUS = (a, b) -> a - b;
+    public static final IgniteDoubleBinaryOperator MINUS = (a, b) -> a - b;
 
     /** Function that returns {@code min(a, b)}. */
-    public static final IgniteBiFunction<Double, Double, Double> MIN = Math::min;
+    public static final IgniteDoubleBinaryOperator MIN = Math::min;
 
     /** Function that returns {@code abs(a - b)}. */
-    public static final IgniteBiFunction<Double, Double, Double> MINUS_ABS = (a, b) -> Math.abs(a - b);
+    public static final IgniteDoubleBinaryOperator MINUS_ABS = (a, b) -> Math.abs(a - b);
 
     /** Function that returns {@code max(abs(a), abs(b))}. */
-    public static final IgniteBiFunction<Double, Double, Double> MAX_ABS = (a, b) -> Math.max(Math.abs(a), Math.abs(b));
+    public static final IgniteDoubleBinaryOperator MAX_ABS = (a, b) -> Math.max(Math.abs(a), Math.abs(b));
 
     /**
      * Generic 'max' function.
@@ -104,16 +105,16 @@ public final class Functions {
     }
 
     /** Function that returns {@code min(abs(a), abs(b))}. */
-    public static final IgniteBiFunction<Double, Double, Double> MIN_ABS = (a, b) -> Math.min(Math.abs(a), Math.abs(b));
+    public static final IgniteDoubleBinaryOperator MIN_ABS = (a, b) -> Math.min(Math.abs(a), Math.abs(b));
 
     /** Function that returns {@code Math.abs(a) + Math.abs(b)}. */
-    public static final IgniteBiFunction<Double, Double, Double> PLUS_ABS = (a, b) -> Math.abs(a) + Math.abs(b);
+    public static final IgniteDoubleBinaryOperator PLUS_ABS = (a, b) -> Math.abs(a) + Math.abs(b);
 
     /** Function that returns {@code (a - b) * (a - b)} */
-    public static final IgniteBiFunction<Double, Double, Double> MINUS_SQUARED = (a, b) -> (a - b) * (a - b);
+    public static final IgniteDoubleBinaryOperator MINUS_SQUARED = (a, b) -> (a - b) * (a - b);
 
     /** Function that returns {@code a &lt; b ? -1 : a &gt; b ? 1 : 0}. */
-    public static final IgniteBiFunction<Double, Double, Double> COMPARE = (a, b) -> a < b ? -1.0 : a > b ? 1.0 : 0.0;
+    public static final IgniteDoubleBinaryOperator COMPARE = (a, b) -> a < b ? -1.0 : a > b ? 1.0 : 0.0;
 
     /** */
     public static <A, B extends Comparable<B>> IgniteBiTuple<Integer, A> argmin(List<A> args, IgniteFunction<A, B> f) {

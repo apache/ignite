@@ -51,7 +51,7 @@ public class IgniteUniqueIndex extends AbstractUniqueIndex<Object> {
         this.mvMap = mvMap;
     }
     
-    public void init() {
+    public void init(IgniteBinaryCollection collection) {
     	
     }
 

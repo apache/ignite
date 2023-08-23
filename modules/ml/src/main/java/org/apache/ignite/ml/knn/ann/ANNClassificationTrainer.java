@@ -42,6 +42,7 @@ import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
+import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
 
@@ -49,7 +50,7 @@ import org.jetbrains.annotations.NotNull;
  * ANN algorithm trainer to solve multi-class classification task. This trainer is based on ACD strategy and KMeans
  * clustering algorithm to find centroids.
  */
-public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClassificationModel> {
+public class ANNClassificationTrainer<L> extends DatasetTrainer<ANNClassificationModel<L>,L> {
     /** Amount of clusters. */
     private int k = 2;
 
@@ -69,24 +70,24 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
      * @param extractor Mapping from upstream entry to {@link LabeledVector}.
      * @return Model.
      */
-    @Override public <K, V> ANNClassificationModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> ANNClassificationModel<L> fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
                                                        Preprocessor<K, V> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> ANNClassificationModel updateModel(ANNClassificationModel mdl,
+    @Override protected <K, V> ANNClassificationModel<L> updateModel(ANNClassificationModel<L> mdl,
                                                                   DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> extractor) {
 
         List<Vector> centers;
-        CentroidStat centroidStat;
+        CentroidStat<L> centroidStat;
         if (mdl != null) {
             centers = Arrays.stream(mdl.getCandidates().data()).map(x -> x.features()).collect(Collectors.toList());
-            CentroidStat newStat = getCentroidStat(datasetBuilder, extractor, centers);
+            CentroidStat<L> newStat = getCentroidStat(datasetBuilder, extractor, centers);
             if (newStat == null)
                 return mdl;
-            CentroidStat oldStat = mdl.getCentroindsStat();
+            CentroidStat<L> oldStat = mdl.getCentroindsStat();
             centroidStat = newStat.merge(oldStat);
         }
         else {
@@ -94,9 +95,11 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
             centroidStat = getCentroidStat(datasetBuilder, extractor, centers);
         }
 
-        final LabeledVectorSet<LabeledVector> dataset = buildLabelsForCandidates(centers, centroidStat);
+        final LabeledVectorSet<LabeledVector<ProbableLabel<L>>> dataset = buildLabelsForCandidates(centers, centroidStat);
 
-        return new ANNClassificationModel(dataset, centroidStat);
+        ANNClassificationModel<L> model = new ANNClassificationModel<L>(dataset, centroidStat);
+        model.withDistanceMeasure(distance);        
+        return model;
     }
 
 
@@ -106,16 +109,16 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     }
 
     /** {@inheritDoc} */
-    @Override public ANNClassificationTrainer withEnvironmentBuilder(
+    @Override public ANNClassificationTrainer<L> withEnvironmentBuilder(
         LearningEnvironmentBuilder envBuilder) {
-        return (ANNClassificationTrainer)super.withEnvironmentBuilder(envBuilder);
+        return (ANNClassificationTrainer<L>)super.withEnvironmentBuilder(envBuilder);
     }
 
     /** */
-    @NotNull private LabeledVectorSet<LabeledVector> buildLabelsForCandidates(List<Vector> centers,
-        CentroidStat centroidStat) {
+    @NotNull private LabeledVectorSet<LabeledVector<ProbableLabel<L>>> buildLabelsForCandidates(List<Vector> centers,
+        CentroidStat<L> centroidStat) {
         // init
-        final LabeledVector<ProbableLabel>[] arr = new LabeledVector[centers.size()];
+        final LabeledVector<ProbableLabel<L>>[] arr = new LabeledVector[centers.size()];
 
         // fill label for each centroid
         for (int i = 0; i < centers.size(); i++)
@@ -145,13 +148,14 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     }
 
     /** */
-    private ProbableLabel fillProbableLabel(int centroidIdx, CentroidStat centroidStat) {
-        TreeMap<Double, Double> clsLbls = new TreeMap<>();
+    private ProbableLabel<L> fillProbableLabel(int centroidIdx, CentroidStat<L> centroidStat) {
+        TreeMap<L, Double> clsLbls = new TreeMap<>();
 
         // add all class labels as keys
-        centroidStat.clsLblsSet.forEach(t -> clsLbls.put(t, 0.0));
+        // remove@byron
+        //-centroidStat.clsLblsSet.forEach(t -> clsLbls.put(t, 0.0));
 
-        ConcurrentHashMap<Double, Integer> centroidLbDistribution
+        ConcurrentHashMap<L, Integer> centroidLbDistribution
             = centroidStat.centroidStat().get(centroidIdx);
 
         if (centroidStat.counts.containsKey(centroidIdx)) {
@@ -160,19 +164,17 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
                 .counts
                 .get(centroidIdx);
 
-            clsLbls.keySet().forEach(
-                (label) -> clsLbls.put(
-                    label,
-                    centroidLbDistribution.containsKey(label)
-                        ? ((double)(centroidLbDistribution.get(label)) / clusterSize)
-                        : 0.0)
+            centroidLbDistribution.entrySet().forEach(
+                (ent) -> clsLbls.put(
+                    ent.getKey(),(double)(ent.getValue()) / clusterSize)                    
+                       
             );
         }
-        return new ProbableLabel(clsLbls);
+        return new ProbableLabel<L>(clsLbls);
     }
 
     /** */
-    private <K, V> CentroidStat getCentroidStat(DatasetBuilder<K, V> datasetBuilder,
+    private <K, V> CentroidStat<L> getCentroidStat(DatasetBuilder<K, V> datasetBuilder,
                                                 Preprocessor<K, V> vectorizer,
                                                 List<Vector> centers) {
 
@@ -186,20 +188,21 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
             learningEnvironment()
         )) {
             return dataset.compute(data -> {
-                CentroidStat res = new CentroidStat();
+                CentroidStat<L> res = new CentroidStat<L>();
 
                 for (int i = 0; i < data.rowSize(); i++) {
                     final IgniteBiTuple<Integer, Double> closestCentroid = findClosestCentroid(centers, data.getRow(i));
 
                     int centroidIdx = closestCentroid.get1();
 
-                    double lb = data.label(i);
+                    L lb = (L)data.objectLabel(i);
 
                     // add new label to label set
                     res.labels().add(lb);
 
-                    ConcurrentHashMap<Double, Integer> centroidStat = res.centroidStat.get(centroidIdx);
-
+                    ConcurrentHashMap<L, Integer> centroidStat = res.centroidStat.get(centroidIdx);
+                    
+                    
                     if (centroidStat == null) {
                         centroidStat = new ConcurrentHashMap<>();
                         centroidStat.put(lb, 1);
@@ -216,7 +219,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
                 return res;
             }, (a, b) -> {
                 if (a == null)
-                    return b == null ? new CentroidStat() : b;
+                    return b == null ? new CentroidStat<L>() : b;
                 if (b == null)
                     return a;
                 return a.merge(b);
@@ -264,7 +267,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
      * @param k The parameter value.
      * @return Model with new amount of clusters parameter value.
      */
-    public ANNClassificationTrainer withK(int k) {
+    public ANNClassificationTrainer<L> withK(int k) {
         this.k = k;
         return this;
     }
@@ -284,7 +287,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
      * @param maxIterations The parameter value.
      * @return Model with new max number of iterations before convergence parameter value.
      */
-    public ANNClassificationTrainer withMaxIterations(int maxIterations) {
+    public ANNClassificationTrainer<L> withMaxIterations(int maxIterations) {
         this.maxIterations = maxIterations;
         return this;
     }
@@ -304,7 +307,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
      * @param epsilon The parameter value.
      * @return Model with new epsilon parameter value.
      */
-    public ANNClassificationTrainer withEpsilon(double epsilon) {
+    public ANNClassificationTrainer<L> withEpsilon(double epsilon) {
         this.epsilon = epsilon;
         return this;
     }
@@ -324,13 +327,13 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
      * @param distance The parameter value.
      * @return Model with new distance parameter value.
      */
-    public ANNClassificationTrainer withDistance(DistanceMeasure distance) {
+    public ANNClassificationTrainer<L> withDistance(DistanceMeasure distance) {
         this.distance = distance;
         return this;
     }
 
     /** Service class used for statistics. */
-    public static class CentroidStat implements Serializable {
+    public static class CentroidStat<L> implements Serializable {
         /** Serial version uid. */
         @JsonIgnore
         private static final long serialVersionUID = 7624883170532045144L;
@@ -340,16 +343,16 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
         }
 
         /** Count of points closest to the center with a given index. */
-        public ConcurrentHashMap<Integer, ConcurrentHashMap<Double, Integer>> centroidStat = new ConcurrentHashMap<>();
+        public ConcurrentHashMap<Integer, ConcurrentHashMap<L, Integer>> centroidStat = new ConcurrentHashMap<>();
 
         /** Count of points closest to the center with a given index. */
         public ConcurrentHashMap<Integer, Integer> counts = new ConcurrentHashMap<>();
 
         /** Set of unique labels. */
-        public ConcurrentSkipListSet<Double> clsLblsSet = new ConcurrentSkipListSet<>();
+        public ConcurrentSkipListSet<L> clsLblsSet = new ConcurrentSkipListSet<>();
 
         /** Merge current */
-        CentroidStat merge(CentroidStat other) {
+        CentroidStat<L> merge(CentroidStat<L> other) {
             this.counts = MapUtil.mergeMaps(counts, other.counts, (i1, i2) -> i1 + i2, ConcurrentHashMap::new);
             this.centroidStat = MapUtil.mergeMaps(centroidStat, other.centroidStat, (m1, m2) ->
                 MapUtil.mergeMaps(m1, m2, (i1, i2) -> i1 + i2, ConcurrentHashMap::new), ConcurrentHashMap::new);
@@ -358,12 +361,12 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
         }
 
         /** */
-        public ConcurrentSkipListSet<Double> labels() {
+        public ConcurrentSkipListSet<L> labels() {
             return clsLblsSet;
         }
 
         /** */
-        ConcurrentHashMap<Integer, ConcurrentHashMap<Double, Integer>> centroidStat() {
+        ConcurrentHashMap<Integer, ConcurrentHashMap<L, Integer>> centroidStat() {
             return centroidStat;
         }
     }

@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.primitives.vector;
 import java.io.Externalizable;
 import java.io.Serializable;
 import java.util.Spliterator;
+import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntToDoubleFunction;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Destroyable;
@@ -218,7 +219,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @return This function.
      * @throws CardinalityException Thrown if cardinality mismatch.
      */
-    public Vector map(Vector vec, IgniteBiFunction<Double, Double, Double> fun);
+    public Vector map(Vector vec, DoubleBinaryOperator fun);
 
     /**
      * Maps all elements of this vector by applying given function to each element with a constant
@@ -228,7 +229,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @param y Second parameter for mapping function.
      * @return This vector.
      */
-    public Vector map(IgniteBiFunction<Double, Double, Double> fun, double y);
+    public Vector map(DoubleBinaryOperator fun, double y);
 
     /**
      * Creates new vector containing values from this vector divided by the argument.
@@ -350,7 +351,8 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * Creates new vector with a normalized value calculated as {@code log_power(1 + entry) / L_power norm}.
      *
      * @param power The power to use. Must be > 1. Cannot be {@link Double#POSITIVE_INFINITY}.
-     * @return New vector
+     * @return New vec@Override
+	tor
      */
     public Vector logNormalize(double power);
 
@@ -525,7 +527,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @return Folded value of this vector.
      */
     public <T> T foldMap(IgniteBiFunction<T, Double, T> foldFun, IgniteDoubleFunction<Double> mapFun, T zeroVal);
-
+    public double foldMap(DoubleBinaryOperator foldFun, IgniteDoubleFunction<Double> mapFun,double zeroVal);
     /**
      * Combines & maps two vector and folds them into a single value.
      *
@@ -538,7 +540,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @throws CardinalityException Thrown when cardinality mismatch.
      */
     public <T> T foldMap(Vector vec, IgniteBiFunction<T, Double, T> foldFun,
-        IgniteBiFunction<Double, Double, Double> combFun,
+    	DoubleBinaryOperator combFun,
         T zeroVal);
 
     /**

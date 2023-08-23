@@ -70,6 +70,7 @@ import org.apache.lucene.document.TextField;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
+import org.apache.lucene.queryparser.classic.QueryParser.Operator;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -95,6 +96,8 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_N
 public class GridLuceneIndex implements AutoCloseable {
     /** Field name for string representation of value. */
     public static final String VAL_STR_FIELD_NAME = "_TEXT";//modify@byron "_gg_val_str__";  
+    
+    public static final int DEAULT_LIMIT = 1200;
     
     /** */
     private final String cacheName;
@@ -282,27 +285,27 @@ public class GridLuceneIndex implements AutoCloseable {
             searcher = indexAccess.searcher;
 
             MultiFieldQueryParser parser = new MultiFieldQueryParser(idxdFields, indexAccess.analyzerWrapper);
-
-//            parser.setAllowLeadingWildcard(true);
+            parser.setDefaultOperator(Operator.AND);
+            //-parser.setAllowLeadingWildcard(true);
             String [] items = qry.split("\\s");
-            //qty: hello type:blog user:xiaoming sort:create
+            // qty: hello type:blog author:xiaoming orderBy:create
             
             if(limit<=0) {
-            	limit = 1000;
+            	limit = DEAULT_LIMIT;
             }
-            String uid = null;
-            String sort = null;
+            String author = null;
+            String orderBy = null;
             String tag = null;
             StringBuilder sb = new StringBuilder();
             for(String item:items){
             	if(item.startsWith("tag:")){
             		tag = item.substring("tag:".length());
             	}
-            	else if(item.startsWith("sort:")){
-            		sort = item.substring("sort:".length());
+            	else if(item.startsWith("orderBy:")){
+            		orderBy = item.substring("orderBy:".length());
             	}
-            	else if(item.startsWith("user:")){
-            		uid = item.substring("user:".length());
+            	else if(item.startsWith("author:")){
+            		author = item.substring("author:".length());
             	}
             	else{
             		sb.append(item);
@@ -317,19 +320,20 @@ public class GridLuceneIndex implements AutoCloseable {
                 .add(parser.parse(sb.toString()), BooleanClause.Occur.MUST)
                 .add(filter, BooleanClause.Occur.FILTER);
             
-            if(uid!=null){
-            	query.add(new TermQuery(new Term("user",uid)),BooleanClause.Occur.MUST);
-            } 
+            if(author!=null){
+            	query.add(new TermQuery(new Term("author",author)),BooleanClause.Occur.MUST);
+            }
+            
             if(tag!=null){
             	query.add(new TermQuery(new Term("tag",tag)),BooleanClause.Occur.MUST);
             }
 
-            if(sort!=null){
-            	String[] sorts = sort.split(",");
+            if(orderBy!=null){
+            	String[] sorts = orderBy.split(",");
             	Sort sortObj = new Sort();
             	SortField[] sf = new SortField[sorts.length];
             	for(int j=0;j<sorts.length;j++){            		
-            		sf[j] = new SortField(sorts[j],SortField.Type.STRING,true);
+            		sf[j] = new SortField(sorts[j],SortField.Type.DOUBLE,true);
             	}
             	sortObj.setSort(sf);
             	docs = searcher.search(query.build(), limit, sortObj);
@@ -354,8 +358,9 @@ public class GridLuceneIndex implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        U.closeQuiet(indexAccess.writer);
-        U.close(indexAccess.writer.getDirectory(), ctx.log(GridLuceneIndex.class));
+    	LuceneIndexAccess.removeIndexAccess(indexAccess);
+        //-U.closeQuiet(indexAccess.writer);
+        //-U.close(indexAccess.writer.getDirectory(), ctx.log(GridLuceneIndex.class));
     }
 
     /**

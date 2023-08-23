@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Spliterator;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Blas;
@@ -71,7 +72,7 @@ public abstract class AbstractMatrix implements Matrix {
     private MatrixStorage sto;
 
     /** Meta attributes storage. */
-    private Map<String, Object> meta = new HashMap<>();
+    private Map<String, Object> meta = null;
   
 
     /**
@@ -300,6 +301,7 @@ public abstract class AbstractMatrix implements Matrix {
 
     /** {@inheritDoc} */
     @Override public Map<String, Object> getMetaStorage() {
+    	if(meta==null) meta = new TreeMap<>();
         return meta;
     }
 

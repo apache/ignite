@@ -16,27 +16,34 @@
  */
 package org.apache.ignite.ml.math.distances;
 
-import java.util.HashSet;
-import java.util.Set;
+
 import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.util.MatrixUtil;
+
 
 /**
- * Calculates {@code J = |A \cap B| / |A \cup B| } (Jaccard index) distance between two points.
+ * Calculates the {@code A * B } (DotProduct similarity) distance between two points.
  */
-public class JaccardIndex implements DistanceMeasure {
+public class TwoHeadCosineSimilarity implements DistanceMeasure {
     /** {@inheritDoc} */
     @Override public double compute(Vector a, Vector b) throws CardinalityException {
-        Set<Double> uniqueValues = new HashSet<>();
-        for (int i = 0; i < a.size(); i++)
-            uniqueValues.add(a.get(i));
-
-        double intersect = 0;
-        for (int i = 0; i < b.size(); i++)
-            if (uniqueValues.contains(b.get(i)))
-                ++intersect;
-
-        return 1.0d - intersect / (a.size() + b.size() - intersect);
+    	Vector aLeft = a.copyOfRange(0, a.size()/2);
+    	Vector aRight = a.copyOfRange(a.size()/2,a.size());
+    	
+    	Vector bLeft = b.copyOfRange(0, b.size()/2);
+    	Vector bRight = b.copyOfRange(b.size()/2,b.size());
+    	
+        double left = aLeft.dot(bLeft) / (aLeft.kNorm(2d) * bLeft.kNorm(2d));
+        double right = aRight.dot(bRight) / (aRight.kNorm(2d) * bRight.kNorm(2d));
+        
+        if(left<0 && right<0) {
+        	double d = 1.0 + left * right;
+            return d;
+        }
+        
+        double d = 1.0 - left * right;
+        return d;
     }
     
     @Override public boolean isSimilarity() {

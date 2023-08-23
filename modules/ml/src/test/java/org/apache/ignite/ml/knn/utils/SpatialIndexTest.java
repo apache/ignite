@@ -64,7 +64,7 @@ public abstract class SpatialIndexTest {
         for (int k = 1; k <= 201; k += 2) {
             double expRadius = 1.0 * (k - 1) / 2;
             Vector pnt = VectorUtils.of(0);
-            List<LabeledVector<Integer>> neighbours = idx.findKClosest(k, pnt);
+            List<LabeledVector<Integer>> neighbours = PointWithDistanceUtil.transformToListOrdered(idx.findKClosest(k, pnt));
 
             assertEquals(k, neighbours.size());
             for (LabeledVector<Integer> neighbour : neighbours) {
@@ -92,7 +92,7 @@ public abstract class SpatialIndexTest {
         for (int k = 1; k <= 81; k += 8) {
             double expRadius = Math.sqrt(3) * (k - 1) / 8;
             Vector pnt = VectorUtils.of(0, 0, 0);
-            List<LabeledVector<Integer>> neighbours = idx.findKClosest(k, pnt);
+            List<LabeledVector<Integer>> neighbours = PointWithDistanceUtil.transformToListOrdered(idx.findKClosest(k, pnt));
 
             assertEquals(k, neighbours.size());
             for (LabeledVector<Integer> neighbour : neighbours) {

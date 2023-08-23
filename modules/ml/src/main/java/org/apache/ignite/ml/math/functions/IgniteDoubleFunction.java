@@ -21,9 +21,11 @@ import java.io.Serializable;
 import java.util.function.DoubleFunction;
 
 /**
- * Serializable double function.
+ * Not is Serializable double function.  DoubleFunction<Double>, 
  *
  * @see java.util.function.DoubleFunction
  */
-public interface IgniteDoubleFunction<Double> extends DoubleFunction<Double>, Serializable {
+@FunctionalInterface
+public interface IgniteDoubleFunction<T> extends Serializable {	
+	double apply(double value);
 }

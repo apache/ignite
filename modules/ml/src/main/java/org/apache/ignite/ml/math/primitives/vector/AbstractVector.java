@@ -27,9 +27,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Spliterator;
+import java.util.TreeMap;
 import java.util.function.Consumer;
+import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntToDoubleFunction;
-import org.apache.ignite.lang.IgniteUuid;
+
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.math.IndexException;
@@ -53,7 +55,7 @@ public abstract class AbstractVector implements Vector {
     private VectorStorage sto;
 
     /** Meta attribute storage. */
-    private Map<String, Object> meta = new HashMap<>();
+    private Map<String, Object> meta = null;
    
 
     /** Cached value for length squared. */
@@ -231,23 +233,23 @@ public abstract class AbstractVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector map(Vector vec, IgniteBiFunction<Double, Double, Double> fun) {
+    @Override public Vector map(Vector vec, DoubleBinaryOperator fun) {
         checkCardinality(vec);
 
         int len = size();
 
         for (int i = 0; i < len; i++)
-            storageSet(i, fun.apply(storageGet(i), vec.get(i)));
+            storageSet(i, fun.applyAsDouble(storageGet(i), vec.get(i)));
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public Vector map(IgniteBiFunction<Double, Double, Double> fun, double y) {
+    @Override public Vector map(DoubleBinaryOperator fun, double y) {
         int len = size();
 
         for (int i = 0; i < len; i++)
-            storageSet(i, fun.apply(storageGet(i), y));
+            storageSet(i, fun.applyAsDouble(storageGet(i), y));
 
         return this;
     }
@@ -445,17 +447,29 @@ public abstract class AbstractVector implements Vector {
 
         return res;
     }
+    
+    /** {@inheritDoc} */
+    @Override public double foldMap(DoubleBinaryOperator foldFun, IgniteDoubleFunction<Double> mapFun,
+        double zeroVal) {
+        double res = zeroVal;
+        int len = size();
+
+        for (int i = 0; i < len; i++)
+            res = foldFun.applyAsDouble(res, mapFun.apply(storageGet(i)));
+
+        return res;
+    }
 
     /** {@inheritDoc} */
     @Override public <T> T foldMap(Vector vec, IgniteBiFunction<T, Double, T> foldFun,
-        IgniteBiFunction<Double, Double, Double> combFun, T zeroVal) {
+    		DoubleBinaryOperator combFun, T zeroVal) {
         checkCardinality(vec);
 
         T res = zeroVal;
         int len = size();
 
         for (int i = 0; i < len; i++)
-            res = foldFun.apply(res, combFun.apply(storageGet(i), vec.getX(i)));
+            res = foldFun.apply(res, combFun.applyAsDouble(storageGet(i), vec.getX(i)));
 
         return res;
     }
@@ -516,6 +530,7 @@ public abstract class AbstractVector implements Vector {
 
     /** {@inheritDoc} */
     @Override public Map<String, Object> getMetaStorage() {
+    	if(meta==null) meta = new TreeMap<>();
         return meta;
     }
 
@@ -751,8 +766,11 @@ public abstract class AbstractVector implements Vector {
         if (distEst > 1.0e-3 * (thisLenSq + thatLenSq))
             // The vectors are far enough from each other that the formula is accurate.
             return Math.max(distEst, 0);
-        else
-            return foldMap(vec, Functions.PLUS, Functions.MINUS_SQUARED, 0d);
+        else {
+        	IgniteBiFunction<Double, Double, Double> foldFun = (x,y)-> Functions.PLUS.applyAsDouble(x, y);
+        	return foldMap(vec, foldFun, Functions.MINUS_SQUARED, 0d);
+        }
+            
     }
 
     /**

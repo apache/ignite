@@ -7,6 +7,7 @@ import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.IOUtils;
 
 import me.aias.jieba.JiebaSegmenter;
+import me.aias.jieba.keyword.TFIDFAnalyzer;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -15,6 +16,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -63,16 +65,21 @@ public class JiebaTokenizerFactory extends TokenizerFactory
         String stopWordDictionaryPath = get(args, "stopWordDictionaryPath");
         if (stopWordDictionaryPath != null)
         {
-            stopWordDictionary = new TreeSet<>();
-            
-            Path path = Paths.get(stopWordDictionaryPath);
-            Reader reader = IOUtils.getDecodingReader(new FileInputStream(stopWordDictionaryPath), java.nio.charset.StandardCharsets.UTF_8);
-            BufferedReader lineReader = new BufferedReader(reader);
-            String line = null;
-            while((line=lineReader.readLine())!=null) {
-            	stopWordDictionary.add(line);
-            }
+        	if(stopWordDictionaryPath.equals("classpath")) {
+        		stopWordDictionary = TFIDFAnalyzer.getStopWordsSet();
+        	}
+        	else {
+	        	stopWordDictionary = new HashSet<>();     
+	            Path path = Paths.get(stopWordDictionaryPath);
+	            Reader reader = IOUtils.getDecodingReader(new FileInputStream(stopWordDictionaryPath), java.nio.charset.StandardCharsets.UTF_8);
+	            BufferedReader lineReader = new BufferedReader(reader);
+	            String line = null;
+	            while((line=lineReader.readLine())!=null) {
+	            	stopWordDictionary.add(line);
+	            }
+        	}
         }
+        
         
     }
 

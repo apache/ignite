@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.knn.KNNModel;
+import org.apache.ignite.ml.knn.utils.PointWithDistanceUtil;
 import org.apache.ignite.ml.knn.utils.indices.SpatialIndex;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -51,7 +52,7 @@ public class KNNRegressionModel extends KNNModel<Double> {
 
     /** {@inheritDoc} */
     @Override public Double predict(Vector input) {
-        List<LabeledVector<Double>> neighbors = findKClosest(k, input);
+        List<LabeledVector<Double>> neighbors = PointWithDistanceUtil.transformToListOrdered(findKClosest(k, input));
 
         return predictor.predict(neighbors, input);
     }

@@ -41,7 +41,7 @@ import org.jetbrains.annotations.NotNull;
  * Common methods and fields for all kNN and aNN models
  * to predict label based on neighbours' labels.
  */
-public abstract class NNClassificationModel implements IgniteModel<Vector, Double>, Exportable<KNNModelFormat>,
+public abstract class NNClassificationModel<L> implements IgniteModel<Vector, L>, Exportable<KNNModelFormat>,
     DeployableObject {
     /** Amount of nearest neighbors. */
     protected int k = 5;
@@ -57,7 +57,7 @@ public abstract class NNClassificationModel implements IgniteModel<Vector, Doubl
      * @param k Amount of nearest neighbors.
      * @return Model.
      */
-    public NNClassificationModel withK(int k) {
+    public NNClassificationModel<L> withK(int k) {
         this.k = k;
         return this;
     }
@@ -68,7 +68,7 @@ public abstract class NNClassificationModel implements IgniteModel<Vector, Doubl
      * @param weighted Weighted or not.
      * @return This instance.
      */
-    public NNClassificationModel withWeighted(boolean weighted) {
+    public NNClassificationModel<L> withWeighted(boolean weighted) {
         this.weighted = weighted;
         return this;
     }
@@ -78,19 +78,19 @@ public abstract class NNClassificationModel implements IgniteModel<Vector, Doubl
      * @param distanceMeasure Distance measure.
      * @return Model.
      */
-    public NNClassificationModel withDistanceMeasure(DistanceMeasure distanceMeasure) {
+    public NNClassificationModel<L> withDistanceMeasure(DistanceMeasure distanceMeasure) {
         this.distanceMeasure = distanceMeasure;
         return this;
     }
 
     /** */
-    protected LabeledVectorSet<LabeledVector> buildLabeledDatasetOnListOfVectors(
-        List<LabeledVector> neighborsFromPartitions) {
-        LabeledVector[] arr = new LabeledVector[neighborsFromPartitions.size()];
+    protected LabeledVectorSet<LabeledVector<L>> buildLabeledDatasetOnListOfVectors(
+        List<LabeledVector<L>> neighborsFromPartitions) {
+        LabeledVector<L>[] arr = new LabeledVector[neighborsFromPartitions.size()];
         for (int i = 0; i < arr.length; i++)
             arr[i] = neighborsFromPartitions.get(i);
 
-        return new LabeledVectorSet<LabeledVector>(arr);
+        return new LabeledVectorSet<LabeledVector<L>>(arr);
     }
 
     /**
@@ -100,9 +100,9 @@ public abstract class NNClassificationModel implements IgniteModel<Vector, Doubl
      * @param distanceIdxPairs The distance map.
      * @return K-nearest neighbors.
      */
-    @NotNull protected LabeledVector[] getKClosestVectors(LabeledVectorSet<LabeledVector> trainingData,
+    @NotNull protected LabeledVector<L>[] getKClosestVectors(LabeledVectorSet<LabeledVector<L>> trainingData,
                                                           TreeMap<Double, Set<Integer>> distanceIdxPairs) {
-        LabeledVector[] res;
+        LabeledVector<L>[] res;
 
         if (trainingData.rowSize() <= k) {
             res = new LabeledVector[trainingData.rowSize()];
@@ -136,12 +136,12 @@ public abstract class NNClassificationModel implements IgniteModel<Vector, Doubl
      * @return Key - distanceMeasure from given features before features with idx stored in value. Value is presented
      * with Set because there can be a few vectors with the same distance.
      */
-    @NotNull protected TreeMap<Double, Set<Integer>> getDistances(Vector v, LabeledVectorSet<LabeledVector> trainingData) {
+    @NotNull protected TreeMap<Double, Set<Integer>> getDistances(Vector v, LabeledVectorSet<LabeledVector<L>> trainingData) {
         TreeMap<Double, Set<Integer>> distanceIdxPairs = new TreeMap<>();
 
         for (int i = 0; i < trainingData.rowSize(); i++) {
 
-            LabeledVector labeledVector = trainingData.getRow(i);
+            LabeledVector<L> labeledVector = trainingData.getRow(i);
             if (labeledVector != null) {
                 double distance = distanceMeasure.compute(v, labeledVector.features());
                 putDistanceIdxPair(distanceIdxPairs, i, distance);
@@ -164,7 +164,7 @@ public abstract class NNClassificationModel implements IgniteModel<Vector, Doubl
     }
 
     /** */
-    protected double getClassWithMaxVotes(Map<Double, Double> clsVotes) {
+    protected L getClassWithMaxVotes(Map<L, Double> clsVotes) {
         return Collections.max(clsVotes.entrySet(), Map.Entry.comparingByValue()).getKey();
     }
 
@@ -172,7 +172,10 @@ public abstract class NNClassificationModel implements IgniteModel<Vector, Doubl
      *
      */
     protected double getClassVoteForVector(boolean weighted, double distance) {
-        return weighted ? 1.0 / distance : 1.0;
+    	if(this.distanceMeasure.isSimilarity()) {
+    		return 1 - distance;
+    	}
+        return weighted ? 1.0 / (1.0 + distance) : 1.0;
     }
 
     /** */
@@ -210,7 +213,7 @@ public abstract class NNClassificationModel implements IgniteModel<Vector, Doubl
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        NNClassificationModel that = (NNClassificationModel)obj;
+        NNClassificationModel<L> that = (NNClassificationModel<L>)obj;
 
         return k == that.k && distanceMeasure.equals(that.distanceMeasure) && weighted == that.weighted;
     }
@@ -234,7 +237,7 @@ public abstract class NNClassificationModel implements IgniteModel<Vector, Doubl
      *
      * @param mdl Model.
      */
-    protected void copyParametersFrom(NNClassificationModel mdl) {
+    protected void copyParametersFrom(NNClassificationModel<L> mdl) {
         this.k = mdl.k;
         this.distanceMeasure = mdl.distanceMeasure;
         this.weighted = mdl.weighted;

@@ -32,13 +32,18 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.dataset.feature.extractor.ExtractionUtils.IntCoordObjectLabelVectorizer;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDataset;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.knn.KNNPartitionDataBuilder;
+import org.apache.ignite.ml.knn.ann.ANNClassificationModel;
+import org.apache.ignite.ml.knn.ann.ANNClassificationTrainer;
+import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.utils.PointWithDistance;
+import org.apache.ignite.ml.knn.utils.PointWithDistanceUtil;
 import org.apache.ignite.ml.knn.utils.indices.SpatialIndex;
 import org.apache.ignite.ml.knn.utils.indices.SpatialIndexType;
 import org.apache.ignite.ml.math.distances.CosineSimilarity;
@@ -78,11 +83,12 @@ public class IgniteVectorIndex extends Index<Object> {
 	
 	private IgniteCache<Object, Vector> vecIndex;	
 	
-	private final GridKernalContext ctx;
+	private final GridKernalContext ctx;	
 	
-	
-	/** Dataset with {@link SpatialIndex} as a partition data. */
-    private Dataset<EmptyContext, SpatialIndex<Object>> knnDataset;
+	/** knn */
+    private KNNClassificationModel<Object> knnModel;
+    /** ann */
+    private ANNClassificationModel<Object> annModel;
 
     /** Distance measure. */
     protected DistanceMeasure distanceMeasure;
@@ -90,11 +96,13 @@ public class IgniteVectorIndex extends Index<Object> {
     /** Index type. */
     private SpatialIndexType idxType = SpatialIndexType.KD_TREE; 
 	
-	private String keyField = "_id";
+	private String idField = "_id";
 	
 	private int K = 20;
 	
-	private int dimensions = 1024;
+	private int dimensions = 768;
+	
+	private boolean defaultANN = false;
 	
 	private String embeddingModelName = "text2vec-base-chinese-paraphrase";
 	
@@ -124,7 +132,7 @@ public class IgniteVectorIndex extends Index<Object> {
 		super(name, keys, sparse);
 		this.ctx = ctx;
 		this.cacheName = collection.getCollectionName();
-		this.keyField = collection.idField;
+		this.idField = collection.idField;
 		this.distanceMeasure = new CosineSimilarity();
 		
 		if(sparse) {
@@ -135,6 +143,7 @@ public class IgniteVectorIndex extends Index<Object> {
 		if(options!=null) {
 			
 			dimensions = Integer.parseInt(options.getOrDefault("dimensions", dimensions).toString());
+			
 			String similarity = options.getOrDefault("similarity", "").toString();
 			if(similarity.equals("euclidean ")) {
 				this.distanceMeasure = new EuclideanDistance();
@@ -155,7 +164,12 @@ public class IgniteVectorIndex extends Index<Object> {
 			
 			String indexType = options.getOrDefault("indexType", "").toString();
 			if(!indexType.isBlank()) {
-				idxType = SpatialIndexType.valueOf(indexType.toUpperCase());
+				if(indexType.startsWith("ANN") || indexType.startsWith("IVF")) {
+					defaultANN =  true;
+				}
+				else {
+					idxType = SpatialIndexType.valueOf(indexType.toUpperCase());
+				}
 			}
 			// 句向量模型
 			embeddingModelName = (String)options.getOrDefault("modelId", "chinese");
@@ -192,34 +206,56 @@ public class IgniteVectorIndex extends Index<Object> {
         
         vecIndex = ctx.grid().getOrCreateCache(cfg);
         
-        init();
+        init(collection);
 	}
 	
 
-	public void init() {		
-		
-		if (this.knnDataset == null) {
-			try {
-				CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl) ctx.cacheObjects();				
-				 
-				EmbeddingIntCoordObjectLabelVectorizer vectorizer = new EmbeddingIntCoordObjectLabelVectorizer();
-		                   
-
-				CacheBasedDatasetBuilder<Object, Vector> datasetBuilder = new CacheBasedDatasetBuilder<>(ctx.grid(), vecIndex);
+	public void init(IgniteBinaryCollection collection) {
 				
-				knnDataset = datasetBuilder.build(
-		            envBuilder,
-		            new EmptyContextBuilder<>(),
-		            new KNNPartitionDataBuilder<>(vectorizer, idxType, distanceMeasure),
-		            environment
-		        );
-
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}			
 	}
+	
+	public KNNClassificationModel<Object> knnModel(){
+		if(this.knnModel==null) {
+			synchronized(this){
+				if(this.knnModel==null) {
+					EmbeddingIntCoordObjectLabelVectorizer vectorizer = new EmbeddingIntCoordObjectLabelVectorizer();
+					CacheBasedDatasetBuilder<Object, Vector> datasetBuilder = new CacheBasedDatasetBuilder<>(ctx.grid(), vecIndex);
+					
+					CacheBasedDataset<Object, Vector, EmptyContext, SpatialIndex<Object>> knnDataset = datasetBuilder.build(
+				            envBuilder,
+				            new EmptyContextBuilder<>(),
+				            new KNNPartitionDataBuilder<>(vectorizer, idxType, distanceMeasure),
+				            environment
+				        );
+					this.knnModel = new KNNClassificationModel(knnDataset,distanceMeasure,this.K, false);
+				}
+			}			
+		}
+		return knnModel;
+	}
+	
+	public ANNClassificationModel<Object> annModel() {
+		if(this.annModel==null) {
+			synchronized(this){
+				if(this.annModel==null) {
+					EmbeddingIntCoordObjectLabelVectorizer vectorizer = new EmbeddingIntCoordObjectLabelVectorizer();
+					CacheBasedDatasetBuilder<Object, Vector> datasetBuilder = new CacheBasedDatasetBuilder<>(ctx.grid(), vecIndex);
+					int K = 2+(int)Math.sqrt(dimensions*2);
+					ANNClassificationTrainer<Object> annTrainer = new ANNClassificationTrainer<Object>()
+							.withEnvironmentBuilder(envBuilder)
+							.withMaxIterations(2+K/5)
+							.withDistance(distanceMeasure)
+							.withK(K);
+					
+					annModel = annTrainer.update(annModel, datasetBuilder, vectorizer);
+					annModel.withWeighted(true);
+					annModel.withDistanceMeasure(distanceMeasure);
+				}
+			}		
+		}
+		return annModel;
+	}
+	
 	
 	public Vector computeEmbedding(Document document) {
 		Vector vec = null;
@@ -229,9 +265,7 @@ public class IgniteVectorIndex extends Index<Object> {
 			if(vec!=null) break;
 		}
 		return vec;
-	}
-	
-	
+	}	
 
 	public Vector computeValueEmbedding(Object val) {
 		Vector vec = null;
@@ -273,26 +307,23 @@ public class IgniteVectorIndex extends Index<Object> {
 		}
 		return vec;
 	}
-
 	
 	  /** {@inheritDoc} */
-    public List<LabeledVector<Object>> findKClosest(int k, Vector pnt) {
-    	List<LabeledVector<Object>> res = knnDataset.compute(spatialIdx -> spatialIdx.findKClosest(k, pnt), (a, b) -> {
-    		if(a==null || a.isEmpty()) return b;
-    		if(b==null || b.isEmpty()) return a;
-            Queue<PointWithDistance<Object>> heap = new PriorityQueue<>(distanceMeasure.isSimilarity()?Collections.reverseOrder():null);
-            tryToAddIntoHeap(heap, k, pnt, a, distanceMeasure);
-            tryToAddIntoHeap(heap, k, pnt, b, distanceMeasure);
-            return transformToListOrdered(heap);
-        });
+    public List<LabeledVector<Object>> findKClosest(int k, Vector pnt, boolean ann) {
+    	if(ann) {
+    		List<LabeledVector<Object>> list = this.annModel().findKClosestLabels(k, pnt, this.vecIndex);
+    		return list;
+    	}
+    	
+    	Collection<PointWithDistance<Object>> res = knnModel().findKClosest(k, pnt);   	
 
-        return res == null ? Collections.emptyList() : res;
+        return res == null ? Collections.emptyList() : PointWithDistanceUtil.transformToListOrdered(res);
     }
     
 	@Override
 	public Object getPosition(Document document) {
 		// Set<KeyValue> keyValues = getKeyValues(document);
-		Object key = document.getOrDefault(keyField, null);
+		Object key = document.getOrDefault(idField, null);
 		if (key != null) {
 			return DocumentUtil.toBinaryKey(key);
 		}
@@ -301,8 +332,6 @@ public class IgniteVectorIndex extends Index<Object> {
 
 	@Override
 	public void checkAdd(Document document, MongoCollection<Object> collection) {
-		// TODO Auto-generated method stub
-
 	}
 
 
@@ -311,30 +340,26 @@ public class IgniteVectorIndex extends Index<Object> {
 
 		String typeName = collection.getCollectionName();
 		
-		boolean stringsFound = false;
-
-		Vector vec = this.computeEmbedding(document);
-		if(vec==null) {
-			return ;
-		}
-		
 		// build doc body
 		try {
+			Vector vec = this.computeEmbedding(document);
+			if(vec==null) {
+				vecIndex.removeAsync(position);
+				return ;
+			}
 			
-			vecIndex.put(position, vec);
+			vecIndex.putAsync(position, vec);
 
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
+		} catch (Exception e) {			
 			e.printStackTrace();
 		}
 	}
 
 	@Override
-	public Object remove(Document document, MongoCollection<Object> collection) {
-		IgniteBinaryCollection coll = (IgniteBinaryCollection) collection;
+	public Object remove(Document document, MongoCollection<Object> collection) {		
 		Object key = getPosition(document);
 		try {
-			vecIndex.remove(key);
+			vecIndex.removeAsync(key);
 			
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -358,15 +383,9 @@ public class IgniteVectorIndex extends Index<Object> {
 
 		for (String key : keys()) {
 			Object queryValue = query.get(key);
-			if (queryValue instanceof Document) {
-				if (isCompoundIndex() && !this.isTextIndex()) {
-					// https://github.com/bwaldvogel/mongo-java-server/issues/80
-					// Not yet supported. Use some other index, or none:
-					return false;
-				}
-				if (BsonRegularExpression.isRegularExpression(queryValue)) {
-					return false;
-				}
+			if (queryValue instanceof Document) {				
+				Document queryDoc = (Document) queryValue;
+				
 				if (BsonRegularExpression.isTextSearchExpression(queryValue)) {
 					continue;
 				}
@@ -374,17 +393,17 @@ public class IgniteVectorIndex extends Index<Object> {
 					if (isInQuery(queriedKeys)) {
 						// okay
 					} 
-					else if (this.isTextIndex() && queriedKeys.startsWith("$search")) {
-						// not yet supported
+					else if (queriedKeys.startsWith("$search")) {						
 						return true;
 					}
-					else if (this.isTextIndex() && queriedKeys.startsWith("$knnVector")) {
-						// not yet supported
+					else if (queriedKeys.startsWith("$knnVector") || queriedKeys.startsWith("$annVector")) {						
 						return true;
 					}
 					else if (queriedKeys.startsWith("$")) {
 						// not yet supported
-						return false;
+						if(queryDoc.size()==1) {
+							return false;
+						}
 					}
 				}
 			}
@@ -398,17 +417,19 @@ public class IgniteVectorIndex extends Index<Object> {
 	public Iterable<Object> getPositions(Document query) {
 		final KeyValue queriedKeys = getQueriedKeys(query);
 		KeyValue searchKey = queriedKeys;		
-		int n = 0;		
+		int n = 0;
+		List<Object> all = new ArrayList<>(this.K);
+		
 		for (Object queriedKey : queriedKeys.iterator()) {
-			if (isCompoundIndex()) {
-				throw new UnsupportedOperationException("Not yet implemented");
-			}
+			IndexKey indexKey = this.getKeys().get(n);			
 					
 			// for $text value  { textField : { $text: 'keyword' } }
 			if (BsonRegularExpression.isTextSearchExpression(queriedKey)) {				
-				List<KeyValue> positions = getVectorTextList(queriedKey);				
-				query.remove(this.keys().get(n));
-				return  (List)positions;
+				List<IdWithMeta> positions = getVectorTextList(indexKey,queriedKey);				
+				query.remove(indexKey.getKey());
+				all.addAll(positions);
+				n++;
+				continue;
 			}
 			
 			// for { $text : { $search: 'keyword' } } || { $text : { $knnVector: [0.1,0.4,0.6] } }
@@ -422,31 +443,40 @@ public class IgniteVectorIndex extends Index<Object> {
 					
 					if (expression.contains(QueryOperator.SEARCH.getValue())) {						
 						searchKey = searchKey.copyFrom(n, keyObj);						
-						query.remove(this.keys().get(n));
+						query.remove(indexKey.getKey());
 					}
-					else if (expression.contains(QueryOperator.RNNVECTOR.getValue())) {						
+					else if (expression.contains(QueryOperator.RNN_VECTOR.getValue())) {						
 						searchKey = searchKey.copyFrom(n, keyObj);
-						query.remove(this.keys().get(n));
+						query.remove(indexKey.getKey());
+					}
+					else if (expression.contains(QueryOperator.ANN_VECTOR.getValue())) {						
+						searchKey = searchKey.copyFrom(n, keyObj);
+						query.remove(indexKey.getKey());
 					}
 					else if (expression.contains(QueryOperator.IN.getValue())) {
-						return (List)getPositionsForExpression(keyObj, QueryOperator.IN.getValue());
+						List<IdWithMeta> positions = getPositionsForInExpression(indexKey,keyObj.get(QueryOperator.IN.getValue()), QueryOperator.IN.getValue());
+						query.remove(indexKey.getKey());						
+						all.addAll(positions);
+						searchKey = searchKey.copyFrom(n, null);
 					}
 				}
 			}
 			n++;
 		}
 
-		List<KeyValue> positions = getPosition(searchKey);
-		if (positions == null) {
-			return Collections.emptyList();
+		List<IdWithMeta> positions = getPosition(searchKey);
+		if (positions!=null) {
+			if(all.size()==0) {
+				return (List)positions;
+			}
+			all.addAll(positions);
 		}
-		return (List)positions;
+		return all;
 	}
 
 	@Override
-	public long getCount() {
-		
-		return vecIndex.localSizeLong(CachePeekMode.ALL);
+	public long getCount() {		
+		return vecIndex.sizeLong(CachePeekMode.ALL);
 	}
 
 	@Override
@@ -476,7 +506,12 @@ public class IgniteVectorIndex extends Index<Object> {
 	public void drop() {
 		String typeName = IgniteBinaryCollection.tableOfCache(cacheName);
 		try {
-			this.knnDataset.close();
+			if (this.knnModel != null) {
+				this.knnModel.close();
+			}	
+			if (this.annModel != null) {
+				this.annModel.close();
+			}
 			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -484,19 +519,35 @@ public class IgniteVectorIndex extends Index<Object> {
 		}
 		this.vecIndex.destroy();		
 	}
+	
+	void close() {
+		try {
+			if (this.knnModel != null) {
+				this.knnModel.close();
+				this.knnModel = null;
+			}			
+			if (this.annModel != null) {
+				this.annModel.close();
+				this.annModel = null;
+			}
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 
-	private Iterable<KeyValue> getPositionsForExpression(Document keyObj, String operator) {
+	private List<IdWithMeta> getPositionsForInExpression(IndexKey indexKey, Object value, String operator) {
 		if (isInQuery(operator)) {
 			@SuppressWarnings("unchecked")
-			Collection<Object> objects = (Collection<Object>) keyObj.get(operator);
+			Collection<Object> objects = (Collection<Object>) value;
 			Collection<Object> queriedObjects = new TreeSet<>(ValueComparator.asc());
 			queriedObjects.addAll(objects);
 
-			List<KeyValue> allKeys = new ArrayList<>();
+			List<IdWithMeta> allKeys = new ArrayList<>();
 			for (Object object : queriedObjects) {
-
-				Object keyValue = Utils.normalizeValue(object);
-				List<KeyValue> keys = getPosition(KeyValue.valueOf(keyValue));
+				
+				List<IdWithMeta> keys = getVectorTextList(indexKey,object);
 				if (keys != null) {
 					allKeys.addAll(keys);
 				} else {
@@ -511,35 +562,48 @@ public class IgniteVectorIndex extends Index<Object> {
 			throw new UnsupportedOperationException("unsupported query expression: " + operator);
 		}
 	}
-
-	protected List<KeyValue> getPosition(KeyValue keyValue) {
-		List<KeyValue> result = new ArrayList<>();		
+	/**
+	 *  可以获取多个字段的匹配结果，拼接在一起返回
+	 * @param keyValue
+	 * @return
+	 */
+	protected List<IdWithMeta> getPosition(KeyValue keyValue) {
+		List<IdWithMeta> result = new ArrayList<>();		
 
 		try {
 			int n = 0;
 			int limit = 0;
-			
+			float scoreMax = Float.MAX_VALUE;
 			for (IndexKey key : this.getKeys()) {
 				Object obj = keyValue.get(n);
 				if(obj == null) {
 					n++;
 					continue;
 				}
-				
+				boolean useAnn = this.defaultANN;
 				if (obj instanceof Map) {
 					Map<String, Object> opt = (Map) obj;
-					if(opt.containsKey("$search")) {
+					if(opt.containsKey("$knnVector")) {
+						obj = opt.get("$knnVector");
+						useAnn = false;
+					}
+					else if(opt.containsKey("$annVector")) {
+						obj = opt.get("$annVector");
+						useAnn = true;
+					}
+					else if(opt.containsKey("$search")) {
 						obj = opt.get("$search");
 					}
 					else if(opt.containsKey("$text")) {
 						obj = opt.get("$text");
 					}
-					else if(opt.containsKey("$knnVector")) {
-						obj = opt.get("$knnVector");
-					}
 					
 					if(opt.containsKey("$limit")) {
 						limit = Integer.parseInt(opt.get("$limit").toString());
+					}
+					
+					if(opt.containsKey("$max")) {
+						scoreMax = Float.parseFloat(opt.get("$max").toString());
 					}
 				}				
 				
@@ -549,13 +613,13 @@ public class IgniteVectorIndex extends Index<Object> {
 				if(limit==0) {
 					maxResults = K;
 				}
-				List<LabeledVector<Object>> docs = this.findKClosest(maxResults, vec);
+				List<LabeledVector<Object>> docs = this.findKClosest(maxResults, vec, useAnn);
 				limit = (int) docs.size();
 				for (int i = 0; i < limit; i++) {
 					LabeledVector<Object> sd = docs.get(i);				
 					float score = sd.weight();
-					if(!distanceMeasure.isSimilarity() || score>0) {
-						result.add(KeyValue.valueOf(sd.label(),score));
+					if(score<=scoreMax) {		// 越小越好	
+						result.add(new IdWithMeta(sd.label(),true,new Document("searchScore",score)));
 					}
 				}
 				n++;
@@ -574,18 +638,24 @@ public class IgniteVectorIndex extends Index<Object> {
 	 * @param text
 	 * @return
 	 */
-	protected List<KeyValue> getVectorTextList(Object exp) {
-		List<KeyValue> result = new ArrayList<>();
+	protected List<IdWithMeta> getVectorTextList(IndexKey indexKey, Object exp) {
+		List<IdWithMeta> result = new ArrayList<>();
 		try {
-			int limit = 0;
-			String scoreField = null;
+			int limit = 0;			
 			Object obj = exp;
+			float scoreMax = Float.MAX_VALUE;
+			boolean useAnn = defaultANN;
 			if (exp instanceof Map) {
-				Map<String, Object> opt = ((Map<String, Object>) obj);
+				Map<String, Object> opt = (Map) obj;
 				
 				if(opt.containsKey("$knnVector")) {
 					obj = opt.get("$knnVector");
-				}				
+					useAnn = false;
+				}
+				else if(opt.containsKey("$annVector")) {
+					obj = opt.get("$annVector");
+					useAnn = true;
+				}
 				else if(opt.containsKey("$search")) {
 					obj = opt.get("$search");
 				}
@@ -595,7 +665,11 @@ public class IgniteVectorIndex extends Index<Object> {
 				
 				if(opt.containsKey("$limit")) {
 					limit = Integer.parseInt(opt.get("$limit").toString());
-				}				
+				}
+				
+				if(opt.containsKey("$max")) {
+					scoreMax = Float.parseFloat(opt.get("$max").toString());
+				}
 			}
 
 			Vector vec = this.computeValueEmbedding(obj);
@@ -604,18 +678,18 @@ public class IgniteVectorIndex extends Index<Object> {
 			if(limit==0) {
 				maxResults = K;
 			}
-			List<LabeledVector<Object>> docs = this.findKClosest(maxResults, vec);
+			List<LabeledVector<Object>> docs = this.findKClosest(maxResults, vec, useAnn);
 			limit = (int) docs.size();
 			result = new ArrayList<>(limit);
 			for (int i = 0; i < limit; i++) {
 				
 				LabeledVector<Object> doc = docs.get(i);
 				float score = doc.weight();
-				if(!distanceMeasure.isSimilarity() || score>0) {
+				if(score<=scoreMax) { // 越小越好
 					Object k = doc.label();
 					Vector v = doc.features();
-
-					result.add(KeyValue.valueOf(k,score,v));
+					
+					result.add(new IdWithMeta(k,true,new Document("searchScore",score)));
 				}
 				
 			}
@@ -625,14 +699,14 @@ public class IgniteVectorIndex extends Index<Object> {
 		}
 		return result;
 
-	}
-
-	private static boolean isInQuery(String key) {
-		return key.equals(QueryOperator.IN.getValue());
-	}
+	}	
 	
 	public boolean isTextIndex() {
 		return true;
+	}
+	
+	private static boolean isInQuery(String key) {
+		return key.equals(QueryOperator.IN.getValue());
 	}
 
 }

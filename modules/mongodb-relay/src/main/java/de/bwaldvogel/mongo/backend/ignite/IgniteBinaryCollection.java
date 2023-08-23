@@ -2,9 +2,13 @@ package de.bwaldvogel.mongo.backend.ignite;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -20,7 +24,11 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteBiPredicate;
+
+import com.google.common.collect.Sets;
+
 import de.bwaldvogel.mongo.backend.AbstractMongoCollection;
 import de.bwaldvogel.mongo.backend.CollectionOptions;
 import de.bwaldvogel.mongo.backend.ComposeKeyValue;
@@ -30,6 +38,7 @@ import de.bwaldvogel.mongo.backend.DocumentWithPosition;
 import de.bwaldvogel.mongo.backend.Index;
 import de.bwaldvogel.mongo.backend.Missing;
 import de.bwaldvogel.mongo.backend.QueryResult;
+import de.bwaldvogel.mongo.backend.Utils;
 import de.bwaldvogel.mongo.backend.ignite.util.BinaryObjectMatch;
 import de.bwaldvogel.mongo.bson.Document;
 import de.bwaldvogel.mongo.exception.BadValueException;
@@ -68,16 +77,21 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     }    
    
     protected void indexChanged(Index<Object> index,String op) {
+    	boolean firstLuneceIndex = true;
     	for (Index<Object> idx : this.getIndexes()) {
 			if (idx instanceof IgniteLuceneIndex) {
 				IgniteLuceneIndex igniteIndex = (IgniteLuceneIndex) idx;
 				if(op.equals("reIndex"))
-					igniteIndex.init();
+					igniteIndex.init(this);
+				if(op.equals("add")) {
+					igniteIndex.setFirstIndex(firstLuneceIndex);
+					firstLuneceIndex = false;
+				}
 			}
 			if (idx instanceof IgniteVectorIndex) {
 				IgniteVectorIndex igniteIndex = (IgniteVectorIndex) idx;
 				if(op.equals("reIndex"))
-					igniteIndex.init();
+					igniteIndex.init(this);
 			}
     	}
     }
@@ -111,9 +125,9 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
         if(key==null || key==Missing.getInstance()) {
             key = UUID.randomUUID();
         }
-        T2<String,String> t2 = typeNameAndKeyField(this.dataMap,document);
-    	String typeName = t2.get1();	
-    	String keyField = t2.get2();
+        T3<String,String,String> t2 = typeNameAndKeyField(this.dataMap,document);
+    	String typeName = t2.get2();	
+    	String keyField = t2.get3();
     	IgniteDatabase database = (IgniteDatabase)this.getDatabase();
     	try {
     		key = toBinaryKey(key);
@@ -147,14 +161,17 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     @Override
     protected Document getDocument(Object position) {
     	// position with score
-    	if(position instanceof ComposeKeyValue) { // _key,_score,_indexValue
-    		ComposeKeyValue idWithScore = (ComposeKeyValue)position;    		
-    		position = idWithScore.get(0);    		
+    	if(position instanceof IdWithMeta) { // _key,_score,_indexValue
+    		IdWithMeta idWithScore = (IdWithMeta)position;    		
+    		position = idWithScore.key;    		
     		Object obj = dataMap.get(position);
         	if(obj==null) return null;
         	Document doc = objectToDocument(position,obj,idField);
-        	Document meta = (Document) doc.computeIfAbsent("_meta", (k)-> new Document());        	
-        	meta.append("searchScore", idWithScore.get(1));
+        	Document meta = (Document) doc.computeIfAbsent("_meta", (k)-> idWithScore.meta);
+        	if(meta!=null && idWithScore.meta!=null && idWithScore.meta!=meta) {
+        		meta.putAll(idWithScore.meta);
+        	}
+        	
         	return doc;
     	}
     	Object obj = dataMap.get(position);
@@ -182,6 +199,83 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     	 }    	 
          return null;
     }
+    
+    @Override
+    protected QueryResult queryDocuments(Document query, Document orderBy, int numberToSkip, int limit, int batchSize,
+            Document fieldSelector) {
+		query = Utils.normalizeDocument(query);
+		
+		List<Iterable<Object>> indexResult = new ArrayList<>();
+		
+		for (Index<Object> index : getIndexes()) {
+			if (index.canHandle(query)) {
+				Iterable<Object> positions = index.getPositions(query);
+				if(index.isUnique() || (positions instanceof List && ((List)positions).size()==0)) {
+					return matchDocuments(query, positions, orderBy, numberToSkip, limit, batchSize, fieldSelector);
+				}
+				else {
+					indexResult.add(positions);
+				}
+			}
+		}
+		if(indexResult.size()==1) {
+			return matchDocuments(query, indexResult.get(0), orderBy, numberToSkip, limit, batchSize, fieldSelector);
+		}
+		else if(indexResult.size()>1) {			
+			final LinkedHashMap<Object,Object> resultMap = new LinkedHashMap<>();
+			HashSet<Object> ids = new HashSet<>();
+			int n = 0;
+			for(Iterable<Object> positions: indexResult) {
+				for(Object position: positions) {
+					Object rawPosition = position;
+					if(position instanceof IdWithMeta) {
+						IdWithMeta idWithScore = (IdWithMeta)position;    		
+			    		rawPosition = idWithScore.key;				    		
+					}
+					
+					if(n==0) {
+						resultMap.put(rawPosition, position);
+					}
+					else {
+						Object originPosition = resultMap.get(rawPosition);
+						if(originPosition!=null) {
+							if(position instanceof IdWithMeta) {
+								IdWithMeta idWithScore = (IdWithMeta)position;  
+								if(originPosition instanceof IdWithMeta) {
+									IdWithMeta idWithScoreOrigin = (IdWithMeta)originPosition;
+									if(idWithScoreOrigin.meta!=null) {
+										if(idWithScore.meta!=null)
+											idWithScoreOrigin.meta.putAll(idWithScore.meta);
+									}
+									else {
+										resultMap.put(rawPosition, position);
+									}
+								}
+								else {
+									resultMap.put(rawPosition, position);
+								}
+								
+							}
+							ids.add(rawPosition);
+						}
+					}						
+				}					
+				
+				if(n>0) {
+					Set<Object> removes = Sets.difference(resultMap.keySet(),ids);
+					Sets.newCopyOnWriteArraySet(removes).forEach(id->{
+						resultMap.remove(id);
+					});
+					ids.clear();
+				}					
+				n++;
+			}
+			
+			return matchDocuments(query, resultMap.values(), orderBy, numberToSkip, limit, batchSize, fieldSelector);
+		}
+		
+		return matchDocuments(query, orderBy, numberToSkip, limit, batchSize, fieldSelector);
+	}
 
 
     @Override
@@ -231,15 +325,28 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     		dataMap.destroy();
     	}
     }
+    
+    public void close() {
+    	for(Index<Object> idx: this.getIndexes()) {
+    		if (idx instanceof IgniteLuceneIndex) {
+				IgniteLuceneIndex igniteIndex = (IgniteLuceneIndex) idx;				
+				igniteIndex.close();
+			}
+			if (idx instanceof IgniteVectorIndex) {
+				IgniteVectorIndex igniteIndex = (IgniteVectorIndex) idx;				
+				igniteIndex.close();
+			}
+    	}
+    }
 
     @Override
     protected void handleUpdate(Object key, Document oldDocument,Document document) {
     	if(readOnly) {
     		throw new IllegalOperationException("This collection is read only!");
     	}
-    	T2<String,String> t2 = typeNameAndKeyField(this.dataMap,document);
-    	String typeName = t2.get1();    	
-    	String keyField = t2.get2();    
+    	T3<String,String,String> t2 = typeNameAndKeyField(this.dataMap,document);
+    	String typeName = t2.get2();    	
+    	String keyField = t2.get3();
     	IgniteDatabase database = (IgniteDatabase)this.getDatabase();
     	BinaryObject obj = documentToBinaryObject(database.getIgnite().binary(),typeName,document,idField);
         
@@ -268,7 +375,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 		return cacheName;
 	}
     
-    public T2<String,String> typeNameAndKeyField(IgniteCache<Object,BinaryObject> dataMap,Document obj) {
+    public T3<String,String,String> typeNameAndKeyField(IgniteCache<Object,BinaryObject> dataMap,Document obj) {
     	String typeName = (String)obj.get("_class");
     	String shortName = typeName;
     	if(!StringUtil.isNullOrEmpty(typeName)) {
@@ -278,6 +385,10 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     	
     	String keyField = idField;
     	CacheConfiguration<Object,BinaryObject> cfg = dataMap.getConfiguration(CacheConfiguration.class);
+    	String schema = cfg.getSqlSchema();
+    	if(schema==null) {
+    		schema = cfg.getName();
+    	}
     	if(!cfg.getQueryEntities().isEmpty()) {
     		Iterator<QueryEntity> qeit = cfg.getQueryEntities().iterator();
     		while(qeit.hasNext()) {
@@ -298,10 +409,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     	if(StringUtil.isNullOrEmpty(typeName)) {
     		typeName = tableOfCache(dataMap.getName());
     	}    	
-    	return new T2<>(typeName,keyField);
-    }
-
-	
-    
+    	return new T3<>(schema,typeName,keyField);
+    }    
     
 }

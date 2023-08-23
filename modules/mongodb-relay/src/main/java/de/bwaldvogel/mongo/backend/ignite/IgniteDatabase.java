@@ -4,7 +4,9 @@ import static de.bwaldvogel.mongo.backend.Constants.ID_FIELD;
 import static de.bwaldvogel.mongo.backend.ignite.util.DocumentUtil.objectToDocument;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.cache.Cache;
@@ -153,6 +155,15 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
             mvStore.destroyCache(cacheName);
         }
     }
+    
+    void close() {
+    	for( MongoCollection<Object> coll: collections.values()) {
+			if(coll instanceof IgniteBinaryCollection) {
+				IgniteBinaryCollection collection = (IgniteBinaryCollection) coll;
+				collection.close();
+			}					
+		}
+    }
 
     public static String indexName(List<IndexKey> keys) {
         Assert.notEmpty(keys, () -> "No keys");
@@ -163,21 +174,29 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
     
     @Override
     protected Iterable<String> listCollectionNamespaces() {    	
-    	return mvStore.cacheNames().stream().filter(c-> 
-    		!c.startsWith(INDEX_DB_PREFIX))
-    	.map(n->databaseName+'.'+n)
-    	.collect(Collectors.toList());
+    	return mvStore.cacheNames().stream().filter(c-> !c.startsWith(INDEX_DB_PREFIX))
+    		.map(n->databaseName+'.'+n)
+    		.collect(Collectors.toList());
     }
 
     @Override
     protected MongoCollection<Object> openOrCreateCollection(String collectionName, CollectionOptions options) {    	
-       
+    	MongoCollection<Object> coll = super.resolveCollection(collectionName, false);
+		if(coll!=null) {
+			return coll;
+		}
         IgniteBackend backend = (IgniteBackend)this.backend;
         IgniteDatabase database = this;
     	String fullCollectionName = getCacheName(databaseName ,collectionName);
     	if(collectionName.equals(NAMESPACES_COLLECTION_NAME) || collectionName.equals(NAMESPACES_VIEWS_NAME) || collectionName.equals(INDEXES_COLLECTION_NAME)) {
-    		if(!databaseName.equals("admin"))
+    		if(!databaseName.equals("admin")) {
     			database = ((IgniteDatabase)backend.adminDatabase());
+    			MongoCollection<Object> systemColl = database.resolveCollection(collectionName, false);
+    			if(systemColl==null) {
+    				systemColl = database.openOrCreateCollection(collectionName,options);
+    			}
+    			return systemColl;
+    		}
     	}
         
     	Ignite mvStore = database.getIgnite();

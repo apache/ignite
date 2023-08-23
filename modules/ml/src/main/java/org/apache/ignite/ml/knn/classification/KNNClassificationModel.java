@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.knn.KNNModel;
+import org.apache.ignite.ml.knn.utils.PointWithDistanceUtil;
 import org.apache.ignite.ml.knn.utils.indices.SpatialIndex;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -37,7 +38,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * be saved or used in other places. Under the hood it keeps {@link Dataset} that consists of a set of resources
  * allocated across the cluster.
  */
-public class KNNClassificationModel extends KNNModel<Double> {
+public class KNNClassificationModel<L> extends KNNModel<L> {
     /**
      * Constructs a new instance of KNN classification model.
      *
@@ -46,14 +47,14 @@ public class KNNClassificationModel extends KNNModel<Double> {
      * @param k Number of neighbours.
      * @param weighted Weighted or not.
      */
-    KNNClassificationModel(Dataset<EmptyContext, SpatialIndex<Double>> dataset, DistanceMeasure distanceMeasure, int k,
+	public KNNClassificationModel(Dataset<EmptyContext, SpatialIndex<L>> dataset, DistanceMeasure distanceMeasure, int k,
         boolean weighted) {
         super(dataset, distanceMeasure, k, weighted);
     }
 
     /** {@inheritDoc} */
-    @Override public Double predict(Vector input) {
-        List<LabeledVector<Double>> neighbors = findKClosest(k, input);
+    @Override public L predict(Vector input) {
+        List<LabeledVector<L>> neighbors = PointWithDistanceUtil.transformToListOrdered(findKClosest(k, input));
 
         return election(neighbors, input);
     }
@@ -65,8 +66,8 @@ public class KNNClassificationModel extends KNNModel<Double> {
      * @param pnt Point to calculate distance to.
      * @return Label with max votes for it.
      */
-    private Double election(List<LabeledVector<Double>> neighbours, Vector pnt) {
-        Collection<GroupedNeighbours> groups = groupByLabel(neighbours);
+    private L election(List<LabeledVector<L>> neighbours, Vector pnt) {
+        Collection<GroupedNeighbours<L>> groups = groupByLabel(neighbours);
 
         return election(groups, pnt);
     }
@@ -78,11 +79,11 @@ public class KNNClassificationModel extends KNNModel<Double> {
      * @param pnt Point to calculate distance to.
      * @return Label with max votes for it.
      */
-    private Double election(Collection<GroupedNeighbours> groups, Vector pnt) {
-        Double res = null;
+    private L election(Collection<GroupedNeighbours<L>> groups, Vector pnt) {
+        L res = null;
         double votes = 0.0;
 
-        for (GroupedNeighbours groupedNeighbours : groups) {
+        for (GroupedNeighbours<L> groupedNeighbours : groups) {
             double grpVotes = calculateGroupVotes(groupedNeighbours, pnt);
             if (grpVotes > votes) {
                 votes = grpVotes;
@@ -100,13 +101,18 @@ public class KNNClassificationModel extends KNNModel<Double> {
      * @param pnt Point to calculate distance to.
      * @return Total vote for the label of the given group.
      */
-    private Double calculateGroupVotes(GroupedNeighbours grp, Vector pnt) {
+    private Double calculateGroupVotes(GroupedNeighbours<L> grp, Vector pnt) {
         double res = 0;
 
         for (Vector neighbour : grp) {
             double distance = distanceMeasure.compute(pnt, neighbour);
-            double vote = weighted ? 1.0 / distance : 1.0;
-            res += vote;
+            if(distanceMeasure.isSimilarity()) { // [0,2]
+            	res += (1.0 - distance);
+            }
+            else {
+	            double vote = weighted ? 1.0 / (1.0+distance) : 1.0;
+	            res += vote;
+            }
         }
 
         return res;
@@ -118,15 +124,15 @@ public class KNNClassificationModel extends KNNModel<Double> {
      * @param neighbours List of neighbours.
      * @return Collection of grouped neighbours (each group contains neighbours with the same label).
      */
-    private Collection<GroupedNeighbours> groupByLabel(List<LabeledVector<Double>> neighbours) {
-        Map<Double, GroupedNeighbours> groups = new HashMap<>();
+    private Collection<GroupedNeighbours<L>> groupByLabel(List<LabeledVector<L>> neighbours) {
+        Map<L, GroupedNeighbours<L>> groups = new HashMap<>();
 
-        for (LabeledVector<Double> neighbour : neighbours) {
-            double lb = neighbour.label();
+        for (LabeledVector<L> neighbour : neighbours) {
+            L lb = neighbour.label();
 
-            GroupedNeighbours groupedNeighbours = groups.get(lb);
+            GroupedNeighbours<L> groupedNeighbours = groups.get(lb);
             if (groupedNeighbours == null) {
-                groupedNeighbours = new GroupedNeighbours(lb);
+                groupedNeighbours = new GroupedNeighbours<L>(lb);
                 groups.put(lb, groupedNeighbours);
             }
 
@@ -139,9 +145,9 @@ public class KNNClassificationModel extends KNNModel<Double> {
     /**
      * Util class that represents neighbours grouped by label (each group contains neighbours with the same label).
      */
-    private static class GroupedNeighbours implements Iterable<Vector> {
+    private static class GroupedNeighbours<L> implements Iterable<Vector> {
         /** Label. */
-        private final Double lb;
+        private final L lb;
 
         /** Neighbours. */
         private final List<Vector> neighbours = new ArrayList<>();
@@ -151,7 +157,7 @@ public class KNNClassificationModel extends KNNModel<Double> {
          *
          * @param lb Label.
          */
-        public GroupedNeighbours(Double lb) {
+        public GroupedNeighbours(L lb) {
             this.lb = lb;
         }
 
@@ -169,7 +175,7 @@ public class KNNClassificationModel extends KNNModel<Double> {
          *
          * @return Label of the group.
          */
-        public Double getLb() {
+        public L getLb() {
             return lb;
         }
 

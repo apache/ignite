@@ -18,7 +18,9 @@
 package org.apache.ignite.ml.knn.utils.indices;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -62,12 +64,12 @@ public class BallTreeSpatialIndex<L> implements SpatialIndex<L> {
     }
 
     /** {@inheritDoc} */
-    @Override public List<LabeledVector<L>> findKClosest(int k, Vector pnt) {
-    	Queue<PointWithDistance<L>> heap = new PriorityQueue<>(k, distanceMeasure.isSimilarity()?Collections.reverseOrder():null);
+    @Override public Collection<PointWithDistance<L>> findKClosest(int k, Vector pnt) {
+    	Queue<PointWithDistance<L>> heap = new PriorityQueue<>(k,Comparator.reverseOrder());
 
         root.findKClosest(pnt, heap, k);
 
-        return transformToListOrdered(heap);
+        return heap;
     }
 
     /**

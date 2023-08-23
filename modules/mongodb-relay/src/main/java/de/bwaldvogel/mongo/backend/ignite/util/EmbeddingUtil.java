@@ -163,18 +163,19 @@ public class EmbeddingUtil {
 		return predictor;
 	}
 	
-	public static Vector textTwoGramVec(String sentence,String modelId) {
-		SparseVector vec = new SparseVector(61580*3);
+	public static Vector textTwoGramVec(String sentence,String modelId) {		
 		Path file = Paths.get(modelId);
 		HuggingFaceTokenizer tokenizer = (HuggingFaceTokenizer)tokenizer(file);
+		// perceive-xlm-large
 		int vocbSize = 61580;
-		
+		SparseVector vec = new SparseVector(vocbSize*2);
 		Encoding tokens = tokenizer.encode(sentence,false);
 		int last = 0;
 		for(long id: tokens.getIds()) {
 			vec.set((int)id, 1.0);
 			if(last>0) {
-				vec.set((int)(vocbSize+last+id), 0.5);
+				long hashed = (last*37+id) % vocbSize;
+				vec.set((int)(vocbSize+hashed), 0.5);
 			}	
 			// 是标点符号，特殊字符
 			if(id>=59274) {

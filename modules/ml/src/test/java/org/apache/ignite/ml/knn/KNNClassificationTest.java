@@ -73,7 +73,7 @@ public class KNNClassificationTest {
             .withDistanceMeasure(new EuclideanDistance())
             .withWeighted(false);
 
-        KNNClassificationModel knnMdl = trainer.fit(
+        KNNClassificationModel<Double> knnMdl = trainer.fit(
             data, parts,
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
@@ -104,7 +104,7 @@ public class KNNClassificationTest {
             .withDistanceMeasure(new EuclideanDistance())
             .withWeighted(false);
 
-        KNNClassificationModel knnMdl = trainer.fit(
+        KNNClassificationModel<Double> knnMdl = trainer.fit(
             data, parts,
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
@@ -129,7 +129,7 @@ public class KNNClassificationTest {
             .withDistanceMeasure(new EuclideanDistance())
             .withWeighted(false);
 
-        KNNClassificationModel knnMdl = trainer.fit(
+        KNNClassificationModel<Double> knnMdl = trainer.fit(
             data, parts,
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
@@ -153,7 +153,7 @@ public class KNNClassificationTest {
             .withDistanceMeasure(new EuclideanDistance())
             .withWeighted(true);
 
-        KNNClassificationModel knnMdl = trainer.fit(
+        KNNClassificationModel<Double> knnMdl = trainer.fit(
             data, parts,
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
@@ -177,13 +177,13 @@ public class KNNClassificationTest {
             .withDistanceMeasure(new EuclideanDistance())
             .withWeighted(false);
 
-        KNNClassificationModel originalMdlOnEmptyDataset = trainer.fit(
+        KNNClassificationModel<Double> originalMdlOnEmptyDataset = trainer.fit(
             new HashMap<>(),
             parts,
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
-        KNNClassificationModel updatedOnData = trainer.update(
+        KNNClassificationModel<Double> updatedOnData = trainer.update(
             originalMdlOnEmptyDataset,
             data,
             parts,
