@@ -28,7 +28,7 @@
 
     <parent>
         <artifactId>ignite-parent-internal</artifactId>
-        <groupId>com.sbt.ignite</groupId>
+        <groupId>org.apache.ignite</groupId>
         <version>${revision}</version>
         <relativePath>../../parent-internal</relativePath>
     </parent>
