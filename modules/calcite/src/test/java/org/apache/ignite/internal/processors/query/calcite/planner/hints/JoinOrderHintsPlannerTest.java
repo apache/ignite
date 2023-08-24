@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlann
 import org.apache.ignite.internal.processors.query.calcite.planner.TestTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
 /**
@@ -43,13 +44,14 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
         int fldNum = 3;
 
         TestTable[] tables = new TestTable[tblNum];
-        Object[] fields = new Object[fldNum * 2];
+        Object[] fields = new Object[tblNum * 2];
 
         for (int f = 0; f < fldNum; ++f) {
             fields[f * 2] = "V" + (f + 1);
             fields[f * 2 + 1] = Integer.class;
         }
 
+        // Tables with growing records number.
         for (int t = 0; t < tables.length; ++t) {
             tables[t] = createTable("TBL" + (t + 1), Math.min(1_000_000, (int)Math.pow(10, t + 1)),
                 IgniteDistributions.broadcast(), fields);
@@ -203,5 +205,30 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
         assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(Join.class)
             .and(input(0, isTableScan("TBL3")))
             .and(input(1, isTableScan("TBL1")))).negate());
+    }
+
+    /**
+     * Tests join plan building duration. Without enabled forced order, takes too long.
+     */
+    @Test
+    public void testJoinPlanBuildingDuration() throws Exception {
+        // Just a 3-tables join.
+        String sql = "SELECT /*+ " + HintDefinition.ORDERED_JOINS + " */ T1.V1, T2.V1, T2.V2, T3.V1, T3.V2, T3.V3 " +
+            "FROM TBL1 T1 JOIN TBL2 T2 ON T1.V3=T2.V1 JOIN TBL3 T3 ON T2.V3=T3.V1 AND T2.V2=T3.V2";
+
+        long time = 0;
+
+        // Heat a bit and measure only the last run.
+        for (int i = 0; i < 6; ++i) {
+            time = System.nanoTime();
+
+            physicalPlan(sql, schema);
+
+            time = U.nanosToMillis(System.nanoTime() - time);
+
+            log.info("Plan building took " + time + "ms.");
+        }
+
+        assertTrue("Plan building took too long: " + time + "ms.", time < 3000L);
     }
 }
