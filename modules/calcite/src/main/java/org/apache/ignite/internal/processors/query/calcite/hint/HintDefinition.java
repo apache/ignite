@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.hint;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.rel.hint.HintOptionChecker;
 import org.apache.calcite.rel.hint.HintPredicate;
@@ -53,7 +51,7 @@ public enum HintDefinition {
     },
 
     /** Forces join order as appears in the query. Fastens building of joins plan. */
-    ORDERED_JOIN {
+    ORDERED_JOINS {
         @Override public HintOptionChecker optionsChecker() {
             return HintsConfig.OPTS_CHECK_EMPTY;
         }
