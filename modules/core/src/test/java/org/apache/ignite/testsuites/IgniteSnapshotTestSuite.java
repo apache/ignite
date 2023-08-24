@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSn
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotRestoreFromRemoteTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotWithMetastorageTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.PlainSnapshotTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.IgniteCacheDumpSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
@@ -69,5 +70,7 @@ public class IgniteSnapshotTestSuite {
         GridTestUtils.addTestIfNeeded(suite, IgniteSnapshotConsistencyTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotDeltaTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IncrementalSnapshotsTestSuite.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheDumpSelfTest.class, ignoredTests);
+
     }
 }

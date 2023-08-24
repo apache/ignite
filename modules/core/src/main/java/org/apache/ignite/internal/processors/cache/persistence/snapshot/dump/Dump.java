@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -46,6 +47,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARS
 import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.readCacheData;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpCacheFutureTask.DUMP_FILE_NAME;
 
@@ -76,22 +78,33 @@ public class Dump {
     }
 
     /** */
-    public SnapshotMetadata metadata() throws IOException, IgniteCheckedException {
-        File[] metas = dumpDir.listFiles(f -> f.getName().endsWith(DUMP_METAFILE_EXT));
-
-        if (metas.length != 1)
-            throw new IgniteException("Wrong number of meta files: " + metas.length);
-
-        try (InputStream in = new BufferedInputStream(Files.newInputStream(metas[0].toPath()))) {
-            return MarshallerUtils.jdkMarshaller(cctx.igniteInstanceName()).unmarshal(in, U.resolveClassLoader(cctx.config()));
-        }
+    public List<String> nodesDirectories() {
+        return Arrays.stream(new File(dumpDir, DFLT_STORE_DIR).listFiles(f -> f.isDirectory() &&
+            !(f.getAbsolutePath().endsWith(DFLT_BINARY_METADATA_PATH)
+                || f.getAbsolutePath().endsWith(DFLT_MARSHALLER_PATH)))).map(File::getName).collect(Collectors.toList());
     }
 
     /** */
-    public List<CacheConfiguration<?, ?>> config(int groupId) {
+    public List<SnapshotMetadata> metadata() throws IOException, IgniteCheckedException {
         JdkMarshaller marsh = MarshallerUtils.jdkMarshaller(cctx.igniteInstanceName());
 
-        return Arrays.stream(FilePageStoreManager.cacheDataFiles(dumpGroupDirectory(groupId))).map(f -> {
+        ClassLoader clsLdr = U.resolveClassLoader(cctx.config());
+
+        return Arrays.stream(dumpDir.listFiles(f -> f.getName().endsWith(DUMP_METAFILE_EXT))).map(meta -> {
+            try (InputStream in = new BufferedInputStream(Files.newInputStream(meta.toPath()))) {
+                return marsh.<SnapshotMetadata>unmarshal(in, clsLdr);
+            }
+            catch (IOException | IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }).collect(Collectors.toList());
+    }
+
+    /** */
+    public List<CacheConfiguration<?, ?>> configs(String node, int groupId) {
+        JdkMarshaller marsh = MarshallerUtils.jdkMarshaller(cctx.igniteInstanceName());
+
+        return Arrays.stream(FilePageStoreManager.cacheDataFiles(dumpGroupDirectory(node, groupId))).map(f -> {
             try {
                 return readCacheData(f, marsh, cctx.config()).config();
             }
@@ -102,10 +115,10 @@ public class Dump {
     }
 
     /** */
-    public DumpIterator iterator(int groupId) throws IOException {
+    public DumpIterator iterator(String node, int groupId) throws IOException {
         FileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
-        FileIO dumpFile = ioFactory.create(new File(dumpGroupDirectory(groupId), DUMP_FILE_NAME));
+        FileIO dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, groupId), DUMP_FILE_NAME));
 
         byte[] fileVerBytes = new byte[Short.BYTES];
 
@@ -160,16 +173,12 @@ public class Dump {
     }
 
     /** */
-    private File dumpGroupDirectory(int groupId) {
-        File[] nodeDirs = new File(dumpDir, "db")
-            .listFiles(f -> f.isDirectory()
-                && !f.getAbsolutePath().endsWith(DFLT_BINARY_METADATA_PATH)
-                && !f.getAbsolutePath().endsWith(DFLT_MARSHALLER_PATH));
+    private File dumpGroupDirectory(String node, int groupId) {
+        File nodeDir = Paths.get(dumpDir.getAbsolutePath(), DFLT_STORE_DIR, node).toFile();
 
-        if (nodeDirs.length != 1)
-            throw new IgniteException("Wrong number of node directories: " + nodeDirs.length);
+        assert nodeDir.exists() && nodeDir.isDirectory();
 
-        File[] grpDirs = nodeDirs[0].listFiles(f -> {
+        File[] grpDirs = nodeDir.listFiles(f -> {
             if (!f.isDirectory()
                 || (!f.getName().startsWith(CACHE_DIR_PREFIX)
                 && !f.getName().startsWith(CACHE_GRP_DIR_PREFIX)))
