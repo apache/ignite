@@ -26,8 +26,6 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptCost;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
@@ -53,7 +51,6 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
 import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
@@ -290,10 +287,6 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
     /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
         return Util.first(joinRowCount(mq, this), 1D);
-    }
-
-    @Override public @Nullable RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        return super.computeSelfCost(planner, mq);
     }
 
     /** */

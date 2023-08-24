@@ -52,6 +52,7 @@ public enum HintDefinition {
 
     /** Forces join order as appears in the query. Fastens building of joins plan. */
     ORDERED_JOINS {
+        /** {@inheritDoc} */
         @Override public HintOptionChecker optionsChecker() {
             return HintsConfig.OPTS_CHECK_EMPTY;
         }
