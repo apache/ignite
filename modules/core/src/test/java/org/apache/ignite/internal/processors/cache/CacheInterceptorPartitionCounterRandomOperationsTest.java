@@ -53,14 +53,12 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -284,117 +282,11 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTx() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL_SNAPSHOT,
-            false);
-
-        doTestPartitionCounterOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxWithStore() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL_SNAPSHOT,
-            true);
-
-        doTestPartitionCounterOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxExplicit() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL_SNAPSHOT,
-            false);
-
-        doTestPartitionCounterOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxReplicated() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
-            0,
-            TRANSACTIONAL_SNAPSHOT,
-            false);
-
-        doTestPartitionCounterOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxReplicatedWithStore() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
-            0,
-            TRANSACTIONAL_SNAPSHOT,
-            true);
-
-        doTestPartitionCounterOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxNoBackups() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            0,
-            TRANSACTIONAL_SNAPSHOT,
-            false);
-
-        doTestPartitionCounterOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxNoBackupsWithStore() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            0,
-            TRANSACTIONAL_SNAPSHOT,
-            true);
-
-        doTestPartitionCounterOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxNoBackupsExplicit() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            0,
-            TRANSACTIONAL_SNAPSHOT,
-            false);
-
-        doTestPartitionCounterOperation(ccfg);
-    }
-
-    /**
      * @param ccfg Cache configuration.
      * @throws Exception If failed.
      */
-    protected void doTestPartitionCounterOperation(CacheConfiguration<Object, Object> ccfg)
-        throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9323",
-            ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT);
+    protected void doTestPartitionCounterOperation(CacheConfiguration<Object, Object> ccfg) throws Exception {
+        assertTrue(ccfg.getAtomicityMode() == TRANSACTIONAL || ccfg.getAtomicityMode() == ATOMIC);
 
         ignite(0).createCache(ccfg);
 

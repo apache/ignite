@@ -25,7 +25,7 @@ import org.junit.Test;
 /**
  *
  */
-public class SqlTransactionCommandsWithMvccDisabledSelfTest extends AbstractSchemaSelfTest {
+public class SqlTransactionCommandsSelfTest extends AbstractSchemaSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();

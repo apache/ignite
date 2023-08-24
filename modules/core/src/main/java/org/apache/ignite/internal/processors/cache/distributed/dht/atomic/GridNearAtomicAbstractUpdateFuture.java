@@ -197,7 +197,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
         this.recovery = recovery;
-        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
+        deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         nearEnabled = CU.isNearEnabled(cctx);
 
@@ -298,13 +298,11 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     final void sendSingleRequest(UUID nodeId, GridNearAtomicAbstractUpdateRequest req) {
         if (cctx.localNodeId().equals(nodeId)) {
             cache.updateAllAsyncInternal(cctx.localNode(), req,
-                new GridDhtAtomicCache.UpdateReplyClosure() {
-                    @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
-                        if (syncMode != FULL_ASYNC)
-                            onPrimaryResponse(res.nodeId(), res, false);
-                        else if (res.remapTopologyVersion() != null)
-                            ((GridDhtAtomicCache)cctx.cache()).remapToNewPrimary(req);
-                    }
+                (ignored, res) -> {
+                    if (syncMode != FULL_ASYNC)
+                        onPrimaryResponse(res.nodeId(), res, false);
+                    else if (res.remapTopologyVersion() != null)
+                        ((GridDhtAtomicCache<?, ?>)cctx.cache()).remapToNewPrimary(req);
                 });
         }
         else {
@@ -771,7 +769,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
                 nodeRes.rcvd = true;
 
-                rcvdCnt++;
             }
             else {
                 if (!hasRes) // Do not finish future until primary response received and mapping is known.
@@ -779,8 +776,9 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
                 mappedNodes.put(nodeId, new NodeResult(true));
 
-                rcvdCnt++;
             }
+
+            rcvdCnt++;
 
             return finished();
         }

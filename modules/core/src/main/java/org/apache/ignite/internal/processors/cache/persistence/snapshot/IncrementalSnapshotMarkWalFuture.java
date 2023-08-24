@@ -106,11 +106,11 @@ class IncrementalSnapshotMarkWalFuture extends GridFutureAdapter<WALPointer> {
 
             checkFut.markInitialized();
 
-            checkFut.listen(finish -> {
+            checkFut.listen(() -> {
                 if (isDone())
                     return;
 
-                if (Boolean.FALSE.equals(finish.result())) {
+                if (Boolean.FALSE.equals(checkFut.result())) {
                     onDone(new IgniteCheckedException("Incremental snapshot is inconsistent [id=" + id + ']'));
 
                     return;

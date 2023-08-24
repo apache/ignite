@@ -136,7 +136,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
 
                 assert !correctedMap.isEmpty(); // Check failed on the same data.
 
-                tx.finishFuture().listen(future -> {
+                tx.finishFuture().listen(() -> {
                     TransactionState state = tx.state();
 
                     if (state == TransactionState.COMMITTED) // Explicit tx may fix the values but become rolled back later.

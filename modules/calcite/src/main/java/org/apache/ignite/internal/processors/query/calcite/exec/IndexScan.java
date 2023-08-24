@@ -21,8 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -109,7 +107,6 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
      * @param desc Table descriptor.
      * @param idxFieldMapping Mapping from index keys to row fields.
      * @param idx Physical index.
-     * @param filters Additional filters.
      * @param ranges Index scan bounds.
      */
     public IndexScan(
@@ -118,13 +115,10 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         InlineIndex idx,
         ImmutableIntList idxFieldMapping,
         int[] parts,
-        Predicate<Row> filters,
         RangeIterable<Row> ranges,
-        Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        this(ectx, desc, new TreeIndexWrapper(idx), idxFieldMapping, parts, filters, ranges, rowTransformer,
-            requiredColumns);
+        this(ectx, desc, new TreeIndexWrapper(idx), idxFieldMapping, parts, ranges, requiredColumns);
     }
 
     /**
@@ -132,7 +126,6 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
      * @param desc Table descriptor.
      * @param idxFieldMapping Mapping from index keys to row fields.
      * @param treeIdx Physical index wrapper.
-     * @param filters Additional filters.
      * @param ranges Index scan bounds.
      */
     protected IndexScan(
@@ -141,18 +134,14 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         TreeIndexWrapper treeIdx,
         ImmutableIntList idxFieldMapping,
         int[] parts,
-        Predicate<Row> filters,
         RangeIterable<Row> ranges,
-        Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     ) {
         super(
             ectx,
             desc.rowType(ectx.getTypeFactory(), requiredColumns),
             treeIdx,
-            filters,
-            ranges,
-            rowTransformer
+            ranges
         );
 
         this.desc = desc;

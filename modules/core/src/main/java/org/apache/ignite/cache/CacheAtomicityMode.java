@@ -138,4 +138,14 @@ public enum CacheAtomicityMode {
     @Nullable public static CacheAtomicityMode fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
+
+    /**
+     * TRANSACTIONAL_SNAPSHOT free values.
+     * To be removed on <a href="https://issues.apache.org/jira/browse/IGNITE-13871">MVCC removal</a> finish.
+     *
+     * @return Values.
+     */
+    public static CacheAtomicityMode[] _values() {
+        return new CacheAtomicityMode[] {TRANSACTIONAL, ATOMIC};
+    }
 }

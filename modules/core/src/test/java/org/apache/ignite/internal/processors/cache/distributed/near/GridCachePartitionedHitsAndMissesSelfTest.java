@@ -29,7 +29,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.stream.StreamReceiver;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -91,8 +90,6 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
      */
     @Test
     public void testHitsAndMisses() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.METRICS);
-
         startGrids(GRID_CNT);
 
         awaitPartitionMapExchange();

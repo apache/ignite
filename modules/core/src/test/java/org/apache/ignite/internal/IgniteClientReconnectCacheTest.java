@@ -69,7 +69,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -818,19 +817,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         IgniteInClosure<IgniteCache<Object, Object>> putOp = new CI1<IgniteCache<Object, Object>>() {
             @Override public void apply(IgniteCache<Object, Object> cache) {
-                while (true) {
-                    try {
-                        cache.put(1, 1);
-
-                        break;
-                    }
-                    catch (Exception e) {
-                        if (e.getCause() instanceof IgniteClientDisconnectedException)
-                            throw e;
-                        else
-                            MvccFeatureChecker.assertMvccWriteConflict(e);
-                    }
-                }
+                cache.put(1, 1);
             }
         };
 
@@ -848,7 +835,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         int cnt = 0;
 
-        for (CacheAtomicityMode atomicityMode : CacheAtomicityMode.values()) {
+        for (CacheAtomicityMode atomicityMode : CacheAtomicityMode._values()) {
             for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
                 CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -1416,16 +1403,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         assertNotEquals(id, client.localNode().id());
 
-        while (true) {
-            try {
-                cache.put(1, 1);
-
-                break;
-            }
-            catch (Exception e) {
-                MvccFeatureChecker.assertMvccWriteConflict(e);
-            }
-        }
+        cache.put(1, 1);
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {

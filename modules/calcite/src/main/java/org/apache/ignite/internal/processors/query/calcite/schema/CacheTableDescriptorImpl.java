@@ -59,7 +59,6 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexImpTable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseDataContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
@@ -355,11 +354,8 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         Object key = handler.get(keyField, row);
 
-        if (key != null) {
-            key = replaceDefault(key, descriptors[QueryUtils.KEY_COL]);
-
+        if (key != null)
             return TypeUtils.fromInternal(ectx, key, descriptors[QueryUtils.KEY_COL].storageType());
-        }
 
         // skip _key and _val
         for (int i = 2; i < descriptors.length; i++) {
@@ -368,7 +364,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             if (!desc.field() || !desc.key())
                 continue;
 
-            Object fieldVal = replaceDefault(handler.get(i, row), desc);
+            Object fieldVal = handler.get(i, row);
 
             if (fieldVal != null) {
                 if (key == null)
@@ -397,24 +393,16 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             for (int i = 2; i < descriptors.length; i++) {
                 final CacheColumnDescriptor desc = descriptors[i];
 
-                Object fieldVal = replaceDefault(handler.get(i, row), desc);
+                Object fieldVal = handler.get(i, row);
 
                 if (desc.field() && !desc.key() && fieldVal != null)
                     desc.set(val, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             }
         }
-        else {
-            val = replaceDefault(val, descriptors[QueryUtils.VAL_COL]);
-
+        else
             val = TypeUtils.fromInternal(ectx, val, descriptors[QueryUtils.VAL_COL].storageType());
-        }
 
         return val;
-    }
-
-    /** */
-    private Object replaceDefault(Object val, ColumnDescriptor desc) {
-        return val == RexImpTable.DEFAULT_VALUE_PLACEHOLDER ? desc.defaultValue() : val;
     }
 
     /** */

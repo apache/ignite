@@ -1198,7 +1198,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                 return null;
             }, 6, "consume-starter");
 
-            starterFut.listen((fut) -> stop.set(true));
+            starterFut.listen(() -> stop.set(true));
 
             IgniteInternalFuture<?> stopperFut = multithreadedAsync(() -> {
                 while (!stop.get() || !queue.isEmpty()) {

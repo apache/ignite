@@ -484,12 +484,12 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                             IgniteInternalFuture<Boolean> lastFut = ctx.lastRemoveAllJobFut().get();
 
                             if (lastFut != locFut) {
-                                lastFut.listen((IgniteInClosure<IgniteInternalFuture<Boolean>>)fut -> {
+                                lastFut.listen(() -> {
                                     if (lastFut.error() != null)
                                         locFut.onDone(lastFut.error());
                                     else {
                                         try {
-                                            completeWithResult(fut.get());
+                                            completeWithResult(lastFut.get());
                                         }
                                         catch (IgniteCheckedException ignored) {
                                             // Should be never thrown.
