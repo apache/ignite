@@ -1571,7 +1571,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             long nextIdx = ptr.index() + 1;
 
-            try (SegmentIO fileIO = new SegmentIO(nextIdx, ioFactory.create(segmentFile(nextIdx)))) {
+            try (SegmentIO fileIO = new SegmentIO(nextIdx, ioFactory.create(segmentFile(nextIdx), READ))) {
                 readSegmentHeader(fileIO, segmentFileInputFactory);
             }
 
