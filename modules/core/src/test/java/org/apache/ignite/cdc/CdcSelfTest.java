@@ -824,14 +824,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         addData(cache, 0, 3);
 
-        UserCdcConsumer cnsmr = new UserCdcConsumer();
-
-        // Cdc application must fail due to skipped data.
-        checkCdcAppFailed(ign, cnsmr, 1);
-
-        ign.compute().execute(CdcDeleteLostSegmentsTask.class, new VisorTaskArgument<>(ign.localNode().id(), false));
-
-        checkCdcApp(ign, cnsmr, 3);
+        checkCdcAppFailed(ign, 1, 3);
     }
 
     /** */
@@ -870,14 +863,7 @@ public class CdcSelfTest extends AbstractCdcTest {
         primaryKeys(cache0, 3).forEach(k -> cache0.put(k, createUser(k)));
         primaryKeys(cache1, 3).forEach(k -> cache1.put(k, createUser(k)));
 
-        UserCdcConsumer cnsmr0 = new UserCdcConsumer();
-
-        checkCdcAppFailed(ign0, cnsmr0, 1);
-
-        ign0.compute().execute(CdcDeleteLostSegmentsTask.class,
-            new VisorTaskArgument<>(F.nodeIds(ign0.cluster().nodes()), false));
-
-        checkCdcApp(ign0, cnsmr0, 3);
+        checkCdcAppFailed(ign0, 1, 3);
         checkCdcApp(ign1, new UserCdcConsumer(), 3);
     }
 
@@ -914,31 +900,30 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         addData(cache, 0, 4);
 
-        UserCdcConsumer cnsmr = new UserCdcConsumer();
-
-        checkCdcAppFailed(ign, cnsmr, 1);
-
-        ign.compute().execute(CdcDeleteLostSegmentsTask.class, new VisorTaskArgument<>(ign.localNode().id(), false));
-
-        checkCdcApp(ign, cnsmr, 4);
+        checkCdcAppFailed(ign, 1, persistenceEnabled ? 4 : 7);
     }
 
     /** */
-    void checkCdcAppFailed(Ignite ign, UserCdcConsumer cnsmr, int expSizeBefore) throws Exception {
-        cnsmr.clear();
+    private void checkCdcAppFailed(Ignite ign, int expSizeBeforeFail, int expSizeAfterFail) throws Exception {
+        UserCdcConsumer cnsmr = new UserCdcConsumer();
 
         IgniteInternalFuture<?> cdcFut = runAsync(createCdc(cnsmr, getConfiguration(ign.name())));
 
-        waitForSize(expSizeBefore, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
+        waitForSize(expSizeBeforeFail, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
 
         // Cdc application must fail due to skipped data.
         assertThrowsAnyCause(log, cdcFut::get, IgniteException.class, "CDC disabled on node.");
+
+        ign.compute().execute(CdcDeleteLostSegmentsTask.class,
+            new VisorTaskArgument<>(F.nodeIds(ign.cluster().nodes()), false));
+
+        cnsmr.clear();
+
+        checkCdcApp(ign, cnsmr, expSizeAfterFail);
     }
 
     /** */
-    void checkCdcApp(Ignite ign, UserCdcConsumer cnsmr, int expSize) throws Exception {
-        cnsmr.clear();
-
+    private void checkCdcApp(Ignite ign, UserCdcConsumer cnsmr, int expSize) throws Exception {
         IgniteInternalFuture<?> cdcFut = runAsync(createCdc(cnsmr, getConfiguration(ign.name())));
 
         waitForSize(expSize, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
