@@ -121,11 +121,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMvcc() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean detached() {
         return false;
     }

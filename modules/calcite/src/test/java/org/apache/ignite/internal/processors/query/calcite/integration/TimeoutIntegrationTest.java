@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -39,6 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGr
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
@@ -144,14 +143,12 @@ public class TimeoutIntegrationTest extends AbstractBasicIntegrationTest {
                 @Override public <Row> Iterable<Row> scan(
                     ExecutionContext<Row> execCtx,
                     ColocationGroup grp,
-                    Predicate<Row> filter,
-                    Function<Row, Row> rowTransformer,
                     @Nullable ImmutableBitSet usedColumns
                 ) {
-                    return super.scan(execCtx, grp, r -> {
+                    return F.iterator(super.scan(execCtx, grp, usedColumns), r -> {
                         doSleep(SLEEP_PER_ROW);
-                        return true;
-                    }, rowTransformer, usedColumns);
+                        return r;
+                    }, true);
                 }
             };
 

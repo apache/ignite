@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.MemoryQuo
 import org.apache.ignite.internal.processors.query.calcite.integration.MetadataIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryEngineConfigurationIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryMetadataIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.QueryWithPartitionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.RunningQueriesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SearchSargOnIndexIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ServerStatisticsIntegrationTest;
@@ -117,6 +118,7 @@ import org.junit.runners.Suite;
     SearchSargOnIndexIntegrationTest.class,
     KeepBinaryIntegrationTest.class,
     LocalQueryIntegrationTest.class,
+    QueryWithPartitionsIntegrationTest.class,
     QueryMetadataIntegrationTest.class,
     MemoryQuotasIntegrationTest.class,
     LocalDateTimeSupportTest.class,

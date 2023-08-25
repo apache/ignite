@@ -23,8 +23,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
@@ -171,9 +169,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .build()) {
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
-                ColocationGroup group,
-                Predicate<Row> filter,
-                Function<Row, Row> transformer,
+                ColocationGroup grp,
                 ImmutableBitSet requiredColumns
             ) {
                 return Arrays.asList(
@@ -199,9 +195,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .build()) {
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
-                ColocationGroup group,
-                Predicate<Row> filter,
-                Function<Row, Row> transformer,
+                ColocationGroup grp,
                 ImmutableBitSet requiredColumns
             ) {
                 return Arrays.asList(
@@ -257,27 +251,22 @@ public class PlannerTest extends AbstractPlannerTest {
                 .build()) {
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
-                ColocationGroup group,
-                Predicate<Row> filter,
-                Function<Row, Row> rowTransformer,
+                ColocationGroup grp,
                 ImmutableBitSet requiredColumns
             ) {
+                List<Row> res = new ArrayList<>();
                 List<Row> checkRes0 = new ArrayList<>();
 
                 for (int i = 0; i < 10; ++i) {
                     int col = ThreadLocalRandom.current().nextInt(1_000);
 
-                    Row r = row(execCtx, requiredColumns, col, col);
-
-                    if (rowTransformer != null)
-                        r = rowTransformer.apply(r);
-
-                    checkRes0.add(r);
+                    res.add(row(execCtx, requiredColumns, col, col));
+                    checkRes0.add(row(execCtx, null, col + col));
                 }
 
                 checkRes.set(checkRes0);
 
-                return checkRes0;
+                return res;
             }
 
             @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {

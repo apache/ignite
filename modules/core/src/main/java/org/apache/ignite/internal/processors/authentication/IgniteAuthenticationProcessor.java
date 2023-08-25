@@ -183,7 +183,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         discoMgr.setCustomEventListener(UserAcceptedMessage.class, new UserAcceptedListener());
 
-        discoMgr.localJoinFuture().listen(fut -> onLocalJoin());
+        discoMgr.localJoinFuture().listen(this::onLocalJoin);
 
         discoLsnr = (evt, discoCache) -> {
             if (ctx.isStopping())

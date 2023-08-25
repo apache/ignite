@@ -26,8 +26,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.calcite.rel.RelCollation;
@@ -167,8 +165,6 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
                 ColocationGroup grp,
-                Predicate<Row> filter,
-                Function<Row, Row> rowTransformer,
                 @Nullable ImmutableBitSet usedColumns
             ) {
                 return new Iterable<Row>() {
@@ -398,8 +394,6 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
                 ColocationGroup grp,
-                Predicate<Row> filter,
-                Function<Row, Row> rowTransformer,
                 @Nullable ImmutableBitSet usedColumns
             ) {
                 initLatch.countDown();

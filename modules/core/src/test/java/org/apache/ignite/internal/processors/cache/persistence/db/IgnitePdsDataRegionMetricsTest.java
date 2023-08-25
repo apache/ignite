@@ -296,7 +296,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture chpBeginFut = psMgr.wakeupForCheckpoint(null);
 
-        chpBeginFut.listen((f) -> {
+        chpBeginFut.listen(() -> {
             load(ig);
 
             metricsResult.onDone(new T2<>(

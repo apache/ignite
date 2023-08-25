@@ -30,7 +30,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -42,9 +41,6 @@ public class IgniteCacheStoreCollectionTest extends GridCommonAbstractTest {
 
     /** */
     private static final String CACHE2 = "cache2";
-
-    /** */
-    private static final String CACHE3 = "cache3";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -58,11 +54,7 @@ public class IgniteCacheStoreCollectionTest extends GridCommonAbstractTest {
         ccfg2.setAtomicityMode(TRANSACTIONAL);
         ccfg2.setWriteSynchronizationMode(FULL_SYNC);
 
-        CacheConfiguration<Object, Object> ccfg3 = new CacheConfiguration<>(CACHE3);
-        ccfg3.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-        ccfg3.setWriteSynchronizationMode(FULL_SYNC);
-
-        cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3);
+        cfg.setCacheConfiguration(ccfg1, ccfg2);
 
         return cfg;
     }
@@ -81,11 +73,9 @@ public class IgniteCacheStoreCollectionTest extends GridCommonAbstractTest {
     public void testStoreMap() throws Exception {
         IgniteCache<Object, Object> cache1 = ignite(0).cache(CACHE1);
         IgniteCache<Object, Object> cache2 = ignite(0).cache(CACHE2);
-        IgniteCache<Object, Object> cache3 = ignite(0).cache(CACHE3);
 
         checkStoreMap(cache1);
         checkStoreMap(cache2);
-        checkStoreMap(cache3);
     }
 
     /**

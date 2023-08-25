@@ -25,8 +25,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -108,8 +106,6 @@ public class KillQueryCommandDdlIntegrationTest extends AbstractDdlIntegrationTe
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
                 ColocationGroup grp,
-                Predicate<Row> filter,
-                Function<Row, Row> rowTransformer,
                 @Nullable ImmutableBitSet usedColumns
             ) {
                 return new Iterable<Row>() {

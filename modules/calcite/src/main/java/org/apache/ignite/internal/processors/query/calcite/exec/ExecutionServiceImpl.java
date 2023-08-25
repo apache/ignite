@@ -75,8 +75,10 @@ import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
@@ -564,6 +566,17 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         List<Fragment> fragments = plan.fragments();
 
+        if (!F.isEmpty(qry.context().partitions())) {
+            fragments = Commons.transform(fragments, f -> {
+                try {
+                    return f.filterByPartitions(qry.context().partitions());
+                }
+                catch (ColocationMappingException e) {
+                    throw new FragmentMappingException("Failed to calculate physical distribution", f, f.root(), e);
+                }
+            });
+        }
+
         // Local execution
         Fragment fragment = F.first(fragments);
 
@@ -576,7 +589,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             List<UUID> nodes = mapping.nodeIds();
 
-            assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(localNodeId());
+            assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(localNodeId())
+                    : "nodes=" + nodes + ", localNode=" + localNodeId();
         }
 
         long timeout = qry.remainingTime();

@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -116,9 +115,6 @@ public class CachePutIfAbsentTest extends GridCommonAbstractTest {
 
                     for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                         for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                            if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
-                                continue;
-
                             try (Transaction tx = txs.txStart(concurrency, isolation)) {
                                 Object old = cache.getAndPutIfAbsent(key, 3);
 

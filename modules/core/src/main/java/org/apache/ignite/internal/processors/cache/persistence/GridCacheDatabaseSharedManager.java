@@ -1203,6 +1203,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             chpBufSize = cacheSize;
         }
 
+        // TODO IGNITE-20138 : Should be actual checkpoint lock checker, related to the checkpointer for this data
+        // region. Like LightweightCheckpointManager#checkpointer for the defragmentation.
+        CheckpointLockStateChecker chpLockChecker = this;
+
         PageMemoryImpl pageMem = new PageMemoryImpl(
             wrapMetricsPersistentMemoryProvider(memProvider, regMetrics),
             calculateFragmentSizes(
@@ -1220,10 +1224,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 // Write page to disk.
                 pageMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag, true);
 
+                // TODO IGNITE-20138 : Should be actual checkpointer, related to this data rageion. Like
+                // LightweightCheckpointManager#checkpointer for the defragmentation.
                 getCheckpointer().currentProgress().updateEvictedPages(1);
             },
             trackable,
-            this,
+            chpLockChecker,
             regMetrics,
             regCfg,
             resolveThrottlingPolicy(),
@@ -1482,7 +1488,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 );
 
                 if (rebuildFut != null)
-                    rebuildFut.listen(fut -> rebuildIndexesCompleteCntr.countDown(true));
+                    rebuildFut.listen(() -> rebuildIndexesCompleteCntr.countDown(true));
                 else
                     rebuildIndexesCompleteCntr.countDown(false);
             }
