@@ -25,8 +25,6 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.junit.Test;
 
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-
 /**
  * Planner test for index hints.
  */
