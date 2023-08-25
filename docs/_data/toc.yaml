@@ -272,6 +272,88 @@
       url: code-deployment/deploying-user-code
     - title: Peer Class Loading
       url: code-deployment/peer-class-loading
+- title: Machine Learning
+  items:
+    - title: Machine Learning
+      url: machine-learning/machine-learning
+    - title: Partition Based Dataset
+      url: machine-learning/partition-based-dataset
+    - title: Updating Trained Models
+      url: machine-learning/updating-trained-models
+    - title: Binary Classification
+      items:
+        - title: Introduction
+          url: machine-learning/binary-classification/introduction
+        - title: Linear SVM (Support Vector Machine)
+          url: machine-learning/binary-classification/linear-svm
+        - title: Decision Trees
+          url: machine-learning/binary-classification/decision-trees
+        - title: Multilayer Perceptron
+          url: machine-learning/binary-classification/multilayer-perceptron
+        - title: Logistic Regression
+          url: machine-learning/binary-classification/logistic-regression
+        - title: k-NN Classification
+          url: machine-learning/binary-classification/knn-classification
+        - title: ANN (Approximate Nearest Neighbor)
+          url: machine-learning/binary-classification/ann
+        - title: Naive Bayes
+          url: machine-learning/binary-classification/naive-bayes
+    - title: Regression
+      items:
+        - title: Introduction
+          url: machine-learning/regression/introduction
+        - title: Linear Regression
+          url: machine-learning/regression/linear-regression
+        - title: Decision Trees Regression
+          url: machine-learning/regression/decision-trees-regression
+        - title: k-NN Regression
+          url: machine-learning/regression/knn-regression
+    - title: Clustering
+      items:
+        - title: Introduction
+          url: machine-learning/clustering/introduction
+        - title: K-Means Clustering
+          url: machine-learning/clustering/k-means-clustering
+        - title: Gaussian mixture (GMM)
+          url: machine-learning/clustering/gaussian-mixture
+    - title: Preprocessing
+      url: machine-learning/preprocessing
+    - title: Model Selection
+      items:
+        - title: Introduction
+          url: machine-learning/model-selection/introduction
+        - title: Evaluator
+          url: machine-learning/model-selection/evaluator
+        - title: Split the dataset on test and train datasets
+          url: machine-learning/model-selection/split-the-dataset-on-test-and-train-datasets
+        - title: Hyper-parameter tuning
+          url: machine-learning/model-selection/hyper-parameter-tuning
+        - title: Pipeline API
+          url: machine-learning/model-selection/pipeline-api
+    - title: Multiclass Classification
+      url: machine-learning/multiclass-classification
+    - title: Ensemble Methods
+      items:
+        - title:
+          url: machine-learning/ensemble-methods/introduction
+        - title: Stacking
+          url: machine-learning/ensemble-methods/stacking
+        - title: Bagging
+          url: machine-learning/ensemble-methods/baggin
+        - title: Random Forest
+          url: machine-learning/ensemble-methods/random-forest
+        - title: Gradient Boosting
+          url: machine-learning/ensemble-methods/gradient-boosting
+    - title: Recommendation Systems
+      url: machine-learning/recommendation-systems
+    - title: Importing Model
+      items:
+        - title: Introduction
+          url: machine-learning/importing-model/introduction
+        - title: Import Model from XGBoost
+          url: machine-learning/importing-model/model-import-from-gxboost
+        - title: Import Model from Apache Spark
+          url: machine-learning/importing-model/model-import-from-apache-spark
 - title: Using Continuous Queries
   url: key-value-api/continuous-queries
 - title: Using Ignite Services
@@ -431,76 +513,6 @@
           url: extensions-and-integrations/ignite-for-spark/spark-shell
         - title: Troubleshooting
           url: extensions-and-integrations/ignite-for-spark/troubleshooting
-    - title: Machine Learning
-      items:
-        - title: Machine Learning
-          url: extensions-and-integrations/machine-learning/machine-learning
-        - title: Partition Based Dataset
-          url: extensions-and-integrations/machine-learning/partition-based-dataset
-        - title: Updating Trained Models
-          url: extensions-and-integrations/machine-learning/updating-trained-models
-        - title: Binary Classification&#58; Introduction
-          url: extensions-and-integrations/machine-learning/binary-classification/introduction
-        - title: Binary Classification&#58; Linear SVM (Support Vector Machine)
-          url: extensions-and-integrations/machine-learning/binary-classification/linear-svm
-        - title: Binary Classification&#58; Decision Trees
-          url: extensions-and-integrations/machine-learning/binary-classification/decision-trees
-        - title: Binary Classification&#58; Multilayer Perceptron
-          url: extensions-and-integrations/machine-learning/binary-classification/multilayer-perceptron
-        - title: Binary Classification&#58; Logistic Regression
-          url: extensions-and-integrations/machine-learning/binary-classification/logistic-regression
-        - title: Binary Classification&#58; k-NN
-          url: extensions-and-integrations/machine-learning/binary-classification/knn-classification
-        - title: Binary Classification&#58; ANN (Approximate Nearest Neighbor)
-          url: extensions-and-integrations/machine-learning/binary-classification/ann
-        - title: Binary Classification&#58; Naive Bayes
-          url: extensions-and-integrations/machine-learning/binary-classification/naive-bayes
-        - title: Regression&#58; Introduction
-          url: extensions-and-integrations/machine-learning/regression/introduction
-        - title: Regression&#58; Linear
-          url: extensions-and-integrations/machine-learning/regression/linear-regression
-        - title: Regression&#58; Decision Trees
-          url: extensions-and-integrations/machine-learning/regression/decision-trees-regression
-        - title: Regression&#58; k-NN
-          url: extensions-and-integrations/machine-learning/regression/knn-regression
-        - title: Clustering&#58; Introduction
-          url: extensions-and-integrations/machine-learning/clustering/introduction
-        - title: Clustering&#58; K-Means
-          url: extensions-and-integrations/machine-learning/clustering/k-means-clustering
-        - title: Clustering&#58; Gaussian mixture (GMM)
-          url: extensions-and-integrations/machine-learning/clustering/gaussian-mixture
-        - title: Preprocessing
-          url: extensions-and-integrations/machine-learning/preprocessing
-        - title: Model Selection&#58; Introduction
-          url: extensions-and-integrations/machine-learning/model-selection/introduction
-        - title: Model Selection&#58; Evaluator
-          url: extensions-and-integrations/machine-learning/model-selection/evaluator
-        - title: Model Selection&#58; Split the dataset on test and train datasets
-          url: extensions-and-integrations/machine-learning/model-selection/split-the-dataset-on-test-and-train-datasets
-        - title: Model Selection&#58; Hyper-parameter tuning
-          url: extensions-and-integrations/machine-learning/model-selection/hyper-parameter-tuning
-        - title: Model Selection&#58; Pipeline API
-          url: extensions-and-integrations/machine-learning/model-selection/pipeline-api
-        - title: Multiclass Classification
-          url: extensions-and-integrations/machine-learning/multiclass-classification
-        - title: Ensemble Methods&#58; Introduction
-          url: extensions-and-integrations/machine-learning/ensemble-methods/introduction
-        - title: Ensemble Methods&#58; Stacking
-          url: extensions-and-integrations/machine-learning/ensemble-methods/stacking
-        - title: Ensemble Methods&#58; Bagging
-          url: extensions-and-integrations/machine-learning/ensemble-methods/baggin
-        - title: Ensemble Methods&#58; Random Forest
-          url: extensions-and-integrations/machine-learning/ensemble-methods/random-forest
-        - title: Ensemble Methods&#58; Gradient Boosting
-          url: extensions-and-integrations/machine-learning/ensemble-methods/gradient-boosting
-        - title: Recommendation Systems
-          url: extensions-and-integrations/machine-learning/recommendation-systems
-        - title: Importing Model&#58; Introduction
-          url: extensions-and-integrations/machine-learning/importing-model/introduction
-        - title: Importing Model&#58; Import Model from XGBoost
-          url: extensions-and-integrations/machine-learning/importing-model/model-import-from-gxboost
-        - title: Importing Model&#58; Import Model from Apache Spark
-          url: extensions-and-integrations/machine-learning/importing-model/model-import-from-apache-spark
     - title: MyBatis L2 Cache
       url: extensions-and-integrations/mybatis-l2-cache
     - title: Streaming
