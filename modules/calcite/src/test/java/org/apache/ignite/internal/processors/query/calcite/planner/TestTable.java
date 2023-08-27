@@ -142,8 +142,7 @@ public class TestTable implements IgniteCacheTable {
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        return IgniteLogicalTableScan.create(cluster, cluster.traitSet(), relOptTbl, Collections.emptyList(), proj,
-            cond, requiredColumns);
+        return IgniteLogicalTableScan.create(cluster, cluster.traitSet(), relOptTbl, proj, cond, requiredColumns);
     }
 
     /** {@inheritDoc} */

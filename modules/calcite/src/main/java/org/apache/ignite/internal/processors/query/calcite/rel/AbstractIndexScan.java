@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -26,6 +25,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelWriter;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
@@ -65,6 +65,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
     protected AbstractIndexScan(
         RelOptCluster cluster,
         RelTraitSet traitSet,
+        List<RelHint> hints,
         RelOptTable table,
         String idxName,
         @Nullable List<RexNode> proj,
@@ -72,7 +73,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
         @Nullable List<SearchBounds> searchBounds,
         @Nullable ImmutableBitSet reqColumns
     ) {
-        super(cluster, traitSet, Collections.emptyList(), table, proj, cond, reqColumns);
+        super(cluster, traitSet, hints, table, proj, cond, reqColumns);
 
         this.idxName = idxName;
         this.searchBounds = searchBounds;

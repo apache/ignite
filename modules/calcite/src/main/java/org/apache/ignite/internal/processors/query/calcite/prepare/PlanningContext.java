@@ -252,7 +252,7 @@ public final class PlanningContext implements Context {
     }
 
     /**
-     * Stores skipped hint and the reason.
+     * Stores skipped hint and the reason. If {@link #log} is not {@code Null}, logs as a warning.
      */
     public void skippedHint(RelNode rel, RelHint hint, @Nullable String optionKey, @Nullable String optionValue,
         String reason) {
