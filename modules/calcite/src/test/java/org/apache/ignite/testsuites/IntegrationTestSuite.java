@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.query.calcite.integration.Functions
 import org.apache.ignite.internal.processors.query.calcite.integration.HashSpoolIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexRebuildIntegrationTest;
-import org.apache.ignite.internal.processors.query.calcite.integration.IndexScanlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexSpoolIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IntervalTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.JoinIntegrationTest;
@@ -103,7 +102,6 @@ import org.junit.runners.Suite;
     DataTypesTest.class,
     IndexSpoolIntegrationTest.class,
     HashSpoolIntegrationTest.class,
-    IndexScanlIntegrationTest.class,
     SetOpIntegrationTest.class,
     UnstableTopologyTest.class,
     JoinCommuteRulesTest.class,
