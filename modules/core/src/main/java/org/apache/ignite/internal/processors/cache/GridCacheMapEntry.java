@@ -1546,7 +1546,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
 
             if (dumpLsnr != null)
-                dumpLsnr.beforeChange(cctx, key, oldValPresent ? oldVal : null, extras.expireTime());
+                dumpLsnr.beforeChange(cctx, key, old, extras.expireTime());
 
             // Detach value before index update.
             val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
@@ -1744,7 +1744,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
 
             if (dumpLsnr != null)
-                dumpLsnr.beforeChange(cctx, key, oldValPresent ? oldVal : null, extras.expireTime());
+                dumpLsnr.beforeChange(cctx, key, old, extras.expireTime());
 
             removeValue();
 

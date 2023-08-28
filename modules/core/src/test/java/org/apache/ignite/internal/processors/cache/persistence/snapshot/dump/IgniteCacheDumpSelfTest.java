@@ -104,8 +104,10 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
         IgniteInternalFuture<Object> dumpFut = GridTestUtils.runAsync(() -> createDump(ign));
 
-        GridTestUtils.waitForCondition(() -> snpExec.getQueue().size() > 1, 1_000);
+        // Waiting while dump will be setup: task planned after change listener set.
+        GridTestUtils.waitForCondition(() -> snpExec.getQueue().size() > 1, getTestTimeout());
 
+        // This operations will be catched by change listeners. Old value must be stored in dump.
         op.accept(ign.cache(DEFAULT_CACHE_NAME));
 
         latch.countDown();
