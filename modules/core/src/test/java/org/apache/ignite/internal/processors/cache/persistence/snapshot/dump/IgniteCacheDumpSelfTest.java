@@ -19,13 +19,18 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.platform.model.Key;
+import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
 import static org.junit.Assume.assumeTrue;
@@ -49,42 +54,110 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
     /** */
     @Test
-    public void testWithConcurrentInsert() throws Exception {
-        doTestWithOperations(cache -> {
+    public void testWithConcurrentInserts() throws Exception {
+        doTestConcurrentOperations(ignite -> {
             for (int i = KEYS_CNT; i < KEYS_CNT + 3; i++) {
-                assertFalse(cache.containsKey(i));
+                assertFalse(ignite.cache(DEFAULT_CACHE_NAME).containsKey(i));
+                assertFalse(ignite.cache(CACHE_0).containsKey(i));
+                assertFalse(ignite.cache(CACHE_1).containsKey(new Key(i)));
 
-                cache.put(i, i);
+                insertOrUpdate(ignite, i);
+            }
+
+            for (int i = KEYS_CNT + 3; i < KEYS_CNT + 6; i++) {
+                assertFalse(cli.cache(DEFAULT_CACHE_NAME).containsKey(i));
+                assertFalse(cli.cache(CACHE_0).containsKey(i));
+                assertFalse(cli.cache(CACHE_1).containsKey(new Key(i)));
+
+                insertOrUpdate(cli, i);
             }
         });
     }
 
     /** */
     @Test
-    public void testWithConcurrentUpdate() throws Exception {
-        doTestWithOperations(cache -> {
+    public void testWithConcurrentUpdates() throws Exception {
+        doTestConcurrentOperations(ignite -> {
             for (int i = 0; i < 3; i++) {
-                assertTrue(cache.containsKey(i));
+                assertTrue(ignite.cache(DEFAULT_CACHE_NAME).containsKey(i));
+                assertTrue(ignite.cache(CACHE_0).containsKey(i));
+                assertTrue(ignite.cache(CACHE_1).containsKey(new Key(i)));
 
-                cache.put(i, i + 1);
+                insertOrUpdate(ignite, i);
+            }
+
+            for (int i = 3; i < 6; i++) {
+                assertTrue(cli.cache(DEFAULT_CACHE_NAME).containsKey(i));
+                assertTrue(cli.cache(CACHE_0).containsKey(i));
+                assertTrue(cli.cache(CACHE_1).containsKey(new Key(i)));
+
+                insertOrUpdate(cli, i);
             }
         });
     }
 
     /** */
     @Test
-    public void testWithConcurrentRemove() throws Exception {
-        doTestWithOperations(cache -> {
-            for (int i = 0; i < 3; i++) {
-                assertTrue(cache.containsKey(i));
+    public void testWithConcurrentRemovals() throws Exception {
+        doTestConcurrentOperations(ignite -> {
+            for (int i = 0; i < 3; i++)
+                remove(ignite, i);
 
-                cache.remove(i);
-            }
+            for (int i = 3; i < 6; i++)
+                remove(cli, i);
         });
     }
 
     /** */
-    private void doTestWithOperations(Consumer<IgniteCache<Object, Object>> op) throws Exception {
+    private void insertOrUpdate(IgniteEx ignite, int i) {
+        ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
+
+        IgniteCache<Object, Object> cache = ignite.cache(CACHE_0);
+        IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_1);
+
+        IntConsumer moreInserts = j -> {
+            cache.put(j, USER_FACTORY.apply(j));
+            cache1.put(new Key(j), new Value(String.valueOf(j)));
+        };
+
+        if (mode == CacheAtomicityMode.TRANSACTIONAL) {
+            try (Transaction tx = ignite.transactions().txStart()) {
+                moreInserts.accept(i);
+
+                tx.commit();
+            }
+        }
+        else
+            moreInserts.accept(i);
+    }
+
+    /** */
+    private void remove(IgniteEx ignite, int i) {
+        assertTrue(ignite.cache(DEFAULT_CACHE_NAME).containsKey(i));
+
+        ignite.cache(DEFAULT_CACHE_NAME).remove(i);
+
+        IgniteCache<Object, Object> cache = ignite.cache(CACHE_0);
+        IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_1);
+
+        IntConsumer moreRemovals = j -> {
+            cache.remove(j);
+            cache1.remove(new Key(j));
+        };
+
+        if (mode == CacheAtomicityMode.TRANSACTIONAL) {
+            try (Transaction tx = ignite.transactions().txStart()) {
+                moreRemovals.accept(i);
+
+                tx.commit();
+            }
+        }
+        else
+            moreRemovals.accept(i);
+    }
+
+    /** */
+    private void doTestConcurrentOperations(Consumer<IgniteEx> op) throws Exception {
         assumeTrue(nodes == 1);
 
         IgniteEx ign = startGridAndFillCaches();
@@ -108,7 +181,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
         GridTestUtils.waitForCondition(() -> snpExec.getQueue().size() > 1, getTestTimeout());
 
         // This operations will be catched by change listeners. Old value must be stored in dump.
-        op.accept(ign.cache(DEFAULT_CACHE_NAME));
+        op.accept(ign);
 
         latch.countDown();
 

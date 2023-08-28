@@ -108,6 +108,9 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
+    protected IgniteEx cli;
+
+    /** */
     protected static final IntFunction<User> USER_FACTORY = i ->
         new User(i, ACL.values()[i % ACL.values().length], new Role("Role" + i, SUPER));
 
@@ -137,6 +140,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     /** */
     protected IgniteEx startGridAndFillCaches() throws Exception {
         IgniteEx ign = (IgniteEx)startGridsMultiThreaded(nodes);
+        cli = startClientGrid(nodes);
 
         ign.cluster().state(ClusterState.ACTIVE);
 
