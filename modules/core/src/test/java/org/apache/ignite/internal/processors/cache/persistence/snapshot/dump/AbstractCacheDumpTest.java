@@ -25,12 +25,17 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import javax.management.DynamicMBean;
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -38,8 +43,11 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.ACL;
@@ -54,6 +62,8 @@ import org.junit.runners.Parameterized;
 import static org.apache.ignite.internal.management.api.CommandMBean.INVOKE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_DUMPS_DIRECTORY;
 import static org.apache.ignite.platform.model.AccessLevel.SUPER;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 @RunWith(Parameterized.class)
@@ -131,45 +141,86 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setDataStorageConfiguration(
-            new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistence))
-        );
+        return super.getConfiguration(igniteInstanceName)
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistence)))
+            .setCacheConfiguration(
+                new CacheConfiguration<>()
+                    .setName(DEFAULT_CACHE_NAME)
+                    .setBackups(backups)
+                    .setAtomicityMode(mode),
+                new CacheConfiguration<>()
+                    .setGroupName(GRP)
+                    .setName(CACHE_0)
+                    .setBackups(backups)
+                    .setAtomicityMode(mode),
+                new CacheConfiguration<>()
+                    .setGroupName(GRP)
+                    .setName(CACHE_1)
+                    .setBackups(backups)
+                    .setAtomicityMode(mode)
+            );
     }
 
     /** */
     protected IgniteEx startGridAndFillCaches() throws Exception {
         IgniteEx ign = (IgniteEx)startGridsMultiThreaded(nodes);
+
         cli = startClientGrid(nodes);
 
         ign.cluster().state(ClusterState.ACTIVE);
 
-        IgniteCache<Object, Object> cache = ign.createCache(new CacheConfiguration<>()
-            .setName(DEFAULT_CACHE_NAME)
-            .setBackups(backups)
-            .setAtomicityMode(mode)
-        );
+        putData(ign.cache(DEFAULT_CACHE_NAME), ign.cache(CACHE_0), ign.cache(CACHE_1));
 
-        IgniteCache<Object, Object> grpCache0 = ign.createCache(new CacheConfiguration<>()
-            .setGroupName(GRP)
-            .setName(CACHE_0)
-            .setBackups(backups)
-            .setAtomicityMode(mode)
-        );
-        IgniteCache<Object, Object> grpCache1 = ign.createCache(new CacheConfiguration<>()
-            .setGroupName(GRP)
-            .setName(CACHE_1)
-            .setBackups(backups)
-            .setAtomicityMode(mode)
-        );
+        return ign;
+    }
 
+    /** */
+    protected T2<CountDownLatch, IgniteInternalFuture<?>> runDumpAsyncAndStopBeforeStart() throws IgniteInterruptedCheckedException {
+        CountDownLatch latch = new CountDownLatch(1);
+
+        List<Ignite> ignites = Ignition.allGrids();
+
+        for (Ignite ign : ignites) {
+            ((IgniteEx)ign).context().pools().getSnapshotExecutorService().submit(() -> {
+                try {
+                    latch.await();
+                }
+                catch (InterruptedException e) {
+                    throw new IgniteException(e);
+                }
+            });
+        }
+
+        IgniteInternalFuture<Object> dumpFut = runAsync(() -> createDump((IgniteEx)ignites.get(0)));
+
+        // Waiting while dump will be setup: task planned after change listener set.
+        assertTrue(waitForCondition(() -> {
+            for (Ignite ign : ignites) {
+                if (ign.configuration().isClientMode() == Boolean.TRUE)
+                    continue;
+
+                if (((ThreadPoolExecutor)((IgniteEx)ign).context().pools().getSnapshotExecutorService()).getTaskCount() <= 1)
+                    return false;
+            }
+
+            return true;
+        }, 10 * 1000));
+
+        return new T2(latch, dumpFut);
+    }
+
+    /** */
+    protected void putData(
+        IgniteCache<Object, Object> cache,
+        IgniteCache<Object, Object> grpCache0,
+        IgniteCache<Object, Object> grpCache1
+    ) {
         IntStream.range(0, KEYS_CNT).forEach(i -> {
             cache.put(i, i);
             grpCache0.put(i, USER_FACTORY.apply(i));
             grpCache1.put(new Key(i), new Value(String.valueOf(i)));
         });
-
-        return ign;
     }
 
     /** */

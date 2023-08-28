@@ -3745,6 +3745,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (mvccExtras() != null)
             return false;
 
+        DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
+
+        if (dumpLsnr != null)
+            dumpLsnr.beforeChange(cctx, key, expiredVal, CU.TTL_MINIMUM);
+
         if (cctx.deferredDelete() && !detached() && !isInternal()) {
             if (!deletedUnlocked() && !isStartVersion()) {
                 update(null, 0L, 0L, ver, true);

@@ -21,19 +21,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.platform.model.Value;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-
-import static org.junit.Assume.assumeTrue;
 
 /** */
 public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
@@ -158,34 +154,16 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
     /** */
     private void doTestConcurrentOperations(Consumer<IgniteEx> op) throws Exception {
-        assumeTrue(nodes == 1);
-
         IgniteEx ign = startGridAndFillCaches();
 
-        CountDownLatch latch = new CountDownLatch(1);
-
-        IgniteThreadPoolExecutor snpExec = (IgniteThreadPoolExecutor)ign.context().pools().getSnapshotExecutorService();
-
-        snpExec.submit(() -> {
-            try {
-                latch.await();
-            }
-            catch (InterruptedException e) {
-                throw new IgniteException(e);
-            }
-        });
-
-        IgniteInternalFuture<Object> dumpFut = GridTestUtils.runAsync(() -> createDump(ign));
-
-        // Waiting while dump will be setup: task planned after change listener set.
-        GridTestUtils.waitForCondition(() -> snpExec.getQueue().size() > 1, getTestTimeout());
+        T2<CountDownLatch, IgniteInternalFuture<?>> latchAndFut = runDumpAsyncAndStopBeforeStart();
 
         // This operations will be catched by change listeners. Old value must be stored in dump.
         op.accept(ign);
 
-        latch.countDown();
+        latchAndFut.get1().countDown();
 
-        dumpFut.get();
+        latchAndFut.get2().get(10 * 1000);
 
         checkDump(ign);
     }
