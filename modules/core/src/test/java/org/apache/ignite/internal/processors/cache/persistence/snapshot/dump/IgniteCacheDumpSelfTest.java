@@ -17,249 +17,101 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.function.IntFunction;
-import java.util.stream.IntStream;
-import javax.management.DynamicMBean;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
-import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.platform.model.ACL;
-import org.apache.ignite.platform.model.Key;
-import org.apache.ignite.platform.model.Role;
-import org.apache.ignite.platform.model.User;
-import org.apache.ignite.platform.model.Value;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.management.api.CommandMBean.INVOKE;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_DUMPS_DIRECTORY;
-import static org.apache.ignite.platform.model.AccessLevel.SUPER;
+import static org.junit.Assume.assumeTrue;
 
 /** */
-@RunWith(Parameterized.class)
-public class IgniteCacheDumpSelfTest extends GridCommonAbstractTest {
-    /** */
-    public static final String GRP = "grp";
-
-    /** */
-    public static final String CACHE_0 = "cache-0";
-
-    /** */
-    public static final String CACHE_1 = "cache-1";
-
-    /** */
-    public static final int KEYS_CNT = 1000;
-
-    /** */
-    @Parameterized.Parameter
-    public int nodes;
-
-    /** */
-    @Parameterized.Parameter(1)
-    public int backups;
-
-    /** */
-    @Parameterized.Parameter(2)
-    public boolean persistence;
-
-    /** */
-    @Parameterized.Parameter(3)
-    public CacheAtomicityMode mode;
-
-    /** */
-    @Parameterized.Parameters(name = "nodes={0}, backups={1}, persistence={2}, mode={3}")
-    public static List<Object[]> params() {
-        List<Object[]> params = new ArrayList<>();
-
-        for (int nodes : new int[]{1, 3})
-            for (int backups : new int[]{0, 1})
-                for (boolean persistence : new boolean[]{true, false})
-                    for (CacheAtomicityMode mode : CacheAtomicityMode._values()) {
-                        if (nodes == 1 && backups != 0)
-                            continue;
-
-                        params.add(new Object[]{nodes, backups, persistence, mode});
-                    }
-
-        return params;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        stopAllGrids();
-    }
-
+public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setDataStorageConfiguration(
-            new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistence))
-        );
+        return super.getConfiguration(igniteInstanceName).setSnapshotThreadPoolSize(1);
     }
 
     /** */
     @Test
     public void testCacheDump() throws Exception {
-        IntFunction<User> userFactory = i ->
-            new User(i, ACL.values()[i % ACL.values().length], new Role("Role" + i, SUPER));
+        IgniteEx ign = startGridAndFillCaches();
 
-        IgniteEx ign = (IgniteEx)startGridsMultiThreaded(nodes);
+        createDump(ign);
 
-        ign.cluster().state(ClusterState.ACTIVE);
-
-        IgniteCache<Object, Object> cache = ign.createCache(new CacheConfiguration<>()
-            .setName(DEFAULT_CACHE_NAME)
-            .setBackups(backups)
-            .setAtomicityMode(mode)
-        );
-
-        IgniteCache<Object, Object> grpCache0 = ign.createCache(new CacheConfiguration<>()
-            .setGroupName(GRP)
-            .setName(CACHE_0)
-            .setBackups(backups)
-            .setAtomicityMode(mode)
-        );
-        IgniteCache<Object, Object> grpCache1 = ign.createCache(new CacheConfiguration<>()
-            .setGroupName(GRP)
-            .setName(CACHE_1)
-            .setBackups(backups)
-            .setAtomicityMode(mode)
-        );
-
-        IntStream.range(0, KEYS_CNT).forEach(i -> {
-            cache.put(i, i);
-            grpCache0.put(i, userFactory.apply(i));
-            grpCache1.put(new Key(i), new Value(String.valueOf(i)));
-        });
-
-        Object[] args = {"dump", ""};
-
-        String[] signature = new String[args.length];
-
-        Arrays.fill(signature, String.class.getName());
-
-        String res = (String)createDumpBean(ign).invoke(INVOKE, args, signature);
-
-        assertTrue(res.isEmpty());
-
-        Dump dump = new Dump(
-            ign.context(),
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_DUMPS_DIRECTORY, false), "dump")
-        );
-
-        assertNotNull(dump);
-
-        List<SnapshotMetadata> metadata = dump.metadata();
-
-        assertNotNull(metadata);
-        assertEquals(nodes, metadata.size());
-
-        for (SnapshotMetadata meta : metadata) {
-            assertEquals("dump", meta.snapshotName());
-            assertTrue(meta.dump());
-        }
-
-        List<String> nodesDirs = dump.nodesDirectories();
-
-        assertEquals(nodes, nodesDirs.size());
-
-        int dfltCacheDumpSz = 0;
-        int grpCachesSz = 0;
-
-        CacheObjectContext coCtx = ign.context().cache().context().cacheObjectContext(CU.cacheId(DEFAULT_CACHE_NAME));
-        CacheObjectContext coCtx0 = ign.context().cache().context().cacheObjectContext(CU.cacheId(CACHE_0));
-        CacheObjectContext coCtx1 = ign.context().cache().context().cacheObjectContext(CU.cacheId(CACHE_1));
-
-        for (String nodeDir : nodesDirs) {
-            List<CacheConfiguration<?, ?>> ccfgs = dump.configs(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME));
-
-            assertNotNull(ccfgs);
-            assertEquals(1, ccfgs.size());
-            assertEquals(DEFAULT_CACHE_NAME, ccfgs.get(0).getName());
-
-            ccfgs = dump.configs(nodeDir, CU.cacheId(GRP));
-
-            assertNotNull(ccfgs);
-            assertEquals(2, ccfgs.size());
-
-            ccfgs.sort(Comparator.comparing(CacheConfiguration::getName));
-
-            assertEquals(GRP, ccfgs.get(0).getGroupName());
-            assertEquals(CACHE_0, ccfgs.get(0).getName());
-            assertEquals(GRP, ccfgs.get(1).getGroupName());
-            assertEquals(CACHE_1, ccfgs.get(1).getName());
-
-            try (DumpIterator iter = dump.iterator(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME))) {
-                while (iter.hasNext()) {
-                    DumpEntry e = iter.next();
-
-                    assertNotNull(e);
-                    assertEquals(e.key().<Integer>value(coCtx, true), e.value().<Integer>value(coCtx, true));
-
-                    dfltCacheDumpSz++;
-                }
-            }
-
-            try (DumpIterator iter = dump.iterator(nodeDir, CU.cacheId(GRP))) {
-                while (iter.hasNext()) {
-                    DumpEntry e = iter.next();
-
-                    assertNotNull(e);
-
-                    if (e.cacheId() == CU.cacheId(CACHE_0))
-                        assertEquals(userFactory.apply(e.key().value(coCtx0, true)), e.value().value(coCtx0, true));
-                    else {
-                        assertNotNull(e.key().<Key>value(coCtx1, true));
-                        assertNotNull(e.value().<Value>value(coCtx1, true));
-                    }
-
-                    grpCachesSz++;
-                }
-            }
-        }
-
-        assertEquals(KEYS_CNT + KEYS_CNT * backups, dfltCacheDumpSz);
-        assertEquals(2 * (KEYS_CNT + KEYS_CNT * backups), grpCachesSz);
+        checkDump(ign);
     }
 
     /** */
-    static DynamicMBean createDumpBean(IgniteEx ign) {
-        DynamicMBean mbean = getMxBean(
-            ign.context().igniteInstanceName(),
-            "management",
-            Collections.singletonList("Dump"),
-            "Create",
-            DynamicMBean.class
-        );
+    @Test
+    public void testWithConcurrentInsert() throws Exception {
+        doTestWithOperations(cache -> {
+            for (int i = KEYS_CNT; i < KEYS_CNT + 3; i++) {
+                assertFalse(cache.containsKey(i));
 
-        assertNotNull(mbean);
+                cache.put(i, i);
+            }
+        });
+    }
 
-        return mbean;
+    /** */
+    @Test
+    public void testWithConcurrentUpdate() throws Exception {
+        doTestWithOperations(cache -> {
+            for (int i = 0; i < 3; i++) {
+                assertTrue(cache.containsKey(i));
+
+                cache.put(i, i + 1);
+            }
+        });
+    }
+
+    /** */
+    @Test
+    public void testWithConcurrentRemove() throws Exception {
+        doTestWithOperations(cache -> {
+            for (int i = 0; i < 3; i++) {
+                assertTrue(cache.containsKey(i));
+
+                cache.remove(i);
+            }
+        });
+    }
+
+    /** */
+    private void doTestWithOperations(Consumer<IgniteCache<Object, Object>> op) throws Exception {
+        assumeTrue(nodes == 1);
+
+        IgniteEx ign = startGridAndFillCaches();
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        IgniteThreadPoolExecutor snpExec = (IgniteThreadPoolExecutor)ign.context().pools().getSnapshotExecutorService();
+
+        snpExec.submit(() -> {
+            try {
+                latch.await();
+            }
+            catch (InterruptedException e) {
+                throw new IgniteException(e);
+            }
+        });
+
+        IgniteInternalFuture<Object> dumpFut = GridTestUtils.runAsync(() -> createDump(ign));
+
+        GridTestUtils.waitForCondition(() -> snpExec.getQueue().size() > 1, 1_000);
+
+        op.accept(ign.cache(DEFAULT_CACHE_NAME));
+
+        latch.countDown();
+
+        dumpFut.get();
+
+        checkDump(ign);
     }
 }

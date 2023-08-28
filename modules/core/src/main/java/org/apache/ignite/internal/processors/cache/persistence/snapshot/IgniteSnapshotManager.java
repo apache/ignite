@@ -141,7 +141,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpCacheFutureTask;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -2198,7 +2198,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
         A.ensure(!(incremental && onlyPrimary), "Only primary not supported for incremental snapshots");
-        A.ensure(dump && !(incremental || onlyPrimary), "Dump not supported onlyPrimary and incremental flags");
+        if (dump)
+            A.ensure(!incremental, "Incremental dump not supported");
 
         try {
             cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
@@ -2559,7 +2560,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public void onCacheGroupsStopped(List<Integer> grps) {
         Collection<AbstractSnapshotFutureTask<?>> tasks =
-            F.view(locSnpTasks.values(), t -> t instanceof SnapshotFutureTask || t instanceof DumpCacheFutureTask);
+            F.view(locSnpTasks.values(), t -> t instanceof SnapshotFutureTask || t instanceof CreateDumpFutureTask);
 
         for (AbstractSnapshotFutureTask<?> sctx : tasks) {
             Set<Integer> retain = new HashSet<>(grps);
@@ -2715,7 +2716,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotSender snpSndr
     ) {
         AbstractSnapshotFutureTask<?> createTask = dump
-            ? new DumpCacheFutureTask(cctx, srcNodeId, requestId, snpName, snapshotLocalDir(snpName, null, locDumpDir),
+            ? new CreateDumpFutureTask(cctx, srcNodeId, requestId, snpName, snapshotLocalDir(snpName, null, locDumpDir),
                 ioFactory, snpSndr, parts)
             : new SnapshotFutureTask(cctx, srcNodeId, requestId, snpName, tmpWorkDir, ioFactory, snpSndr, parts, withMetaStorage, locBuff);
 

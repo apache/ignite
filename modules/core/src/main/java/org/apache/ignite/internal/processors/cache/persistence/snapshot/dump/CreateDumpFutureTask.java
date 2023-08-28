@@ -64,7 +64,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntrySerializer.FILE_VER;
 
 /** */
-public class DumpCacheFutureTask extends AbstractCreateBackupFutureTask implements DumpEntryChangeListener {
+public class CreateDumpFutureTask extends AbstractCreateBackupFutureTask implements DumpEntryChangeListener {
     /** Dump files name. */
     public static final String DUMP_FILE_NAME = "dump.bin";
 
@@ -92,7 +92,7 @@ public class DumpCacheFutureTask extends AbstractCreateBackupFutureTask implemen
      * @param snpSndr Snapshot sender.
      * @param parts Parts to dump.
      */
-    public DumpCacheFutureTask(
+    public CreateDumpFutureTask(
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
         UUID reqId,
@@ -126,7 +126,7 @@ public class DumpCacheFutureTask extends AbstractCreateBackupFutureTask implemen
 
             processPartitions();
 
-            initAll();
+            prepare();
 
             backupAllAsync();
         }
@@ -140,7 +140,7 @@ public class DumpCacheFutureTask extends AbstractCreateBackupFutureTask implemen
     }
 
     /** Prepares all data structures to dump entries. */
-    private void initAll() throws IOException, IgniteCheckedException {
+    private void prepare() throws IOException, IgniteCheckedException {
         for (int grp : processed.keySet()) {
             serializers.put(grp, DumpEntrySerializer.serializer(FILE_VER));
 

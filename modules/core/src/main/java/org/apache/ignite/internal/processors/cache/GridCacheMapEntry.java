@@ -6157,7 +6157,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
 
             if (dumpLsnr != null)
-                dumpLsnr.beforeChange(cctx, entry.key, oldVal, entry.extras.expireTime());
+                dumpLsnr.beforeChange(cctx, entry.key, oldVal, entry.extras == null ? CU.EXPIRE_TIME_ETERNAL : entry.extras.expireTime());
 
             updated = cctx.kernalContext().cacheObjects().prepareForCache(updated, cctx);
 
@@ -6265,7 +6265,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
 
             if (dumpLsnr != null)
-                dumpLsnr.beforeChange(cctx, entry.key, oldVal, entry.extras.expireTime());
+                dumpLsnr.beforeChange(cctx, entry.key, oldVal, entry.extras == null ? CU.EXPIRE_TIME_ETERNAL : entry.extras.expireTime());
 
             if (writeThrough)
                 // Must persist inside synchronization in non-tx mode.
