@@ -51,9 +51,7 @@ import static org.apache.calcite.util.Util.last;
  */
 @Value.Enclosing
 public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
-    /**
-     *
-     */
+    /** */
     public static final RelOptRule INSTANCE = Config.DEFAULT.toRule();
 
     /**
@@ -65,16 +63,12 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
         super(config);
     }
 
-    /**
-     *
-     */
+    /** */
     private static boolean preMatch(IgniteLogicalTableScan scan) {
         return !scan.getTable().unwrap(IgniteTable.class).indexes().isEmpty(); // has indexes to expose
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
         IgniteLogicalTableScan scan = call.rel(0);
         RelOptCluster cluster = scan.getCluster();
