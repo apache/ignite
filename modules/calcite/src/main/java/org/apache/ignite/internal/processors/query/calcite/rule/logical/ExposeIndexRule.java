@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -113,9 +114,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
         call.transformTo(F.first(indexes), equivMap);
     }
 
-    /**
-     *
-     */
+    /** */
     private List<IgniteLogicalIndexScan> processHints(TableScan scan, List<IgniteLogicalIndexScan> indexes) {
         assert !F.isEmpty(indexes);
 
@@ -126,25 +125,24 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
         for (RelHint hint : Hint.hints(scan, HintDefinition.NO_INDEX, HintDefinition.FORCE_INDEX)) {
             boolean skip = !hint.hintName.equals(HintDefinition.FORCE_INDEX.name());
 
-            if (skip && hint.listOptions.isEmpty()) {
-                // TODO
-                idxToSkip.addAll(tblIdxNames.stream().filter(i -> !idxToUse.contains(i)).collect(Collectors.toList()));
+            Collection<String> hintIdxNames = hint.listOptions.isEmpty() ? tblIdxNames : hint.listOptions;
 
-                continue;
-            }
-
-            for (String hintIdxName : hint.listOptions) {
+            for (String hintIdxName : hintIdxNames) {
                 if (!tblIdxNames.contains(hintIdxName))
                     continue;
 
-                if (idxToSkip.contains(hintIdxName)) {
-                    Commons.planContext(scan).skippedHint(hint, null, "Has already been excluded " +
-                        "by other hint options or hints before.");
+                if (idxToSkip.contains(hintIdxName) || idxToUse.contains(hintIdxName)) {
+                    Commons.planContext(scan).skippedHint(hint, hintIdxName, "Index '" + hintIdxName
+                        + "' of table '" + last(scan.getTable().getQualifiedName())
+                        + "' has already been excluded or forced to use by other options or other hints before.");
 
                     continue;
                 }
 
-                idxToSkip.add(hintIdxName);
+                if (skip)
+                    idxToSkip.add(hintIdxName);
+                else
+                    idxToUse.add(hintIdxName);
             }
         }
 

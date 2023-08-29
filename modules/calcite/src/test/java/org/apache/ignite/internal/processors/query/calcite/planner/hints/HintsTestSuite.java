@@ -27,7 +27,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     CommonHintsPlannerTest.class,
     NoIndexHintPlannerTest.class,
-    IndexHintPlannerTest.class
+    ForceIndexHintPlannerTest.class
 })
 public class HintsTestSuite {
 }

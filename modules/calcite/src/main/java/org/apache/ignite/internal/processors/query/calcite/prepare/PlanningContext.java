@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.io.StringWriter;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import org.apache.calcite.plan.Context;
@@ -33,7 +34,9 @@ import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.util.CancelFlag;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -228,14 +231,15 @@ public final class PlanningContext implements Context {
      */
     public void skippedHint(RelHint hint, @Nullable String optionValue, String reason) {
         if (log != null) {
-            log.info(String.format("Hint '%s' was skipped. Reason: %s", hint.hintName, reason));
+            log.info(String.format("Hint '%s' %swas skipped. Reason: %s", hint.hintName,
+                F.isEmpty(optionValue) ? "" : "with option '" + optionValue + "' ", reason));
         }
 
         skippedHints.add(new SkippedHint(hint.hintName, optionValue, reason));
     }
 
     /** */
-    public void dumpHints(StringWriter w, @Nullable Consumer<StringWriter> header) {
+    public void dumpHints(StringWriter w) {
         if (F.isEmpty(skippedHints))
             return;
 
@@ -249,7 +253,7 @@ public final class PlanningContext implements Context {
             if (sh.value != null)
                 w.append(" with option '").append(sh.value).append('\'');
 
-            w.append("'. Reason: ").append(sh.reason);
+            w.append(". Reason: ").append(sh.reason);
 
             if (!sh.reason.endsWith("."))
                 w.append('.');

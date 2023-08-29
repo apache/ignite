@@ -32,8 +32,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-
 /**
  * Common test for SQL hints.
  */
