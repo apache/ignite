@@ -33,9 +33,6 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 public class DumpEntrySerializer {
-    /** Dump file version. */
-    public static final short FILE_VER = 1;
-
     /** */
     private ByteBuffer buf;
 
@@ -46,7 +43,7 @@ public class DumpEntrySerializer {
     private IgniteCacheObjectProcessor co;
 
     /** */
-    private DumpEntrySerializer() {
+    public DumpEntrySerializer() {
         buf = ByteBuffer.allocate((int)U.MB);
     }
 
@@ -54,14 +51,6 @@ public class DumpEntrySerializer {
     public void kernalContext(GridKernalContext cctx) {
         this.cctx = cctx;
         co = cctx.cacheObjects();
-    }
-
-    /** */
-    public static DumpEntrySerializer serializer(short ver) {
-        if (ver != FILE_VER)
-            throw new IllegalArgumentException("Unknown file version: " + ver);
-
-        return new DumpEntrySerializer();
     }
 
     /** */

@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -91,7 +92,7 @@ public class IgniteCacheDumpExpireTest extends AbstractCacheDumpTest {
 
     /** */
     @Test
-    public void testExplicitExpireTime() throws Exception {
+    public void testDumpWithExpireTime() throws Exception {
         IgniteEx ign = startGridAndFillCaches();
 
         T2<CountDownLatch, IgniteInternalFuture<?>> latchAndFut = runDumpAsyncAndStopBeforeStart();
@@ -135,5 +136,26 @@ public class IgniteCacheDumpExpireTest extends AbstractCacheDumpTest {
         }
         else
             super.putData(cache, grpCache0, grpCache1);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void checkDefaultCacheEntry(DumpEntry e, CacheObjectContext coCtx) {
+        super.checkDefaultCacheEntry(e, coCtx);
+
+        checkExpireTime(e);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void checkGroupEntry(DumpEntry e, CacheObjectContext coCtx0, CacheObjectContext coCtx1) {
+        super.checkGroupEntry(e, coCtx0, coCtx1);
+
+        checkExpireTime(e);
+    }
+
+    /** */
+    private void checkExpireTime(DumpEntry e) {
+        assertTrue("Expire time must be set", e.expireTime() != 0);
+        assertTrue("Expire time must be in past", System.currentTimeMillis() >= e.expireTime());
+        assertTrue("Expire time must be set during test run", System.currentTimeMillis() - getTestTimeout() < e.expireTime());
     }
 }

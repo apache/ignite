@@ -277,13 +277,9 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 while (iter.hasNext()) {
                     DumpEntry e = iter.next();
 
-                    assertNotNull(e);
+                    checkDefaultCacheEntry(e, coCtx);
 
-                    Integer key = e.key().<Integer>value(coCtx, true);
-
-                    assertEquals(key, e.value().<Integer>value(coCtx, true));
-
-                    keys.add(key);
+                    keys.add(e.key().<Integer>value(coCtx, true));
 
                     dfltDumpSz++;
                 }
@@ -293,14 +289,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 while (iter.hasNext()) {
                     DumpEntry e = iter.next();
 
-                    assertNotNull(e);
-
-                    if (e.cacheId() == CU.cacheId(CACHE_0))
-                        assertEquals(USER_FACTORY.apply(e.key().value(coCtx0, true)), e.value().value(coCtx0, true));
-                    else {
-                        assertNotNull(e.key().<Key>value(coCtx1, true));
-                        assertNotNull(e.value().<Value>value(coCtx1, true));
-                    }
+                    checkGroupEntry(e, coCtx0, coCtx1);
 
                     grpDumpSz++;
                 }
@@ -311,6 +300,27 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         assertEquals(2 * (KEYS_CNT + KEYS_CNT * backups), grpDumpSz);
 
         IntStream.range(0, KEYS_CNT).forEach(key -> assertTrue(keys.contains(key)));
+    }
+
+    /** */
+    protected void checkDefaultCacheEntry(DumpEntry e, CacheObjectContext coCtx) {
+        assertNotNull(e);
+
+        Integer key = e.key().<Integer>value(coCtx, true);
+
+        assertEquals(key, e.value().<Integer>value(coCtx, true));
+    }
+
+    /** */
+    protected void checkGroupEntry(DumpEntry e, CacheObjectContext coCtx0, CacheObjectContext coCtx1) {
+        assertNotNull(e);
+
+        if (e.cacheId() == CU.cacheId(CACHE_0))
+            assertEquals(USER_FACTORY.apply(e.key().value(coCtx0, true)), e.value().value(coCtx0, true));
+        else {
+            assertNotNull(e.key().<Key>value(coCtx1, true));
+            assertNotNull(e.value().<Value>value(coCtx1, true));
+        }
     }
 
     /** */

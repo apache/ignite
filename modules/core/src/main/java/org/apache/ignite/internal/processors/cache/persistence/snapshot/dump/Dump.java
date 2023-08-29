@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -48,8 +50,9 @@ import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_METAFILE_EXT;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 
 /**
  *
@@ -118,56 +121,77 @@ public class Dump {
     public DumpIterator iterator(String node, int groupId) throws IOException {
         FileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
-        FileIO dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, groupId), DUMP_FILE_NAME));
+        File[] parts = dumpGroupDirectory(node, groupId)
+            .listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(DUMP_FILE_EXT));
 
-        byte[] fileVerBytes = new byte[Short.BYTES];
+        FileIO[] dumpFilesIOs = new FileIO[parts.length];
 
-        dumpFile.readFully(fileVerBytes, 0, fileVerBytes.length);
+        for (int i = 0; i < parts.length; i++)
+            dumpFilesIOs[i] = ioFactory.create(parts[i]);
 
-        DumpEntrySerializer serializer = DumpEntrySerializer.serializer(U.bytesToShort(fileVerBytes, 0));
+        Iterator<Iterator<DumpEntry>> iterator = Arrays.stream(dumpFilesIOs).map(dumpFile -> {
+            DumpEntrySerializer serializer = new DumpEntrySerializer();
 
-        serializer.kernalContext(cctx);
+            serializer.kernalContext(cctx);
+
+            Iterator<DumpEntry> res = new Iterator<DumpEntry>() {
+                DumpEntry next;
+
+                /** {@inheritDoc} */
+                @Override public boolean hasNext() {
+                    advance();
+
+                    return next != null;
+                }
+
+                /** {@inheritDoc} */
+                @Override public DumpEntry next() {
+                    advance();
+
+                    if (next == null)
+                        throw new NoSuchElementException();
+
+                    DumpEntry next0 = next;
+
+                    next = null;
+
+                    return next0;
+                }
+
+                /** */
+                private void advance() {
+                    if (next != null)
+                        return;
+
+                    try {
+                        next = serializer.read(dumpFile, groupId);
+                    }
+                    catch (IOException | IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }
+            };
+
+            return res;
+        }).iterator();
+
+        Iterator<DumpEntry> res = F.concat(iterator);
 
         return new DumpIterator() {
-            DumpEntry next;
-
             /** {@inheritDoc} */
             @Override public boolean hasNext() {
-                advance();
-
-                return next != null;
+                return res.hasNext();
             }
 
             /** {@inheritDoc} */
             @Override public DumpEntry next() {
-                advance();
-
-                if (next == null)
-                    throw new NoSuchElementException();
-
-                DumpEntry next0 = next;
-
-                next = null;
-
-                return next0;
+                return res.next();
             }
 
             /** {@inheritDoc} */
             @Override public void close() throws Exception {
-                dumpFile.close();
-            }
-
-            /** */
-            private void advance() {
-                if (next != null)
-                    return;
-
-                try {
-                    next = serializer.read(dumpFile, groupId);
-                }
-                catch (IOException | IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
+                for (FileIO dumpFileIO : dumpFilesIOs)
+                    U.closeQuiet(dumpFileIO);
             }
         };
     }

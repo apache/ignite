@@ -1546,7 +1546,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
 
             if (dumpLsnr != null)
-                dumpLsnr.beforeChange(cctx, key, old, extras.expireTime());
+                dumpLsnr.beforeChange(cctx, key, old, extras == null ? CU.EXPIRE_TIME_ETERNAL : extras.expireTime());
 
             // Detach value before index update.
             val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
@@ -1744,7 +1744,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
 
             if (dumpLsnr != null)
-                dumpLsnr.beforeChange(cctx, key, old, extras.expireTime());
+                dumpLsnr.beforeChange(cctx, key, old, extras == null ? CU.EXPIRE_TIME_ETERNAL : extras.expireTime());
 
             removeValue();
 
@@ -3748,7 +3748,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
 
         if (dumpLsnr != null)
-            dumpLsnr.beforeChange(cctx, key, expiredVal, CU.TTL_MINIMUM);
+            dumpLsnr.beforeChange(cctx, key, expiredVal, extras == null ? CU.TTL_MINIMUM : extras.expireTime());
 
         if (cctx.deferredDelete() && !detached() && !isInternal()) {
             if (!deletedUnlocked() && !isStartVersion()) {
