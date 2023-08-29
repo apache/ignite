@@ -118,8 +118,9 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
                     continue;
 
                 if (idxToSkip.contains(hintIdxName)) {
-                    Commons.planContext(scan).skippedHint(hint, null, "Has already been excluded " +
-                        "by other hint options or hints before.");
+                    Commons.planContext(scan).skippedHint(hint, hintIdxName, "Index '" + hintIdxName
+                        + "' of table '" + last(scan.getTable().getQualifiedName())
+                        + "' has already been excluded by other options or other hints before.");
 
                     continue;
                 }
@@ -129,13 +130,6 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
         }
 
         return indexes.stream().filter(idx -> !idxToSkip.contains(idx.indexName())).collect(Collectors.toList());
-    }
-
-    /** */
-    private static boolean checkTblName(List<String> tblQName, List<String> hintTblQName) {
-        assert !hintTblQName.isEmpty();
-
-        return hintTblQName.size() == 1 && last(tblQName).equals(hintTblQName.get(0)) || F.eq(tblQName, hintTblQName);
     }
 
     /** */
