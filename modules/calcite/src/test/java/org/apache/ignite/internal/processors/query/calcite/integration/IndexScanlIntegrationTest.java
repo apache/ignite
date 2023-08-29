@@ -356,12 +356,12 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(2)
             .check();
 
-        assertQuery("SELECT /*+ NO_INDEX(t2='T2_IDX') */ i3 FROM t2 where i2=2")
+        assertQuery("SELECT /*+ NO_INDEX('T2_IDX') */ i3 FROM t2 where i2=2")
             .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX")))
             .returns(2)
             .check();
 
-        assertQuery("SELECT /*+ NO_INDEX(t1='T1_IDX',t2='T2_IDX') */ i1, i3 FROM t1, t2 where i2=i1")
+        assertQuery("SELECT /*+ NO_INDEX(T1_IDX,T2_IDX) */ i1, i3 FROM t1, t2 where i2=i1")
             .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX")))
             .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX")))
             .returns(1, 1)
@@ -384,6 +384,11 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(2, 2)
             .returns(30, 30)
             .returns(40, 40)
+            .check();
+
+        assertQuery("SELECT * FROM t1 WHERE i1 = (SELECT /*+ NO_INDEX(T2_IDX) */ i3 from t2 where i2=40)")
+            .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX")))
+            .returns(40)
             .check();
     }
 

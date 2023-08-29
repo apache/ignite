@@ -18,30 +18,22 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.io.StringWriter;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.prepare.CalciteCatalogReader;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.util.CancelFlag;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -74,11 +66,8 @@ public final class PlanningContext implements Context {
     /** */
     private final long plannerTimeout;
 
-    /** Current query's hints. */
-    private List<RelHint> hints = Collections.emptyList();
-
     /** */
-    private List<SkippedHint> skippedHints;
+    private final List<SkippedHint> skippedHints = new CopyOnWriteArrayList<>();
 
     /** */
     private final @Nullable IgniteLogger log;
@@ -235,58 +224,18 @@ public final class PlanningContext implements Context {
     }
 
     /**
-     * @return Query hints, hints of the root node or it's children if root node is not a primary selecting node.
-     */
-    public List<RelHint> hints() {
-        return hints;
-    }
-
-    /**
-     * Stores the query hints.
-     * @see #hints()
-     */
-    PlanningContext hints(List<RelHint> hints) {
-        this.hints = Collections.unmodifiableList(hints);
-
-        return this;
-    }
-
-    /**
      * Stores skipped hint and the reason.
      */
-    public void skippedHint(RelNode rel, RelHint hint, @Nullable String optionKey, @Nullable String optionValue,
-        String reason) {
-
+    public void skippedHint(RelHint hint, @Nullable String optionValue, String reason) {
         if (log != null) {
-            log.warning(String.format("Hint '%s' skipped for '%s'. Reason: %s", hint.hintName,
-                RelOptUtil.toString(rel, SqlExplainLevel.NO_ATTRIBUTES).trim(), reason));
+            log.info(String.format("Hint '%s' was skipped. Reason: %s", hint.hintName, reason));
         }
 
-        if (skippedHints == null) {
-            synchronized (parentCtx) {
-                if (skippedHints == null)
-                    skippedHints = new CopyOnWriteArrayList<>();
-            }
-        }
-
-        skippedHints.add(new SkippedHint(rel, hint.hintName, optionKey, optionValue, reason));
+        skippedHints.add(new SkippedHint(hint.hintName, optionValue, reason));
     }
 
     /** */
     public void dumpHints(StringWriter w, @Nullable Consumer<StringWriter> header) {
-        List<RelHint> hints = this.hints;
-        List<SkippedHint> skippedHints = this.skippedHints;
-
-        if (F.isEmpty(hints))
-            return;
-
-        if (header != null)
-            header.accept(w);
-
-        w.append("Accepted hints:");
-
-        hints.forEach(h -> w.append(U.nl()).append("\t").append(h.toString()));
-
         if (F.isEmpty(skippedHints))
             return;
 
@@ -297,13 +246,10 @@ public final class PlanningContext implements Context {
             w.append(U.nl())
                 .append("\t- '").append(sh.hintName).append('\'');
 
-            if (sh.option != null && sh.value != null)
-                w.append(" with option '").append(sh.option).append('=').append(sh.value).append('\'');
-            else if (sh.option != null)
-                w.append(" with option '").append(sh.option).append('\'');
+            if (sh.value != null)
+                w.append(" with option '").append(sh.value).append('\'');
 
-            w.append(" for node `").append(RelOptUtil.toString(sh.rel).trim()).append("`.")
-                .append(U.nl()).append("\t\t").append("Reason: ").append(sh.reason);
+            w.append("'. Reason: ").append(sh.reason);
 
             if (!sh.reason.endsWith("."))
                 w.append('.');
@@ -315,13 +261,7 @@ public final class PlanningContext implements Context {
      */
     private static class SkippedHint {
         /** */
-        private final RelNode rel;
-
-        /** */
         private final String hintName;
-
-        /** Hint option or hint option key.  */
-        private final @Nullable String option;
 
         /** Hint option value. */
         private final @Nullable String value;
@@ -330,11 +270,8 @@ public final class PlanningContext implements Context {
         private final String reason;
 
         /** */
-        private SkippedHint(RelNode rel, String hintName, @Nullable String hintOption,
-            @Nullable String hintOptionValue, String reason) {
-            this.rel = rel;
+        private SkippedHint(String hintName, @Nullable String hintOptionValue, String reason) {
             this.hintName = hintName;
-            this.option = hintOption;
             this.value = hintOptionValue;
             this.reason = reason;
         }
