@@ -31,7 +31,7 @@ public enum HintDefinition {
     /** Sets the query engine like H2 or Calcite. */
     QUERY_ENGINE,
 
-    /** Disables certain converter rules. */
+    /** Disables planner rules. */
     DISABLE_RULE,
 
     /** Forces expanding of distinct aggregates to join. */
