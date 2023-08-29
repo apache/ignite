@@ -466,13 +466,4 @@ public final class Commons {
     public static MappingQueryContext mapContext(UUID locNodeId, AffinityTopologyVersion topVer, boolean isLocal) {
         return new MappingQueryContext(locNodeId, topVer, isLocal);
     }
-
-    /**
-     * @return Dot-separated, name with preceding domain/schema.
-     */
-    public static List<String> qualifiedName(String name) {
-        return name.indexOf('.') > 0
-            ? Arrays.stream(name.split("\\.")).collect(Collectors.toList())
-            : Collections.singletonList(name);
-    }
 }

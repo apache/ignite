@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.apache.calcite.DataContexts;
@@ -46,6 +47,7 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
@@ -127,6 +129,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     public static final String IGNITE_CALCITE_PLANNER_TIMEOUT = "IGNITE_CALCITE_PLANNER_TIMEOUT";
 
     /** */
+    private static final AtomicReference<IgniteLogger> HINTS_LOG_SUPPLIER = new AtomicReference<>();
+
+    /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
         .executor(new RexExecutorImpl(DataContexts.EMPTY))
         .sqlToRelConverterConfig(SqlToRelConverter.config()
@@ -137,7 +142,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             .withInSubQueryThreshold(Integer.MAX_VALUE)
             .withDecorrelationEnabled(true)
             .withExpand(false)
-            .withHintStrategyTable(HintsConfig.buildHintTable())
+            .withHintStrategyTable(HintsConfig.buildHintTable(HINTS_LOG_SUPPLIER::get))
         )
         .convertletTable(IgniteConvertletTable.INSTANCE)
         .parserConfig(
@@ -223,6 +228,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
      */
     public CalciteQueryProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        HINTS_LOG_SUPPLIER.compareAndSet(null, log);
 
         failureProcessor = ctx.failure();
         schemaHolder = new SchemaHolderImpl(ctx);
