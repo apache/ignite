@@ -409,7 +409,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
     }
 
     /**
-     * Test ensures that snapshot fail if during check some files are absent.
+     * Test ensures that snapshot fails if some files are absent during the check.
      * @see SnapshotPartitionsQuickVerifyHandler
      */
     @Test
@@ -420,7 +420,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
             }
 
             @Override public Void invoke(SnapshotHandlerContext ctx) {
-                // Someone remove snapshot files during creation.
+                // Someone removes snapshot files during creation.
                 // In this case snapshot must fail.
                 U.delete(ctx.snapshotDirectory());
 
