@@ -214,7 +214,7 @@ public class CreateDumpFutureTask extends AbstractCreateBackupFutureTask impleme
     }
 
     /** {@inheritDoc} */
-    @Override protected List<CompletableFuture<Void>> saveGroup(int grp, Set<Integer> grpParts) throws IgniteCheckedException {
+    @Override protected List<CompletableFuture<Void>> saveGroup(int grp, Set<Integer> grpParts) {
         return Collections.singletonList(CompletableFuture.runAsync(wrapExceptionIfStarted(() -> {
             long start = System.currentTimeMillis();
             long entriesCnt = 0;
@@ -288,6 +288,8 @@ public class CreateDumpFutureTask extends AbstractCreateBackupFutureTask impleme
 
     /** {@inheritDoc} */
     @Override protected CompletableFuture<Void> closeAsync() {
+        dumpCtxs.values().stream().forEach(PartitionDumpContext::close);
+
         if (closeFut == null) {
             Throwable err0 = err.get();
 
@@ -326,7 +328,7 @@ public class CreateDumpFutureTask extends AbstractCreateBackupFutureTask impleme
         final int part;
 
         /** Partition serializer. */
-        final DumpEntrySerializer serdes;
+        volatile DumpEntrySerializer serdes;
 
         /** */
         final File dumpFile;
@@ -345,7 +347,6 @@ public class CreateDumpFutureTask extends AbstractCreateBackupFutureTask impleme
             this.grp = grp;
             this.part = part;
             this.dumpFile = dumpFile;
-            serdes = new DumpEntrySerializer();
             changed = new GridConcurrentHashSet<>();
         }
 
@@ -381,6 +382,9 @@ public class CreateDumpFutureTask extends AbstractCreateBackupFutureTask impleme
             KeyCacheObject key,
             CacheObject val
         ) {
+            if (closed)
+                throw new IgniteException("Already closed");
+
             if (changed.contains(key.hashCode()))
                 return false;
 
@@ -408,9 +412,14 @@ public class CreateDumpFutureTask extends AbstractCreateBackupFutureTask impleme
 
         /** {@inheritDoc} */
         @Override public synchronized void close() {
+            if (closed)
+                return;
+
             closed = true;
 
             U.closeQuiet(file);
+
+            serdes = null;
         }
 
         /** */
@@ -427,6 +436,8 @@ public class CreateDumpFutureTask extends AbstractCreateBackupFutureTask impleme
                 throw new IgniteCheckedException("Dump file can't be created: " + dumpFile);
 
             file = ioFactory.create(dumpFile);
+
+            serdes = new DumpEntrySerializer();
 
             return file;
         }

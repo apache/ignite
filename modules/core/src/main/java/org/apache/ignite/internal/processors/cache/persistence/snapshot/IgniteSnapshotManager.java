@@ -598,7 +598,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             String.class,
             "The error message of last started cluster snapshot request which fail with an error. " +
                 "This value will be empty if last snapshot request has been completed successfully.");
-        mreg.register("LocalSnapshotNames", () -> localSnapshotNames(null), List.class,
+        mreg.register("LocalSnapshotNames", () -> localSnapshotNames(null, false), List.class,
             "The list of names of all snapshots currently saved on the local node with respect to " +
                 "the configured via IgniteConfiguration snapshot working path.");
         mreg.register("LastRequestId", () -> Optional.ofNullable(lastSeenSnpFut.rqId).map(UUID::toString).orElse(""),
@@ -684,7 +684,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             SNAPSHOT_SYS_VIEW,
             SNAPSHOT_SYS_VIEW_DESC,
             new SnapshotViewWalker(),
-            () -> F.flatCollections(F.transform(localSnapshotNames(null), name -> {
+            () -> F.flatCollections(F.transform(localSnapshotNames(null, false), name -> {
                 List<SnapshotView> views = new ArrayList<>();
 
                 for (SnapshotMetadata m: readSnapshotMetadatas(name, null)) {
@@ -1635,7 +1635,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @return List of all known snapshots on the local node.
      */
-    public List<String> localSnapshotNames(@Nullable String snpPath) {
+    public List<String> localSnapshotNames(@Nullable String snpPath, boolean dump) {
         if (cctx.kernalContext().clientNode())
             throw new UnsupportedOperationException("Client nodes can not perform this operation.");
 
@@ -1643,7 +1643,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return Collections.emptyList();
 
         synchronized (snpOpMux) {
-            File[] dirs = (snpPath == null ? locSnpDir : new File(snpPath)).listFiles(File::isDirectory);
+            File[] dirs = (snpPath == null ? (dump ? locDumpDir : locSnpDir) : new File(snpPath)).listFiles(File::isDirectory);
 
             if (dirs == null)
                 return Collections.emptyList();
@@ -2242,7 +2242,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (clusterSnpReq != null)
                     throw new IgniteException("Create snapshot request has been rejected. Parallel snapshot processes are not allowed.");
 
-                boolean snpExists = localSnapshotNames(snpPath).contains(name);
+                boolean snpExists = localSnapshotNames(snpPath, dump).contains(name);
 
                 if (!incremental && snpExists) {
                     throw new IgniteException("Create snapshot request has been rejected. " +

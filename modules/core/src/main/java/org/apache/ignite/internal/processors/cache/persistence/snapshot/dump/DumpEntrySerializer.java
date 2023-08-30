@@ -44,7 +44,7 @@ public class DumpEntrySerializer {
 
     /** */
     public DumpEntrySerializer() {
-        buf = ByteBuffer.allocate((int)U.MB);
+        buf = ByteBuffer.allocate(100);
     }
 
     /** */

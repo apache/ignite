@@ -225,9 +225,14 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     void checkDump(IgniteEx ign) throws Exception {
+        checkDump(ign, DMP_NAME);
+    }
+
+    /** */
+    void checkDump(IgniteEx ign, String name) throws Exception {
         Dump dump = new Dump(
             ign.context(),
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_DUMPS_DIRECTORY, false), DMP_NAME)
+            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_DUMPS_DIRECTORY, false), name)
         );
 
         assertNotNull(dump);
@@ -238,7 +243,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         assertEquals(nodes, metadata.size());
 
         for (SnapshotMetadata meta : metadata) {
-            assertEquals(DMP_NAME, meta.snapshotName());
+            assertEquals(name, meta.snapshotName());
             assertTrue(meta.dump());
         }
 
@@ -324,16 +329,26 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
-    void createDump(IgniteEx ign) throws MBeanException, ReflectionException {
-        Object[] args = {DMP_NAME, ""};
+    void createDump(IgniteEx ign) {
+        createDump(ign, DMP_NAME);
+    }
+
+    /** */
+    void createDump(IgniteEx ign, String name) {
+        Object[] args = {name, ""};
 
         String[] signature = new String[args.length];
 
         Arrays.fill(signature, String.class.getName());
 
-        String res = (String)createDumpBean(ign).invoke(INVOKE, args, signature);
+        try {
+            String res = (String)createDumpBean(ign).invoke(INVOKE, args, signature);
 
-        assertTrue(res.isEmpty());
+            assertEquals("Dump \"" + name + "\" was created.\n", res);
+        }
+        catch (MBeanException | ReflectionException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** */

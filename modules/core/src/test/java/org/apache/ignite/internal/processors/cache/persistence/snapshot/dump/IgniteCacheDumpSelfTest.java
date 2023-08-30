@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -30,6 +31,8 @@ import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** */
 public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
@@ -47,7 +50,16 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
         checkDump(ign);
 
-        createDump(ign);
+        assertThrows(
+            null,
+            () -> createDump(ign),
+            IgniteException.class,
+            "Create snapshot request has been rejected. Snapshot with given name already exists on local node"
+        );
+
+        createDump(ign, DMP_NAME + 2);
+
+        checkDump(ign, DMP_NAME + 2);
     }
 
     /** */

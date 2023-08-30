@@ -632,7 +632,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertTrue("Snapshot directory must be empty for node 1 due to snapshot future fail: " + dirNameIgnite1,
             !searchDirectoryRecursively(locSnpDir.toPath(), dirNameIgnite1).isPresent());
 
-        List<String> allSnapshots = snp(ignite).localSnapshotNames(null);
+        List<String> allSnapshots = snp(ignite).localSnapshotNames(null, false);
 
         assertTrue("Snapshot directory must be empty due to snapshot fail: " + allSnapshots,
             allSnapshots.isEmpty());
@@ -691,7 +691,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         assertTrue(
             "Snapshot directory must be empty",
-            grid2.context().cache().context().snapshotMgr().localSnapshotNames(null).isEmpty()
+            grid2.context().cache().context().snapshotMgr().localSnapshotNames(null, false).isEmpty()
         );
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
