@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +31,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -215,56 +215,70 @@ public class CreateDumpFutureTask extends AbstractCreateBackupFutureTask impleme
 
     /** {@inheritDoc} */
     @Override protected List<CompletableFuture<Void>> saveGroup(int grp, Set<Integer> grpParts) {
-        return Collections.singletonList(CompletableFuture.runAsync(wrapExceptionIfStarted(() -> {
-            long start = System.currentTimeMillis();
-            long entriesCnt = 0;
-            long changedEntriesCnt = 0;
+        long start = System.currentTimeMillis();
+        AtomicLong entriesCnt = new AtomicLong();
+        AtomicLong changedEntriesCnt = new AtomicLong();
+        AtomicLong partsRemain = new AtomicLong(grpParts.size());
 
-            CacheGroupContext grpCtx = cctx.cache().cacheGroup(grp);
+        CacheGroupContext grpCtx = cctx.cache().cacheGroup(grp);
+        CacheGroupContext gctx = cctx.kernalContext().cache().cacheGroup(grp);
+        AffinityTopologyVersion topVer = gctx.topology().lastTopologyChangeVersion();
 
-            log.info("Start group dump [name=" + grpCtx.cacheOrGroupName() + ", id=" + grp + ']');
+        log.info("Start group dump [name=" + grpCtx.cacheOrGroupName() + ", id=" + grp + ']');
 
-            CacheGroupContext gctx = cctx.kernalContext().cache().cacheGroup(grp);
-            AffinityTopologyVersion topVer = gctx.topology().lastTopologyChangeVersion();
+        return grpParts.stream().map(part -> CompletableFuture.runAsync(wrapExceptionIfStarted(() -> {
+            long entriesCnt0 = 0;
 
-            for (int part : grpParts) {
-                try (PartitionDumpContext dumpCtx = dumpCtxs.get(toLong(grp, part))) {
-                    try (GridCloseableIterator<CacheDataRow> rows = gctx.offheap().reservedIterator(part, topVer)) {
-                        if (rows == null)
-                            throw new IgniteCheckedException("Partition missing [part=" + part + ']');
+            try (PartitionDumpContext dumpCtx = dumpCtxs.get(toLong(grp, part))) {
+                try (GridCloseableIterator<CacheDataRow> rows = gctx.offheap().reservedIterator(part, topVer)) {
+                    if (rows == null)
+                        throw new IgniteCheckedException("Partition missing [part=" + part + ']');
 
-                        while (rows.hasNext()) {
-                            CacheDataRow row = rows.next();
+                    while (rows.hasNext()) {
+                        CacheDataRow row = rows.next();
 
-                            assert row.partition() == part;
+                        assert row.partition() == part;
 
-                            int cache = row.cacheId() == 0 ? grp : row.cacheId();
+                        int cache = row.cacheId() == 0 ? grp : row.cacheId();
 
-                            boolean written = dumpCtx.writeIteratorRow(cache, row.expireTime(), row.key(), row.value());
+                        boolean written = dumpCtx.writeIteratorRow(cache, row.expireTime(), row.key(), row.value());
 
-                            if (written)
-                                entriesCnt++;
-                            else if (log.isTraceEnabled())
-                                log.trace("Entry saved by change listener. Skip [" +
-                                    "grp=" + grp +
-                                    ", cache=" + cache +
-                                    ", key=" + row.key() + ']');
+                        if (written)
+                            entriesCnt0++;
+                        else if (log.isTraceEnabled())
+                            log.trace("Entry saved by change listener. Skip [" +
+                                "grp=" + grp +
+                                ", cache=" + cache +
+                                ", key=" + row.key() + ']');
 
-                            if (log.isTraceEnabled())
-                                log.trace("Row [key=" + row.key() + ", cacheId=" + cache + ']');
-                        }
+                        if (log.isTraceEnabled())
+                            log.trace("Row [key=" + row.key() + ", cacheId=" + cache + ']');
                     }
+                }
 
-                    changedEntriesCnt += dumpCtx.changedSize();
+                entriesCnt.addAndGet(entriesCnt0);
+                changedEntriesCnt.addAndGet(dumpCtx.changedSize());
+
+                long remain = partsRemain.decrementAndGet();
+
+                if (remain == 0) {
+                    log.info("Finish group dump [name=" + grpCtx.cacheOrGroupName() +
+                        ", id=" + grp +
+                        ", time=" + (System.currentTimeMillis() - start) +
+                        ", iteratorEntriesCount=" + entriesCnt +
+                        ", changedEntriesCount=" + changedEntriesCnt + ']');
+                }
+                else if (log.isDebugEnabled()) {
+                    log.info("Finish group partition dump [name=" + grpCtx.cacheOrGroupName() +
+                        ", id=" + grp +
+                        ", part=" + part +
+                        ", time=" + (System.currentTimeMillis() - start) +
+                        ", iteratorEntriesCount=" + entriesCnt +
+                        ", changedEntriesCount=" + changedEntriesCnt + ']');
+
                 }
             }
-
-            log.info("Finish group dump [name=" + grpCtx.cacheOrGroupName() +
-                ", id=" + grp +
-                ", time=" + (System.currentTimeMillis() - start) +
-                ", iteratorEntriesCount=" + entriesCnt +
-                ", changedEntriesCount=" + changedEntriesCnt + ']');
-        }), snpSndr.executor()));
+        }), snpSndr.executor())).collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */
