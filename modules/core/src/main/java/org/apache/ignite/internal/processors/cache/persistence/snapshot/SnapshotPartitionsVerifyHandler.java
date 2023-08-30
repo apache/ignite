@@ -60,6 +60,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
@@ -106,8 +107,21 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         SnapshotMetadata meta = opCtx.metadata();
 
-        Set<Integer> grps = F.isEmpty(opCtx.groups()) ? new HashSet<>(meta.partitions().keySet()) :
-            opCtx.groups().stream().map(CU::cacheId).collect(Collectors.toSet());
+        Set<Integer> grps = F.isEmpty(opCtx.groups())
+            ? new HashSet<>(meta.partitions().keySet())
+            : opCtx.groups().stream().map(CU::cacheId).collect(Collectors.toSet());
+
+        grps = grps.stream().filter(grp -> {
+            if (grp == MetaStorage.METASTORAGE_CACHE_ID)
+                return true;
+
+            IgnitePredicate<ClusterNode> filter = cctx.kernalContext().cache().cacheGroupDescriptor(grp).config().getNodeFilter();
+
+            return filter == null || CU.affinityNode(
+                cctx.localNode(),
+                filter
+            );
+        }).collect(Collectors.toSet());
 
         Set<File> partFiles = new HashSet<>();
 
