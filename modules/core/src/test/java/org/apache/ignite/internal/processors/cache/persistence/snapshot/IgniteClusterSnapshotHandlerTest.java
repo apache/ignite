@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -48,6 +49,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Snapshot custom handlers test.
@@ -404,5 +406,35 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
         finally {
             U.delete(snpDir);
         }
+    }
+
+    /**
+     * Test ensures that snapshot fail if during check some files are absent.
+     * @see SnapshotPartitionsQuickVerifyHandler
+     */
+    @Test
+    public void testHandlerExceptionFailSnapshot() throws Exception {
+        handlers.add(new SnapshotHandler<Void>() {
+            @Override public SnapshotHandlerType type() {
+                return SnapshotHandlerType.CREATE;
+            }
+
+            @Override public Void invoke(SnapshotHandlerContext ctx) {
+                // Someone remove snapshot files during creation.
+                // In this case snapshot must fail.
+                U.delete(ctx.snapshotDirectory());
+
+                return null;
+            }
+        });
+
+        IgniteEx ignite = startGridsWithCache(1, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
+
+        assertThrows(
+            null,
+            () -> snp(ignite).createSnapshot("must_fail", null, false, onlyPrimary).get(getTestTimeout()),
+            IgniteException.class,
+            "Snapshot data doesn't contain required cache group partition"
+        );
     }
 }
