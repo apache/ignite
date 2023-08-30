@@ -45,6 +45,7 @@ import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -115,7 +116,12 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             if (grp == MetaStorage.METASTORAGE_CACHE_ID)
                 return true;
 
-            IgnitePredicate<ClusterNode> filter = cctx.kernalContext().cache().cacheGroupDescriptor(grp).config().getNodeFilter();
+            CacheGroupDescriptor grpDesc = cctx.kernalContext().cache().cacheGroupDescriptor(grp);
+
+            if (grpDesc == null)
+                return true; // Restore. Skip filter.
+
+            IgnitePredicate<ClusterNode> filter = grpDesc.config().getNodeFilter();
 
             return filter == null || CU.affinityNode(
                 cctx.localNode(),
