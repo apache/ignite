@@ -36,6 +36,10 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 /** */
 public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     /** */
+    public static final String EXISTS_ERR_MSG = "Create snapshot request has been rejected. " +
+        "Snapshot with given name already exists on local node";
+
+    /** */
     @Test
     public void testCacheDump() throws Exception {
         snpPoolSz = 4;
@@ -47,24 +51,14 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
             checkDump(ign);
 
-            assertThrows(
-                null,
-                () -> createDump(ign),
-                IgniteException.class,
-                "Create snapshot request has been rejected. Snapshot with given name already exists on local node"
-            );
+            assertThrows(null, () -> createDump(ign), IgniteException.class, EXISTS_ERR_MSG);
 
             createDump(ign, DMP_NAME + 2);
 
             checkDump(ign, DMP_NAME + 2);
 
             if (persistence) {
-                assertThrows(
-                    null,
-                    () -> ign.snapshot().createSnapshot(DMP_NAME).get(),
-                    IgniteException.class,
-                    "Create snapshot request has been rejected. Snapshot with given name already exists on local node"
-                );
+                assertThrows(null, () -> ign.snapshot().createSnapshot(DMP_NAME).get(), IgniteException.class, EXISTS_ERR_MSG);
 
                 ign.snapshot().createSnapshot(DMP_NAME + 3).get();
             }
