@@ -45,7 +45,6 @@ import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
@@ -78,7 +77,7 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
     protected final IgniteLogger log;
 
     /** */
-    protected long timeout;
+    private final long timeout;
 
     /** Initiated thread id. */
     protected final long threadId;
@@ -91,7 +90,7 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
 
     /** */
     @GridToStringExclude
-    private GridDhtTxAbstractEnlistFuture localEnlistFuture;
+    private GridDhtTxAbstractEnlistFuture locEnlistFut;
 
     /** */
     @SuppressWarnings("unused")
@@ -100,7 +99,7 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
 
     /** Timeout object. */
     @GridToStringExclude
-    protected LockTimeoutObject timeoutObj;
+    private LockTimeoutObject timeoutObj;
 
     /**
      * @param cctx Cache context.
@@ -108,7 +107,7 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
      * @param timeout Timeout.
      * @param rdc Compound future reducer.
      */
-    public GridNearTxAbstractEnlistFuture(
+    protected GridNearTxAbstractEnlistFuture(
         GridCacheContext<?, ?> cctx, GridNearTxLocal tx, long timeout, @Nullable IgniteReducer<T, T> rdc) {
         super(rdc);
 
@@ -158,11 +157,9 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
 
                 // Terminate this future if parent future is terminated by rollback.
                 if (!fut.isDone()) {
-                    fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
-                        @Override public void apply(IgniteInternalFuture fut) {
-                            if (fut.error() != null)
-                                onDone(fut.error());
-                        }
+                    fut.listen(() -> {
+                        if (fut.error() != null)
+                            onDone(fut.error());
                     });
                 }
                 else if (fut.error() != null)
@@ -277,9 +274,9 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
     protected synchronized void updateLocalFuture(GridDhtTxAbstractEnlistFuture fut) throws IgniteCheckedException {
         checkCompleted();
 
-        assert localEnlistFuture == null;
+        assert locEnlistFut == null;
 
-        localEnlistFuture = fut;
+        locEnlistFut = fut;
     }
 
     /**
@@ -289,8 +286,8 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
     protected synchronized void clearLocalFuture(GridDhtTxAbstractEnlistFuture fut) throws IgniteCheckedException {
         checkCompleted();
 
-        if (localEnlistFuture == fut)
-            localEnlistFuture = null;
+        if (locEnlistFut == fut)
+            locEnlistFut = null;
     }
 
     /**
@@ -376,10 +373,10 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
             tx.setRollbackOnly();
 
         synchronized (this) {
-            GridDhtTxAbstractEnlistFuture localFuture0 = localEnlistFuture;
+            GridDhtTxAbstractEnlistFuture locFut0 = locEnlistFut;
 
-            if (localFuture0 != null && (err != null || cancelled))
-                localFuture0.onDone(cancelled ? new IgniteFutureCancelledCheckedException("Future was cancelled: " + localFuture0) : err);
+            if (locFut0 != null && (err != null || cancelled))
+                locFut0.onDone(cancelled ? new IgniteFutureCancelledCheckedException("Future was cancelled: " + locFut0) : err);
 
             boolean done = super.onDone(res, err, cancelled);
 

@@ -107,7 +107,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
                     () -> false,
                     defaultPartitionConsumer(parts0, latch)));
 
-                locFut.listen(f -> assertEquals("All partitions must be handled: " + parts0,
+                locFut.listen(() -> assertEquals("All partitions must be handled: " + parts0,
                     F.size(parts0.values(), Set::isEmpty), parts0.size()));
             }
             catch (IgniteCheckedException e) {
@@ -361,7 +361,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
                 .requestRemoteSnapshotFiles(sndNode, null, SNAPSHOT_NAME, null, expParts, () -> false,
                     defaultPartitionConsumer(expParts, null));
 
-            fut.listen(f -> expParts.values().forEach(integers -> assertTrue(integers.isEmpty())));
+            fut.listen(() -> expParts.values().forEach(integers -> assertTrue(integers.isEmpty())));
 
             futs.add(fut);
         }

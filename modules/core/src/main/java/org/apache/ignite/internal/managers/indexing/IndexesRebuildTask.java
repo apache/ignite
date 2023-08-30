@@ -116,8 +116,8 @@ public class IndexesRebuildTask {
 
         cctx.kernalContext().query().onStartRebuildIndexes(cctx, recreate);
 
-        rebuildCacheIdxFut.listen(fut -> {
-            Throwable err = fut.error();
+        rebuildCacheIdxFut.listen(() -> {
+            Throwable err = rebuildCacheIdxFut.error();
 
             if (err == null) {
                 try {

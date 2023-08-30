@@ -17,8 +17,6 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.List;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
@@ -82,17 +80,13 @@ public class SystemViewIndexImpl implements IgniteIndex {
     @Override public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
         ColocationGroup grp,
-        Predicate<Row> filters,
         RangeIterable<Row> ranges,
-        Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     ) {
         return new SystemViewScan<>(
             execCtx,
             tbl.descriptor(),
             ranges,
-            filters,
-            rowTransformer,
             requiredColumns
         );
     }

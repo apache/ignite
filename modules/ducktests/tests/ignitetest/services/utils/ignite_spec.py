@@ -24,6 +24,7 @@ import os
 import subprocess
 from abc import ABCMeta, abstractmethod
 import re
+from copy import deepcopy
 from itertools import chain
 
 from ignitetest.services.utils import IgniteServiceType
@@ -209,7 +210,10 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         :return: modules set.
         """
-        modules = self.service.modules or []
+        if self.service.modules:
+            modules = deepcopy(self.service.modules)
+        else:
+            modules = []
 
         modules.append("log4j2")
         modules.append("ducktests")

@@ -29,7 +29,6 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterState;
@@ -88,8 +87,6 @@ public class IgniteCacheStoreClusterReadOnlyModeSelfTest extends GridCommonAbstr
      */
     protected CacheConfiguration<?, ?>[] cacheConfigurations() {
         return Stream.of(ClusterReadOnlyModeTestUtils.cacheConfigurations())
-            // 3'rd party store doesn't support in a MVCC mode.
-            .filter(cfg -> cfg.getAtomicityMode() != CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
             .map(cfg -> cfg.setReadThrough(true))
             .map(cfg -> cfg.setWriteBehindEnabled(true))
             .map(cfg -> cfg.setWriteThrough(true))

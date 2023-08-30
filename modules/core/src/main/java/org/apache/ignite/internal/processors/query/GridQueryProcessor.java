@@ -2634,8 +2634,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (log.isInfoEnabled())
                 log.info("Started indexes rebuilding for cache " + cacheInfo);
 
-            idxFut.listen(fut -> {
-                Throwable err = fut.error();
+            idxFut.listen(() -> {
+                Throwable err = idxFut.error();
 
                 if (isNull(err) && log.isInfoEnabled())
                     log.info("Finished indexes rebuilding for cache " + cacheInfo);

@@ -22,8 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.type.RelDataType;
@@ -109,14 +107,13 @@ public class CacheTableImpl extends AbstractTable implements IgniteCacheTable {
     /** {@inheritDoc} */
     @Override public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
-        ColocationGroup group,
-        Predicate<Row> filter,
-        Function<Row, Row> rowTransformer,
-        @Nullable ImmutableBitSet usedColumns) {
-        UUID localNodeId = execCtx.localNodeId();
+        ColocationGroup grp,
+        @Nullable ImmutableBitSet usedColumns
+    ) {
+        UUID locNodeId = execCtx.localNodeId();
 
-        if (group.nodeIds().contains(localNodeId))
-            return new TableScan<>(execCtx, desc, group.partitions(localNodeId), filter, rowTransformer, usedColumns);
+        if (grp.nodeIds().contains(locNodeId))
+            return new TableScan<>(execCtx, desc, grp.partitions(locNodeId), usedColumns);
 
         return Collections.emptyList();
     }

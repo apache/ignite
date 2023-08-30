@@ -50,7 +50,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
-import static org.apache.ignite.testframework.MvccFeatureChecker.forcedMvcc;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -103,9 +102,6 @@ public class IgniteOnePhaseCommitNearSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOnePhaseCommitFromNearNode() throws Exception {
-        if (forcedMvcc())
-            return;
-
         backups = 1;
 
         startGrids(GRID_CNT);

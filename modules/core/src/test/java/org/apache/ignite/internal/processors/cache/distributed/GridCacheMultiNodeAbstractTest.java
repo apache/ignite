@@ -33,7 +33,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -83,11 +82,6 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
         cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
         cache3 = ignite3.cache(DEFAULT_CACHE_NAME);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
     }
 
     /** {@inheritDoc} */
@@ -179,8 +173,6 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
      * @throws Exception If check fails.
      */
     private void checkPuts(int cnt, Ignite... ignites) throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-
         CountDownLatch latch = new CountDownLatch(ignites.length * cnt);
 
         CacheEventListener lsnr = new CacheEventListener(latch, EVT_CACHE_OBJECT_PUT);
@@ -229,8 +221,6 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
      */
     @Test
     public void testLockUnlock() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-
         CacheEventListener lockLsnr1 = new CacheEventListener(ignite1, new CountDownLatch(1), EVT_CACHE_OBJECT_LOCKED);
 
         addListener(ignite1, lockLsnr1, EVT_CACHE_OBJECT_LOCKED);
