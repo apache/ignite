@@ -123,10 +123,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
             IgnitePredicate<ClusterNode> filter = grpDesc.config().getNodeFilter();
 
-            return filter == null || CU.affinityNode(
-                cctx.localNode(),
-                filter
-            );
+            return filter == null || CU.affinityNode(cctx.localNode(), filter);
         }).collect(Collectors.toSet());
 
         Set<File> partFiles = new HashSet<>();
