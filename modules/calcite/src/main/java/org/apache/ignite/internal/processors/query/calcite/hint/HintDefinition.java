@@ -17,12 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.calcite.hint;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.HintOptionChecker;
 import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintPredicates;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rule.CorrelatedNestedLoopJoinRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.NestedLoopJoinConverterRule;
 
 /**
  * Holds supported SQL hints and their settings.
@@ -75,6 +81,24 @@ public enum HintDefinition {
         @Override public HintOptionChecker optionsChecker() {
             return NO_INDEX.optionsChecker();
         }
+    },
+
+    /** Forces merge join. */
+    MERGE_JOIN {
+        /** {@inheritDoc} */
+        @Override public HintPredicate predicate() {
+            return HintPredicates.JOIN;
+        }
+
+        /** {@inheritDoc} */
+        @Override public HintOptionChecker optionsChecker() {
+            return HintsConfig.OPTS_CHECK_NO_KV;
+        }
+
+        /** {@inheritDoc} */
+        @Override Collection<RelOptRule> disabledRules() {
+            return Arrays.asList(NestedLoopJoinConverterRule.INSTANCE, CorrelatedNestedLoopJoinRule.INSTANCE);
+        }
     };
 
     /**
@@ -89,5 +113,10 @@ public enum HintDefinition {
      */
     HintOptionChecker optionsChecker() {
         return HintsConfig.OPTS_CHECK_PLAIN;
+    }
+
+    /** */
+    RelOptRule[] disabledRules() {
+        return new RelOptRule[0];
     }
 }
