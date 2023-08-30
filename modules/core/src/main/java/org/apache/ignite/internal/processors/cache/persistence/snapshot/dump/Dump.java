@@ -24,9 +24,11 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -51,7 +53,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_METAFILE_EXT;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 
 /**
@@ -93,14 +95,14 @@ public class Dump {
 
         ClassLoader clsLdr = U.resolveClassLoader(cctx.config());
 
-        return Arrays.stream(dumpDir.listFiles(f -> f.getName().endsWith(DUMP_METAFILE_EXT))).map(meta -> {
+        return Arrays.stream(dumpDir.listFiles(f -> f.getName().endsWith(SNAPSHOT_METAFILE_EXT))).map(meta -> {
             try (InputStream in = new BufferedInputStream(Files.newInputStream(meta.toPath()))) {
                 return marsh.<SnapshotMetadata>unmarshal(in, clsLdr);
             }
             catch (IOException | IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
-        }).collect(Collectors.toList());
+        }).filter(SnapshotMetadata::dump).collect(Collectors.toList());
     }
 
     /** */
@@ -119,6 +121,11 @@ public class Dump {
 
     /** */
     public DumpIterator iterator(String node, int groupId) throws IOException {
+        return iterator(node, groupId, true);
+    }
+
+    /** */
+    DumpIterator iterator(String node, int groupId, boolean excludeDuplicates) throws IOException {
         FileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
         File[] parts = dumpGroupDirectory(node, groupId)
@@ -136,6 +143,8 @@ public class Dump {
 
             Iterator<DumpEntry> res = new Iterator<DumpEntry>() {
                 DumpEntry next;
+
+                Set<Integer> partKeys = new HashSet<>();
 
                 /** {@inheritDoc} */
                 @Override public boolean hasNext() {
@@ -165,6 +174,16 @@ public class Dump {
 
                     try {
                         next = serializer.read(dumpFile, groupId);
+
+                        /*
+                         * During dumping entry can be dumped twice: by partition iterator and change listener.
+                         * Excluding duplicates keys from iteration.
+                         */
+                        while (next != null && !partKeys.add(next.key().hashCode()))
+                            next = serializer.read(dumpFile, groupId);
+
+                        if (next == null)
+                            partKeys = null; // Let GC do the rest.
                     }
                     catch (IOException | IgniteCheckedException e) {
                         throw new IgniteException(e);

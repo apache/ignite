@@ -63,7 +63,7 @@ public class SnapshotView {
         SnapshotMetadata meta,
         Collection<String> cacheGrps
     ) {
-        type = SnapshotType.FULL;
+        type = meta.dump() ? SnapshotType.DUMP : SnapshotType.FULL;
         name = meta.snapshotName();
         consistentId = meta.consistentId();
         baselineNodes = F.concat(meta.baselineNodes(), ",");
@@ -149,6 +149,9 @@ public class SnapshotView {
         FULL,
 
         /** Incremental snapshot. */
-        INCREMENTAL
+        INCREMENTAL,
+
+        /** DUMP. */
+        DUMP
     }
 }

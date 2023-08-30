@@ -73,6 +73,5 @@ public class IgniteSnapshotTestSuite {
         GridTestUtils.addTestIfNeeded(suite, IncrementalSnapshotsTestSuite.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheDumpSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheDumpExpireTest.class, ignoredTests);
-
     }
 }
