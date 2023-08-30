@@ -17,15 +17,22 @@
 
 package org.apache.ignite.internal.management.dump;
 
-import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 
 /** */
-public class DumpCommand extends CommandRegistryImpl {
-    /** */
-    public DumpCommand() {
-        super(
-            new DumpCreateCommand(),
-            new DumpRestoreCommand()
-        );
+public class DumpRestoreCommand implements ComputeCommand<DumpRestoreCommandArg, Void> {
+    /** {@inheritDoc} */
+    @Override public String description() {
+        return "Restore data from dump";
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<DumpRestoreCommandArg> argClass() {
+        return DumpRestoreCommandArg.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class taskClass() {
+        return null;
     }
 }

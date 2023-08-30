@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.dump;
 
+import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 
 /**
@@ -36,5 +37,10 @@ public class DumpCreateCommand implements ComputeCommand<DumpCreateCommandArg, V
     /** {@inheritDoc} */
     @Override public Class<DumpCreateTask> taskClass() {
         return DumpCreateTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printResult(DumpCreateCommandArg arg, Void res, Consumer<String> printer) {
+        printer.accept("Dump \"" + arg.name() + "\" was created.");
     }
 }

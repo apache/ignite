@@ -46,6 +46,8 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
         createDump(ign);
 
         checkDump(ign);
+
+        createDump(ign);
     }
 
     /** */
