@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -81,6 +82,9 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     public static final String DMP_NAME = "dump";
+
+    /** */
+    protected int snpPoolSz = 1;
 
     /** */
     @Parameterized.Parameter
@@ -141,23 +145,27 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
+            .setSnapshotThreadPoolSize(snpPoolSz)
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistence)))
             .setCacheConfiguration(
                 new CacheConfiguration<>()
                     .setName(DEFAULT_CACHE_NAME)
                     .setBackups(backups)
-                    .setAtomicityMode(mode),
+                    .setAtomicityMode(mode)
+                    .setAffinity(new RendezvousAffinityFunction().setPartitions(20)),
                 new CacheConfiguration<>()
                     .setGroupName(GRP)
                     .setName(CACHE_0)
                     .setBackups(backups)
-                    .setAtomicityMode(mode),
+                    .setAtomicityMode(mode)
+                    .setAffinity(new RendezvousAffinityFunction().setPartitions(20)),
                 new CacheConfiguration<>()
                     .setGroupName(GRP)
                     .setName(CACHE_1)
                     .setBackups(backups)
                     .setAtomicityMode(mode)
+                    .setAffinity(new RendezvousAffinityFunction().setPartitions(20))
             );
     }
 

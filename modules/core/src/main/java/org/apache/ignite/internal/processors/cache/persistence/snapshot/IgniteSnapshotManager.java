@@ -2205,6 +2205,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     ));
             }
 
+            if (!CU.isPersistenceEnabled(cctx.gridConfig()) && !dump) {
+                throw new IgniteException("Create snapshot request has been rejected. " +
+                    "Snapshots on an in-memory clusters are not allowed.");
+            }
+
             ClusterSnapshotFuture snpFut0;
             int incIdx = -1;
 

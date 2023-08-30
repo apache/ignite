@@ -80,7 +80,7 @@ public class IgniteCacheDumpExpireTest extends AbstractCacheDumpTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName).setSnapshotThreadPoolSize(1);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (!explicit) {
             for (CacheConfiguration<?, ?> ccfg : cfg.getCacheConfiguration())

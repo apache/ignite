@@ -23,7 +23,6 @@ import java.util.function.IntConsumer;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -36,30 +35,51 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** */
 public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setSnapshotThreadPoolSize(1);
-    }
-
     /** */
     @Test
     public void testCacheDump() throws Exception {
-        IgniteEx ign = startGridAndFillCaches();
+        snpPoolSz = 4;
 
-        createDump(ign);
+        try {
+            IgniteEx ign = startGridAndFillCaches();
 
-        checkDump(ign);
+            createDump(ign);
 
-        assertThrows(
-            null,
-            () -> createDump(ign),
-            IgniteException.class,
-            "Create snapshot request has been rejected. Snapshot with given name already exists on local node"
-        );
+            checkDump(ign);
 
-        createDump(ign, DMP_NAME + 2);
+            assertThrows(
+                null,
+                () -> createDump(ign),
+                IgniteException.class,
+                "Create snapshot request has been rejected. Snapshot with given name already exists on local node"
+            );
 
-        checkDump(ign, DMP_NAME + 2);
+            createDump(ign, DMP_NAME + 2);
+
+            checkDump(ign, DMP_NAME + 2);
+
+            if (persistence) {
+                assertThrows(
+                    null,
+                    () -> ign.snapshot().createSnapshot(DMP_NAME).get(),
+                    IgniteException.class,
+                    "Create snapshot request has been rejected. Snapshot with given name already exists on local node"
+                );
+
+                ign.snapshot().createSnapshot(DMP_NAME + 3).get();
+            }
+            else {
+                assertThrows(
+                    null,
+                    () -> ign.snapshot().createSnapshot(DMP_NAME + 3).get(),
+                    IgniteException.class,
+                    "Create snapshot request has been rejected. Snapshots on an in-memory clusters are not allowed."
+                );
+            }
+        }
+        finally {
+            snpPoolSz = 1;
+        }
     }
 
     /** */
