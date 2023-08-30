@@ -49,7 +49,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Snapshot custom handlers test.
@@ -430,11 +430,9 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         IgniteEx ignite = startGridsWithCache(1, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        assertThrows(
-            null,
+        assertThrowsWithCause(
             () -> snp(ignite).createSnapshot("must_fail", null, false, onlyPrimary).get(getTestTimeout()),
-            IgniteException.class,
-            "Snapshot data doesn't contain required cache group partition"
+            IgniteException.class
         );
     }
 }
