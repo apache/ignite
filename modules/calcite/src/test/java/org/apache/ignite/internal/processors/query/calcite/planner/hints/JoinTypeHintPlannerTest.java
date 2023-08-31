@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner.hints;
 
+import java.util.Arrays;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.TestTable;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIgniteJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -53,6 +55,33 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
 
     /** */
     @Test
+    public void test0() throws Exception {
+        String sqlTpl = "SELECT %s t1.v1, t2.v2, t3.v3 FROM TBL3 t1 JOIN TBL4 t2 on t1.v1=t2.v2 JOIN TBL5 t3 on " +
+            "t2.v2=t3.v3";
+
+        assertPlan(String.format(sqlTpl, ""), schema,
+            nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class).negate().negate()));
+
+        assertPlan(String.format(sqlTpl, "/*+ " + HintDefinition.NO_MERGE_JOIN + " */"), schema,
+            nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)).negate());
+
+        for (String tbl : Arrays.asList("TBL3", "TBL4", "TBL5")) {
+            assertPlan(String.format(sqlTpl, "/*+ " + HintDefinition.NO_MERGE_JOIN + "(" + tbl + ") */"), schema,
+                nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)).and(input(nodeOrAnyChild(isTableScan(tbl)
+                    .negate()))));
+        }
+
+        for (String tbl : Arrays.asList("TBL3", "TBL4", "TBL5")) {
+            assertPlan(String.format(sqlTpl, "/*+ " + HintDefinition.NO_MERGE_JOIN + "(" + tbl + ") */"), schema,
+                nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)).and(input(nodeOrAnyChild(isTableScan(tbl)
+                    .negate()))));
+        }
+    }
+
+    /**
+     * Tests {@link HintDefinition#NO_CNL_JOIN} disables collerated nested loop join.
+     */
+    @Test
     public void testDisableNCL() throws Exception {
         doTestDisableJoinTypeWith("TBL2", "TBL1", "INNER", IgniteCorrelatedNestedLoopJoin.class,
             HintDefinition.NO_CNL_JOIN);
@@ -65,7 +94,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
             HintDefinition.NO_CNL_JOIN);
 
         LogListener lsnr = LogListener.matches("Hint 'NO_CNL_JOIN' was skipped. Reason: Correlated nested " +
-                "loop is not supported for join type 'FULL'").build();
+            "loop is not supported for join type 'FULL'").build();
 
         lsnrLog.registerListener(lsnr);
 
@@ -75,7 +104,9 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
         assertTrue(lsnr.check());
     }
 
-    /** */
+    /**
+     * Tests {@link HintDefinition#NO_NL_JOIN} disables nested loop join.
+     */
     @Test
     public void testDisableNL() throws Exception {
         doTestDisableJoinTypeWith("TBL3", "TBL1", "LEFT", IgniteNestedLoopJoin.class,
@@ -89,6 +120,24 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
 
         doTestDisableJoinTypeWith("TBL1", "TBL2", "FULL", IgniteNestedLoopJoin.class,
             HintDefinition.NO_NL_JOIN);
+    }
+
+    /**
+     * Tests {@link HintDefinition#NO_MERGE_JOIN} disables nested loop join.
+     */
+    @Test
+    public void testDisableMerge() throws Exception {
+        doTestDisableJoinTypeWith("TBL3", "TBL5", "INNER", IgniteMergeJoin.class,
+            HintDefinition.NO_MERGE_JOIN);
+
+        doTestDisableJoinTypeWith("TBL3", "TBL5", "LEFT", IgniteMergeJoin.class,
+            HintDefinition.NO_MERGE_JOIN);
+
+        doTestDisableJoinTypeWith("TBL3", "TBL5", "RIGHT", IgniteMergeJoin.class,
+            HintDefinition.NO_MERGE_JOIN);
+
+        doTestDisableJoinTypeWith("TBL3", "TBL5", "FULL", IgniteMergeJoin.class,
+            HintDefinition.NO_MERGE_JOIN);
     }
 
     /** */
