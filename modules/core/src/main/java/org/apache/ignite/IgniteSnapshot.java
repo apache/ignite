@@ -97,6 +97,10 @@ public interface IgniteSnapshot {
     public IgniteFuture<Boolean> cancelSnapshotRestore(String name);
 
     /**
+     * Creates cache groups dump.
+     * Dump is consistent entry by entry backup of cache group content.
+     * In-memory cache groups also supported.
+     *
      * @param name Dump name.
      * @param cacheGroupNames Cache group names to be dumped or {@code null} to dump all cache groups.
      * @return Future which will be completed when dump ends.

@@ -26,8 +26,7 @@ public class DumpCommand extends CommandRegistryImpl {
     /** */
     public DumpCommand() {
         super(
-            new DumpCreateCommand(),
-            new DumpRestoreCommand()
+            new DumpCreateCommand()
         );
     }
 }
