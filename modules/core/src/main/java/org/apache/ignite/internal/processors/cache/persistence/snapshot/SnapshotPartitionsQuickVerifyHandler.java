@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
@@ -72,21 +71,10 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
         String name,
         Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>>> results
     ) throws IgniteCheckedException {
-        IgniteLogger log = cctx.logger(SnapshotPartitionsQuickVerifyHandler.class);
-
-        Exception err = null;
-
         for (SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>> result : results) {
-            if (result.error() != null) {
-                if (err == null)
-                    err = result.error();
-
-                log.error("Verify error", result.error());
-            }
+            if (result.error() != null)
+                throw new IgniteCheckedException(result.error());
         }
-
-        if (err != null)
-            throw new IgniteCheckedException(err);
 
         if (results.stream().anyMatch(r -> r.data() == null))
             return;
