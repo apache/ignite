@@ -33,20 +33,14 @@ public class DumpCreateCommandArg extends IgniteDataTransferObject {
     @Argument(description = "Name of the dump")
     private String name;
 
-    /** */
-    @Argument(description = "Groups to create dump for", optional = true)
-    private String[] groups;
-
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
-        U.writeArray(out, groups);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
-        groups = U.readArray(in, String.class);
     }
 
     /** */
@@ -57,15 +51,5 @@ public class DumpCreateCommandArg extends IgniteDataTransferObject {
     /** */
     public void name(String name) {
         this.name = name;
-    }
-
-    /** */
-    public String[] groups() {
-        return groups;
-    }
-
-    /** */
-    public void groups(String[] groups) {
-        this.groups = groups;
     }
 }

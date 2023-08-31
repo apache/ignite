@@ -101,7 +101,7 @@ public class SnapshotMetadata implements Serializable {
     /** If {@code true} snapshot only primary copies of partitions. */
     private boolean onlyPrimary;
 
-    /** If {@code true} cache gropu dump stored. */
+    /** If {@code true} cache group dump stored. */
     private boolean dump;
 
     /**
@@ -115,7 +115,7 @@ public class SnapshotMetadata implements Serializable {
      * @param snpRecPtr WAL pointer to {@link ClusterSnapshotRecord} if exists.
      * @param masterKeyDigest Master key digest for encrypted caches.
      * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
-     * @param dump If {@code true} cache gropu dump stored.
+     * @param dump If {@code true} cache group dump stored.
      */
     public SnapshotMetadata(
         UUID rqId,
@@ -234,7 +234,7 @@ public class SnapshotMetadata implements Serializable {
         return onlyPrimary;
     }
 
-    /** @return If {@code true} snapshot only primary copies of partitions. */
+    /** @return If {@code true} then metadata describe cache dump. */
     public boolean dump() {
         return dump;
     }

@@ -1768,8 +1768,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> createDump(String name, @Nullable Collection<String> groupNames) {
-        return createSnapshot(name, null, false, false, true, groupNames);
+    @Override public IgniteFuture<Void> createDump(String name) {
+        return createSnapshot(name, null, false, false, true);
     }
 
     /**
@@ -2142,14 +2142,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         return createSnapshot(name, null, true, false);
     }
 
-    /** */
+    /**
+     * Create a consistent copy of all persistence cache groups from the whole cluster.
+     *
+     * @param name Snapshot unique name which satisfies the following name pattern [a-zA-Z0-9_].
+     * @param snpPath Snapshot directory path.
+     * @param incremental Incremental snapshot flag.
+     * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
+     * @param dump If {@code true} cache dump must be created.
+     * @return Future which will be completed when a process ends.
+     */
     public IgniteFutureImpl<Void> createSnapshot(
         String name,
         @Nullable String snpPath,
         boolean incremental,
         boolean onlyPrimary
     ) {
-        return createSnapshot(name, snpPath, incremental, onlyPrimary, false, null);
+        return createSnapshot(name, snpPath, incremental, onlyPrimary, false);
     }
 
     /**
@@ -2160,7 +2169,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param incremental Incremental snapshot flag.
      * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
      * @param dump If {@code true} cache dump must be created.
-     * @param grpNames Cache group names. If {@code null} then dump all groups.
      * @return Future which will be completed when a process ends.
      */
     public IgniteFutureImpl<Void> createSnapshot(
@@ -2168,14 +2176,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Nullable String snpPath,
         boolean incremental,
         boolean onlyPrimary,
-        boolean dump,
-        @Nullable Collection<String> grpNames
+        boolean dump
     ) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
         A.ensure(!(incremental && onlyPrimary), "Only primary not supported for incremental snapshots");
-        if (dump)
-            A.ensure(!incremental, "Incremental dump not supported");
+        A.ensure(!(dump && incremental), "Incremental dump not supported");
 
         try {
             cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
@@ -2200,7 +2206,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return new IgniteSnapshotFutureImpl(cctx.kernalContext().closure()
                     .callAsync(
                         BALANCE,
-                        new CreateSnapshotCallable(name, incremental, onlyPrimary, dump, grpNames),
+                        new CreateSnapshotCallable(name, incremental, onlyPrimary, dump),
                         options(Collections.singletonList(crd)).withFailoverDisabled()
                     ));
             }
@@ -2209,6 +2215,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 throw new IgniteException("Create snapshot request has been rejected. " +
                     "Snapshots on an in-memory clusters are not allowed.");
             }
+
+            cctx.discovery().aliveServerNodes().stream().filter(n -> n.consistentId() == null).forEach(n -> {
+                throw new IgniteException("Create dump request has been rejected. " +
+                    "ConsistenID not set [node=" + n.id() + ']');
+            });
 
             ClusterSnapshotFuture snpFut0;
             int incIdx = -1;
@@ -2263,7 +2274,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             List<String> grps = (dump ? cctx.cache().cacheGroupDescriptors().values() : cctx.cache().persistentGroups()).stream()
                 .filter(g -> cctx.cache().cacheType(g.cacheOrGroupName()) == CacheType.USER)
                 .map(CacheGroupDescriptor::cacheOrGroupName)
-                .filter(n -> grpNames == null || grpNames.contains(n))
                 .collect(Collectors.toList());
 
             if (!dump)
@@ -4601,9 +4611,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** If {@code true} create cache dump. */
         private final boolean dump;
 
-        /** Cache group names. */
-        private final Collection<String> grpNames;
-
         /** Auto-injected grid instance. */
         @IgniteInstanceResource
         private transient IgniteEx ignite;
@@ -4613,20 +4620,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param incremental If {@code true} then incremental snapshot must be created.
          * @param onlyPrimary If {@code true} then only copy of primary partitions will be created.
          * @param dump If {@code true} then cache dump must be created.
-         * @param grpNames Cache group names to include in dump.
          */
         public CreateSnapshotCallable(
             String snpName,
             boolean incremental,
             boolean onlyPrimary,
-            boolean dump,
-            Collection<String> grpNames
+            boolean dump
         ) {
             this.snpName = snpName;
             this.incremental = incremental;
             this.onlyPrimary = onlyPrimary;
             this.dump = dump;
-            this.grpNames = grpNames;
         }
 
         /** {@inheritDoc} */
@@ -4639,8 +4643,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     null,
                     false,
                     onlyPrimary,
-                    dump,
-                    grpNames
+                    dump
                 ).get();
             }
 

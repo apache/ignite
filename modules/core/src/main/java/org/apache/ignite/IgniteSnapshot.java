@@ -62,6 +62,16 @@ public interface IgniteSnapshot {
     public IgniteFuture<Void> cancelSnapshot(String name);
 
     /**
+     * Creates cache groups dump.
+     * Dump is consistent entry by entry backup of cache group content.
+     * In-memory cache groups also supported.
+     *
+     * @param name Dump name.
+     * @return Future which will be completed when dump ends.
+     */
+    public IgniteFuture<Void> createDump(String name);
+
+    /**
      * Restore cache group(s) from the snapshot.
      * <p>
      * <b>NOTE:</b> Cache groups to be restored from the snapshot must not present in the cluster, if they present,
@@ -95,15 +105,4 @@ public interface IgniteSnapshot {
      * future will be {@code false} if the restore process with the specified snapshot name is not running at all.
      */
     public IgniteFuture<Boolean> cancelSnapshotRestore(String name);
-
-    /**
-     * Creates cache groups dump.
-     * Dump is consistent entry by entry backup of cache group content.
-     * In-memory cache groups also supported.
-     *
-     * @param name Dump name.
-     * @param cacheGroupNames Cache group names to be dumped or {@code null} to dump all cache groups.
-     * @return Future which will be completed when dump ends.
-     */
-    public IgniteFuture<Void> createDump(String name, @Nullable Collection<String> cacheGroupNames);
 }

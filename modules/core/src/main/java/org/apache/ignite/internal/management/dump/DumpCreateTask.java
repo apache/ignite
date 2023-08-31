@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.management.dump;
 
-import java.util.Arrays;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -45,7 +44,7 @@ public class DumpCreateTask extends VisorOneNodeTask<DumpCreateCommandArg, Void>
 
         /** {@inheritDoc} */
         @Override protected Void run(@Nullable DumpCreateCommandArg arg) throws IgniteException {
-            ignite.snapshot().createDump(arg.name(), arg.groups() == null ? null : Arrays.asList(arg.groups())).get();
+            ignite.snapshot().createDump(arg.name()).get();
 
             return null;
         }
