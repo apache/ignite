@@ -87,7 +87,7 @@ public final class HintsConfig {
 
         Arrays.stream(HintDefinition.values()).forEach(hintDef ->
             b.hintStrategy(hintDef.name(), HintStrategy.builder(hintDef.predicate())
-                .optionChecker(hintDef.optionsChecker()).excludedRules(hintDef.disabledRules()).build()));
+                .optionChecker(hintDef.optionsChecker()).build()));
 
         return b.build();
     }

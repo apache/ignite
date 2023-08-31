@@ -26,7 +26,7 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 
 /** */
-public abstract class AbstractIgniteConverterRule<T extends RelNode> extends ConverterRule {
+abstract class AbstractIgniteConverterRule<T extends RelNode> extends ConverterRule {
     /** */
     protected AbstractIgniteConverterRule(Class<T> clazz) {
         this(clazz, clazz.getName() + "Converter");

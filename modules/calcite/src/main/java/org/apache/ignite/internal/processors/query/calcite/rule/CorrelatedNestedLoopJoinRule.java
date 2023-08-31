@@ -31,6 +31,7 @@ import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexBuilder;
@@ -39,13 +40,15 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.tools.RelBuilder;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /** */
-public class CorrelatedNestedLoopJoinRule extends AbstractIgniteConverterRule<LogicalJoin> {
+public class CorrelatedNestedLoopJoinRule extends AbstractIgniteJoinConverterRule {
     /** */
     public static final RelOptRule INSTANCE = new CorrelatedNestedLoopJoinRule(1);
 
@@ -57,7 +60,7 @@ public class CorrelatedNestedLoopJoinRule extends AbstractIgniteConverterRule<Lo
 
     /** */
     public CorrelatedNestedLoopJoinRule(int batchSize) {
-        super(LogicalJoin.class, "CorrelatedNestedLoopJoin");
+        super("CorrelatedNestedLoopJoin", HintDefinition.CNL_JOIN, HintDefinition.NO_CNL_JOIN);
 
         this.batchSize = batchSize;
     }
@@ -141,9 +144,29 @@ public class CorrelatedNestedLoopJoinRule extends AbstractIgniteConverterRule<Lo
     }
 
     /** {@inheritDoc} */
-    @Override public boolean matches(RelOptRuleCall call) {
+    @Override public boolean matchesCall(RelOptRuleCall call) {
         LogicalJoin join = call.rel(0);
 
-        return join.getJoinType() == JoinRelType.INNER || join.getJoinType() == JoinRelType.LEFT;
+        return supportedJoinType(join.getJoinType());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean activateDisableHint(LogicalJoin join, RelHint hint) {
+        if (!supportedJoinType(join.getJoinType())) {
+            List<String> joinTblNames = joinTblNames(join);
+
+            Commons.planContext(join).skippedHint(hint, null, "Correlated nested loop is not " +
+                "supported for join type '" + join.getJoinType()
+                + (joinTblNames.isEmpty() ? "'." : "' for tables " + String.join(",", joinTblNames) + '.'));
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /** */
+    private static boolean supportedJoinType(JoinRelType type) {
+        return type == JoinRelType.INNER || type == JoinRelType.LEFT;
     }
 }
