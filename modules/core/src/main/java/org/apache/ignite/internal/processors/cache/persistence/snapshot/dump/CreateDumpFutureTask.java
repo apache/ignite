@@ -21,9 +21,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -35,9 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -53,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Abstract
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFutureTaskResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotSender;
-import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -171,18 +165,6 @@ public class CreateDumpFutureTask extends AbstractCreateBackupFutureTask impleme
             for (GridCacheContext<?, ?> cctx : gctx.caches())
                 cctx.dumpListener(this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected List<CompletableFuture<Void>> saveMetaCopy() {
-        Collection<BinaryType> types = cctx.kernalContext().cacheObjects().binary().types();
-
-        ArrayList<Map<Integer, MappedName>> mappings = cctx.kernalContext().marshallerContext().getCachedMappings();
-
-        return Arrays.asList(
-            future(() -> cctx.kernalContext().cacheObjects().saveMetadata(types, dumpDir)),
-            future(() -> MarshallerContextImpl.saveMappings(cctx.kernalContext(), mappings, dumpDir))
-        );
     }
 
     /** {@inheritDoc} */

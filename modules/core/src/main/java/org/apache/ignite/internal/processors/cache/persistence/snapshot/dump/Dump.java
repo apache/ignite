@@ -265,4 +265,11 @@ public class Dump {
 
         return grpDirs[0];
     }
+
+    /**
+     * Closeable dump iterator.
+     */
+    public interface DumpIterator extends Iterator<DumpEntry>, AutoCloseable {
+        // No-op.
+    }
 }

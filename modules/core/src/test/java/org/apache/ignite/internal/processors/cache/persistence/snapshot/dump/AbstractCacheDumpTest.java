@@ -285,7 +285,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             assertEquals(GRP, ccfgs.get(1).getGroupName());
             assertEquals(CACHE_1, ccfgs.get(1).getName());
 
-            try (DumpIterator iter = dump.iterator(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME))) {
+            try (Dump.DumpIterator iter = dump.iterator(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME))) {
                 while (iter.hasNext()) {
                     DumpEntry e = iter.next();
 
@@ -297,7 +297,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 }
             }
 
-            try (DumpIterator iter = dump.iterator(nodeDir, CU.cacheId(GRP))) {
+            try (Dump.DumpIterator iter = dump.iterator(nodeDir, CU.cacheId(GRP))) {
                 while (iter.hasNext()) {
                     DumpEntry e = iter.next();
 

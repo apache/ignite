@@ -23,9 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +43,6 @@ import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -65,7 +62,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
-import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -390,25 +386,6 @@ class SnapshotFutureTask extends AbstractCreateBackupFutureTask implements Check
             return;
 
         backupAllAsync();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected List<CompletableFuture<Void>> saveMetaCopy() {
-        Collection<BinaryType> binTypesCopy = cctx.kernalContext()
-            .cacheObjects()
-            .metadata(Collections.emptyList())
-            .values();
-
-        List<Map<Integer, MappedName>> mappingsCopy = cctx.kernalContext()
-            .marshallerContext()
-            .getCachedMappings();
-
-        return Arrays.asList(
-            // Process binary meta.
-            future(() -> snpSndr.sendBinaryMeta(binTypesCopy)),
-            // Process marshaller meta.
-            future(() -> snpSndr.sendMarshallerMeta(mappingsCopy))
-        );
     }
 
     /** {@inheritDoc} */

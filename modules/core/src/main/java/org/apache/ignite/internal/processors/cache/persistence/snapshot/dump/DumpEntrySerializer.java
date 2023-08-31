@@ -193,10 +193,6 @@ public class DumpEntrySerializer {
         CacheObject val = co.toCacheObject(coCtx, valType, valBytes);
 
         return new DumpEntry() {
-            @Override public int groupId() {
-                return grp;
-            }
-
             @Override public int cacheId() {
                 return cache;
             }

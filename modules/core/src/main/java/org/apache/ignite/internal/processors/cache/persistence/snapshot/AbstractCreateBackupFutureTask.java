@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -28,12 +30,14 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
+import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -73,9 +77,6 @@ public abstract class AbstractCreateBackupFutureTask extends AbstractSnapshotFut
     ) {
         super(cctx, srcNodeId, reqId, snpName, snpSndr, parts);
     }
-
-    /** */
-    protected abstract List<CompletableFuture<Void>> saveMetaCopy();
 
     /** */
     protected abstract List<CompletableFuture<Void>> saveCacheConfigsCopy();
@@ -179,7 +180,19 @@ public abstract class AbstractCreateBackupFutureTask extends AbstractSnapshotFut
             // Submit all tasks for partitions and deltas processing.
             List<CompletableFuture<Void>> futs = new ArrayList<>();
 
-            futs.addAll(saveMetaCopy());
+            Collection<BinaryType> binTypesCopy = cctx.kernalContext()
+                .cacheObjects()
+                .metadata(Collections.emptyList())
+                .values();
+
+            List<Map<Integer, MappedName>> mappingsCopy = cctx.kernalContext()
+                .marshallerContext()
+                .getCachedMappings();
+
+            // Process binary meta.
+            futs.add(future(() -> snpSndr.sendBinaryMeta(binTypesCopy)));
+            // Process marshaller meta.
+            futs.add(future(() -> snpSndr.sendMarshallerMeta(mappingsCopy)));
             futs.addAll(saveCacheConfigsCopy());
 
             for (Map.Entry<Integer, Set<Integer>> grpParts : processed.entrySet())

@@ -24,9 +24,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
  * Single cache entry from dump.
  */
 public interface DumpEntry {
-    /** @return Group id. */
-    public int groupId();
-
     /** @return Cache id. */
     public int cacheId();
 
