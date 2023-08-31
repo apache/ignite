@@ -217,6 +217,6 @@ public class DumpEntrySerializer {
         crc.update(buf, dataSz + Integer.BYTES /*dataSz field included in CRC calculation*/);
 
         if (expCrc != crc.getValue())
-            throw new IgniteException("Data corrupted[expCrc=" + expCrc + ", crc=" + crc + ']');
+            throw new IgniteException("Data corrupted [expCrc=" + expCrc + ", crc=" + crc + ']');
     }
 }

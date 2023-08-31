@@ -2215,11 +2215,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "Snapshots on an in-memory clusters are not allowed.");
             }
 
-            cctx.discovery().aliveServerNodes().stream().filter(n -> n.consistentId() == null).forEach(n -> {
-                throw new IgniteException("Create dump request has been rejected. " +
-                    "ConsistenID not set [node=" + n.id() + ']');
-            });
-
             ClusterSnapshotFuture snpFut0;
             int incIdx = -1;
 
@@ -2277,6 +2272,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             if (!dump)
                 grps.add(METASTORAGE_CACHE_NAME);
+            else if (grps.isEmpty())
+                throw new IgniteException("Dump operation has been rejected. No cache group defined in cluster");
 
             List<ClusterNode> srvNodes = cctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
 

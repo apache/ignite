@@ -84,7 +84,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     public static final String DMP_NAME = "dump";
 
     /** */
-    protected int snpPoolSz = 1;
+    protected static final IntFunction<User> USER_FACTORY = i ->
+        new User(i, ACL.values()[i % ACL.values().length], new Role("Role" + i, SUPER));
 
     /** */
     @Parameterized.Parameter
@@ -121,12 +122,10 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected IgniteEx cli;
+    protected int snpPoolSz = 1;
 
     /** */
-    protected static final IntFunction<User> USER_FACTORY = i ->
-        new User(i, ACL.values()[i % ACL.values().length], new Role("Role" + i, SUPER));
-
+    protected IgniteEx cli;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -241,8 +240,6 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             ign.context(),
             new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name)
         );
-
-        assertNotNull(dump);
 
         List<SnapshotMetadata> metadata = dump.metadata();
 
