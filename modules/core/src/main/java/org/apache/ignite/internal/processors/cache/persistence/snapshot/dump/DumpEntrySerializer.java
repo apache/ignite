@@ -31,15 +31,17 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-/** */
+/**
+ * Serialization logic for dump.
+ */
 public class DumpEntrySerializer {
     /** */
     private ByteBuffer buf;
 
-    /** */
+    /** Kernal context. */
     private @Nullable GridKernalContext cctx;
 
-    /** */
+    /** Cache object processor. */
     private IgniteCacheObjectProcessor co;
 
     /** */
@@ -53,10 +55,17 @@ public class DumpEntrySerializer {
         co = cctx.cacheObjects();
     }
 
-    /** */
+    /**
+     * @param cache Cache id.
+     * @param expireTime Expire time.
+     * @param key Key.
+     * @param val Value.
+     * @param coCtx Cache object context.
+     * @return Buffer with serialized entry.
+     * @throws IgniteCheckedException If failed
+     */
     public ByteBuffer writeToBuffer(
         int cache,
-        int partition,
         long expireTime,
         KeyCacheObject key,
         CacheObject val,
@@ -68,7 +77,6 @@ public class DumpEntrySerializer {
         int keySz = key.valueBytesLength(coCtx);
         int valSz = val.valueBytesLength(coCtx);
         int dataSz = /*cache ID*/Integer.BYTES +
-            /*part ID*/Integer.BYTES +
             /*expire Time*/Long.BYTES +
             /*key*/keySz +
             /*value*/valSz;
@@ -79,7 +87,6 @@ public class DumpEntrySerializer {
 
         buf.putInt(dataSz);
         buf.putInt(cache);
-        buf.putInt(partition);
         buf.putLong(expireTime);
 
         if (!key.putValue(buf))
@@ -101,7 +108,7 @@ public class DumpEntrySerializer {
      * @param grp Cache group.
      * @return dump entry.
      */
-    public DumpEntry read(FileIO dumpFile, int grp) throws IOException, IgniteCheckedException {
+    public DumpEntry read(FileIO dumpFile, int grp, int part) throws IOException, IgniteCheckedException {
         assert cctx != null : "Set kernalContext first";
 
         byte[] dataSzBytes = new byte[Integer.BYTES];
@@ -130,7 +137,6 @@ public class DumpEntrySerializer {
         buf.rewind();
 
         int cache = buf.getInt();
-        int partition = buf.getInt();
         long expireTime = buf.getLong();
 
         int keySz = buf.getInt();
@@ -148,7 +154,7 @@ public class DumpEntrySerializer {
         KeyCacheObject key = co.toKeyCacheObject(coCtx, keyType, keyBytes);
 
         if (key.partition() == -1)
-            key.partition(partition);
+            key.partition(part);
 
         int valSz = buf.getInt();
         byte valType = buf.get();

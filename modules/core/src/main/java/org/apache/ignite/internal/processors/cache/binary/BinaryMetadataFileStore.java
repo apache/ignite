@@ -82,6 +82,7 @@ class BinaryMetadataFileStore {
      * @param log Logger.
      * @param binaryMetadataFileStoreDir Path to binary metadata store configured by user, should include binary_meta
      * and consistentId.
+     * @param forceEnabled If {@code true} then will write files even if persistence and CDC disabled.
      */
     BinaryMetadataFileStore(
         final ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache,
@@ -96,6 +97,9 @@ class BinaryMetadataFileStore {
         enabled = forceEnabled || CU.isPersistenceEnabled(ctx.config()) || CU.isCdcEnabled(ctx.config());
 
         this.log = log;
+
+        if (!enabled)
+            return;
 
         DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
 

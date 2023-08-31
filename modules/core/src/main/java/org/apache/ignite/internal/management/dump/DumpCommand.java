@@ -19,7 +19,9 @@ package org.apache.ignite.internal.management.dump;
 
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 
-/** */
+/**
+ * Root command to use dump feature.
+ */
 public class DumpCommand extends CommandRegistryImpl {
     /** */
     public DumpCommand() {

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -57,13 +58,13 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 
 /**
- *
+ * This class provides ability to work with saved cache dump.
  */
 public class Dump {
     /** Dump directory. */
     private final File dumpDir;
 
-    /** */
+    /** Kernal context. */
     private final GridKernalContext cctx;
 
     /**
@@ -82,14 +83,14 @@ public class Dump {
         A.ensure(marshaller.exists(), "marshaller directory not exists");
     }
 
-    /** */
+    /** @return List of node directories. */
     public List<String> nodesDirectories() {
         return Arrays.stream(new File(dumpDir, DFLT_STORE_DIR).listFiles(f -> f.isDirectory() &&
             !(f.getAbsolutePath().endsWith(DFLT_BINARY_METADATA_PATH)
                 || f.getAbsolutePath().endsWith(DFLT_MARSHALLER_PATH)))).map(File::getName).collect(Collectors.toList());
     }
 
-    /** */
+    /** @return List of snapshot metadata saved in {@link #dumpDir}. */
     public List<SnapshotMetadata> metadata() throws IOException, IgniteCheckedException {
         JdkMarshaller marsh = MarshallerUtils.jdkMarshaller(cctx.igniteInstanceName());
 
@@ -105,11 +106,15 @@ public class Dump {
         }).filter(SnapshotMetadata::dump).collect(Collectors.toList());
     }
 
-    /** */
-    public List<CacheConfiguration<?, ?>> configs(String node, int groupId) {
+    /**
+     * @param node Node directory name.
+     * @param group Group id.
+     * @return List of cache configs saved in dump for group.
+     */
+    public List<CacheConfiguration<?, ?>> configs(String node, int group) {
         JdkMarshaller marsh = MarshallerUtils.jdkMarshaller(cctx.igniteInstanceName());
 
-        return Arrays.stream(FilePageStoreManager.cacheDataFiles(dumpGroupDirectory(node, groupId))).map(f -> {
+        return Arrays.stream(FilePageStoreManager.cacheDataFiles(dumpGroupDirectory(node, group))).map(f -> {
             try {
                 return readCacheData(f, marsh, cctx.config()).config();
             }
@@ -119,27 +124,48 @@ public class Dump {
         }).collect(Collectors.toList());
     }
 
-    /** */
-    public DumpIterator iterator(String node, int groupId) throws IOException {
-        return iterator(node, groupId, true);
+    /**
+     * @param node Node directory name.
+     * @param group Group id.
+     * @return Dump iterator.
+     * @throws IOException If failed.
+     */
+    public DumpIterator iterator(String node, int group) throws IOException {
+        return iterator(node, group, true);
     }
 
-    /** */
-    DumpIterator iterator(String node, int groupId, boolean excludeDuplicates) throws IOException {
+    /**
+     * @param node Node directory name.
+     * @param group Group id.
+     * @param excludeDuplicates Skip entries that was dumped twice - by iterator and change listener.
+     * @return Dump iterator.
+     * @throws IOException If failed.
+     */
+    DumpIterator iterator(String node, int group, boolean excludeDuplicates) {
         FileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
-        File[] parts = dumpGroupDirectory(node, groupId)
+        File[] parts = dumpGroupDirectory(node, group)
             .listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(DUMP_FILE_EXT));
 
-        FileIO[] dumpFilesIOs = new FileIO[parts.length];
+        List<FileIO> dumpFilesIOs = new ArrayList<>();
 
-        for (int i = 0; i < parts.length; i++)
-            dumpFilesIOs[i] = ioFactory.create(parts[i]);
+        Iterator<Iterator<DumpEntry>> iterator = Arrays.stream(parts).map(partFile -> {
+            FileIO dumpFile;
 
-        Iterator<Iterator<DumpEntry>> iterator = Arrays.stream(dumpFilesIOs).map(dumpFile -> {
+            try {
+                dumpFile = ioFactory.create(partFile);
+
+                dumpFilesIOs.add(dumpFile);
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
             DumpEntrySerializer serializer = new DumpEntrySerializer();
 
             serializer.kernalContext(cctx);
+
+            int part = Integer.parseInt(partFile.getName().replace(PART_FILE_PREFIX, "").replace(DUMP_FILE_EXT, ""));
 
             Iterator<DumpEntry> res = new Iterator<DumpEntry>() {
                 DumpEntry next;
@@ -173,14 +199,14 @@ public class Dump {
                         return;
 
                     try {
-                        next = serializer.read(dumpFile, groupId);
+                        next = serializer.read(dumpFile, group, part);
 
                         /*
                          * During dumping entry can be dumped twice: by partition iterator and change listener.
                          * Excluding duplicates keys from iteration.
                          */
                         while (next != null && !partKeys.add(next.key().hashCode()))
-                            next = serializer.read(dumpFile, groupId);
+                            next = serializer.read(dumpFile, group, part);
 
                         if (next == null)
                             partKeys = null; // Let GC do the rest.
@@ -208,7 +234,7 @@ public class Dump {
             }
 
             /** {@inheritDoc} */
-            @Override public void close() throws Exception {
+            @Override public void close() {
                 for (FileIO dumpFileIO : dumpFilesIOs)
                     U.closeQuiet(dumpFileIO);
             }
@@ -224,7 +250,7 @@ public class Dump {
         File[] grpDirs = nodeDir.listFiles(f -> {
             if (!f.isDirectory()
                 || (!f.getName().startsWith(CACHE_DIR_PREFIX)
-                && !f.getName().startsWith(CACHE_GRP_DIR_PREFIX)))
+                    && !f.getName().startsWith(CACHE_GRP_DIR_PREFIX)))
                 return false;
 
             String grpName = f.getName().startsWith(CACHE_DIR_PREFIX)

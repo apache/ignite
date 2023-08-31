@@ -228,4 +228,12 @@ public abstract class AbstractCreateBackupFutureTask extends AbstractSnapshotFut
             }
         };
     }
+
+    /** */
+    public CompletableFuture<Void> future(IgniteThrowableRunner task) {
+        return CompletableFuture.runAsync(
+            wrapExceptionIfStarted(task),
+            snpSndr.executor()
+        );
+    }
 }

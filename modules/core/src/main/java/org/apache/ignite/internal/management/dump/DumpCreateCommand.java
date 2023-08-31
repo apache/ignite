@@ -20,9 +20,7 @@ package org.apache.ignite.internal.management.dump;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 
-/**
- *
- */
+/** */
 public class DumpCreateCommand implements ComputeCommand<DumpCreateCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {

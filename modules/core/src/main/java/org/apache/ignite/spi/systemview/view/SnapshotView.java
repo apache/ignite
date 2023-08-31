@@ -151,7 +151,7 @@ public class SnapshotView {
         /** Incremental snapshot. */
         INCREMENTAL,
 
-        /** DUMP. */
+        /** Dump. */
         DUMP
     }
 }

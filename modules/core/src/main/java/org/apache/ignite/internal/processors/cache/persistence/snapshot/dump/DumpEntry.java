@@ -21,21 +21,21 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 
 /**
- *
+ * Single cache entry from dump.
  */
 public interface DumpEntry {
-    /** */
+    /** @return Group id. */
     public int groupId();
 
-    /** */
+    /** @return Cache id. */
     public int cacheId();
 
-    /** */
+    /** @return Expiration time. */
     public long expireTime();
 
-    /** */
+    /** @return Key. */
     public KeyCacheObject key();
 
-    /** */
+    /** @return Value. */
     public CacheObject value();
 }

@@ -22,18 +22,15 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.jetbrains.annotations.Nullable;
 
-/** */
+/**
+ * Copy on write listener that handles changes of entries during dump.
+ */
 public interface DumpEntryChangeListener {
     /**
-     * @param cctx
-     * @param key
-     * @param val
-     * @param expireTime
+     * @param cctx Cache context.
+     * @param key Key.
+     * @param val Value BEFORE change.
+     * @param expireTime Expire time BEFORE change.
      */
-    public void beforeChange(
-        GridCacheContext cctx,
-        KeyCacheObject key,
-        @Nullable CacheObject val,
-        long expireTime
-    );
+    public void beforeChange(GridCacheContext cctx, KeyCacheObject key, @Nullable CacheObject val, long expireTime);
 }

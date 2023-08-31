@@ -405,9 +405,9 @@ class SnapshotFutureTask extends AbstractCreateBackupFutureTask implements Check
 
         return Arrays.asList(
             // Process binary meta.
-            CompletableFuture.runAsync(wrapExceptionIfStarted(() -> snpSndr.sendBinaryMeta(binTypesCopy)), snpSndr.executor()),
+            future(() -> snpSndr.sendBinaryMeta(binTypesCopy)),
             // Process marshaller meta.
-            CompletableFuture.runAsync(wrapExceptionIfStarted(() -> snpSndr.sendMarshallerMeta(mappingsCopy)), snpSndr.executor())
+            future(() -> snpSndr.sendMarshallerMeta(mappingsCopy))
         );
     }
 
@@ -423,55 +423,51 @@ class SnapshotFutureTask extends AbstractCreateBackupFutureTask implements Check
 
             totalSize.addAndGet(partLen);
 
-            return CompletableFuture.runAsync(
-                    wrapExceptionIfStarted(() -> {
-                        snpSndr.sendPart(
-                            getPartitionFile(pageStore.workDir(), cacheDirName, partId),
-                            cacheDirName,
-                            pair,
-                            partLen);
+            return future(() -> {
+                snpSndr.sendPart(
+                    getPartitionFile(pageStore.workDir(), cacheDirName, partId),
+                    cacheDirName,
+                    pair,
+                    partLen);
 
-                        // Stop partition writer.
-                        partDeltaWriters.get(pair).markPartitionProcessed();
+                // Stop partition writer.
+                partDeltaWriters.get(pair).markPartitionProcessed();
 
-                        processedSize.addAndGet(partLen);
-                    }),
-                    snpSndr.executor())
+                processedSize.addAndGet(partLen);
+
                 // Wait for the completion of both futures - checkpoint end, copy partition.
-                .runAfterBothAsync(cpEndFut,
-                    wrapExceptionIfStarted(() -> {
-                        PageStoreSerialWriter writer = partDeltaWriters.get(pair);
+            }).runAfterBothAsync(cpEndFut, wrapExceptionIfStarted(() -> {
+                PageStoreSerialWriter writer = partDeltaWriters.get(pair);
 
-                        writer.close();
+                writer.close();
 
-                        File delta = writer.deltaFile;
+                File delta = writer.deltaFile;
 
-                        try {
-                            // Atomically creates a new, empty delta file if and only if
-                            // a file with this name does not yet exist.
-                            delta.createNewFile();
-                        }
-                        catch (IOException ex) {
-                            throw new IgniteCheckedException(ex);
-                        }
+                try {
+                    // Atomically creates a new, empty delta file if and only if
+                    // a file with this name does not yet exist.
+                    delta.createNewFile();
+                }
+                catch (IOException ex) {
+                    throw new IgniteCheckedException(ex);
+                }
 
-                        snpSndr.sendDelta(delta, cacheDirName, pair);
+                snpSndr.sendDelta(delta, cacheDirName, pair);
 
-                        processedSize.addAndGet(delta.length());
+                processedSize.addAndGet(delta.length());
 
-                        boolean deleted = delta.delete();
+                boolean deleted = delta.delete();
 
-                        assert deleted;
+                assert deleted;
 
-                        File deltaIdx = partDeltaIndexFile(delta);
+                File deltaIdx = partDeltaIndexFile(delta);
 
-                        if (deltaIdx.exists()) {
-                            deleted = deltaIdx.delete();
+                if (deltaIdx.exists()) {
+                    deleted = deltaIdx.delete();
 
-                            assert deleted;
-                        }
-                    }),
-                    snpSndr.executor());
+                    assert deleted;
+                }
+            }), snpSndr.executor());
         }).collect(Collectors.toList());
     }
 
@@ -490,7 +486,7 @@ class SnapshotFutureTask extends AbstractCreateBackupFutureTask implements Check
     @Override protected List<CompletableFuture<Void>> saveCacheConfigsCopy() {
         // Send configuration files of all cache groups.
         return ccfgSndrs.stream()
-            .map(ccfgSndr -> CompletableFuture.runAsync(wrapExceptionIfStarted(ccfgSndr::sendCacheConfig), snpSndr.executor()))
+            .map(ccfgSndr -> future(ccfgSndr::sendCacheConfig))
             .collect(Collectors.toList());
     }
 
@@ -526,10 +522,8 @@ class SnapshotFutureTask extends AbstractCreateBackupFutureTask implements Check
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
 
-            closeFut = CompletableFuture.runAsync(
-                () -> onDone(new SnapshotFutureTaskResult(taken, snpPtr), err0),
-                cctx.kernalContext().pools().getSystemExecutorService()
-            );
+            closeFut = CompletableFuture.runAsync(() -> onDone(new SnapshotFutureTaskResult(taken, snpPtr), err0),
+                cctx.kernalContext().pools().getSystemExecutorService());
         }
 
         return closeFut;
