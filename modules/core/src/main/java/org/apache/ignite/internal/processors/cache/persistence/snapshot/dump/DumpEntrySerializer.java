@@ -27,16 +27,22 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Serialization logic for dump.
  */
 public class DumpEntrySerializer {
+    /**  */
+    public static final int HEADER_SZ = Integer.BYTES + Integer.BYTES;
+
     /** */
     private ByteBuffer buf;
+
+    /** */
+    private final FastCrc crc = new FastCrc();
 
     /** Kernal context. */
     private @Nullable GridKernalContext cctx;
@@ -56,6 +62,15 @@ public class DumpEntrySerializer {
     }
 
     /**
+     * Dump entry structure:
+     * <pre>
+     * +---------+-----------+----------+-----------------+-----+-------+
+     * | 4 bytes | 4 bytes   | 4 bytes  | 8 bytes         |     |       |
+     * +---------+-----------+----------+-----------------+-----+-------+
+     * | CRC     | Data size | cache ID | expiration time | key | value |
+     * +---------+-----------+----------+-----------------+-----+-------+
+     * </pre>
+     *
      * @param cache Cache id.
      * @param expireTime Expire time.
      * @param key Key.
@@ -71,20 +86,18 @@ public class DumpEntrySerializer {
         CacheObject val,
         CacheObjectContext coCtx
     ) throws IgniteCheckedException {
-        buf.rewind();
-        buf.limit(buf.capacity());
-
         int keySz = key.valueBytesLength(coCtx);
         int valSz = val.valueBytesLength(coCtx);
-        int dataSz = /*cache ID*/Integer.BYTES +
-            /*expire Time*/Long.BYTES +
-            /*key*/keySz +
-            /*value*/valSz;
-        int rowSz = dataSz + Integer.BYTES/*extra bytes for row size*/;
+        int dataSz = /*cache ID*/Integer.BYTES + /*expire time*/Long.BYTES + /*key*/keySz + /*value*/valSz;
 
-        if (buf.capacity() < rowSz)
-            buf = ByteBuffer.allocate(rowSz);
+        int fullSz = dataSz + /*extra bytes for row size*/Integer.BYTES + /*CRC*/Integer.BYTES;
 
+        if (buf.capacity() < fullSz)
+            buf = ByteBuffer.allocate(fullSz);
+        else
+            buf.limit(fullSz);
+
+        buf.position(Integer.BYTES); // CRC value.
         buf.putInt(dataSz);
         buf.putInt(cache);
         buf.putLong(expireTime);
@@ -95,10 +108,17 @@ public class DumpEntrySerializer {
         if (!val.putValue(buf))
             throw new IgniteCheckedException("Can't write value");
 
-        assert buf.position() == rowSz;
+        assert buf.position() == fullSz;
 
-        buf.rewind();
-        buf.limit(rowSz);
+        buf.position(Integer.BYTES);
+
+        crc.reset();
+        crc.update(buf, fullSz - Integer.BYTES);
+
+        buf.position(0);
+        buf.putInt(crc.getValue());
+
+        buf.position(0);
 
         return buf;
     }
@@ -111,30 +131,38 @@ public class DumpEntrySerializer {
     public DumpEntry read(FileIO dumpFile, int grp, int part) throws IOException, IgniteCheckedException {
         assert cctx != null : "Set kernalContext first";
 
-        byte[] dataSzBytes = new byte[Integer.BYTES];
+        buf.position(0);
+        buf.limit(HEADER_SZ);
 
-        int read = dumpFile.readFully(dataSzBytes, 0, dataSzBytes.length);
+        int read = dumpFile.readFully(buf);
 
-        if (read <= 0)
+        if (read < HEADER_SZ)
             return null;
 
-        if (read != dataSzBytes.length)
-            throw new IgniteException("Expected to read " + dataSzBytes.length + " bytes but read only " + read);
+        buf.position(0);
 
-        int dataSz = U.bytesToInt(dataSzBytes, 0);
+        int crc = buf.getInt();
+        int dataSz = buf.getInt();
 
-        if (buf.capacity() < dataSz)
-            buf = ByteBuffer.allocate(dataSz);
+        if (buf.capacity() < dataSz + HEADER_SZ) {
+            buf = ByteBuffer.allocate(dataSz + HEADER_SZ);
 
-        buf.rewind();
-        buf.limit(dataSz);
+            buf.position(HEADER_SZ - Integer.BYTES);
+            buf.putInt(dataSz); // Required for CRC check.
+        }
+        else
+            buf.limit(dataSz + HEADER_SZ);
 
         read = dumpFile.readFully(buf);
 
         if (read != dataSz)
             throw new IgniteException("Expected to read " + dataSz + " bytes but read only " + read);
 
-        buf.rewind();
+        buf.position(HEADER_SZ - Integer.BYTES);
+
+        checkCRC(crc, dataSz, buf);
+
+        buf.position(HEADER_SZ);
 
         int cache = buf.getInt();
         long expireTime = buf.getLong();
@@ -185,5 +213,14 @@ public class DumpEntrySerializer {
                 return val;
             }
         };
+    }
+
+    /** */
+    private void checkCRC(int expCrc, int dataSz, ByteBuffer buf) {
+        crc.reset();
+        crc.update(buf, dataSz + Integer.BYTES /*dataSz field included in CRC calculation*/);
+
+        if (expCrc != crc.getValue())
+            throw new IgniteException("Data corrupted[expCrc=" + expCrc + ", crc=" + crc + ']');
     }
 }
