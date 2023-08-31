@@ -87,7 +87,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
  * If partitions for particular cache group are not provided that they will be collected and added
  * on checkpoint under the write-lock.
  */
-class SnapshotFutureTask extends AbstractCreateBackupFutureTask implements CheckpointListener {
+class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements CheckpointListener {
     /** File page store manager for accessing cache group associated files. */
     private final FilePageStoreManager pageStore;
 
@@ -385,7 +385,7 @@ class SnapshotFutureTask extends AbstractCreateBackupFutureTask implements Check
         if (!startedFut.onDone())
             return;
 
-        backupAllAsync();
+        startAllAsync();
     }
 
     /** {@inheritDoc} */
@@ -449,14 +449,14 @@ class SnapshotFutureTask extends AbstractCreateBackupFutureTask implements Check
     }
 
     /** {@inheritDoc} */
-    @Override protected void backupAllAsync() {
+    @Override protected void startAllAsync() {
         if (log.isInfoEnabled()) {
             log.info("Submit partition processing tasks to the snapshot execution pool " +
                 "[map=" + groupByGroupId(partFileLengths.keySet()) +
                 ", totalSize=" + U.humanReadableByteCount(partFileLengths.values().stream().mapToLong(v -> v).sum()) + ']');
         }
 
-        super.backupAllAsync();
+        super.startAllAsync();
     }
 
     /** {@inheritDoc} */

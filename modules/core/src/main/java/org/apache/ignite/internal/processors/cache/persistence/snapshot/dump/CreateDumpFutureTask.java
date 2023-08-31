@@ -44,7 +44,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractCreateBackupFutureTask;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractCreateSnapshotFutureTask;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFutureTaskResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotSender;
@@ -69,7 +69,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
  * @see Dump
  * @see DumpEntry
  */
-public class CreateDumpFutureTask extends AbstractCreateBackupFutureTask implements DumpEntryChangeListener {
+public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask implements DumpEntryChangeListener {
     /** Dump files name. */
     public static final String DUMP_FILE_EXT = ".dump";
 
@@ -130,7 +130,7 @@ public class CreateDumpFutureTask extends AbstractCreateBackupFutureTask impleme
 
             prepare();
 
-            backupAllAsync();
+            startAllAsync();
         }
         catch (IgniteCheckedException | IOException e) {
             acceptException(e);

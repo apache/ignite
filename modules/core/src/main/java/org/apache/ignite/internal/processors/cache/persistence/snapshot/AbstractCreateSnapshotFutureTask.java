@@ -48,7 +48,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
 /**
  *
  */
-public abstract class AbstractCreateBackupFutureTask extends AbstractSnapshotFutureTask<SnapshotFutureTaskResult> {
+public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotFutureTask<SnapshotFutureTaskResult> {
     /**
      * Cache group and corresponding partitions collected under the PME lock.
      * For full snapshot additional checkpoint write lock required.
@@ -67,7 +67,7 @@ public abstract class AbstractCreateBackupFutureTask extends AbstractSnapshotFut
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @param parts Partition to be processed.
      */
-    protected AbstractCreateBackupFutureTask(
+    protected AbstractCreateSnapshotFutureTask(
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
         UUID reqId,
@@ -174,8 +174,8 @@ public abstract class AbstractCreateBackupFutureTask extends AbstractSnapshotFut
         }
     }
 
-    /** */
-    protected void backupAllAsync() {
+    /** Starts async execution of all tasks required to create snapshot. */
+    protected void startAllAsync() {
         try {
             // Submit all tasks for partitions and deltas processing.
             List<CompletableFuture<Void>> futs = new ArrayList<>();
