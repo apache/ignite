@@ -1455,16 +1455,25 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @throws StorageException If failed to initialize WAL write handle.
      */
     private FileWriteHandle restoreWriteHandle(@Nullable WALPointer lastReadPtr) throws StorageException {
-        long absIdx = lastReadPtr == null ? 0 : lastReadPtr.index();
-
         @Nullable FileArchiver archiver0 = archiver;
 
-        long segNo = archiver0 == null ? absIdx : absIdx % dsCfg.getWalSegments();
+        long absIdx;
+        int off;
 
-        File curFile = new File(walWorkDir, fileName(segNo));
+        if (lastReadPtr == null) {
+            absIdx = 0;
+            off = 0;
+        }
+        else if (nextSegmentInited(lastReadPtr)) {
+            absIdx = lastReadPtr.index() + 1;
+            off = HEADER_RECORD_SIZE;
+        }
+        else {
+            absIdx = lastReadPtr.index();
+            off = lastReadPtr.fileOffset() + lastReadPtr.length();
+        }
 
-        int off = lastReadPtr == null ? 0 : lastReadPtr.fileOffset();
-        int len = lastReadPtr == null ? 0 : lastReadPtr.length();
+        File curFile = segmentFile(absIdx);
 
         try {
             SegmentIO fileIO = new SegmentIO(absIdx, ioFactory.create(curFile));
@@ -1494,7 +1503,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         ", offset=" + off + ", ver=" + serVer + ']');
                 }
 
-                FileWriteHandle hnd = fileHandleManager.initHandle(fileIO, off + len, ser);
+                FileWriteHandle hnd = fileHandleManager.initHandle(fileIO, off, ser);
 
                 segmentAware.curAbsWalIdx(absIdx);
 
@@ -1543,6 +1552,36 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         catch (IOException e) {
             throw new StorageException("Failed to restore WAL write handle: " + curFile.getAbsolutePath(), e);
         }
+    }
+
+    /** */
+    private File segmentFile(long absIdx) {
+        long segNo = archiver == null ? absIdx : absIdx % dsCfg.getWalSegments();
+
+        return new File(walWorkDir, fileName(segNo));
+    }
+
+    /** @return {@code True} if the given pointer is the last in a segment and a next segment has been initialized. */
+    private boolean nextSegmentInited(WALPointer ptr) {
+        try {
+            try (WALIterator iter = replay(new WALPointer(ptr.index(), ptr.fileOffset() + ptr.length(), 0))) {
+                if (iter.hasNext())
+                    return false;
+            }
+
+            long nextIdx = ptr.index() + 1;
+
+            try (SegmentIO fileIO = new SegmentIO(nextIdx, ioFactory.create(segmentFile(nextIdx), READ))) {
+                readSegmentHeader(fileIO, segmentFileInputFactory);
+            }
+
+            return true;
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+
+        return false;
     }
 
     /**
