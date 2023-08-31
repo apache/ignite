@@ -102,11 +102,14 @@ public final class Hint {
     }
 
     /**
-     * @return Hints within {@code hints} filtered with {@code hintDefs}.
+     * @return Distinct hints within {@code hints} filtered with {@code hintDefs} and reoved inherit pathes.
+     * @see RelHint#inheritPath
      */
     private static List<RelHint> filterHints(Collection<RelHint> hints, Collection<HintDefinition> hintDefs) {
         Set<String> hintNames = hintDefs.stream().map(Enum::name).collect(Collectors.toSet());
 
-        return hints.stream().filter(h -> hintNames.contains(h.hintName)).collect(Collectors.toList());
+        return hints.stream().filter(h -> hintNames.contains(h.hintName))
+            .map(h -> RelHint.builder(h.hintName).hintOptions(h.listOptions).build()).distinct()
+            .collect(Collectors.toList());
     }
 }
