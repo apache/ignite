@@ -28,8 +28,7 @@ import org.apache.ignite.internal.visor.VisorJob;
  * @see IgniteSnapshotManager#checkSnapshot(String, String)
  */
 @GridInternal
-public class SnapshotCheckTask extends SnapshotOneNodeTask<SnapshotCheckCommandArg,
-    SnapshotPartitionsVerifyTaskResult> {
+public class SnapshotCheckTask extends SnapshotOneNodeTask<SnapshotCheckCommandArg, SnapshotPartitionsVerifyTaskResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -39,8 +38,7 @@ public class SnapshotCheckTask extends SnapshotOneNodeTask<SnapshotCheckCommandA
     }
 
     /** */
-    private static class SnapshotCheckJob extends SnapshotJob<SnapshotCheckCommandArg,
-            SnapshotPartitionsVerifyTaskResult> {
+    private static class SnapshotCheckJob extends SnapshotJob<SnapshotCheckCommandArg, SnapshotPartitionsVerifyTaskResult> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 

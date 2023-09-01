@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.management.dump;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
@@ -29,30 +32,30 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.sys
 
 /** */
 @GridInternal
-public class DumpCreateTask extends VisorOneNodeTask<DumpCreateCommandArg, Void> {
+public class DumpCheckTask extends VisorOneNodeTask<DumpCreateCommandArg, SnapshotPartitionsVerifyTaskResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<DumpCreateCommandArg, Void> job(DumpCreateCommandArg arg) {
-        return new DumpCreateJob(arg);
+    @Override protected VisorJob<DumpCreateCommandArg, SnapshotPartitionsVerifyTaskResult> job(DumpCreateCommandArg arg) {
+        return new DumpCheckJob(arg);
     }
 
     /** */
-    private static class DumpCreateJob extends VisorJob<DumpCreateCommandArg, Void> {
+    private static class DumpCheckJob extends VisorJob<DumpCreateCommandArg, SnapshotPartitionsVerifyTaskResult> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /** */
-        protected DumpCreateJob(@Nullable DumpCreateCommandArg arg) {
+        protected DumpCheckJob(@Nullable DumpCreateCommandArg arg) {
             super(arg, false);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(@Nullable DumpCreateCommandArg arg) throws IgniteException {
-            ignite.snapshot().createDump(arg.name()).get();
+        @Override protected SnapshotPartitionsVerifyTaskResult run(@Nullable DumpCreateCommandArg arg) throws IgniteException {
+            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
-            return null;
+            return new IgniteFutureImpl<>(snpMgr.checkSnapshot(arg.name(), null, 0)).get();
         }
 
         /** {@inheritDoc} */
