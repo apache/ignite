@@ -237,7 +237,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     void checkDump(IgniteEx ign, String name) throws Exception {
-        assertNull(ign.context().cache().context().database().metaStorage().read(SNP_RUNNING_DIR_KEY));
+        if (persistence)
+            assertNull(ign.context().cache().context().database().metaStorage().read(SNP_RUNNING_DIR_KEY));
 
         Dump dump = new Dump(
             ign.context(),
