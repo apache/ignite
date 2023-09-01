@@ -61,6 +61,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.management.api.CommandMBean.INVOKE;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_RUNNING_DIR_KEY;
 import static org.apache.ignite.platform.model.AccessLevel.SUPER;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -236,6 +237,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     void checkDump(IgniteEx ign, String name) throws Exception {
+        assertNull(ign.context().cache().context().database().metaStorage().read(SNP_RUNNING_DIR_KEY));
+
         Dump dump = new Dump(
             ign.context(),
             new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name)
