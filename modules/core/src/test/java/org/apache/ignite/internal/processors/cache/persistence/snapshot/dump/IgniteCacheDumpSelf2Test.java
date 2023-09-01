@@ -18,13 +18,15 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -164,9 +166,16 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
             assertTrue(cacheDumpDir.exists());
 
-            Set<File> dumpFiles = new HashSet<>(Arrays.asList(cacheDumpDir.listFiles()));
-
-            assertEquals(2, dumpFiles.size());
+            Set<File> dumpFiles = Arrays.asList(cacheDumpDir.listFiles()).stream()
+                .filter(f -> {
+                    try {
+                        return Files.size(f.toPath()) > 0;
+                    }
+                    catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .collect(Collectors.toSet());
 
             String partDumpName = PART_FILE_PREFIX + 0 + DUMP_FILE_EXT;
 

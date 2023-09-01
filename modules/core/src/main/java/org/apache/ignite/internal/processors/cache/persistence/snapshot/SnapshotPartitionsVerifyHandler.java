@@ -68,12 +68,14 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cachePartitionFiles;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.checkPartitionsPageCrcSum;
 
@@ -132,7 +134,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             Set<Integer> parts = meta.partitions().get(grpId) == null ? Collections.emptySet() :
                 new HashSet<>(meta.partitions().get(grpId));
 
-            for (File part : cachePartitionFiles(dir)) {
+            for (File part : cachePartitionFiles(dir, meta.dump() ? DUMP_FILE_EXT : FILE_SUFFIX)) {
                 int partId = partId(part.getName());
 
                 if (!parts.remove(partId))
@@ -156,13 +158,23 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 ", meta=" + meta + ']');
         }
 
-        boolean punchHoleEnabled = isPunchHoleEnabled(opCtx, grpDirs.keySet());
-
         if (!opCtx.check()) {
             log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
 
             return Collections.emptyMap();
         }
+
+        return meta.dump() ? checkDumpFiles() : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles);
+    }
+
+    /** */
+    private Map<PartitionKeyV2, PartitionHashRecordV2> checkSnapshotFiles(
+        SnapshotHandlerContext opCtx,
+        Map<Integer, File> grpDirs,
+        SnapshotMetadata meta,
+        Set<File> partFiles
+    ) throws IgniteCheckedException {
+        boolean punchHoleEnabled = isPunchHoleEnabled(opCtx, grpDirs.keySet());
 
         Map<PartitionKeyV2, PartitionHashRecordV2> res = new ConcurrentHashMap<>();
         ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
@@ -290,8 +302,12 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             for (GridComponent comp : snpCtx)
                 comp.stop(true);
         }
-
         return res;
+    }
+
+    /** */
+    private Map<PartitionKeyV2, PartitionHashRecordV2> checkDumpFiles() {
+        return Collections.emptyMap();
     }
 
     /** {@inheritDoc} */

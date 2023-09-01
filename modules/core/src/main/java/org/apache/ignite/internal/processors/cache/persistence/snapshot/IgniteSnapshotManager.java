@@ -1212,7 +1212,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
 
-                return new SnapshotOperationResponse(ctx.metadata().dump() ? null : handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
+                return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
             }
             catch (IgniteCheckedException e) {
                 throw F.wrap(e);
