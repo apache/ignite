@@ -1410,9 +1410,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         enableIncrementalSnapshotsCreation(grpIds);
                     }
                 }
-                else {
+                else
                     removeDumpLock(req.snapshotName());
-                }
             }
             catch (Exception e) {
                 throw F.wrap(e);
@@ -2288,8 +2287,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
             });
 
-            Set<UUID> nodeIds =
-                new HashSet<>(F.viewReadOnly(srvNodes, F.node2id(), (node) -> dump || CU.baselineNode(node, clusterState)));
+            Set<UUID> bltNodeIds =
+                new HashSet<>(F.viewReadOnly(srvNodes, F.node2id(), (node) -> CU.baselineNode(node, clusterState)));
 
             startSnpProc.start(snpFut0.rqId, new SnapshotOperationRequest(
                 snpFut0.rqId,
@@ -2297,7 +2296,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 name,
                 snpPath,
                 grps,
-                nodeIds,
+                bltNodeIds,
                 incremental,
                 incIdx,
                 onlyPrimary,
