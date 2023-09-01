@@ -52,7 +52,6 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.cachDataFilename;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
@@ -319,17 +318,14 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         /** Partition id. */
         final int part;
 
-        /** Partition serializer. */
-        volatile DumpEntrySerializer serdes;
-
-        /** Dump file. */
-        final File dumpFile;
-
         /** Hashes of keys of entries changed by the user during partition dump. */
         final Set<Integer> changed;
 
         /** Partition dump file. Lazily initialized to prevent creation files for empty partitions. */
-        volatile @Nullable FileIO file;
+        final FileIO file;
+
+        /** Partition serializer. */
+        DumpEntrySerializer serdes;
 
         /** If {@code true} context is closed. */
         volatile boolean closed;
@@ -339,11 +335,17 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
          * @param part Partition id.
          * @param dumpFile Dump file path.
          */
-        public PartitionDumpContext(int grp, int part, File dumpFile) {
+        public PartitionDumpContext(int grp, int part, File dumpFile) throws IOException {
             this.grp = grp;
             this.part = part;
-            this.dumpFile = dumpFile;
+
+            serdes = new DumpEntrySerializer();
             changed = new GridConcurrentHashSet<>();
+
+            if (!dumpFile.createNewFile())
+                throw new IgniteException("Dump file can't be created: " + dumpFile);
+
+            file = ioFactory.create(dumpFile);
         }
 
         /**
@@ -403,8 +405,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             assert !closed;
 
             try {
-                FileIO file = dumpFile();
-
                 ByteBuffer buf = serdes.writeToBuffer(cache, expireTime, key, val, cctx.cacheObjectContext(cache));
 
                 if (file.writeFully(buf) != buf.limit())
@@ -430,24 +430,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         /** @return Cound of entries changed while partition dumped. */
         public synchronized long changedSize() {
             return changed.size();
-        }
-
-        /**
-         * Lazily creates dump file.
-         * @return Dump file.
-         */
-        private FileIO dumpFile() throws IOException, IgniteCheckedException {
-            if (file != null)
-                return file;
-
-            if (!dumpFile.createNewFile())
-                throw new IgniteCheckedException("Dump file can't be created: " + dumpFile);
-
-            file = ioFactory.create(dumpFile);
-
-            serdes = new DumpEntrySerializer();
-
-            return file;
         }
     }
 
