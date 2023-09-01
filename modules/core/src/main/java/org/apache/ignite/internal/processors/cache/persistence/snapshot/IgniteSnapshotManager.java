@@ -313,7 +313,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public static final int SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES = 64 * 1024;
 
     /** Metastorage key to save currently running snapshot directory path. */
-    private static final String SNP_RUNNING_DIR_KEY = "snapshot-running-dir";
+    public static final String SNP_RUNNING_DIR_KEY = "snapshot-running-dir";
 
     /** Prefix for meta store records which means that incremental snapshot creation is disabled for a cache group. */
     private static final String INC_SNP_DISABLED_KEY_PREFIX = "grp-inc-snp-disabled-";
@@ -693,10 +693,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         Arrays.stream(locSnpDir.listFiles())
             .filter(File::isDirectory)
-            .filter(dumpDir -> new File(dumpDir, DUMP_LOCK).exists())
-            .forEach(lockedDumpDir -> log.warning("Found locked dump dir. " +
-                "This means, dump creation not finished prior to node fail. " +
-                "Please, remove it manually: " + lockedDumpDir));
+            .map(dumpDir ->
+                Paths.get(dumpDir.getAbsolutePath(), DB_DEFAULT_FOLDER, pdsSettings.folderName(), DUMP_LOCK).toFile())
+            .filter(File::exists)
+            .map(File::getParentFile)
+            .forEach(lockedDumpDir -> {
+                log.warning("Found locked dump dir. " +
+                    "This means, dump creation not finished prior to node fail. " +
+                    "Directory will be deleted: " + lockedDumpDir);
+
+                U.delete(lockedDumpDir);
+            });
     }
 
     /** {@inheritDoc} */
@@ -1205,7 +1212,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
 
-                return new SnapshotOperationResponse(ctx.metadata().dump() ? null : handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
+                return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
             }
             catch (IgniteCheckedException e) {
                 throw F.wrap(e);
@@ -1410,9 +1417,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         enableIncrementalSnapshotsCreation(grpIds);
                     }
                 }
-                else {
+                else
                     removeDumpLock(req.snapshotName());
-                }
             }
             catch (Exception e) {
                 throw F.wrap(e);
@@ -2288,8 +2294,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
             });
 
-            Set<UUID> nodeIds =
-                new HashSet<>(F.viewReadOnly(srvNodes, F.node2id(), (node) -> dump || CU.baselineNode(node, clusterState)));
+            Set<UUID> bltNodeIds =
+                new HashSet<>(F.viewReadOnly(srvNodes, F.node2id(), (node) -> CU.baselineNode(node, clusterState)));
 
             startSnpProc.start(snpFut0.rqId, new SnapshotOperationRequest(
                 snpFut0.rqId,
@@ -2297,7 +2303,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 name,
                 snpPath,
                 grps,
-                nodeIds,
+                bltNodeIds,
                 incremental,
                 incIdx,
                 onlyPrimary,
@@ -2803,6 +2809,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** @param snpLocDir Snapshot local directory. */
     public void writeSnapshotDirectoryToMetastorage(File snpLocDir) {
+        if (currentCreateRequest().dump())
+            return;
+
         cctx.database().checkpointReadLock();
 
         try {
