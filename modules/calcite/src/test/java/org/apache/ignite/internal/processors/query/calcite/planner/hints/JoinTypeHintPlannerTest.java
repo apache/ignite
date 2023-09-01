@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.planner.hints;
 
 import java.util.Arrays;
+import org.apache.calcite.rel.core.Join;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest;
@@ -30,6 +31,8 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
+
+import static java.util.function.Predicate.not;
 
 /**
  * Planner test for index hints.
@@ -59,23 +62,20 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
         String sqlTpl = "SELECT %s t1.v1, t2.v2, t3.v3 FROM TBL3 t1 JOIN TBL4 t2 on t1.v1=t2.v2 JOIN TBL5 t3 on " +
             "t2.v2=t3.v3";
 
-        assertPlan(String.format(sqlTpl, ""), schema,
-            nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class).negate().negate()));
+        assertPlan(String.format(sqlTpl, ""), schema, nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class))
+            .and(nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class).and(j -> !(j instanceof IgniteMergeJoin))).negate()));
 
         assertPlan(String.format(sqlTpl, "/*+ " + HintDefinition.NO_MERGE_JOIN + " */"), schema,
-            nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)).negate());
+            nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class))
+                .and(nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class).and(j -> j instanceof IgniteMergeJoin)).negate()));
 
-        for (String tbl : Arrays.asList("TBL3", "TBL4", "TBL5")) {
-            assertPlan(String.format(sqlTpl, "/*+ " + HintDefinition.NO_MERGE_JOIN + "(" + tbl + ") */"), schema,
-                nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)).and(input(nodeOrAnyChild(isTableScan(tbl)
-                    .negate()))));
-        }
-
-        for (String tbl : Arrays.asList("TBL3", "TBL4", "TBL5")) {
-            assertPlan(String.format(sqlTpl, "/*+ " + HintDefinition.NO_MERGE_JOIN + "(" + tbl + ") */"), schema,
-                nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)).and(input(nodeOrAnyChild(isTableScan(tbl)
-                    .negate()))));
-        }
+        assertPlan(String.format(sqlTpl, "/*+ " + HintDefinition.NO_MERGE_JOIN + "(TBL3) */"), schema,
+            nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
+                .and(input(0, nodeOrAnyChild(isTableScan("TBL3")))
+                    .or(input(1, nodeOrAnyChild(isTableScan("TBL3")))))).negate()
+                .and(nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class).and(j -> !(j instanceof IgniteMergeJoin))
+                    .and(input(0, nodeOrAnyChild(isTableScan("TBL3")))
+                        .or(input(1, nodeOrAnyChild(isTableScan("TBL3"))))))));
     }
 
     /**
