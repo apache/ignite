@@ -189,7 +189,7 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
      */
     public FragmentMapping fragmentMapping(IgniteIndexScan rel, RelMetadataQuery mq, MappingQueryContext ctx) {
         return FragmentMapping.create(rel.sourceId(),
-            rel.getTable().unwrap(IgniteTable.class).colocationGroup(ctx));
+            rel.getTable().unwrap(IgniteTable.class).colocationGroup(ctx)).prune(rel);
     }
 
     /**
