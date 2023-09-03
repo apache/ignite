@@ -351,7 +351,12 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkDumpWithCommand(IgniteEx ign, String name) {
+    public static void checkDumpWithCommand(IgniteEx ign, String name) {
+        assertEquals("The check procedure has finished, no conflicts have been found.\n\n", invokeCheckCommand(ign, name));
+    }
+
+    /** */
+    public static String invokeCheckCommand(IgniteEx ign, String name) {
         Object[] args = {name};
 
         String[] signature = new String[args.length];
@@ -359,9 +364,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         Arrays.fill(signature, String.class.getName());
 
         try {
-            String res = (String)mngmntBean(ign, "Dump", "Check").invoke(INVOKE, args, signature);
-
-            assertEquals("The check procedure has finished, no conflicts have been found.\n\n", res);
+            return (String)mngmntBean(ign, "Dump", "Check").invoke(INVOKE, args, signature);
         }
         catch (MBeanException | ReflectionException e) {
             throw new IgniteException(e);
