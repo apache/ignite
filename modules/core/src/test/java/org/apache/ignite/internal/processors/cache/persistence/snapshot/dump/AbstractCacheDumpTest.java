@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -237,6 +236,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     void checkDump(IgniteEx ign, String name) throws Exception {
+        checkDumpWithCommand(ign, name);
+
         if (persistence)
             assertNull(ign.context().cache().context().database().metaStorage().read(SNP_RUNNING_DIR_KEY));
 
@@ -286,25 +287,33 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             assertEquals(GRP, ccfgs.get(1).getGroupName());
             assertEquals(CACHE_1, ccfgs.get(1).getName());
 
-            try (Dump.DumpIterator iter = dump.iterator(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME))) {
-                while (iter.hasNext()) {
-                    DumpEntry e = iter.next();
+            List<Integer> parts = dump.partitions(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME));
 
-                    checkDefaultCacheEntry(e, coCtx);
+            for (int part : parts) {
+                try (Dump.DumpedPartitionIterator iter = dump.iterator(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME), part)) {
+                    while (iter.hasNext()) {
+                        DumpEntry e = iter.next();
 
-                    keys.add(e.key().<Integer>value(coCtx, true));
+                        checkDefaultCacheEntry(e, coCtx);
 
-                    dfltDumpSz++;
+                        keys.add(e.key().<Integer>value(coCtx, true));
+
+                        dfltDumpSz++;
+                    }
                 }
             }
 
-            try (Dump.DumpIterator iter = dump.iterator(nodeDir, CU.cacheId(GRP))) {
-                while (iter.hasNext()) {
-                    DumpEntry e = iter.next();
+            parts = dump.partitions(nodeDir, CU.cacheId(GRP));
 
-                    checkGroupEntry(e, coCtx0, coCtx1);
+            for (int part : parts) {
+                try (Dump.DumpedPartitionIterator iter = dump.iterator(nodeDir, CU.cacheId(GRP), part)) {
+                    while (iter.hasNext()) {
+                        DumpEntry e = iter.next();
 
-                    grpDumpSz++;
+                        checkGroupEntry(e, coCtx0, coCtx1);
+
+                        grpDumpSz++;
+                    }
                 }
             }
         }
@@ -342,6 +351,24 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
+    private void checkDumpWithCommand(IgniteEx ign, String name) {
+        Object[] args = {name};
+
+        String[] signature = new String[args.length];
+
+        Arrays.fill(signature, String.class.getName());
+
+        try {
+            String res = (String)mngmntBean(ign, "Dump", "Check").invoke(INVOKE, args, signature);
+
+            assertEquals("The check procedure has finished, no conflicts have been found.\n\n", res);
+        }
+        catch (MBeanException | ReflectionException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** */
     void createDump(IgniteEx ign, String name) {
         Object[] args = {name};
 
@@ -350,7 +377,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         Arrays.fill(signature, String.class.getName());
 
         try {
-            String res = (String)createDumpBean(ign).invoke(INVOKE, args, signature);
+            String res = (String)mngmntBean(ign, "Dump", "Create").invoke(INVOKE, args, signature);
 
             assertEquals("Dump \"" + name + "\" was created.\n", res);
         }
@@ -360,12 +387,12 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
-    static DynamicMBean createDumpBean(IgniteEx ign) {
+    static DynamicMBean mngmntBean(IgniteEx ign, String... path) {
         DynamicMBean mbean = getMxBean(
             ign.context().igniteInstanceName(),
             "management",
-            Collections.singletonList("Dump"),
-            "Create",
+            Arrays.asList(path).subList(0, path.length - 1),
+            path[path.length - 1],
             DynamicMBean.class
         );
 

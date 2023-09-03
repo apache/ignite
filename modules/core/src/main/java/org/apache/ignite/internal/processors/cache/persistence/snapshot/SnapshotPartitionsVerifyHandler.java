@@ -51,8 +51,12 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntry;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -65,7 +69,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
@@ -78,6 +81,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.checkPartitionsPageCrcSum;
+import static org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2.PartitionState.OWNING;
 
 /**
  * Default snapshot restore handler for checking snapshot partitions consistency.
@@ -164,7 +168,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             return Collections.emptyMap();
         }
 
-        return meta.dump() ? checkDumpFiles() : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles);
+        return meta.dump() ? checkDumpFiles(opCtx, partFiles) : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles);
     }
 
     /** */
@@ -177,6 +181,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         boolean punchHoleEnabled = isPunchHoleEnabled(opCtx, grpDirs.keySet());
 
         Map<PartitionKeyV2, PartitionHashRecordV2> res = new ConcurrentHashMap<>();
+
         ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
             .order(ByteOrder.nativeOrder()));
 
@@ -253,7 +258,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                         PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
                         GridDhtPartitionState partState = fromOrdinal(io.getPartitionState(pageAddr));
 
-                        if (partState != OWNING) {
+                        if (partState != GridDhtPartitionState.OWNING) {
                             throw new IgniteCheckedException("Snapshot partitions must be in the OWNING " +
                                 "state only: " + partState);
                         }
@@ -302,12 +307,79 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             for (GridComponent comp : snpCtx)
                 comp.stop(true);
         }
+
         return res;
     }
 
     /** */
-    private Map<PartitionKeyV2, PartitionHashRecordV2> checkDumpFiles() {
-        return Collections.emptyMap();
+    private Map<PartitionKeyV2, PartitionHashRecordV2> checkDumpFiles(
+        SnapshotHandlerContext opCtx,
+        Set<File> partFiles
+    ) throws IgniteCheckedException {
+        Map<PartitionKeyV2, PartitionHashRecordV2> res = new ConcurrentHashMap<>();
+
+        Dump dump = new Dump(cctx.kernalContext(), opCtx.snapshotDirectory());
+
+        U.doInParallel(
+            cctx.snapshotMgr().snapshotExecutorService(),
+            partFiles,
+            part -> {
+                String grpName = cacheGroupName(part.getParentFile());
+                int grpId = CU.cacheId(grpName);
+                int partId = partId(part.getName());
+
+                PartitionKeyV2 key = new PartitionKeyV2(grpId, partId, grpName);
+                PartitionHashRecordV2 hash = caclucateDumpedPartitionHash(key, dump);
+
+                res.put(key, hash);
+
+                return null;
+            }
+        );
+
+        return res;
+    }
+
+    /** */
+    private PartitionHashRecordV2 caclucateDumpedPartitionHash(PartitionKeyV2 key, Dump dump) {
+        if (skipHash())
+            return new PartitionHashRecordV2();
+
+        try {
+            String node = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
+
+            Dump.DumpedPartitionIterator iter = dump.iterator(node, key.groupId(), key.partitionId());
+
+            long size = 0;
+
+            VerifyPartitionContext ctx = new VerifyPartitionContext();
+
+            while (iter.hasNext()) {
+                DumpEntry e = iter.next();
+
+                IdleVerifyUtility.updateVerifyContext(e.key(), e.value(), null, ctx);
+
+                size++;
+            }
+
+            return new PartitionHashRecordV2(
+                key,
+                false,
+                cctx.localNode().consistentId(),
+                ctx.partHash,
+                ctx.partVerHash,
+                null,
+                size,
+                OWNING,
+                ctx.cf,
+                ctx.noCf,
+                ctx.binary,
+                ctx.regular
+            );
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */

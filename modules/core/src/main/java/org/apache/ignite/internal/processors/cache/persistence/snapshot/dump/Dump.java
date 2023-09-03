@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -40,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -130,8 +128,21 @@ public class Dump {
      * @return Dump iterator.
      * @throws IOException If failed.
      */
-    public DumpIterator iterator(String node, int group) throws IOException {
-        return iterator(node, group, true);
+    List<Integer> partitions(String node, int group) {
+        return Arrays.stream(dumpGroupDirectory(node, group)
+            .listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(DUMP_FILE_EXT)))
+            .map(partFile -> Integer.parseInt(partFile.getName().replace(PART_FILE_PREFIX, "").replace(DUMP_FILE_EXT, "")))
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * @param node Node directory name.
+     * @param group Group id.
+     * @return Dump iterator.
+     * @throws IOException If failed.
+     */
+    public DumpedPartitionIterator iterator(String node, int group, int part) {
+        return iterator(node, group, part, true);
     }
 
     /**
@@ -141,102 +152,76 @@ public class Dump {
      * @return Dump iterator.
      * @throws IOException If failed.
      */
-    DumpIterator iterator(String node, int group, boolean excludeDuplicates) {
+    DumpedPartitionIterator iterator(String node, int group, int part, boolean excludeDuplicates) {
         FileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
-        File[] parts = dumpGroupDirectory(node, group)
-            .listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(DUMP_FILE_EXT));
+        FileIO dumpFile;
 
-        List<FileIO> dumpFilesIOs = new ArrayList<>();
+        try {
+            dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, group), PART_FILE_PREFIX + part + DUMP_FILE_EXT));
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
-        Iterator<Iterator<DumpEntry>> iterator = Arrays.stream(parts).map(partFile -> {
-            FileIO dumpFile;
+        DumpEntrySerializer serializer = new DumpEntrySerializer();
 
-            try {
-                dumpFile = ioFactory.create(partFile);
+        serializer.kernalContext(cctx);
 
-                dumpFilesIOs.add(dumpFile);
-            }
-            catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+        return new DumpedPartitionIterator() {
+            DumpEntry next;
 
-            DumpEntrySerializer serializer = new DumpEntrySerializer();
+            Set<Integer> partKeys = new HashSet<>();
 
-            serializer.kernalContext(cctx);
-
-            int part = Integer.parseInt(partFile.getName().replace(PART_FILE_PREFIX, "").replace(DUMP_FILE_EXT, ""));
-
-            Iterator<DumpEntry> res = new Iterator<DumpEntry>() {
-                DumpEntry next;
-
-                Set<Integer> partKeys = new HashSet<>();
-
-                /** {@inheritDoc} */
-                @Override public boolean hasNext() {
-                    advance();
-
-                    return next != null;
-                }
-
-                /** {@inheritDoc} */
-                @Override public DumpEntry next() {
-                    advance();
-
-                    if (next == null)
-                        throw new NoSuchElementException();
-
-                    DumpEntry next0 = next;
-
-                    next = null;
-
-                    return next0;
-                }
-
-                /** */
-                private void advance() {
-                    if (next != null)
-                        return;
-
-                    try {
-                        next = serializer.read(dumpFile, group, part);
-
-                        /*
-                         * During dumping entry can be dumped twice: by partition iterator and change listener.
-                         * Excluding duplicates keys from iteration.
-                         */
-                        while (next != null && !partKeys.add(next.key().hashCode()))
-                            next = serializer.read(dumpFile, group, part);
-
-                        if (next == null)
-                            partKeys = null; // Let GC do the rest.
-                    }
-                    catch (IOException | IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-                }
-            };
-
-            return res;
-        }).iterator();
-
-        Iterator<DumpEntry> res = F.concat(iterator);
-
-        return new DumpIterator() {
             /** {@inheritDoc} */
             @Override public boolean hasNext() {
-                return res.hasNext();
+                advance();
+
+                return next != null;
             }
 
             /** {@inheritDoc} */
             @Override public DumpEntry next() {
-                return res.next();
+                advance();
+
+                if (next == null)
+                    throw new NoSuchElementException();
+
+                DumpEntry next0 = next;
+
+                next = null;
+
+                return next0;
+            }
+
+            /** */
+            private void advance() {
+                if (next != null)
+                    return;
+
+                try {
+                    next = serializer.read(dumpFile, group, part);
+
+                    /*
+                     * During dumping entry can be dumped twice: by partition iterator and change listener.
+                     * Excluding duplicates keys from iteration.
+                     */
+                    while (next != null && !partKeys.add(next.key().hashCode()))
+                        next = serializer.read(dumpFile, group, part);
+
+                    if (next == null)
+                        partKeys = null; // Let GC do the rest.
+                }
+                catch (IOException | IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
             }
 
             /** {@inheritDoc} */
-            @Override public void close() {
-                for (FileIO dumpFileIO : dumpFilesIOs)
-                    U.closeQuiet(dumpFileIO);
+            @Override public void close() throws Exception {
+                U.closeQuiet(dumpFile);
+
+                partKeys = null;
             }
         };
     }
@@ -269,7 +254,7 @@ public class Dump {
     /**
      * Closeable dump iterator.
      */
-    public interface DumpIterator extends Iterator<DumpEntry>, AutoCloseable {
+    public interface DumpedPartitionIterator extends Iterator<DumpEntry>, AutoCloseable {
         // No-op.
     }
 }
