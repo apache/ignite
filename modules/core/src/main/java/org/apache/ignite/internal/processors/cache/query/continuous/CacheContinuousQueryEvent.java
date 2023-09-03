@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Continuous query event.
  */
-class CacheContinuousQueryEvent<K, V> extends CacheQueryEntryEvent<K, V> {
+public class CacheContinuousQueryEvent<K, V> extends CacheQueryEntryEvent<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -70,7 +70,12 @@ class CacheContinuousQueryEvent<K, V> extends CacheQueryEntryEvent<K, V> {
 
     /** {@inheritDoc} */
     @Override public V getValue() {
-        return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(e.value(), e.isKeepBinary(), false, null);
+        return e.isInternal() ? getNewValue() : super.getValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected V getNewValue() {
+        return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(e.newValue(), e.isKeepBinary(), false, null);
     }
 
     /** {@inheritDoc} */
@@ -86,14 +91,6 @@ class CacheContinuousQueryEvent<K, V> extends CacheQueryEntryEvent<K, V> {
     /** {@inheritDoc} */
     @Override public long getPartitionUpdateCounter() {
         return e.updateCounter();
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> T unwrap(Class<T> cls) {
-        if (cls.isAssignableFrom(getClass()))
-            return cls.cast(this);
-
-        throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
     }
 
     /** {@inheritDoc} */

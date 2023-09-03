@@ -140,6 +140,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
             new CacheObjectImpl(2, new byte[] {0, 0, 0, 2}),
             new CacheObjectImpl(2, new byte[] {0, 0, 0, 3}),
             true,
+            false,
             1,
             1L,
             new AffinityTopologyVersion(1L),
@@ -172,8 +173,8 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
         assertNotNull(e0.key());
         assertNull(e1.oldValue());
         assertNotNull(e0.oldValue());
-        assertNull(e1.value());
-        assertNotNull(e0.value());
+        assertNull(e1.newValue());
+        assertNotNull(e0.newValue());
     }
 
     /**

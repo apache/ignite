@@ -53,6 +53,9 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     private static final byte KEEP_BINARY = 0b0100;
 
     /** */
+    private static final byte INTERNAL = 0b1000;
+
+    /** */
     private static final EventType[] EVT_TYPE_VALS = EventType.values();
 
     /**
@@ -136,6 +139,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         @Nullable CacheObject newVal,
         @Nullable CacheObject oldVal,
         boolean keepBinary,
+        boolean internal,
         int part,
         long updateCntr,
         @Nullable AffinityTopologyVersion topVer,
@@ -153,6 +157,9 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
         if (keepBinary)
             this.flags |= KEEP_BINARY;
+
+        if (internal)
+            this.flags |= INTERNAL;
     }
 
     /**
@@ -175,6 +182,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
             null,
             null,
             null,
+            false,
             false,
             partId,
             cntr,
@@ -282,6 +290,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
             null,
             null,
             false,
+            false,
             part,
             updateCntr,
             topVer,
@@ -307,6 +316,11 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      */
     boolean isKeepBinary() {
         return (flags & KEEP_BINARY) != 0;
+    }
+
+    /** */
+    boolean isInternal() {
+        return (flags & INTERNAL) != 0;
     }
 
     /**
@@ -352,7 +366,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     /**
      * @return New value.
      */
-    CacheObject value() {
+    CacheObject newValue() {
         return newVal;
     }
 

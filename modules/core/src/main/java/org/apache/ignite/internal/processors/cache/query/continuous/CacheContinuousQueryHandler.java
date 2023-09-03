@@ -1626,6 +1626,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             transVal == null ? null : cacheContext(ctx).toCacheObject(transVal),
             null,
             evt.entry().isKeepBinary(),
+            true,
             evt.entry().partition(),
             evt.entry().updateCounter(),
             evt.entry().topologyVersion(),
