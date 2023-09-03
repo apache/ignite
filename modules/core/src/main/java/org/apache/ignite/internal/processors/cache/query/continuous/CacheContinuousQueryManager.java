@@ -242,6 +242,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                 null,
                 null,
                 lsnr.keepBinary(),
+                false,
                 partId,
                 updCntr,
                 topVer,
@@ -434,9 +435,10 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                 cctx.cacheId(),
                 evtType,
                 key,
-                (!internal && evtType == REMOVED && lsnr.oldValueRequired()) ? oldVal : newVal,
+                newVal,
                 lsnr.oldValueRequired() ? oldVal : null,
                 lsnr.keepBinary(),
+                internal,
                 partId,
                 updateCntr,
                 topVer,
@@ -496,9 +498,10 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                     cctx.cacheId(),
                     EXPIRED,
                     key,
-                    lsnr.oldValueRequired() ? oldVal : null,
+                    null,
                     lsnr.oldValueRequired() ? oldVal : null,
                     lsnr.keepBinary(),
+                    false,
                     e.partition(),
                     -1,
                     null,
@@ -838,6 +841,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                                     e.value(),
                                     null,
                                     keepBinary,
+                                    internal,
                                     0,
                                     -1,
                                     null,
@@ -1433,16 +1437,8 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         }
 
         /** {@inheritDoc} */
-        @Override public Object getValue() {
+        @Override public Object getNewValue() {
             return val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object unwrap(Class cls) {
-            if (cls.isAssignableFrom(getClass()))
-                return cls.cast(this);
-
-            throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
         }
 
         /** {@inheritDoc} */

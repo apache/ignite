@@ -409,12 +409,14 @@ public class CacheContinuousQueryEventBuffer {
                     if (e.isFiltered())
                         filtered++;
                     else {
-                        flushEntry = new CacheContinuousQueryEntry(e.cacheId(),
+                        flushEntry = new CacheContinuousQueryEntry(
+                            e.cacheId(),
                             e.eventType(),
                             e.key(),
-                            e.value(),
+                            e.newValue(),
                             e.oldValue(),
                             e.isKeepBinary(),
+                            e.isInternal(),
                             e.partition(),
                             e.updateCounter(),
                             e.topologyVersion(),
