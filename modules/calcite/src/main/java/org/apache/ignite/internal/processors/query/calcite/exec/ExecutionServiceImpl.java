@@ -548,7 +548,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             IgniteTypeFactory typeFactory = qry.context().typeFactory();
 
             resCur.fieldsMeta(new FieldsMetadataImpl(RelOptUtil.createDmlRowType(
-                SqlKind.INSERT, typeFactory), null).queryFieldsMetadata(typeFactory));
+                SqlKind.INSERT, typeFactory), null, null).queryFieldsMetadata(typeFactory));
 
             return resCur;
         }

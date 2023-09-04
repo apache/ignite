@@ -38,17 +38,24 @@ public class FieldsMetadataImpl implements FieldsMetadata {
     private final List<List<String>> origins;
 
     /** */
-    public FieldsMetadataImpl(RelDataType rowType, List<List<String>> origins) {
-        this.rowType = rowType;
-        sqlRowType = rowType;
-        this.origins = origins;
+    private final List<String> derivedAliases;
+
+    /** */
+    public FieldsMetadataImpl(RelDataType rowType, List<List<String>> origins, List<String> derivedAliases) {
+        this(rowType, rowType, origins, derivedAliases);
     }
 
     /** */
-    public FieldsMetadataImpl(RelDataType sqlRowType, RelDataType rowType, List<List<String>> origins) {
+    public FieldsMetadataImpl(
+        RelDataType sqlRowType,
+        RelDataType rowType,
+        List<List<String>> origins,
+        List<String> derivedAliases
+    ) {
         this.rowType = rowType;
         this.sqlRowType = sqlRowType;
         this.origins = origins;
+        this.derivedAliases = derivedAliases;
     }
 
 
@@ -67,6 +74,7 @@ public class FieldsMetadataImpl implements FieldsMetadata {
 
         for (int i = 0; i < fields.size(); i++) {
             List<String> origin = origins != null ? origins.get(i) : null;
+            String alias = !F.isEmpty(derivedAliases) ? derivedAliases.get(i) : null;
             RelDataTypeField field = fields.get(i);
             RelDataType fieldType = field.getType();
             Type fieldCls = typeFactory.getResultClass(fieldType);
@@ -74,7 +82,7 @@ public class FieldsMetadataImpl implements FieldsMetadata {
             b.add(new CalciteQueryFieldMetadata(
                 F.isEmpty(origin) ? null : origin.get(0),
                 F.isEmpty(origin) ? null : origin.get(1),
-                F.isEmpty(origin) ? field.getName() : origin.get(2),
+                F.isEmpty(origin) ? alias != null ? alias : field.getName() : origin.get(2),
                 fieldCls == null ? Void.class.getName() : fieldCls.getTypeName(),
                 fieldType.getPrecision(),
                 fieldType.getScale(),

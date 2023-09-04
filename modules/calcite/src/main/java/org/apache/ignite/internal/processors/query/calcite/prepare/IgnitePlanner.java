@@ -61,8 +61,10 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.validate.SelectScope;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlRexConvertletTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
@@ -79,6 +81,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQ
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Query planer.
@@ -130,6 +133,9 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** */
     private RelOptCluster cluster;
 
+    /** */
+    private @Nullable SqlNode validatedSqlNode;
+
     /**
      * @param ctx Planner context.
      */
@@ -177,7 +183,9 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** {@inheritDoc} */
     @Override public SqlNode validate(SqlNode sqlNode) throws ValidationException {
         try {
-            return validator().validate(sqlNode);
+            validatedSqlNode = validator().validate(sqlNode);
+
+            return validatedSqlNode;
         }
         catch (RuntimeException e) {
             throw new ValidationException(e.getMessage(), e);
@@ -189,6 +197,11 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         SqlNode validatedNode = validator().validate(sqlNode);
         RelDataType type = validator().getValidatedNodeType(validatedNode);
         return Pair.of(validatedNode, type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelDataType getParameterRowType() {
+        return validator.getParameterRowType(validatedSqlNode);
     }
 
     /**
@@ -212,7 +225,20 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         RelDataType type = validator().getValidatedNodeType(validatedNode);
         List<List<String>> origins = validator().getFieldOrigins(validatedNode);
 
-        return new ValidationResult(validatedNode, type, origins);
+        List<String> derived = Collections.emptyList();
+        if (sqlNode instanceof SqlSelect) {
+            SelectScope list = validator().getRawSelectScope((SqlSelect)sqlNode);
+
+            assert type.getFieldList().size() == list.getExpandedSelectList().size();
+
+            int cnt = 0;
+            derived = new ArrayList<>(list.getExpandedSelectList().size());
+            for (SqlNode node : list.getExpandedSelectList()) {
+                derived.add(validator().deriveAlias(node, cnt++));
+            }
+        }
+
+        return new ValidationResult(validatedNode, type, origins, derived);
     }
 
     /** {@inheritDoc} */
