@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -57,10 +59,12 @@ public class IgniteConcurrentCacheDumpTest extends AbstractCacheDumpTest {
 
         try (IgniteEx srv = (IgniteEx)startGridsMultiThreaded(nodes)) {
             IgniteInternalFuture<Long> opFut = GridTestUtils.runMultiThreadedAsync(() -> {
-                List<Integer> keys = new ArrayList<>();
+                Set<Integer> keys = new TreeSet<>();
 
-                IntStream.range(0, KEYS_CNT * 3).forEach(i -> {
-                    int k = ThreadLocalRandom.current().nextInt();
+                ThreadLocalRandom rand = ThreadLocalRandom.current();
+
+                IntStream.range(0, KEYS_CNT).forEach(i -> {
+                    int k = rand.nextInt(KEYS_CNT);
 
                     keys.add(k);
 
@@ -70,31 +74,35 @@ public class IgniteConcurrentCacheDumpTest extends AbstractCacheDumpTest {
                 initLatch.countDown();
 
                 while (!canceled.get()) {
-                    switch (ThreadLocalRandom.current().nextInt(3)) {
+                    switch (rand.nextInt(3)) {
                         case 0:
-                            int newKey = ThreadLocalRandom.current().nextInt();
+                            int newKey = rand.nextInt(KEYS_CNT);
 
-                            while (keys.contains(newKey))
-                                newKey = ThreadLocalRandom.current().nextInt();
+                            int iter = 0;
+
+                            while (keys.contains(newKey) && iter < 10) {
+                                newKey = rand.nextInt(KEYS_CNT);
+                                iter++;
+                            }
 
                             keys.add(newKey);
 
-                            insertOrUpdate(srv, newKey);
+                            insertOrUpdate(srv, newKey, rand.nextInt());
 
                             break;
                         case 1:
-                            int updKey = keys.get(ThreadLocalRandom.current().nextInt(keys.size()));
+                            int updKey = keys.isEmpty() ? rand.nextInt(KEYS_CNT) : keys.iterator().next();
 
-                            insertOrUpdate(srv, updKey);
+                            insertOrUpdate(srv, updKey, rand.nextInt());
 
                             break;
                         case 2:
                             if (keys.isEmpty())
                                 break;
 
-                            int rmvKey = keys.get(ThreadLocalRandom.current().nextInt(keys.size()));
+                            int rmvKey = keys.isEmpty() ? rand.nextInt(KEYS_CNT) : keys.iterator().next();
 
-                            keys.remove((Integer)rmvKey);
+                            keys.remove(rmvKey);
 
                             remove(srv, rmvKey);
                     }

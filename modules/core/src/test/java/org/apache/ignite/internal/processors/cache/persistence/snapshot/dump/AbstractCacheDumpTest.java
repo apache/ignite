@@ -21,8 +21,11 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -50,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.DumpedPartitionIterator;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -63,6 +67,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.management.api.CommandMBean.INVOKE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_RUNNING_DIR_KEY;
 import static org.apache.ignite.platform.model.AccessLevel.SUPER;
@@ -156,18 +161,21 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                     .setName(DEFAULT_CACHE_NAME)
                     .setBackups(backups)
                     .setAtomicityMode(mode)
+                    .setWriteSynchronizationMode(FULL_SYNC)
                     .setAffinity(new RendezvousAffinityFunction().setPartitions(20)),
                 new CacheConfiguration<>()
                     .setGroupName(GRP)
                     .setName(CACHE_0)
                     .setBackups(backups)
                     .setAtomicityMode(mode)
+                    .setWriteSynchronizationMode(FULL_SYNC)
                     .setAffinity(new RendezvousAffinityFunction().setPartitions(20)),
                 new CacheConfiguration<>()
                     .setGroupName(GRP)
                     .setName(CACHE_1)
                     .setBackups(backups)
                     .setAtomicityMode(mode)
+                    .setWriteSynchronizationMode(FULL_SYNC)
                     .setAffinity(new RendezvousAffinityFunction().setPartitions(20))
             );
     }
@@ -217,7 +225,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             return true;
         }, 10 * 1000));
 
-        return new T2(latch, dumpFut);
+        return new T2<>(latch, dumpFut);
     }
 
     /** */
@@ -294,7 +302,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             List<Integer> parts = dump.partitions(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME));
 
             for (int part : parts) {
-                try (Dump.DumpedPartitionIterator iter = dump.iterator(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME), part)) {
+                try (DumpedPartitionIterator iter = dump.iterator(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME), part)) {
                     while (iter.hasNext()) {
                         DumpEntry e = iter.next();
 
@@ -310,7 +318,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             parts = dump.partitions(nodeDir, CU.cacheId(GRP));
 
             for (int part : parts) {
-                try (Dump.DumpedPartitionIterator iter = dump.iterator(nodeDir, CU.cacheId(GRP), part)) {
+                try (DumpedPartitionIterator iter = dump.iterator(nodeDir, CU.cacheId(GRP), part)) {
                     while (iter.hasNext()) {
                         DumpEntry e = iter.next();
 
@@ -351,28 +359,32 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     protected void insertOrUpdate(IgniteEx ignite, int i) {
-        ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
+        insertOrUpdate(ignite, i, i);
+    }
 
+    /** */
+    protected void insertOrUpdate(IgniteEx ignite, int i, int val) {
+        ignite.cache(DEFAULT_CACHE_NAME).put(i, val);
         IgniteCache<Object, Object> cache = ignite.cache(CACHE_0);
         IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_1);
 
         if (mode == CacheAtomicityMode.TRANSACTIONAL) {
             try (Transaction tx = ignite.transactions().txStart()) {
-                cache.put(i, USER_FACTORY.apply(i));
+                cache.put(i, USER_FACTORY.apply(val));
 
                 tx.commit();
             }
 
             try (Transaction tx = ignite.transactions().txStart()) {
-                cache1.put(new Key(i), new Value(String.valueOf(i)));
+                cache1.put(new Key(i), new Value(String.valueOf(val)));
 
                 tx.commit();
             }
         }
         else {
-            cache.put(i, USER_FACTORY.apply(i));
+            cache.put(i, USER_FACTORY.apply(val));
 
-            cache1.put(new Key(i), new Value(String.valueOf(i)));
+            cache1.put(new Key(i), new Value(String.valueOf(val)));
         }
     }
 
@@ -385,6 +397,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
         IntConsumer moreRemovals = j -> {
             cache.remove(j);
+            cache.remove(j);
+            cache1.remove(new Key(j));
             cache1.remove(new Key(j));
         };
 
@@ -405,18 +419,86 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static void checkDumpWithCommand(IgniteEx ign, String name) {
+    public static void checkDumpWithCommand(IgniteEx ign, String name) throws Exception {
         CacheGroupContext gctx = ign.context().cache().cacheGroup(CU.cacheId(DEFAULT_CACHE_NAME));
 
-        for (GridCacheContext cctx : gctx.caches())
+        for (GridCacheContext<?, ?> cctx : gctx.caches())
             assertNull(cctx.dumpListener());
 
         gctx = ign.context().cache().cacheGroup(CU.cacheId(GRP));
 
-        for (GridCacheContext cctx : gctx.caches())
+        for (GridCacheContext<?, ?> cctx : gctx.caches())
             assertNull(cctx.dumpListener());
 
-        assertEquals("The check procedure has finished, no conflicts have been found.\n\n", invokeCheckCommand(ign, name));
+        String msg = invokeCheckCommand(ign, name);
+        String expMsg = "The check procedure has finished, no conflicts have been found.\n\n";
+
+        if (!Objects.equals(msg, expMsg)) {
+            Dump dump = new Dump(
+                ign.context(),
+                new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name)
+            );
+
+            CacheObjectContext coCtx = ign.context().cache().context().cacheObjectContext(CU.cacheId(DEFAULT_CACHE_NAME));
+            CacheObjectContext coCtx0 = ign.context().cache().context().cacheObjectContext(CU.cacheId(CACHE_0));
+            CacheObjectContext coCtx1 = ign.context().cache().context().cacheObjectContext(CU.cacheId(CACHE_1));
+
+            Map<String, List<Set<Object>>> keys = new HashMap<>();
+
+            for (String nodeDir : dump.nodesDirectories()) {
+                for (int part : dump.partitions(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME))) {
+                    try (DumpedPartitionIterator iter = dump.iterator(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME), part)) {
+
+                        Set<Object> partKeys = new HashSet<>();
+
+                        while (iter.hasNext())
+                            partKeys.add(iter.next().key().value(coCtx, false));
+
+                        keys.computeIfAbsent(DEFAULT_CACHE_NAME + part, key -> new ArrayList<>())
+                            .add(partKeys);
+                    }
+                }
+
+                for (int part : dump.partitions(nodeDir, CU.cacheId(GRP))) {
+                    try (DumpedPartitionIterator iter = dump.iterator(nodeDir, CU.cacheId(GRP), part)) {
+                        Set<Object> partKeys = new HashSet<>();
+
+                        while (iter.hasNext()) {
+                            DumpEntry e = iter.next();
+                            partKeys.add(e.key().value(e.cacheId() == CU.cacheId(CACHE_0) ? coCtx0 : coCtx1, false));
+                        }
+
+                        keys.computeIfAbsent(GRP + part, key -> new ArrayList<>())
+                            .add(partKeys);
+                    }
+                }
+            }
+
+            for (Map.Entry<String, List<Set<Object>>> partCopies : keys.entrySet()) {
+                String part = partCopies.getKey();
+
+                assertEquals(2, partCopies.getValue().size());
+
+                Set<Object> a = partCopies.getValue().get(0);
+                Set<Object> b = partCopies.getValue().get(1);
+
+                if (!Objects.equals(a, b)) {
+                    log.error(part + " DIFF (b - a):");
+                    for (Object b0 : b) {
+                        if (!a.contains(b0))
+                            log.error(b0.toString());
+                    }
+
+                    log.error(part + " DIFF (a - b):");
+                    for (Object a0 : a) {
+                        if (!b.contains(a0))
+                            log.error(a0.toString());
+                    }
+                }
+            }
+        }
+
+        assertEquals(expMsg, msg);
     }
 
     /** */

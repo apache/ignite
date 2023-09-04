@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Abstract
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFutureTaskResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotSender;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -153,7 +153,11 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             for (int part : e.getValue()) {
                 PartitionDumpContext prev = dumpCtxs.put(
                     toLong(grp, part),
-                    new PartitionDumpContext(grp, part, new File(grpDumpDir, PART_FILE_PREFIX + part + DUMP_FILE_EXT))
+                    new PartitionDumpContext(
+                        cctx.kernalContext().cache().cacheGroup(grp),
+                        part,
+                        new File(grpDumpDir, PART_FILE_PREFIX + part + DUMP_FILE_EXT)
+                    )
                 );
 
                 assert prev == null;
@@ -327,8 +331,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         /** Partition id. */
         final int part;
 
-        /** Hashes of keys of entries changed by the user during partition dump. */
-        final Set<Integer> changed;
+        /** Hashes of cache keys of entries changed by the user during partition dump. */
+        final Map<Integer, Set<Integer>> changed;
 
         /** Partition dump file. Lazily initialized to prevent creation files for empty partitions. */
         final FileIO file;
@@ -340,16 +344,21 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         volatile boolean closed;
 
         /**
-         * @param grp Group id.
+         * @param gctx Group id.
          * @param part Partition id.
          * @param dumpFile Dump file path.
          */
-        public PartitionDumpContext(int grp, int part, File dumpFile) throws IOException {
-            this.grp = grp;
+        public PartitionDumpContext(CacheGroupContext gctx, int part, File dumpFile) throws IOException {
+            assert gctx != null;
+
+            this.grp = gctx.groupId();
             this.part = part;
 
             serdes = new DumpEntrySerializer();
-            changed = new GridConcurrentHashSet<>();
+            changed = new HashMap<>();
+
+            for (int cache : gctx.cacheIds())
+                changed.put(cache, new HashSet<>());
 
             if (!dumpFile.createNewFile())
                 throw new IgniteException("Dump file can't be created: " + dumpFile);
@@ -373,10 +382,10 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         ) {
             if (closed) // Partition already saved in dump.
                 return "partition already saved";
-            else if (!changed.add(key.hashCode())) // Entry changed several time during dump.
+            if (!changed.get(cache).add(key.hashCode())) // Entry changed several time during dump.
                 return "changed several times";
             else if (val == null)
-                return "newly created"; // Previous value is null. Entry created after dump start, skip.
+                return "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
 
             write(cache, expireTime, key, val);
 
@@ -401,7 +410,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             if (closed)
                 throw new IgniteException("Already closed");
 
-            if (changed.contains(key.hashCode()))
+            if (changed.get(cache).contains(key.hashCode()))
                 return false;
 
             write(cache, expireTime, key, val);
@@ -438,7 +447,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         /** @return Cound of entries changed while partition dumped. */
         public synchronized long changedSize() {
-            return changed.size();
+            return changed.values().stream().mapToInt(Set::size).sum();
         }
     }
 
