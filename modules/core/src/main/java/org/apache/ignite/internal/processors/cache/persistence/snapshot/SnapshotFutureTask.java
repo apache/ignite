@@ -385,7 +385,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         if (!startedFut.onDone())
             return;
 
-        startAllAsync();
+        saveSnapshotData();
     }
 
     /** {@inheritDoc} */
@@ -449,14 +449,14 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
     }
 
     /** {@inheritDoc} */
-    @Override protected void startAllAsync() {
+    @Override protected void saveSnapshotData() {
         if (log.isInfoEnabled()) {
             log.info("Submit partition processing tasks to the snapshot execution pool " +
                 "[map=" + groupByGroupId(partFileLengths.keySet()) +
                 ", totalSize=" + U.humanReadableByteCount(partFileLengths.values().stream().mapToLong(v -> v).sum()) + ']');
         }
 
-        super.startAllAsync();
+        super.saveSnapshotData();
     }
 
     /** {@inheritDoc} */

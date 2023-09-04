@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -32,5 +33,5 @@ public interface DumpEntryChangeListener {
      * @param val Value BEFORE change.
      * @param expireTime Expire time BEFORE change.
      */
-    public void beforeChange(GridCacheContext cctx, KeyCacheObject key, @Nullable CacheObject val, long expireTime);
+    public void beforeChange(GridCacheContext cctx, KeyCacheObject key, @Nullable CacheObject val, long expireTime, GridCacheVersion ver);
 }
