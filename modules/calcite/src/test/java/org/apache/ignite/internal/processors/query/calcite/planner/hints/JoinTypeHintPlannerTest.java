@@ -138,6 +138,92 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
         }
     }
 
+    /**
+     * Tests the merge join is enabled by the hint instead of the other joins.
+     */
+    @Test
+    public void testMergeJoinEnabled() throws Exception {
+        doTestCertainJoinTypeEnabled("TBL1", "INNER", "TBL2", IgniteCorrelatedNestedLoopJoin.class,
+            MERGE_JOIN, IgniteMergeJoin.class);
+
+        doTestCertainJoinTypeEnabled("TBL1", "RIGHT", "TBL2", IgniteNestedLoopJoin.class,
+            MERGE_JOIN, IgniteMergeJoin.class);
+
+        doTestCertainJoinTypeEnabled("TBL1", "INNER", "TBL2", IgniteCorrelatedNestedLoopJoin.class,
+            MERGE_JOIN, IgniteMergeJoin.class, CORE_JOIN_REORDER_RULES);
+
+        doTestCertainJoinTypeEnabled("TBL1", "RIGHT", "TBL2", IgniteNestedLoopJoin.class,
+            MERGE_JOIN, IgniteMergeJoin.class, CORE_JOIN_REORDER_RULES);
+    }
+
+    /**
+     * Tests the nested loop join is enabled by the hint instead of the other joins.
+     */
+    @Test
+    public void testNLJoinEnabled() throws Exception {
+        doTestCertainJoinTypeEnabled("TBL2", "INNER", "TBL1", IgniteCorrelatedNestedLoopJoin.class,
+            NL_JOIN, IgniteNestedLoopJoin.class);
+
+        doTestCertainJoinTypeEnabled("TBL5", "INNER", "TBL4", IgniteMergeJoin.class,
+            NL_JOIN, IgniteNestedLoopJoin.class);
+
+        doTestCertainJoinTypeEnabled("TBL1", "LEFT", "TBL2", IgniteCorrelatedNestedLoopJoin.class,
+            NL_JOIN, IgniteNestedLoopJoin.class, CORE_JOIN_REORDER_RULES);
+
+        doTestCertainJoinTypeEnabled("TBL5", "INNER", "TBL4", IgniteMergeJoin.class,
+            NL_JOIN, IgniteNestedLoopJoin.class, CORE_JOIN_REORDER_RULES);
+    }
+
+    /**
+     * Tests the correlated nested loop join is enabled by the hint instead of the other joins.
+     */
+    @Test
+    public void testCNLJoinEnabled() throws Exception {
+        doTestCertainJoinTypeEnabled("TBL2", "LEFT", "TBL1", IgniteNestedLoopJoin.class,
+            CNL_JOIN, IgniteCorrelatedNestedLoopJoin.class);
+
+        doTestCertainJoinTypeEnabled("TBL5", "INNER", "TBL4", IgniteMergeJoin.class,
+            CNL_JOIN, IgniteCorrelatedNestedLoopJoin.class);
+
+        // Even CNL join doesn't support RIGHT join, join type and join inputs might be switched by Calcite.
+        doTestCertainJoinTypeEnabled("TBL1", "RIGHT", "TBL2", IgniteNestedLoopJoin.class,
+            CNL_JOIN, IgniteCorrelatedNestedLoopJoin.class);
+
+        doTestCertainJoinTypeEnabled("TBL2", "LEFT", "TBL1", IgniteNestedLoopJoin.class,
+            CNL_JOIN, IgniteCorrelatedNestedLoopJoin.class, CORE_JOIN_REORDER_RULES);
+
+        doTestCertainJoinTypeEnabled("TBL5", "INNER", "TBL4", IgniteMergeJoin.class,
+            CNL_JOIN, IgniteCorrelatedNestedLoopJoin.class, CORE_JOIN_REORDER_RULES);
+    }
+
+    /**
+     * Checks {@code expectedJoin} switches to {@code newJoin} by {@code hint} in the simple query
+     * 'SELECT /*+ {@code hint} *&#47; t1.v1, t2.v2 FROM {@code tbl1} t1 {@code joinType} JOIN {@code tbl2} t2 on
+     * t1.v3=t2.v3'.
+     */
+    private void doTestCertainJoinTypeEnabled(String tbl1, String joinType, String tbl2,
+        Class<? extends AbstractIgniteJoin> expectedJoin, HintDefinition hint,
+        Class<? extends AbstractIgniteJoin> newJoin, String... disabledRules) throws Exception {
+        String sqlTpl = String.format("SELECT %%s t1.v1, t2.v2 FROM %s t1 %s JOIN %s t2 on t1.v3=t2.v3", tbl1,
+            joinType, tbl2);
+
+        assertPlan(String.format(sqlTpl, ""), schema, nodeOrAnyChild(isInstanceOf(expectedJoin)
+            .and(hasNestedTableScan(tbl1)).and(hasNestedTableScan(tbl2)))
+            .and(nodeOrAnyChild(isInstanceOf(newJoin)).negate()), disabledRules);
+
+        // Not using table name.
+        assertPlan(String.format(sqlTpl, "/*+ " + hint.name() + "(UNEXISTING) */"), schema,
+            nodeOrAnyChild(isInstanceOf(expectedJoin).and(hasNestedTableScan(tbl1))
+                .and(hasNestedTableScan(tbl2))).and(nodeOrAnyChild(isInstanceOf(newJoin)).negate()), disabledRules);
+
+        for (String t : Arrays.asList("", tbl1, tbl2)) {
+            assertPlan(String.format(sqlTpl, "/*+ " + hint.name() + "(" + t + ") */"), schema,
+                nodeOrAnyChild(isInstanceOf(expectedJoin).negate())
+                    .and(nodeOrAnyChild(isInstanceOf(newJoin).and(hasNestedTableScan(tbl1)
+                        .and(hasNestedTableScan(tbl2))))), disabledRules);
+        }
+    }
+
     /** */
     private void doTestDisableJoinTypeWith(String tbl1, String tbl2, String sqlJoinType,
         Class<? extends AbstractIgniteJoin> joinRel, HintDefinition hint, String... disabledRules) throws Exception {
