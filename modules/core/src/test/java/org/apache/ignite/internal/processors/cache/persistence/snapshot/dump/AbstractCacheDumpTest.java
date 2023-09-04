@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import javax.management.DynamicMBean;
@@ -45,7 +46,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -56,6 +59,7 @@ import org.apache.ignite.platform.model.Role;
 import org.apache.ignite.platform.model.User;
 import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -85,7 +89,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     protected static final IntFunction<User> USER_FACTORY = i ->
-        new User(i, ACL.values()[i % ACL.values().length], new Role("Role" + i, SUPER));
+        new User(i, ACL.values()[Math.abs(i) % ACL.values().length], new Role("Role" + i, SUPER));
 
     /** */
     @Parameterized.Parameter
@@ -346,12 +350,72 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
+    protected void insertOrUpdate(IgniteEx ignite, int i) {
+        ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
+
+        IgniteCache<Object, Object> cache = ignite.cache(CACHE_0);
+        IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_1);
+
+        if (mode == CacheAtomicityMode.TRANSACTIONAL) {
+            try (Transaction tx = ignite.transactions().txStart()) {
+                cache.put(i, USER_FACTORY.apply(i));
+
+                tx.commit();
+            }
+
+            try (Transaction tx = ignite.transactions().txStart()) {
+                cache1.put(new Key(i), new Value(String.valueOf(i)));
+
+                tx.commit();
+            }
+        }
+        else {
+            cache.put(i, USER_FACTORY.apply(i));
+
+            cache1.put(new Key(i), new Value(String.valueOf(i)));
+        }
+    }
+
+    /** */
+    protected void remove(IgniteEx ignite, int i) {
+        ignite.cache(DEFAULT_CACHE_NAME).remove(i);
+
+        IgniteCache<Object, Object> cache = ignite.cache(CACHE_0);
+        IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_1);
+
+        IntConsumer moreRemovals = j -> {
+            cache.remove(j);
+            cache1.remove(new Key(j));
+        };
+
+        if (mode == CacheAtomicityMode.TRANSACTIONAL) {
+            try (Transaction tx = ignite.transactions().txStart()) {
+                moreRemovals.accept(i);
+
+                tx.commit();
+            }
+        }
+        else
+            moreRemovals.accept(i);
+    }
+
+    /** */
     void createDump(IgniteEx ign) {
         createDump(ign, DMP_NAME);
     }
 
     /** */
     public static void checkDumpWithCommand(IgniteEx ign, String name) {
+        CacheGroupContext gctx = ign.context().cache().cacheGroup(CU.cacheId(DEFAULT_CACHE_NAME));
+
+        for (GridCacheContext cctx : gctx.caches())
+            assertNull(cctx.dumpListener());
+
+        gctx = ign.context().cache().cacheGroup(CU.cacheId(GRP));
+
+        for (GridCacheContext cctx : gctx.caches())
+            assertNull(cctx.dumpListener());
+
         assertEquals("The check procedure has finished, no conflicts have been found.\n\n", invokeCheckCommand(ign, name));
     }
 

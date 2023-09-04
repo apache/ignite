@@ -237,6 +237,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 long remain = partsRemain.decrementAndGet();
 
                 if (remain == 0) {
+                    clearDumpListener(gctx);
+
                     log.info("Finish group dump [name=" + name +
                         ", id=" + grp +
                         ", time=" + (System.currentTimeMillis() - start) +
@@ -266,26 +268,27 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         String reasonToSkip = dumpCtx.writeChanged(cctx.cacheId(), expireTime, key, val);
 
-        if (reasonToSkip != null && log.isInfoEnabled()) {
-            log.info("Skip entry [grp=" + cctx.groupId() +
+        if (reasonToSkip != null && log.isTraceEnabled()) {
+            log.trace("Skip entry [grp=" + cctx.groupId() +
                 ", cache=" + cctx.cacheId() +
                 ", key=" + key +
                 ", reason=" + reasonToSkip + ']');
         }
-
     }
 
     /** {@inheritDoc} */
     @Override protected CompletableFuture<Void> closeAsync() {
-        dumpCtxs.values().stream().forEach(PartitionDumpContext::close);
-
         if (closeFut == null) {
+            dumpCtxs.values().stream().forEach(PartitionDumpContext::close);
+
             Throwable err0 = err.get();
 
             Set<GroupPartitionId> taken = new HashSet<>();
 
             for (Map.Entry<Integer, Set<Integer>> e : processed.entrySet()) {
                 int grp = e.getKey();
+
+                clearDumpListener(cctx.cache().cacheGroup(grp));
 
                 for (Integer part : e.getValue())
                     taken.add(new GroupPartitionId(grp, part));
@@ -298,6 +301,12 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         }
 
         return closeFut;
+    }
+
+    /** */
+    private void clearDumpListener(CacheGroupContext gctx) {
+        for (GridCacheContext<?, ?> cctx : gctx.caches())
+            cctx.dumpListener(null);
     }
 
     /** */
