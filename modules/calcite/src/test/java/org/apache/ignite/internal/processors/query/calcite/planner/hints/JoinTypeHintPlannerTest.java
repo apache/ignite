@@ -33,6 +33,13 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.CNL_JOIN;
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.MERGE_JOIN;
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NL_JOIN;
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_CNL_JOIN;
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_MERGE_JOIN;
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_NL_JOIN;
+
 /**
  * Planner test for index hints.
  */
@@ -60,20 +67,24 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
     }
 
     /**
-     * Tests {@link HintDefinition#NO_CNL_JOIN} disables collerated nested loop join.
+     * Tests nested loop join is disabled by hinta.
      */
     @Test
-    public void testDisableNCL() throws Exception {
-        doTestDisableJoinTypeWith("TBL2", "TBL1", "INNER", IgniteCorrelatedNestedLoopJoin.class,
-            HintDefinition.NO_CNL_JOIN);
+    public void testDisableNCLJoin() throws Exception {
+        for (HintDefinition hint : Arrays.asList(NO_CNL_JOIN, NL_JOIN, MERGE_JOIN)) {
+            doTestDisableJoinTypeWith("TBL2", "TBL1", "INNER", IgniteCorrelatedNestedLoopJoin.class,
+                hint);
 
-        doTestDisableJoinTypeWith("TBL1", "TBL2", "LEFT", IgniteCorrelatedNestedLoopJoin.class,
-            HintDefinition.NO_CNL_JOIN);
+            doTestDisableJoinTypeWith("TBL1", "TBL2", "LEFT", IgniteCorrelatedNestedLoopJoin.class,
+                hint);
+        }
+    }
 
-        // RIGHT-join is not supported by correlated nested loop. But Calcite replaces join inputs and join type.
-        doTestDisableJoinTypeWith("TBL2", "TBL1", "RIGHT", IgniteCorrelatedNestedLoopJoin.class,
-            HintDefinition.NO_CNL_JOIN);
-
+    /**
+     * Tests no-nested-loop hint is skipped and a warning is logged.
+     */
+    @Test
+    public void testNoNCLJoinSkippedWarning() throws Exception {
         LogListener lsnr = LogListener.matches("Hint 'NO_CNL_JOIN' was skipped. Reason: Correlated nested " +
             "loop is not supported for join type 'FULL'").build();
 
@@ -86,39 +97,45 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
     }
 
     /**
-     * Tests {@link HintDefinition#NO_NL_JOIN} disables nested loop join.
+     * Tests nested loop join is disabled by hints.
      */
     @Test
-    public void testDisableNL() throws Exception {
-        doTestDisableJoinTypeWith("TBL3", "TBL1", "LEFT", IgniteNestedLoopJoin.class,
-            HintDefinition.NO_NL_JOIN);
+    public void testDisableNLJoin() throws Exception {
+        for (HintDefinition hint : Arrays.asList(NO_NL_JOIN, CNL_JOIN, MERGE_JOIN)) {
+            doTestDisableJoinTypeWith("TBL5", "TBL4", "INNER", IgniteNestedLoopJoin.class,
+                NO_NL_JOIN, "MergeJoinConverter");
 
-        doTestDisableJoinTypeWith("TBL1", "TBL3", "RIGHT", IgniteNestedLoopJoin.class,
-            HintDefinition.NO_NL_JOIN);
+            doTestDisableJoinTypeWith("TBL3", "TBL1", "LEFT", IgniteNestedLoopJoin.class,
+                NO_NL_JOIN);
 
-        doTestDisableJoinTypeWith("TBL5", "TBL4", "INNER", IgniteNestedLoopJoin.class,
-            HintDefinition.NO_NL_JOIN, "MergeJoinConverter");
+            // Correlated nested loop join supports only INNER and LEFT join types.
+            if (hint != CNL_JOIN) {
+                doTestDisableJoinTypeWith("TBL1", "TBL3", "RIGHT", IgniteNestedLoopJoin.class,
+                    NO_NL_JOIN);
 
-        doTestDisableJoinTypeWith("TBL1", "TBL2", "FULL", IgniteNestedLoopJoin.class,
-            HintDefinition.NO_NL_JOIN);
+                doTestDisableJoinTypeWith("TBL1", "TBL2", "FULL", IgniteNestedLoopJoin.class,
+                    NO_NL_JOIN);
+            }
+        }
     }
 
     /**
-     * Tests {@link HintDefinition#NO_MERGE_JOIN} disables nested loop join.
+     * Tests merge join is disabled by hints.
      */
     @Test
-    public void testDisableMerge() throws Exception {
-        doTestDisableJoinTypeWith("TBL3", "TBL5", "INNER", IgniteMergeJoin.class,
-            HintDefinition.NO_MERGE_JOIN);
+    public void testDisableMergeJoin() throws Exception {
+        for (HintDefinition hint : Arrays.asList(NO_MERGE_JOIN, NL_JOIN, CNL_JOIN)) {
+            doTestDisableJoinTypeWith("TBL3", "TBL5", "INNER", IgniteMergeJoin.class, hint);
 
-        doTestDisableJoinTypeWith("TBL3", "TBL5", "LEFT", IgniteMergeJoin.class,
-            HintDefinition.NO_MERGE_JOIN);
+            doTestDisableJoinTypeWith("TBL3", "TBL5", "LEFT", IgniteMergeJoin.class, hint);
 
-        doTestDisableJoinTypeWith("TBL3", "TBL5", "RIGHT", IgniteMergeJoin.class,
-            HintDefinition.NO_MERGE_JOIN);
+            // Correlated nested loop join supports only INNER and LEFT join types.
+            if (hint != CNL_JOIN) {
+                doTestDisableJoinTypeWith("TBL3", "TBL5", "RIGHT", IgniteMergeJoin.class, hint);
 
-        doTestDisableJoinTypeWith("TBL3", "TBL5", "FULL", IgniteMergeJoin.class,
-            HintDefinition.NO_MERGE_JOIN);
+                doTestDisableJoinTypeWith("TBL3", "TBL5", "FULL", IgniteMergeJoin.class, hint);
+            }
+        }
     }
 
     /** */
@@ -179,7 +196,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
             )), CORE_JOIN_REORDER_RULES);
 
         for (String tbl : Arrays.asList("TBL3", "TBL4")) {
-            assertPlan(String.format(sqlTpl, "/*+ " + HintDefinition.NO_MERGE_JOIN + "(" + tbl + ") */", ""), schema,
+            assertPlan(String.format(sqlTpl, "/*+ " + NO_MERGE_JOIN + "(" + tbl + ") */", ""), schema,
                 nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
                     .and(input(0, noJoinChildren()))
                     .and(input(1, noJoinChildren()))
@@ -187,7 +204,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
                 ).negate(), CORE_JOIN_REORDER_RULES);
 
             // Hint in the sub-query.
-            assertPlan(String.format(sqlTpl, "", "/*+ " + HintDefinition.NO_MERGE_JOIN + "(" + tbl + ") */"), schema,
+            assertPlan(String.format(sqlTpl, "", "/*+ " + NO_MERGE_JOIN + "(" + tbl + ") */"), schema,
                 nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
                     .and(input(0, noJoinChildren()))
                     .and(input(1, noJoinChildren()))
@@ -195,8 +212,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
                 ).negate(), CORE_JOIN_REORDER_RULES);
 
             // Also NO-NL-JOIN hint in the sub-query. Must not affect the parent query.
-            assertPlan(String.format(sqlTpl, "", "/*+ " + HintDefinition.NO_MERGE_JOIN + ','
-                    + HintDefinition.NO_NL_JOIN + " */"), schema,
+            assertPlan(String.format(sqlTpl, "", "/*+ " + NO_MERGE_JOIN + ',' + NO_NL_JOIN + " */"), schema,
                 nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class)
                     .and(input(0, noJoinChildren()))
                     .and(input(1, noJoinChildren()))
@@ -221,13 +237,13 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
             .and(nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class)
                 .and(j -> !(j instanceof IgniteMergeJoin))).negate()));
 
-        assertPlan(String.format(sqlTpl, "/*+ " + HintDefinition.NO_MERGE_JOIN + " */"), schema,
+        assertPlan(String.format(sqlTpl, "/*+ " + NO_MERGE_JOIN + " */"), schema,
             nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class))
                 .and(nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class)
                     .and(j -> j instanceof IgniteMergeJoin)).negate()));
 
         for (String tbl : Arrays.asList("TBL3", "TBL4", "TBL5")) {
-            assertPlan(String.format(sqlTpl, "/*+ " + HintDefinition.NO_MERGE_JOIN + "(" + tbl + ") */"), schema,
+            assertPlan(String.format(sqlTpl, "/*+ " + NO_MERGE_JOIN + "(" + tbl + ") */"), schema,
                 nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
                     .and(input(0, noJoinChildren()))
                     .and(input(1, noJoinChildren()))
