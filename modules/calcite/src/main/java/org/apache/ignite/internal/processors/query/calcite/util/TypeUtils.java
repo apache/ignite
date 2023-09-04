@@ -372,17 +372,22 @@ public class TypeUtils {
      */
     private static long toLong(DataContext ctx, Object val) {
         if (val instanceof LocalDateTime)
-            return SqlFunctions.toLong(DateValueUtils.convertToTimestamp((LocalDateTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
+            return toLong(DateValueUtils.convertToTimestamp((LocalDateTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
 
         if (val instanceof LocalDate)
-            return SqlFunctions.toLong(DateValueUtils.convertToSqlDate((LocalDate)val), DataContext.Variable.TIME_ZONE.get(ctx));
+            return toLong(DateValueUtils.convertToSqlDate((LocalDate)val), DataContext.Variable.TIME_ZONE.get(ctx));
 
         if (val instanceof LocalTime)
-            return SqlFunctions.toLong(DateValueUtils.convertToSqlTime((LocalTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
+            return toLong(DateValueUtils.convertToSqlTime((LocalTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
 
-        Timestamp val0 = val instanceof Timestamp ? (Timestamp)val : new Timestamp(((java.util.Date)val).getTime());
+        return toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx));
+    }
 
-        return SqlFunctions.toLong(val0, DataContext.Variable.TIME_ZONE.get(ctx));
+    /** */
+    private static long toLong(java.util.Date val, TimeZone tz) {
+        long time = val.getTime();
+
+        return time + tz.getOffset(time);
     }
 
     /** */

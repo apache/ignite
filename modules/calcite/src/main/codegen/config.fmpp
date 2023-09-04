@@ -165,6 +165,7 @@ data: {
       "CURSOR"
       "CYCLE"
       "DATE"
+      "DATETIME"
       "DAY"
       "DEALLOCATE"
       "DEC"
@@ -294,6 +295,7 @@ data: {
       "PREPARE"
       "PREV"
       "PROCEDURE"
+      "QUALIFY"
       "RANGE"
       "RANK"
       "READS"
@@ -389,6 +391,13 @@ data: {
       "WITHIN"
       "WITHOUT"
       "YEAR"
+      "MONDAY"
+      "TUESDAY"
+      "WEDNESDAY"
+      "THURSDAY"
+      "FRIDAY"
+      "SATURDAY"
+      "SUNDAY"
     ]
 
     # List of non-reserved keywords to remove;

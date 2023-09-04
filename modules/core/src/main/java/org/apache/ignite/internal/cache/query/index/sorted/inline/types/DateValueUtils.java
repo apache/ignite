@@ -156,17 +156,17 @@ public class DateValueUtils {
     }
 
     /** */
-    public static Timestamp convertToSqlTime(LocalTime locTime) {
+    public static Time convertToSqlTime(LocalTime locTime) {
         long millis = TimeUnit.NANOSECONDS.toMillis(locTime.toNanoOfDay());
 
-        return new Timestamp(defaultTzMillisFromUtc(millis));
+        return new Time(defaultTzMillisFromUtc(millis));
     }
 
     /** */
-    public static Timestamp convertToSqlDate(LocalDate locDate) {
+    public static Date convertToSqlDate(LocalDate locDate) {
         long dateVal = dateValue(locDate.getYear(), locDate.getMonthValue(), locDate.getDayOfMonth());
         long millis = millisFromDateValue(dateVal);
 
-        return new Timestamp(defaultTzMillisFromUtc(millis));
+        return new Date(defaultTzMillisFromUtc(millis));
     }
 }
