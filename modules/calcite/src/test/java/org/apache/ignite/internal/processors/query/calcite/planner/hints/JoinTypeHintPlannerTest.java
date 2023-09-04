@@ -18,7 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.planner.hints;
 
 import java.util.Arrays;
-import org.apache.calcite.rel.core.Join;
+import java.util.function.Predicate;
+import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest;
@@ -32,12 +33,14 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
-import static java.util.function.Predicate.not;
-
 /**
  * Planner test for index hints.
  */
 public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
+    /** */
+    private static final String[] CORE_JOIN_REORDER_RULES =
+        {"JoinCommuteRule", "JoinPushThroughJoinRule:left", "JoinPushThroughJoinRule:right"};
+
     /** */
     private IgniteSchema schema;
 
@@ -54,28 +57,6 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
         }
 
         schema = createSchema(tables);
-    }
-
-    /** */
-    @Test
-    public void test0() throws Exception {
-        String sqlTpl = "SELECT %s t1.v1, t2.v2, t3.v3 FROM TBL3 t1 JOIN TBL4 t2 on t1.v1=t2.v2 JOIN TBL5 t3 on " +
-            "t2.v2=t3.v3";
-
-        assertPlan(String.format(sqlTpl, ""), schema, nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class))
-            .and(nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class).and(j -> !(j instanceof IgniteMergeJoin))).negate()));
-
-        assertPlan(String.format(sqlTpl, "/*+ " + HintDefinition.NO_MERGE_JOIN + " */"), schema,
-            nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class))
-                .and(nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class).and(j -> j instanceof IgniteMergeJoin)).negate()));
-
-        assertPlan(String.format(sqlTpl, "/*+ " + HintDefinition.NO_MERGE_JOIN + "(TBL3) */"), schema,
-            nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
-                .and(input(0, nodeOrAnyChild(isTableScan("TBL3")))
-                    .or(input(1, nodeOrAnyChild(isTableScan("TBL3")))))).negate()
-                .and(nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class).and(j -> !(j instanceof IgniteMergeJoin))
-                    .and(input(0, nodeOrAnyChild(isTableScan("TBL3")))
-                        .or(input(1, nodeOrAnyChild(isTableScan("TBL3"))))))));
     }
 
     /**
@@ -174,5 +155,95 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
         // Hint with correct and incorrect tbl.
         assertPlan(String.format(sqlTpl, hintPref + '(' + tbl1 + ",UNEXISTING) */"), schema,
             nodeOrAnyChild(isInstanceOf(joinRel)).negate(), disabledRules);
+    }
+
+    /**
+     * Tests disable-join-hint works for a sub-query.
+     */
+    @Test
+    public void testDisableJoinTypeInSubquery() throws Exception {
+        String sqlTpl = "SELECT %s t1.v1, t2.v2 FROM TBL2 t1 JOIN TBL1 t2 on t1.v3=t2.v3 where t2.v3 in " +
+            "(select %s t3.v3 from TBL3 t3 JOIN TBL4 t4 on t3.v1=t4.v1)";
+
+        assertPlan(String.format(sqlTpl, "", ""), schema,
+            nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class)
+                .and(input(0, noJoinChildren()))
+                .and(input(1, noJoinChildren()))
+                .and(hasNestedTableScan("TBL2"))
+                .and(hasNestedTableScan("TBL1"))
+            ).and(nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
+                .and(input(0, noJoinChildren()))
+                .and(input(1, noJoinChildren()))
+                .and(hasNestedTableScan("TBL3"))
+                .and(hasNestedTableScan("TBL4"))
+            )), CORE_JOIN_REORDER_RULES);
+
+        for (String tbl : Arrays.asList("TBL3", "TBL4")) {
+            assertPlan(String.format(sqlTpl, "/*+ " + HintDefinition.NO_MERGE_JOIN + "(" + tbl + ") */", ""), schema,
+                nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
+                    .and(input(0, noJoinChildren()))
+                    .and(input(1, noJoinChildren()))
+                    .and(hasNestedTableScan(tbl))
+                ).negate(), CORE_JOIN_REORDER_RULES);
+
+            // Hint in the sub-query.
+            assertPlan(String.format(sqlTpl, "", "/*+ " + HintDefinition.NO_MERGE_JOIN + "(" + tbl + ") */"), schema,
+                nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
+                    .and(input(0, noJoinChildren()))
+                    .and(input(1, noJoinChildren()))
+                    .and(hasNestedTableScan(tbl))
+                ).negate(), CORE_JOIN_REORDER_RULES);
+
+            // Also NO-NL-JOIN hint in the sub-query. Must not affect the parent query.
+            assertPlan(String.format(sqlTpl, "", "/*+ " + HintDefinition.NO_MERGE_JOIN + ','
+                    + HintDefinition.NO_NL_JOIN + " */"), schema,
+                nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class)
+                    .and(input(0, noJoinChildren()))
+                    .and(input(1, noJoinChildren()))
+                    .and(hasNestedTableScan("TBL2"))
+                    .and(hasNestedTableScan("TBL1"))
+                ).and(nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
+                    .and(input(0, noJoinChildren()))
+                    .and(input(1, noJoinChildren()))
+                    .and(hasNestedTableScan(tbl))
+                ).negate()), CORE_JOIN_REORDER_RULES);
+        }
+    }
+
+    /** */
+    @Test
+    public void testDisableMergeJoinWith3Tables() throws Exception {
+        String sqlTpl = "SELECT %s t1.v1, t2.v2, t3.v3 FROM TBL3 t1 JOIN TBL4 t2 on t1.v1=t2.v2 JOIN TBL5 t3 on " +
+            "t2.v2=t3.v3";
+
+        // Ensures there is no non-merge joins.
+        assertPlan(String.format(sqlTpl, ""), schema, nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class))
+            .and(nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class)
+                .and(j -> !(j instanceof IgniteMergeJoin))).negate()));
+
+        assertPlan(String.format(sqlTpl, "/*+ " + HintDefinition.NO_MERGE_JOIN + " */"), schema,
+            nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class))
+                .and(nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class)
+                    .and(j -> j instanceof IgniteMergeJoin)).negate()));
+
+        for (String tbl : Arrays.asList("TBL3", "TBL4", "TBL5")) {
+            assertPlan(String.format(sqlTpl, "/*+ " + HintDefinition.NO_MERGE_JOIN + "(" + tbl + ") */"), schema,
+                nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
+                    .and(input(0, noJoinChildren()))
+                    .and(input(1, noJoinChildren()))
+                    .and(hasNestedTableScan(tbl))
+                ).negate());
+        }
+    }
+
+    /** */
+    private Predicate<RelNode> hasNestedTableScan(String tbl) {
+        return input(0, nodeOrAnyChild(isTableScan(tbl)))
+            .or(input(1, nodeOrAnyChild(isTableScan(tbl))));
+    }
+
+    /** */
+    private Predicate<RelNode> noJoinChildren() {
+        return nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class)).negate();
     }
 }
