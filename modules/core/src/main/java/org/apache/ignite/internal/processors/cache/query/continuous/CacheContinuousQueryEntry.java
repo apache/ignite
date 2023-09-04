@@ -52,7 +52,11 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     /** */
     private static final byte KEEP_BINARY = 0b0100;
 
-    /** */
+    /**
+     * Whether this CQ entry can be considered internal. Internal means that the CQ entry will not be passed to the
+     * user as is, and may not meet JCache requirements.
+     * @see CacheContinuousQueryEvent
+     */
     private static final byte INTERNAL = 0b1000;
 
     /** */
@@ -127,6 +131,8 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      * @param newVal New value.
      * @param oldVal Old value.
      * @param keepBinary Keep binary flag.
+     * @param internal Whether this CQ entry can be considered internal. Internal means that the CQ entry will not be
+     *                 passed to the user as is, and may not meet JCache requirements.
      * @param part Partition.
      * @param updateCntr Update partition counter.
      * @param topVer Topology version if applicable.
