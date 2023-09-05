@@ -955,7 +955,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return null;
 
         // Skip if in-memory CDC disabled.
-        if (inMemoryCdc && cdcDisabled.getOrDefault(false) && !(rec instanceof CdcDisableRecord))
+        if (inMemoryCdc && cdcDisabled.get() && !(rec instanceof CdcDisableRecord))
             return null;
 
         FileWriteHandle currWrHandle = currentHandle();
