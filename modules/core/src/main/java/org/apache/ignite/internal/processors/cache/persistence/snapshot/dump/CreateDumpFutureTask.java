@@ -411,10 +411,11 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         ) {
             if (closed) // Partition already saved in dump.
                 return "partition already saved";
-            if ( (startVer != null && ver.isGreater(startVer)) ||
-                !changed.get(cache).add(key.hashCode())) // Entry changed several time during dump.
+            if (startVer != null && ver.isGreater(startVer))
+                return "greater version";
+            if (!changed.get(cache).add(key.hashCode())) // Entry changed several time during dump.
                 return "changed several times";
-            else if (val == null)
+            if (val == null)
                 return "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
 
             changedCnt++;
@@ -447,7 +448,12 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             if (startVer != null && ver.isGreater(startVer))
                 return false;
 
-            if (changed.get(cache).remove(key.hashCode()))
+            // Can remove only on primaries, because other updates will be skiped based on version
+            boolean alreadySaved = startVer != null
+                ? changed.get(cache).remove(key.hashCode())
+                : changed.get(cache).contains(key.hashCode());
+
+            if (alreadySaved)
                 return false;
 
             write(cache, expireTime, key, val);
