@@ -226,8 +226,8 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         List<List<String>> origins = validator().getFieldOrigins(validatedNode);
 
         List<String> derived = Collections.emptyList();
-        if (sqlNode instanceof SqlSelect) {
-            SelectScope list = validator().getRawSelectScope((SqlSelect)sqlNode);
+        if (validatedNode instanceof SqlSelect) {
+            SelectScope list = validator().getRawSelectScope((SqlSelect)validatedNode);
 
             assert type.getFieldList().size() == list.getExpandedSelectList().size();
 
