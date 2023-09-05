@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -82,6 +83,12 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     /** */
     private final FileIOFactory ioFactory;
 
+    /** */
+    final String name;
+
+    /** */
+    final PrintWriter logf;
+
     /**
      * Dump contextes.
      * Key is [group_id, partition_id] combined in single long value.
@@ -120,6 +127,18 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         this.dumpDir = dumpDir;
         this.ioFactory = ioFactory;
+        try {
+            name = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
+
+            File logf = new File("/Users/user/tmp/dump_log.log");
+            logf.delete();
+            logf.createNewFile();
+
+            this.logf = new PrintWriter(logf);
+        }
+        catch (IgniteCheckedException | IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -242,6 +261,13 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                                 ", cache=" + cache +
                                 ", key=" + row.key() + ']');
 
+                        logf.println("iterat.write [grp=" + grp +
+                            ", cache=" + cache +
+                            ", key=" + row.key().value(null, false) +
+                            ", written=" + written +
+                            ", version=" + row.version() +
+                            ", " + name + ']');
+
                         if (log.isTraceEnabled())
                             log.trace("Row [key=" + row.key() + ", cacheId=" + cache + ']');
                     }
@@ -284,6 +310,13 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         String reasonToSkip = dumpCtx.writeChanged(cctx.cacheId(), expireTime, key, val, ver);
 
+        logf.println("change.write [grp=" + cctx.groupId() +
+            ", cache=" + cctx.cacheId() +
+            ", key=" + key.value(null, false) +
+            ", reason=" + reasonToSkip +
+            ", version=" + ver +
+            ", name=" + name + ']');
+
         if (reasonToSkip != null && log.isTraceEnabled()) {
             log.trace("Skip entry [grp=" + cctx.groupId() +
                 ", cache=" + cctx.cacheId() +
@@ -295,6 +328,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     /** {@inheritDoc} */
     @Override protected CompletableFuture<Void> closeAsync() {
         if (closeFut == null) {
+            logf.close();
+
             dumpCtxs.values().stream().forEach(PartitionDumpContext::close);
 
             Throwable err0 = err.get();
@@ -411,10 +446,11 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         ) {
             if (closed) // Partition already saved in dump.
                 return "partition already saved";
-            if ( (startVer != null && ver.isGreater(startVer)) ||
-                !changed.get(cache).add(key.hashCode())) // Entry changed several time during dump.
+            if (startVer != null && ver.isGreater(startVer))
+                return "greater version";
+            if (!changed.get(cache).add(key.hashCode())) // Entry changed several time during dump.
                 return "changed several times";
-            else if (val == null)
+            if (val == null)
                 return "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
 
             changedCnt++;
@@ -447,7 +483,12 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             if (startVer != null && ver.isGreater(startVer))
                 return false;
 
-            if (changed.get(cache).remove(key.hashCode()))
+            // Can remove only on primaries, because other updates will be skiped based on version
+            boolean alreadySaved = startVer != null
+                ? changed.get(cache).remove(key.hashCode())
+                : changed.get(cache).contains(key.hashCode());
+
+            if (alreadySaved)
                 return false;
 
             write(cache, expireTime, key, val);
