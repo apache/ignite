@@ -20,13 +20,13 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import javax.management.DynamicMBean;
@@ -34,6 +34,7 @@ import javax.management.MBeanException;
 import javax.management.ReflectionException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -47,7 +48,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.DumpedPartitionIterator;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -57,9 +60,11 @@ import org.apache.ignite.platform.model.Role;
 import org.apache.ignite.platform.model.User;
 import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.management.api.CommandMBean.INVOKE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_RUNNING_DIR_KEY;
 import static org.apache.ignite.platform.model.AccessLevel.SUPER;
@@ -86,7 +91,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     protected static final IntFunction<User> USER_FACTORY = i ->
-        new User(i, ACL.values()[i % ACL.values().length], new Role("Role" + i, SUPER));
+        new User(i, ACL.values()[Math.abs(i) % ACL.values().length], new Role("Role" + i, SUPER));
 
     /** */
     @Parameterized.Parameter
@@ -153,18 +158,21 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                     .setName(DEFAULT_CACHE_NAME)
                     .setBackups(backups)
                     .setAtomicityMode(mode)
+                    .setWriteSynchronizationMode(FULL_SYNC)
                     .setAffinity(new RendezvousAffinityFunction().setPartitions(20)),
                 new CacheConfiguration<>()
                     .setGroupName(GRP)
                     .setName(CACHE_0)
                     .setBackups(backups)
                     .setAtomicityMode(mode)
+                    .setWriteSynchronizationMode(FULL_SYNC)
                     .setAffinity(new RendezvousAffinityFunction().setPartitions(20)),
                 new CacheConfiguration<>()
                     .setGroupName(GRP)
                     .setName(CACHE_1)
                     .setBackups(backups)
                     .setAtomicityMode(mode)
+                    .setWriteSynchronizationMode(FULL_SYNC)
                     .setAffinity(new RendezvousAffinityFunction().setPartitions(20))
             );
     }
@@ -214,7 +222,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             return true;
         }, 10 * 1000));
 
-        return new T2(latch, dumpFut);
+        return new T2<>(latch, dumpFut);
     }
 
     /** */
@@ -240,10 +248,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         if (persistence)
             assertNull(ign.context().cache().context().database().metaStorage().read(SNP_RUNNING_DIR_KEY));
 
-        Dump dump = new Dump(
-            ign.context(),
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name)
-        );
+        Dump dump = dump(ign, name);
 
         List<SnapshotMetadata> metadata = dump.metadata();
 
@@ -268,43 +273,63 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         CacheObjectContext coCtx1 = ign.context().cache().context().cacheObjectContext(CU.cacheId(CACHE_1));
 
         for (String nodeDir : nodesDirs) {
-            List<CacheConfiguration<?, ?>> ccfgs = dump.configs(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME));
+            List<StoredCacheData> ccfgs = dump.configs(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME));
 
             assertNotNull(ccfgs);
             assertEquals(1, ccfgs.size());
-            assertEquals(DEFAULT_CACHE_NAME, ccfgs.get(0).getName());
+
+            assertEquals(DEFAULT_CACHE_NAME, ccfgs.get(0).configuration().getName());
+            assertFalse(ccfgs.get(0).sql());
+            assertTrue(ccfgs.get(0).queryEntities().isEmpty());
 
             ccfgs = dump.configs(nodeDir, CU.cacheId(GRP));
 
             assertNotNull(ccfgs);
             assertEquals(2, ccfgs.size());
 
-            ccfgs.sort(Comparator.comparing(CacheConfiguration::getName));
+            ccfgs.sort(Comparator.comparing(d -> d.config().getName()));
 
-            assertEquals(GRP, ccfgs.get(0).getGroupName());
-            assertEquals(CACHE_0, ccfgs.get(0).getName());
-            assertEquals(GRP, ccfgs.get(1).getGroupName());
-            assertEquals(CACHE_1, ccfgs.get(1).getName());
+            CacheConfiguration ccfg0 = ccfgs.get(0).configuration();
+            CacheConfiguration ccfg1 = ccfgs.get(1).configuration();
 
-            try (Dump.DumpIterator iter = dump.iterator(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME))) {
-                while (iter.hasNext()) {
-                    DumpEntry e = iter.next();
+            assertEquals(GRP, ccfg0.getGroupName());
+            assertEquals(CACHE_0, ccfg0.getName());
 
-                    checkDefaultCacheEntry(e, coCtx);
+            assertEquals(GRP, ccfg1.getGroupName());
+            assertEquals(CACHE_1, ccfg1.getName());
 
-                    keys.add(e.key().<Integer>value(coCtx, true));
+            assertFalse(ccfgs.get(0).sql());
+            assertFalse(ccfgs.get(1).sql());
+            assertTrue(ccfgs.get(0).queryEntities().isEmpty());
+            assertTrue(ccfgs.get(1).queryEntities().isEmpty());
 
-                    dfltDumpSz++;
+            List<Integer> parts = dump.partitions(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME));
+
+            for (int part : parts) {
+                try (DumpedPartitionIterator iter = dump.iterator(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME), part)) {
+                    while (iter.hasNext()) {
+                        DumpEntry e = iter.next();
+
+                        checkDefaultCacheEntry(e, coCtx);
+
+                        keys.add(e.key().<Integer>value(coCtx, true));
+
+                        dfltDumpSz++;
+                    }
                 }
             }
 
-            try (Dump.DumpIterator iter = dump.iterator(nodeDir, CU.cacheId(GRP))) {
-                while (iter.hasNext()) {
-                    DumpEntry e = iter.next();
+            parts = dump.partitions(nodeDir, CU.cacheId(GRP));
 
-                    checkGroupEntry(e, coCtx0, coCtx1);
+            for (int part : parts) {
+                try (DumpedPartitionIterator iter = dump.iterator(nodeDir, CU.cacheId(GRP), part)) {
+                    while (iter.hasNext()) {
+                        DumpEntry e = iter.next();
 
-                    grpDumpSz++;
+                        checkGroupEntry(e, coCtx0, coCtx1);
+
+                        grpDumpSz++;
+                    }
                 }
             }
         }
@@ -337,8 +362,72 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
+    protected void insertOrUpdate(IgniteEx ignite, int i) {
+        insertOrUpdate(ignite, i, i);
+    }
+
+    /** */
+    protected void insertOrUpdate(IgniteEx ignite, int i, int val) {
+        ignite.cache(DEFAULT_CACHE_NAME).put(i, val);
+        IgniteCache<Object, Object> cache = ignite.cache(CACHE_0);
+        IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_1);
+
+        if (mode == CacheAtomicityMode.TRANSACTIONAL) {
+            try (Transaction tx = ignite.transactions().txStart()) {
+                cache.put(i, USER_FACTORY.apply(val));
+
+                tx.commit();
+            }
+
+            try (Transaction tx = ignite.transactions().txStart()) {
+                cache1.put(new Key(i), new Value(String.valueOf(val)));
+
+                tx.commit();
+            }
+        }
+        else {
+            cache.put(i, USER_FACTORY.apply(val));
+
+            cache1.put(new Key(i), new Value(String.valueOf(val)));
+        }
+    }
+
+    /** */
+    protected void remove(IgniteEx ignite, int i) {
+        ignite.cache(DEFAULT_CACHE_NAME).remove(i);
+
+        IgniteCache<Object, Object> cache = ignite.cache(CACHE_0);
+        IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_1);
+
+        IntConsumer moreRemovals = j -> {
+            cache.remove(j);
+            cache.remove(j);
+            cache1.remove(new Key(j));
+            cache1.remove(new Key(j));
+        };
+
+        if (mode == CacheAtomicityMode.TRANSACTIONAL) {
+            try (Transaction tx = ignite.transactions().txStart()) {
+                moreRemovals.accept(i);
+
+                tx.commit();
+            }
+        }
+        else
+            moreRemovals.accept(i);
+    }
+
+    /** */
     void createDump(IgniteEx ign) {
         createDump(ign, DMP_NAME);
+    }
+
+    /** */
+    public static Dump dump(IgniteEx ign, String name) throws IgniteCheckedException {
+        return new Dump(
+            ign.context(),
+            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name)
+        );
     }
 
     /** */
@@ -350,7 +439,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         Arrays.fill(signature, String.class.getName());
 
         try {
-            String res = (String)createDumpBean(ign).invoke(INVOKE, args, signature);
+            String res = (String)mngmntBean(ign, "Dump", "Create").invoke(INVOKE, args, signature);
 
             assertEquals("Dump \"" + name + "\" was created.\n", res);
         }
@@ -360,12 +449,12 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
-    static DynamicMBean createDumpBean(IgniteEx ign) {
+    static DynamicMBean mngmntBean(IgniteEx ign, String... path) {
         DynamicMBean mbean = getMxBean(
             ign.context().igniteInstanceName(),
             "management",
-            Collections.singletonList("Dump"),
-            "Create",
+            Arrays.asList(path).subList(0, path.length - 1),
+            path[path.length - 1],
             DynamicMBean.class
         );
 

@@ -19,12 +19,10 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
-import java.util.function.IntConsumer;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -32,9 +30,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.platform.model.Key;
-import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
 import static java.lang.Boolean.FALSE;
@@ -173,11 +169,17 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     @Test
     public void testWithConcurrentRemovals() throws Exception {
         doTestConcurrentOperations(ignite -> {
-            for (int i = 0; i < 3; i++)
-                remove(ignite, i);
+            for (int i = 0; i < 3; i++) {
+                assertTrue(ignite.cache(DEFAULT_CACHE_NAME).containsKey(i));
 
-            for (int i = 3; i < 6; i++)
+                remove(ignite, i);
+            }
+
+            for (int i = 3; i < 6; i++) {
+                assertTrue(ignite.cache(DEFAULT_CACHE_NAME).containsKey(i));
+
                 remove(cli, i);
+            }
         });
     }
 
@@ -224,54 +226,6 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
         latchAndFut.get2().get();
 
         checkDump(ign);
-    }
-
-    /** */
-    private void insertOrUpdate(IgniteEx ignite, int i) {
-        ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
-
-        IgniteCache<Object, Object> cache = ignite.cache(CACHE_0);
-        IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_1);
-
-        IntConsumer moreInserts = j -> {
-            cache.put(j, USER_FACTORY.apply(j));
-            cache1.put(new Key(j), new Value(String.valueOf(j)));
-        };
-
-        if (mode == CacheAtomicityMode.TRANSACTIONAL) {
-            try (Transaction tx = ignite.transactions().txStart()) {
-                moreInserts.accept(i);
-
-                tx.commit();
-            }
-        }
-        else
-            moreInserts.accept(i);
-    }
-
-    /** */
-    private void remove(IgniteEx ignite, int i) {
-        assertTrue(ignite.cache(DEFAULT_CACHE_NAME).containsKey(i));
-
-        ignite.cache(DEFAULT_CACHE_NAME).remove(i);
-
-        IgniteCache<Object, Object> cache = ignite.cache(CACHE_0);
-        IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_1);
-
-        IntConsumer moreRemovals = j -> {
-            cache.remove(j);
-            cache1.remove(new Key(j));
-        };
-
-        if (mode == CacheAtomicityMode.TRANSACTIONAL) {
-            try (Transaction tx = ignite.transactions().txStart()) {
-                moreRemovals.accept(i);
-
-                tx.commit();
-            }
-        }
-        else
-            moreRemovals.accept(i);
     }
 
     /** */

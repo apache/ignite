@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -175,15 +174,14 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
     }
 
     /** Starts async execution of all tasks required to create snapshot. */
-    protected void startAllAsync() {
+    protected void saveSnapshotData() {
         try {
             // Submit all tasks for partitions and deltas processing.
             List<CompletableFuture<Void>> futs = new ArrayList<>();
 
             Collection<BinaryType> binTypesCopy = cctx.kernalContext()
                 .cacheObjects()
-                .metadata(Collections.emptyList())
-                .values();
+                .metadata();
 
             List<Map<Integer, MappedName>> mappingsCopy = cctx.kernalContext()
                 .marshallerContext()
@@ -228,7 +226,7 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
      * @param exec Runnable task to execute.
      * @return Wrapped task.
      */
-    public Runnable wrapExceptionIfStarted(IgniteThrowableRunner exec) {
+    Runnable wrapExceptionIfStarted(IgniteThrowableRunner exec) {
         return () -> {
             if (stopping())
                 return;
@@ -243,7 +241,7 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
     }
 
     /** */
-    public CompletableFuture<Void> future(IgniteThrowableRunner task) {
+    protected CompletableFuture<Void> future(IgniteThrowableRunner task) {
         return CompletableFuture.runAsync(
             wrapExceptionIfStarted(task),
             snpSndr.executor()

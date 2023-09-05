@@ -385,7 +385,13 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         if (!startedFut.onDone())
             return;
 
-        startAllAsync();
+        if (log.isInfoEnabled()) {
+            log.info("Submit partition processing tasks to the snapshot execution pool " +
+                "[map=" + groupByGroupId(partFileLengths.keySet()) +
+                ", totalSize=" + U.humanReadableByteCount(partFileLengths.values().stream().mapToLong(v -> v).sum()) + ']');
+        }
+
+        saveSnapshotData();
     }
 
     /** {@inheritDoc} */
@@ -446,17 +452,6 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                 }
             }), snpSndr.executor());
         }).collect(Collectors.toList());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void startAllAsync() {
-        if (log.isInfoEnabled()) {
-            log.info("Submit partition processing tasks to the snapshot execution pool " +
-                "[map=" + groupByGroupId(partFileLengths.keySet()) +
-                ", totalSize=" + U.humanReadableByteCount(partFileLengths.values().stream().mapToLong(v -> v).sum()) + ']');
-        }
-
-        super.startAllAsync();
     }
 
     /** {@inheritDoc} */

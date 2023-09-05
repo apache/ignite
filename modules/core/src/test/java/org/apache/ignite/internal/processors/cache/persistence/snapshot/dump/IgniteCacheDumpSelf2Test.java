@@ -34,7 +34,6 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -49,6 +48,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.DMP_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.KEYS_CNT;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.dump;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntrySerializer.HEADER_SZ;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -112,17 +112,14 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        File dumpDir =
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), DMP_NAME);
-
-        Dump dump = new Dump(ign.context(), dumpDir);
+        Dump dump = dump(ign, DMP_NAME);
 
         List<String> nodes = dump.nodesDirectories();
 
         assertNotNull(nodes);
         assertEquals(2, nodes.size());
 
-        File nodeDumpDir = new File(dumpDir, DB_DEFAULT_FOLDER + File.separator + nodes.get(0));
+        File nodeDumpDir = new File(dump.dumpDirectory(), DB_DEFAULT_FOLDER + File.separator + nodes.get(0));
 
         assertTrue(new File(nodeDumpDir, DUMP_LOCK).createNewFile());
 
@@ -149,10 +146,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
             ign.snapshot().createDump(DMP_NAME).get();
 
-            File dumpDir =
-                new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), DMP_NAME);
-
-            Dump dump = new Dump(ign.context(), dumpDir);
+            Dump dump = dump(ign, DMP_NAME);
 
             List<String> nodes = dump.nodesDirectories();
 
@@ -160,7 +154,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             assertEquals(1, nodes.size());
 
             File cacheDumpDir = new File(
-                dumpDir,
+                dump.dumpDirectory(),
                 DB_DEFAULT_FOLDER + File.separator + nodes.get(0) + File.separator + CACHE_DIR_PREFIX + DEFAULT_CACHE_NAME
             );
 
@@ -209,7 +203,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
             assertThrows(
                 null,
-                () -> dump.iterator(nodes.get(0), CU.cacheId(DEFAULT_CACHE_NAME)),
+                () -> dump.iterator(nodes.get(0), CU.cacheId(DEFAULT_CACHE_NAME), 0).next(),
                 IgniteException.class,
                 "Data corrupted"
             );

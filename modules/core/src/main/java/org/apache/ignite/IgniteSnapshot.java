@@ -34,6 +34,8 @@ import org.jetbrains.annotations.Nullable;
  * <li>Concurrent updates from {@link IgniteDataStreamer} with default {@link IgniteDataStreamer#allowOverwrite()}
  * setting (false) into a persistent cache can cause that cache data stored inconsistent.</li>
  * </ul>
+ * You can create cache dump, also. Cache dump is consistent files consist of entry by entry cache content.
+ * This type of snapshots supports in-memory caches.
  */
 public interface IgniteSnapshot {
     /**

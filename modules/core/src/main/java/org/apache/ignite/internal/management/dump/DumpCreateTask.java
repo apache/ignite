@@ -18,11 +18,17 @@
 package org.apache.ignite.internal.management.dump;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
+
 /** */
+@GridInternal
 public class DumpCreateTask extends VisorOneNodeTask<DumpCreateCommandArg, Void> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
@@ -47,6 +53,11 @@ public class DumpCreateTask extends VisorOneNodeTask<DumpCreateCommandArg, Void>
             ignite.snapshot().createDump(arg.name()).get();
 
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecurityPermissionSet requiredPermissions() {
+            return systemPermissions(ADMIN_SNAPSHOT);
         }
     }
 }
