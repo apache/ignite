@@ -32,8 +32,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -109,12 +109,12 @@ public class Dump {
      * @param group Group id.
      * @return List of cache configs saved in dump for group.
      */
-    public List<CacheConfiguration<?, ?>> configs(String node, int group) {
+    public List<StoredCacheData> configs(String node, int group) {
         JdkMarshaller marsh = MarshallerUtils.jdkMarshaller(cctx.igniteInstanceName());
 
         return Arrays.stream(FilePageStoreManager.cacheDataFiles(dumpGroupDirectory(node, group))).map(f -> {
             try {
-                return readCacheData(f, marsh, cctx.config()).config();
+                return readCacheData(f, marsh, cctx.config());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -126,9 +126,8 @@ public class Dump {
      * @param node Node directory name.
      * @param group Group id.
      * @return Dump iterator.
-     * @throws IOException If failed.
      */
-    List<Integer> partitions(String node, int group) {
+    public List<Integer> partitions(String node, int group) {
         return Arrays.stream(dumpGroupDirectory(node, group)
             .listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(DUMP_FILE_EXT)))
             .map(partFile -> Integer.parseInt(partFile.getName().replace(PART_FILE_PREFIX, "").replace(DUMP_FILE_EXT, "")))
@@ -139,7 +138,6 @@ public class Dump {
      * @param node Node directory name.
      * @param group Group id.
      * @return Dump iterator.
-     * @throws IOException If failed.
      */
     public DumpedPartitionIterator iterator(String node, int group, int part) {
         return iterator(node, group, part, true);
@@ -150,7 +148,6 @@ public class Dump {
      * @param group Group id.
      * @param excludeDuplicates Skip entries that was dumped twice - by iterator and change listener.
      * @return Dump iterator.
-     * @throws IOException If failed.
      */
     DumpedPartitionIterator iterator(String node, int group, int part, boolean excludeDuplicates) {
         FileIOFactory ioFactory = new RandomAccessFileIOFactory();
@@ -218,12 +215,17 @@ public class Dump {
             }
 
             /** {@inheritDoc} */
-            @Override public void close() throws Exception {
+            @Override public void close() {
                 U.closeQuiet(dumpFile);
 
                 partKeys = null;
             }
         };
+    }
+
+    /** @return Root dump directory. */
+    public File dumpDirectory() {
+        return dumpDir;
     }
 
     /** */

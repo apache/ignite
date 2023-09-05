@@ -37,6 +37,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.cachDataFilename;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
@@ -142,6 +144,13 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         return false; // Don't wait for checkpoint.
     }
 
+    /** {@inheritDoc} */
+    @Override protected void processPartitions() throws IgniteCheckedException {
+        super.processPartitions();
+
+        processed.values().forEach(parts -> parts.remove(INDEX_PARTITION));
+    }
+
     /** Prepares all data structures to dump entries. */
     private void prepare() throws IOException, IgniteCheckedException {
         for (Map.Entry<Integer, Set<Integer>> e : processed.entrySet()) {
@@ -182,12 +191,14 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             IgniteUtils.ensureDirectory(grpDir, "dump group directory", null);
 
             for (GridCacheContext<?, ?> cacheCtx : gctx.caches()) {
-                CacheConfiguration<?, ?> ccfg = cacheCtx.config();
+                DynamicCacheDescriptor desc = cctx.kernalContext().cache().cacheDescriptor(cacheCtx.cacheId());
 
-                cctx.cache().configManager().writeCacheData(
-                    new StoredCacheData(ccfg),
-                    new File(grpDir, cachDataFilename(ccfg))
-                );
+                StoredCacheData cacheData = new StoredCacheData(new CacheConfiguration(desc.cacheConfiguration()));
+
+                cacheData.queryEntities(desc.schema().entities());
+                cacheData.sql(desc.sql());
+
+                cctx.cache().configManager().writeCacheData(cacheData, new File(grpDir, cachDataFilename(cacheData.config())));
             }
         })).collect(Collectors.toList());
     }
@@ -295,8 +306,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
                 clearDumpListener(cctx.cache().cacheGroup(grp));
 
-                for (Integer part : e.getValue())
+                for (Integer part : e.getValue()) {
                     taken.add(new GroupPartitionId(grp, part));
+                }
             }
 
             closeFut = CompletableFuture.runAsync(

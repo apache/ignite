@@ -34,6 +34,7 @@ import javax.management.MBeanException;
 import javax.management.ReflectionException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -49,6 +50,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.DumpedPartitionIterator;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -250,10 +252,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         if (persistence)
             assertNull(ign.context().cache().context().database().metaStorage().read(SNP_RUNNING_DIR_KEY));
 
-        Dump dump = new Dump(
-            ign.context(),
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name)
-        );
+        Dump dump = dump(ign, name);
 
         List<SnapshotMetadata> metadata = dump.metadata();
 
@@ -278,23 +277,35 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         CacheObjectContext coCtx1 = ign.context().cache().context().cacheObjectContext(CU.cacheId(CACHE_1));
 
         for (String nodeDir : nodesDirs) {
-            List<CacheConfiguration<?, ?>> ccfgs = dump.configs(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME));
+            List<StoredCacheData> ccfgs = dump.configs(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME));
 
             assertNotNull(ccfgs);
             assertEquals(1, ccfgs.size());
-            assertEquals(DEFAULT_CACHE_NAME, ccfgs.get(0).getName());
+
+            assertEquals(DEFAULT_CACHE_NAME, ccfgs.get(0).configuration().getName());
+            assertFalse(ccfgs.get(0).sql());
+            assertTrue(ccfgs.get(0).queryEntities().isEmpty());
 
             ccfgs = dump.configs(nodeDir, CU.cacheId(GRP));
 
             assertNotNull(ccfgs);
             assertEquals(2, ccfgs.size());
 
-            ccfgs.sort(Comparator.comparing(CacheConfiguration::getName));
+            ccfgs.sort(Comparator.comparing(d -> d.config().getName()));
 
-            assertEquals(GRP, ccfgs.get(0).getGroupName());
-            assertEquals(CACHE_0, ccfgs.get(0).getName());
-            assertEquals(GRP, ccfgs.get(1).getGroupName());
-            assertEquals(CACHE_1, ccfgs.get(1).getName());
+            CacheConfiguration ccfg0 = ccfgs.get(0).configuration();
+            CacheConfiguration ccfg1 = ccfgs.get(1).configuration();
+
+            assertEquals(GRP, ccfg0.getGroupName());
+            assertEquals(CACHE_0, ccfg0.getName());
+
+            assertEquals(GRP, ccfg1.getGroupName());
+            assertEquals(CACHE_1, ccfg1.getName());
+
+            assertFalse(ccfgs.get(0).sql());
+            assertFalse(ccfgs.get(1).sql());
+            assertTrue(ccfgs.get(0).queryEntities().isEmpty());
+            assertTrue(ccfgs.get(1).queryEntities().isEmpty());
 
             List<Integer> parts = dump.partitions(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME));
 
@@ -413,6 +424,14 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     /** */
     void createDump(IgniteEx ign) {
         createDump(ign, DMP_NAME);
+    }
+
+    /** */
+    public static Dump dump(IgniteEx ign, String name) throws IgniteCheckedException {
+        return new Dump(
+            ign.context(),
+            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name)
+        );
     }
 
     /** */
