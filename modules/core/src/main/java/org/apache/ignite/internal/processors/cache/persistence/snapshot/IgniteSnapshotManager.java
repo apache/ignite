@@ -255,7 +255,8 @@ import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VI
  * <p>
  * These major actions available:
  * <ul>
- *     <li>Create snapshot of the whole cluster cache groups by triggering PME to achieve consistency.</li>
+ *     <li>Create snapshot of the whole persistent cluster cache groups by triggering PME to achieve consistency.</li>
+ *     <li>Create cache dump - snapshot of cluster cache groups including in-memory.</li>
  *     <li>Create incremental snapshot using lightweight, non-blocking Consistent Cut algorithm.</li>
  * </ul>
  */

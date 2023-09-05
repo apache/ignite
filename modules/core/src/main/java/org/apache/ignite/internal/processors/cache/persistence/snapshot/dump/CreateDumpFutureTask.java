@@ -237,7 +237,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 }
 
                 entriesCnt.addAndGet(entriesCnt0);
-                changedEntriesCnt.addAndGet(dumpCtx.changedSize());
+                changedEntriesCnt.addAndGet(dumpCtx.changedCnt);
 
                 long remain = partsRemain.decrementAndGet();
 
@@ -335,6 +335,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         /** Hashes of cache keys of entries changed by the user during partition dump. */
         final Map<Integer, Set<Integer>> changed;
 
+        /** Count of entries changed during dump creation. */
+        int changedCnt;
+
         /** Partition dump file. Lazily initialized to prevent creation files for empty partitions. */
         final FileIO file;
 
@@ -402,6 +405,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             else if (val == null)
                 return "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
 
+            changedCnt++;
+
             write(cache, expireTime, key, val);
 
             return null;
@@ -430,7 +435,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             if (startVer != null && ver.isGreater(startVer))
                 return false;
 
-            if (changed.get(cache).contains(key.hashCode()))
+            if (changed.get(cache).remove(key.hashCode()))
                 return false;
 
             write(cache, expireTime, key, val);
@@ -463,11 +468,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             U.closeQuiet(file);
 
             serdes = null;
-        }
-
-        /** @return Cound of entries changed while partition dumped. */
-        public synchronized long changedSize() {
-            return changed.values().stream().mapToInt(Set::size).sum();
         }
     }
 
