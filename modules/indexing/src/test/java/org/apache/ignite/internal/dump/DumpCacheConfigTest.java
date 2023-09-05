@@ -19,7 +19,6 @@ package org.apache.ignite.internal.dump;
 
 import java.util.Collection;
 import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -29,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dum
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.DumpedPartitionIterator;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntry;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -68,7 +66,7 @@ public class DumpCacheConfigTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkDump(IgniteEx srv, String name, boolean first) throws IgniteCheckedException {
+    private void checkDump(IgniteEx srv, String name, boolean first) throws Exception {
         srv.snapshot().createDump(name).get(10_000L);
 
         int grpId = CU.cacheId("T1");
@@ -78,24 +76,22 @@ public class DumpCacheConfigTest extends GridCommonAbstractTest {
 
         for (String nodeDir : dump.nodesDirectories()) {
             for (int part : dump.partitions(nodeDir, grpId)) {
-                DumpedPartitionIterator iter = dump.iterator(nodeDir, grpId, part);
+                try (DumpedPartitionIterator iter = dump.iterator(nodeDir, grpId, part)) {
+                    while (iter.hasNext()) {
+                        DumpEntry e = iter.next();
 
-                while (iter.hasNext()) {
-                    DumpEntry e = iter.next();
+                        assertNotNull(e);
 
-                    assertNotNull(e);
+                        int id = e.key().value(null, false);
 
-                    int id = e.key().value(null, false);
+                        BinaryObject val = (BinaryObject)e.value();
 
-                    BinaryObject val = (BinaryObject)e.value();
+                        assertNotNull(val);
+                        assertEquals("Name-" + id, val.field("NAME"));
 
-                    assertNotNull(val);
-                    assertEquals("Name-" + id, val.field("NAME"));
-
-                    cnt++;
+                        cnt++;
+                    }
                 }
-
-                U.closeQuiet(iter);
             }
 
             List<StoredCacheData> ccfgs = dump.configs(nodeDir, grpId);

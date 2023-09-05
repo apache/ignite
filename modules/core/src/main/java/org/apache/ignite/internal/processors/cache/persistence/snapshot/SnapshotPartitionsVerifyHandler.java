@@ -69,6 +69,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
@@ -81,7 +82,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.checkPartitionsPageCrcSum;
-import static org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2.PartitionState.OWNING;
 
 /**
  * Default snapshot restore handler for checking snapshot partitions consistency.
@@ -181,7 +181,6 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         boolean punchHoleEnabled = isPunchHoleEnabled(opCtx, grpDirs.keySet());
 
         Map<PartitionKeyV2, PartitionHashRecordV2> res = new ConcurrentHashMap<>();
-
         ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
             .order(ByteOrder.nativeOrder()));
 
@@ -258,7 +257,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                         PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
                         GridDhtPartitionState partState = fromOrdinal(io.getPartitionState(pageAddr));
 
-                        if (partState != GridDhtPartitionState.OWNING) {
+                        if (partState != OWNING) {
                             throw new IgniteCheckedException("Snapshot partitions must be in the OWNING " +
                                 "state only: " + partState);
                         }
@@ -316,68 +315,69 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         SnapshotHandlerContext opCtx,
         Set<File> partFiles
     ) throws IgniteCheckedException {
-        Map<PartitionKeyV2, PartitionHashRecordV2> res = new ConcurrentHashMap<>();
-
         Dump dump = new Dump(cctx.kernalContext(), opCtx.snapshotDirectory());
 
-        U.doInParallel(
+        Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
             cctx.snapshotMgr().snapshotExecutorService(),
             partFiles,
-            part -> {
-                String grpName = cacheGroupName(part.getParentFile());
-                int grpId = CU.cacheId(grpName);
-                int partId = partId(part.getName());
-
-                PartitionKeyV2 key = new PartitionKeyV2(grpId, partId, grpName);
-                PartitionHashRecordV2 hash = caclucateDumpedPartitionHash(key, dump);
-
-                res.put(key, hash);
-
-                return null;
-            }
+            part -> caclucateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()))
         );
 
-        return res;
+        return partitionHashRecordV2s.stream().collect(Collectors.toMap(PartitionHashRecordV2::partitionKey, r -> r));
     }
 
     /** */
-    private PartitionHashRecordV2 caclucateDumpedPartitionHash(PartitionKeyV2 key, Dump dump) {
-        if (skipHash())
-            return new PartitionHashRecordV2();
+    private PartitionHashRecordV2 caclucateDumpedPartitionHash(Dump dump, String grpName, int part) {
+        if (skipHash()) {
+            return new PartitionHashRecordV2(
+                new PartitionKeyV2(CU.cacheId(grpName), part, grpName),
+                false,
+                cctx.localNode().consistentId(),
+                0,
+                0,
+                null,
+                0,
+                PartitionHashRecordV2.PartitionState.OWNING,
+                0,
+                0,
+                0,
+                0
+            );
+        }
 
         try {
             String node = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
 
-            Dump.DumpedPartitionIterator iter = dump.iterator(node, key.groupId(), key.partitionId());
+            try (Dump.DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part)) {
+                long size = 0;
 
-            long size = 0;
+                VerifyPartitionContext ctx = new VerifyPartitionContext();
 
-            VerifyPartitionContext ctx = new VerifyPartitionContext();
+                while (iter.hasNext()) {
+                    DumpEntry e = iter.next();
 
-            while (iter.hasNext()) {
-                DumpEntry e = iter.next();
+                    IdleVerifyUtility.updateVerifyContext(e.key(), e.value(), null, ctx);
 
-                IdleVerifyUtility.updateVerifyContext(e.key(), e.value(), null, ctx);
+                    size++;
+                }
 
-                size++;
+                return new PartitionHashRecordV2(
+                    new PartitionKeyV2(CU.cacheId(grpName), part, grpName),
+                    false,
+                    cctx.localNode().consistentId(),
+                    ctx.partHash,
+                    ctx.partVerHash,
+                    null,
+                    size,
+                    PartitionHashRecordV2.PartitionState.OWNING,
+                    ctx.cf,
+                    ctx.noCf,
+                    ctx.binary,
+                    ctx.regular
+                );
             }
-
-            return new PartitionHashRecordV2(
-                key,
-                false,
-                cctx.localNode().consistentId(),
-                ctx.partHash,
-                ctx.partVerHash,
-                null,
-                size,
-                OWNING,
-                ctx.cf,
-                ctx.noCf,
-                ctx.binary,
-                ctx.regular
-            );
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             throw new IgniteException(e);
         }
     }
