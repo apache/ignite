@@ -68,12 +68,13 @@ public class FieldsMetadataImpl implements FieldsMetadata {
     @Override public List<GridQueryFieldMetadata> queryFieldsMetadata(IgniteTypeFactory typeFactory) {
         List<RelDataTypeField> fields = sqlRowType.getFieldList();
 
-        assert origins == null || fields.size() == origins.size();
+        assert F.isEmpty(origins) || fields.size() == origins.size();
+        assert F.isEmpty(derivedAliases) || fields.size() == derivedAliases.size();
 
         ImmutableList.Builder<GridQueryFieldMetadata> b = ImmutableList.builder();
 
         for (int i = 0; i < fields.size(); i++) {
-            List<String> origin = origins != null ? origins.get(i) : null;
+            List<String> origin = !F.isEmpty(origins) ? origins.get(i) : null;
             String alias = !F.isEmpty(derivedAliases) ? derivedAliases.get(i) : null;
             RelDataTypeField field = fields.get(i);
             RelDataType fieldType = field.getType();
