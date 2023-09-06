@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
@@ -34,28 +36,37 @@ import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 import static org.apache.calcite.util.Util.last;
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.CNL_JOIN;
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.MERGE_JOIN;
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NL_JOIN;
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_CNL_JOIN;
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_MERGE_JOIN;
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_NL_JOIN;
 
 /** */
 abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRule<LogicalJoin> {
+    /** Known join type hints. */
+    private static final HintDefinition[] HINTS = new HintDefinition[] {
+        MERGE_JOIN, NL_JOIN, CNL_JOIN,
+        NO_MERGE_JOIN, NO_NL_JOIN, NO_CNL_JOIN};
+
     /** Known force join type hints. */
-    private static final Set<HintDefinition> FORCE_HINTS;
+    private static final Set<HintDefinition> FORCE_HINTS =
+        Stream.of(Arrays.copyOfRange(HINTS, 0, HINTS.length / 2)).collect(Collectors.toSet());
 
-    static {
-        FORCE_HINTS = new HashSet<>();
+    /** Known disable join type hints. */
+    private static final Set<HintDefinition> DISABLE_HINTS =
+        Stream.of(Arrays.copyOfRange(HINTS, HINTS.length / 2, HINTS.length)).collect(Collectors.toSet());
 
-        FORCE_HINTS.add(HintDefinition.MERGE_JOIN);
-        FORCE_HINTS.add(HintDefinition.NL_JOIN);
-        FORCE_HINTS.add(HintDefinition.CNL_JOIN);
-    }
+    /** */
+    public static final String SKIPPED_HINT_PREFIX = "This join type is already disabled or forced to use before " +
+        "by previous hints";
 
-    /** Hint which disabled this join type. */
+    /** Hint disabing this join type. */
     private final HintDefinition disableHint;
 
-    /** Hint which forces usage of this join type. */
+    /** Hint forcing usage of this join type. */
     private final HintDefinition forceHint;
-
-    /** Hints to search for. */
-    private final HintDefinition[] hintsToProcess;
 
     /** */
     protected AbstractIgniteJoinConverterRule(String descriptionPrefix, HintDefinition forceHint,
@@ -64,14 +75,12 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
 
         assert forceHint != disableHint;
         assert FORCE_HINTS.contains(forceHint);
+        assert DISABLE_HINTS.contains(disableHint);
         assert !FORCE_HINTS.contains(disableHint);
+        assert !DISABLE_HINTS.contains(forceHint);
 
         this.disableHint = disableHint;
         this.forceHint = forceHint;
-
-        List<HintDefinition> hintsToProcess = new ArrayList<>(FORCE_HINTS);
-        hintsToProcess.add(disableHint);
-        this.hintsToProcess = hintsToProcess.toArray(new HintDefinition[0]);
     }
 
     /** {@inheritDoc} */
@@ -84,32 +93,52 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
         // Disabled - negative, enabled - positive. 0 - no action.
         int forcedOrDisabled = 0;
 
-        List<String> joinTbls = joinTblNames(join);
+        Set<String> hintedTables = new HashSet<>();
 
-        for (RelHint hint : Hint.hints(join, hintsToProcess)) {
-            if (hint.listOptions.isEmpty()) {
-                if (forcedOrDisabled != 0) {
-                    Commons.planContext(join).skippedHint(hint, null, "This join type is already " +
-                        "disabled or forced to use by previous hints.");
+        Set<String> joinTbls = joinTblNames(join);
+
+        assert joinTbls.size() < 3;
+
+        for (RelHint hint : Hint.hints(join, HINTS)) {
+            boolean skip = false;
+
+            for (String tbl : joinTbls) {
+                if (hintedTables.contains(tbl)) {
+                    skip = true;
+
+                    break;
                 }
             }
-            else {
-                boolean tblFound = false;
+
+            hintedTables.addAll(joinTbls);
+
+            if (!skip && !hint.listOptions.isEmpty() && forcedOrDisabled != 0)
+                skip = true;
+
+            if (skip) {
+                Commons.planContext(join).skippedHint(join, hint, null, SKIPPED_HINT_PREFIX
+                    + " for the tables " + joinTbls.stream().map(t -> '\'' + t + '\'')
+                    .collect(Collectors.joining(",")) + '.');
+
+                continue;
+            }
+
+            if (!hint.listOptions.isEmpty()) {
+                skip = true;
 
                 for (String hintTblName : hint.listOptions) {
                     if (!joinTbls.contains(hintTblName))
                         continue;
 
-                    tblFound = true;
+                    skip = false;
 
                     if (forcedOrDisabled != 0) {
-                        Commons.planContext(join).skippedHint(hint, hintTblName, "This join type is already " +
-                            "disabled or forced to use by previous optons or other hints for table '" + hintTblName
-                            + "'.");
+                        Commons.planContext(join).skippedHint(join, hint, hintTblName, SKIPPED_HINT_PREFIX
+                            + " for the table '" + hintTblName + "'.");
                     }
                 }
 
-                if (!tblFound)
+                if (skip)
                     continue;
             }
 
@@ -131,8 +160,8 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
     }
 
     /** */
-    protected static List<String> joinTblNames(Join join) {
-        List<String> res = new ArrayList<>();
+    protected static Set<String> joinTblNames(Join join) {
+        Set<String> res = new LinkedHashSet<>();
 
         for (RelNode in : join.getInputs()) {
             if (in instanceof RelSubset) {

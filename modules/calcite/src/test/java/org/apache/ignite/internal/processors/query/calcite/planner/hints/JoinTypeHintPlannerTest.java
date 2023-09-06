@@ -85,12 +85,38 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testNoNCLJoinSkippedWarning() throws Exception {
-        LogListener lsnr = LogListener.matches("Hint 'NO_CNL_JOIN' was skipped. Reason: Correlated nested " +
-            "loop is not supported for join type 'FULL'").build();
+        LogListener lsnr = LogListener.matches("Skipped hint '" + NO_CNL_JOIN + "'")
+            .andMatches("Correlated nested loop is not supported for join type 'FULL'").build();
 
         lsnrLog.registerListener(lsnr);
 
-        physicalPlan("SELECT /*+ " + HintDefinition.NO_CNL_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 FULL JOIN " +
+        physicalPlan("SELECT /*+ " + NO_CNL_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 FULL JOIN " +
+            "TBL2 t2 on t1.v3=t2.v3", schema);
+
+        assertTrue(lsnr.check());
+
+        lsnrLog.clearListeners();
+
+        lsnr = LogListener.matches("kipped hint '" + NO_CNL_JOIN + "'")
+            .andMatches("Correlated nested loop is not supported for join type 'RIGHT'").build();
+
+        lsnrLog.registerListener(lsnr);
+
+        physicalPlan("SELECT /*+ " + NO_CNL_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 RIGHT JOIN " +
+            "TBL2 t2 on t1.v3=t2.v3", schema);
+
+        assertTrue(lsnr.check());
+    }
+
+    /** */
+    @Test
+    public void testJoinTypeErrors() throws Exception {
+        LogListener lsnr = LogListener.matches("Skipped hint 'CNL_JOIN'")
+            .andMatches("This join type is already disabled or forced to use before").build();
+
+        lsnrLog.registerListener(lsnr);
+
+        physicalPlan("SELECT /*+ " + NO_CNL_JOIN + ',' + CNL_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN " +
             "TBL2 t2 on t1.v3=t2.v3", schema);
 
         assertTrue(lsnr.check());
