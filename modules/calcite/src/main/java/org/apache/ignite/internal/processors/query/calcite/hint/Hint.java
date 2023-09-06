@@ -76,7 +76,7 @@ public final class Hint {
     }
 
     /**
-     * @return Distinct hints within {@code hints} filtered with {@code hintDefs} and reoved inherit pathes.
+     * @return Distinct hints within {@code hints} filtered with {@code hintDefs} and removed inherit pathes.
      * @see RelHint#inheritPath
      */
     private static List<RelHint> filterHints(Collection<RelHint> hints, Collection<HintDefinition> hintDefs) {

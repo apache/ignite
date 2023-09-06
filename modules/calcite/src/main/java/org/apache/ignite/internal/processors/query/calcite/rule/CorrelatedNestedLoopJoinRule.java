@@ -155,9 +155,9 @@ public class CorrelatedNestedLoopJoinRule extends AbstractIgniteJoinConverterRul
         if (!supportedJoinType(join.getJoinType())) {
             Set<String> joinTblNames = joinTblNames(join);
 
-            Commons.planContext(join).skippedHint(join, hint, null, "Correlated nested loop is not " +
-                "supported for join type '" + join.getJoinType()
-                + (joinTblNames.isEmpty() ? "'." : "' for tables " + String.join(",", joinTblNames) + '.'));
+            Commons.planContext(join).skippedHint(join, hint, "Correlated nested loop is not supported for " +
+                "join type '" + join.getJoinType() + (joinTblNames.isEmpty() ? "'." : "' for tables "
+                + String.join(",", joinTblNames) + '.'));
 
             return false;
         }

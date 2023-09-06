@@ -45,8 +45,8 @@ import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefin
  */
 public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
     /** */
-    private static final String[] CORE_JOIN_REORDER_RULES =
-        {"JoinCommuteRule", "JoinPushThroughJoinRule:left", "JoinPushThroughJoinRule:right"};
+    private static final String[] CORE_JOIN_REORDER_RULES = {"JoinCommuteRule", "JoinPushThroughJoinRule:left",
+        "JoinPushThroughJoinRule:right"};
 
     /** */
     private IgniteSchema schema;
@@ -110,14 +110,68 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
 
     /** */
     @Test
-    public void testJoinTypeErrors() throws Exception {
-        LogListener lsnr = LogListener.matches("Skipped hint 'CNL_JOIN'")
+    public void testHintsErrors() throws Exception {
+        // Leading hint must disable inconsistent follower.
+        LogListener lsnr = LogListener.matches("Skipped hint '" + CNL_JOIN.name() + "'")
             .andMatches("This join type is already disabled or forced to use before").build();
 
         lsnrLog.registerListener(lsnr);
 
         physicalPlan("SELECT /*+ " + NO_CNL_JOIN + ',' + CNL_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 JOIN " +
             "TBL2 t2 on t1.v3=t2.v3", schema);
+
+        assertTrue(lsnr.check());
+
+        // Wrong table name must not affect next hint.
+        lsnrLog.clearListeners();
+
+        lsnr = LogListener.matches("Skipped hint '" + MERGE_JOIN.name() + "'").build();
+
+        lsnrLog.registerListener(lsnr);
+
+        physicalPlan("SELECT /*+ " + NL_JOIN + "(UNEXISTING), " + MERGE_JOIN + "(TBL2) */ t1.v1, t2.v2 FROM " +
+            "TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3", schema);
+
+        assertTrue(!lsnr.check());
+
+        // Following hint must not override leading.
+        lsnrLog.clearListeners();
+
+        lsnr = LogListener.matches("Skipped hint '" + NL_JOIN.name() + "'")
+            .andMatches("This join type is already disabled or forced to use before").build();
+
+        lsnrLog.registerListener(lsnr);
+
+        physicalPlan("SELECT /*+ " + MERGE_JOIN + "(TBL1)," + NL_JOIN + "(TBL1,TBL2) */ t1.v1, t2.v2 FROM TBL1 " +
+            "t1 JOIN TBL2 t2 on t1.v3=t2.v3", schema);
+
+        assertTrue(lsnr.check());
+
+        // Following hint must not override leading.
+        lsnrLog.clearListeners();
+
+        lsnr = LogListener.matches("Skipped hint '" + MERGE_JOIN.name() + "' with options 'TBL1','TBL2'")
+            .andMatches("This join type is already disabled or forced to use before").build();
+
+        lsnrLog.registerListener(lsnr);
+
+        physicalPlan("SELECT /*+ " + MERGE_JOIN + "(TBL1)," + MERGE_JOIN + "(TBL1,TBL2) */ t1.v1, t2.v2 FROM TBL1 " +
+            "t1 JOIN TBL2 t2 on t1.v3=t2.v3", schema);
+
+        assertTrue(lsnr.check());
+
+        // Inner hint must override heading. Second inner hint must not override first inner hint.
+        lsnrLog.clearListeners();
+
+        lsnr = LogListener.matches("Skipped hint '" + CNL_JOIN.name() + "' with options 'TBL1','TBL3'")
+            .andMatches("Skipped hint '" + NL_JOIN.name() + "' with options 'TBL1'").build();
+
+        lsnrLog.registerListener(lsnr);
+
+        physicalPlan("SELECT /*+ " + NL_JOIN + "(TBL1) */ t1.v1, t2.v2 FROM TBL1 " +
+            "t1 JOIN TBL2 t2 on t1.v3=t2.v3 where t2.v1 in " +
+            "(SELECT /*+ " + MERGE_JOIN + "(TBL1), " + CNL_JOIN + "(TBL1,TBL3) */ t3.v3 from TBL3 t3 JOIN TBL1 t4 " +
+            "on t3.v2=t4.v2)", schema, CORE_JOIN_REORDER_RULES);
 
         assertTrue(lsnr.check());
     }

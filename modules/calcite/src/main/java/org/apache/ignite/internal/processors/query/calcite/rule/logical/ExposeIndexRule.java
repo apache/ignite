@@ -126,9 +126,9 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
                     continue;
 
                 if (idxToSkip.contains(hintIdxName) || idxToUse.contains(hintIdxName)) {
-                    Commons.planContext(scan).skippedHint(scan, hint, hintIdxName, "Index '" + hintIdxName
-                        + "' of table '" + last(scan.getTable().getQualifiedName())
-                        + "' has already been excluded or forced to use by other options or other hints before.");
+                    Commons.planContext(scan).skippedHint(scan, hint, "Index '" + hintIdxName + "' of table '"
+                        + last(scan.getTable().getQualifiedName()) + "' has already been excluded or forced to use " +
+                        "by other options or other hints before.");
 
                     continue;
                 }

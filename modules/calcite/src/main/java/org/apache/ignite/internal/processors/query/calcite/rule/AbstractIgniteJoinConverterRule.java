@@ -110,39 +110,31 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
                 }
             }
 
-            hintedTables.addAll(joinTbls);
-
-            if (!skip && !hint.listOptions.isEmpty() && forcedOrDisabled != 0)
-                skip = true;
-
             if (skip) {
-                Commons.planContext(join).skippedHint(join, hint, null, SKIPPED_HINT_PREFIX
-                    + " for the tables " + joinTbls.stream().map(t -> '\'' + t + '\'')
-                    .collect(Collectors.joining(",")) + '.');
+                Commons.planContext(join).skippedHint(join, hint, SKIPPED_HINT_PREFIX + " for the tables "
+                    + joinTbls.stream().map(t -> '\'' + t + '\'').collect(Collectors.joining(",")) + '.');
 
                 continue;
             }
 
-            if (!hint.listOptions.isEmpty()) {
-                skip = true;
+            skip = true;
 
-                for (String hintTblName : hint.listOptions) {
-                    if (!joinTbls.contains(hintTblName))
-                        continue;
+            if (hint.listOptions.isEmpty()) {
+                hintedTables.addAll(joinTbls);
 
-                    skip = false;
+                skip = false;
+            }
+            else {
+                for (String tbl : hint.listOptions) {
+                    if (joinTbls.contains(tbl)) {
+                        hintedTables.add(tbl);
 
-                    if (forcedOrDisabled != 0) {
-                        Commons.planContext(join).skippedHint(join, hint, hintTblName, SKIPPED_HINT_PREFIX
-                            + " for the table '" + hintTblName + "'.");
+                        skip = false;
                     }
                 }
-
-                if (skip)
-                    continue;
             }
 
-            if (forcedOrDisabled != 0)
+            if (skip)
                 continue;
 
             if (FORCE_HINTS.contains(HintDefinition.valueOf(hint.hintName)))
