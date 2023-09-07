@@ -63,10 +63,8 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testWrongParams() throws Exception {
-        String wrnStr = "Hint 'NO_INDEX' with option 'IDX2_1' was skipped. Reason: " +
-            "Index 'IDX2_1' of table 'TBL2' has already been";
-
-        LogListener lsnr = LogListener.matches(wrnStr).times(1).build();
+        LogListener lsnr = LogListener.matches("Skipped hint 'NO_INDEX' with options 'IDX2_1','IDX2_1'")
+            .times(1).build();
 
         lsnrLog.registerListener(lsnr);
 
@@ -76,7 +74,7 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
 
         lsnrLog.clearListeners();
 
-        lsnr = LogListener.matches(wrnStr).times(1).build();
+        lsnr = LogListener.matches("Skipped hint 'NO_INDEX' with options 'IDX2_1'").times(1).build();
 
         lsnrLog.registerListener(lsnr);
 

@@ -255,8 +255,8 @@ public class ForceIndexHintPlannerTest extends AbstractPlannerTest {
                     .or(isIndexScan("TBL2", "IDX2_2"))
                     .or(isIndexScan("TBL2", "IDX2_3")))));
 
-        LogListener lsnr = LogListener.matches("Hint 'NO_INDEX' with option 'IDX2_3' was skipped. Reason: " +
-            "Index 'IDX2_3' of table 'TBL2' has already been excluded").times(1).build();
+        LogListener lsnr = LogListener.matches("Skipped hint 'NO_INDEX' with options 'IDX2_3'")
+            .andMatches("Index 'IDX2_3' of table 'TBL2' has already been excluded").times(1).build();
 
         lsnrLog.registerListener(lsnr);
 
