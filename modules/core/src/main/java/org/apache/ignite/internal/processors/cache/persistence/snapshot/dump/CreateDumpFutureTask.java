@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -379,6 +379,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         /** Partition id. */
         final int part;
 
+        /** Hashes of cache keys of entries changed by the user during partition dump. */
+        final Map<Integer, Set<Integer>> changed;
+
         /** Count of entries changed during dump creation. */
         int changedCnt;
 
@@ -409,21 +412,15 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             this.part = part;
             this.topVer = gctx.topology().lastTopologyChangeVersion();
 
-            UUID localNodeId = gctx.shared().kernalContext().localNodeId();
+            boolean primary = gctx.affinity().primaryPartitions(gctx.shared().kernalContext().localNodeId(), topVer).contains(part);
 
-            ClusterNode primary = gctx.affinity().nodes(part, topVer).get(0);
-
-            GridCacheVersion lastVer = gctx.shared().versions().last();
-
-            this.startVer = primary.id().equals(localNodeId)
-                ? lastVer
-                : new GridCacheVersion(
-                    lastVer.topologyVersion(),
-                    gctx.shared().versions().maxSeenNodeVersion().get(localNodeId),
-                    (int)primary.order(),
-                    lastVer.dataCenterId());
+            this.startVer = primary ? gctx.shared().versions().last() : null;
 
             serdes = new DumpEntrySerializer();
+            changed = new HashMap<>();
+
+            for (int cache : gctx.cacheIds())
+                changed.put(cache, new HashSet<>());
 
             if (!dumpFile.createNewFile())
                 throw new IgniteException("Dump file can't be created: " + dumpFile);
@@ -449,8 +446,10 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         ) {
             if (closed) // Partition already saved in dump.
                 return "partition already saved";
-            if (ver.isGreater(startVer))
+            if (startVer != null && ver.isGreater(startVer))
                 return "greater version";
+            if (!changed.get(cache).add(key.hashCode())) // Entry changed several time during dump.
+                return "changed several times";
             if (val == null)
                 return "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
 
@@ -464,11 +463,11 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         /**
          * Writes entry fetched from partition iterator.
          *
-         * @param cache Cache id.
+         * @param cache      Cache id.
          * @param expireTime Expire time.
-         * @param key Key.
-         * @param val Value.
-         * @param ver Entry version.
+         * @param key        Key.
+         * @param val        Value.
+         * @param ver
          * @return {@code True} if entry was written in dump,
          * {@code false} if it already written by {@link #writeChanged(int, long, KeyCacheObject, CacheObject, GridCacheVersion)}.
          */
@@ -477,12 +476,19 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             long expireTime,
             KeyCacheObject key,
             CacheObject val,
-            GridCacheVersion ver
-        ) {
+            GridCacheVersion ver) {
             if (closed)
                 throw new IgniteException("Already closed");
 
-            if (ver.isGreater(startVer))
+            if (startVer != null && ver.isGreater(startVer))
+                return false;
+
+            // Can remove only on primaries, because other updates will be skiped based on version
+            boolean alreadySaved = startVer != null
+                ? changed.get(cache).remove(key.hashCode())
+                : changed.get(cache).contains(key.hashCode());
+
+            if (alreadySaved)
                 return false;
 
             write(cache, expireTime, key, val);

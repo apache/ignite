@@ -17,10 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.version;
 
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -66,9 +63,6 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
     /** Current order for store operations. */
     private final AtomicLong loadOrder = new AtomicLong(0);
-
-    /** */
-    private final ConcurrentMap<UUID, Long> maxSeenNodeVer = new ConcurrentHashMap<>();
 
     /** Entry start version. */
     private GridCacheVersion startVer;
@@ -185,8 +179,6 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
                 break;
             }
         }
-
-        maxSeenNodeVer.compute(nodeId, (k, maxVer) -> maxVer == null ? ver : Math.max(ver, maxVer));
     }
 
     /**
@@ -381,10 +373,5 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         offset = (int)((startTime - TOP_VER_BASE_TIME) / 1000);
 
         isolatedStreamerVer = new GridCacheVersion(1 + offset, 0, 1, dataCenterId);
-    }
-
-    /** */
-    public Map<UUID, Long> maxSeenNodeVersion() {
-        return maxSeenNodeVer;
     }
 }
