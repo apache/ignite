@@ -236,9 +236,7 @@ public final class PlanningContext implements Context {
      * Stores skipped hint and the reason. Also, logs the issue.
      */
     public void skippedHint(RelNode relNode, RelHint hint, String reason) {
-        IgniteBiTuple<RelHint, RelNode> key = new IgniteBiTuple<>(hint, relNode);
-
-        skippedHints.compute(key, (k, sh) -> {
+        skippedHints.compute(new IgniteBiTuple<>(hint, relNode), (k, sh) -> {
             if (sh == null) {
                 sh = new SkippedHint(hint.hintName, hint.listOptions, reason);
 

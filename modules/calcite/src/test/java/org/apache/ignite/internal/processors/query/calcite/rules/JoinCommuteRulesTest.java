@@ -60,7 +60,7 @@ public class JoinCommuteRulesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testCommuteOuter() {
-        String sql = "SELECT /*+ DISABLE_RULE('CorrelatedNestedLoopJoin', 'MergeJoinConverter') */ " +
+        String sql = "SELECT /*+ NO_MERGE_JOIN, NO_CNL_JOIN */ " +
             "COUNT(*) FROM SMALL s RIGHT JOIN HUGE h on h.id = s.id";
 
         checkQuery(sql)
@@ -69,7 +69,7 @@ public class JoinCommuteRulesTest extends GridCommonAbstractTest {
             .matches(containsSubPlan("IgniteNestedLoopJoin(condition=[=($0, $1)], joinType=[left]"))
             .check();
 
-        sql = "SELECT /*+ DISABLE_RULE('CorrelatedNestedLoopJoin', 'MergeJoinConverter', 'JoinCommuteRule') */ " +
+        sql = "SELECT /*+ NO_MERGE_JOIN, NO_CNL_JOIN, DISABLE_RULE('JoinCommuteRule') */ " +
             "COUNT(*) FROM SMALL s RIGHT JOIN HUGE h on h.id = s.id";
 
         checkQuery(sql)
@@ -82,7 +82,7 @@ public class JoinCommuteRulesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testCommuteInner() {
-        String sql = "SELECT /*+ DISABLE_RULE('CorrelatedNestedLoopJoin', 'MergeJoinConverter') */ " +
+        String sql = "SELECT /*+ NO_MERGE_JOIN, NO_CNL_JOIN */ " +
             "COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id";
 
         checkQuery(sql)
@@ -91,7 +91,7 @@ public class JoinCommuteRulesTest extends GridCommonAbstractTest {
             .matches(containsSubPlan("IgniteNestedLoopJoin(condition=[=($0, $1)], joinType=[inner]"))
             .check();
 
-        sql = "SELECT /*+ DISABLE_RULE('CorrelatedNestedLoopJoin', 'MergeJoinConverter', 'JoinCommuteRule') */ " +
+        sql = "SELECT /*+ NO_MERGE_JOIN, NO_CNL_JOIN, DISABLE_RULE('JoinCommuteRule') */ " +
             "COUNT(*) FROM SMALL s JOIN HUGE h on h.id = s.id";
 
         checkQuery(sql)

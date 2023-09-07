@@ -59,6 +59,14 @@ public final class Hint {
     }
 
     /**
+     * @return Hints filtered with {@code hintDefs} and suitable for {@code rel}.
+     * @see HintStrategyTable#apply(List, RelNode)
+     */
+    public static List<RelHint> hints(RelNode rel, Collection<HintDefinition>... hintDefs) {
+        return hints(rel, F.flatCollections(Arrays.asList(hintDefs)).toArray(new HintDefinition[0]));
+    }
+
+    /**
      * @return {@code True} if the query has a suitable hint for {@code rel} defined by {@code hintDefs}.
      * {@code False} otherwise.
      * @see HintStrategyTable#apply(List, RelNode)
