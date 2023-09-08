@@ -65,7 +65,7 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
     static final int GRID_CNT = 3;
 
     /** Span buffer count - hardcode in open census. */
-    private static final int SPAN_BUFFER_COUNT = 32;
+    private static final int SPAN_BUFFER_COUNT = 2500;
 
     /** Default configuration map. */
     static final Map<TracingConfigurationCoordinates, TracingConfigurationParameters> DFLT_CONFIG_MAP =

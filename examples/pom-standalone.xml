@@ -88,7 +88,7 @@
         <dependency>
             <groupId>io.opencensus</groupId>
             <artifactId>opencensus-exporter-stats-prometheus</artifactId>
-            <version>0.22.0</version>
+            <version>0.31.1</version>
         </dependency>
 
         <dependency>
