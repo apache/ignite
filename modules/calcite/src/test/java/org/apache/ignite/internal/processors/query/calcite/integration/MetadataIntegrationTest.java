@@ -41,11 +41,28 @@ public class MetadataIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void columnNames() {
-        createAndPopulateTable();
+        sql("CREATE TABLE person (ID INT PRIMARY KEY, NAME VARCHAR, SALARY DOUBLE)");
+        sql("CREATE TABLE address (ID INT PRIMARY KEY, PERSON_ID INT, DATA VARCHAR)");
+
+        assertQuery("select salary * 2, *, salary / 2, * from person")
+                .columnNames("SALARY * 2", "ID", "NAME", "SALARY", "SALARY / 2", "ID", "NAME", "SALARY")
+                .check();
+
+        assertQuery("select *, trim(name) from person")
+                .columnNames("ID", "NAME", "SALARY", "TRIM(BOTH ' ' FROM NAME)")
+                .check();
+
+        assertQuery("select salary * 2, * , trim(name) from person")
+                .columnNames("SALARY * 2", "ID", "NAME", "SALARY", "TRIM(BOTH ' ' FROM NAME)")
+                .check();
+
+        assertQuery("select p.*, salary / 2, a.* from person p, address a where p.id = a.person_id")
+                .columnNames("ID", "NAME", "SALARY", "SALARY / 2", "ID", "PERSON_ID", "DATA")
+                .check();
 
         assertQuery("select count(_key), _key from person group by _key")
-            .columnNames("COUNT(PERSON._KEY)", "_KEY")
-            .check();
+                .columnNames("COUNT(_KEY)", "_KEY")
+                .check();
 
         assertQuery("select (select count(*) from person), (select avg(salary) from person) from person")
             .columnNames("EXPR$0", "EXPR$1").check();
@@ -53,24 +70,22 @@ public class MetadataIntegrationTest extends AbstractBasicIntegrationTest {
             .columnNames("SUBQUERY").check();
 
         assertQuery("select salary*2, salary/2, salary+2, salary-2, mod(salary, 2)  from person")
-            .columnNames("PERSON.SALARY * 2", "PERSON.SALARY / 2", "PERSON.SALARY + 2", "PERSON.SALARY - 2",
-                    "MOD(CAST(PERSON.SALARY AS DECIMAL(30, 15)), 2)").check();
+            .columnNames("SALARY * 2", "SALARY / 2", "SALARY + 2", "SALARY - 2", "MOD(SALARY, 2)").check();
         assertQuery("select salary*2 as first, salary/2 as secOND from person").columnNames("FIRST", "SECOND").check();
 
         assertQuery("select trim(name) tr_name from person").columnNames("TR_NAME").check();
-        assertQuery("select trim(name) from person").columnNames("TRIM(BOTH ' ' FROM PERSON.NAME)").check();
+        assertQuery("select trim(name) from person").columnNames("TRIM(BOTH ' ' FROM NAME)").check();
         assertQuery("select row(1), ceil(salary), floor(salary), position('text' IN salary) from person")
-            .columnNames("ROW(1)", "CEIL(PERSON.SALARY)", "FLOOR(PERSON.SALARY)",
-                    "POSITION('text' IN CAST(PERSON.SALARY AS VARCHAR CHARACTER SET \"UTF-8\"))").check();
+            .columnNames("ROW(1)", "CEIL(SALARY)", "FLOOR(SALARY)", "POSITION('text' IN SALARY)").check();
 
         assertQuery("select count(*) from person").columnNames("COUNT(*)").check();
-        assertQuery("select count(name) from person").columnNames("COUNT(PERSON.NAME)").check();
-        assertQuery("select max(salary) from person").columnNames("MAX(PERSON.SALARY)").check();
-        assertQuery("select min(salary) from person").columnNames("MIN(PERSON.SALARY)").check();
-        assertQuery("select aVg(salary) from person").columnNames("AVG(PERSON.SALARY)").check();
-        assertQuery("select sum(salary) from person").columnNames("SUM(PERSON.SALARY)").check();
+        assertQuery("select count(name) from person").columnNames("COUNT(NAME)").check();
+        assertQuery("select max(salary) from person").columnNames("MAX(SALARY)").check();
+        assertQuery("select min(salary) from person").columnNames("MIN(SALARY)").check();
+        assertQuery("select aVg(salary) from person").columnNames("AVG(SALARY)").check();
+        assertQuery("select sum(salary) from person").columnNames("SUM(SALARY)").check();
 
-        assertQuery("select salary, count(name) from person group by salary").columnNames("SALARY", "COUNT(PERSON.NAME)").check();
+        assertQuery("select salary, count(name) from person group by salary").columnNames("SALARY", "COUNT(NAME)").check();
 
         assertQuery("select 1, -1, 'some string' from person").columnNames("1", "-1", "'some string'").check();
     }

@@ -38,11 +38,11 @@ public class FieldsMetadataImpl implements FieldsMetadata {
     private final List<List<String>> origins;
 
     /** */
-    private final List<String> derivedAliases;
+    private final List<String> aliases;
 
     /** */
-    public FieldsMetadataImpl(RelDataType rowType, List<List<String>> origins, List<String> derivedAliases) {
-        this(rowType, rowType, origins, derivedAliases);
+    public FieldsMetadataImpl(RelDataType rowType, List<List<String>> origins, List<String> aliases) {
+        this(rowType, rowType, origins, aliases);
     }
 
     /** */
@@ -50,12 +50,12 @@ public class FieldsMetadataImpl implements FieldsMetadata {
         RelDataType sqlRowType,
         RelDataType rowType,
         List<List<String>> origins,
-        List<String> derivedAliases
+        List<String> aliases
     ) {
         this.rowType = rowType;
         this.sqlRowType = sqlRowType;
         this.origins = origins;
-        this.derivedAliases = derivedAliases;
+        this.aliases = aliases;
     }
 
 
@@ -69,13 +69,13 @@ public class FieldsMetadataImpl implements FieldsMetadata {
         List<RelDataTypeField> fields = sqlRowType.getFieldList();
 
         assert F.isEmpty(origins) || fields.size() == origins.size();
-        assert F.isEmpty(derivedAliases) || fields.size() == derivedAliases.size();
+        assert F.isEmpty(aliases) || fields.size() == aliases.size();
 
         ImmutableList.Builder<GridQueryFieldMetadata> b = ImmutableList.builder();
 
         for (int i = 0; i < fields.size(); i++) {
             List<String> origin = !F.isEmpty(origins) ? origins.get(i) : null;
-            String alias = !F.isEmpty(derivedAliases) ? derivedAliases.get(i) : null;
+            String alias = !F.isEmpty(aliases) ? aliases.get(i) : null;
             RelDataTypeField field = fields.get(i);
             RelDataType fieldType = field.getType();
             Type fieldCls = typeFactory.getResultClass(fieldType);

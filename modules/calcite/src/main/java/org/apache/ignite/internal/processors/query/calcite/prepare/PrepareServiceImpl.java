@@ -177,8 +177,8 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         QueryTemplate template = new QueryTemplate(fragments);
 
-        return new MultiStepQueryPlan(ctx.query(), template,
-            queryFieldsMetadata(ctx, validated.dataType(), validated.origins()), params);
+        return new MultiStepQueryPlan(ctx.query(), template, queryFieldsMetadata(ctx, validated.dataType(),
+                validated.origins(), validated.aliases()), params);
     }
 
     /** */
@@ -206,12 +206,15 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
     }
 
     /** */
-    private FieldsMetadata queryFieldsMetadata(PlanningContext ctx, RelDataType sqlType,
-        @Nullable List<List<String>> origins, @Nullable List<String> derivedAliases) {
-        RelDataType resultType = TypeUtils.getResultType(
-            ctx.typeFactory(), ctx.catalogReader(), sqlType, origins);
+    private FieldsMetadata queryFieldsMetadata(
+        PlanningContext ctx,
+        RelDataType sqlType,
+        @Nullable List<List<String>> origins,
+        @Nullable List<String> aliases
+    ) {
+        RelDataType resultType = TypeUtils.getResultType(ctx.typeFactory(), ctx.catalogReader(), sqlType, origins);
 
-        return new FieldsMetadataImpl(sqlType, resultType, origins, derivedAliases);
+        return new FieldsMetadataImpl(sqlType, resultType, origins, aliases);
     }
 
     /** */

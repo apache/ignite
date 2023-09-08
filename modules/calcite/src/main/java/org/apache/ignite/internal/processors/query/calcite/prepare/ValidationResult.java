@@ -37,25 +37,25 @@ public class ValidationResult {
     private final List<List<String>> origins;
 
     /** */
-    private final List<String> derivedAlias;
+    private final List<String> aliases;
 
     /**
      *
      * @param sqlNode Validated SQL node.
      * @param dataType Validated type.
      * @param origins Type fields provenance.
-     * @param derivedAlias Derived name aliases.
+     * @param aliases Derived name aliases.
      */
     public ValidationResult(
         SqlNode sqlNode,
         RelDataType dataType,
         List<List<String>> origins,
-        List<String> derivedAlias
+        List<String> aliases
     ) {
         this.sqlNode = sqlNode;
         this.dataType = dataType;
         this.origins = origins;
-        this.derivedAlias = derivedAlias;
+        this.aliases = aliases;
     }
 
     /**
@@ -82,7 +82,7 @@ public class ValidationResult {
     /**
      *
      */
-    public List<String> derivedAlias() {
-        return derivedAlias != null ? Collections.unmodifiableList(derivedAlias) : Collections.emptyList();
+    public List<String> aliases() {
+        return aliases != null ? Collections.unmodifiableList(aliases) : Collections.emptyList();
     }
 }

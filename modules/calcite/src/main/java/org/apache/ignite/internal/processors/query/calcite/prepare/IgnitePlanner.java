@@ -56,15 +56,18 @@ import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexExecutor;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
+import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlDataTypeSpec;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.validate.SelectScope;
+import org.apache.calcite.sql.validate.SqlNonNullableAccessors;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlRexConvertletTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
@@ -80,6 +83,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetada
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -221,20 +225,63 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
      * @return Validated node, its validated type and type's origins.
      */
     public ValidationResult validateAndGetTypeMetadata(SqlNode sqlNode) {
+        List<SqlNode> selectItems = null;
+        List<SqlNode> selectItemsNoStar = null;
+        SqlNode sqlNode0 = sqlNode instanceof SqlOrderBy ? ((SqlOrderBy)sqlNode).query : sqlNode;
+
+        boolean hasStar = false;
+        if (sqlNode0 instanceof SqlSelect) {
+            selectItems = SqlNonNullableAccessors.getSelectList((SqlSelect)sqlNode0);
+            selectItemsNoStar = new ArrayList<>(selectItems.size());
+
+            for (SqlNode node : selectItems) {
+                if (node instanceof SqlIdentifier) {
+                    if (((SqlIdentifier)node).isStar())
+                        hasStar = true;
+                    else
+                        selectItemsNoStar.add(node);
+                }
+                else
+                    selectItemsNoStar.add(node);
+            }
+        }
+
         SqlNode validatedNode = validator().validate(sqlNode);
         RelDataType type = validator().getValidatedNodeType(validatedNode);
         List<List<String>> origins = validator().getFieldOrigins(validatedNode);
 
-        List<String> derived = Collections.emptyList();
-        if (validatedNode instanceof SqlSelect) {
-            SelectScope list = validator().getRawSelectScope((SqlSelect)validatedNode);
+        List<String> derived = null;
+        if (validatedNode instanceof SqlSelect && !F.isEmpty(selectItems) && !F.isEmpty(selectItemsNoStar)) {
+            derived = new ArrayList<>(selectItems.size());
 
-            assert type.getFieldList().size() == list.getExpandedSelectList().size();
+            if (hasStar) {
+                SqlNodeList expandedItems = ((SqlSelect)validatedNode).getSelectList();
 
-            int cnt = 0;
-            derived = new ArrayList<>(list.getExpandedSelectList().size());
-            for (SqlNode node : list.getExpandedSelectList()) {
-                derived.add(validator().deriveAlias(node, cnt++));
+                int cnt = 0;
+                for (SqlNode node : expandedItems) {
+                    if (node instanceof SqlIdentifier)
+                        derived.add(null);
+                    else {
+                        if (node instanceof SqlBasicCall) {
+                            SqlBasicCall node0 = (SqlBasicCall)node;
+
+                            if (node0.operandCount() == 2
+                                    && node0.operand(0) instanceof SqlIdentifier
+                                    && node0.operand(1) instanceof SqlIdentifier
+                                    && node.getKind() == SqlKind.AS)
+                                derived.add(null);
+                            else
+                                derived.add(validator().deriveAlias(selectItemsNoStar.get(cnt), cnt++));
+                        }
+                        else
+                            derived.add(validator().deriveAlias(selectItemsNoStar.get(cnt), cnt++));
+                    }
+                }
+            }
+            else {
+                int cnt = 0;
+                for (SqlNode node : selectItems)
+                    derived.add(validator().deriveAlias(node, cnt++));
             }
         }
 
