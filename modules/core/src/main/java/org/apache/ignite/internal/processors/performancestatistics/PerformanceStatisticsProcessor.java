@@ -29,6 +29,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IndexQueryDesc;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
@@ -263,6 +264,51 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      */
     public void pagesWriteThrottle(long endTime, long duration) {
         write(writer -> writer.pagesWriteThrottle(endTime, duration));
+    }
+
+    /**
+     * @param evtType Event type.
+     * @param startTime Time in milliseconds.
+     * @param duratione Time in milliseconds.
+     * @param initVer Initial exchange version.
+     * @param resVer Result exchange version.
+     * @param rebalanced {@code True} if cluster fully rebalanced.
+     */
+    public void pme(
+        int evtType,
+        long startTime,
+        long duratione,
+        AffinityTopologyVersion initVer,
+        AffinityTopologyVersion resVer,
+        boolean rebalanced
+    ) {
+        write(writer -> writer.pme(
+            evtType,
+            startTime,
+            duratione,
+            initVer.topologyVersion(),
+            initVer.minorTopologyVersion(),
+            resVer.topologyVersion(),
+            resVer.minorTopologyVersion(),
+            rebalanced));
+    }
+
+    /**
+     * @param rebalanceId Rebalance id.
+     * @param parts Parts.
+     * @param entries Entries.
+     * @param bytes Bytes.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration in milliseconds.
+     */
+    public void rebalanceChainFinished(
+        long rebalanceId,
+        long parts,
+        long entries,
+        long bytes,
+        long startTime,
+        long duration) {
+        write(writer -> writer.rebalanceChainFinished(rebalanceId, parts, entries, bytes, startTime, duration));
     }
 
     /**

@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.performancestatistics.PerformanceSt
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsRotateFileTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsSelfTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsThinClientTest;
+import org.apache.ignite.internal.processors.performancestatistics.RebalanceTest;
 import org.apache.ignite.internal.processors.performancestatistics.StringCacheTest;
 import org.apache.ignite.internal.processors.performancestatistics.TopologyChangesTest;
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
@@ -104,7 +105,8 @@ import org.junit.runners.Suite;
     PerformanceStatisticsMultipleStartTest.class,
     ForwardReadTest.class,
     CacheStartTest.class,
-    CheckpointTest.class
+    CheckpointTest.class,
+    RebalanceTest.class
 })
 public class IgniteBasicWithPersistenceTestSuite {
 }

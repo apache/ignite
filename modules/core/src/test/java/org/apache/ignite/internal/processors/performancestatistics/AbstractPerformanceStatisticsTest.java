@@ -22,6 +22,7 @@ import java.lang.management.ThreadInfo;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.G;
@@ -222,6 +223,18 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
 
         /** {@inheritDoc} */
         @Override public void pagesWriteThrottle(UUID nodeId, long endTime, long duration) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void pme(UUID nodeId, int evtType, long startTime, long duration, AffinityTopologyVersion initVer,
+            AffinityTopologyVersion resVer, boolean rebalanced) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void rebalanceChainFinished(UUID nodeId, long rebalanceId, long parts, long entries,
+            long bytes, long startTime, long duration) {
             // No-op.
         }
     }

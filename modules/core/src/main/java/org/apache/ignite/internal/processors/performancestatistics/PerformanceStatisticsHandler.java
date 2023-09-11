@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.util.UUID;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.lang.IgniteUuid;
@@ -138,4 +139,41 @@ public interface PerformanceStatisticsHandler {
      * @param duration Duration in milliseconds.
      */
     void pagesWriteThrottle(UUID nodeId, long endTime, long duration);
+
+    /**
+     * @param nodeId Node id.
+     * @param evtType Event type.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration in milliseconds.
+     * @param initVer Initial exchange version.
+     * @param resVer Result exchange version.
+     * @param rebalanced {@code True} if cluster fully rebalanced.
+     */
+    void pme(
+        UUID nodeId,
+        int evtType,
+        long startTime,
+        long duration,
+        AffinityTopologyVersion initVer,
+        AffinityTopologyVersion resVer,
+        boolean rebalanced
+    );
+
+    /**
+     * @param nodeId Node id.
+     * @param rebalanceId Rebalance id.
+     * @param parts Parts.
+     * @param entries Entries.
+     * @param bytes Bytes.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration in milliseconds.
+     */
+    void rebalanceChainFinished(
+        UUID nodeId,
+        long rebalanceId,
+        long parts,
+        long entries,
+        long bytes,
+        long startTime,
+        long duration);
 }
