@@ -3460,7 +3460,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
-     * Suspends transaction. It could be resumed later. Supported only for optimistic transactions.
+     * Suspends transaction. It could be resumed later.
      *
      * @throws IgniteCheckedException If the transaction is in an incorrect state, or timed out.
      */

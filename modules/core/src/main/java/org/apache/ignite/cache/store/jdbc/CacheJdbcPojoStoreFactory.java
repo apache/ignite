@@ -205,7 +205,7 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
     }
 
     /**
-     * Get maximum batch size for delete and delete operations.
+     * Get maximum batch size for write and delete operations.
      *
      * @return Maximum batch size.
      */
