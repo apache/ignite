@@ -136,6 +136,6 @@ public class JdbcTypesDefaultTransformer implements JdbcTypesTransformer {
             }
         }
 
-        return rs.getObject(colIdx);
+        return rs.getObject(colIdx, type);
     }
 }
