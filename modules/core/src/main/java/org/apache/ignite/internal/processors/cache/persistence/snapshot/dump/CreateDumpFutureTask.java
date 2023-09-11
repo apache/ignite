@@ -30,6 +30,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -248,7 +249,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 }
 
                 entriesCnt.addAndGet(entriesCnt0);
-                changedEntriesCnt.addAndGet(dumpCtx.changedCnt);
+                changedEntriesCnt.addAndGet(dumpCtx.changedCnt.intValue());
 
                 long remain = partsRemain.decrementAndGet();
 
@@ -295,7 +296,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     /** {@inheritDoc} */
     @Override protected CompletableFuture<Void> closeAsync() {
         if (closeFut == null) {
-            dumpCtxs.values().stream().forEach(PartitionDumpContext::close);
+            dumpCtxs.values().forEach(PartitionDumpContext::close);
 
             Throwable err0 = err.get();
 
@@ -306,9 +307,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
                 clearDumpListener(cctx.cache().cacheGroup(grp));
 
-                for (Integer part : e.getValue()) {
+                for (Integer part : e.getValue())
                     taken.add(new GroupPartitionId(grp, part));
-                }
             }
 
             closeFut = CompletableFuture.runAsync(
@@ -348,7 +348,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         final Map<Integer, Set<Integer>> changed;
 
         /** Count of entries changed during dump creation. */
-        int changedCnt;
+        LongAdder changedCnt = new LongAdder();
 
         /** Partition dump file. Lazily initialized to prevent creation files for empty partitions. */
         final FileIO file;
@@ -398,11 +398,11 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
          * @param cache Cache id.
          * @param expireTime Expire time.
          * @param key Key.
-         * @param val Value.
-         * @param ver Version.
+         * @param val Value before change.
+         * @param ver Version before change.
          * @return {@code null} if entry saved in dump or reason why it skipped.
          */
-        public synchronized String writeChanged(
+        public String writeChanged(
             int cache,
             long expireTime,
             KeyCacheObject key,
@@ -411,16 +411,24 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         ) {
             if (closed) // Partition already saved in dump.
                 return "partition already saved";
+
             if (startVer != null && ver.isGreater(startVer))
                 return "greater version";
+
             if (!changed.get(cache).add(key.hashCode())) // Entry changed several time during dump.
                 return "changed several times";
+
             if (val == null)
                 return "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
 
-            changedCnt++;
+            synchronized (this) {
+                if (closed) // Partition already saved in dump.
+                    return "partition already saved";
 
-            write(cache, expireTime, key, val);
+                write(cache, expireTime, key, val);
+            }
+
+            changedCnt.increment();
 
             return null;
         }
@@ -428,23 +436,20 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         /**
          * Writes entry fetched from partition iterator.
          *
-         * @param cache      Cache id.
+         * @param cache Cache id.
          * @param expireTime Expire time.
-         * @param key        Key.
-         * @param val        Value.
-         * @param ver
+         * @param key Key.
+         * @param val Value.
+         * @param ver Version.
          * @return {@code True} if entry was written in dump,
-         * {@code false} if it already written by {@link #writeChanged(int, long, KeyCacheObject, CacheObject, GridCacheVersion)}.
+         * {@code false} if it was already written by {@link #writeChanged(int, long, KeyCacheObject, CacheObject, GridCacheVersion)}.
          */
-        public synchronized boolean writeForIterator(
+        public boolean writeForIterator(
             int cache,
             long expireTime,
             KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver) {
-            if (closed)
-                throw new IgniteException("Already closed");
-
             if (startVer != null && ver.isGreater(startVer))
                 return false;
 
@@ -456,7 +461,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             if (alreadySaved)
                 return false;
 
-            write(cache, expireTime, key, val);
+            synchronized (this) {
+                write(cache, expireTime, key, val);
+            }
 
             return true;
         }
@@ -477,11 +484,13 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         }
 
         /** {@inheritDoc} */
-        @Override public synchronized void close() {
+        @Override public void close() {
             if (closed)
                 return;
 
-            closed = true;
+            synchronized (this) {
+                closed = true;
+            }
 
             U.closeQuiet(file);
 

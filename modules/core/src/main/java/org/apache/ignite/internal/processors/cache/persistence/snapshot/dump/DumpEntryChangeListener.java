@@ -32,6 +32,7 @@ public interface DumpEntryChangeListener {
      * @param key Key.
      * @param val Value BEFORE change.
      * @param expireTime Expire time BEFORE change.
+     * @param ver Version of entry BEFORE change.
      */
     public void beforeChange(GridCacheContext cctx, KeyCacheObject key, @Nullable CacheObject val, long expireTime, GridCacheVersion ver);
 }
