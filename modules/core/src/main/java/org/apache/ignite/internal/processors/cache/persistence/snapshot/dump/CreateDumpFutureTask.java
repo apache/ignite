@@ -280,19 +280,24 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
     /** {@inheritDoc} */
     @Override public void beforeChange(GridCacheContext cctx, KeyCacheObject key, CacheObject val, long expireTime, GridCacheVersion ver) {
-        assert key.partition() != -1;
+        try {
+            assert key.partition() != -1;
 
-        PartitionDumpContext dumpCtx = dumpCtxs.get(toLong(cctx.groupId(), key.partition()));
+            PartitionDumpContext dumpCtx = dumpCtxs.get(toLong(cctx.groupId(), key.partition()));
 
-        assert dumpCtx != null;
+            assert dumpCtx != null;
 
-        String reasonToSkip = dumpCtx.writeChanged(cctx.cacheId(), expireTime, key, val, ver);
+            String reasonToSkip = dumpCtx.writeChanged(cctx.cacheId(), expireTime, key, val, ver);
 
-        if (reasonToSkip != null && log.isTraceEnabled()) {
-            log.trace("Skip entry [grp=" + cctx.groupId() +
-                ", cache=" + cctx.cacheId() +
-                ", key=" + key +
-                ", reason=" + reasonToSkip + ']');
+            if (reasonToSkip != null && log.isTraceEnabled()) {
+                log.trace("Skip entry [grp=" + cctx.groupId() +
+                    ", cache=" + cctx.cacheId() +
+                    ", key=" + key +
+                    ", reason=" + reasonToSkip + ']');
+            }
+        }
+        catch (IgniteException e) {
+            acceptException(e);
         }
     }
 
