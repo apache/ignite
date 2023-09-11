@@ -29,8 +29,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -366,6 +368,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         /** If {@code true} context is closed. */
         volatile boolean closed;
 
+        /** Count of writers. When count becomes {@code 0} context must be closed. */
+        private final AtomicInteger writers = new AtomicInteger(1); // Iterator writing entries to this context, by default.
+
         /**
          * @param gctx Group id.
          * @param part Partition id.
@@ -413,25 +418,32 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             if (closed) // Partition already saved in dump.
                 return "partition already saved";
 
-            if (startVer != null && ver.isGreater(startVer))
-                return "greater version";
+            writers.getAndIncrement();
 
-            if (!changed.get(cache).add(key)) // Entry changed several time during dump.
-                return "changed several times";
+            try {
+                if (startVer != null && ver.isGreater(startVer))
+                    return "greater version";
 
-            if (val == null)
-                return "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
+                if (!changed.get(cache).add(key)) // Entry changed several time during dump.
+                    return "changed several times";
 
-            synchronized (this) {
-                if (closed) // Partition already saved in dump.
-                    return "partition already saved";
+                if (val == null)
+                    return "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
 
-                write(cache, expireTime, key, val);
+                synchronized (this) {
+                    if (closed) // Partition already saved in dump.
+                        return "partition already saved";
+
+                    write(cache, expireTime, key, val);
+                }
+
+                changedCnt.increment();
+
+                return null;
             }
-
-            changedCnt.increment();
-
-            return null;
+            finally {
+                writers.decrementAndGet();
+            }
         }
 
         /**
@@ -454,12 +466,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             if (startVer != null && ver.isGreater(startVer))
                 return false;
 
-            // Can remove only on primaries, because other updates will be skiped based on version
-            boolean alreadySaved = startVer != null
-                ? changed.get(cache).remove(key)
-                : changed.get(cache).contains(key);
-
-            if (alreadySaved)
+            if (changed.get(cache).contains(key))
                 return false;
 
             synchronized (this) {
@@ -488,6 +495,11 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         @Override public void close() {
             if (closed)
                 return;
+
+            writers.decrementAndGet();
+
+            while (writers.get() > 0)
+                LockSupport.parkNanos(1_000_000);
 
             synchronized (this) {
                 closed = true;
