@@ -17,7 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
@@ -28,7 +33,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -36,6 +45,8 @@ import org.junit.Test;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_RUNNING_DIR_KEY;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** */
@@ -187,6 +198,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     @Test
     public void testDumpWithExplicitExpireTime() throws Exception {
         explicitTtl = true;
+
         doTestDumpWithExpiry();
     }
 
@@ -196,6 +208,72 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
         explicitTtl = false;
 
         doTestDumpWithExpiry();
+    }
+
+    /** */
+    @Test
+    public void testDumpCancelOnFileCreateError() throws Exception {
+        IgniteEx ign = startGridAndFillCaches();
+
+        FileIOFactory delegate = ign.context().cache().context().snapshotMgr().ioFactory();
+
+        ign.context().cache().context().snapshotMgr().ioFactory(new FileIOFactory() {
+            /** {@inheritDoc} */
+            @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+                if (file.getName().endsWith(DUMP_FILE_EXT))
+                    throw new IOException("Test error");
+
+                return delegate.create(file, modes);
+            }
+        });
+
+        assertThrows(null, () -> ign.snapshot().createDump(DMP_NAME).get(), IgniteException.class, "Test error");
+
+        if (persistence)
+            assertNull(ign.context().cache().context().database().metaStorage().read(SNP_RUNNING_DIR_KEY));
+
+        assertFalse(
+            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), DMP_NAME).exists()
+        );
+
+        ign.cache(DEFAULT_CACHE_NAME).put(KEYS_CNT, KEYS_CNT);
+    }
+
+    /** */
+    @Test
+    public void testDumpCancelOnFileWriteError() throws Exception {
+        IgniteEx ign = startGridAndFillCaches();
+
+        FileIOFactory delegate = ign.context().cache().context().snapshotMgr().ioFactory();
+
+        AtomicInteger errorAfter = new AtomicInteger(KEYS_CNT / 2);
+
+        ign.context().cache().context().snapshotMgr().ioFactory(new FileIOFactory() {
+            /** {@inheritDoc} */
+            @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+                return new FileIODecorator(delegate.create(file, modes)) {
+                    @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
+                        if (errorAfter.decrementAndGet() > 0)
+                            return super.writeFully(srcBuf);
+
+                        throw new IOException("Test write error");
+                    }
+                };
+            }
+        });
+
+        assertThrows(null, () -> ign.snapshot().createDump(DMP_NAME).get(), IgniteException.class, "Test write error");
+
+        assertTrue(errorAfter.get() <= 0);
+
+        if (persistence)
+            assertNull(ign.context().cache().context().database().metaStorage().read(SNP_RUNNING_DIR_KEY));
+
+        assertFalse(
+            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), DMP_NAME).exists()
+        );
+
+        ign.cache(DEFAULT_CACHE_NAME).put(KEYS_CNT, KEYS_CNT);
     }
 
     /** */

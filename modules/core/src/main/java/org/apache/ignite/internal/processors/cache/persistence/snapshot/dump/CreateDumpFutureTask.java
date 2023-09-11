@@ -331,7 +331,12 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
     /** */
     private void createDumpLock() throws IgniteCheckedException, IOException {
-        File lock = new File(IgniteSnapshotManager.nodeDumpDirectory(dumpDir, cctx), DUMP_LOCK);
+        File nodeDumpDir = IgniteSnapshotManager.nodeDumpDirectory(dumpDir, cctx);
+
+        if (!nodeDumpDir.mkdirs())
+            throw new IgniteCheckedException("Can't create node dump directory: " + nodeDumpDir.getAbsolutePath());
+
+        File lock = new File(nodeDumpDir, DUMP_LOCK);
 
         if (!lock.createNewFile())
             throw new IgniteCheckedException("Lock file can't be created or already exists: " + lock.getAbsolutePath());
@@ -462,7 +467,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             long expireTime,
             KeyCacheObject key,
             CacheObject val,
-            GridCacheVersion ver) {
+            GridCacheVersion ver
+        ) {
             if (startVer != null && ver.isGreater(startVer))
                 return false;
 
