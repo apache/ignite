@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.dump.DumpEntry;
@@ -36,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
  * Serialization logic for dump.
  */
 public class DumpEntrySerializer {
-    /**  */
+    /** sizeOf(CRC) + sizeOf(Data size)  */
     public static final int HEADER_SZ = Integer.BYTES + Integer.BYTES;
 
     /** */
@@ -176,9 +177,12 @@ public class DumpEntrySerializer {
 
         buf.get(keyBytes, 0, keyBytes.length);
 
-        GridCacheContext<?, ?> cacheCtx = cctx.cache().cacheGroup(grp).shared().cacheContext(cache);
+        GridCacheContext<?, ?> cacheCtx = Objects.requireNonNull(
+            cctx.cache().cacheGroup(grp).shared().cacheContext(cache),
+            "Can't find cache context!"
+        );
 
-        CacheObjectContext coCtx = cacheCtx.cacheObjectContext();
+        CacheObjectContext coCtx = Objects.requireNonNull(cacheCtx.cacheObjectContext(), "Can't find cache object context!");
 
         KeyCacheObject key = co.toKeyCacheObject(coCtx, keyType, keyBytes);
 
