@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSn
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFutureTaskResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotSender;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -345,7 +346,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         final int part;
 
         /** Hashes of cache keys of entries changed by the user during partition dump. */
-        final Map<Integer, Set<Integer>> changed;
+        final Map<Integer, Set<KeyCacheObject>> changed;
 
         /** Count of entries changed during dump creation. */
         LongAdder changedCnt = new LongAdder();
@@ -373,19 +374,19 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         public PartitionDumpContext(CacheGroupContext gctx, int part, File dumpFile) throws IOException {
             assert gctx != null;
 
-            this.grp = gctx.groupId();
             this.part = part;
-            this.topVer = gctx.topology().lastTopologyChangeVersion();
+            grp = gctx.groupId();
+            topVer = gctx.topology().lastTopologyChangeVersion();
 
             boolean primary = gctx.affinity().primaryPartitions(gctx.shared().kernalContext().localNodeId(), topVer).contains(part);
 
-            this.startVer = primary ? gctx.shared().versions().last() : null;
+            startVer = primary ? gctx.shared().versions().last() : null;
 
             serdes = new DumpEntrySerializer();
             changed = new HashMap<>();
 
             for (int cache : gctx.cacheIds())
-                changed.put(cache, new HashSet<>());
+                changed.put(cache, new GridConcurrentHashSet<>());
 
             if (!dumpFile.createNewFile())
                 throw new IgniteException("Dump file can't be created: " + dumpFile);
@@ -415,7 +416,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             if (startVer != null && ver.isGreater(startVer))
                 return "greater version";
 
-            if (!changed.get(cache).add(key.hashCode())) // Entry changed several time during dump.
+            if (!changed.get(cache).add(key)) // Entry changed several time during dump.
                 return "changed several times";
 
             if (val == null)
@@ -455,8 +456,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
             // Can remove only on primaries, because other updates will be skiped based on version
             boolean alreadySaved = startVer != null
-                ? changed.get(cache).remove(key.hashCode())
-                : changed.get(cache).contains(key.hashCode());
+                ? changed.get(cache).remove(key)
+                : changed.get(cache).contains(key);
 
             if (alreadySaved)
                 return false;
