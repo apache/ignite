@@ -44,6 +44,10 @@ public class MetadataIntegrationTest extends AbstractBasicIntegrationTest {
         sql("CREATE TABLE person (ID INT PRIMARY KEY, NAME VARCHAR, SALARY DOUBLE)");
         sql("CREATE TABLE address (ID INT PRIMARY KEY, PERSON_ID INT, DATA VARCHAR)");
 
+        assertQuery("select salary , *, name, * from person")
+                .columnNames("SALARY", "ID", "NAME", "SALARY", "NAME", "ID", "NAME", "SALARY")
+                .check();
+
         assertQuery("select salary * 2, *, salary / 2, * from person")
                 .columnNames("SALARY * 2", "ID", "NAME", "SALARY", "SALARY / 2", "ID", "NAME", "SALARY")
                 .check();
