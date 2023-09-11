@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.io.StringWriter;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
@@ -43,6 +45,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -60,6 +63,9 @@ public final class PlanningContext implements Context {
     private final Object[] parameters;
 
     /** */
+    private final Collection<RelHint> hints;
+
+    /** */
     private final CancelFlag cancelFlag = new CancelFlag(new AtomicBoolean());
 
     /** */
@@ -74,11 +80,8 @@ public final class PlanningContext implements Context {
     /** */
     private final long plannerTimeout;
 
-    /** Current query's hints. */
-    private List<RelHint> hints = Collections.emptyList();
-
     /** */
-    private List<SkippedHint> skippedHints;
+    private final Map<IgniteBiTuple<RelHint, RelNode>, SkippedHint> skippedHints = new ConcurrentHashMap<>();
 
     /** */
     private final @Nullable IgniteLogger log;
@@ -91,6 +94,7 @@ public final class PlanningContext implements Context {
         String qry,
         Object[] parameters,
         long plannerTimeout,
+        @Nullable Collection<RelHint> hints,
         @Nullable IgniteLogger log
     ) {
         this.qry = qry;
@@ -99,6 +103,8 @@ public final class PlanningContext implements Context {
         this.parentCtx = parentCtx;
         startTs = U.currentTimeMillis();
         this.plannerTimeout = plannerTimeout;
+
+        this.hints = hints == null ? Collections.emptyList() : hints;
 
         this.log = log;
     }
@@ -131,6 +137,13 @@ public final class PlanningContext implements Context {
      */
     public String schemaName() {
         return schema().getName();
+    }
+
+    /**
+     * @return Additional hints of the query.
+     */
+    public Collection<RelHint> hints() {
+        return hints;
     }
 
     /**
@@ -235,75 +248,47 @@ public final class PlanningContext implements Context {
     }
 
     /**
-     * @return Query hints, hints of the root node or it's children if root node is not a primary selecting node.
+     * Stores skipped hint and the reason. Also, logs the issue.
      */
-    public List<RelHint> hints() {
-        return hints;
-    }
+    public void skippedHint(RelNode relNode, RelHint hint, String reason) {
+        skippedHints.compute(new IgniteBiTuple<>(hint, relNode), (k, sh) -> {
+            if (sh == null) {
+                sh = new SkippedHint(hint.hintName, hint.listOptions, reason);
 
-    /**
-     * Stores the query hints.
-     * @see #hints()
-     */
-    PlanningContext hints(List<RelHint> hints) {
-        this.hints = Collections.unmodifiableList(hints);
+                if (log != null) {
+                    String hintOptions = hint.listOptions.isEmpty() ? "" : "with options "
+                        + hint.listOptions.stream().map(o -> '\'' + o + '\'').collect(Collectors.joining(","))
+                        + ' ';
 
-        return this;
-    }
-
-    /**
-     * Stores skipped hint and the reason. If {@link #log} is not {@code Null}, logs as a warning.
-     */
-    public void skippedHint(RelNode rel, RelHint hint, @Nullable String optionKey, @Nullable String optionValue,
-        String reason) {
-
-        if (log != null) {
-            log.warning(String.format("Hint '%s' skipped for '%s'. Reason: %s", hint.hintName,
-                RelOptUtil.toString(rel, SqlExplainLevel.NO_ATTRIBUTES).trim(), reason));
-        }
-
-        if (skippedHints == null) {
-            synchronized (parentCtx) {
-                if (skippedHints == null)
-                    skippedHints = new CopyOnWriteArrayList<>();
+                    log.info(String.format("Skipped hint '%s' %sfor relation operator '%s'. %s", hint.hintName,
+                        hintOptions, RelOptUtil.toString(relNode, SqlExplainLevel.EXPPLAN_ATTRIBUTES).trim(), reason));
+                }
             }
-        }
 
-        skippedHints.add(new SkippedHint(rel, hint.hintName, optionKey, optionValue, reason));
+            return sh;
+        });
     }
 
     /** */
-    public void dumpHints(StringWriter w, @Nullable Consumer<StringWriter> header) {
-        List<RelHint> hints = this.hints;
-        List<SkippedHint> skippedHints = this.skippedHints;
-
-        if (F.isEmpty(hints))
-            return;
-
-        if (header != null)
-            header.accept(w);
-
-        w.append("Accepted hints:");
-
-        hints.forEach(h -> w.append(U.nl()).append("\t").append(h.toString()));
-
+    public void dumpHints(StringWriter w) {
         if (F.isEmpty(skippedHints))
             return;
 
         w.append(U.nl()).append(U.nl())
             .append("Skipped hints:");
 
-        skippedHints.forEach(sh -> {
+        skippedHints.forEach((relAndHint, sh) -> {
             w.append(U.nl())
                 .append("\t- '").append(sh.hintName).append('\'');
 
-            if (sh.option != null && sh.value != null)
-                w.append(" with option '").append(sh.option).append('=').append(sh.value).append('\'');
-            else if (sh.option != null)
-                w.append(" with option '").append(sh.option).append('\'');
+            if (!sh.options.isEmpty()) {
+                w.append(" with options ").append(sh.options.stream().map(o -> '\'' + o + '\'')
+                    .collect(Collectors.joining(",")));
+            }
 
-            w.append(" for node `").append(RelOptUtil.toString(sh.rel).trim()).append("`.")
-                .append(U.nl()).append("\t\t").append("Reason: ").append(sh.reason);
+            w.append(" for relation operator '")
+                .append(RelOptUtil.toString(relAndHint.getValue(), SqlExplainLevel.EXPPLAN_ATTRIBUTES))
+                .append("'. ").append(sh.reason);
 
             if (!sh.reason.endsWith("."))
                 w.append('.');
@@ -315,27 +300,18 @@ public final class PlanningContext implements Context {
      */
     private static class SkippedHint {
         /** */
-        private final RelNode rel;
-
-        /** */
         private final String hintName;
 
-        /** Hint option or hint option key.  */
-        private final @Nullable String option;
-
-        /** Hint option value. */
-        private final @Nullable String value;
+        /** Hint options. */
+        private final List<String> options;
 
         /** */
         private final String reason;
 
         /** */
-        private SkippedHint(RelNode rel, String hintName, @Nullable String hintOption,
-            @Nullable String hintOptionValue, String reason) {
-            this.rel = rel;
+        private SkippedHint(String hintName, List<String> options, String reason) {
             this.hintName = hintName;
-            this.option = hintOption;
-            this.value = hintOptionValue;
+            this.options = options;
             this.reason = reason;
         }
     }
@@ -360,6 +336,9 @@ public final class PlanningContext implements Context {
         /** */
         private IgniteLogger log;
 
+        /** */
+        private Collection<RelHint> hints = Collections.emptyList();
+
         /**
          * @param parentCtx Parent context.
          * @return Builder for chaining.
@@ -375,6 +354,15 @@ public final class PlanningContext implements Context {
          */
         public Builder query(@NotNull String qry) {
             this.qry = qry;
+            return this;
+        }
+
+        /**
+         * @param hints Additional query hints.
+         * @return Builder for chaining.
+         */
+        public Builder hints(Collection<RelHint> hints) {
+            this.hints = hints;
             return this;
         }
 
@@ -414,7 +402,7 @@ public final class PlanningContext implements Context {
          * @return Planner context.
          */
         public PlanningContext build() {
-            return new PlanningContext(parentCtx, qry, parameters, plannerTimeout, log);
+            return new PlanningContext(parentCtx, qry, parameters, plannerTimeout, hints, log);
         }
     }
 }

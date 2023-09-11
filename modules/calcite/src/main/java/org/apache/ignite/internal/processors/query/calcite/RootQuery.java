@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -28,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.apache.calcite.plan.Context;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.CancelFlag;
@@ -35,6 +37,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -45,6 +48,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
@@ -308,13 +312,16 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
             if (pctx == null) {
                 state = QueryState.PLANNING;
 
-                pctx = PlanningContext.builder()
+                PlanningContext.Builder planCtxBuilder = PlanningContext.builder()
                     .parentContext(ctx)
                     .query(sql)
                     .parameters(params)
                     .plannerTimeout(plannerTimeout)
-                    .log(log)
-                    .build();
+                    .log(log);
+
+                addQueryParams(planCtxBuilder);
+
+                pctx = planCtxBuilder.build();
 
                 try {
                     cancel.add(() -> pctx.unwrap(CancelFlag.class).requestCancel());
@@ -326,6 +333,16 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
 
             return pctx;
         }
+    }
+
+    /** */
+    private PlanningContext.Builder addQueryParams(PlanningContext.Builder builder) {
+        SqlFieldsQuery sqlFieldsQuery = this.ctx.unwrap(SqlFieldsQuery.class);
+
+        if (sqlFieldsQuery != null && sqlFieldsQuery.isEnforceJoinOrder())
+            builder.hints(Collections.singletonList(RelHint.builder(HintDefinition.ORDERED_JOINS.name()).build()));
+
+        return builder;
     }
 
     /** */

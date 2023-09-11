@@ -21,7 +21,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
@@ -33,6 +35,7 @@ import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlDynamicParam;
 import org.apache.calcite.sql.SqlKind;
@@ -73,6 +76,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryI
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexExecutorImpl;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintsConfig;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
@@ -430,7 +434,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                         AtomicBoolean miss = new AtomicBoolean();
 
                         plan = queryPlanCache().queryPlan(
-                                new CacheKey(schema.getName(), sql, contextKey(qryCtx), params),
+                                new CacheKey(schema.getName(), sql, contextKey(qryCtx), params, queryParams(qryCtx)),
                                 () -> {
                                     miss.set(true);
 
@@ -470,7 +474,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         assert schema != null : "Schema not found: " + schemaName;
 
-        QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql, contextKey(qryCtx), params));
+        QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql, contextKey(qryCtx), params,
+            queryParams(qryCtx)));
 
         if (plan != null) {
             parserMetrics.countCacheHit();
@@ -493,7 +498,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 if (qryList.size() == 1) {
                     plan0 = queryPlanCache().queryPlan(
                         // Use source SQL to avoid redundant parsing next time.
-                        new CacheKey(schema.getName(), sql, contextKey(qryCtx), params),
+                        new CacheKey(schema.getName(), sql, contextKey(qryCtx), params, queryParams(qryCtx)),
                         () -> prepareSvc.prepareSingle(sqlNode, qry.planningContext())
                     );
                 }
@@ -504,6 +509,24 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             }, schema.getName(), removeSensitive(sqlNode), qrys, params);
 
             res.add(singleRes);
+        }
+
+        return res;
+    }
+
+    /** */
+    private static Map<Class<?>, Object> queryParams(QueryContext ctx) {
+        SqlFieldsQuery sqlFieldsQuery = ctx.unwrap(SqlFieldsQuery.class);
+
+        if (sqlFieldsQuery == null)
+            return null;
+
+        Map<Class<?>, Object> res = null;
+
+        if (sqlFieldsQuery.isEnforceJoinOrder()) {
+            res = new HashMap<>();
+
+            res.put(RelHint.class, Collections.singletonList(RelHint.builder(HintDefinition.ORDERED_JOINS.name())));
         }
 
         return res;

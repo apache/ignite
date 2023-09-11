@@ -76,7 +76,7 @@ public class JdbcCrossEngineTest extends GridCommonAbstractTest {
         startGrids(nodesCnt);
 
         for (int i = 0; i < engineNames.length; i++) {
-            conns[i] = DriverManager.getConnection(url + "?queryEngine=" + engineNames[i]);
+            conns[i] = DriverManager.getConnection(url + "?queryEngine=" + engineNames[i] + "&enforceJoinOrder=true");
             conns[i].setSchema("PUBLIC");
             stmts[i] = conns[i].createStatement();
 
