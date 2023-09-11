@@ -117,7 +117,7 @@ public class IgniteConcurrentCacheDumpTest extends AbstractCacheDumpTest {
 
             opFut.get();
 
-            checkDumpWithCommand(srv, DMP_NAME);
+            checkDumpWithCommand(srv, DMP_NAME, backups);
         }
     }
 }

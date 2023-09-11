@@ -250,7 +250,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     void checkDump(IgniteEx ign, String name) throws Exception {
-        checkDumpWithCommand(ign, name);
+        checkDumpWithCommand(ign, name, backups);
 
         if (persistence)
             assertNull(ign.context().cache().context().database().metaStorage().read(SNP_RUNNING_DIR_KEY));
@@ -438,7 +438,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static void checkDumpWithCommand(IgniteEx ign, String name) throws Exception {
+    public static void checkDumpWithCommand(IgniteEx ign, String name, int backups) throws Exception {
         CacheGroupContext gctx = ign.context().cache().cacheGroup(CU.cacheId(DEFAULT_CACHE_NAME));
 
         for (GridCacheContext<?, ?> cctx : gctx.caches())
@@ -496,22 +496,24 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             for (Map.Entry<String, List<Set<Object>>> partCopies : keys.entrySet()) {
                 String part = partCopies.getKey();
 
-                assertEquals(2, partCopies.getValue().size());
+                assertEquals(backups + 1, partCopies.getValue().size());
 
-                Set<Object> a = partCopies.getValue().get(0);
-                Set<Object> b = partCopies.getValue().get(1);
+                for (int i = 0; i <= backups; i++) {
+                    Set<Object> a = partCopies.getValue().get(i);
+                    Set<Object> b = partCopies.getValue().get((i + 1) % (backups + 1));
 
-                if (!Objects.equals(a, b)) {
-                    log.error(part + " DIFF (b - a):");
-                    for (Object b0 : b) {
-                        if (!a.contains(b0))
-                            log.error(b0.toString());
-                    }
+                    if (!Objects.equals(a, b)) {
+                        log.error(part + " DIFF (b - a):");
+                        for (Object b0 : b) {
+                            if (!a.contains(b0))
+                                log.error(b0.toString());
+                        }
 
-                    log.error(part + " DIFF (a - b):");
-                    for (Object a0 : a) {
-                        if (!b.contains(a0))
-                            log.error(a0.toString());
+                        log.error(part + " DIFF (a - b):");
+                        for (Object a0 : a) {
+                            if (!b.contains(a0))
+                                log.error(a0.toString());
+                        }
                     }
                 }
             }

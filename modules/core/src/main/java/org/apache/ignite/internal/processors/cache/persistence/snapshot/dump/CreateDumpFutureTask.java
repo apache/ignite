@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,8 +30,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -84,6 +87,12 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     /** */
     private final FileIOFactory ioFactory;
 
+    /** */
+    final String name;
+
+    /** */
+    final PrintWriter logf;
+
     /**
      * Dump contextes.
      * Key is [group_id, partition_id] combined in single long value.
@@ -122,6 +131,19 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         this.dumpDir = dumpDir;
         this.ioFactory = ioFactory;
+
+        try {
+            name = U.maskForFileName(cctx.localNode().consistentId().toString());
+
+            File logf = new File("/Users/user/tmp/dump_log_" + name + ".log");
+            logf.delete();
+            logf.createNewFile();
+
+            this.logf = new PrintWriter(logf);
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -244,6 +266,15 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                                 ", cache=" + cache +
                                 ", key=" + row.key() + ']');
 
+                        logf.println("iterat.write [grp=" + grp +
+                            ", cache=" + cache +
+                            ", key=" + row.key().value(null, false) +
+                            ", key_hash=" + row.key().hashCode() +
+                            ", part=" + row.key().partition() +
+                            ", written=" + written +
+                            ", version=" + row.version() +
+                            ", name=" + this.name + ']');
+
                         if (log.isTraceEnabled())
                             log.trace("Row [key=" + row.key() + ", cacheId=" + cache + ']');
                     }
@@ -286,6 +317,15 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         String reasonToSkip = dumpCtx.writeChanged(cctx.cacheId(), expireTime, key, val, ver);
 
+        logf.println("change.write [grp=" + cctx.groupId() +
+            ", cache=" + cctx.cacheId() +
+            ", key=" + key.value(null, false) +
+            ", key_hash=" + key.hashCode() +
+            ", part=" + key.partition() +
+            ", written=" + (reasonToSkip == null ? "true" : reasonToSkip) +
+            ", version=" + ver +
+            ", name=" + name + ']');
+
         if (reasonToSkip != null && log.isTraceEnabled()) {
             log.trace("Skip entry [grp=" + cctx.groupId() +
                 ", cache=" + cctx.cacheId() +
@@ -297,6 +337,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     /** {@inheritDoc} */
     @Override protected CompletableFuture<Void> closeAsync() {
         if (closeFut == null) {
+            U.closeQuiet(logf);
+
             dumpCtxs.values().forEach(PartitionDumpContext::close);
 
             Throwable err0 = err.get();
@@ -366,6 +408,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         /** If {@code true} context is closed. */
         volatile boolean closed;
 
+        /** Count of writers. When count becomes {@code 0} context must be closed. */
+        private final AtomicInteger writers = new AtomicInteger(1); // Iterator writing entries to this context, by default.
+
         /**
          * @param gctx Group id.
          * @param part Partition id.
@@ -413,25 +458,32 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             if (closed) // Partition already saved in dump.
                 return "partition already saved";
 
-            if (startVer != null && ver.isGreater(startVer))
-                return "greater version";
+            writers.getAndIncrement();
 
-            if (!changed.get(cache).add(key)) // Entry changed several time during dump.
-                return "changed several times";
+            try {
+                if (startVer != null && ver.isGreater(startVer))
+                    return "greater version";
 
-            if (val == null)
-                return "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
+                if (!changed.get(cache).add(key)) // Entry changed several time during dump.
+                    return "changed several times";
 
-            synchronized (this) {
-                if (closed) // Partition already saved in dump.
-                    return "partition already saved";
+                if (val == null)
+                    return "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
 
-                write(cache, expireTime, key, val);
+                synchronized (this) {
+                    if (closed) // Partition already saved in dump.
+                        return "partition already saved";
+
+                    write(cache, expireTime, key, val);
+                }
+
+                changedCnt.increment();
+
+                return null;
             }
-
-            changedCnt.increment();
-
-            return null;
+            finally {
+                writers.decrementAndGet();
+            }
         }
 
         /**
@@ -454,12 +506,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             if (startVer != null && ver.isGreater(startVer))
                 return false;
 
-            // Can remove only on primaries, because other updates will be skiped based on version
-            boolean alreadySaved = startVer != null
-                ? changed.get(cache).remove(key)
-                : changed.get(cache).contains(key);
-
-            if (alreadySaved)
+            if (changed.get(cache).contains(key))
                 return false;
 
             synchronized (this) {
@@ -489,7 +536,14 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             if (closed)
                 return;
 
+            writers.decrementAndGet();
+
+            while (writers.get() > 0)
+                LockSupport.parkNanos(1_000_000);
+
             synchronized (this) {
+                logf.println("PARTITION DONE [part=" + part + ", group=" + grp + ", start_ver=" + startVer + ", name = " + name + ']');
+
                 closed = true;
             }
 
