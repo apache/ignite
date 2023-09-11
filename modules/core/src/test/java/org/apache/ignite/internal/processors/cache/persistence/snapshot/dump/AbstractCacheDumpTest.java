@@ -47,6 +47,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.dump.Dump;
+import org.apache.ignite.dump.DumpEntry;
+import org.apache.ignite.dump.DumpedPartitionIterator;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -55,7 +58,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.DumpedPartitionIterator;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -431,7 +433,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     public static Dump dump(IgniteEx ign, String name) throws IgniteCheckedException {
-        return new Dump(
+        return new DumpImpl(
             ign.context(),
             new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name)
         );
@@ -453,7 +455,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         String expMsg = "The check procedure has finished, no conflicts have been found.\n\n";
 
         if (!Objects.equals(msg, expMsg)) {
-            Dump dump = new Dump(
+            Dump dump = new DumpImpl(
                 ign.context(),
                 new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name)
             );

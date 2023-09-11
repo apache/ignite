@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -70,7 +71,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
  * Directories structure is same as a full snapshot but each partitions saved in "part-0.dump" file.
  * Files structure is a set of {@link DumpEntry} written one by one.
  *
- * @see Dump
+ * @see DumpImpl
  * @see DumpEntry
  */
 public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask implements DumpEntryChangeListener {

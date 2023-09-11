@@ -25,13 +25,15 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.dump.Dump;
+import org.apache.ignite.dump.DumpEntry;
+import org.apache.ignite.dump.DumpedPartitionIterator;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -58,7 +60,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.d
 /**
  * This class provides ability to work with saved cache dump.
  */
-public class Dump {
+public class DumpImpl implements Dump {
     /** Dump directory. */
     private final File dumpDir;
 
@@ -68,7 +70,7 @@ public class Dump {
     /**
      * @param dumpDir Dump directory.
      */
-    public Dump(GridKernalContext cctx, File dumpDir) throws IgniteCheckedException {
+    public DumpImpl(GridKernalContext cctx, File dumpDir) {
         this.cctx = cctx;
         this.dumpDir = dumpDir;
 
@@ -81,15 +83,15 @@ public class Dump {
         A.ensure(marshaller.exists(), "marshaller directory not exists");
     }
 
-    /** @return List of node directories. */
-    public List<String> nodesDirectories() {
+    /** {@inheritDoc} */
+    @Override public List<String> nodesDirectories() {
         return Arrays.stream(new File(dumpDir, DFLT_STORE_DIR).listFiles(f -> f.isDirectory() &&
             !(f.getAbsolutePath().endsWith(DFLT_BINARY_METADATA_PATH)
                 || f.getAbsolutePath().endsWith(DFLT_MARSHALLER_PATH)))).map(File::getName).collect(Collectors.toList());
     }
 
-    /** @return List of snapshot metadata saved in {@link #dumpDir}. */
-    public List<SnapshotMetadata> metadata() throws IOException, IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public List<SnapshotMetadata> metadata() throws IOException, IgniteCheckedException {
         JdkMarshaller marsh = MarshallerUtils.jdkMarshaller(cctx.igniteInstanceName());
 
         ClassLoader clsLdr = U.resolveClassLoader(cctx.config());
@@ -104,12 +106,8 @@ public class Dump {
         }).filter(SnapshotMetadata::dump).collect(Collectors.toList());
     }
 
-    /**
-     * @param node Node directory name.
-     * @param group Group id.
-     * @return List of cache configs saved in dump for group.
-     */
-    public List<StoredCacheData> configs(String node, int group) {
+    /** {@inheritDoc} */
+    @Override public List<StoredCacheData> configs(String node, int group) {
         JdkMarshaller marsh = MarshallerUtils.jdkMarshaller(cctx.igniteInstanceName());
 
         return Arrays.stream(FilePageStoreManager.cacheDataFiles(dumpGroupDirectory(node, group))).map(f -> {
@@ -122,24 +120,16 @@ public class Dump {
         }).collect(Collectors.toList());
     }
 
-    /**
-     * @param node Node directory name.
-     * @param group Group id.
-     * @return Dump iterator.
-     */
-    public List<Integer> partitions(String node, int group) {
+    /** {@inheritDoc} */
+    @Override public List<Integer> partitions(String node, int group) {
         return Arrays.stream(dumpGroupDirectory(node, group)
             .listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(DUMP_FILE_EXT)))
             .map(partFile -> Integer.parseInt(partFile.getName().replace(PART_FILE_PREFIX, "").replace(DUMP_FILE_EXT, "")))
             .collect(Collectors.toList());
     }
 
-    /**
-     * @param node Node directory name.
-     * @param group Group id.
-     * @return Dump iterator.
-     */
-    public DumpedPartitionIterator iterator(String node, int group, int part) {
+    /** {@inheritDoc} */
+    @Override public DumpedPartitionIterator iterator(String node, int group, int part) {
         return iterator(node, group, part, true);
     }
 
@@ -223,8 +213,8 @@ public class Dump {
         };
     }
 
-    /** @return Root dump directory. */
-    public File dumpDirectory() {
+    /** {@inheritDoc} */
+    @Override public File dumpDirectory() {
         return dumpDir;
     }
 
@@ -251,12 +241,5 @@ public class Dump {
             throw new IgniteException("Wrong number of group directories: " + grpDirs.length);
 
         return grpDirs[0];
-    }
-
-    /**
-     * Closeable dump iterator.
-     */
-    public interface DumpedPartitionIterator extends Iterator<DumpEntry>, AutoCloseable {
-        // No-op.
     }
 }

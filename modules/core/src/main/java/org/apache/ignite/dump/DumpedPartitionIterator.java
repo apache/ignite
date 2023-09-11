@@ -15,24 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
+package org.apache.ignite.dump;
 
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import java.util.Iterator;
+import org.apache.ignite.lang.IgniteExperimental;
 
 /**
- * Single cache entry from dump.
+ * Closeable dump iterator.
  */
-public interface DumpEntry {
-    /** @return Cache id. */
-    public int cacheId();
-
-    /** @return Expiration time. */
-    public long expireTime();
-
-    /** @return Key. */
-    public KeyCacheObject key();
-
-    /** @return Value. */
-    public CacheObject value();
+@IgniteExperimental
+public interface DumpedPartitionIterator extends Iterator<DumpEntry>, AutoCloseable {
+    // No-op.
 }

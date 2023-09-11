@@ -38,6 +38,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.dump.Dump;
+import org.apache.ignite.dump.DumpEntry;
+import org.apache.ignite.dump.DumpedPartitionIterator;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
@@ -51,8 +54,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntry;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility;
@@ -315,7 +317,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         SnapshotHandlerContext opCtx,
         Set<File> partFiles
     ) throws IgniteCheckedException {
-        Dump dump = new Dump(cctx.kernalContext(), opCtx.snapshotDirectory());
+        Dump dump = new DumpImpl(cctx.kernalContext(), opCtx.snapshotDirectory());
 
         Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
             cctx.snapshotMgr().snapshotExecutorService(),
@@ -348,7 +350,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         try {
             String node = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
 
-            try (Dump.DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part)) {
+            try (DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part)) {
                 long size = 0;
 
                 VerifyPartitionContext ctx = new VerifyPartitionContext();
