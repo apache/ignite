@@ -406,7 +406,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
             totalSize.addAndGet(partLen);
 
-            return future(() -> {
+            return runAsync(() -> {
                 snpSndr.sendPart(
                     getPartitionFile(pageStore.workDir(), cacheDirName, partId),
                     cacheDirName,
@@ -458,7 +458,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
     @Override protected List<CompletableFuture<Void>> saveCacheConfigsCopy() {
         // Send configuration files of all cache groups.
         return ccfgSndrs.stream()
-            .map(ccfgSndr -> future(ccfgSndr::sendCacheConfig))
+            .map(ccfgSndr -> runAsync(ccfgSndr::sendCacheConfig))
             .collect(Collectors.toList());
     }
 

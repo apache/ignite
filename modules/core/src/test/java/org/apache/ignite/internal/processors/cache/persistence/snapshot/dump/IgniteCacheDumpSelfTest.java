@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -40,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.Key;
@@ -140,7 +142,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     @Test
     public void testWithConcurrentInserts() throws Exception {
         doTestConcurrentOperations(ignite -> {
-            for (int i = KEYS_CNT; i < KEYS_CNT + 3; i++) {
+            for (int i = KEYS_CNT * 10; i < KEYS_CNT * 10 + 3; i++) {
                 assertFalse(ignite.cache(DEFAULT_CACHE_NAME).containsKey(i));
                 assertFalse(ignite.cache(CACHE_0).containsKey(i));
                 assertFalse(ignite.cache(CACHE_1).containsKey(new Key(i)));
@@ -148,7 +150,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
                 insertOrUpdate(ignite, i);
             }
 
-            for (int i = KEYS_CNT + 3; i < KEYS_CNT + 6; i++) {
+            for (int i = KEYS_CNT * 10 + 3; i < KEYS_CNT * 10 + 6; i++) {
                 assertFalse(cli.cache(DEFAULT_CACHE_NAME).containsKey(i));
                 assertFalse(cli.cache(CACHE_0).containsKey(i));
                 assertFalse(cli.cache(CACHE_1).containsKey(new Key(i)));
@@ -219,7 +221,12 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     public void testDumpCancelOnFileCreateError() throws Exception {
         IgniteEx ign = startGridAndFillCaches();
 
-        ign.context().cache().context().snapshotMgr().ioFactory(new DumpFailingFactory(ign, false));
+        for (Ignite node : G.allGrids()) {
+            if (node.configuration().isClientMode() == TRUE)
+                continue;
+
+            ((IgniteEx)node).context().cache().context().snapshotMgr().ioFactory(new DumpFailingFactory((IgniteEx)node, false));
+        }
 
         assertThrows(null, () -> ign.snapshot().createDump(DMP_NAME).get(), IgniteException.class, "Test error");
 
@@ -405,12 +412,12 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     }
 
     /** */
-    public class DumpFailingFactory implements FileIOFactory {
+    public static class DumpFailingFactory implements FileIOFactory {
         /** */
         private final FileIOFactory delegate;
 
         /** */
-        private final AtomicInteger errorAfter = new AtomicInteger(KEYS_CNT / 2);
+        private final AtomicInteger errorAfter;
 
         /** */
         private final boolean failOnWrite;
@@ -419,6 +426,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
         public DumpFailingFactory(IgniteEx ign, boolean failOnWrite) {
             this.delegate = ign.context().cache().context().snapshotMgr().ioFactory();
             this.failOnWrite = failOnWrite;
+            this.errorAfter = new AtomicInteger(KEYS_CNT / 20);
         }
 
         /** {@inheritDoc} */
@@ -434,8 +442,9 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
                     }
                 };
             }
-            else if (file.getName().endsWith(DUMP_FILE_EXT))
+            else if (file.getName().endsWith(DUMP_FILE_EXT)) {
                 throw new IOException("Test error");
+            }
 
             return delegate.create(file, modes);
         }
