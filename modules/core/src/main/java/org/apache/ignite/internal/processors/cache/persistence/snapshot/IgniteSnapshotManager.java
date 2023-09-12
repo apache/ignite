@@ -163,7 +163,6 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -1207,7 +1206,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 req.meta(meta);
 
-                File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
+                File smf = new File(snpDir, snapshotMetaFileName(pdsSettings.folderName()));
 
                 storeSnapshotMeta(req.meta(), smf);
 
@@ -2847,7 +2846,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         File lock = new File(nodeDumpDirectory(snapshotLocalDir(dumpName, null), cctx), DUMP_LOCK);
 
         if (!lock.exists())
-            throw new IgniteCheckedException("Lock file not exists: " + lock);
+            return;
 
         if (!lock.delete())
             throw new IgniteCheckedException("Lock file can't be deleted: " + lock);
@@ -2855,11 +2854,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** */
     public static File nodeDumpDirectory(File dumpDir, GridCacheSharedContext<?, ?> cctx) throws IgniteCheckedException {
-        File nodeDumpDir = new File(dumpDir, databaseRelativePath(cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName()));
-
-        IgniteUtils.ensureDirectory(nodeDumpDir, "dump directory", null);
-
-        return nodeDumpDir;
+        return new File(dumpDir, databaseRelativePath(cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName()));
     }
 
     /**
