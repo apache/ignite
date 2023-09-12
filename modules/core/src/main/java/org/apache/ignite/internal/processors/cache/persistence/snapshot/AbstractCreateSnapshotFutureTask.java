@@ -62,9 +62,9 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
      * @param cctx Shared context.
      * @param srcNodeId Node id which cause snapshot task creation.
      * @param reqId Snapshot operation request ID.
-     * @param snpName Unique identifier of snapshot process.
-     * @param snpSndr Factory which produces snapshot receiver instance.
-     * @param parts Partition to be processed.
+     * @param snpName Snapshot name.
+     * @param snpSndr Factory which produces snapshot sender instance.
+     * @param parts Partitions to be processed.
      */
     protected AbstractCreateSnapshotFutureTask(
         GridCacheSharedContext<?, ?> cctx,
