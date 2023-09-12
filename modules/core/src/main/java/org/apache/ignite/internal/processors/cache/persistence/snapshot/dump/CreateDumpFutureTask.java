@@ -94,6 +94,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
      */
     private final Map<Long, PartitionDumpContext> dumpCtxs = new ConcurrentHashMap<>();
 
+    /** Local node is primary for set of group partitions. */
+    private final Map<Integer, Set<Integer>> grpPrimaries = new ConcurrentHashMap();
+
     /**
      * @param cctx Cache context.
      * @param srcNodeId Node id which cause snapshot task creation.
@@ -141,8 +144,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         }
         catch (IgniteCheckedException | IOException e) {
             acceptException(e);
-
-            onDone(e);
         }
 
         return false; // Don't wait for checkpoint.
@@ -164,19 +165,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
             if (!grpDumpDir.mkdirs())
                 throw new IgniteCheckedException("Dump directory can't be created: " + grpDumpDir);
-
-            for (int part : e.getValue()) {
-                PartitionDumpContext prev = dumpCtxs.put(
-                    toLong(grp, part),
-                    new PartitionDumpContext(
-                        cctx.kernalContext().cache().cacheGroup(grp),
-                        part,
-                        new File(grpDumpDir, PART_FILE_PREFIX + part + DUMP_FILE_EXT)
-                    )
-                );
-
-                assert prev == null;
-            }
 
             CacheGroupContext gctx = cctx.cache().cacheGroup(grp);
 
@@ -224,7 +212,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         return grpParts.stream().map(part -> runAsync(() -> {
             long entriesCnt0 = 0;
 
-            try (PartitionDumpContext dumpCtx = dumpCtxs.get(toLong(grp, part))) {
+            try (PartitionDumpContext dumpCtx = dumpContext(grp, part)) {
                 try (GridCloseableIterator<CacheDataRow> rows = gctx.offheap().reservedIterator(part, dumpCtx.topVer)) {
                     if (rows == null)
                         throw new IgniteCheckedException("Partition missing [part=" + part + ']');
@@ -273,11 +261,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         try {
             assert key.partition() != -1;
 
-            PartitionDumpContext dumpCtx = dumpCtxs.get(toLong(cctx.groupId(), key.partition()));
-
-            assert dumpCtx != null;
-
-            dumpCtx.writeChanged(cctx.cacheId(), expireTime, key, val, ver);
+            dumpContext(cctx.groupId(), key.partition()).writeChanged(cctx.cacheId(), expireTime, key, val, ver);
         }
         catch (IgniteException e) {
             acceptException(e);
@@ -330,6 +314,25 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             throw new IgniteCheckedException("Lock file can't be created or already exists: " + lock.getAbsolutePath());
     }
 
+    /** */
+    private PartitionDumpContext dumpContext(int grp, int part) {
+        return dumpCtxs.computeIfAbsent(
+            toLong(grp, part),
+            key -> {
+                try {
+                    return new PartitionDumpContext(
+                        cctx.kernalContext().cache().cacheGroup(grp),
+                        part,
+                        new File(groupDirectory(cctx.cache().cacheGroup(grp)), PART_FILE_PREFIX + part + DUMP_FILE_EXT)
+                    );
+                }
+                catch (IOException | IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+        );
+    }
+
     /**
      * Context of dump single partition.
      */
@@ -376,7 +379,10 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             grp = gctx.groupId();
             topVer = gctx.topology().lastTopologyChangeVersion();
 
-            boolean primary = gctx.affinity().primaryPartitions(gctx.shared().kernalContext().localNodeId(), topVer).contains(part);
+            boolean primary = grpPrimaries.computeIfAbsent(
+                gctx.groupId(),
+                key -> gctx.affinity().primaryPartitions(gctx.shared().kernalContext().localNodeId(), topVer)
+            ).contains(part);
 
             startVer = primary ? gctx.shared().versions().last() : null;
 
@@ -508,14 +514,14 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             if (closed)
                 return;
 
+            synchronized (this) {
+                closed = true;
+            }
+
             writers.decrementAndGet();
 
             while (writers.get() > 0)
                 LockSupport.parkNanos(1_000_000);
-
-            synchronized (this) {
-                closed = true;
-            }
 
             U.closeQuiet(file);
 
