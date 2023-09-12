@@ -236,18 +236,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
                         int cache = row.cacheId() == 0 ? grp : row.cacheId();
 
-                        boolean written = dumpCtx.writeForIterator(cache, row.expireTime(), row.key(), row.value(), row.version());
-
-                        if (written)
+                        if (dumpCtx.writeForIterator(cache, row.expireTime(), row.key(), row.value(), row.version()))
                             entriesCnt0++;
-                        else if (log.isTraceEnabled())
-                            log.trace("Entry saved by change listener. Skip [" +
-                                "grp=" + grp +
-                                ", cache=" + cache +
-                                ", key=" + row.key() + ']');
-
-                        if (log.isTraceEnabled())
-                            log.trace("Row [key=" + row.key() + ", cacheId=" + cache + ']');
                     }
                 }
 
@@ -287,14 +277,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
             assert dumpCtx != null;
 
-            String reasonToSkip = dumpCtx.writeChanged(cctx.cacheId(), expireTime, key, val, ver);
-
-            if (reasonToSkip != null && log.isTraceEnabled()) {
-                log.trace("Skip entry [grp=" + cctx.groupId() +
-                    ", cache=" + cctx.cacheId() +
-                    ", key=" + key +
-                    ", reason=" + reasonToSkip + ']');
-            }
+            dumpCtx.writeChanged(cctx.cacheId(), expireTime, key, val, ver);
         }
         catch (IgniteException e) {
             acceptException(e);
@@ -416,43 +399,50 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
          * @param key Key.
          * @param val Value before change.
          * @param ver Version before change.
-         * @return {@code null} if entry saved in dump or reason why it skipped.
          */
-        public String writeChanged(
+        public void writeChanged(
             int cache,
             long expireTime,
             KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver
         ) {
+            String reasonToSkip = null;
+
             if (closed) // Partition already saved in dump.
-                return "partition already saved";
+                reasonToSkip = "partition already saved";
+            else {
+                writers.getAndIncrement();
 
-            writers.getAndIncrement();
+                try {
+                    if (startVer != null && ver.isGreater(startVer))
+                        reasonToSkip = "greater version";
+                    else if (!changed.get(cache).add(key)) // Entry changed several time during dump.
+                        reasonToSkip = "changed several times";
+                    else if (val == null)
+                        reasonToSkip = "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
+                    else {
+                        synchronized (this) {
+                            if (closed) // Partition already saved in dump.
+                                reasonToSkip = "partition already saved";
+                            else
+                                write(cache, expireTime, key, val);
+                        }
 
-            try {
-                if (startVer != null && ver.isGreater(startVer))
-                    return "greater version";
-
-                if (!changed.get(cache).add(key)) // Entry changed several time during dump.
-                    return "changed several times";
-
-                if (val == null)
-                    return "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
-
-                synchronized (this) {
-                    if (closed) // Partition already saved in dump.
-                        return "partition already saved";
-
-                    write(cache, expireTime, key, val);
+                        changedCnt.increment();
+                    }
                 }
-
-                changedCnt.increment();
-
-                return null;
+                finally {
+                    writers.decrementAndGet();
+                }
             }
-            finally {
-                writers.decrementAndGet();
+
+            if (log.isTraceEnabled()) {
+                log.trace("Listener [grp=" + grp +
+                    ", cache=" + cache +
+                    ", part=" + part +
+                    ", key=" + key +
+                    ", written=" + (reasonToSkip == null ? "true" : reasonToSkip) + ']');
             }
         }
 
@@ -474,17 +464,28 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             CacheObject val,
             GridCacheVersion ver
         ) {
+            boolean written = true;
+
             if (startVer != null && ver.isGreater(startVer))
-                return false;
-
-            if (changed.get(cache).contains(key))
-                return false;
-
-            synchronized (this) {
-                write(cache, expireTime, key, val);
+                written = false;
+            else if (changed.get(cache).contains(key))
+                written = false;
+            else {
+                synchronized (this) {
+                    write(cache, expireTime, key, val);
+                }
             }
 
-            return true;
+            if (log.isTraceEnabled()) {
+                log.trace("Iterator [" +
+                    "grp=" + grp +
+                    ", cache=" + cache +
+                    ", part=" + part +
+                    ", key=" + key +
+                    ", written=" + written + ']');
+            }
+
+            return written;
         }
 
         /** */
