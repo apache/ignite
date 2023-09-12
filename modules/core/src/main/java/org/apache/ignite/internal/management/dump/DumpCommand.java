@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.management.dump;
 
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Root command to use dump feature.
  */
+@IgniteExperimental
 public class DumpCommand extends CommandRegistryImpl {
     /** */
     public DumpCommand() {
