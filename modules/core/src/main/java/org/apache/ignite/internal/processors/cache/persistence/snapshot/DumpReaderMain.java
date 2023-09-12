@@ -15,30 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.dump;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import org.apache.ignite.lang.IgniteExperimental;
+import java.io.File;
+import org.apache.ignite.dump.Dump;
+import org.apache.ignite.dump.DumpConsumer;
 
 /**
- * Consumer of {@link Dump}.
- * This consumer will receive all {@link DumpEntry} stored in cache dump during {@link DumpMain} application invocation.
- * The lifecycle of the consumer is the following:
- * <ul>
- *     <li>Start of the consumer {@link #start()}.</li>
- *     <li>Stop of the consumer {@link #stop()}.</li>
- * </ul>
- *
+ * Dump Reader application.
+ * The application runs independently of Ignite node process and provides the ability to the {@link DumpConsumer} to consume
+ * all data stored in cache dump ({@link Dump})
  */
-@IgniteExperimental
-public interface DumpConsumer {
-    /**
-     * Starts the consumer.
-     */
-    public void start();
+public class DumpReaderMain implements Runnable {
+    /** Dump consumer. */
+    private final DumpConsumer cnsmr;
 
-    /**
-     * Stops the consumer.
-     * This method can be invoked only after {@link #start()}.
-     */
-    public void stop();
+    /** Dump directory. */
+    private final File dumpDirectory;
+
+    /** {@inheritDoc} */
+    @Override public void run() {
+        System.out.println("DumpReaderMain.run");
+    }
 }

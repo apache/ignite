@@ -26,7 +26,11 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
+ * This class provides an ability to explore cache dump from disk.
+ * Cache dump is entry by entry consistent copy of cache.
+ * Dump can be created by {@link org.apache.ignite.IgniteSnapshot#createDump(String)}.
  *
+ * @see org.apache.ignite.IgniteSnapshot#createDump(String)
  */
 @IgniteExperimental
 public interface Dump {

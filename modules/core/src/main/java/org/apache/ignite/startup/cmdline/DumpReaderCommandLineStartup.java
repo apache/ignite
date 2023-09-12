@@ -17,10 +17,13 @@
 
 package org.apache.ignite.startup.cmdline;
 
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.DumpReaderMain;
 import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_SHUTDOWN_HOOK;
 import static org.apache.ignite.internal.IgniteKernal.NL;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
@@ -71,6 +74,38 @@ public class DumpReaderCommandLineStartup {
         if (args.length > 0 && args[0].charAt(0) == '-')
             exit("Invalid arguments: " + args[0], true, -1);
 
+        AtomicReference<DumpReaderMain> dumpReader = new AtomicReference<>();
+
+        try {
+            dumpReader.set(DumpReaderLoader.loadDumpReader(args[0]));
+
+            if (!IgniteSystemProperties.getBoolean(IGNITE_NO_SHUTDOWN_HOOK, false)) {
+                Runtime.getRuntime().addShutdownHook(new Thread("cdc-shutdown-hook") {
+                    @Override public void run() {
+                        dumpReader.get().stop();
+                    }
+                });
+            }
+
+            Thread appThread = new Thread(dumpReader.get());
+
+            appThread.start();
+
+            appThread.join();
+        }
+        catch (InterruptedException ignore) {
+            X.error("CDC was interrupted.");
+        }
+        catch (Throwable e) {
+            e.printStackTrace();
+
+            String note = "";
+
+            if (X.hasCause(e, ClassNotFoundException.class))
+                note = "\nNote! You may use 'USER_LIBS' environment variable to specify your classpath.";
+
+            exit("Failed to run CDC: " + e.getMessage() + note, false, -1);
+        }
     }
 
     /**
