@@ -56,7 +56,7 @@ import org.junit.Test;
 @WithSystemProperty(key = "calcite.debug", value = "true")
 public class JdbcQueryTest extends GridCommonAbstractTest {
     /** URL. */
-    private final String url = "jdbc:ignite:thin://127.0.0.1?queryEngine=" + CalciteQueryEngineConfiguration.ENGINE_NAME;
+    private String url = "jdbc:ignite:thin://127.0.0.1?queryEngine=" + CalciteQueryEngineConfiguration.ENGINE_NAME;
 
     /** Nodes count. */
     private final int nodesCnt = 3;
@@ -76,12 +76,25 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGrids(nodesCnt);
-        conn = DriverManager.getConnection(url);
-        conn.setSchema("PUBLIC");
-        stmt = conn.createStatement();
+
+        connect();
 
         assert stmt != null;
         assert !stmt.isClosed();
+    }
+
+    /** */
+    private void connect() throws Exception {
+        if (stmt != null)
+            stmt.close();
+
+        if (conn != null)
+            conn.close();
+
+        conn = DriverManager.getConnection(url);
+        conn.setSchema("PUBLIC");
+
+        stmt = conn.createStatement();
     }
 
     /** {@inheritDoc} */
@@ -199,6 +212,50 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
                 assertEquals(i, rs.getInt(1));
                 assertEquals("Name", rs.getString(2));
             }
+        }
+    }
+
+    /** Test endforced join order param. */
+    @Test
+    public void testEnforcedJoinOrder() throws Exception {
+        stmt.execute("CREATE TABLE Person1(\"ID\" INT, PRIMARY KEY(\"ID\"), \"NAME\" VARCHAR) WITH template=REPLICATED");
+        stmt.execute("CREATE TABLE Person2(\"ID\" INT, PRIMARY KEY(\"ID\"), \"NAME\" VARCHAR) WITH template=REPLICATED");
+
+        for (int i = 0; i < 3; ++i)
+            stmt.execute(String.format("INSERT INTO Person1 VALUES (%d, 'Name')", i));
+
+        for (int i = 0; i < 100; ++i)
+            stmt.addBatch(String.format("INSERT INTO Person2 VALUES (%d, 'Name')", i));
+
+        stmt.executeBatch();
+
+        String sql = "EXPLAIN PLAN FOR SELECT p2.Name from Person1 p1 LEFT JOIN Person2 p2 on p2.NAME=p1.NAME";
+
+        String scan1 = "IgniteTableScan(table=[[PUBLIC, PERSON1]]";
+        String scan2 = "IgniteTableScan(table=[[PUBLIC, PERSON2]]";
+
+        try (ResultSet rs = stmt.executeQuery(sql)) {
+            assertTrue(rs.next());
+
+            String plan = rs.getString(1);
+
+            // Reordered joins and changed join type.
+            assertTrue(plan.indexOf(scan1) > plan.indexOf(scan2));
+            assertFalse(plan.contains("joinType=[left]"));
+        }
+
+        url += "&enforceJoinOrder=true";
+
+        connect();
+
+        try (ResultSet rs = stmt.executeQuery(sql)) {
+            assertTrue(rs.next());
+
+            String plan = rs.getString(1);
+
+            // Joins as in the query.
+            assertTrue(plan.indexOf(scan1) < plan.indexOf(scan2));
+            assertTrue(plan.contains("joinType=[left]"));
         }
     }
 

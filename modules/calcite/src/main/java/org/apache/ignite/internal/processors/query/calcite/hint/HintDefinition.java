@@ -53,6 +53,11 @@ public enum HintDefinition {
     /** Forces join order as appears in the query. Fastens building of joins plan. */
     ORDERED_JOINS {
         /** {@inheritDoc} */
+        @Override public HintPredicate predicate() {
+            return HintPredicates.JOIN;
+        }
+
+        /** {@inheritDoc} */
         @Override public HintOptionChecker optionsChecker() {
             return HintsConfig.OPTS_CHECK_EMPTY;
         }
@@ -79,7 +84,7 @@ public enum HintDefinition {
     }
 
     /**
-     * @return Excluded by this hint rules.
+     * @return Rules to excluded by current hint.
      */
     public Collection<RelOptRule> disabledRules() {
         return Collections.emptyList();

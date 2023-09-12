@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.HintStrategyTable;
@@ -30,7 +31,7 @@ import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Base class for working with Calcite's SQL hints.
@@ -42,67 +43,49 @@ public final class Hint {
     }
 
     /**
-     * @return Hints filtered with {@code hintDefs} and suitable for {@code rel}.
+     * @return Combined list options of all {@code hints} filtered with {@code hintDef}.
+     * @see #filterHints(Collection, Collection)
+     */
+    public static Collection<String> options(Collection<RelHint> hints, HintDefinition hintDef) {
+        return F.flatCollections(filterHints(hints, Collections.singletonList(hintDef)).stream()
+            .map(h -> h.listOptions).collect(Collectors.toList()));
+    }
+
+    /**
+     * @return Hints filtered with {@code hintDefs} and suitable for {@code rel} including the additional query hints.
      * @see HintStrategyTable#apply(List, RelNode)
      * @see PlanningContext#hints()
      */
     public static List<RelHint> hints(RelNode rel, HintDefinition... hintDefs) {
-        if (!(rel instanceof Hintable))
-            return Collections.emptyList();
-
         RelOptCluster c = rel.getCluster();
 
-        return c.getHintStrategies().apply(filterHints(Commons.planContext(c).hints(), Arrays.asList(hintDefs)), rel);
+        Collection<RelHint> hints = Commons.planContext(rel).hints().isEmpty()
+            ? allRelHints(rel)
+            : Stream.concat(Commons.planContext(rel).hints().stream(), allRelHints(rel).stream())
+                .collect(Collectors.toList());
+
+        return c.getHintStrategies().apply(filterHints(hints, Arrays.asList(hintDefs)), rel);
     }
 
     /**
      * @return {@code True} if the query has a suitable hint for {@code rel} defined by {@code hintDefs}.
      * {@code False} otherwise.
+     * @see HintStrategyTable#apply(List, RelNode)
      */
     public static boolean hasHint(RelNode rel, HintDefinition... hintDefs) {
         return !hints(rel, hintDefs).isEmpty();
     }
 
     /**
-     * @return Options of {@code hint}.
-     */
-    public static HintOptions options(RelHint hint) {
-        return HintOptions.collect(Collections.singletonList(hint));
-    }
-
-    /**
-     * @return Combined options of all {@code hints} with natural order.
-     */
-    public static HintOptions options(Collection<RelHint> hints) {
-        return HintOptions.collect(hints);
-    }
-
-    /**
-     * @return Combined options of all {@code hints} filtered with {@code hintDef} with natural order.
-     * {@code Null} if no hint found by {@code hintDef}.
-     * @see #filterHints(Collection, Collection)
-     */
-    public static @Nullable HintOptions options(Collection<RelHint> hints, HintDefinition hintDef) {
-        return options(filterHints(hints, Collections.singletonList(hintDef)));
-    }
-
-    /**
-     * @return Options of {@code hint} if it is {@code hintDef}. {@code Null} otherwise.
-     */
-    public static @Nullable HintOptions options(RelHint hint, HintDefinition hintDef) {
-        return options(filterHints(Collections.singletonList(hint), Collections.singletonList(hintDef)));
-    }
-
-    /**
      * @return Hints of {@code rel} if it is a {@code Hintable}. If is not or has no hints, empty collection.
      * @see Hintable#getHints()
      */
-    public static List<RelHint> relHints(RelNode rel) {
+    public static List<RelHint> allRelHints(RelNode rel) {
         return rel instanceof Hintable ? ((Hintable)rel).getHints() : Collections.emptyList();
     }
 
     /**
-     * @return Distinct hints within {@code hints} filtered with {@code hintDefs} and reoved inherit pathes.
+     * @return Distinct hints within {@code hints} filtered with {@code hintDefs} and removed inherit pathes.
      * @see RelHint#inheritPath
      */
     private static List<RelHint> filterHints(Collection<RelHint> hints, Collection<HintDefinition> hintDefs) {

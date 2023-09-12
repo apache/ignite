@@ -312,16 +312,12 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
             if (pctx == null) {
                 state = QueryState.PLANNING;
 
-                PlanningContext.Builder planCtxBuilder = PlanningContext.builder()
+                pctx = addQueryParams(PlanningContext.builder())
                     .parentContext(ctx)
                     .query(sql)
                     .parameters(params)
                     .plannerTimeout(plannerTimeout)
-                    .log(log);
-
-                addQueryParams(planCtxBuilder);
-
-                pctx = planCtxBuilder.build();
+                    .log(log).build();
 
                 try {
                     cancel.add(() -> pctx.unwrap(CancelFlag.class).requestCancel());
@@ -337,7 +333,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
 
     /** */
     private PlanningContext.Builder addQueryParams(PlanningContext.Builder builder) {
-        SqlFieldsQuery sqlFieldsQuery = this.ctx.unwrap(SqlFieldsQuery.class);
+        SqlFieldsQuery sqlFieldsQuery = ctx.unwrap(SqlFieldsQuery.class);
 
         if (sqlFieldsQuery != null && sqlFieldsQuery.isEnforceJoinOrder())
             builder.hints(Collections.singletonList(RelHint.builder(HintDefinition.ORDERED_JOINS.name()).build()));

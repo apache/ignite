@@ -18,18 +18,16 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashSet;
+import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import com.google.common.collect.ImmutableSet;
-import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableScan;
@@ -43,7 +41,6 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.hint.Hint;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
-import org.apache.ignite.internal.processors.query.calcite.hint.HintOptions;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -56,7 +53,6 @@ import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescript
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class PlannerHelper {
@@ -77,14 +73,20 @@ public class PlannerHelper {
             // Convert to Relational operators graph
             RelRoot root = planner.rel(sqlNode);
 
-            root = processHints(root);
+            root = extractRootHints(root, 0);
 
-            setDisabledRules(planner);
+            planner.setDisabledRules(Hint.options(root.hints, HintDefinition.DISABLE_RULE));
 
             RelNode rel = root.rel;
 
             // Transformation chain
             rel = planner.transform(PlannerPhase.HEP_DECORRELATE, rel.getTraitSet(), rel);
+
+            // RelOptUtil#propagateRelHints(RelNode, equiv) may skip hints because current RelNode has no hints.
+            // Or if hints reside in a node which is not input of the current node. Like in LogicalFlter#condition.
+            // But hints may appear or be required below in the tree, after rules applying.
+            // In Calcite, RelDecorrelator#decorrelateQuery(...) can re-propagate hints.
+            rel = RelOptUtil.propagateRelHints(rel, false);
 
             rel = planner.replaceCorrelatesCollisions(rel);
 
@@ -126,69 +128,37 @@ public class PlannerHelper {
     }
 
     /**
-     * Assigns disabled rules to {@code planner}.
-     *
-     * @see HintDefinition#DISABLE_RULE
-     * @see HintDefinition#disabledRules()
-     * @see PlanningContext#hints()
+     * Extracts planner-level hints like 'DISABLE_RULE' if the root node is a combining node like 'UNION'.
      */
-    private static void setDisabledRules(IgnitePlanner planner) {
-        Set<String> disabled = new LinkedHashSet<>();
+    private static RelRoot extractRootHints(RelRoot rootRel, int depth) {
+        assert depth >= 0;
 
-        for (RelHint hint : Commons.planContext(planner.cluster()).hints()) {
-            HintOptions disableRuleOpts = Hint.options(hint, HintDefinition.DISABLE_RULE);
+        if (rootRel.hints.isEmpty()) {
+            if (!Hint.allRelHints(rootRel.rel).isEmpty())
+                rootRel = rootRel.withHints(Hint.allRelHints(rootRel.rel));
+            else if (rootRel.rel instanceof SetOp) {
+                Collection<RelHint> hints1 = extractRootHints(rootRel.withRel(rootRel.rel.getInput(0)), depth + 1).hints;
+                Collection<RelHint> hints2 = extractRootHints(rootRel.withRel(rootRel.rel.getInput(1)), depth + 1).hints;
 
-            if (disableRuleOpts != null)
-                disabled.addAll(disableRuleOpts.plain());
+                List<RelHint> hints = new ArrayList<>(hints1);
 
-            HintDefinition hintDef = HintDefinition.valueOf(hint.hintName);
+                hints.addAll(hints2);
 
-            if (!F.isEmpty(hintDef.disabledRules()))
-                disabled.addAll(hintDef.disabledRules().stream().map(RelOptRule::toString).collect(Collectors.toList()));
+                rootRel = rootRel.withHints(hints);
+            }
         }
 
-        planner.setDisabledRules(disabled);
-    }
-
-    /**
-     * Extracts SQL hints and stores them into the plan context. After, removes any hints from the rel tree.
-     *
-     * @return Root rel with no-hints rel tree.
-     * @see PlanningContext#hints()
-     */
-    private static RelRoot processHints(RelRoot rootRel) {
-        PlanningContext ctx = Commons.planContext(rootRel.rel.getCluster());
-
-        ctx.hints(resolveQueryHints(rootRel));
-
-        rootRel = rootRel.withHints(Collections.emptyList());
-
-        RelNode newRel = new RelShuttleImpl() {
-            @Override public RelNode visit(RelNode rel) {
-                if (rel instanceof Hintable && !F.isEmpty(((Hintable)rel).getHints()))
-                    rel = ((Hintable)rel).withHints(Collections.emptyList());
-
-                return super.visit(rel);
+        if (depth < 1) {
+            if (!Commons.planContext(rootRel.rel).hints().isEmpty()) {
+                rootRel = rootRel.withHints(Stream.concat(Commons.planContext(rootRel.rel).hints().stream(), rootRel.hints.stream())
+                    .collect(Collectors.toList()));
             }
-        }.visit(rootRel.rel);
 
-        return rootRel.rel == newRel ? rootRel : rootRel.withRel(newRel);
-    }
+            if (rootRel.rel instanceof Hintable)
+                rootRel = rootRel.withRel(((Hintable)rootRel.rel).withHints(rootRel.hints));
+        }
 
-    /**
-     * @return Hints resolved as top-node or 'query' hints which are not set by Calcite to the root node.
-     */
-    private static List<RelHint> resolveQueryHints(RelRoot root) {
-        if (!F.isEmpty(root.hints))
-            return root.hints;
-
-        if (!F.isEmpty(Hint.relHints(root.rel)))
-            return Hint.relHints(root.rel);
-
-        if (root.rel instanceof SetOp && !F.isEmpty(root.rel.getInputs()))
-            return resolveQueryHints(root.withRel(root.rel.getInput(0)));
-
-        return Collections.emptyList();
+        return rootRel;
     }
 
     /**

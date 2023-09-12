@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.hint;
 
 import java.util.Arrays;
+import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.rel.hint.HintOptionChecker;
 import org.apache.calcite.rel.hint.HintStrategy;
 import org.apache.calcite.rel.hint.HintStrategyTable;
@@ -44,17 +45,6 @@ public final class HintsConfig {
         }
     };
 
-    /** Requires at least one option. */
-    static final HintOptionChecker OPTS_CHECK_NON_EMPTY = new HintOptionChecker() {
-        @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
-            return errorHandler.check(
-                !hint.kvOptions.isEmpty() || !hint.listOptions.isEmpty(),
-                "Hint '{}' needs at least one option.",
-                hint.hintName
-            );
-        }
-    };
-
     /** Allows only plain options. */
     static final HintOptionChecker OPTS_CHECK_PLAIN = new HintOptionChecker() {
         @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
@@ -72,9 +62,13 @@ public final class HintsConfig {
     public static HintStrategyTable buildHintTable() {
         HintStrategyTable.Builder b = HintStrategyTable.builder().errorHandler(Litmus.IGNORE);
 
+        RelOptRule[] disabledRulesTpl = new RelOptRule[0];
+
         Arrays.stream(HintDefinition.values()).forEach(hintDef ->
             b.hintStrategy(hintDef.name(), HintStrategy.builder(hintDef.predicate())
-                .optionChecker(hintDef.optionsChecker()).build()));
+                .optionChecker(hintDef.optionsChecker())
+                .excludedRules(hintDef.disabledRules().toArray(disabledRulesTpl))
+                .build()));
 
         return b.build();
     }
