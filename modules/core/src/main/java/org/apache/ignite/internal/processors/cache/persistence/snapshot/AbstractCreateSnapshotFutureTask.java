@@ -188,9 +188,9 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
                 .getCachedMappings();
 
             // Process binary meta.
-            futs.add(future(() -> snpSndr.sendBinaryMeta(binTypesCopy)));
+            futs.add(runAsync(() -> snpSndr.sendBinaryMeta(binTypesCopy)));
             // Process marshaller meta.
-            futs.add(future(() -> snpSndr.sendMarshallerMeta(mappingsCopy)));
+            futs.add(runAsync(() -> snpSndr.sendMarshallerMeta(mappingsCopy)));
             futs.addAll(saveCacheConfigsCopy());
 
             for (Map.Entry<Integer, Set<Integer>> grpParts : processed.entrySet())
@@ -241,7 +241,7 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
     }
 
     /** */
-    protected CompletableFuture<Void> future(IgniteThrowableRunner task) {
+    protected CompletableFuture<Void> runAsync(IgniteThrowableRunner task) {
         return CompletableFuture.runAsync(
             wrapExceptionIfStarted(task),
             snpSndr.executor()

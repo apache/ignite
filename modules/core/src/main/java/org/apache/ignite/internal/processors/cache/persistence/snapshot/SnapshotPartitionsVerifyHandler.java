@@ -302,6 +302,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             for (GridComponent comp : snpCtx)
                 comp.stop(true);
         }
+
         return res;
     }
 

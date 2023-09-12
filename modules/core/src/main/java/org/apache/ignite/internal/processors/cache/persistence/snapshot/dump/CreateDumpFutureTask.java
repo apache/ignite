@@ -187,7 +187,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
     /** {@inheritDoc} */
     @Override protected List<CompletableFuture<Void>> saveCacheConfigsCopy() {
-        return parts.keySet().stream().map(grp -> future(() -> {
+        return parts.keySet().stream().map(grp -> runAsync(() -> {
             CacheGroupContext gctx = cctx.cache().cacheGroup(grp);
 
             File grpDir = groupDirectory(gctx);
@@ -221,7 +221,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         log.info("Start group dump [name=" + name + ", id=" + grp + ']');
 
-        return grpParts.stream().map(part -> future(() -> {
+        return grpParts.stream().map(part -> runAsync(() -> {
             long entriesCnt0 = 0;
 
             try (PartitionDumpContext dumpCtx = dumpCtxs.get(toLong(grp, part))) {
