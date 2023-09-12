@@ -309,28 +309,33 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
     /** {@inheritDoc} */
     @Override public void beforeChange(GridCacheContext cctx, KeyCacheObject key, CacheObject val, long expireTime, GridCacheVersion ver) {
-        assert key.partition() != -1;
+        try {
+            assert key.partition() != -1;
 
-        PartitionDumpContext dumpCtx = dumpCtxs.get(toLong(cctx.groupId(), key.partition()));
+            PartitionDumpContext dumpCtx = dumpCtxs.get(toLong(cctx.groupId(), key.partition()));
 
-        assert dumpCtx != null;
+            assert dumpCtx != null;
 
-        String reasonToSkip = dumpCtx.writeChanged(cctx.cacheId(), expireTime, key, val, ver);
+            String reasonToSkip = dumpCtx.writeChanged(cctx.cacheId(), expireTime, key, val, ver);
 
-        logf.println("change.write [grp=" + cctx.groupId() +
-            ", cache=" + cctx.cacheId() +
-            ", key=" + key.value(null, false) +
-            ", key_hash=" + key.hashCode() +
-            ", part=" + key.partition() +
-            ", written=" + (reasonToSkip == null ? "true" : reasonToSkip) +
-            ", version=" + ver +
-            ", name=" + name + ']');
-
-        if (reasonToSkip != null && log.isTraceEnabled()) {
-            log.trace("Skip entry [grp=" + cctx.groupId() +
+            logf.println("change.write [grp=" + cctx.groupId() +
                 ", cache=" + cctx.cacheId() +
-                ", key=" + key +
-                ", reason=" + reasonToSkip + ']');
+                ", key=" + key.value(null, false) +
+                ", key_hash=" + key.hashCode() +
+                ", part=" + key.partition() +
+                ", written=" + (reasonToSkip == null ? "true" : reasonToSkip) +
+                ", version=" + ver +
+                ", name=" + name + ']');
+
+            if (reasonToSkip != null && log.isTraceEnabled()) {
+                log.trace("Skip entry [grp=" + cctx.groupId() +
+                    ", cache=" + cctx.cacheId() +
+                    ", key=" + key +
+                    ", reason=" + reasonToSkip + ']');
+            }
+        }
+        catch (IgniteException e) {
+            acceptException(e);
         }
     }
 
@@ -371,7 +376,12 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
     /** */
     private void createDumpLock() throws IgniteCheckedException, IOException {
-        File lock = new File(IgniteSnapshotManager.nodeDumpDirectory(dumpDir, cctx), DUMP_LOCK);
+        File nodeDumpDir = IgniteSnapshotManager.nodeDumpDirectory(dumpDir, cctx);
+
+        if (!nodeDumpDir.mkdirs())
+            throw new IgniteCheckedException("Can't create node dump directory: " + nodeDumpDir.getAbsolutePath());
+
+        File lock = new File(nodeDumpDir, DUMP_LOCK);
 
         if (!lock.createNewFile())
             throw new IgniteCheckedException("Lock file can't be created or already exists: " + lock.getAbsolutePath());
@@ -502,7 +512,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             long expireTime,
             KeyCacheObject key,
             CacheObject val,
-            GridCacheVersion ver) {
+            GridCacheVersion ver
+        ) {
             if (startVer != null && ver.isGreater(startVer))
                 return false;
 

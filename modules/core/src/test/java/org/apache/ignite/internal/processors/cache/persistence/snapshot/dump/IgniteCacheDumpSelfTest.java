@@ -17,18 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -36,6 +48,8 @@ import org.junit.Test;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_RUNNING_DIR_KEY;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** */
@@ -187,6 +201,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     @Test
     public void testDumpWithExplicitExpireTime() throws Exception {
         explicitTtl = true;
+
         doTestDumpWithExpiry();
     }
 
@@ -196,6 +211,122 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
         explicitTtl = false;
 
         doTestDumpWithExpiry();
+    }
+
+    /** */
+    @Test
+    public void testDumpCancelOnFileCreateError() throws Exception {
+        IgniteEx ign = startGridAndFillCaches();
+
+        ign.context().cache().context().snapshotMgr().ioFactory(new DumpFailingFactory(ign, false));
+
+        assertThrows(null, () -> ign.snapshot().createDump(DMP_NAME).get(), IgniteException.class, "Test error");
+
+        checkDumpCleared(ign);
+
+        ign.cache(DEFAULT_CACHE_NAME).put(KEYS_CNT, KEYS_CNT);
+    }
+
+    /** */
+    @Test
+    public void testDumpCancelOnIteratorWriteError() throws Exception {
+        IgniteEx ign = startGridAndFillCaches();
+
+        DumpFailingFactory ioFactory = new DumpFailingFactory(ign, true);
+
+        ign.context().cache().context().snapshotMgr().ioFactory(ioFactory);
+
+        assertThrows(null, () -> ign.snapshot().createDump(DMP_NAME).get(), IgniteException.class, "Test write error");
+
+        assertTrue(ioFactory.errorAfter.get() <= 0);
+
+        checkDumpCleared(ign);
+
+        ign.cache(DEFAULT_CACHE_NAME).put(KEYS_CNT, KEYS_CNT);
+    }
+
+    /** */
+    @Test
+    public void testDumpCancelOnListenerWriteError() throws Exception {
+        IgniteEx ign = startGridAndFillCaches();
+
+        IgniteCache<Object, Object> cache = ign.cache(DEFAULT_CACHE_NAME);
+
+        int keyToFail = findKeys(ign.localNode(), cache, 1, KEYS_CNT, 0).get(0);
+
+        byte[] valToFail = new byte[100];
+
+        AtomicBoolean keyToFailFound = new AtomicBoolean();
+
+        IntStream.range(0, 100).forEach(i -> valToFail[i] = (byte)i);
+
+        cache.put(keyToFail, valToFail);
+
+        FileIOFactory delegate = ign.context().cache().context().snapshotMgr().ioFactory();
+
+        ign.context().cache().context().snapshotMgr().ioFactory(new FileIOFactory() {
+            @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+                if (file.getName().endsWith(DUMP_FILE_EXT)) {
+                    return new FileIODecorator(delegate.create(file, modes)) {
+                        /** {@inheritDoc} */
+                        @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
+                            if (findValToFail(srcBuf)) {
+                                keyToFailFound.set(true);
+
+                                throw new IOException("Val to fail found");
+                            }
+
+                            return super.writeFully(srcBuf);
+                        }
+
+                        private boolean findValToFail(ByteBuffer srcBuf) {
+                            if (srcBuf.limit() >= valToFail.length) {
+                                int valIdx = 0;
+
+                                for (int i = 0; i < srcBuf.limit(); i++) {
+                                    if (srcBuf.get(i) == valToFail[valIdx]) {
+                                        valIdx++;
+
+                                        if (valIdx == valToFail.length)
+                                            return true;
+                                    }
+                                    else
+                                        valIdx = 0;
+                                }
+                            }
+
+                            return false;
+                        }
+                    };
+                }
+
+                return delegate.create(file, modes);
+            }
+        });
+
+        T2<CountDownLatch, IgniteInternalFuture<?>> latchAndFut = runDumpAsyncAndStopBeforeStart();
+
+        cache.put(keyToFail, "test string");
+
+        latchAndFut.get1().countDown();
+
+        assertThrows(null, () -> latchAndFut.get2().get(10 * 1000), IgniteCheckedException.class, "Val to fail found");
+
+        assertTrue(keyToFailFound.get());
+
+        checkDumpCleared(ign);
+
+        cache.put(keyToFail, valToFail);
+    }
+
+    /** */
+    private void checkDumpCleared(IgniteEx ign) throws IgniteCheckedException {
+        if (persistence)
+            assertNull(ign.context().cache().context().database().metaStorage().read(SNP_RUNNING_DIR_KEY));
+
+        assertFalse(
+            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), DMP_NAME).exists()
+        );
     }
 
     /** */
@@ -272,4 +403,40 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
         }
     }
 
+    /** */
+    public class DumpFailingFactory implements FileIOFactory {
+        /** */
+        private final FileIOFactory delegate;
+
+        /** */
+        private final AtomicInteger errorAfter = new AtomicInteger(KEYS_CNT / 2);
+
+        /** */
+        private final boolean failOnWrite;
+
+        /** */
+        public DumpFailingFactory(IgniteEx ign, boolean failOnWrite) {
+            this.delegate = ign.context().cache().context().snapshotMgr().ioFactory();
+            this.failOnWrite = failOnWrite;
+        }
+
+        /** {@inheritDoc} */
+        @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+            if (failOnWrite) {
+                return new FileIODecorator(delegate.create(file, modes)) {
+                    /** {@inheritDoc} */
+                    @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
+                        if (errorAfter.decrementAndGet() > 0)
+                            return super.writeFully(srcBuf);
+
+                        throw new IOException("Test write error");
+                    }
+                };
+            }
+            else if (file.getName().endsWith(DUMP_FILE_EXT))
+                throw new IOException("Test error");
+
+            return delegate.create(file, modes);
+        }
+    }
 }
