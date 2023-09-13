@@ -416,7 +416,6 @@ public class CacheContinuousQueryEventBuffer {
                             e.newValue(),
                             e.oldValue(),
                             e.isKeepBinary(),
-                            e.isInternal(),
                             e.partition(),
                             e.updateCounter(),
                             e.topologyVersion(),
