@@ -31,12 +31,12 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.CLEAR_ALL_SPLIT_THRESHOLD;
-import static org.apache.ignite.testframework.MvccFeatureChecker.forcedMvcc;
 
 /**
  * Test {@link IgniteCache#localClearAll(java.util.Set)} operations in multinode environment with nodes having caches with different names.
@@ -206,9 +206,6 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of exception.
      */
     private void test(Mode mode, int keysCnt) throws Exception {
-        if (forcedMvcc())
-            return;
-
         startUp();
 
         // Take in count special case for near-only cache as well.

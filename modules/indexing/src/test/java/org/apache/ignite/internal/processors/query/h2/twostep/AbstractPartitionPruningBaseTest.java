@@ -144,21 +144,10 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
      * @param cols Columns.
      */
     protected void createPartitionedTable(String name, Object... cols) {
-        createPartitionedTable(false, name, cols);
-    }
-
-    /**
-     * Create PARTITIONED table.
-     *
-     * @param mvcc MVCC flag.
-     * @param name Name.
-     * @param cols Columns.
-     */
-    protected void createPartitionedTable(boolean mvcc, String name, Object... cols) {
         if (createTableWithSql)
-            createTable0(name, false, mvcc, cols);
+            createTable0(name, false, cols);
         else
-            createCacheTable(name, false, mvcc, cols);
+            createCacheTable(name, false, cols);
     }
 
     /**
@@ -168,21 +157,10 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
      * @param cols Columns.
      */
     protected void createReplicatedTable(String name, Object... cols) {
-        createReplicatedTable(false, name, cols);
-    }
-
-    /**
-     * Create REPLICATED table.
-     *
-     * @param mvcc MVCC flag.
-     * @param name Name.
-     * @param cols Columns.
-     */
-    protected void createReplicatedTable(boolean mvcc, String name, Object... cols) {
         if (createTableWithSql)
-            createTable0(name, true, mvcc, cols);
+            createTable0(name, true, cols);
         else
-            createCacheTable(name, true, mvcc, cols);
+            createCacheTable(name, true, cols);
     }
 
     /**
@@ -190,11 +168,10 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
      *
      * @param name Name.
      * @param replicated Replicated table flag.
-     * @param mvcc MVCC flag.
      * @param cols Columns.
      */
     @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
-    private void createTable0(String name, boolean replicated, boolean mvcc, Object... cols) {
+    private void createTable0(String name, boolean replicated, Object... cols) {
         List<String> pkCols = new ArrayList<>();
 
         String affCol = null;
@@ -242,9 +219,6 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
             sql.append(", KEY_TYPE=" + name + "_key");
         }
 
-        if (mvcc)
-            sql.append(", atomicity=TRANSACTIONAL_SNAPSHOT");
-
         sql.append("\"");
 
         executeSql(sql.toString());
@@ -255,10 +229,9 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
      *
      * @param name Name.
      * @param replicated Replicated table flag.
-     * @param mvcc MVCC flag.
      * @param cols Columns.
      */
-    private void createCacheTable(String name, boolean replicated, boolean mvcc, Object... cols) {
+    private void createCacheTable(String name, boolean replicated, Object... cols) {
         QueryEntity e = new QueryEntity()
             .setValueType(name)
             .setTableName(name);
@@ -300,7 +273,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>()
             .setName(name)
             .setSqlSchema(DFLT_SCHEMA)
-            .setAtomicityMode(mvcc ? CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT : CacheAtomicityMode.TRANSACTIONAL)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setCacheMode(replicated ? CacheMode.REPLICATED : CacheMode.PARTITIONED)
             .setQueryEntities(Collections.singletonList(e));
 

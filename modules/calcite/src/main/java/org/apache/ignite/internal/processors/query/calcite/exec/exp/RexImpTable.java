@@ -260,9 +260,6 @@ public class RexImpTable {
     /** */
     private final Map<SqlOperator, RexCallImplementor> map = new HashMap<>();
 
-    /** Placeholder for DEFAULT operator value. */
-    public static final Object DEFAULT_VALUE_PLACEHOLDER = new Object();
-
     /** */
     RexImpTable() {
         defineMethod(ROW, BuiltInMethod.ARRAY.method, NullPolicy.NONE);
@@ -2513,7 +2510,7 @@ public class RexImpTable {
     private static class DefaultImplementor extends AbstractRexCallImplementor {
         /** */
         DefaultImplementor() {
-            super(NullPolicy.NONE, false);
+            super(NullPolicy.NONE, true);
         }
 
         /** {@inheritDoc} */
@@ -2524,7 +2521,7 @@ public class RexImpTable {
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
             final RexCall call, final List<Expression> argValueList) {
-            return Expressions.field(null, RexImpTable.class, "DEFAULT_VALUE_PLACEHOLDER");
+            return Expressions.constant(null);
         }
     }
 

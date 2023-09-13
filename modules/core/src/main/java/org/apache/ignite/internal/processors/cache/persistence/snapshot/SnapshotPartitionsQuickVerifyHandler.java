@@ -71,6 +71,11 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
         String name,
         Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>>> results
     ) throws IgniteCheckedException {
+        for (SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>> result : results) {
+            if (result.error() != null)
+                throw new IgniteCheckedException(result.error());
+        }
+
         if (results.stream().anyMatch(r -> r.data() == null))
             return;
 

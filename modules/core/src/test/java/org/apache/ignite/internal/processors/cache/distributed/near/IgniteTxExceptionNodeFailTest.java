@@ -52,7 +52,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishFuture.ALL_PARTITION_OWNERS_LEFT_GRID_MSG;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 
 /**
  * Tests check a result of commit when a node fail before send {@link GridNearTxFinishResponse} to transaction
@@ -175,18 +174,16 @@ public class IgniteTxExceptionNodeFailTest extends GridCommonAbstractTest {
 
             assertTrue(msg.contains(ALL_PARTITION_OWNERS_LEFT_GRID_MSG));
 
-            if (!mvccEnabled(grid1.context())) {
-                Pattern msgPtrn;
+            Pattern msgPtrn;
 
-                msgPtrn = Pattern.compile(" \\[cacheName=" + DEFAULT_CACHE_NAME +
-                    ", partition=\\d+, " +
-                    "key=KeyCacheObjectImpl \\[part=\\d+, val=" + key0 +
-                    ", hasValBytes=true\\]\\]");
+            msgPtrn = Pattern.compile(" \\[cacheName=" + DEFAULT_CACHE_NAME +
+                ", partition=\\d+, " +
+                "key=KeyCacheObjectImpl \\[part=\\d+, val=" + key0 +
+                ", hasValBytes=true\\]\\]");
 
-                Matcher matcher = msgPtrn.matcher(msg);
+            Matcher matcher = msgPtrn.matcher(msg);
 
-                assertTrue("Message does not match: [msg=" + msg + ']', matcher.find());
-            }
+            assertTrue("Message does not match: [msg=" + msg + ']', matcher.find());
         }
 
         stopNodeFut.get(10_000);

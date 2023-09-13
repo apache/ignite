@@ -709,7 +709,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             nodeId,
             req.version(),
             req.mvccSnapshot(),
-            req.threadId(),
             req.futureId(),
             req.miniId(),
             tx,
@@ -768,14 +767,14 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 if (waitForExchangeFuture(nearNode, req))
                     return;
 
-                f = lockAllAsync(ctx, nearNode, req, null);
+                f = lockAllAsync(ctx, nearNode, req);
 
                 if (f != null)
                     break;
             }
         }
         else
-            f = lockAllAsync(ctx, nearNode, req, null);
+            f = lockAllAsync(ctx, nearNode, req);
 
         // Register listener just so we print out errors.
         // Exclude lock timeout and rollback exceptions since it's not a fatal exception.
@@ -839,7 +838,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     private void processDhtLockResponse(UUID nodeId, GridDhtLockResponse res) {
         assert nodeId != null;
         assert res != null;
-        GridDhtLockFuture fut = (GridDhtLockFuture)ctx.mvcc().<Boolean>versionedFuture(res.version(), res.futureId());
+        GridDhtLockFuture fut = (GridDhtLockFuture)ctx.mvcc().versionedFuture(res.version(), res.futureId());
 
         if (fut == null) {
             if (txLockMsgLog.isDebugEnabled())
@@ -988,17 +987,13 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param cacheCtx Cache context.
      * @param nearNode Near node.
      * @param req Request.
-     * @param filter0 Filter.
      * @return Future.
      */
     public IgniteInternalFuture<GridNearLockResponse> lockAllAsync(
         final GridCacheContext<?, ?> cacheCtx,
         final ClusterNode nearNode,
-        final GridNearLockRequest req,
-        @Nullable final CacheEntryPredicate[] filter0) {
+        final GridNearLockRequest req) {
         final List<KeyCacheObject> keys = req.keys();
-
-        CacheEntryPredicate[] filter = filter0;
 
         // Set message into thread context.
         GridDhtTxLocal tx = null;
@@ -1014,10 +1009,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
 
             final List<GridCacheEntryEx> entries = new ArrayList<>(cnt);
-
-            // Unmarshal filter first.
-            if (filter == null)
-                filter = req.filter();
 
             GridDhtLockFuture fut = null;
 
@@ -1704,10 +1695,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         Map<ClusterNode, List<KeyCacheObject>> map) {
         if (nodes != null) {
             for (ClusterNode n : nodes) {
-                List<KeyCacheObject> keys = map.get(n);
-
-                if (keys == null)
-                    map.put(n, keys = new LinkedList<>());
+                List<KeyCacheObject> keys = map.computeIfAbsent(n, k -> new LinkedList<>());
 
                 keys.add(entry.key());
             }
@@ -1958,7 +1946,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             nodeId,
             req.version(),
             req.mvccSnapshot(),
-            req.threadId(),
             req.futureId(),
             req.miniId(),
             tx,
@@ -2021,7 +2008,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             nodeId,
             req.version(),
             req.mvccSnapshot(),
-            req.threadId(),
             req.futureId(),
             req.miniId(),
             tx,

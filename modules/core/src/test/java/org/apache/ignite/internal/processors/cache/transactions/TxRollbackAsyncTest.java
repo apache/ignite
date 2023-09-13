@@ -61,7 +61,6 @@ import org.apache.ignite.internal.management.tx.TxTaskResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -79,13 +78,11 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils.SF;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static java.lang.Thread.interrupted;
@@ -204,8 +201,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRollbackSimple() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7952", MvccFeatureChecker.forcedMvcc());
-
         startClient();
 
         for (Ignite ignite : G.allGrids()) {
@@ -476,8 +471,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEnlistManyReadOptimistic() throws Exception {
-        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc()); // Optimistic transactions are not supported by MVCC.
-
         testEnlistMany(false, SERIALIZABLE, OPTIMISTIC);
     }
 
@@ -486,8 +479,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEnlistManyWriteOptimistic() throws Exception {
-        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc()); // Optimistic transactions are not supported by MVCC.
-
         testEnlistMany(true, SERIALIZABLE, OPTIMISTIC);
     }
 
@@ -539,9 +530,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         final TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)client.configuration().getCommunicationSpi();
 
-        boolean mvcc = MvccFeatureChecker.forcedMvcc();
-
-        Class msgCls = mvcc ? GridNearTxEnlistRequest.class : GridNearLockRequest.class;
+        Class msgCls = GridNearLockRequest.class;
 
         spi.blockMessages(msgCls, prim.name());
 
@@ -668,8 +657,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         for (Ignite ignite : G.allGrids())
             perNodeTxs.put(ignite, new ArrayBlockingQueue<>(1000));
 
-        boolean mvcc = MvccFeatureChecker.forcedMvcc();
-
         IgniteInternalFuture<?> txFut = multithreadedAsync(() -> {
             while (!stop.get()) {
                 int nodeId = r.nextInt(GRID_CNT + 1);
@@ -677,8 +664,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                 // Choose random node to start tx on.
                 Ignite node = nodeId == GRID_CNT || nearCacheEnabled() ? client : grid(nodeId);
 
-                TransactionConcurrency conc = mvcc ? PESSIMISTIC : TC_VALS[r.nextInt(TC_VALS.length)];
-                TransactionIsolation isolation = mvcc ? REPEATABLE_READ : TI_VALS[r.nextInt(TI_VALS.length)];
+                TransactionConcurrency conc = TC_VALS[r.nextInt(TC_VALS.length)];
+                TransactionIsolation isolation = TI_VALS[r.nextInt(TI_VALS.length)];
 
                 // Timeout is necessary otherwise deadlock is possible due to randomness of lock acquisition.
                 long timeout = r.nextInt(50) + 50;

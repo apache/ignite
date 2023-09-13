@@ -28,7 +28,6 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -41,7 +40,6 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
@@ -80,10 +78,7 @@ public abstract class IgniteCacheClusterReadOnlyModeAbstractTest extends GridCom
     protected static final Predicate<CacheConfiguration> TX_CACHES_PRED = cfg -> cfg.getAtomicityMode() == TRANSACTIONAL;
 
     /** */
-    protected static final Predicate<CacheConfiguration> MVCC_CACHES_PRED = cfg -> cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
-
-    /** */
-    protected static final Predicate<CacheConfiguration> NO_MVCC_CACHES_PRED = ATOMIC_CACHES_PRED.or(TX_CACHES_PRED);
+    protected static final Predicate<CacheConfiguration> ANY_CACHES_PRED = ATOMIC_CACHES_PRED.or(TX_CACHES_PRED);
 
     /** Started cache configurations. */
     protected static Collection<CacheConfiguration<?, ?>> cacheConfigurations;
@@ -256,7 +251,6 @@ public abstract class IgniteCacheClusterReadOnlyModeAbstractTest extends GridCom
     protected static CacheConfiguration<?, ?>[] filterAndAddNearCacheConfig(CacheConfiguration<?, ?>[] cfgs) {
         return Stream.of(cfgs)
             // Near caches doesn't support in a MVCC mode.
-            .filter(cfg -> cfg.getAtomicityMode() != CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
             .map(cfg -> cfg.setNearConfiguration(new NearCacheConfiguration<>()))
             .toArray(CacheConfiguration[]::new);
     }

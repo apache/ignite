@@ -29,8 +29,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.testframework.MvccFeatureChecker;
-import org.apache.ignite.testframework.MvccFeatureChecker.Feature;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -107,7 +105,7 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
 
         try {
             for (CacheMode mode : CacheMode.values()) {
-                for (CacheAtomicityMode atomMode : CacheAtomicityMode.values()) {
+                for (CacheAtomicityMode atomMode : CacheAtomicityMode._values()) {
                     if (mode == CacheMode.PARTITIONED) {
                         // Near cache makes sense only for partitioned cache.
                         checkTxCache(CacheMode.PARTITIONED, atomMode, true, false);
@@ -133,12 +131,6 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
         boolean nearEnabled,
         boolean useEvicPlc
     ) throws Exception {
-        if (atomMode == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT) {
-            if ((nearEnabled && !MvccFeatureChecker.isSupported(Feature.NEAR_CACHE)) ||
-                (useEvicPlc && !MvccFeatureChecker.isSupported(Feature.EVICTION)))
-                return; // Nothing to do. Mode is not supported.
-        }
-
         final Ignite ignite = grid(0);
 
         final CacheConfiguration<String, TestClass> ccfg = cacheConfiguration(
@@ -163,10 +155,6 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
 
                 for (TransactionIsolation iso : TransactionIsolation.values()) {
                     for (TransactionConcurrency con : TransactionConcurrency.values()) {
-                        if (atomMode == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT &&
-                            !MvccFeatureChecker.isSupported(con, iso))
-                            continue; // Mode not supported.
-
                         try (Transaction transaction = ignite.transactions().txStart(con, iso)) {
                             assertEquals(val, cache.get(key));
 
