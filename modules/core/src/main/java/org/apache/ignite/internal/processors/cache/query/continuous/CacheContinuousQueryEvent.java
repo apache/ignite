@@ -69,11 +69,6 @@ class CacheContinuousQueryEvent<K, V> extends CacheQueryEntryEvent<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V getValue() {
-        return e.isInternal() ? getNewValue() : super.getValue();
-    }
-
-    /** {@inheritDoc} */
     @Override protected V getNewValue() {
         return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(e.newValue(), e.isKeepBinary(), false, null);
     }
