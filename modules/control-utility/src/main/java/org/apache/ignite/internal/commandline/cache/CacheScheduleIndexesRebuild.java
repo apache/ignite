@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline.cache;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -26,6 +27,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -95,16 +97,11 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
         ScheduleIndexRebuildTaskRes taskRes;
 
         try (GridClient client = Command.startClient(clientCfg)) {
-            UUID nodeId = args.nodeId;
-
-            if (nodeId == null)
-                nodeId = TaskExecutor.BROADCAST_UUID;
-
-            taskRes = TaskExecutor.executeTaskByNameOnNode(
+            taskRes = TaskExecutor.executeTaskByName(
                 client,
                 ScheduleIndexRebuildTask.class.getName(),
                 new ScheduleIndexRebuildTaskArg(args.cacheToIndexes, args.cacheGroups),
-                nodeId,
+                args.nodeIds,
                 clientCfg
             );
         }
@@ -198,9 +195,9 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
      * Container for command arguments.
      */
     public static class Arguments {
-        /** Node id. */
+        /** Node ids. */
         @Nullable
-        private final UUID nodeId;
+        private final Collection<UUID> nodeIds;
 
         /** Cache name -> indexes. */
         @Nullable
@@ -211,8 +208,9 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
         private final Set<String> cacheGroups;
 
         /** */
-        private Arguments(@Nullable UUID nodeId, @Nullable Map<String, Set<String>> cacheToIndexes, @Nullable Set<String> cacheGroups) {
-            this.nodeId = nodeId;
+        private Arguments(@Nullable Collection<UUID> nodeIds, @Nullable Map<String, Set<String>> cacheToIndexes,
+            @Nullable Set<String> cacheGroups) {
+            this.nodeIds = nodeIds;
             this.cacheToIndexes = cacheToIndexes;
             this.cacheGroups = cacheGroups;
         }
@@ -242,6 +240,7 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIterator) {
         UUID nodeId = null;
+        Set<UUID> nodeIds = null;
         Map<String, Set<String>> cacheToIndexes = null;
         Set<String> cacheGroups = null;
 
@@ -259,6 +258,10 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
                         throw new IllegalArgumentException(arg.argName() + " arg specified twice.");
 
                     nodeId = UUID.fromString(argIterator.nextArg("Failed to read node id."));
+
+                    break;
+
+                case NODES:
 
                     break;
 
@@ -318,7 +321,7 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
             }
         }
 
-        args = new Arguments(nodeId, cacheToIndexes, cacheGroups);
+        args = new Arguments(nodeIds, cacheToIndexes, cacheGroups);
 
         validateArguments();
     }

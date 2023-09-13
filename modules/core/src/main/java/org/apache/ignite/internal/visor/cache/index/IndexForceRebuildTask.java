@@ -19,9 +19,13 @@ package org.apache.ignite.internal.visor.cache.index;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -29,14 +33,15 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Task that triggers indexes force rebuild for specified caches or cache groups.
  */
 @GridInternal
-public class IndexForceRebuildTask extends VisorOneNodeTask<IndexForceRebuildTaskArg, IndexForceRebuildTaskRes> {
+public class IndexForceRebuildTask extends VisorMultiNodeTask<IndexForceRebuildTaskArg, Map<UUID, IndexForceRebuildTaskRes>,
+    IndexForceRebuildTaskRes> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -111,5 +116,12 @@ public class IndexForceRebuildTask extends VisorOneNodeTask<IndexForceRebuildTas
                 notFound
             );
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Map<UUID, IndexForceRebuildTaskRes> reduce0(List<ComputeJobResult> results)
+        throws IgniteException {
+
+        return results.stream().collect(Collectors.toMap(r -> r.getNode().id(), ComputeJobResult::getData));
     }
 }

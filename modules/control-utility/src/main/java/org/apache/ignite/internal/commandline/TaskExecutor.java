@@ -20,7 +20,10 @@ package org.apache.ignite.internal.commandline;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -35,6 +38,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Visor task executor.
@@ -62,27 +66,75 @@ public class TaskExecutor {
         GridClient client,
         String taskClsName,
         Object taskArgs,
-        UUID nodeId,
+        @Nullable UUID nodeId,
         GridClientConfiguration clientCfg
     ) throws GridClientException {
+        return executeTaskByName(client, taskClsName, taskArgs, nodeId == null ? null : Collections.singletonList(nodeId),
+            clientCfg);
+    }
+
+    /**
+     * @param client Client.
+     * @param taskCls Task class.
+     * @param taskArgs Task arguments.
+     * @param clientCfg Client configuration.
+     * @return Task result.
+     * @throws GridClientException If failed to execute task.
+     */
+    public static <R> R executeTask(
+        GridClient client,
+        Class<? extends ComputeTask<?, R>> taskCls,
+        Object taskArgs,
+        GridClientConfiguration clientCfg
+    ) throws GridClientException {
+        return executeTaskByNameOnNode(client, taskCls.getName(), taskArgs, null, clientCfg);
+    }
+
+    /**
+     * @param client Client.
+     * @param taskClsName Task class.
+     * @param taskArgs Task arguments.
+     * @param nodeIds Nodes ids to execute task at (if empty or null, random node will be chosen by balancer).
+     * @param clientCfg Client configuration.
+     * @return Task result.
+     * @throws GridClientException If failed to execute task.
+     */
+    public static <R> R executeTaskByName(
+        GridClient client,
+        String taskClsName,
+        Object taskArgs,
+        @Nullable Collection<UUID> nodeIds,
+        GridClientConfiguration clientCfg
+    )throws GridClientException {
         GridClientCompute compute = client.compute();
 
-        if (nodeId == BROADCAST_UUID) {
+        if (!F.isEmpty(nodeIds) && nodeIds.contains(BROADCAST_UUID)) {
+            String certainNodeIds = nodeIds.stream().filter(nid -> !nid.equals(BROADCAST_UUID)).map(UUID::toString)
+                .collect(Collectors.joining(","));
+
+            if (!certainNodeIds.isEmpty()) {
+                throw new GridClientDisconnectedException("Unable to execute broadcast task together with node ids. " +
+                    "Set either broadcast task or type certain node ids. Passed additional node ids: " + certainNodeIds,
+                    null);
+            }
+
             Collection<GridClientNode> nodes = compute.nodes(GridClientNode::connectable);
 
             if (F.isEmpty(nodes))
                 throw new GridClientDisconnectedException("Connectable nodes not found", null);
 
-            List<UUID> nodeIds = nodes.stream()
+            nodeIds = nodes.stream()
                 .map(GridClientNode::nodeId)
                 .collect(Collectors.toList());
 
             return client.compute().execute(taskClsName, new VisorTaskArgument<>(nodeIds, taskArgs, false));
         }
 
-        GridClientNode node = null;
+        Collection<GridClientNode> nodes = null;
 
-        if (nodeId == null) {
+        if (F.isEmpty(nodeIds)) {
+            GridClientNode node;
+
             // Prefer node from connect string.
             final String cfgAddr = clientCfg.getServers().iterator().next();
 
@@ -115,38 +167,23 @@ public class TaskExecutor {
             // Otherwise choose random node.
             if (node == null)
                 node = getBalancedNode(compute);
+
+            nodes = Collections.singletonList(node);
         }
         else {
-            for (GridClientNode n : compute.nodes()) {
-                if (n.connectable() && nodeId.equals(n.nodeId())) {
-                    node = n;
+            Set<UUID> missedNodes = new HashSet<>(nodeIds);
 
-                    break;
-                }
+            compute.nodes().stream().map(GridClientNode::nodeId).collect(Collectors.toList()).forEach(missedNodes::remove);
+
+            if (!missedNodes.isEmpty()) {
+                throw new IllegalArgumentException("Nodes with ids " +
+                    missedNodes.stream().map(UUID::toString).collect(Collectors.joining(",")) + " not found.");
             }
 
-            if (node == null)
-                throw new IllegalArgumentException("Node with id=" + nodeId + " not found");
+            nodes = compute.nodes(nodeIds);
         }
 
-        return compute.projection(node).execute(taskClsName, new VisorTaskArgument<>(node.nodeId(), taskArgs, false));
-    }
-
-    /**
-     * @param client Client.
-     * @param taskCls Task class.
-     * @param taskArgs Task arguments.
-     * @param clientCfg Client configuration.
-     * @return Task result.
-     * @throws GridClientException If failed to execute task.
-     */
-    public static <R> R executeTask(
-        GridClient client,
-        Class<? extends ComputeTask<?, R>> taskCls,
-        Object taskArgs,
-        GridClientConfiguration clientCfg
-    ) throws GridClientException {
-        return executeTaskByNameOnNode(client, taskCls.getName(), taskArgs, null, clientCfg);
+        return compute.projection(nodes).execute(taskClsName, new VisorTaskArgument<>(nodeIds, taskArgs, false));
     }
 
     /**

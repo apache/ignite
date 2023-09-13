@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.commandline.cache;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -49,6 +51,22 @@ import static org.apache.ignite.internal.commandline.cache.argument.IndexForceRe
  * Cache subcommand that triggers indexes force rebuild.
  */
 public class CacheIndexesForceRebuild extends AbstractCommand<CacheIndexesForceRebuild.Arguments> {
+    /** */
+    private static final String PREF_REBUILDING = "WARNING: These caches have indexes rebuilding in progress:";
+
+    /** */
+    private static final String PREF_CACHES_NOT_FOUND = "WARNING: These caches were not found:";
+
+    /** */
+    private static final String PREF_GROUPS_NOT_FOUND = "WARNING: These cache groups were not found:";
+
+    /** */
+    private static final String PREF_REBUILD_STARTED = "Indexes rebuild was started for these caches:";
+
+    /** */
+    private static final String PREF_REBUILD_NOT_STARTED = "WARNING: Indexes rebuild was not started for any cache. " +
+        "Check command input";
+
     /** Command parsed arguments. */
     private Arguments args;
 
@@ -67,25 +85,23 @@ public class CacheIndexesForceRebuild extends AbstractCommand<CacheIndexesForceR
             CacheSubcommands.INDEX_FORCE_REBUILD,
             desc,
             map,
-            NODE_ID.argName() + " nodeId",
+            NODE_ID.argName() + " nodeId[,nodeId,...]",
             or("--cache-names cacheName1,...cacheNameN", "--group-names groupName1,...groupNameN")
         );
     }
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
-        IndexForceRebuildTaskRes taskRes;
+        Map<UUID, IndexForceRebuildTaskRes> taskRes;
 
         IndexForceRebuildTaskArg taskArg = new IndexForceRebuildTaskArg(args.cacheGrps, args.cacheNames);
 
-        final UUID nodeId = args.nodeId;
-
         try (GridClient client = Command.startClient(clientCfg)) {
-            taskRes = TaskExecutor.executeTaskByNameOnNode(
+            taskRes = TaskExecutor.executeTaskByName(
                 client,
                 IndexForceRebuildTask.class.getName(),
                 taskArg,
-                nodeId,
+                args.nodeIds,
                 clientCfg
             );
         }
@@ -96,13 +112,79 @@ public class CacheIndexesForceRebuild extends AbstractCommand<CacheIndexesForceR
     }
 
     /**
-     * @param res Rebuild task result.
+     * @param results Rebuild task results.
+     * @param logger  IgniteLogger to print to.
+     */
+    private void printResult(Map<UUID, IndexForceRebuildTaskRes> results, IgniteLogger logger) {
+        if (results.size() == 1) {
+            printSingleResult(results.values().iterator().next(), logger);
+
+            return;
+        }
+
+        StringBuilder notFound = new StringBuilder();
+        StringBuilder rebuilding = new StringBuilder();
+        StringBuilder started = new StringBuilder();
+        StringBuilder notStarted = new StringBuilder();
+
+        results.forEach((node, res) -> {
+            if (!F.isEmpty(res.notFoundCacheNames())) {
+                if (notFound.length() == 0)
+                    notFound.append(args.cacheGrps == null ? PREF_CACHES_NOT_FOUND : PREF_GROUPS_NOT_FOUND);
+
+                newNodeLog(notFound, node);
+
+                notFound.append(res.notFoundCacheNames().stream().sorted().collect(Collectors.joining(",")));
+            }
+
+            if (!F.isEmpty(res.cachesWithRebuildInProgress())) {
+                if (rebuilding.length() == 0)
+                    rebuilding.append(PREF_REBUILDING);
+
+                printInfos(rebuilding, node, res.cachesWithRebuildInProgress());
+            }
+
+            if (F.isEmpty(res.cachesWithStartedRebuild())) {
+                if (notStarted.length() == 0)
+                    notStarted.append(PREF_REBUILD_STARTED).append(':');
+
+                notStarted.append(node).append(',');
+            }
+            else {
+                if (started.length() == 0)
+                    started.append(PREF_REBUILD_STARTED);
+
+                printInfos(started, node, res.cachesWithStartedRebuild());
+            }
+        });
+
+        if (notStarted.length() > 0)
+            notStarted.delete(notStarted.length() - 1, notStarted.length());
+
+        StringBuilder res = new StringBuilder();
+
+        if (notFound.length() > 0)
+            res.append(notFound).append(U.nl());
+
+        if (rebuilding.length() > 0)
+            res.append(rebuilding).append(U.nl());
+
+        if (notStarted.length() > 0)
+            res.append(notStarted).append(U.nl());
+
+        if (started.length() > 0)
+            res.append(started).append(U.nl());
+
+        logger.info(res.toString());
+    }
+
+    /**
+     * @param res    Rebuild task result.
      * @param logger IgniteLogger to print to.
      */
-    private void printResult(IndexForceRebuildTaskRes res, IgniteLogger logger) {
+    private void printSingleResult(IndexForceRebuildTaskRes res, IgniteLogger logger) {
         if (!F.isEmpty(res.notFoundCacheNames())) {
-            String warning = args.cacheGrps == null ?
-                "WARNING: These caches were not found:" : "WARNING: These cache groups were not found:";
+            String warning = args.cacheGrps == null ? PREF_CACHES_NOT_FOUND : PREF_GROUPS_NOT_FOUND;
 
             logger.info(warning);
 
@@ -115,7 +197,7 @@ public class CacheIndexesForceRebuild extends AbstractCommand<CacheIndexesForceR
         }
 
         if (!F.isEmpty(res.cachesWithRebuildInProgress())) {
-            logger.info("WARNING: These caches have indexes rebuilding in progress:");
+            logger.info(PREF_REBUILDING);
 
             printInfos(res.cachesWithRebuildInProgress(), logger);
 
@@ -123,21 +205,39 @@ public class CacheIndexesForceRebuild extends AbstractCommand<CacheIndexesForceR
         }
 
         if (!F.isEmpty(res.cachesWithStartedRebuild())) {
-            logger.info("Indexes rebuild was started for these caches:");
+            logger.info(PREF_REBUILD_STARTED);
 
             printInfos(res.cachesWithStartedRebuild(), logger);
         }
         else
-            logger.info("WARNING: Indexes rebuild was not started for any cache. Check command input.");
+            logger.info(PREF_REBUILD_NOT_STARTED + '.');
 
         logger.info("");
     }
 
     /** */
-    private void printInfos(Collection<IndexRebuildStatusInfoContainer> infos, IgniteLogger logger) {
+    private static void printInfos(Collection<IndexRebuildStatusInfoContainer> infos, IgniteLogger logger) {
         infos.stream()
             .sorted(IndexRebuildStatusInfoContainer.comparator())
             .forEach(rebuildStatusInfo -> logger.info(INDENT + rebuildStatusInfo.toString()));
+    }
+
+    /** */
+    private static void printInfos(StringBuilder b, UUID node, Set<IndexRebuildStatusInfoContainer> infos) {
+        infos.stream()
+            .sorted(IndexRebuildStatusInfoContainer.comparator())
+            .forEach(rebuildStatusInfo -> newNodeLog(b, node).append(rebuildStatusInfo.toString()).append("; "));
+
+        if (!infos.isEmpty()) {
+            b.delete(b.length() - 2, b.length());
+
+            b.append('.');
+        }
+    }
+
+    /** */
+    private static StringBuilder newNodeLog(StringBuilder b, UUID nodeId) {
+        return b.append(U.nl()).append(INDENT).append("Node ").append(nodeId).append(':').append(INDENT);
     }
 
     /** {@inheritDoc} */
@@ -150,12 +250,10 @@ public class CacheIndexesForceRebuild extends AbstractCommand<CacheIndexesForceR
         return CacheSubcommands.INDEX_FORCE_REBUILD.text().toUpperCase();
     }
 
-    /**
-     * Container for command arguments.
-     */
+    /** Container for command arguments. */
     public static class Arguments {
         /** Node id. */
-        private UUID nodeId;
+        private Collection<UUID> nodeIds;
 
         /** Cache group name. */
         private Set<String> cacheGrps;
@@ -164,29 +262,23 @@ public class CacheIndexesForceRebuild extends AbstractCommand<CacheIndexesForceR
         private Set<String> cacheNames;
 
         /** */
-        public Arguments(UUID nodeId, Set<String> cacheGrps, Set<String> cacheNames) {
-            this.nodeId = nodeId;
+        public Arguments(Collection<UUID> nodeIds, Set<String> cacheGrps, Set<String> cacheNames) {
+            this.nodeIds = nodeIds;
             this.cacheGrps = cacheGrps;
             this.cacheNames = cacheNames;
         }
 
-        /**
-         * @return Node id.
-         */
-        public UUID nodeId() {
-            return nodeId;
+        /** @return Node ids. */
+        public Collection<UUID> nodeIds() {
+            return nodeIds;
         }
 
-        /**
-         * @return Cache group to scan for, null means scanning all groups.
-         */
+        /** @return Cache group to scan for, null means scanning all groups. */
         public Set<String> cacheGrps() {
             return cacheGrps;
         }
 
-        /**
-         * @return List of caches names.
-         */
+        /** @return List of caches names. */
         public Set<String> cacheNames() {
             return cacheNames;
         }
@@ -199,7 +291,7 @@ public class CacheIndexesForceRebuild extends AbstractCommand<CacheIndexesForceR
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIterator) {
-        UUID nodeId = null;
+        Set<UUID> nodeIds = null;
         Set<String> cacheGrps = null;
         Set<String> cacheNames = null;
 
@@ -213,10 +305,11 @@ public class CacheIndexesForceRebuild extends AbstractCommand<CacheIndexesForceR
 
             switch (arg) {
                 case NODE_ID:
-                    if (nodeId != null)
+                    if (nodeIds != null)
                         throw new IllegalArgumentException(arg.argName() + " arg specified twice.");
 
-                    nodeId = UUID.fromString(argIterator.nextArg("Failed to read node id."));
+                    nodeIds = Arrays.stream(argIterator.nextArg("Failed to read node id.").split(","))
+                        .map(UUID::fromString).collect(Collectors.toSet());
 
                     break;
 
@@ -247,14 +340,14 @@ public class CacheIndexesForceRebuild extends AbstractCommand<CacheIndexesForceR
             }
         }
 
-        args = new Arguments(nodeId, cacheGrps, cacheNames);
+        args = new Arguments(nodeIds, cacheGrps, cacheNames);
 
         validateArguments();
     }
 
     /** */
     private void validateArguments() {
-        if (args.nodeId == null)
+        if (F.isEmpty(args.nodeIds))
             throw new IllegalArgumentException(NODE_ID + " must be specified.");
 
         if ((args.cacheGrps == null) == (args.cacheNames() == null))

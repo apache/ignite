@@ -27,6 +27,9 @@ public enum IndexRebuildCommandArg implements CommandArg {
     /** Node id. */
     NODE_ID("--node-id"),
 
+    /** Comma-separated node ids list. */
+    NODES("--nodes"),
+
     /** Target cache and index names. Format: cacheName[indexName],cacheName2,cacheName3[idx1,idx2]. */
     CACHE_NAMES_TARGET("--cache-names"),
 

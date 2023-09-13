@@ -209,6 +209,30 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     }
 
     /**
+     * Checks that index on 2 fields is rebuilt correctly on 2 nodes with one command.
+     */
+    @Test
+    public void testComplexIndexRebuildTwoNodes() throws IgniteInterruptedCheckedException {
+        injectTestSystemOut();
+
+        LogListener lsnr1 = installRebuildCheckListener(grid(0), CACHE_NAME_NO_GRP);
+        LogListener lsnr2 = installRebuildCheckListener(grid(LAST_NODE_NUM), CACHE_NAME_NO_GRP);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "indexes_force_rebuild",
+            "--node-id", grid(LAST_NODE_NUM).localNode().id().toString() + ',' + grid(0).localNode().id().toString(),
+            "--cache-names", CACHE_NAME_NO_GRP));
+
+        assertTrue(waitForIndexesRebuild(grid(0)));
+        assertTrue(waitForIndexesRebuild(grid(LAST_NODE_NUM)));
+
+        assertTrue(lsnr1.check());
+        assertTrue(lsnr2.check());
+
+        removeLogListener(grid(0), lsnr1);
+        removeLogListener(grid(LAST_NODE_NUM), lsnr2);
+    }
+
+    /**
      * Checks --node-id and --cache-names options,
      * correctness of utility output and the fact that indexes were actually rebuilt.
      */
