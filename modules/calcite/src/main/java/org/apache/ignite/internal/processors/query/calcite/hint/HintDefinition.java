@@ -51,11 +51,7 @@ public enum HintDefinition {
     NO_INDEX {
         /** {@inheritDoc} */
         @Override public HintPredicate predicate() {
-            return new HintPredicate() {
-                @Override public boolean apply(RelHint hint, RelNode rel) {
-                    return rel instanceof IgniteLogicalTableScan;
-                }
-            };
+            return (hint, rel) -> rel instanceof IgniteLogicalTableScan;
         }
 
         /** {@inheritDoc} */
