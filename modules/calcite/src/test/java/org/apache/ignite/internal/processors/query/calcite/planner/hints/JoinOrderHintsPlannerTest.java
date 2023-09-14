@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
 /**
- * Planner test for JOIN hints.
+ * Planner test for join order hints.
  */
 public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
     /** */
@@ -230,5 +230,32 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
         }
 
         assertTrue("Plan building took too long: " + time + "ms.", time < 3000L);
+    }
+
+    /** */
+    @Test
+    public void testDisabledCommutingOfJoinInputsInSubquery() throws Exception {
+        String sqlTpl = "SELECT %s t1.v1, t3.v2 from TBL1 t1 JOIN TBL3 t3 on t1.v3=t3.v3 where t1.v2 in " +
+            "(SELECT %s t2.v2 from TBL2 t2 JOIN TBL3 t3 on t2.v1=t3.v1)";
+
+        // Ensure that sub-query has swapped join inputs, 'TBL3->TBL2' instead of 'TBL2->TBL3'.
+        assertPlan(String.format(sqlTpl, "", ""), schema,
+            nodeOrAnyChild(isInstanceOf(Join.class).and(input(0, nodeOrAnyChild(isTableScan("TBL1"))))
+                .and(input(1, nodeOrAnyChild(isInstanceOf(Join.class)
+                    .and(input(0, nodeOrAnyChild(isTableScan("TBL3"))))
+                    .and(input(1, nodeOrAnyChild(isTableScan("TBl2")))))))));
+
+        // Ensure that the sub-join has inputs order matching the sub-query: 'TBL2->TBL3'.
+        assertPlan(String.format(sqlTpl, "/*+ " + HintDefinition.ORDERED_JOINS + " */", ""), schema,
+            nodeOrAnyChild(isInstanceOf(Join.class).and(input(0, nodeOrAnyChild(isTableScan("TBL1"))))
+                .and(input(1, nodeOrAnyChild(isInstanceOf(Join.class)
+                    .and(input(0, nodeOrAnyChild(isTableScan("TBL2"))))
+                    .and(input(1, nodeOrAnyChild(isTableScan("TBl3")))))))));
+
+        assertPlan(String.format(sqlTpl, "", "/*+ " + HintDefinition.ORDERED_JOINS + " */"), schema,
+            nodeOrAnyChild(isInstanceOf(Join.class).and(input(0, nodeOrAnyChild(isTableScan("TBL1"))))
+                .and(input(1, nodeOrAnyChild(isInstanceOf(Join.class)
+                    .and(input(0, nodeOrAnyChild(isTableScan("TBL2"))))
+                    .and(input(1, nodeOrAnyChild(isTableScan("TBl3")))))))));
     }
 }
