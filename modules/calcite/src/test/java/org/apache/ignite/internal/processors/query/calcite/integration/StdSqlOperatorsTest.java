@@ -19,7 +19,10 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.math.BigDecimal;
 import java.sql.Date;
+import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.Month;
 import java.time.Period;
 import java.util.Arrays;
 import java.util.Collections;
@@ -248,6 +251,9 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertExpression("UNIX_DATE(DATE '2021-01-01')").returns(18628).check();
         assertExpression("DATE_FROM_UNIX_DATE(18628)").returns(Date.valueOf("2021-01-01")).check();
         assertExpression("DATE('2021-01-01')").returns(Date.valueOf("2021-01-01")).check();
+        assertExpression("TIME(1, 10, 30)").returns(Time.valueOf("01:10:30")).check();
+        assertExpression("DATETIME(2021, 1, 1, 1, 10, 30)").returns(Timestamp.valueOf("2021-01-01 01:10:30")).check();
+        assertExpression("TIMESTAMP('2021-01-01 01:10:30')").returns(LocalDateTime.of(2021, Month.JANUARY, 1, 1, 10, 30)).check();
     }
 
     /** */

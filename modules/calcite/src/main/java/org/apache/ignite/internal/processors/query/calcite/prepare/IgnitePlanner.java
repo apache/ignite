@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
@@ -238,8 +239,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
                 if (node instanceof SqlIdentifier) {
                     if (((SqlIdentifier)node).isStar())
                         hasStar = true;
-                    else
-                        selectItemsNoStar.add(node);
                 }
                 else
                     selectItemsNoStar.add(node);
@@ -259,23 +258,45 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
                 int cnt = 0;
                 for (SqlNode node : expandedItems) {
-                    if (node instanceof SqlIdentifier)
+                    if (node instanceof SqlIdentifier) {
                         derived.add(null);
-                    else {
-                        if (node instanceof SqlBasicCall) {
-                            SqlBasicCall node0 = (SqlBasicCall)node;
 
-                            if (node0.operandCount() == 2
-                                    && node0.operand(0) instanceof SqlIdentifier
-                                    && node0.operand(1) instanceof SqlIdentifier
-                                    && node.getKind() == SqlKind.AS)
-                                derived.add(null);
-                            else
-                                derived.add(validator().deriveAlias(selectItemsNoStar.get(cnt), cnt++));
-                        }
-                        else
-                            derived.add(validator().deriveAlias(selectItemsNoStar.get(cnt), cnt++));
+                        continue;
                     }
+
+                    if (node instanceof SqlBasicCall) {
+                        if (cnt < selectItemsNoStar.size()) {
+                            SqlNode noStarItem = selectItemsNoStar.get(cnt);
+
+                            if (noStarItem instanceof SqlBasicCall
+                                    && ((SqlBasicCall)node).operandCount() == 2 && node.getKind() == SqlKind.AS
+                                    && ((SqlBasicCall)node).operand(0) instanceof SqlIdentifier
+                                    && ((SqlBasicCall)node).operand(1) instanceof SqlIdentifier) {
+                                SqlBasicCall origItem = (SqlBasicCall)noStarItem;
+                                SqlBasicCall expandedItem = (SqlBasicCall)node;
+
+                                if (Objects.equals(origItem.getParserPosition(), expandedItem.getParserPosition())) {
+                                    derived.add(((SqlIdentifier)origItem.operand(1)).getSimple());
+                                    cnt++;
+
+                                    continue;
+                                }
+                            }
+                            else {
+                                derived.add(validator().deriveAlias(noStarItem, cnt++));
+
+                                continue;
+                            }
+                        }
+                        derived.add(null);
+
+                        continue;
+                    }
+
+                    if (cnt < selectItemsNoStar.size())
+                        derived.add(validator().deriveAlias(selectItemsNoStar.get(cnt), cnt++));
+                    else
+                        derived.add(null);
                 }
             }
             else {

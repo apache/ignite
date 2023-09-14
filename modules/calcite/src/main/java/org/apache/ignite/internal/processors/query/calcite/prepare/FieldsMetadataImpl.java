@@ -69,13 +69,12 @@ public class FieldsMetadataImpl implements FieldsMetadata {
         List<RelDataTypeField> fields = sqlRowType.getFieldList();
 
         assert F.isEmpty(origins) || fields.size() == origins.size();
-        assert F.isEmpty(aliases) || fields.size() == aliases.size();
 
         ImmutableList.Builder<GridQueryFieldMetadata> b = ImmutableList.builder();
 
         for (int i = 0; i < fields.size(); i++) {
             List<String> origin = !F.isEmpty(origins) ? origins.get(i) : null;
-            String alias = !F.isEmpty(aliases) ? aliases.get(i) : null;
+            String alias = aliases != null && aliases.size() > i ? aliases.get(i) : null;
             RelDataTypeField field = fields.get(i);
             RelDataType fieldType = field.getType();
             Type fieldCls = typeFactory.getResultClass(fieldType);
@@ -83,7 +82,7 @@ public class FieldsMetadataImpl implements FieldsMetadata {
             b.add(new CalciteQueryFieldMetadata(
                 F.isEmpty(origin) ? null : origin.get(0),
                 F.isEmpty(origin) ? null : origin.get(1),
-                F.isEmpty(origin) ? alias != null ? alias : field.getName() : origin.get(2),
+                alias != null ? alias : F.isEmpty(origin) ? field.getName() : origin.get(2),
                 fieldCls == null ? Void.class.getName() : fieldCls.getTypeName(),
                 fieldType.getPrecision(),
                 fieldType.getScale(),

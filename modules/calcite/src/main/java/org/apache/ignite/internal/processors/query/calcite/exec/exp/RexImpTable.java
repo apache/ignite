@@ -457,7 +457,6 @@ public class RexImpTable {
 
         map.put(COALESCE, new CoalesceImplementor());
         map.put(CAST, new CastImplementor());
-        map.put(DATE, new CastImplementor());
 
         map.put(REINTERPRET, new ReinterpretImplementor());
 
@@ -798,6 +797,11 @@ public class RexImpTable {
         }
 
         /** {@inheritDoc} */
+        @Override String getVariableName() {
+            return "lastDay";
+        }
+
+        /** {@inheritDoc} */
         @Override Expression implementSafe(RexToLixTranslator translator,
                                  RexCall call, List<Expression> argValueList) {
             Expression operand = argValueList.get(0);
@@ -821,11 +825,6 @@ public class RexImpTable {
         /** */
         TrimImplementor() {
             super("trim", NullPolicy.STRICT, false);
-        }
-
-        /** {@inheritDoc} */
-        @Override String getVariableName() {
-            return "trim";
         }
 
         /** {@inheritDoc} */
