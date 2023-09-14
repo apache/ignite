@@ -207,7 +207,6 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlLibraryOperators.DATE_FROM_UNIX_DATE); // Days since 1970-01-01 to date.
         register(SqlLibraryOperators.DATE); // String to date.
         register(SqlLibraryOperators.DATETIME); // String to datetime.
-        register(SqlLibraryOperators.TIMESTAMP); // String to timestamp.
         register(SqlLibraryOperators.TIME); // String to time.
 
         // POSIX REGEX.

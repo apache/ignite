@@ -177,7 +177,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         QueryTemplate template = new QueryTemplate(fragments);
 
-        return new MultiStepQueryPlan(ctx.query(), template, queryFieldsMetadata(ctx, validated.dataType(),
+        return new MultiStepQueryPlan(ctx.query(), plan, template, queryFieldsMetadata(ctx, validated.dataType(),
                 validated.origins(), validated.aliases()), params);
     }
 
@@ -201,8 +201,8 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         QueryTemplate template = new QueryTemplate(fragments);
 
-        return new MultiStepDmlPlan(ctx.query(), plan, template,
-            queryFieldsMetadata(ctx, igniteRel.getRowType(), null, null), params);
+        return new MultiStepDmlPlan(ctx.query(), plan, template, queryFieldsMetadata(ctx, igniteRel.getRowType(),
+                null, null), params);
     }
 
     /** */
