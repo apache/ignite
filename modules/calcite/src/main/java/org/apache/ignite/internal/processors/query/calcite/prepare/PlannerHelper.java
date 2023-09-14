@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
@@ -36,8 +38,8 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.query.calcite.hint.Hint;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -50,6 +52,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescript
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class PlannerHelper {
@@ -67,10 +70,10 @@ public class PlannerHelper {
      */
     public static IgniteRel optimize(SqlNode sqlNode, IgnitePlanner planner, IgniteLogger log) {
         try {
-            // Convert to Relational operators graph
+            // Convert to Relational operators graph.
             RelRoot root = planner.rel(sqlNode);
 
-            planner.setDisabledRules(Hint.options(extractRootHints(root), HintDefinition.DISABLE_RULE));
+            planner.setDisabledRules(HintUtils.options(root.rel, extractRootHints(root.rel), HintDefinition.DISABLE_RULE));
 
             RelNode rel = root.rel;
 
@@ -78,8 +81,8 @@ public class PlannerHelper {
             rel = planner.transform(PlannerPhase.HEP_DECORRELATE, rel.getTraitSet(), rel);
 
             // RelOptUtil#propagateRelHints(RelNode, equiv) may skip hints because current RelNode has no hints.
-            // Or if hints reside in a node which is not input of the current node. Like in LogicalFlter#condition.
-            // But hints may appear or be required below in the tree, after rules applying.
+            // Or if hints reside in a child nodes which are not inputs of the current node. Like LogicalFlter#condition.
+            // Such hints may appear or be required below in the tree, after rules applying.
             // In Calcite, RelDecorrelator#decorrelateQuery(...) can re-propagate hints.
             rel = RelOptUtil.propagateRelHints(rel, false);
 
@@ -126,21 +129,15 @@ public class PlannerHelper {
      * Extracts planner-level hints like 'DISABLE_RULE' if the root node is a combining node like 'UNION'.
      */
     private static Collection<RelHint> extractRootHints(RelNode rel) {
-        if (!Hint.allRelHints(rel).isEmpty())
-            return Hint.allRelHints(rel);
+        if (!HintUtils.allRelHints(rel).isEmpty())
+            return HintUtils.allRelHints(rel);
 
         if (rel instanceof SetOp) {
-            Collection<RelHint> hints1 = extractRootHints(rootRel.withRel(rootRel.rel.getInput(0)));
-            Collection<RelHint> hints2 = extractRootHints(rootRel.withRel(rootRel.rel.getInput(1)));
-
-            List<RelHint> hints = new ArrayList<>(hints1);
-
-            hints.addAll(hints2);
-
-            return hints;
+            return F.flatCollections(rel.getInputs().stream()
+                .map(PlannerHelper::extractRootHints).collect(Collectors.toList()));
         }
 
-        return rootRel.hints;
+        return Collections.emptyList();
     }
 
     /**

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.hint;
 
-import org.apache.calcite.rel.hint.HintOptionChecker;
 import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintPredicates;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
@@ -40,7 +39,7 @@ public enum HintDefinition {
         }
 
         /** {@inheritDoc} */
-        @Override public HintOptionChecker optionsChecker() {
+        @Override public HintOptionsChecker optionsChecker() {
             return HintsConfig.OPTS_CHECK_EMPTY;
         }
     },
@@ -53,7 +52,7 @@ public enum HintDefinition {
         }
 
         /** {@inheritDoc} */
-        @Override public HintOptionChecker optionsChecker() {
+        @Override public HintOptionsChecker optionsChecker() {
             return HintsConfig.OPTS_CHECK_NO_KV;
         }
     },
@@ -66,7 +65,7 @@ public enum HintDefinition {
         }
 
         /** {@inheritDoc} */
-        @Override public HintOptionChecker optionsChecker() {
+        @Override public HintOptionsChecker optionsChecker() {
             return NO_INDEX.optionsChecker();
         }
     };
@@ -79,9 +78,9 @@ public enum HintDefinition {
     }
 
     /**
-     * @return Hint options validator.
+     * @return {@link HintOptionsChecker}.
      */
-    HintOptionChecker optionsChecker() {
+    HintOptionsChecker optionsChecker() {
         return HintsConfig.OPTS_CHECK_PLAIN;
     }
 }
