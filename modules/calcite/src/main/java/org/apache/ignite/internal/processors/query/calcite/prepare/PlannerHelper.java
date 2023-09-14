@@ -126,20 +126,18 @@ public class PlannerHelper {
      * Extracts planner-level hints like 'DISABLE_RULE' if the root node is a combining node like 'UNION'.
      */
     private static Collection<RelHint> extractRootHints(RelNode rel) {
-        if (rootRel.hints.isEmpty()) {
-            if (!Hint.allRelHints(rootRel.rel).isEmpty())
-                return Hint.allRelHints(rootRel.rel);
+        if (!Hint.allRelHints(rel).isEmpty())
+            return Hint.allRelHints(rel);
 
-            if (rootRel.rel instanceof SetOp) {
-                Collection<RelHint> hints1 = extractRootHints(rootRel.withRel(rootRel.rel.getInput(0)));
-                Collection<RelHint> hints2 = extractRootHints(rootRel.withRel(rootRel.rel.getInput(1)));
+        if (rel instanceof SetOp) {
+            Collection<RelHint> hints1 = extractRootHints(rootRel.withRel(rootRel.rel.getInput(0)));
+            Collection<RelHint> hints2 = extractRootHints(rootRel.withRel(rootRel.rel.getInput(1)));
 
-                List<RelHint> hints = new ArrayList<>(hints1);
+            List<RelHint> hints = new ArrayList<>(hints1);
 
-                hints.addAll(hints2);
+            hints.addAll(hints2);
 
-                return hints;
-            }
+            return hints;
         }
 
         return rootRel.hints;

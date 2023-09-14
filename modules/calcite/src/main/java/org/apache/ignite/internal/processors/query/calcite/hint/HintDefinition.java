@@ -17,18 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.calcite.hint;
 
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.HintOptionChecker;
 import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintPredicates;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 
 /**
  * Holds supported SQL hints and their settings.
  */
 public enum HintDefinition {
-    /** Sets the query engine like H2 or Calcite. */
+    /** Sets the query engine like H2 or Calcite. Is preprocessed by regexp. */
     QUERY_ENGINE,
 
     /** Disables planner rules. */
