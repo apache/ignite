@@ -315,7 +315,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
             Iterable<Row> rowsIter = idx.scan(ctx, grp, ranges, requiredColumns);
 
-            return new ScanStorageNode<>(ctx, rowType, rowsIter, filters, prj);
+            return new ScanStorageNode<>(idx.name(), ctx, rowType, rowsIter, filters, prj);
         }
         else {
             // Index was invalidated after planning, workaround through table-scan -> sort -> index spool.
@@ -339,7 +339,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             if (!spoolNodeRequired && projects != null)
                 rowType = rel.getRowType();
 
-            Node<Row> node = new ScanStorageNode<>(ctx, rowType, rowsIter, filterHasCorrelation ? null : filters,
+            Node<Row> node = new ScanStorageNode<>(tbl.name(), ctx, rowType, rowsIter, filterHasCorrelation ? null : filters,
                 projNodeRequired ? null : prj);
 
             RelCollation collation = rel.collation();
@@ -406,14 +406,14 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteIndex idx = tbl.getIndex(rel.indexName());
 
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
-            return new ScanStorageNode<>(ctx, rel.getRowType(), () -> Collections.singletonList(ctx.rowHandler()
-                .factory(ctx.getTypeFactory(), rel.getRowType())
-                .create(idx.count(ctx, ctx.group(rel.sourceId()), rel.notNull()))).iterator());
+            return new ScanStorageNode<>(idx.name() + "_COUNT", ctx, rel.getRowType(),
+                () -> Collections.singletonList(ctx.rowHandler().factory(ctx.getTypeFactory(), rel.getRowType())
+                    .create(idx.count(ctx, ctx.group(rel.sourceId()), rel.notNull()))).iterator());
         }
         else {
             CollectNode<Row> replacement = CollectNode.createCountCollector(ctx);
 
-            replacement.register(new ScanStorageNode<>(ctx, rel.getTable().getRowType(), tbl.scan(ctx,
+            replacement.register(new ScanStorageNode<>(tbl.name(), ctx, rel.getTable().getRowType(), tbl.scan(ctx,
                 ctx.group(rel.sourceId()), ImmutableBitSet.of(0))));
 
             return replacement;
@@ -429,14 +429,16 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         ImmutableBitSet requiredColumns = idxBndRel.requiredColumns();
         RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
 
-        if (idx != null && !tbl.isIndexRebuildInProgress())
-            return new ScanStorageNode<>(ctx, rowType, idx.firstOrLast(idxBndRel.first(), ctx, grp, requiredColumns));
+        if (idx != null && !tbl.isIndexRebuildInProgress()) {
+            return new ScanStorageNode<>(idx.name() + "_BOUND", ctx, rowType,
+                idx.firstOrLast(idxBndRel.first(), ctx, grp, requiredColumns));
+        }
         else {
             assert requiredColumns.cardinality() == 1;
 
             Iterable<Row> rowsIter = tbl.scan(ctx, grp, idxBndRel.requiredColumns());
 
-            Node<Row> scanNode = new ScanStorageNode<>(ctx, rowType, rowsIter,
+            Node<Row> scanNode = new ScanStorageNode<>(tbl.name(), ctx, rowType, rowsIter,
                 r -> ctx.rowHandler().get(0, r) != null, null);
 
             RelCollation collation = idx.collation().apply(LogicalScanConverterRule.createMapping(
@@ -481,7 +483,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         Iterable<Row> rowsIter = tbl.scan(ctx, group, requiredColunms);
 
-        return new ScanStorageNode<>(ctx, rowType, rowsIter, filters, prj);
+        return new ScanStorageNode<>(tbl.name(), ctx, rowType, rowsIter, filters, prj);
     }
 
     /** {@inheritDoc} */

@@ -369,6 +369,31 @@ public class RunningQueryManager {
             }
 
             if (ctx.performanceStatistics().enabled() && qry.startTimeNanos() > 0) {
+                String flags = null;
+
+                // Create string for flags with not default values.
+                if (qry.local())
+                    flags = "local";
+
+                if (!qry.lazy())
+                    flags = (flags == null ? "" : flags + ", ") + "notLazy";
+
+                if (qry.distributedJoins())
+                    flags = (flags == null ? "" : flags + ", ") + "distributedJoins";
+
+                if (qry.enforceJoinOrder())
+                    flags = (flags == null ? "" : flags + ", ") + "enforceJoinOrder";
+
+                if (flags != null) {
+                    ctx.performanceStatistics().queryProperty(
+                        qry.queryType(),
+                        qry.nodeId(),
+                        qry.id(),
+                        "Flags",
+                        flags
+                    );
+                }
+
                 ctx.performanceStatistics().query(
                     qry.queryType(),
                     qry.query(),

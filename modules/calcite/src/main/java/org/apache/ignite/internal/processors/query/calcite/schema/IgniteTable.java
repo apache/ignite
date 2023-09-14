@@ -149,4 +149,9 @@ public interface IgniteTable extends TranslatableTable {
      * @return {@code True} if index rebuild in progress.
      */
     boolean isIndexRebuildInProgress();
+
+    /**
+     * @return Table name.
+     */
+    String name();
 }
