@@ -468,6 +468,16 @@ public class GridMapQueryExecutor {
 
                         MapH2QueryInfo qryInfo = new MapH2QueryInfo(stmt, qry.query(), node.id(), qryId, reqId, segmentId);
 
+                        if (performanceStatsEnabled) {
+                            ctx.performanceStatistics().queryProperty(
+                                GridCacheQueryType.SQL_FIELDS,
+                                qryInfo.nodeId(),
+                                qryInfo.queryId(),
+                                "Map phase plan",
+                                qryInfo.plan()
+                            );
+                        }
+
                         ResultSet rs = h2.executeSqlQueryWithTimer(
                             stmt,
                             conn,

@@ -293,7 +293,7 @@ public class TestTable implements IgniteCacheTable {
     }
 
     /** */
-    public String name() {
+    @Override public String name() {
         return name;
     }
 }

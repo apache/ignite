@@ -160,6 +160,11 @@ public class CacheTableImpl extends AbstractTable implements IgniteCacheTable {
     }
 
     /** {@inheritDoc} */
+    @Override public String name() {
+        return desc.typeDescription().tableName();
+    }
+
+    /** {@inheritDoc} */
     @Override public <C> C unwrap(Class<C> aCls) {
         if (aCls.isInstance(desc))
             return aCls.cast(desc);

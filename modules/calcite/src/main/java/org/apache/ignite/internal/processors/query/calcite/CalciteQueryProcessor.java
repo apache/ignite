@@ -34,12 +34,14 @@ import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDynamicParam;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -93,7 +95,10 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCach
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCacheImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderImpl;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterUser;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlConformance;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateUser;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlOption;
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable;
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteStdSqlOperatorTable;
 import org.apache.ignite.internal.processors.query.calcite.sql.generated.IgniteSqlParserImpl;
@@ -518,6 +523,22 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 new SqlShuttle() {
                     @Override public SqlNode visit(SqlLiteral literal) {
                         return new SqlDynamicParam(-1, literal.getParserPosition());
+                    }
+
+                    @Override public SqlNode visit(SqlCall call) {
+                        // Handle some special cases.
+                        if (call instanceof IgniteSqlOption)
+                            return call;
+                        else if (call instanceof IgniteSqlCreateUser) {
+                            return new IgniteSqlCreateUser(call.getParserPosition(), ((IgniteSqlCreateUser)call).user(),
+                                SqlLiteral.createCharString("hidden", SqlParserPos.ZERO));
+                        }
+                        else if (call instanceof IgniteSqlAlterUser) {
+                            return new IgniteSqlAlterUser(call.getParserPosition(), ((IgniteSqlAlterUser)call).user(),
+                                SqlLiteral.createCharString("hidden", SqlParserPos.ZERO));
+                        }
+
+                        return super.visit(call);
                     }
                 }
             ).toString();

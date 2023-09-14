@@ -28,8 +28,10 @@ import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -339,6 +341,9 @@ class MapQueryResult {
         /** */
         private final HeavyQueriesTracker.ResultSetChecker resultSetChecker;
 
+        /** */
+        private final MapH2QueryInfo qryInfo;
+
         /**
          * Constructor.
          *
@@ -346,6 +351,7 @@ class MapQueryResult {
          */
         Result(@NotNull ResultSet rs, MapH2QueryInfo qryInfo) {
             this.rs = rs;
+            this.qryInfo = qryInfo;
 
             try {
                 res = (ResultInterface)RESULT_FIELD.get(rs);
@@ -363,6 +369,18 @@ class MapQueryResult {
         /** */
         void close() {
             resultSetChecker.checkOnClose();
+
+            PerformanceStatisticsProcessor perfStat = cctx.kernalContext().performanceStatistics();
+
+            if (perfStat.enabled() && resultSetChecker.fetchedSize() > 0) {
+                perfStat.queryRowsProcessed(
+                    GridCacheQueryType.SQL_FIELDS,
+                    qryInfo.nodeId(),
+                    qryInfo.queryId(),
+                    "Fetched on mapper",
+                    resultSetChecker.fetchedSize()
+                );
+            }
 
             U.close(rs, log);
         }
