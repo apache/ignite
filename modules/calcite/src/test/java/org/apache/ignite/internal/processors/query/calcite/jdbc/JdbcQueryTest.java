@@ -215,7 +215,7 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Test endforced join order param. */
+    /** Test enforced join order parameter passes. */
     @Test
     public void testEnforcedJoinOrder() throws Exception {
         stmt.execute("CREATE TABLE Person1(\"ID\" INT, PRIMARY KEY(\"ID\"), \"NAME\" VARCHAR) WITH template=REPLICATED");
