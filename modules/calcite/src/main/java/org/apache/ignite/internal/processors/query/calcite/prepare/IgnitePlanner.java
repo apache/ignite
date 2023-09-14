@@ -251,6 +251,12 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         RelDataType type = validator().getValidatedNodeType(validatedNode);
         List<List<String>> origins = validator().getFieldOrigins(validatedNode);
 
+        //    There is four cases.
+        //    1. Simple column (SqlIdentifier) -- alias will be obtained from origins.
+        //    2. Expanded column from star -- alias will be obtained from origins.
+        //    3. AS call -- alias will be obtained from original call (second operand).
+        //    4. Other call -- alias will be obtained via SqlValidator#deriveAlias.
+
         List<String> derived = null;
         if (validatedNode instanceof SqlSelect && !F.isEmpty(selectItems) && !F.isEmpty(selectItemsNoStar)) {
             derived = new ArrayList<>(selectItems.size());
@@ -261,7 +267,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
                 int cnt = 0;
                 for (SqlNode node : expandedItems) {
-                    // If the node is SqlIdentifier, skip alias.
+                    // If the node is SqlIdentifier, alias will be obtained from origins.
                     if (node instanceof SqlIdentifier) {
                         derived.add(null);
 
@@ -274,10 +280,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
                             // The validator can transform SqlIdentifier to AS call. We should check whether
                             // AS call is a real one and take the second operand from original one.
-                            if (noStarItem instanceof SqlBasicCall
-                                    && isAsCall((SqlBasicCall)noStarItem)
-                                    && node instanceof SqlBasicCall
-                                    && isAsCall((SqlBasicCall)node)) {
+                            if (isAsCall(noStarItem) && isAsCall(node)) {
                                 SqlBasicCall origItem = (SqlBasicCall)noStarItem;
                                 SqlBasicCall expandedItem = (SqlBasicCall)node;
 
@@ -289,6 +292,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
                                 }
                             }
                             else {
+                                // Other calls should be processed via SqlValidator#deriveAlias
                                 derived.add(validator().deriveAlias(noStarItem, cnt++));
 
                                 continue;
@@ -316,10 +320,11 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     /** */
-    private static boolean isAsCall(SqlBasicCall node) {
-        return node.operandCount() == 2 && node.getKind() == SqlKind.AS
-                && node.operand(0) instanceof SqlIdentifier
-                && node.operand(1) instanceof SqlIdentifier;
+    private static boolean isAsCall(SqlNode node) {
+        return node instanceof SqlBasicCall && node.getKind() == SqlKind.AS
+                && ((SqlBasicCall)node).operandCount() == 2
+                && ((SqlBasicCall)node).operand(0) instanceof SqlIdentifier
+                && ((SqlBasicCall)node).operand(1) instanceof SqlIdentifier;
     }
 
     /** {@inheritDoc} */
