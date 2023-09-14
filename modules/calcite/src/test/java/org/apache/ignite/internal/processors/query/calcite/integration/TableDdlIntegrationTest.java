@@ -37,7 +37,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.hamcrest.CustomMatcher;
@@ -229,7 +232,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         assertThat(ccfg.getGroupName(), equalTo("my_cache_group"));
         assertThat(ccfg.getName(), equalTo("my_cache_name"));
         assertThat(ccfg.getDataRegionName(), equalTo(DATA_REGION_NAME));
-        assertThat(ccfg.getKeyConfiguration()[0].getAffinityKeyFieldName(), equalTo("id2"));
+        assertThat(ccfg.getKeyConfiguration()[0].getAffinityKeyFieldName(), equalTo("ID2"));
 
         QueryEntity ent = ccfg.getQueryEntities().iterator().next();
 
@@ -265,6 +268,67 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
             ccfg -> "REPL".equals(ccfg.getName()) && ccfg.getCacheMode() == CacheMode.REPLICATED)));
         assertThat(ccfgs, hasItem(matches("partitioned cache",
             ccfg -> "PART".equals(ccfg.getName()) && ccfg.getCacheMode() == CacheMode.PARTITIONED)));
+    }
+
+    /**
+     * Creates table with affinity key.
+     */
+    @Test
+    public void createTableWithAffinity() {
+        assertThrows("create table TBL0 (id1 int, id2 int, val varchar, primary key(id1, id2)) with " +
+            "\"affinity_key=''\"", IgniteSQLException.class, "Affinity key cannot be empty");
+
+        assertThrows("create table TBL0 (id1 int, id2 int, val varchar, primary key(id1, id2)) with " +
+            "\"affinity_key='id\"", IgniteSQLException.class, "Affinity key column name does not have trailing quote");
+
+        assertThrows("create table TBL0 (id1 int, id2 int, val varchar, primary key(id1, id2)) with " +
+            "affinity_key=\"id3\"", IgniteSQLException.class, "Affinity key column with given name not found: id3");
+
+        assertThrows("create table TBL0 (id1 int, id2 int, val varchar, primary key(id1, id2)) with " +
+            "affinity_key=val", IgniteSQLException.class, "Affinity key column must be one of key columns: VAL");
+
+        // Wrong case of quoted 'id1'.
+        assertThrows("create table TBL0 (id1 int, id2 int, val varchar, primary key(id1, id2)) with " +
+            "\"affinity_key='id1'\"", IgniteSQLException.class, "Affinity key column with given name not found: id1");
+
+        assertThrows("create table TBL0 (\"id\" int, \"iD\" int, val varchar, primary key(\"id\", \"iD\")) with " +
+            " \"affinity_key=id\"", IgniteSQLException.class, "Ambiguous affinity column name");
+
+        sql("create table TBL1 (id1 int, id2 int, val varchar, primary key(id1, id2)) with " +
+            " affinity_key=id1");
+
+        checkAffinity("TBL1", "ID1");
+
+        sql("create table TBL2 (\"id1\" int, id2 int, val varchar, primary key(\"id1\", id2)) with " +
+            " affinity_key=\"id1\"");
+
+        checkAffinity("TBL2", "id1");
+
+        sql("create table TBL3 (\"id1\" int, id2 int, val varchar, primary key(\"id1\", id2)) with " +
+            " \"affinity_key='id1'\"");
+
+        checkAffinity("TBL3", "id1");
+
+        sql("create table TBL4 (id1 int, \"iD2\" int, val varchar, primary key(id1, \"iD2\")) with " +
+            " affinity_key=id2");
+
+        checkAffinity("TBL4", "iD2");
+
+        sql("create table TBL5 (\"id\" int, \"iD\" int, val varchar, primary key(\"id\", \"iD\")) with " +
+            " \"affinity_key='iD'\"");
+
+        checkAffinity("TBL5", "iD");
+    }
+
+    /** */
+    private void checkAffinity(String tableName, String affCol) {
+        CalciteQueryProcessor proc = queryProcessor(client);
+
+        IgniteTable tbl = (IgniteTable)proc.schemaHolder().schema(QueryUtils.DFLT_SCHEMA).getTable(tableName);
+        IgniteDistribution distr = tbl.distribution();
+
+        assertEquals(1, distr.getKeys().size());
+        assertEquals(tbl.descriptor().columnDescriptor(affCol).fieldIndex(), (int)distr.getKeys().get(0));
     }
 
     /**

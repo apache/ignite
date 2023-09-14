@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.prepare.bounds;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 import org.apache.calcite.rex.RexNode;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -43,6 +45,12 @@ public class MultiBounds extends SearchBounds {
      */
     public List<SearchBounds> bounds() {
         return bounds;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SearchBounds transform(Function<RexNode, RexNode> tranformFunction) {
+        return new MultiBounds(tranformFunction.apply(condition()),
+            Commons.transform(bounds, b -> b.transform(tranformFunction)));
     }
 
     /** {@inheritDoc} */

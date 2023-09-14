@@ -60,7 +60,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedM
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -92,13 +91,6 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
 
     /** Stores errors that triggered failure handler. */
     private final Map<String, Throwable> errs = new ConcurrentHashMap<>();
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-
-        super.beforeTestsStarted();
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

@@ -34,8 +34,6 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
@@ -60,9 +58,9 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 
 /**
@@ -105,13 +103,6 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration iCfg = super.getConfiguration(igniteInstanceName);
-
-        if (MvccFeatureChecker.forcedMvcc()) {
-            iCfg.setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration().setMaxSize(400L * 1024 * 1024)
-                ));
-        }
 
         TcpCommunicationSpi commSpi = new CollectingCommunicationSpi();
         commSpi.setTcpNoDelay(true);

@@ -474,6 +474,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         H2QueryInfo qryInfo = new H2QueryInfo(H2QueryInfo.QueryType.LOCAL, stmt, qry,
                             ctx.localNodeId(), qryId);
 
+                        if (ctx.performanceStatistics().enabled()) {
+                            ctx.performanceStatistics().queryProperty(
+                                GridCacheQueryType.SQL_FIELDS,
+                                qryInfo.nodeId(),
+                                qryInfo.queryId(),
+                                "Local plan",
+                                qryInfo.plan()
+                            );
+                        }
+
                         ResultSet rs = executeSqlQueryWithTimer(
                             stmt,
                             conn,

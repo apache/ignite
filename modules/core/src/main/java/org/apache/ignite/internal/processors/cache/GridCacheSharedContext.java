@@ -1135,7 +1135,7 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * Suspends transaction. It could be resume later. Supported only for optimistic transactions.
+     * Suspends transaction. It could be resume later.
      *
      * @param tx Transaction to suspend.
      * @throws IgniteCheckedException If suspension failed.

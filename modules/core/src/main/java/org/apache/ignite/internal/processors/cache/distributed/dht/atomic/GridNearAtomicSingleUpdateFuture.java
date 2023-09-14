@@ -41,9 +41,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.lang.GridPlainRunnable;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -60,10 +57,10 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
  */
 public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpdateFuture {
     /** Keys */
-    private Object key;
+    private final Object key;
 
     /** Values. */
-    private Object val;
+    private final Object val;
 
     /** */
     private PrimaryRequestState reqState;
@@ -306,8 +303,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         AffinityTopologyVersion remapTopVer0 = null;
 
         if (remapTopVer == null) {
-            if (err != null &&
-                X.hasCause(err, CachePartialUpdateCheckedException.class) &&
+            if (X.hasCause(err, CachePartialUpdateCheckedException.class) &&
                 X.hasCause(err, ClusterTopologyCheckedException.class) &&
                 storeFuture() &&
                 --remapCnt > 0) {
@@ -363,18 +359,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
         IgniteInternalFuture<AffinityTopologyVersion> fut = cctx.shared().exchange().affinityReadyFuture(remapTopVer);
 
-        if (fut == null)
-            fut = new GridFinishedFuture<>(remapTopVer);
-
-        fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-            @Override public void apply(final IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
-                    @Override public void run() {
-                        mapOnTopology();
-                    }
-                });
-            }
-        });
+        fut.listen(() -> cctx.kernalContext().closure().runLocalSafe(this::mapOnTopology));
     }
 
     /**
@@ -425,15 +410,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         else {
             assert !topLocked : this;
 
-            fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
-                    cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
-                        @Override public void run() {
-                            mapOnTopology();
-                        }
-                    });
-                }
-            });
+            fut.listen(() -> cctx.kernalContext().closure().runLocalSafe(this::mapOnTopology));
 
             return;
         }

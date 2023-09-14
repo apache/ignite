@@ -24,3 +24,15 @@ Build image
         docker build . -t apacheignite/ignite[:<version>]
 
    Prepared image will be available issuing `docker images` command
+
+6) Build ARM64 docker image
+
+ARM64 image can be built on x64 hardware with `docker buildx`.
+
+   - Install `docker buildx` plugin
+
+        docker buildx install
+
+   - Build and push ARM64 image (currently no way to push separately from build)
+
+        docker buildx build . -f ./arm64/Dockerfile -t apacheignite/ignite:<version>-arm64 -t apacheignite/ignite:latest-arm64 --push --platform linux/arm64
