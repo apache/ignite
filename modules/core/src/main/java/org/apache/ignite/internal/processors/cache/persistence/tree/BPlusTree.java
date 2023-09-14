@@ -1057,12 +1057,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Wrapped page handler.
      */
     private <X> PageHandler<X, Result> wrap(PageHandlerWrapper<Result> hndWrapper, PageHandler<?, Result> hnd) {
-        // Wrap using tree page handler wrapper, if it's specified.
-        if (hndWrapper != null)
-            hnd = hndWrapper.wrap(this, hnd);
+        // Wrap handler using test wrapper.
+        if (testHndWrapper != null)
+            hnd = testHndWrapper.wrap(this, hnd);
 
-        // Additionally wrap handler using test wrapper.
-        return (PageHandler<X, Result>)(testHndWrapper == null ? hnd : testHndWrapper.wrap(this, hnd));
+        // Additionally wrap using tree page handler wrapper, if it's specified.
+        return (PageHandler<X, Result>)(hndWrapper == null ? hnd : hndWrapper.wrap(this, hnd));
     }
 
     /**
