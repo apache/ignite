@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
+
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
@@ -176,8 +177,8 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         QueryTemplate template = new QueryTemplate(fragments);
 
-        return new MultiStepQueryPlan(ctx.query(), plan, template,
-            queryFieldsMetadata(ctx, validated.dataType(), validated.origins()), params);
+        return new MultiStepQueryPlan(ctx.query(), plan, template, queryFieldsMetadata(ctx, validated.dataType(),
+                validated.origins(), validated.aliases()), params);
     }
 
     /** */
@@ -200,17 +201,20 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         QueryTemplate template = new QueryTemplate(fragments);
 
-        return new MultiStepDmlPlan(ctx.query(), plan, template,
-            queryFieldsMetadata(ctx, igniteRel.getRowType(), null), params);
+        return new MultiStepDmlPlan(ctx.query(), plan, template, queryFieldsMetadata(ctx, igniteRel.getRowType(),
+                null, null), params);
     }
 
     /** */
-    private FieldsMetadata queryFieldsMetadata(PlanningContext ctx, RelDataType sqlType,
-        @Nullable List<List<String>> origins) {
-        RelDataType resultType = TypeUtils.getResultType(
-            ctx.typeFactory(), ctx.catalogReader(), sqlType, origins);
+    private FieldsMetadata queryFieldsMetadata(
+        PlanningContext ctx,
+        RelDataType sqlType,
+        @Nullable List<List<String>> origins,
+        @Nullable List<String> aliases
+    ) {
+        RelDataType resultType = TypeUtils.getResultType(ctx.typeFactory(), ctx.catalogReader(), sqlType, origins);
 
-        return new FieldsMetadataImpl(sqlType, resultType, origins);
+        return new FieldsMetadataImpl(sqlType, resultType, origins, aliases);
     }
 
     /** */
@@ -221,6 +225,6 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
         T2<String, RelDataType> planField = new T2<>(ExplainPlan.PLAN_COL_NAME, planStrDataType);
         RelDataType planDataType = factory.createStructType(singletonList(planField));
 
-        return queryFieldsMetadata(ctx, planDataType, null);
+        return queryFieldsMetadata(ctx, planDataType, null, null);
     }
 }
