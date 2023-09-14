@@ -27,6 +27,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.cache.Cache;
@@ -150,17 +151,17 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
 
             cache.put(0, 0);
 
-            lsnr.assertNextCacheEventDataNotReceived(EventType.CREATED, "oldVal");
+            lsnr.assertNextCacheEvent(EventType.CREATED, evt -> assertNull(evt.getOldValue()));
 
             cache.remove(0);
 
-            lsnr.assertNextCacheEventDataNotReceived(EventType.REMOVED, "newVal");
+            lsnr.assertNextCacheEvent(EventType.REMOVED, evt -> assertSame(evt.getValue(), evt.getOldValue()));
 
             cache.withExpirePolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, 100))).put(1, 1);
 
-            lsnr.assertNextCacheEventDataNotReceived(EventType.CREATED, "oldVal");
+            lsnr.assertNextCacheEvent(EventType.CREATED, evt -> assertNull(evt.getOldValue()));
 
-            lsnr.assertNextCacheEventDataNotReceived(EventType.EXPIRED, "newVal");
+            lsnr.assertNextCacheEvent(EventType.EXPIRED, evt -> assertSame(evt.getValue(), evt.getOldValue()));
         }
     }
 
@@ -798,12 +799,15 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
         }
 
         /** */
-        public void assertNextCacheEventDataNotReceived(EventType expType, String name) throws Exception {
+        public void assertNextCacheEvent(
+            EventType expType,
+            Consumer<CacheEntryEvent<? extends K, ? extends V>> checker
+        ) throws Exception {
             CacheEntryEvent<? extends K, ? extends V> evt = poll();
 
             assertEquals(expType, evt.getEventType());
 
-            assertNull(U.field(evt, name));
+            checker.accept(evt);
         }
 
         /** */
