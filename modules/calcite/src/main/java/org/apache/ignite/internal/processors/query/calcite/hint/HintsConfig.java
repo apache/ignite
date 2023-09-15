@@ -34,12 +34,19 @@ public final class HintsConfig {
     }
 
     /** Allows no key-value option. */
-    static final HintOptionsChecker OPTS_CHECK_NO_KV = new NoKevValueOptionsChecker();
+    static final HintOptionsChecker OPTS_CHECK_NO_KV = new HintOptionsChecker() {
+        /** {@inheritDoc} */
+        @Override public @Nullable String apply(RelHint hint) {
+            return hint.kvOptions.isEmpty()
+                ? null
+                : String.format("Hint '%s' can't have any key-value option (not supported).", hint.hintName);
+        }
+    };
 
     /** Allows no option. */
-    static final HintOptionsChecker OPTS_CHECK_EMPTY = new NoKevValueOptionsChecker() {
+    static final HintOptionsChecker OPTS_CHECK_EMPTY = new HintOptionsChecker() {
         @Override public @Nullable String apply(RelHint hint) {
-            String noKv = super.apply(hint);
+            String noKv = OPTS_CHECK_NO_KV.apply(hint);
 
             if (noKv != null)
                 return noKv;
@@ -51,9 +58,9 @@ public final class HintsConfig {
     };
 
     /** Allows only plain options. */
-    static final HintOptionsChecker OPTS_CHECK_PLAIN = new NoKevValueOptionsChecker() {
+    static final HintOptionsChecker OPTS_CHECK_PLAIN = new HintOptionsChecker() {
         @Override public @Nullable String apply(RelHint hint) {
-            String noKv = super.apply(hint);
+            String noKv = OPTS_CHECK_NO_KV.apply(hint);
 
             if (noKv != null)
                 return noKv;
@@ -74,17 +81,5 @@ public final class HintsConfig {
             b.hintStrategy(hintDef.name(), HintStrategy.builder(hintDef.predicate()).build()));
 
         return b.build();
-    }
-
-    /**
-     * Allows no key-value hint options.
-     */
-    private static class NoKevValueOptionsChecker implements HintOptionsChecker {
-        /** {@inheritDoc} */
-        @Override public @Nullable String apply(RelHint hint) {
-            return hint.kvOptions.isEmpty()
-                ? null
-                : String.format("Hint '%s' can't have any key-value option (not supported).", hint.hintName);
-        }
     }
 }

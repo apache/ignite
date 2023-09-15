@@ -22,8 +22,8 @@ import org.apache.calcite.rel.hint.RelHint;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Hint options validator. The validator returs error text if the rel hint can't accept passed options.
- * If the options are ok, the validator returns {@code null}.
+ * Hint options validator. Returns error text if the rel hint can't accept passed options.
+ * Otherwise, returns {@code null}.
  */
 interface HintOptionsChecker extends Function<RelHint, @Nullable String> {
     /* No-op. */

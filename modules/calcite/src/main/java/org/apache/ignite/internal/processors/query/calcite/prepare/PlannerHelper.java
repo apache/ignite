@@ -73,7 +73,8 @@ public class PlannerHelper {
             // Convert to Relational operators graph.
             RelRoot root = planner.rel(sqlNode);
 
-            planner.setDisabledRules(HintUtils.options(root.rel, extractRootHints(root.rel), HintDefinition.DISABLE_RULE));
+            planner.setDisabledRules(HintUtils.options(root.rel, extractRootHints(root.rel),
+                HintDefinition.DISABLE_RULE));
 
             RelNode rel = root.rel;
 

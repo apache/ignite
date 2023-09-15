@@ -24,6 +24,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.apache.logging.log4j.Level;
 import org.junit.Test;
 
 /**
@@ -60,6 +62,13 @@ public class ForceIndexHintPlannerTest extends AbstractPlannerTest {
             .addIndex("IDX2_3", 3);
 
         schema = createSchema(tbl1, tbl2);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        ((GridTestLog4jLogger)log).setLevel(Level.INFO);
     }
 
     /** */
@@ -181,9 +190,9 @@ public class ForceIndexHintPlannerTest extends AbstractPlannerTest {
     @Test
     public void testAggregates() throws Exception {
         doTestAggregates("sum");
-//        doTestAggregates("avg");
-//        doTestAggregates("min");
-//        doTestAggregates("max");
+        doTestAggregates("avg");
+        doTestAggregates("min");
+        doTestAggregates("max");
     }
     
     /** */
@@ -259,6 +268,8 @@ public class ForceIndexHintPlannerTest extends AbstractPlannerTest {
             .andMatches("Index 'IDX2_3' of table 'TBL2' has already been excluded").times(1).build();
 
         lsnrLog.registerListener(lsnr);
+
+        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
         assertPlan("SELECT /*+ NO_INDEX(IDX2_1), FORCE_INDEX(IDX2_3), NO_INDEX(IDX2_3) */ * FROM TBL2 where " +
             "val21=1 and val22=2 and val23=3", schema, nodeOrAnyChild(isTableScan("TBL2")).negate()

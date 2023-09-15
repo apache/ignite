@@ -38,9 +38,6 @@ public class CommonHintsPlannerTest extends AbstractPlannerTest {
     /** */
     private TestTable tbl;
 
-    /** */
-    private Level logLevel;
-
     /** {@inheritDoc} */
     @Override public void setup() {
         super.setup();

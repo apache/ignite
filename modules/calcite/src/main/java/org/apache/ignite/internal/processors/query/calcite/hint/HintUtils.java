@@ -63,17 +63,8 @@ public final class HintUtils {
      * @see #filterHints(RelNode, Collection, List)
      */
     public static List<RelHint> hints(RelNode rel, HintDefinition... hintDefs) {
-        return rel.getCluster().getHintStrategies().apply(filterHints(rel, allRelHints(rel), Arrays.asList(hintDefs)),
-            rel);
-    }
-
-    /**
-     * @return {@code True} if the query has a suitable hint for {@code rel} defined by {@code hintDefs}.
-     * {@code False} otherwise.
-     * @see HintStrategyTable#apply(List, RelNode)
-     */
-    public static boolean hasHint(RelNode rel, HintDefinition... hintDefs) {
-        return !hints(rel, hintDefs).isEmpty();
+        return rel.getCluster().getHintStrategies()
+            .apply(filterHints(rel, allRelHints(rel), Arrays.asList(hintDefs)), rel);
     }
 
     /**
@@ -128,7 +119,8 @@ public final class HintUtils {
      * {@code False} otherwise.
      */
     public static boolean isExpandedDistinct(LogicalAggregate rel) {
-        return hasHint(rel, EXPAND_DISTINCT_AGG) && rel.getAggCallList().stream().anyMatch(AggregateCall::isDistinct);
+        return !hints(rel, EXPAND_DISTINCT_AGG).isEmpty()
+            && rel.getAggCallList().stream().anyMatch(AggregateCall::isDistinct);
     }
 
     /**

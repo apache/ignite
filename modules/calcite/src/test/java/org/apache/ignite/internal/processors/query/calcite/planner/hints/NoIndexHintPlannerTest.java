@@ -24,6 +24,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.apache.logging.log4j.Level;
 import org.junit.Test;
 
 /**
@@ -60,6 +62,13 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
         schema = createSchema(tbl1, tbl2);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        ((GridTestLog4jLogger)log).setLevel(Level.INFO);
+    }
+
     /** */
     @Test
     public void testWrongParams() throws Exception {
@@ -67,6 +76,8 @@ public class NoIndexHintPlannerTest extends AbstractPlannerTest {
             .times(1).build();
 
         lsnrLog.registerListener(lsnr);
+
+        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
         physicalPlan("SELECT /*+ NO_INDEX(IDX2_1,IDX2_1) */ * FROM TBL2 WHERE val2='v'", schema);
 
