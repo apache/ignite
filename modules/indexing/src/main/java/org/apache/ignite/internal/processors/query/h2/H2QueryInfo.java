@@ -97,6 +97,21 @@ public class H2QueryInfo implements TrackableQuery {
         }
     }
 
+    /** */
+    public UUID nodeId() {
+        return nodeId;
+    }
+
+    /** */
+    public long queryId() {
+        return queryId;
+    }
+
+    /** */
+    public String plan() {
+        return stmt.getPlanSQL();
+    }
+
     /**
      * Print info specified by children.
      *

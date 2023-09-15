@@ -172,8 +172,8 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
         assertNotNull(e0.key());
         assertNull(e1.oldValue());
         assertNotNull(e0.oldValue());
-        assertNull(e1.value());
-        assertNotNull(e0.value());
+        assertNull(e1.newValue());
+        assertNotNull(e0.newValue());
     }
 
     /**
