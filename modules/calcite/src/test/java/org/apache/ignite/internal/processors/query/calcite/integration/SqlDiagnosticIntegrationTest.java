@@ -23,9 +23,11 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -37,8 +39,11 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
@@ -52,6 +57,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.Query;
 import org.apache.ignite.internal.processors.query.calcite.QueryRegistry;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -63,6 +69,9 @@ import org.junit.Test;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.withSecurityContextOnAllNodes;
+import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.cleanPerformanceStatisticsDir;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.startCollectStatistics;
@@ -90,14 +99,22 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     private ListeningTestLogger log;
 
+    /** */
+    private SecurityContext secCtxDflt;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setGridLogger(log)
+            .setAuthenticationEnabled(true)
             .setSqlConfiguration(new SqlConfiguration()
                 .setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration())
                 .setLongQueryWarningTimeout(LONG_QRY_TIMEOUT))
-            .setIncludeEventTypes(EVT_SQL_QUERY_EXECUTION, EVT_CACHE_QUERY_EXECUTED, EVT_CACHE_QUERY_OBJECT_READ);
+            .setIncludeEventTypes(EVT_SQL_QUERY_EXECUTION, EVT_CACHE_QUERY_EXECUTED, EVT_CACHE_QUERY_OBJECT_READ)
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)
+            )
+        );
     }
 
     /** {@inheritDoc} */
@@ -109,11 +126,17 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        cleanPersistenceDir();
+
         log = new ListeningTestLogger(log());
 
         startGrids(nodeCount());
 
         client = startClientGrid();
+
+        client.cluster().state(ClusterState.ACTIVE);
+
+        secCtxDflt = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
     }
 
     /** {@inheritDoc} */
@@ -169,6 +192,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testBatchParserMetrics() throws Exception {
+        withSecurityContextOnAllNodes(secCtxDflt);
+
         MetricRegistry mreg0 = grid(0).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
         MetricRegistry mreg1 = grid(1).context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
         mreg0.reset();
@@ -186,7 +211,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         assertEquals(0, misses0.value());
         assertEquals(0, misses1.value());
 
-        try (Connection conn = DriverManager.getConnection(jdbcUrl)) {
+        try (Connection conn = DriverManager.getConnection(jdbcUrl, DFAULT_USER_NAME, "ignite")) {
             conn.setSchema("PUBLIC");
 
             try (Statement stmt = conn.createStatement()) {
@@ -291,7 +316,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         sql(grid(0), "SELECT * FROM table(system_range(1, 1000))");
         sql(grid(0), "CREATE TABLE test_perf_stat (a INT)");
         sql(grid(0), "INSERT INTO test_perf_stat VALUES (0), (1), (2), (3), (4)");
-        sql(grid(0), "SELECT * FROM test_perf_stat");
+        sql(grid(0), "SELECT * FROM test_perf_stat WHERE a > 0");
 
         assertTrue(GridTestUtils.waitForCondition(() -> finishQryCnt.get() == 4, 1_000L));
 
@@ -302,18 +327,17 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         // ScanNode page reads, since table/index scans are local and executed in current thread. ModifyNode uses
         // distributed `invoke` operation, which can be executed by other threads or on other nodes. It's hard to
         // obtain correct value of page reads for these types of operations, so, currently we just ignore page reads
-        // performed by ModifyNode. Despite static values scan themself doesn't require any page reads, it still can
-        // catch some page reads performed by insert operation. But, taking into account small amount of inserted
-        // values, it's not enough rows to trigger batch insert during values scan, and we expect zero page-reads
-        // for this query in this test.
+        // performed by ModifyNode.
         // The fourth query is a table scan and should perform page reads on all data nodes.
 
         AtomicInteger qryCnt = new AtomicInteger();
-        AtomicInteger readsCnt = new AtomicInteger();
+        AtomicLong rowsScanned = new AtomicLong();
         Iterator<String> sqlIt = F.asList("SELECT", "CREATE", "INSERT", "SELECT").iterator();
         Set<UUID> dataNodesIds = new HashSet<>(F.asList(grid(0).localNode().id(), grid(1).localNode().id()));
         Set<UUID> readsNodes = new HashSet<>(dataNodesIds);
         Set<Long> readsQueries = new HashSet<>();
+        Map<Long, Long> rowsFetchedPerQuery = new HashMap<>();
+        AtomicLong firstQryId = new AtomicLong(-1);
         AtomicLong lastQryId = new AtomicLong();
 
         stopCollectStatisticsAndRead(new AbstractPerformanceStatisticsTest.TestHandler() {
@@ -328,13 +352,14 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
             ) {
                 qryCnt.incrementAndGet();
 
-                assertTrue(nodeId.equals(grid(0).localNode().id()));
+                assertEquals(grid(0).localNode().id(), nodeId);
                 assertEquals(SQL_FIELDS, type);
                 assertTrue(text.startsWith(sqlIt.next()));
                 assertTrue(qryStartTime >= startTime);
                 assertTrue(duration >= 0);
                 assertTrue(success);
 
+                firstQryId.compareAndSet(-1, id);
                 lastQryId.set(id);
             }
 
@@ -346,21 +371,43 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
                 long logicalReads,
                 long physicalReads
             ) {
-                readsCnt.incrementAndGet();
-
                 readsQueries.add(id);
-                assertTrue(dataNodesIds.contains(qryNodeId));
+                assertTrue(dataNodesIds.contains(nodeId));
                 readsNodes.remove(nodeId);
 
-                assertTrue(grid(0).localNode().id().equals(qryNodeId));
+                assertEquals(grid(0).localNode().id(), qryNodeId);
                 assertEquals(SQL_FIELDS, type);
                 assertTrue(logicalReads > 0);
+            }
+
+            @Override public void queryRows(
+                UUID nodeId,
+                GridCacheQueryType type,
+                UUID qryNodeId,
+                long id,
+                String action,
+                long rows
+            ) {
+                assertEquals(grid(0).localNode().id(), qryNodeId);
+                assertEquals(SQL_FIELDS, type);
+
+                if (action.toLowerCase().contains("test_perf_stat")) {
+                    assertTrue(dataNodesIds.contains(nodeId));
+                    rowsScanned.addAndGet(rows);
+                }
+                else if ("Fetched".equals(action)) {
+                    assertEquals(grid(0).localNode().id(), nodeId);
+                    assertNull(rowsFetchedPerQuery.put(id, rows));
+                }
             }
         });
 
         assertEquals(4, qryCnt.get());
         assertTrue("Query reads expected on nodes: " + readsNodes, readsNodes.isEmpty());
         assertEquals(Collections.singleton(lastQryId.get()), readsQueries);
+        assertEquals((Long)1000L, rowsFetchedPerQuery.get(firstQryId.get()));
+        assertEquals((Long)4L, rowsFetchedPerQuery.get(lastQryId.get()));
+        assertEquals(5L, rowsScanned.get());
     }
 
     /** */
@@ -426,6 +473,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testSensitiveInformationHiding() throws Exception {
+        withSecurityContextOnAllNodes(secCtxDflt);
+
         cleanPerformanceStatisticsDir();
         startCollectStatistics();
 
@@ -464,7 +513,24 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
                 fut.get();
             }
 
+            // Test bounds hiding in index scans.
+            sql(grid(0), "CREATE TABLE test_sens (id int, val varchar)");
+            sql(grid(0), "CREATE INDEX test_sens_idx ON test_sens(val)");
+            sql(grid(0), "INSERT INTO test_sens (id, val) VALUES (0, 'sensitive0'), (1, 'sensitive1'), " +
+                "(2, 'sensitive2'), (3, 'sensitive3'), (4, 'sensitive4'), (5, 'sensitive5'), (6, 'sensitive6')");
+            sql(grid(0), "SELECT * FROM test_sens WHERE val IN ('sensitive0', 'sensitive1')");
+            sql(grid(0), "SELECT * FROM test_sens WHERE val BETWEEN 'sensitive1' AND 'sensitive3'");
+            sql(grid(0), "SELECT * FROM test_sens WHERE val = 'sensitive4'");
+
+            // Test CREATE AS SELECT rewrite.
+            sql(grid(0), "CREATE TABLE test_sens1 (val) WITH CACHE_NAME=\"test_sens1\" AS SELECT 'sensitive' AS val");
+
+            // Test CREATE/ALTER USER commands rewrite.
+            sql(grid(0), "CREATE USER test WITH PASSWORD 'sensitive'");
+            sql(grid(0), "ALTER USER test WITH PASSWORD 'sensitive'");
+
             AtomicInteger qryCnt = new AtomicInteger();
+            AtomicInteger planCnt = new AtomicInteger();
 
             stopCollectStatisticsAndRead(new AbstractPerformanceStatisticsTest.TestHandler() {
                 @Override public void query(
@@ -477,11 +543,26 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
                     boolean success
                 ) {
                     qryCnt.incrementAndGet();
-                    assertFalse(text.contains("sensitive"));
+                    assertFalse(text, text.contains("sensitive"));
+                }
+
+                @Override public void queryProperty(
+                    UUID nodeId,
+                    GridCacheQueryType type,
+                    UUID qryNodeId,
+                    long id,
+                    String name,
+                    String val
+                ) {
+                    if ("Query plan".equals(name)) {
+                        planCnt.incrementAndGet();
+                        assertFalse(val, val.contains("sensitive"));
+                    }
                 }
             });
 
-            assertEquals(2, qryCnt.get());
+            assertEquals(12, qryCnt.get()); // CREATE AS SELECT counts as two queries.
+            assertEquals(7, planCnt.get()); // DDL queries don't produce plans, except CREATE AS SELECT.
         }
         finally {
             QueryUtils.INCLUDE_SENSITIVE = true;

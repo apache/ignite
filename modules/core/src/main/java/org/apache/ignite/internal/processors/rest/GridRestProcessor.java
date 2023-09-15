@@ -320,6 +320,8 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
         GridRestCommandHandler hnd = handlers.get(req.command());
 
+        final UUID secSubjId = securityEnabled ? ctx.security().securityContext().subject().id() : null;
+
         if (hnd == null) {
             return new GridFinishedFuture<>(
                 new IgniteCheckedException("Failed to find registered handler for command: " + req.command()));
@@ -384,8 +386,12 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
                 assert res != null;
 
-                if (securityEnabled && !failed)
-                    res.sessionTokenBytes(req.sessionToken());
+                if (securityEnabled) {
+                    if (!failed)
+                        res.sessionTokenBytes(req.sessionToken());
+
+                    res.setSecuritySubjectId(secSubjId);
+                }
 
                 interceptResponse(res, req);
 

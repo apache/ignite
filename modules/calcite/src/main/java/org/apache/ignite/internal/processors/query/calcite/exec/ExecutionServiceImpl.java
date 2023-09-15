@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
@@ -547,7 +548,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             IgniteTypeFactory typeFactory = qry.context().typeFactory();
 
             resCur.fieldsMeta(new FieldsMetadataImpl(RelOptUtil.createDmlRowType(
-                SqlKind.INSERT, typeFactory), null).queryFieldsMetadata(typeFactory));
+                SqlKind.INSERT, typeFactory), null, null).queryFieldsMetadata(typeFactory));
 
             return resCur;
         }
@@ -673,6 +674,16 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             }
         }
 
+        if (perfStatProc.enabled()) {
+            perfStatProc.queryProperty(
+                GridCacheQueryType.SQL_FIELDS,
+                qry.initiatorNodeId(),
+                qry.localQueryId(),
+                "Query plan",
+                plan.textPlan()
+            );
+        }
+
         QueryProperties qryProps = qry.context().unwrap(QueryProperties.class);
 
         Function<Object, Object> fieldConverter = (qryProps == null || qryProps.keepBinary()) ? null :
@@ -720,8 +731,22 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             };
         }
 
+        Runnable onClose = () -> {
+            if (perfStatProc.enabled()) {
+                perfStatProc.queryRowsProcessed(
+                    GridCacheQueryType.SQL_FIELDS,
+                    qry.initiatorNodeId(),
+                    qry.localQueryId(),
+                    "Fetched",
+                    resultSetChecker.fetchedSize()
+                );
+            }
+
+            resultSetChecker.checkOnClose();
+        };
+
         Iterator<List<?>> it = new ConvertingClosableIterator<>(iteratorsHolder().iterator(qry.iterator()), ectx,
-            fieldConverter, rowConverter, resultSetChecker::checkOnClose);
+            fieldConverter, rowConverter, onClose);
 
         return new ListFieldsQueryCursor<>(plan, it, ectx);
     }
