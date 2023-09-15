@@ -18,22 +18,19 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.io.StringWriter;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.prepare.CalciteCatalogReader;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.tools.FrameworkConfig;
@@ -43,7 +40,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -76,7 +72,7 @@ public final class PlanningContext implements Context {
     private final long plannerTimeout;
 
     /** */
-    private final Map<IgniteBiTuple<RelHint, RelNode>, SkippedHint> skippedHints = new ConcurrentHashMap<>();
+    private final Set<SkippedHint> skippedHints = new LinkedHashSet<>();
 
     /** */
     private final @Nullable IgniteLogger log;
@@ -233,25 +229,17 @@ public final class PlanningContext implements Context {
     }
 
     /**
-     * Stores skipped hint and the reason. Also, logs the issue.
+     * Stores disctinct skipped hint and the reason. Also, logs the issue if the logger is not {@code null}.
+     *
+     * @param relNodeDescr Unique description of a rel node and its alternatives.
+     * @param hint Hint.
+     * @param reason Reason without dot at the end.
      */
-    public void skippedHint(RelNode relNode, RelHint hint, String reason) {
-        skippedHints.compute(new IgniteBiTuple<>(hint, relNode), (k, sh) -> {
-            if (sh == null) {
-                sh = new SkippedHint(hint.hintName, hint.listOptions, reason);
+    public void skippedHint(String relNodeDescr, RelHint hint, String reason) {
+        SkippedHint sk = new SkippedHint(relNodeDescr, hint.hintName, hint.listOptions, reason);
 
-                if (log != null) {
-                    String hintOptions = hint.listOptions.isEmpty() ? "" : "with options "
-                        + hint.listOptions.stream().map(o -> '\'' + o + '\'').collect(Collectors.joining(","))
-                        + ' ';
-
-                    log.info(String.format("Skipped hint '%s' %sfor relation operator '%s'. %s", hint.hintName,
-                        hintOptions, RelOptUtil.toString(relNode, SqlExplainLevel.EXPPLAN_ATTRIBUTES).trim(), reason));
-                }
-            }
-
-            return sh;
-        });
+        if (skippedHints.add(sk) && log != null)
+            log.info("Skipped hint " + sk.toString());
     }
 
     /** */
@@ -262,28 +250,16 @@ public final class PlanningContext implements Context {
         w.append(U.nl()).append(U.nl())
             .append("Skipped hints:");
 
-        skippedHints.forEach((relAndHint, sh) -> {
-            w.append(U.nl())
-                .append("\t- '").append(sh.hintName).append('\'');
-
-            if (!sh.options.isEmpty()) {
-                w.append(" with options ").append(sh.options.stream().map(o -> '\'' + o + '\'')
-                    .collect(Collectors.joining(",")));
-            }
-
-            w.append(" for relation operator '")
-                .append(RelOptUtil.toString(relAndHint.getValue(), SqlExplainLevel.EXPPLAN_ATTRIBUTES))
-                .append("'. ").append(sh.reason);
-
-            if (!sh.reason.endsWith("."))
-                w.append('.');
-        });
+        skippedHints.forEach(sh -> w.append(U.nl()).append('\t').append(sh.toString()));
     }
 
     /**
      * Holds skipped hint description.
      */
-    private static class SkippedHint {
+    private static final class SkippedHint {
+        /** */
+        private final String relDescr;
+
         /** */
         private final String hintName;
 
@@ -293,11 +269,54 @@ public final class PlanningContext implements Context {
         /** */
         private final String reason;
 
-        /** */
-        private SkippedHint(String hintName, List<String> options, String reason) {
+        /**
+         * @param relDescr Unique description of a rel node and its alternatives.
+         * @param hintName Hint name.
+         * @param options  Hint options.
+         * @param reason   Reason.
+         */
+        private SkippedHint(String relDescr, String hintName, List<String> options, String reason) {
+            this.relDescr = relDescr;
             this.hintName = hintName;
             this.options = options;
             this.reason = reason;
+        }
+
+        /** {@inheritDoc */
+        @Override public String toString() {
+            String hintOptions = options.isEmpty() ? "" : "with options " + options.stream().map(o -> '\'' + o + '\'')
+                .collect(Collectors.joining(",")) + ' ';
+
+            return String.format("'%s' %sfor [%s]. %s.", hintName, hintOptions, relDescr, reason);
+        }
+
+        /** {@inheritDoc */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            SkippedHint hint = (SkippedHint)o;
+
+            if (!hintName.equals(hint.hintName))
+                return false;
+            if (!options.equals(hint.options))
+                return false;
+            if (!relDescr.equals(hint.relDescr))
+                return false;
+            return reason.equals(hint.reason);
+        }
+
+        /** {@inheritDoc */
+        @Override public int hashCode() {
+            int result = relDescr.hashCode();
+
+            result = 31 * result + hintName.hashCode();
+            result = 31 * result + options.hashCode();
+            result = 31 * result + reason.hashCode();
+
+            return result;
         }
     }
 

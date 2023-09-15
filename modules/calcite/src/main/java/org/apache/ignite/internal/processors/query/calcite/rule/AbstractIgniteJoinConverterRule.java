@@ -37,6 +37,7 @@ import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.ignite.internal.processors.query.calcite.hint.Hint;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.util.Util.last;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.CNL_JOIN;
@@ -50,10 +51,6 @@ import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefin
 abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRule<LogicalJoin> {
     /** Known join type hints. */
     private static final EnumMap<HintDefinition, HintDefinition> HINTS = new EnumMap<>(HintDefinition.class);
-
-    /** */
-    public static final String SKIPPED_HINT_PREFIX = "This join type is already disabled or forced to use before " +
-        "by previous hints";
 
     /** Hint disabing this join type. */
     private final HintDefinition knownDisableHint;
@@ -139,8 +136,11 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
             }
 
             if (unableToProcess) {
-                Commons.planContext(join).skippedHint(join, hint, SKIPPED_HINT_PREFIX + " for the tables "
-                    + joinTbls.stream().map(t -> '\'' + t + '\'').collect(Collectors.joining(",")) + '.');
+                Commons.planContext(join).skippedHint(
+                    relDescription(joinTbls),
+                    hint,
+                    "This join type is already disabled or forced to use before by previous hints"
+                );
 
                 continue;
             }
@@ -156,18 +156,32 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
                 });
             }
 
+            String skipDisableReason = skipDisableHintReason(join, hint);
+
             // This join type is directyly disabled or other join type is forced.
-            if (curHintIsDisable && curHintDef == knownDisableHint && activateDisableHint(join, hint)
-                || !curHintIsDisable && knownForceHint != curHintDef)
+            if ((curHintIsDisable && curHintDef == knownDisableHint && skipDisableReason != null)
+                || (!curHintIsDisable && knownForceHint != curHintDef)) {
+                Commons.planContext(join).skippedHint(
+                    relDescription(joinTbls),
+                    hint,
+                    "This join type is already disabled or forced to use before by previous hints"
+                );
+
                 disabledRes = true;
+            }
         }
 
         return disabledRes;
     }
 
     /** */
-    protected boolean activateDisableHint(LogicalJoin join, RelHint hint) {
-        return true;
+    private static String relDescription(Collection<String> tbls) {
+        return "Join tables " + tbls.stream().sorted().collect(Collectors.joining(","));
+    }
+
+    /** */
+    protected @Nullable String skipDisableHintReason(LogicalJoin join, RelHint hint) {
+        return null;
     }
 
     /** */
