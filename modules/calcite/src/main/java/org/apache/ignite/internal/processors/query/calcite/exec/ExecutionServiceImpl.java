@@ -565,10 +565,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         plan.init(mappingSvc, mapCtx);
 
-        List<Fragment> fragments = plan.fragments();
-
         if (!F.isEmpty(qry.context().partitions())) {
-            fragments = Commons.transform(fragments, f -> {
+            plan.transformFragments(f -> {
                 try {
                     return f.filterByPartitions(qry.context().partitions());
                 }
@@ -577,6 +575,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 }
             });
         }
+
+        List<Fragment> fragments = plan.fragments();
 
         // Local execution
         Fragment fragment = F.first(fragments);

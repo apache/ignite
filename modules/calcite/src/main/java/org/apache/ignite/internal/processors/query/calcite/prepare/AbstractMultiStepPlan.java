@@ -22,13 +22,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -128,5 +131,17 @@ public abstract class AbstractMultiStepPlan extends AbstractQueryPlan implements
     /** {@inheritDoc} */
     @Override public String textPlan() {
         return textPlan;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void transformFragments(@NotNull Function<Fragment, Fragment> clo) {
+        if (executionPlan != null) {
+            List<Fragment> fragments = executionPlan.fragments();
+
+            if (F.isEmpty(fragments))
+                return;
+
+            executionPlan = new ExecutionPlan(executionPlan.topologyVersion(), Commons.transform(fragments, clo));
+        }
     }
 }

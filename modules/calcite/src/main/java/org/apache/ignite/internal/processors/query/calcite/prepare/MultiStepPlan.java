@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Regular query or DML
@@ -66,4 +68,11 @@ public interface MultiStepPlan extends QueryPlan {
      * @return Text representation of query plan
      */
     String textPlan();
+
+    /**
+     * Transform fragments of plan.
+     *
+     * @param clo Mapping closure to apply on.
+     */
+    void transformFragments(@NotNull Function<Fragment, Fragment> clo);
 }
