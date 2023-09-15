@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.immutables.value.Value;
@@ -127,7 +126,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
                     continue;
 
                 if (idxToSkip.contains(hintIdxName) || idxToUse.contains(hintIdxName)) {
-                    Commons.planContext(scan).skippedHint(scan, hint, "Index '" + hintIdxName
+                    HintUtils.skippedHint(scan, hint, "Index '" + hintIdxName
                         + "' of table '" + last(scan.getTable().getQualifiedName())
                         + "' has already been excluded or forced to use by other options or other hints before.");
 

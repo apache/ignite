@@ -228,7 +228,6 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         PlanningContext ctx = PlanningContext.builder()
             .parentContext(baseQueryContext(schemas))
             .query(sql)
-            .log(lsnrLog)
             .build();
 
         IgnitePlanner planner = ctx.planner();
@@ -686,7 +685,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
                     .defaultSchema(dfltSchema)
                     .build()
             )
-            .logger(log)
+            .logger(lsnrLog)
             .build();
     }
 

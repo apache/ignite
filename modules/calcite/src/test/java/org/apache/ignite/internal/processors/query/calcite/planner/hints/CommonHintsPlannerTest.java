@@ -24,6 +24,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.apache.logging.log4j.Level;
 import org.junit.Test;
 
 /**
@@ -36,6 +38,9 @@ public class CommonHintsPlannerTest extends AbstractPlannerTest {
     /** */
     private TestTable tbl;
 
+    /** */
+    private Level logLevel;
+
     /** {@inheritDoc} */
     @Override public void setup() {
         super.setup();
@@ -44,6 +49,13 @@ public class CommonHintsPlannerTest extends AbstractPlannerTest {
             Integer.class).addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0).addIndex("IDX", 1);
 
         schema = createSchema(tbl);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        ((GridTestLog4jLogger)log).setLevel(Level.INFO);
     }
 
     /**
@@ -65,6 +77,8 @@ public class CommonHintsPlannerTest extends AbstractPlannerTest {
         LogListener lsnr = LogListener.matches("Hint 'DISABLE_RULE' must have at least one option").build();
 
         lsnrLog.registerListener(lsnr);
+
+        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
         physicalPlan("SELECT /*+ DISABLE_RULE */ VAL FROM TBL", schema);
 
@@ -89,6 +103,8 @@ public class CommonHintsPlannerTest extends AbstractPlannerTest {
         LogListener lsnr = LogListener.matches("Hint 'EXPAND_DISTINCT_AGG' can't have any option").build();
 
         lsnrLog.registerListener(lsnr);
+
+        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
         physicalPlan("SELECT /*+ EXPAND_DISTINCT_AGG(OPTION) */ MAX(VAL) FROM TBL", schema);
 

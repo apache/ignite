@@ -24,12 +24,16 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalAggregate;
+import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -110,7 +114,7 @@ public final class HintUtils {
             String optsErr = HintDefinition.valueOf(hint.hintName).optionsChecker().apply(hint);
 
             if (!F.isEmpty(optsErr)) {
-                Commons.planContext(rel).skippedHint(rel, hint, optsErr);
+                skippedHint(rel, hint, optsErr);
 
                 it.remove();
             }
@@ -125,5 +129,21 @@ public final class HintUtils {
      */
     public static boolean isExpandedDistinct(LogicalAggregate rel) {
         return hasHint(rel, EXPAND_DISTINCT_AGG) && rel.getAggCallList().stream().anyMatch(AggregateCall::isDistinct);
+    }
+
+    /**
+     * Logs skipped hint.
+     */
+    public static void skippedHint(RelNode relNode, RelHint hint, String reason) {
+        IgniteLogger log = Commons.context(relNode).unwrap(BaseQueryContext.class).logger();
+
+        if (log.isDebugEnabled()) {
+            String hintOptions = hint.listOptions.isEmpty() ? "" : "with options "
+                + hint.listOptions.stream().map(o -> '\'' + o + '\'').collect(Collectors.joining(","))
+                + ' ';
+
+            log.debug(String.format("Skipped hint '%s' %sfor relation operator '%s'. %s", hint.hintName,
+                hintOptions, RelOptUtil.toString(relNode, SqlExplainLevel.EXPPLAN_ATTRIBUTES).trim(), reason));
+        }
     }
 }
