@@ -81,16 +81,25 @@ public final class HintUtils {
     }
 
     /**
-     * @return Distinct hints within {@code hints} filtered with {@code hintDefs}, {@link HintOptionsChecker} and removed inherit pathes.
+     * @return Distinct hints within {@code hints} filtered with {@code hintDefs}, {@link HintOptionsChecker} and
+     * removed inherit pathes.
      * @see HintOptionsChecker
      * @see RelHint#inheritPath
      */
     private static List<RelHint> filterHints(RelNode rel, Collection<RelHint> hints, List<HintDefinition> hintDefs) {
-        Set<String> hintNames = hintDefs.stream().map(Enum::name).collect(Collectors.toSet());
+        Set<String> requiredHintDefs = hintDefs.stream().map(Enum::name).collect(Collectors.toSet());
 
-        List<RelHint> res = hints.stream().filter(h -> hintNames.contains(h.hintName))
-            .map(h -> RelHint.builder(h.hintName).hintOptions(h.listOptions).build()).distinct()
-            .collect(Collectors.toList());
+        List<RelHint> res = hints.stream().filter(h -> requiredHintDefs.contains(h.hintName))
+            .map(h -> {
+                RelHint.Builder rb = RelHint.builder(h.hintName);
+
+                if (!h.listOptions.isEmpty())
+                    rb.hintOptions(h.listOptions);
+                else if (!h.kvOptions.isEmpty())
+                    rb.hintOptions(h.kvOptions);
+
+                return rb.build();
+            }).distinct().collect(Collectors.toList());
 
         // Validate hint options.
         Iterator<RelHint> it = res.iterator();

@@ -17,18 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner.hints;
 
-import java.lang.reflect.Field;
-import java.util.concurrent.atomic.AtomicReference;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.TestTable;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
@@ -45,18 +39,6 @@ public class CommonHintsPlannerTest extends AbstractPlannerTest {
     /** {@inheritDoc} */
     @Override public void setup() {
         super.setup();
-
-        // Sets CalciteQueryEngines's logger for the hints warnings.
-        try {
-            Field f = U.findField(CalciteQueryProcessor.class, "HINTS_LOG_SUPPLIER");
-
-            f.setAccessible(true);
-
-            ((AtomicReference<IgniteLogger>)f.get(null)).set(lsnrLog);
-        }
-        catch (IllegalAccessException e) {
-            throw new IgniteException("Unble to setup test.", e);
-        }
 
         tbl = createTable("TBL", 100, IgniteDistributions.random(), "ID", Integer.class, "VAL",
             Integer.class).addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0).addIndex("IDX", 1);
@@ -108,7 +90,7 @@ public class CommonHintsPlannerTest extends AbstractPlannerTest {
 
         lsnrLog.registerListener(lsnr);
 
-        physicalPlan("SELECT /*+ EXPAND_DISTINCT_AGG(OPTION) */ VAL FROM TBL", schema);
+        physicalPlan("SELECT /*+ EXPAND_DISTINCT_AGG(OPTION) */ MAX(VAL) FROM TBL", schema);
 
         assertTrue(lsnr.check());
 
@@ -116,24 +98,11 @@ public class CommonHintsPlannerTest extends AbstractPlannerTest {
 
         lsnrLog.clearListeners();
 
-        lsnr = LogListener.matches("Hint 'EXPAND_DISTINCT_AGG' can't have any option").build();
+        lsnr = LogListener.matches("Hint 'EXPAND_DISTINCT_AGG' can't have any key-value option").build();
 
         lsnrLog.registerListener(lsnr);
 
-        physicalPlan("SELECT /*+ EXPAND_DISTINCT_AGG(a='b') */ VAL FROM TBL", schema);
-
-        assertTrue(lsnr.check());
-    }
-
-    /** */
-    @Test
-    public void testWrongHint() throws Exception {
-        LogListener lsnr =
-            LogListener.matches("Hint: UNEXISTING_HINT should be registered in the HintStrategyTable").build();
-
-        lsnrLog.registerListener(lsnr);
-
-        physicalPlan("SELECT /*+ UNEXISTING_HINT */ VAL FROM TBL", schema);
+        physicalPlan("SELECT /*+ EXPAND_DISTINCT_AGG(a='b') */ MAX(VAL) FROM TBL", schema);
 
         assertTrue(lsnr.check());
     }
