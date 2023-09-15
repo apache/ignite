@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
@@ -147,12 +148,8 @@ public class RestProcessorInitializationTest extends AbstractSecurityTest {
                 false,
                 new TestSecurityData("client", ALL_PERMISSIONS)));
 
-        PluginProvider<?>[] plugins = new PluginProvider[cfg.getPluginProviders().length + 1];
-
-        System.arraycopy(cfg.getPluginProviders(), 0, plugins, 0, cfg.getPluginProviders().length);
-
-        plugins[plugins.length - 1] = new TestRestProcessorProvider();
-
-        return cfg.setConnectorConfiguration(new ConnectorConfiguration()).setPluginProviders(plugins);
+        return cfg
+            .setConnectorConfiguration(new ConnectorConfiguration())
+            .setPluginProviders(F.concat(cfg.getPluginProviders(), new TestRestProcessorProvider()));
     }
 }
