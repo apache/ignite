@@ -57,7 +57,7 @@ public class HashAggregateConverterRule {
         /** {@inheritDoc} */
         @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
             LogicalAggregate agg) {
-            if (HintUtils.isExpandedDistinct(agg))
+            if (HintUtils.isExpandDistinctAggregate(agg))
                 return null;
 
             RelOptCluster cluster = agg.getCluster();
@@ -86,7 +86,7 @@ public class HashAggregateConverterRule {
         /** {@inheritDoc} */
         @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
             LogicalAggregate agg) {
-            if (HintUtils.isExpandedDistinct(agg))
+            if (HintUtils.isExpandDistinctAggregate(agg))
                 return null;
 
             RelOptCluster cluster = agg.getCluster();

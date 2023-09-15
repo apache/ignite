@@ -118,7 +118,7 @@ public final class HintUtils {
      * @return {@code True} if {@code rel} is hinted with {@link HintDefinition#EXPAND_DISTINCT_AGG}.
      * {@code False} otherwise.
      */
-    public static boolean isExpandedDistinct(LogicalAggregate rel) {
+    public static boolean isExpandDistinctAggregate(LogicalAggregate rel) {
         return !hints(rel, EXPAND_DISTINCT_AGG).isEmpty()
             && rel.getAggCallList().stream().anyMatch(AggregateCall::isDistinct);
     }
