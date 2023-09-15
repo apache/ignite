@@ -27,6 +27,9 @@ import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
@@ -111,6 +114,12 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
     /** Tracing processor. */
     protected final Tracing tracing;
 
+    /** */
+    private final GridKernalContext ctx;
+
+    /** */
+    private final H2QueryInfo qryInfo;
+
     /**
      * @param data Data array.
      * @param log Logger.
@@ -126,11 +135,12 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         IgniteH2Indexing h2,
         H2QueryInfo qryInfo,
         Tracing tracing
-    )
-        throws IgniteCheckedException {
+    ) throws IgniteCheckedException {
+        ctx = h2.ctx;
         this.pageSize = pageSize;
         this.data = data;
         this.tracing = tracing;
+        this.qryInfo = qryInfo;
 
         try {
             res = (ResultInterface)RESULT_FIELD.get(data);
@@ -317,6 +327,18 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
 
         try {
             resultSetChecker.checkOnClose();
+
+            PerformanceStatisticsProcessor perfStat = ctx.performanceStatistics();
+
+            if (perfStat.enabled() && resultSetChecker.fetchedSize() > 0) {
+                perfStat.queryRowsProcessed(
+                    GridCacheQueryType.SQL_FIELDS,
+                    qryInfo.nodeId(),
+                    qryInfo.queryId(),
+                    "Fetched on reducer",
+                    resultSetChecker.fetchedSize()
+                );
+            }
 
             data.close();
         }

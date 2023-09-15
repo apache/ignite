@@ -55,6 +55,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -532,6 +533,16 @@ public class GridReduceQueryExecutor {
 
                         ReduceH2QueryInfo qryInfo = new ReduceH2QueryInfo(stmt, qry.originalSql(),
                             ctx.localNodeId(), qryId, qryReqId);
+
+                        if (ctx.performanceStatistics().enabled()) {
+                            ctx.performanceStatistics().queryProperty(
+                                GridCacheQueryType.SQL_FIELDS,
+                                qryInfo.nodeId(),
+                                qryInfo.queryId(),
+                                "Reduce phase plan",
+                                qryInfo.plan()
+                            );
+                        }
 
                         ResultSet res = h2.executeSqlQueryWithTimer(stmt,
                             conn,

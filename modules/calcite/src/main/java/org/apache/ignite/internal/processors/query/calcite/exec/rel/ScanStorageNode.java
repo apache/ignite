@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.calcite.rel.type.RelDataType;
@@ -27,7 +28,11 @@ import org.jetbrains.annotations.Nullable;
  * Scan storage node.
  */
 public class ScanStorageNode<Row> extends ScanNode<Row> {
+    /** */
+    @Nullable private final AtomicLong processedRowsCntr;
+
     /**
+     * @param storageName Storage (index or table) name.
      * @param ctx Execution context.
      * @param rowType Row type.
      * @param src Source.
@@ -35,6 +40,7 @@ public class ScanStorageNode<Row> extends ScanNode<Row> {
      * @param rowTransformer Row transformer (projection).
      */
     public ScanStorageNode(
+        String storageName,
         ExecutionContext<Row> ctx,
         RelDataType rowType,
         Iterable<Row> src,
@@ -42,15 +48,18 @@ public class ScanStorageNode<Row> extends ScanNode<Row> {
         @Nullable Function<Row, Row> rowTransformer
     ) {
         super(ctx, rowType, src, filter, rowTransformer);
+
+        processedRowsCntr = context().ioTracker().processedRowsCounter("Scanned " + storageName);
     }
 
     /**
+     * @param storageName Storage (index or table) name.
      * @param ctx Execution context.
      * @param rowType Row type.
      * @param src Source.
      */
-    public ScanStorageNode(ExecutionContext<Row> ctx, RelDataType rowType, Iterable<Row> src) {
-        super(ctx, rowType, src);
+    public ScanStorageNode(String storageName, ExecutionContext<Row> ctx, RelDataType rowType, Iterable<Row> src) {
+        this(storageName, ctx, rowType, src, null, null);
     }
 
     /** {@inheritDoc} */
@@ -58,10 +67,22 @@ public class ScanStorageNode<Row> extends ScanNode<Row> {
         try {
             context().ioTracker().startTracking();
 
-            return super.processNextBatch();
+            int processed = super.processNextBatch();
+
+            if (processedRowsCntr != null)
+                processedRowsCntr.addAndGet(processed);
+
+            return processed;
         }
         finally {
             context().ioTracker().stopTracking();
         }
+    }
+
+    /** */
+    @Override public void closeInternal() {
+        super.closeInternal();
+
+        context().ioTracker().flush();
     }
 }

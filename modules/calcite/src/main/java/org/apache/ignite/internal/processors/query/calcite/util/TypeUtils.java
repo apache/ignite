@@ -57,6 +57,7 @@ import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlIntervalLiteral;
 import org.apache.calcite.sql.SqlLiteral;
+import org.apache.calcite.sql.SqlUnknownLiteral;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.util.DateString;
@@ -371,15 +372,22 @@ public class TypeUtils {
      */
     private static long toLong(DataContext ctx, Object val) {
         if (val instanceof LocalDateTime)
-            return SqlFunctions.toLong(DateValueUtils.convertToTimestamp((LocalDateTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
+            return toLong(DateValueUtils.convertToTimestamp((LocalDateTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
 
         if (val instanceof LocalDate)
-            return SqlFunctions.toLong(DateValueUtils.convertToSqlDate((LocalDate)val), DataContext.Variable.TIME_ZONE.get(ctx));
+            return toLong(DateValueUtils.convertToSqlDate((LocalDate)val), DataContext.Variable.TIME_ZONE.get(ctx));
 
         if (val instanceof LocalTime)
-            return SqlFunctions.toLong(DateValueUtils.convertToSqlTime((LocalTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
+            return toLong(DateValueUtils.convertToSqlTime((LocalTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
 
-        return SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx));
+        return toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx));
+    }
+
+    /** */
+    private static long toLong(java.util.Date val, TimeZone tz) {
+        long time = val.getTime();
+
+        return time + tz.getOffset(time);
     }
 
     /** */
@@ -419,12 +427,21 @@ public class TypeUtils {
         try {
             storageType = Primitive.box(storageType); // getValueAs() implemented only for boxed classes.
 
-            if (Date.class.equals(storageType))
-                internalVal = literal.getValueAs(DateString.class).getDaysSinceEpoch();
-            else if (Time.class.equals(storageType))
-                internalVal = literal.getValueAs(TimeString.class).getMillisOfDay();
-            else if (Timestamp.class.equals(storageType))
-                internalVal = literal.getValueAs(TimestampString.class).getMillisSinceEpoch();
+            if (Date.class.equals(storageType)) {
+                SqlLiteral literal0 = ((SqlUnknownLiteral)literal).resolve(SqlTypeName.DATE);
+
+                internalVal = literal0.getValueAs(DateString.class).getDaysSinceEpoch();
+            }
+            else if (Time.class.equals(storageType)) {
+                SqlLiteral literal0 = ((SqlUnknownLiteral)literal).resolve(SqlTypeName.TIME);
+
+                internalVal = literal0.getValueAs(TimeString.class).getMillisOfDay();
+            }
+            else if (Timestamp.class.equals(storageType)) {
+                SqlLiteral literal0 = ((SqlUnknownLiteral)literal).resolve(SqlTypeName.TIMESTAMP);
+
+                internalVal = literal0.getValueAs(TimestampString.class).getMillisSinceEpoch();
+            }
             else if (Duration.class.equals(storageType)) {
                 if (literal instanceof SqlIntervalLiteral &&
                     !literal.getValueAs(SqlIntervalLiteral.IntervalValue.class).getIntervalQualifier().isYearMonth())

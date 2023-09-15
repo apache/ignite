@@ -22,6 +22,9 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientNotification;
 
+import static javax.cache.event.EventType.EXPIRED;
+import static javax.cache.event.EventType.REMOVED;
+
 /**
  * Continuous query notification.
  */
@@ -53,7 +56,7 @@ public class ClientCacheEntryEventNotification extends ClientNotification {
         for (CacheEntryEvent evt : evts) {
             writer.writeObjectDetached(evt.getKey());
             writer.writeObjectDetached(evt.getOldValue());
-            writer.writeObjectDetached(evt.getValue());
+            writer.writeObjectDetached(evt.getEventType() == EXPIRED || evt.getEventType() == REMOVED ? null : evt.getValue());
 
             switch (evt.getEventType()) {
                 case CREATED:
