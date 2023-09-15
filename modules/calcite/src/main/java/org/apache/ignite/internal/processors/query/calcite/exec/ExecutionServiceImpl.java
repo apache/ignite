@@ -76,6 +76,7 @@ import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
@@ -634,16 +635,14 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         // Start remote execution.
         for (int i = 1; i < fragments.size(); i++) {
             fragment = fragments.get(i);
-            fragmentDesc = new FragmentDescription(
-                fragment.fragmentId(),
-                plan.mapping(fragment),
-                plan.target(fragment),
-                plan.remotes(fragment));
+            FragmentMapping mapping = plan.mapping(fragment);
+            ColocationGroup target = plan.target(fragment);
+            Map<Long, List<UUID>> remotes = plan.remotes(fragment);
 
             Throwable ex = null;
             byte[] parametersMarshalled = null;
 
-            for (UUID nodeId : fragmentDesc.nodeIds()) {
+            for (UUID nodeId : mapping.nodeIds()) {
                 if (ex != null)
                     qry.onResponse(nodeId, fragment.fragmentId(), ex);
                 else {
@@ -654,7 +653,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                             qry.context().schemaName(),
                             fragment.serialized(),
                             ectx.topologyVersion(),
-                            fragmentDesc,
+                            new FragmentDescription(fragment.fragmentId(), mapping.local(nodeId), target, remotes),
                             fragmentsPerNode.get(nodeId).intValue(),
                             qry.parameters(),
                             parametersMarshalled,
