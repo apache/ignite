@@ -331,12 +331,12 @@ public class JavaThinClient {
         try (IgniteClient igniteClient = Ignition.startClient(cfg)) {
 
             // getting the id of the first node
-            UUID nodeId = (UUID) igniteClient.query(new SqlFieldsQuery("SELECT * from NODES").setSchema("IGNITE"))
+            UUID nodeId = (UUID) igniteClient.query(new SqlFieldsQuery("SELECT * from NODES").setSchema("SYS"))
             .getAll().iterator().next().get(0);
 
             double cpu_load = (Double) igniteClient
             .query(new SqlFieldsQuery("select CUR_CPU_LOAD * 100 from NODE_METRICS where NODE_ID = ? ")
-            .setSchema("IGNITE").setArgs(nodeId.toString()))
+            .setSchema("SYS").setArgs(nodeId.toString()))
             .getAll().iterator().next().get(0);
 
             System.out.println("node's cpu load = " + cpu_load);
@@ -359,6 +359,9 @@ public class JavaThinClient {
         try (IgniteClient client = Ignition.startClient(cfg)) {
             ClientCache<Integer, String> cache = client.cache("myCache");
             // Put, get or remove data from the cache...
+            cache.put(0, "Hello, world!");
+            // The partition number can be specified with IndexQuery#setPartition(Integer) as well.
+            ScanQuery scanQuery = new ScanQuery().setPartition(part);
         } catch (ClientException e) {
             System.err.println(e.getMessage());
         }

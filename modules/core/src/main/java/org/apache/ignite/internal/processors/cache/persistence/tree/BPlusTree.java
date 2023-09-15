@@ -1231,12 +1231,19 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param upper Upper bound.
      * @param upIncl {@code true} if upper bound is inclusive.
      * @param c Filter closure.
+     * @param rowFactory Row factory or (@code null} for default factory.
      * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    private GridCursor<T> findLowerUnbounded(L upper, boolean upIncl, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
-        ForwardCursor cursor = new ForwardCursor(upper, upIncl, c, x);
+    private GridCursor<T> findLowerUnbounded(
+        L upper,
+        boolean upIncl,
+        TreeRowClosure<L, T> c,
+        TreeRowFactory<L, T> rowFactory,
+        Object x
+    ) throws IgniteCheckedException {
+        ForwardCursor cursor = new ForwardCursor(upper, upIncl, c, rowFactory, x);
 
         long firstPageId;
 
@@ -1299,7 +1306,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     public GridCursor<T> find(L lower, L upper, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
-        return find(lower, upper, true, true, c, x);
+        return find(lower, upper, true, true, c, null, x);
     }
 
     /**
@@ -1308,6 +1315,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param lowIncl {@code true} if lower bound is inclusive.
      * @param upIncl {@code true} if upper bound is inclusive.
      * @param c Filter closure.
+     * @param rowFactory Row factory or (@code null} for default factory.
      * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
@@ -1318,15 +1326,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         boolean lowIncl,
         boolean upIncl,
         TreeRowClosure<L, T> c,
+        TreeRowFactory<L, T> rowFactory,
         Object x
     ) throws IgniteCheckedException {
         checkDestroyed();
 
-        ForwardCursor cursor = new ForwardCursor(lower, upper, lowIncl, upIncl, c, x);
+        ForwardCursor cursor = new ForwardCursor(lower, upper, lowIncl, upIncl, c, rowFactory, x);
 
         try {
             if (lower == null)
-                return findLowerUnbounded(upper, upIncl, c, x);
+                return findLowerUnbounded(upper, upIncl, c, rowFactory, x);
 
             cursor.find();
 
@@ -6114,16 +6123,20 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** */
         private final TreeRowClosure<L, T> c;
 
+        /** */
+        private final TreeRowFactory<L, T> rowFactory;
+
         /**
          * Lower unbound cursor.
          *
          * @param upperBound Upper bound.
          * @param upIncl {@code true} if upper bound is inclusive.
          * @param c Filter closure.
+         * @param rowFactory Row factory or (@code null} for default factory.
          * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
          */
-        ForwardCursor(L upperBound, boolean upIncl, TreeRowClosure<L, T> c, Object x) {
-            this(null, upperBound, true, upIncl, c, x);
+        ForwardCursor(L upperBound, boolean upIncl, TreeRowClosure<L, T> c, TreeRowFactory<L, T> rowFactory, Object x) {
+            this(null, upperBound, true, upIncl, c, rowFactory, x);
         }
 
         /**
@@ -6132,12 +6145,22 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param lowIncl {@code true} if lower bound is inclusive.
          * @param upIncl {@code true} if upper bound is inclusive.
          * @param c Filter closure.
+         * @param rowFactory Row factory or (@code null} for default factory.
          * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
          */
-        ForwardCursor(L lowerBound, L upperBound, boolean lowIncl, boolean upIncl, TreeRowClosure<L, T> c, Object x) {
+        ForwardCursor(
+            L lowerBound,
+            L upperBound,
+            boolean lowIncl,
+            boolean upIncl,
+            TreeRowClosure<L, T> c,
+            TreeRowFactory<L, T> rowFactory,
+            Object x
+        ) {
             super(lowerBound, upperBound, lowIncl, upIncl);
 
             this.c = c;
+            this.rowFactory = rowFactory;
             this.x = x;
         }
 
@@ -6164,8 +6187,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             int resCnt = 0;
 
             for (int idx = startIdx; idx < cnt; idx++) {
-                if (c == null || c.apply(BPlusTree.this, io, pageAddr, idx))
-                    rows = GridArrays.set(rows, resCnt++, getRow(io, pageAddr, idx, x));
+                if (c == null || c.apply(BPlusTree.this, io, pageAddr, idx)) {
+                    rows = GridArrays.set(rows, resCnt++, rowFactory == null ? getRow(io, pageAddr, idx, x) :
+                        rowFactory.create(BPlusTree.this, io, pageAddr, idx));
+                }
             }
 
             if (resCnt == 0) {
@@ -6369,6 +6394,24 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @throws IgniteCheckedException If failed.
          */
         public boolean apply(BPlusTree<L, T> tree, BPlusIO<L> io, long pageAddr, int idx)
+            throws IgniteCheckedException;
+    }
+
+    /**
+     * Row factory from page memory.
+     */
+    public interface TreeRowFactory<L, T extends L> {
+        /**
+         * Creates row.
+         *
+         * @param tree The tree.
+         * @param io The tree IO object.
+         * @param pageAddr The page address.
+         * @param idx The item index.
+         * @return Created index row.
+         * @throws IgniteCheckedException If failed.
+         */
+        public T create(BPlusTree<L, T> tree, BPlusIO<L> io, long pageAddr, int idx)
             throws IgniteCheckedException;
     }
 

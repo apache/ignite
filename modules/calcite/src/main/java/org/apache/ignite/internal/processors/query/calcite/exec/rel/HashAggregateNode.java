@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteException;
@@ -36,7 +35,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumula
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static java.util.stream.Collectors.toCollection;
@@ -45,16 +43,7 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.n
 /**
  *
  */
-public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
-    /** */
-    private final AggregateType type;
-
-    /** May be {@code null} when there are not accumulators (DISTINCT aggregate node). */
-    private final Supplier<List<AccumulatorWrapper<Row>>> accFactory;
-
-    /** */
-    private final RowFactory<Row> rowFactory;
-
+public class HashAggregateNode<Row> extends AggregateNode<Row> {
     /** */
     private final ImmutableBitSet grpSet;
 
@@ -73,13 +62,15 @@ public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleN
     /**
      * @param ctx Execution context.
      */
-    public HashAggregateNode(ExecutionContext<Row> ctx, RelDataType rowType, AggregateType type, List<ImmutableBitSet> grpSets,
-        Supplier<List<AccumulatorWrapper<Row>>> accFactory, RowFactory<Row> rowFactory) {
-        super(ctx, rowType);
-
-        this.type = type;
-        this.accFactory = accFactory;
-        this.rowFactory = rowFactory;
+    public HashAggregateNode(
+        ExecutionContext<Row> ctx,
+        RelDataType rowType,
+        AggregateType type,
+        List<ImmutableBitSet> grpSets,
+        Supplier<List<AccumulatorWrapper<Row>>> accFactory,
+        RowFactory<Row> rowFactory
+    ) {
+        super(ctx, rowType, type, accFactory, rowFactory, rowOverhead(type, grpSets));
 
         ImmutableBitSet.Builder b = ImmutableBitSet.builder();
 
@@ -96,6 +87,14 @@ public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleN
         }
 
         grpSet = b.build();
+    }
+
+    /** */
+    private static long rowOverhead(AggregateType type, List<ImmutableBitSet> grpSets) {
+        if (type == AggregateType.REDUCE) // On reduce node each row affects only one group.
+            return HASH_MAP_ROW_OVERHEAD;
+        else // Assume half of groups are affected in case row is added to at least one of them.
+            return HASH_MAP_ROW_OVERHEAD * grpSets.size() / 2;
     }
 
     /** {@inheritDoc} */
@@ -123,8 +122,33 @@ public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleN
 
         waiting--;
 
-        for (Grouping grouping : groupings)
+        boolean groupingsChanged = false;
+
+        for (Grouping grouping : groupings) {
+            int size = groupings.size();
+
             grouping.add(row);
+
+            if (grouping.size() > size)
+                groupingsChanged = true;
+        }
+
+        // It's a very rough estimate of memory consumption for this node.
+        // To calculate precise size several aspects should be taken into account:
+        //  - There are intersections possible between column sets of groupings, in this case size of object refered by
+        //    intersected columns must be calculated only once.
+        //  - If accumulators contain AggAccumulator, then GroupKey columns will be refered to objects which are refered
+        //    by rows in AggAccumulator too.
+        //  - Logic for map and reduce nodes should be completly different, we should take into account GroupKey and
+        //    accumulators wrapping into a row on reduce node.
+        //  - Etc.
+        // So, precise size calculation can be complicated and can affect performance.
+        // To simplify the calculation, here we assuming that all objects referenced by row are used by groupings or
+        // aggregations (all redundant columns are dropped by optimizer earlier), so, just calculating the size of the
+        // whole row we have close to real memory consumption by row referenced objects (except service structures).
+        // Also we can guess size of service structures required by grouping and use it as constant row overhead.
+        if (hasAggAccum || groupingsChanged)
+            nodeMemoryTracker.onRowAdded(row);
 
         if (waiting == 0)
             source().request(waiting = IN_BUFFER_SIZE);
@@ -147,19 +171,7 @@ public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleN
         requested = 0;
         waiting = 0;
         groupings.forEach(Grouping::reset);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Downstream<Row> requestDownstream(int idx) {
-        if (idx != 0)
-            throw new IndexOutOfBoundsException();
-
-        return this;
-    }
-
-    /** */
-    private boolean hasAccumulators() {
-        return accFactory != null;
+        nodeMemoryTracker.reset();
     }
 
     /** */
@@ -304,11 +316,11 @@ public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleN
             GroupKey grpKey = (GroupKey)handler.get(1, row);
 
             List<AccumulatorWrapper<Row>> wrappers = groups.computeIfAbsent(grpKey, this::create);
-            List<Accumulator> accums = hasAccumulators() ? (List<Accumulator>)handler.get(2, row) : Collections.emptyList();
+            Accumulator<Row>[] accums = hasAccumulators() ? (Accumulator<Row>[])handler.get(2, row) : null;
 
             for (int i = 0; i < wrappers.size(); i++) {
                 AccumulatorWrapper<Row> wrapper = wrappers.get(i);
-                Accumulator accum = accums.get(i);
+                Accumulator<Row> accum = accums[i];
 
                 wrapper.apply(accum);
             }
@@ -325,11 +337,17 @@ public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleN
                 Map.Entry<GroupKey, List<AccumulatorWrapper<Row>>> entry = it.next();
 
                 GroupKey grpKey = entry.getKey();
-                List<Accumulator> accums = Commons.transform(entry.getValue(), AccumulatorWrapper::accumulator);
+                if (hasAccumulators()) {
+                    List<AccumulatorWrapper<Row>> wrappers = entry.getValue();
+                    Accumulator<Row>[] accums = new Accumulator[wrappers.size()];
 
-                Row row = hasAccumulators() ? rowFactory.create(grpId, grpKey, accums) : rowFactory.create(grpId, grpKey);
+                    for (int j = 0; j < wrappers.size(); j++)
+                        accums[j] = wrappers.get(j).accumulator();
 
-                res.add(row);
+                    res.add(rowFactory.create(grpId, grpKey, accums));
+                }
+                else
+                    res.add(rowFactory.create(grpId, grpKey));
 
                 it.remove();
             }
@@ -354,8 +372,10 @@ public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleN
 
                 int j = 0, k = 0;
 
+                Object[] keyFields = grpKey.fields();
+
                 for (Integer field : grpSet)
-                    fields[j++] = grpFields.get(field) ? grpKey.field(k++) : null;
+                    fields[j++] = grpFields.get(field) ? keyFields[k++] : null;
 
                 for (AccumulatorWrapper<Row> wrapper : wrappers)
                     fields[j++] = wrapper.end();
@@ -378,6 +398,11 @@ public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleN
         /** */
         private boolean isEmpty() {
             return groups.isEmpty();
+        }
+
+        /** */
+        private int size() {
+            return groups.size();
         }
     }
 }

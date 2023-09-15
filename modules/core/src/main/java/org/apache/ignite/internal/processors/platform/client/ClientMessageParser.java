@@ -585,7 +585,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientCacheQueryContinuousRequest(reader);
 
             case OP_QUERY_INDEX:
-                return new ClientCacheIndexQueryRequest(reader);
+                return new ClientCacheIndexQueryRequest(reader, protocolCtx);
 
             case OP_TX_START:
                 return new ClientTxStartRequest(reader);

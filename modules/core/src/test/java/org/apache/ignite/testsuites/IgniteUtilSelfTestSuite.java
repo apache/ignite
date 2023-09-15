@@ -18,9 +18,12 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.IgniteVersionUtilsSelfTest;
+import org.apache.ignite.internal.management.api.CommandUtilsSelfTest;
 import org.apache.ignite.internal.pagemem.impl.PageIdUtilsSelfTest;
 import org.apache.ignite.internal.util.BasicRateLimiterTest;
+import org.apache.ignite.internal.util.DistributedProcessClientAwaitTest;
 import org.apache.ignite.internal.util.DistributedProcessCoordinatorLeftTest;
+import org.apache.ignite.internal.util.DistributedProcessErrorHandlingTest;
 import org.apache.ignite.internal.util.GridArraysSelfTest;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueueTest;
 import org.apache.ignite.internal.util.GridCountDownCallbackTest;
@@ -29,6 +32,7 @@ import org.apache.ignite.internal.util.IgniteDevOnlyLogTest;
 import org.apache.ignite.internal.util.IgniteExceptionRegistrySelfTest;
 import org.apache.ignite.internal.util.IgniteUtilsSelfTest;
 import org.apache.ignite.internal.util.IgniteUtilsUnitTest;
+import org.apache.ignite.internal.util.lang.GridFuncSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioDelimitedBufferSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioServerTest;
@@ -109,6 +113,7 @@ import org.junit.runners.Suite;
     GridTransientTest.class,
     IgniteDevOnlyLogTest.class,
     GridConcurrentMultiPairQueueTest.class,
+    GridFuncSelfTest.class,
 
     // Sensitive toString.
     IncludeSensitiveAtomicTest.class,
@@ -143,11 +148,14 @@ import org.junit.runners.Suite;
 
     GridCountDownCallbackTest.class,
 
+    DistributedProcessErrorHandlingTest.class,
     DistributedProcessCoordinatorLeftTest.class,
+    DistributedProcessClientAwaitTest.class,
 
     BasicRateLimiterTest.class,
 
-    HostAndPortRangeTest.class
+    HostAndPortRangeTest.class,
+    CommandUtilsSelfTest.class
 })
 public class IgniteUtilSelfTestSuite {
 }

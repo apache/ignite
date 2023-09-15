@@ -50,7 +50,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ObjectMetric;
-import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -116,7 +115,6 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         cdcCfg.setConsumer(cnsmr);
         cdcCfg.setKeepBinary(keepBinary());
-        cdcCfg.setMetricExporterSpi(new JmxMetricExporterSpi());
 
         return new CdcMain(cfg, null, cdcCfg) {
             @Override protected CdcConsumerState createState(Path stateDir) {
@@ -346,7 +344,12 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         /** @return Read keys. */
         public List<T> data(ChangeEventType op, int cacheId) {
-            return data.get(F.t(op, cacheId));
+            return data.computeIfAbsent(F.t(op, cacheId), k -> new ArrayList<>());
+        }
+
+        /** */
+        public void clear() {
+            data.clear();
         }
 
         /** */
@@ -407,7 +410,8 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
                 String typeName = m.typeName();
 
                 assertFalse(typeName.isEmpty());
-                assertEquals(mapper.typeId(typeName), m.typeId());
+                // Can also be registered by OptimizedMarshaller.
+                assertTrue(m.typeId() == mapper.typeId(typeName) || m.typeId() == typeName.hashCode());
             });
         }
     }

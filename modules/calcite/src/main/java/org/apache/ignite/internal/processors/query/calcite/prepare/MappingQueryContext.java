@@ -39,9 +39,18 @@ public class MappingQueryContext {
     private RelOptCluster cluster;
 
     /** */
+    private final boolean isLocal;
+
+    /** */
     public MappingQueryContext(UUID locNodeId, AffinityTopologyVersion topVer) {
+        this(locNodeId, topVer, false);
+    }
+
+    /** */
+    public MappingQueryContext(UUID locNodeId, AffinityTopologyVersion topVer, boolean isLocal) {
         this.locNodeId = locNodeId;
         this.topVer = topVer;
+        this.isLocal = isLocal;
     }
 
     /** */
@@ -52,6 +61,11 @@ public class MappingQueryContext {
     /** */
     public AffinityTopologyVersion topologyVersion() {
         return topVer;
+    }
+
+    /** */
+    public boolean isLocal() {
+        return isLocal;
     }
 
     /** Creates a cluster. */

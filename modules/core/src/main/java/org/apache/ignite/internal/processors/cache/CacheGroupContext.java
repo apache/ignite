@@ -37,6 +37,7 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderCache;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
@@ -56,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapM
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
+import org.apache.ignite.internal.processors.compress.CompressionHandler;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -71,6 +73,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CacheTopologyValidatorProvider;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -174,6 +177,9 @@ public class CacheGroupContext {
     /** */
     private volatile boolean globalWalEnabled;
 
+    /** @see IndexesRebuildTask */
+    private volatile boolean idxWalEnabled;
+
     /** Flag indicates that cache group is under recovering and not attached to topology. */
     private final AtomicBoolean recoveryMode;
 
@@ -192,6 +198,12 @@ public class CacheGroupContext {
     /** Topology validators. */
     private final Collection<TopologyValidator> topValidators;
 
+    /** Disk page compression method. */
+    private final CompressionHandler compressHandler;
+
+    /** Cache is prepared to stop. */
+    private volatile boolean preparedToStop;
+
     /**
      * @param ctx Context.
      * @param grpId Group ID.
@@ -206,6 +218,7 @@ public class CacheGroupContext {
      * @param locStartVer Topology version when group was started on local node.
      * @param persistenceEnabled Persistence enabled flag.
      * @param walEnabled Wal enabled flag.
+     * @param compressHandler Compresion handler.
      */
     public CacheGroupContext(
         GridCacheSharedContext ctx,
@@ -221,7 +234,8 @@ public class CacheGroupContext {
         AffinityTopologyVersion locStartVer,
         boolean persistenceEnabled,
         boolean walEnabled,
-        boolean recoveryMode
+        boolean recoveryMode,
+        CompressionHandler compressHandler
     ) {
         assert ccfg != null;
         assert dataRegion != null || !affNode;
@@ -241,7 +255,9 @@ public class CacheGroupContext {
         this.globalWalEnabled = walEnabled;
         this.persistenceEnabled = persistenceEnabled;
         this.localWalEnabled = true;
+        this.idxWalEnabled = true;
         this.recoveryMode = new AtomicBoolean(recoveryMode);
+        this.compressHandler = compressHandler;
 
         ioPlc = cacheType.ioPolicy();
 
@@ -429,6 +445,9 @@ public class CacheGroupContext {
      */
     public GridCacheContext singleCacheContext() {
         List<GridCacheContext> caches = this.caches;
+
+        if (caches.isEmpty()) // Cache stopped.
+            return null;
 
         assert !sharedGroup() && caches.size() == 1 :
             "stopping=" + ctx.kernalContext().isStopping() + ", groupName=" + ccfg.getGroupName() +
@@ -1227,6 +1246,16 @@ public class CacheGroupContext {
         return globalWalEnabled;
     }
 
+    /** @return {@code True} if WAL for index operations enabled. */
+    public boolean indexWalEnabled() {
+        return idxWalEnabled;
+    }
+
+    /** @param idxWalEnabled Index WAL enabled flag. */
+    public void indexWalEnabled(boolean idxWalEnabled) {
+        this.idxWalEnabled = idxWalEnabled;
+    }
+
     /**
      * @param enabled Global WAL enabled flag.
      */
@@ -1327,6 +1356,23 @@ public class CacheGroupContext {
      */
     public IgniteWriteAheadLogManager wal() {
         return ctx.wal(cdcEnabled());
+    }
+
+    /** */
+    public CompressionHandler compressionHandler() {
+        return compressHandler;
+    }
+
+    /** Prepare cache to stop (prohibit any futher updates). */
+    public void prepareToStop() {
+        preparedToStop = true;
+
+        offheap().prepareToStop();
+    }
+
+    /** */
+    public boolean isPreparedToStop() {
+        return preparedToStop;
     }
 
     /**

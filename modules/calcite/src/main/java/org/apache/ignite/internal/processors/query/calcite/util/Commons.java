@@ -204,7 +204,7 @@ public final class Commons {
             return parse(new SourceStringReader(qry), parserCfg);
         }
         catch (SqlParseException e) {
-            throw new IgniteSQLException("Failed to parse query.", IgniteQueryErrorCode.PARSING, e);
+            throw new IgniteSQLException("Failed to parse query. " + e.getMessage(), IgniteQueryErrorCode.PARSING, e);
         }
     }
 
@@ -444,6 +444,11 @@ public final class Commons {
 
     /** */
     public static MappingQueryContext mapContext(UUID locNodeId, AffinityTopologyVersion topVer) {
-        return new MappingQueryContext(locNodeId, topVer);
+        return mapContext(locNodeId, topVer, false);
+    }
+
+    /** */
+    public static MappingQueryContext mapContext(UUID locNodeId, AffinityTopologyVersion topVer, boolean isLocal) {
+        return new MappingQueryContext(locNodeId, topVer, isLocal);
     }
 }

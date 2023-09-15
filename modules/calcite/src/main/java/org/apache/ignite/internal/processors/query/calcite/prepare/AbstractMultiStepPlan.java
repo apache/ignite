@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public abstract class AbstractMultiStepPlan implements MultiStepPlan {
+public abstract class AbstractMultiStepPlan extends AbstractQueryPlan implements MultiStepPlan {
     /** */
     protected final FieldsMetadata fieldsMetadata;
 
@@ -48,11 +48,19 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     protected ExecutionPlan executionPlan;
 
     /** */
+    private final String textPlan;
+
+    /** */
     protected AbstractMultiStepPlan(
+        String qry,
+        String textPlan,
         QueryTemplate queryTemplate,
         FieldsMetadata fieldsMetadata,
         @Nullable FieldsMetadata paramsMetadata
     ) {
+        super(qry);
+
+        this.textPlan = textPlan;
         this.queryTemplate = queryTemplate;
         this.fieldsMetadata = fieldsMetadata;
         this.paramsMetadata = paramsMetadata;
@@ -115,5 +123,10 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
                 "fragmentId=" + fragmentId + ", " +
                 "fragments=" + fragments() + "]"))
             .mapping();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String textPlan() {
+        return textPlan;
     }
 }

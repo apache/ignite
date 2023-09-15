@@ -141,125 +141,80 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
-        super.start();
+    @Override public void onKernalStart() throws IgniteCheckedException {
+        super.onKernalStart();
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearGetRequest.class, new CI2<UUID, GridNearGetRequest>() {
-            @Override public void apply(UUID nodeId, GridNearGetRequest req) {
-                processNearGetRequest(nodeId, req);
-            }
-        });
+        assert !ctx.isRecoveryMode() : "Registering message handlers in recovery mode [cacheName=" + name() + ']';
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearSingleGetRequest.class, new CI2<UUID, GridNearSingleGetRequest>() {
-            @Override public void apply(UUID nodeId, GridNearSingleGetRequest req) {
-                processNearSingleGetRequest(nodeId, req);
-            }
-        });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridNearGetRequest.class,
+            (CI2<UUID, GridNearGetRequest>)this::processNearGetRequest);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearLockRequest.class, new CI2<UUID, GridNearLockRequest>() {
-            @Override public void apply(UUID nodeId, GridNearLockRequest req) {
-                processNearLockRequest(nodeId, req);
-            }
-        });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridNearSingleGetRequest.class,
+            (CI2<UUID, GridNearSingleGetRequest>)this::processNearSingleGetRequest);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridDhtLockRequest.class, new CI2<UUID, GridDhtLockRequest>() {
-            @Override public void apply(UUID nodeId, GridDhtLockRequest req) {
-                processDhtLockRequest(nodeId, req);
-            }
-        });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridNearLockRequest.class,
+            (CI2<UUID, GridNearLockRequest>)this::processNearLockRequest);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridDhtLockResponse.class, new CI2<UUID, GridDhtLockResponse>() {
-            @Override public void apply(UUID nodeId, GridDhtLockResponse req) {
-                processDhtLockResponse(nodeId, req);
-            }
-        });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridDhtLockRequest.class,
+            (CI2<UUID, GridDhtLockRequest>)this::processDhtLockRequest);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearUnlockRequest.class, new CI2<UUID, GridNearUnlockRequest>() {
-            @Override public void apply(UUID nodeId, GridNearUnlockRequest req) {
-                processNearUnlockRequest(nodeId, req);
-            }
-        });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridDhtLockResponse.class,
+            (CI2<UUID, GridDhtLockResponse>)this::processDhtLockResponse);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridDhtUnlockRequest.class, new CI2<UUID, GridDhtUnlockRequest>() {
-            @Override public void apply(UUID nodeId, GridDhtUnlockRequest req) {
-                processDhtUnlockRequest(nodeId, req);
-            }
-        });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridNearUnlockRequest.class,
+            (CI2<UUID, GridNearUnlockRequest>)this::processNearUnlockRequest);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearTxQueryEnlistRequest.class, new CI2<UUID, GridNearTxQueryEnlistRequest>() {
-            @Override public void apply(UUID nodeId, GridNearTxQueryEnlistRequest req) {
-                processNearTxQueryEnlistRequest(nodeId, req);
-            }
-        });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridDhtUnlockRequest.class,
+            (CI2<UUID, GridDhtUnlockRequest>)this::processDhtUnlockRequest);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearTxQueryEnlistResponse.class, new CI2<UUID, GridNearTxQueryEnlistResponse>() {
-            @Override public void apply(UUID nodeId, GridNearTxQueryEnlistResponse req) {
-                processNearTxQueryEnlistResponse(nodeId, req);
-            }
-        });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridNearTxQueryEnlistRequest.class,
+            (CI2<UUID, GridNearTxQueryEnlistRequest>)this::processNearTxQueryEnlistRequest);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridDhtForceKeysRequest.class,
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridNearTxQueryEnlistResponse.class,
+            (CI2<UUID, GridNearTxQueryEnlistResponse>)this::processNearTxQueryEnlistResponse);
+
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridDhtForceKeysRequest.class,
             new MessageHandler<GridDhtForceKeysRequest>() {
                 @Override public void onMessage(ClusterNode node, GridDhtForceKeysRequest msg) {
                     processForceKeysRequest(node, msg);
                 }
             });
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridDhtForceKeysResponse.class,
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridDhtForceKeysResponse.class,
             new MessageHandler<GridDhtForceKeysResponse>() {
                 @Override public void onMessage(ClusterNode node, GridDhtForceKeysResponse msg) {
                     processForceKeyResponse(node, msg);
                 }
             });
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearTxQueryResultsEnlistRequest.class,
-            new CI2<UUID, GridNearTxQueryResultsEnlistRequest>() {
-                @Override public void apply(UUID nodeId, GridNearTxQueryResultsEnlistRequest req) {
-                    processNearTxQueryResultsEnlistRequest(nodeId, req);
-                }
-            });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridNearTxQueryResultsEnlistRequest.class,
+            (CI2<UUID, GridNearTxQueryResultsEnlistRequest>)this::processNearTxQueryResultsEnlistRequest);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearTxQueryResultsEnlistResponse.class,
-            new CI2<UUID, GridNearTxQueryResultsEnlistResponse>() {
-                @Override public void apply(UUID nodeId, GridNearTxQueryResultsEnlistResponse req) {
-                    processNearTxQueryResultsEnlistResponse(nodeId, req);
-                }
-            });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridNearTxQueryResultsEnlistResponse.class,
+            (CI2<UUID, GridNearTxQueryResultsEnlistResponse>)this::processNearTxQueryResultsEnlistResponse);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearTxEnlistRequest.class,
-            new CI2<UUID, GridNearTxEnlistRequest>() {
-                @Override public void apply(UUID nodeId, GridNearTxEnlistRequest req) {
-                    processNearTxEnlistRequest(nodeId, req);
-                }
-            });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridNearTxEnlistRequest.class,
+            (CI2<UUID, GridNearTxEnlistRequest>)this::processNearTxEnlistRequest);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearTxEnlistResponse.class,
-            new CI2<UUID, GridNearTxEnlistResponse>() {
-                @Override public void apply(UUID nodeId, GridNearTxEnlistResponse msg) {
-                    processNearTxEnlistResponse(nodeId, msg);
-                }
-            });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridNearTxEnlistResponse.class,
+            (CI2<UUID, GridNearTxEnlistResponse>)this::processNearTxEnlistResponse);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridDhtTxQueryEnlistRequest.class,
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridDhtTxQueryEnlistRequest.class,
             new CI2<UUID, GridDhtTxQueryEnlistRequest>() {
                 @Override public void apply(UUID nodeId, GridDhtTxQueryEnlistRequest msg) {
                     processDhtTxQueryEnlistRequest(nodeId, msg, false);
                 }
             });
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridDhtTxQueryFirstEnlistRequest.class,
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridDhtTxQueryFirstEnlistRequest.class,
             new CI2<UUID, GridDhtTxQueryEnlistRequest>() {
                 @Override public void apply(UUID nodeId, GridDhtTxQueryEnlistRequest msg) {
                     processDhtTxQueryEnlistRequest(nodeId, msg, true);
                 }
             });
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridDhtTxQueryEnlistResponse.class,
-            new CI2<UUID, GridDhtTxQueryEnlistResponse>() {
-                @Override public void apply(UUID nodeId, GridDhtTxQueryEnlistResponse msg) {
-                    processDhtTxQueryEnlistResponse(nodeId, msg);
-                }
-            });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridDhtTxQueryEnlistResponse.class,
+            (CI2<UUID, GridDhtTxQueryEnlistResponse>)this::processDhtTxQueryEnlistResponse);
     }
 
     /** {@inheritDoc} */
@@ -326,7 +281,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 tx = new GridDhtTxRemote(
                                     ctx.shared(),
                                     req.nodeId(),
-                                    req.futureId(),
                                     nodeId,
                                     req.nearXidVersion(),
                                     req.topologyVersion(),
@@ -755,7 +709,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             nodeId,
             req.version(),
             req.mvccSnapshot(),
-            req.threadId(),
             req.futureId(),
             req.miniId(),
             tx,
@@ -814,14 +767,14 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 if (waitForExchangeFuture(nearNode, req))
                     return;
 
-                f = lockAllAsync(ctx, nearNode, req, null);
+                f = lockAllAsync(ctx, nearNode, req);
 
                 if (f != null)
                     break;
             }
         }
         else
-            f = lockAllAsync(ctx, nearNode, req, null);
+            f = lockAllAsync(ctx, nearNode, req);
 
         // Register listener just so we print out errors.
         // Exclude lock timeout and rollback exceptions since it's not a fatal exception.
@@ -885,7 +838,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     private void processDhtLockResponse(UUID nodeId, GridDhtLockResponse res) {
         assert nodeId != null;
         assert res != null;
-        GridDhtLockFuture fut = (GridDhtLockFuture)ctx.mvcc().<Boolean>versionedFuture(res.version(), res.futureId());
+        GridDhtLockFuture fut = (GridDhtLockFuture)ctx.mvcc().versionedFuture(res.version(), res.futureId());
 
         if (fut == null) {
             if (txLockMsgLog.isDebugEnabled())
@@ -980,7 +933,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             tx.threadId(),
             createTtl,
             accessTtl,
-            filter,
             skipStore,
             keepBinary);
 
@@ -1035,17 +987,13 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param cacheCtx Cache context.
      * @param nearNode Near node.
      * @param req Request.
-     * @param filter0 Filter.
      * @return Future.
      */
     public IgniteInternalFuture<GridNearLockResponse> lockAllAsync(
         final GridCacheContext<?, ?> cacheCtx,
         final ClusterNode nearNode,
-        final GridNearLockRequest req,
-        @Nullable final CacheEntryPredicate[] filter0) {
+        final GridNearLockRequest req) {
         final List<KeyCacheObject> keys = req.keys();
-
-        CacheEntryPredicate[] filter = filter0;
 
         // Set message into thread context.
         GridDhtTxLocal tx = null;
@@ -1061,10 +1009,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
 
             final List<GridCacheEntryEx> entries = new ArrayList<>(cnt);
-
-            // Unmarshal filter first.
-            if (filter == null)
-                filter = req.filter();
 
             GridDhtLockFuture fut = null;
 
@@ -1085,7 +1029,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
 
             try {
-                if (top != null && needRemap(req.topologyVersion(), top.readyTopologyVersion())) {
+                if (top != null && needRemap(req.topologyVersion())) {
                     if (log.isDebugEnabled()) {
                         log.debug("Client topology version mismatch, need remap lock request [" +
                             "reqTopVer=" + req.topologyVersion() +
@@ -1171,7 +1115,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         req.threadId(),
                         req.createTtl(),
                         req.accessTtl(),
-                        filter,
                         req.skipStore(),
                         req.keepBinary());
 
@@ -1752,10 +1695,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         Map<ClusterNode, List<KeyCacheObject>> map) {
         if (nodes != null) {
             for (ClusterNode n : nodes) {
-                List<KeyCacheObject> keys = map.get(n);
-
-                if (keys == null)
-                    map.put(n, keys = new LinkedList<>());
+                List<KeyCacheObject> keys = map.computeIfAbsent(n, k -> new LinkedList<>());
 
                 keys.add(entry.key());
             }
@@ -2006,7 +1946,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             nodeId,
             req.version(),
             req.mvccSnapshot(),
-            req.threadId(),
             req.futureId(),
             req.miniId(),
             tx,
@@ -2069,7 +2008,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             nodeId,
             req.version(),
             req.mvccSnapshot(),
-            req.threadId(),
             req.futureId(),
             req.miniId(),
             tx,
@@ -2240,7 +2178,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         GridNearTxQueryEnlistFuture fut = (GridNearTxQueryEnlistFuture)ctx.mvcc().versionedFuture(res.version(), res.futureId());
 
         if (fut != null)
-            fut.onResult(nodeId, res);
+            fut.onResult(res);
     }
 
     /**
@@ -2275,7 +2213,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 tx = new GridDhtTxRemote(ctx.shared(),
                     req0.nearNodeId(),
-                    req0.dhtFutureId(),
                     primary,
                     req0.nearXidVersion(),
                     req0.topologyVersion(),

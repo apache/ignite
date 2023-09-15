@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -113,7 +114,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
      */
     @Test
     public void testThrottle() throws Exception {
-        startGrids(2).active(true);
+        startGrids(2).cluster().state(ClusterState.ACTIVE);
 
         try {
             IgniteEx ig = ignite(0);

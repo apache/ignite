@@ -30,6 +30,8 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
@@ -114,6 +116,9 @@ public class RuntimeSortedIndexTest extends GridCommonAbstractTest {
                 null,
                 null,
                 ArrayRowHandler.INSTANCE,
+                NoOpMemoryTracker.INSTANCE,
+                NoOpIoTracker.INSTANCE,
+                0,
                 null),
             RelCollations.of(ImmutableIntList.copyOf(idxCols)),
             (o1, o2) -> {

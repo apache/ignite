@@ -94,6 +94,11 @@ public class ValidationOnNodeJoinUtils {
         "Failed to join node to the active cluster, configuration conflict for cache '%s': " +
             "schema '%s' from joining node differs to '%s'";
 
+    /** Template of message of conflicts of  {@link CacheConfiguration#isSqlEscapeAll()} flag. */
+    private static final String SQL_ESCAPE_ALL_CONFLICT_MESSAGE =
+        "Failed to join node to the cluster, configuration conflict for cache '%s': " +
+            "\"isSqlEscapeAll\" configuration property is different [local=%s, remote=%s]";
+
     /** Template of message of conflicts during configuration merge. */
     private static final String MERGE_OF_CONFIG_CONFLICTS_MESSAGE =
         "Conflicts during configuration merge for cache '%s' : \n%s";
@@ -186,6 +191,20 @@ public class ValidationOnNodeJoinUtils {
                         && (joinedSchema != null || !F.isEmpty(joinedQryEntities))) {
                     errorMsg.append(String.format(SQL_SCHEMA_CONFLICTS_MESSAGE, locDesc.cacheName(), joinedSchema,
                             locSchema));
+                }
+
+                if (!cacheInfo.cacheData().queryEntities().isEmpty() && !locDesc.cacheConfiguration().getQueryEntities().isEmpty()) {
+                    boolean locSqlEscapeAll = locDesc.cacheConfiguration().isSqlEscapeAll();
+                    boolean rmtSqlEscapeAll = cacheInfo.cacheData().config().isSqlEscapeAll();
+
+                    if (locSqlEscapeAll != rmtSqlEscapeAll) {
+                        errorMsg.append(String.format(
+                            SQL_ESCAPE_ALL_CONFLICT_MESSAGE,
+                            locDesc.cacheName(),
+                            locSqlEscapeAll,
+                            rmtSqlEscapeAll)
+                        );
+                    }
                 }
 
                 QuerySchemaPatch schemaPatch = locDesc.makeSchemaPatch(joinedQryEntities);
@@ -576,9 +595,7 @@ public class ValidationOnNodeJoinUtils {
         ClusterNode rmt,
         GridKernalContext ctx
     ) throws IgniteCheckedException {
-        ClusterNode locNode = ctx.discovery().localNode();
-
-        if (ctx.config().isClientMode() || locNode.isDaemon() || rmt.isClient() || rmt.isDaemon())
+        if (ctx.config().isClientMode() || rmt.isClient())
             return;
 
         Integer rebalanceThreadPoolSize = rmt.attribute(IgniteNodeAttributes.ATTR_REBALANCE_POOL_SIZE);
@@ -657,9 +674,7 @@ public class ValidationOnNodeJoinUtils {
      * @throws IgniteCheckedException If check failed.
      */
     private static void checkMemoryConfiguration(ClusterNode rmt, GridKernalContext ctx) throws IgniteCheckedException {
-        ClusterNode locNode = ctx.discovery().localNode();
-
-        if (ctx.config().isClientMode() || locNode.isDaemon() || rmt.isClient() || rmt.isDaemon())
+        if (ctx.config().isClientMode() || rmt.isClient())
             return;
 
         DataStorageConfiguration dsCfg = null;

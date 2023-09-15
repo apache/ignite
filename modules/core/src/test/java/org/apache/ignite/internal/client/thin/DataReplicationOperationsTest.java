@@ -17,21 +17,25 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -41,6 +45,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 public class DataReplicationOperationsTest extends AbstractThinClientTest {
     /** Keys count. */
     private static final int KEYS_CNT = 10;
+
+    /** TTL. */
+    public static final int TTL = 1000;
 
     /** */
     private static IgniteClient client;
@@ -55,28 +62,42 @@ public class DataReplicationOperationsTest extends AbstractThinClientTest {
     @Parameterized.Parameter
     public boolean binary;
 
+    /** Cache mode. */
+    @Parameterized.Parameter(1)
+    public CacheAtomicityMode mode;
+
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "binary={0}")
+    @Parameterized.Parameters(name = "binary={0}, cacheMode={1}")
     public static Collection<Object[]> parameters() {
-        return cartesianProduct(F.asList(false, true));
+        List<Object[]> params = new ArrayList<>();
+
+        for (boolean binary : new boolean[]{false, true})
+            for (CacheAtomicityMode mode : new CacheAtomicityMode[]{TRANSACTIONAL, ATOMIC})
+                params.add(new Object[]{binary, mode});
+
+        return params;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid();
+        startGrids(2);
 
-        client = startClient(grid());
+        client = startClient(grid(0));
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        grid().destroyCaches(grid().cacheNames());
+        grid(0).destroyCaches(grid(0).cacheNames());
 
-        cache = (TcpClientCache<Object, Object>)client.createCache(DEFAULT_CACHE_NAME);
+        ClientCacheConfiguration ccfg = new ClientCacheConfiguration()
+            .setName(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(mode);
+
+        cache = (TcpClientCache<Object, Object>)client.createCache(ccfg);
 
         if (binary)
             cache = (TcpClientCache<Object, Object>)cache.withKeepBinary();
@@ -92,7 +113,7 @@ public class DataReplicationOperationsTest extends AbstractThinClientTest {
     /** */
     @Test
     public void testPutAllConflict() {
-        Map<Object, T2<Object, GridCacheVersion>> data = createPutAllData();
+        Map<Object, T3<Object, GridCacheVersion, Long>> data = createPutAllData(CU.EXPIRE_TIME_ETERNAL);
 
         cache.putAllConflict(data);
 
@@ -121,10 +142,11 @@ public class DataReplicationOperationsTest extends AbstractThinClientTest {
     /** @throws Exception If fails. */
     @Test
     public void testWithExpiryPolicy() throws Exception {
-        PlatformExpiryPolicy expPlc = new PlatformExpiryPolicy(1000, 1000, 1000);
+        PlatformExpiryPolicy expPlc = new PlatformExpiryPolicy(TTL, TTL, TTL);
 
         ClientCacheConfiguration ccfgWithExpPlc = new ClientCacheConfiguration()
             .setName("cache-with-expiry-policy")
+            .setAtomicityMode(mode)
             .setExpiryPolicy(expPlc);
 
         TcpClientCache<Object, Object> cache = (TcpClientCache<Object, Object>)client.getOrCreateCache(ccfgWithExpPlc);
@@ -132,7 +154,7 @@ public class DataReplicationOperationsTest extends AbstractThinClientTest {
         TcpClientCache<Object, Object> cacheWithExpPlc = binary ?
             (TcpClientCache<Object, Object>)cache.withKeepBinary() : cache;
 
-        Map<Object, T2<Object, GridCacheVersion>> data = createPutAllData();
+        Map<Object, T3<Object, GridCacheVersion, Long>> data = createPutAllData(CU.EXPIRE_TIME_ETERNAL);
 
         cacheWithExpPlc.putAllConflict(data);
 
@@ -144,16 +166,34 @@ public class DataReplicationOperationsTest extends AbstractThinClientTest {
         ));
     }
 
+    /** @throws Exception If fails. */
+    @Test
+    public void testWithPerEntryExpiry() throws Exception {
+        TcpClientCache<Object, Object> cache0 =
+            (TcpClientCache<Object, Object>)client.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        TcpClientCache<Object, Object> cache = binary ?
+            (TcpClientCache<Object, Object>)cache0.withKeepBinary() : cache0;
+
+        Map<Object, T3<Object, GridCacheVersion, Long>> data = createPutAllData(System.currentTimeMillis() + TTL);
+
+        cache.putAllConflict(data);
+
+        assertTrue(cache.containsKeys(data.keySet()));
+
+        assertTrue(waitForCondition(() -> data.keySet().stream().noneMatch(cache::containsKey), 2 * TTL));
+    }
+
     /** */
-    private Map<Object, T2<Object, GridCacheVersion>> createPutAllData() {
-        Map<Object, T2<Object, GridCacheVersion>> map = new HashMap<>();
+    private Map<Object, T3<Object, GridCacheVersion, Long>> createPutAllData(long expireTime) {
+        Map<Object, T3<Object, GridCacheVersion, Long>> map = new HashMap<>();
 
         for (int i = 0; i < KEYS_CNT; i++) {
             Person key = new Person(i, "Person-" + i);
             Person val = new Person(i, "Person-" + i);
 
             map.put(binary ? client.binary().toBinary(key) : key,
-                new T2<>(binary ? client.binary().toBinary(val) : val, otherVer));
+                new T3<>(binary ? client.binary().toBinary(val) : val, otherVer, expireTime));
         }
 
         return map;

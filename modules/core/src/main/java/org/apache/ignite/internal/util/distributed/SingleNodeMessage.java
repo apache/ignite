@@ -51,7 +51,7 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
     private R resp;
 
     /** Error. */
-    private Exception err;
+    private Throwable err;
 
     /** Empty constructor for marshalling purposes. */
     public SingleNodeMessage() {
@@ -63,7 +63,7 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
      * @param resp Single node response.
      * @param err Error.
      */
-    public SingleNodeMessage(UUID processId, DistributedProcessType type, R resp, Exception err) {
+    public SingleNodeMessage(UUID processId, DistributedProcessType type, R resp, Throwable err) {
         this.processId = processId;
         this.type = type.ordinal();
         this.resp = resp;
@@ -194,7 +194,7 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
     }
 
     /** @return Error. */
-    public Exception error() {
+    public Throwable error() {
         return err;
     }
 }

@@ -17,8 +17,6 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.List;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
@@ -26,6 +24,7 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.SystemViewScan;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
@@ -81,24 +80,32 @@ public class SystemViewIndexImpl implements IgniteIndex {
     @Override public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
         ColocationGroup grp,
-        Predicate<Row> filters,
         RangeIterable<Row> ranges,
-        Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     ) {
         return new SystemViewScan<>(
             execCtx,
             tbl.descriptor(),
             ranges,
-            filters,
-            rowTransformer,
             requiredColumns
         );
     }
 
     /** {@inheritDoc} */
-    @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp) {
+    @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp, boolean notNull) {
+        assert !notNull; // Collation is empty, cannot come here with "notNull" flag.
+
         return tbl.descriptor().systemView().size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <Row> Iterable<Row> firstOrLast(
+        boolean first,
+        ExecutionContext<Row> ectx,
+        ColocationGroup grp,
+        @Nullable ImmutableBitSet requiredColumns
+    ) {
+        throw new IgniteException("Taking first or last value is not implemented for system view index.");
     }
 
     /** {@inheritDoc} */
@@ -113,5 +120,10 @@ public class SystemViewIndexImpl implements IgniteIndex {
         RelDataType rowType = tbl.getRowType(cluster.getTypeFactory());
 
         return RexUtils.buildHashSearchBounds(cluster, cond, rowType, requiredColumns, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isInlineScanPossible(@Nullable ImmutableBitSet requiredColumns) {
+        return false;
     }
 }

@@ -27,6 +27,7 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -96,7 +97,7 @@ public class CacheDataPageScanQueryTest extends GridCommonAbstractTest {
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
     public void testDataPageScanWithRestart() throws Exception {
         IgniteEx ignite = startGrid(0);
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteInternalCache<Long, String> cache = ignite.cachex(CACHE);
         CacheGroupMetricsImpl metrics = cache.context().group().metrics();
@@ -142,7 +143,7 @@ public class CacheDataPageScanQueryTest extends GridCommonAbstractTest {
         stopAllGrids(true);
 
         ignite = startGrid(0);
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         c = ignite.cache(CACHE);
         for (Cache.Entry<Long, String> e : c.query(new ScanQuery<Long, String>()).getAll())

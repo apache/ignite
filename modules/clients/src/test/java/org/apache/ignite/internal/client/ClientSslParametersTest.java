@@ -23,7 +23,6 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -67,7 +66,7 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
 
         cfg.setServers(Collections.singleton("127.0.0.1:11211"));
 
-        cfg.setSslContextFactory(createOldSslFactory());
+        cfg.setSslContextFactory(createSslFactory());
 
         return cfg;
     }
@@ -77,19 +76,6 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
      */
     @NotNull private SslContextFactory createSslFactory() {
         SslContextFactory factory = (SslContextFactory)GridTestUtils.sslFactory();
-
-        factory.setCipherSuites(cipherSuites);
-
-        factory.setProtocols(protocols);
-
-        return factory;
-    }
-
-    /**
-     * @return SSL Factory.
-     */
-    @NotNull private GridSslBasicContextFactory createOldSslFactory() {
-        GridSslBasicContextFactory factory = (GridSslBasicContextFactory)GridTestUtils.sslContextFactory();
 
         factory.setCipherSuites(cipherSuites);
 

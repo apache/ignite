@@ -24,19 +24,32 @@
 
     <Appenders>
         <!-- Console Appender -->
-        <Console name="Console" target="SYSTEM_OUT" follow="true">
+        <Console name="Console" target="SYSTEM_ERR" follow="true">
             <PatternLayout pattern="${LOG_PATTERN}"/>
         </Console>
 
         <!-- File Appenders on need basis -->
-        <RollingFile name="FILE" fileName="${APP_LOG_ROOT}/ignite.log"
-            filePattern="${APP_LOG_ROOT}/ignite-%d{yyyy-MM-dd}-%i.log">
-            <PatternLayout pattern="${LOG_PATTERN}"/>
-            <Policies>
-                <SizeBasedTriggeringPolicy size="10MB"/>
-            </Policies>
-            <DefaultRolloverStrategy max="10"/>
-        </RollingFile>
+
+        <Routing name="FILE">
+            <Routes pattern="$${sys:appId}">
+                <Route>
+                    <RollingFile name="Rolling-${sys:appId}" fileName="${APP_LOG_ROOT}/${sys:appId}.log"
+                                 filePattern="${APP_LOG_ROOT}/${sys:appId}-%d{yyyy-MM-dd}-%i.log">
+                        <PatternLayout pattern="${LOG_PATTERN}"/>
+                        <Policies>
+                            <SizeBasedTriggeringPolicy size="10MB"/>
+                        </Policies>
+                        <DefaultRolloverStrategy max="10"/>
+                    </RollingFile>
+                </Route>
+            </Routes>
+        </Routing>
+
+        <File name="CONSISTENCY" fileName="${APP_LOG_ROOT}/consistency.log">
+            <PatternLayout>
+                <Pattern>"${LOG_PATTERN}"</Pattern>
+            </PatternLayout>
+        </File>
     </Appenders>
 
     <Loggers>
@@ -54,8 +67,12 @@
 
         <Logger name="org.apache.zookeeper" level="info"/>
 
+        <Logger name="org.apache.ignite.internal.visor.consistency" additivity="false" level="INFO">
+            <AppenderRef ref="CONSISTENCY"/>
+        </Logger>
+
         <Root level="info">
-            <AppenderRef ref="Console"/>
+            <AppenderRef ref="Console" level="ERROR"/>
             <AppenderRef ref="FILE"/>
         </Root>
     </Loggers>

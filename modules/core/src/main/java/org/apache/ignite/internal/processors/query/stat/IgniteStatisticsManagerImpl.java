@@ -139,7 +139,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         this.ctx = ctx;
         schemaMgr = ctx.query().schemaManager();
 
-        boolean serverNode = !(ctx.config().isClientMode() || ctx.isDaemon());
+        boolean serverNode = !ctx.config().isClientMode();
 
         helper = new IgniteStatisticsHelper(ctx.localNodeId(), schemaMgr, ctx::log);
 

@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileFilter;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -70,7 +71,7 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
     public void testWalCompactionSwitch() throws Exception {
         IgniteEx ex = startGrid(0);
 
-        ex.cluster().active(true);
+        ex.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Integer> cache = ex.getOrCreateCache(
             new CacheConfiguration<Integer, Integer>()
@@ -108,7 +109,7 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
 
         ex = startGrid(0);
 
-        ex.cluster().active(true);
+        ex.cluster().state(ClusterState.ACTIVE);
 
         File archiveDir = U.resolveWorkDirectory(
                 ex.configuration().getWorkDirectory(),

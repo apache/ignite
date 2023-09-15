@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -53,7 +54,7 @@ import org.junit.Test;
 import static java.lang.String.valueOf;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
+import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 import static org.apache.ignite.internal.util.IgniteUtils.max;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -150,7 +151,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
         IgniteEx ignite = grid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         createAndFillCache(ignite, CACHE_NAME_1_1, GRP_NAME_1);
         createAndFillCache(ignite, CACHE_NAME_1_2, GRP_NAME_1);
@@ -269,7 +270,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
             validateOutputIndicesRebuildWasStarted(outputStr, F.asMap(GRP_NAME_1, F.asList(CACHE_NAME_1_1)));
 
-            assertEquals("Unexpected number of lines in output.", 19, outputStr.split("\n").length);
+            assertEquals("Unexpected number of lines in output.", 8 + commandHandlerExtraLines(), outputStr.split("\n").length);
 
             // Index rebuild must be triggered only for cache1_1 and only on node3.
             assertFalse(cache1Listeners[0].check());
@@ -334,7 +335,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
                 )
             );
 
-            assertEquals("Unexpected number of lines in outputStr.", 20, outputStr.split("\n").length);
+            assertEquals("Unexpected number of lines in outputStr.", 9 + commandHandlerExtraLines(), outputStr.split("\n").length);
 
             assertFalse(cache1Listeners[0].check());
             assertFalse(cache1Listeners[1].check());

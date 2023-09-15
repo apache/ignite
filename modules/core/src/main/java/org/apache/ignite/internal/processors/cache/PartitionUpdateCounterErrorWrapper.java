@@ -147,6 +147,11 @@ public class PartitionUpdateCounterErrorWrapper implements PartitionUpdateCounte
     }
 
     /** {@inheritDoc} */
+    @Override public long highestAppliedCounter() {
+        return delegate.highestAppliedCounter();
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public byte[] getBytes() {
         return delegate.getBytes();
     }

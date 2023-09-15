@@ -43,4 +43,4 @@ sed "${SED_OPTION[@]}" -e "s/<revision>\(.*\)</<revision>${1}</g" ./parent/pom.x
 
 echo Updating sub-modules versions to "$1" and resouces during the build
 
-mvn install -P all-java,all-scala,platforms,skip-docs -DskipTests
+mvn validate -P update-versions

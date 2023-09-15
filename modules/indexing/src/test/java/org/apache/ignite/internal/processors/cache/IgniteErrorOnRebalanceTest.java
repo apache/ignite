@@ -25,6 +25,7 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -95,7 +96,7 @@ public class IgniteErrorOnRebalanceTest extends GridCommonAbstractTest {
     public void testErrorOnRebalance() throws Exception {
         Ignite srv0 = startGrid(0);
 
-        srv0.active(true);
+        srv0.cluster().state(ClusterState.ACTIVE);
 
         {
             IgniteCache<Object, Object> cache0 = srv0.cache(DEFAULT_CACHE_NAME);

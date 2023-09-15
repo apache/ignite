@@ -33,6 +33,7 @@ import org.apache.ignite.compute.ComputeTaskSessionAttributeListener;
 import org.apache.ignite.compute.ComputeTaskSessionFullSupport;
 import org.apache.ignite.compute.ComputeTaskSessionScope;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
@@ -130,8 +131,8 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      */
     @Nullable private List<UUID> jobNodes;
 
-    /** User who created the session, {@code null} if security is not enabled. */
-    @Nullable private final Object login;
+    /** Security context of the user who created the session, {@code null} if security is not enabled. */
+    @Nullable private final SecurityContext secCtx;
 
     /**
      * Constructor.
@@ -151,7 +152,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @param fullSup Session full support enabled flag.
      * @param internal Internal task flag.
      * @param execName Custom executor name.
-     * @param login User who created the session, {@code null} if security is not enabled.
+     * @param secCtx Security context of the user who created the session, {@code null} if security is not enabled.
      */
     public GridTaskSessionImpl(
         UUID taskNodeId,
@@ -169,7 +170,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         boolean fullSup,
         boolean internal,
         @Nullable String execName,
-        @Nullable Object login
+        @Nullable SecurityContext secCtx
     ) {
         assert taskNodeId != null;
         assert taskName != null;
@@ -203,7 +204,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
 
         mapFut = new IgniteFutureImpl(new GridFutureAdapter());
 
-        this.login = login;
+        this.secCtx = secCtx;
     }
 
     /** {@inheritDoc} */
@@ -969,10 +970,17 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /**
+     * @return Security context of the task initiator, {@code null} if security is not enabled.
+     */
+    public SecurityContext initiatorSecurityContext() {
+        return secCtx;
+    }
+
+    /**
      * @return User who created the session, {@code null} if security is not enabled.
      */
     public Object login() {
-        return login;
+        return secCtx == null ? null : secCtx.subject().login();
     }
 
     /** {@inheritDoc} */

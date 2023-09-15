@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cluster;
 
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
 
@@ -69,7 +70,7 @@ public class BaselineAutoAdjustInMemoryTest extends BaselineAutoAdjustTest {
     public void testSetBaselineManually() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         assertEquals(1, ignite0.cluster().currentBaselineTopology().size());
 

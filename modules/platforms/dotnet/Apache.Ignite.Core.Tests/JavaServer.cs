@@ -62,10 +62,13 @@ namespace Apache.Ignite.Core.Tests
         {
             IgniteArgumentCheck.NotNullOrEmpty(version, "version");
 
+            Console.WriteLine("Using maven at: " + MavenPath);
+            Console.WriteLine("JAVA_HOME: " + Environment.GetEnvironmentVariable("JAVA_HOME"));
+
             var pomWrapper =
                 ReplaceIgniteVersionInPomFile(groupId, version, Path.Combine(JavaServerSourcePath, "pom.xml"));
 
-            EnsureJvmCreated();
+            TestUtils.EnsureJvmCreated();
 
             var time = DateTime.Now;
 
@@ -96,19 +99,6 @@ namespace Apache.Ignite.Core.Tests
                 TestUtilsJni.DestroyProcess();
                 pomWrapper.Dispose();
             });
-        }
-
-        /// <summary>
-        /// Ensures that JVM is created.
-        /// When corresponding test runs individually we have to start/stop Ignite node to create the JVM,
-        /// otherwise it already exists.
-        /// </summary>
-        private static void EnsureJvmCreated()
-        {
-            if (Jvm.Get(ignoreMissing: true) == null)
-            {
-                Ignition.Start(TestUtils.GetTestConfiguration()).Dispose();
-            }
         }
 
         /// <summary>

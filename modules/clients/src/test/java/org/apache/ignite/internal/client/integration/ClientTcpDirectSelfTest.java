@@ -18,10 +18,11 @@
 package org.apache.ignite.internal.client.integration;
 
 import java.util.Collections;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientProtocol;
-import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 
 /**
  *
@@ -43,7 +44,7 @@ public class ClientTcpDirectSelfTest extends ClientAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridSslContextFactory sslContextFactory() {
+    @Override protected Factory<SSLContext> sslContextFactory() {
         return null;
     }
 

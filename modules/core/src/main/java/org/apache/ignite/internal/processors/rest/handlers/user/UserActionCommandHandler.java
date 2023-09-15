@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.rest.handlers.user;
 
 import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
@@ -53,7 +54,8 @@ public class UserActionCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
+    @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req)
+        throws IgniteCheckedException {
         assert req != null;
 
         if (log.isDebugEnabled())
@@ -61,34 +63,27 @@ public class UserActionCommandHandler extends GridRestCommandHandlerAdapter {
 
         RestUserActionRequest req0 = (RestUserActionRequest)req;
 
-        try {
-            GridRestCommand cmd = req.command();
+        GridRestCommand cmd = req.command();
 
-            IgniteSecurity security = ctx.security();
+        IgniteSecurity security = ctx.security();
 
-            switch (cmd) {
-                case ADD_USER:
-                    security.createUser(req0.user(), req0.password().toCharArray());
-                    break;
+        switch (cmd) {
+            case ADD_USER:
+                security.createUser(req0.user(), req0.password().toCharArray());
+                break;
 
-                case REMOVE_USER:
-                    security.dropUser(req0.user());
-                    break;
+            case REMOVE_USER:
+                security.dropUser(req0.user());
+                break;
 
-                case UPDATE_USER:
-                    security.alterUser(req0.user(), req0.password().toCharArray());
-                    break;
-            }
-
-            if (log.isDebugEnabled())
-                log.debug("Handled topology REST request [req=" + req + ']');
-
-            return new GridFinishedFuture<>(new GridRestResponse(true));
+            case UPDATE_USER:
+                security.alterUser(req0.user(), req0.password().toCharArray());
+                break;
         }
-        catch (Throwable e) {
-            log.error("Failed to handle REST request [req=" + req + ']', e);
 
-            return new GridFinishedFuture<>(e);
-        }
+        if (log.isDebugEnabled())
+            log.debug("Handled topology REST request [req=" + req + ']');
+
+        return new GridFinishedFuture<>(new GridRestResponse(true));
     }
 }

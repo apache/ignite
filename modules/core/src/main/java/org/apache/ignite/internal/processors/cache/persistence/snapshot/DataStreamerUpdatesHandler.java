@@ -48,12 +48,12 @@ public class DataStreamerUpdatesHandler implements SnapshotHandler<Boolean> {
 
     /** {@inheritDoc} */
     @Override public void complete(String name, Collection<SnapshotHandlerResult<Boolean>> results)
-        throws SnapshotHandlerWarningException {
+        throws SnapshotWarningException {
         Collection<UUID> nodes = F.viewReadOnly(results, r -> r.node().id(), SnapshotHandlerResult::data);
 
-        if (!nodes.isEmpty()) {
-            throw new SnapshotHandlerWarningException(WRN_MSG + " Updates from DataStreamer detected on the nodes: " +
-                nodes.stream().map(UUID::toString).collect(Collectors.joining(", ")));
+        if (!F.isEmpty(nodes)) {
+            throw new SnapshotWarningException(WRN_MSG + " Updates from DataStreamer detected on the nodes: " +
+                nodes.stream().map(UUID::toString).collect(Collectors.joining(", ")) + '.');
         }
     }
 }

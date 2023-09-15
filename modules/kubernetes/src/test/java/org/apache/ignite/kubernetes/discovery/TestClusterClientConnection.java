@@ -18,6 +18,7 @@
 package org.apache.ignite.kubernetes.discovery;
 
 import org.apache.ignite.Ignition;
+import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.ThinClientKubernetesAddressFinder;
@@ -67,7 +68,9 @@ public class TestClusterClientConnection extends KubernetesDiscoveryAbstractTest
         mockServerResponse(crdAddr);
 
         ClientConfiguration ccfg = new ClientConfiguration();
-        ccfg.setAddressesFinder(new ThinClientKubernetesAddressFinder(prepareConfiguration()));
+        DelegatingAddressFinder addrFinder = new DelegatingAddressFinder();
+        ccfg.setAddressesFinder(addrFinder);
+        addrFinder.delegate = new ThinClientKubernetesAddressFinder(prepareConfiguration());
         IgniteClient client = Ignition.startClient(ccfg);
 
         ClientCache cache = client.createCache("cache");
@@ -77,7 +80,7 @@ public class TestClusterClientConnection extends KubernetesDiscoveryAbstractTest
         // Stop node and change port => still can connect.
         Ignition.stop(crd.name(), true);
         int newPort = 10801;
-        ccfg.setAddressesFinder(new ThinClientKubernetesAddressFinder(prepareConfiguration(), newPort));
+        addrFinder.delegate = new ThinClientKubernetesAddressFinder(prepareConfiguration(), newPort);
         mockServerResponse(5, crdAddr);
 
         cfg = getConfiguration(getTestIgniteInstanceName(), false);
@@ -87,6 +90,8 @@ public class TestClusterClientConnection extends KubernetesDiscoveryAbstractTest
         try {
             cache = client.getOrCreateCache("cache");
             cache.put(1, 3);
+
+            fail();
         }
         catch (Exception ignored) {
             // No-op.
@@ -95,5 +100,16 @@ public class TestClusterClientConnection extends KubernetesDiscoveryAbstractTest
         cache = client.getOrCreateCache("cache");
         cache.put(1, 3);
         assertEquals(3, cache.get(1));
+    }
+
+    /** */
+    private static class DelegatingAddressFinder implements ClientAddressFinder {
+        /** */
+        private ClientAddressFinder delegate;
+
+        /** {@inheritDoc} */
+        @Override public String[] getAddresses() {
+            return delegate.getAddresses();
+        }
     }
 }

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -104,7 +105,7 @@ public class OptimizedMarshallerIndexNameTest extends AbstractIndexingCommonTest
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), workSubdir(), true));
 
         startGrid(getTestIgniteInstanceName());
-        grid().active(true);
+        grid().cluster().state(ClusterState.ACTIVE);
     }
 
     /**

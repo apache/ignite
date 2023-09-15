@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.compress;
 
 import java.util.List;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -87,7 +88,7 @@ public class DiskPageCompressionConfigValidationTest extends GridCommonAbstractT
     public void testIncorrectDynamicCacheStartRequest() throws Exception {
         Ignite ig = startGrid();
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         boolean expEThrown = false;
 

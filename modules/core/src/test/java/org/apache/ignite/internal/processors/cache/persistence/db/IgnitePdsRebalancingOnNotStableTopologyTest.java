@@ -27,6 +27,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -58,7 +59,7 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
     public void test() throws Exception {
         Ignite ex = startGrid(0);
 
-        ex.active(true);
+        ex.cluster().state(ClusterState.ACTIVE);
 
         startGrid(1);
 
@@ -72,7 +73,7 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
 
         Thread thread = new Thread(new Runnable() {
             @Override public void run() {
-                ex1.active(true);
+                ex1.cluster().state(ClusterState.ACTIVE);
 
                 try {
                     checkTopology(2);
@@ -135,7 +136,7 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
         //start cluster. it will cause memory restoration and reading WAL.
         ex = startGrids(CLUSTER_SIZE);
 
-        ex.active(true);
+        ex.cluster().state(ClusterState.ACTIVE);
 
         checkTopology(CLUSTER_SIZE);
 

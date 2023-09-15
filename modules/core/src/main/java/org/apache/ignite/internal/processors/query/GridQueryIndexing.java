@@ -25,13 +25,13 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
+import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -267,25 +267,4 @@ public interface GridQueryIndexing {
      * @param sql sql statement.
      */
     public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery sql) throws SQLException;
-
-    /**
-     * Register SQL JMX beans.
-     *
-     * @param mbMgr Ignite MXBean manager.
-     * @throws IgniteCheckedException On bean registration error.
-     */
-    public void registerMxBeans(IgniteMBeansManager mbMgr) throws IgniteCheckedException;
-
-    /**
-     * Checks if object of the specified class can be stored in the specified table column by the query engine.
-     *
-     * @param schemaName Schema name.
-     * @param tblName Table name.
-     * @param colName Name of the column.
-     * @param cls Class to perform check on.
-     * @return Whether object of the specified class can be successfully stored and accessed from the SQL column by the
-     *         query engine.
-     * @throws IgniteSQLException if table or column with specified name was not found.
-     */
-    public boolean isConvertibleToColumnType(String schemaName, String tblName, String colName, Class<?> cls);
 }

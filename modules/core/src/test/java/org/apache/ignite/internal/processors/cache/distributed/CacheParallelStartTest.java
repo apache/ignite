@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -148,13 +149,13 @@ public class CacheParallelStartTest extends GridCommonAbstractTest {
 
         IgniteEx igniteEx2 = startGrid(1);
 
-        igniteEx.cluster().active(true);
+        igniteEx.cluster().state(ClusterState.ACTIVE);
 
         assertCaches(igniteEx);
 
         assertCaches(igniteEx2);
 
-        igniteEx.cluster().active(false);
+        igniteEx.cluster().state(ClusterState.INACTIVE);
 
         assertCachesAfterStop(igniteEx);
 

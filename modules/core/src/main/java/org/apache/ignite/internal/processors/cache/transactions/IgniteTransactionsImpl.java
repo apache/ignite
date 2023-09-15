@@ -194,8 +194,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
                 true,
                 null,
                 txSize,
-                lb,
-                tracingEnabled
+                lb
             );
 
             assert tx != null;

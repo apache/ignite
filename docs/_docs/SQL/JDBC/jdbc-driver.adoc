@@ -136,12 +136,6 @@ See the link:security/authentication[Authentication] and link:sql-reference/ddl#
 | Whether to use `TCP_NODELAY` option.
 |`true`
 
-|`lazy`
-|Lazy query execution.
-By default, Ignite attempts to get and load the whole query result set into memory and then send it to the client. For small and medium result sets, this provides optimal performance and minimizes the duration of internal database locks, thus increasing concurrency.
-However, if the result set is too big to fit in the available memory, then it can lead to excessive GC pauses and even 'OutOfMemoryError's. Use this flag to tell Ignite to fetch the result set lazily, thus minimizing memory consumption at the cost of a moderate performance hit.
-|`false`
-
 |`skipReducerOnUpdate`
 |Enables server side updates.
 When Ignite executes a DML operation, it fetches all the affected intermediate rows and sends them to the query initiator (also known as reducer) for analysis. Then it prepares batches of updated values to be sent to remote nodes.

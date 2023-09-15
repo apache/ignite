@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.cluster.BaselineNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -48,7 +49,7 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
 
         grid(0).cluster().baselineAutoAdjustEnabled(false);
         // We need to activate cluster.
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */

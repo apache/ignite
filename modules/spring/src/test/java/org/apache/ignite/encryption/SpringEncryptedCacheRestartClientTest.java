@@ -18,6 +18,7 @@
 package org.apache.ignite.encryption;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
@@ -51,7 +52,7 @@ public class SpringEncryptedCacheRestartClientTest extends EncryptedCacheRestart
             IgniteUtils.resolveIgnitePath(
                 "modules/spring/src/test/config/enc/enc-cache-client.xml").getAbsolutePath(), "client");
 
-        g1.cluster().active(true);
+        g1.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 

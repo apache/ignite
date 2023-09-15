@@ -22,6 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -104,7 +105,7 @@ public class RebalanceAfterResettingLostPartitionTest extends GridCommonAbstract
     public void testRebalanceAfterPartitionsWereLost() throws Exception {
         startGrids(2);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         for (int j = 0; j < CACHE_SIZE; j++)
             grid(0).cache(CACHE_NAME).put(j, "Value" + j);

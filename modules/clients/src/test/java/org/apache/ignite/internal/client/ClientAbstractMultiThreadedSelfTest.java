@@ -28,6 +28,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -38,12 +40,12 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.balancer.GridClientRoundRobinBalancer;
-import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -113,7 +115,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
     /**
      * @return SSL context factory to use if SSL is enabled.
      */
-    protected abstract GridSslContextFactory sslContextFactory();
+    protected abstract Factory<SSLContext> sslContextFactory();
 
     /**
      * @return Topology refresh frequency interval.
@@ -158,7 +160,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
         if (useSsl()) {
             clientCfg.setSslEnabled(true);
 
-            clientCfg.setSslContextFactory(sslContextFactory());
+            clientCfg.setSslFactory(sslContextFactory());
         }
 
         c.setConnectorConfiguration(clientCfg);

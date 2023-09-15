@@ -48,8 +48,6 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
@@ -76,7 +74,6 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
-import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.LOCK_RELEASED;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointReadWriteLock.CHECKPOINT_RUNNER_THREAD_PREFIX;
@@ -136,9 +133,6 @@ public class Checkpointer extends GridWorker {
     /** Failure processor. */
     private final FailureProcessor failureProcessor;
 
-    /** Snapshot manager. */
-    private final IgniteCacheSnapshotManager snapshotMgr;
-
     /** Metrics. */
     private final DataStorageMetricsImpl persStoreMetrics;
 
@@ -192,7 +186,6 @@ public class Checkpointer extends GridWorker {
      * @param logger Logger.
      * @param detector Long JVM pause detector.
      * @param failureProcessor Failure processor.
-     * @param snapshotManager Snapshot manager.
      * @param dsMetrics Data storage metrics.
      * @param cacheProcessor Cache processor.
      * @param checkpoint Implementation of checkpoint.
@@ -208,7 +201,6 @@ public class Checkpointer extends GridWorker {
         Function<Class<?>, IgniteLogger> logger,
         LongJVMPauseDetector detector,
         FailureProcessor failureProcessor,
-        IgniteCacheSnapshotManager snapshotManager,
         DataStorageMetricsImpl dsMetrics,
         GridCacheProcessor cacheProcessor,
         CheckpointWorkflow checkpoint,
@@ -221,7 +213,6 @@ public class Checkpointer extends GridWorker {
         this.pauseDetector = detector;
         this.checkpointFreq = checkpointFrequency;
         this.failureProcessor = failureProcessor;
-        this.snapshotMgr = snapshotManager;
         this.checkpointWorkflow = checkpoint;
         this.checkpointPagesWriterFactory = factory;
         this.persStoreMetrics = dsMetrics;
@@ -383,29 +374,6 @@ public class Checkpointer extends GridWorker {
     }
 
     /**
-     * @param snapshotOperation Snapshot operation.
-     */
-    public IgniteInternalFuture wakeupForSnapshotCreation(SnapshotOperation snapshotOperation) {
-        GridFutureAdapter<Object> ret;
-
-        synchronized (this) {
-            scheduledCp.nextCpNanos(System.nanoTime());
-
-            scheduledCp.reason("snapshot");
-
-            scheduledCp.nextSnapshot(true);
-
-            scheduledCp.snapshotOperation(snapshotOperation);
-
-            ret = scheduledCp.futureFor(LOCK_RELEASED);
-
-            notifyAll();
-        }
-
-        return ret;
-    }
-
-    /**
      *
      */
     private void doCheckpoint() {
@@ -475,8 +443,6 @@ public class Checkpointer extends GridWorker {
                 tracker.onPagesWriteStart();
                 tracker.onFsyncStart();
             }
-
-            snapshotMgr.afterCheckpointPageWritten();
 
             int destroyedPartitionsCnt = destroyEvictedPartitions();
 

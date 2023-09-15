@@ -60,7 +60,7 @@ public class ClientCacheAffinityContext {
     private final AtomicReference<TopologyNodes> lastTop = new AtomicReference<>();
 
     /** Cache IDs, which should be included to the next affinity mapping request. */
-    private final Set<Integer> pendingCacheIds = new GridConcurrentHashSet<>();
+    final Set<Integer> pendingCacheIds = new GridConcurrentHashSet<>();
 
     /** Current affinity mapping. */
     private volatile ClientCacheAffinityMapping affinityMapping;
@@ -123,8 +123,6 @@ public class ClientCacheAffinityContext {
      * @param ch Payload output channel.
      */
     public void writePartitionsUpdateRequest(PayloadOutputChannel ch) {
-        assert rq == null : "Previous mapping request was not properly handled: " + rq;
-
         final Set<Integer> cacheIds;
         long lastAccessed;
 
@@ -139,6 +137,7 @@ public class ClientCacheAffinityContext {
                 .orElse(0);
         }
 
+        // In case of IO error rq can hold previous mapping request. Just overwrite it, we don't need it anymore.
         rq = new CacheMappingRequest(cacheIds, lastAccessed);
         ClientCacheAffinityMapping.writeRequest(ch, rq.caches, rq.ts > 0);
     }

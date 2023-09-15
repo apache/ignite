@@ -37,18 +37,19 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.ComputeTaskInternalFuture;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandArg;
+import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
+import org.apache.ignite.internal.management.cache.ValidateIndexesTask;
+import org.apache.ignite.internal.management.cache.ValidateIndexesTaskResult;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskArg;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -146,7 +147,7 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         IgniteEx grid1 = startGrids(4);
 
-        grid1.cluster().active(true);
+        grid1.cluster().state(ClusterState.ACTIVE);
 
         final int accountCnt = 2048;
 
@@ -215,21 +216,25 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         ImmutableSet<UUID> nodes = ImmutableSet.of(grid(2).localNode().id(), grid(3).localNode().id());
 
-        VisorValidateIndexesTaskArg arg = new VisorValidateIndexesTaskArg(null,
-            null, 10000, 1, true, true);
+        CacheValidateIndexesCommandArg arg = new CacheValidateIndexesCommandArg();
 
-        VisorTaskArgument<VisorValidateIndexesTaskArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
+        arg.checkFirst(10000);
+        arg.checkThrough(1);
+        arg.checkCrc(true);
+        arg.checkSizes(true);
 
-        ComputeTaskInternalFuture<VisorValidateIndexesTaskResult> exec = grid1.context().task().
-            execute(new VisorValidateIndexesTask(), visorTaskArg);
+        VisorTaskArgument<CacheValidateIndexesCommandArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
 
-        VisorValidateIndexesTaskResult res = exec.get();
+        ComputeTaskInternalFuture<ValidateIndexesTaskResult> exec = grid1.context().task().
+            execute(new ValidateIndexesTask(), visorTaskArg);
 
-        Map<UUID, VisorValidateIndexesJobResult> results = res.results();
+        ValidateIndexesTaskResult res = exec.get();
+
+        Map<UUID, ValidateIndexesJobResult> results = res.results();
 
         boolean hasIssue = false;
 
-        for (VisorValidateIndexesJobResult jobResult : results.values()) {
+        for (ValidateIndexesJobResult jobResult : results.values()) {
             System.err.println(jobResult);
 
             hasIssue |= jobResult.hasIssues();
@@ -256,7 +261,7 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         IgniteEx grid1 = startGrids(4);
 
-        grid1.cluster().active(true);
+        grid1.cluster().state(ClusterState.ACTIVE);
 
         final int accountCnt = 2048;
 
@@ -310,21 +315,25 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         ImmutableSet<UUID> nodes = ImmutableSet.of(grid(2).localNode().id(), grid(3).localNode().id());
 
-        VisorValidateIndexesTaskArg arg = new VisorValidateIndexesTaskArg(null,
-            null, 10000, 1, true, true);
+        CacheValidateIndexesCommandArg arg = new CacheValidateIndexesCommandArg();
 
-        VisorTaskArgument<VisorValidateIndexesTaskArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
+        arg.checkFirst(10000);
+        arg.checkThrough(1);
+        arg.checkCrc(true);
+        arg.checkSizes(true);
 
-        ComputeTaskInternalFuture<VisorValidateIndexesTaskResult> execute = grid1.context().task().
-            execute(new VisorValidateIndexesTask(), visorTaskArg);
+        VisorTaskArgument<CacheValidateIndexesCommandArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
 
-        VisorValidateIndexesTaskResult res = execute.get();
+        ComputeTaskInternalFuture<ValidateIndexesTaskResult> execute = grid1.context().task().
+            execute(new ValidateIndexesTask(), visorTaskArg);
 
-        Map<UUID, VisorValidateIndexesJobResult> results = res.results();
+        ValidateIndexesTaskResult res = execute.get();
+
+        Map<UUID, ValidateIndexesJobResult> results = res.results();
 
         boolean hasIssue = false;
 
-        for (VisorValidateIndexesJobResult jobResult : results.values()) {
+        for (ValidateIndexesJobResult jobResult : results.values()) {
             System.err.println(jobResult);
 
             hasIssue |= jobResult.hasIssues();

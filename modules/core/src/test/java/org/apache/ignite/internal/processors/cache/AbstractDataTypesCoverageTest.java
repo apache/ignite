@@ -166,7 +166,7 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
 
         Object[] paramLine = null;
 
-        for (CacheAtomicityMode atomicityMode : CacheAtomicityMode.values()) {
+        for (CacheAtomicityMode atomicityMode : CacheAtomicityMode._values()) {
             paramLine = Arrays.copyOf(baseParamLine, baseParamLine.length);
 
             paramLine[1] = atomicityMode;
@@ -184,14 +184,12 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
 
         assert paramLine != null;
 
-        if ((paramLine[1]) != CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT) {
-            for (Factory ttlFactory : TTL_FACTORIES) {
-                paramLine = Arrays.copyOf(baseParamLine, baseParamLine.length);
+        for (Factory ttlFactory : TTL_FACTORIES) {
+            paramLine = Arrays.copyOf(baseParamLine, baseParamLine.length);
 
-                paramLine[3] = ttlFactory;
+            paramLine[3] = ttlFactory;
 
-                params.add(paramLine);
-            }
+            params.add(paramLine);
         }
 
         for (int backups : new int[] {0, 1, 2}) {

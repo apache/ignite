@@ -34,6 +34,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             IntPtr env, IntPtr clazz, IntPtr methodId, long* argsPtr);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        internal delegate int CallStaticIntMethod(
+            IntPtr env, IntPtr clazz, IntPtr methodId, long* argsPtr);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         internal delegate IntPtr NewGlobalRef(IntPtr env, IntPtr lobj);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]

@@ -16,10 +16,13 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
@@ -71,7 +74,31 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
         RelOptCluster cluster = scan.getCluster();
         RexBuilder builder = RexUtils.builder(cluster);
 
+        RexNode remainCondition = null;
         RexNode condition = filter.getCondition();
+
+        if (config.isSkipCorrelated() && RexUtils.hasCorrelation(condition)) {
+            RexNode cnf = RexUtil.toCnf(builder, condition);
+            List<RexNode> conjunctions = RelOptUtil.conjunctions(cnf);
+
+            List<RexNode> correlated = new ArrayList<>();
+            List<RexNode> notCorrelated = new ArrayList<>();
+
+            for (RexNode node : conjunctions) {
+                if (RexUtils.hasCorrelation(node))
+                    correlated.add(node);
+                else
+                    notCorrelated.add(node);
+            }
+
+            if (notCorrelated.isEmpty())
+                return;
+
+            if (!correlated.isEmpty()) {
+                remainCondition = RexUtil.composeConjunction(builder, correlated);
+                condition = RexUtil.composeConjunction(builder, notCorrelated);
+            }
+        }
 
         if (scan.projects() != null) {
             RexShuttle shuttle = new RexShuttle() {
@@ -101,6 +128,9 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
 
         if (res == null)
             return;
+
+        if (remainCondition != null)
+            res = call.builder().push(res).filter(remainCondition).build();
 
         call.transformTo(res);
     }
@@ -163,28 +193,36 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
 
         /** */
         Config TABLE_SCAN = DEFAULT
-            .withScanRuleConfig(IgniteLogicalTableScan.class, "FilterTableScanMergeRule", false);
+            .withScanRuleConfig(IgniteLogicalTableScan.class, "FilterTableScanMergeRule");
 
         /** */
         Config TABLE_SCAN_SKIP_CORRELATED = DEFAULT
-            .withScanRuleConfig(IgniteLogicalTableScan.class, "FilterTableScanMergeSkipCorrelatedRule", true);
+            .withScanRuleConfig(IgniteLogicalTableScan.class, "FilterTableScanMergeSkipCorrelatedRule")
+            .withSkipCorrelated(true);
 
         /** */
         Config INDEX_SCAN = DEFAULT
             .withRuleFactory(FilterIndexScanMergeRule::new)
-            .withScanRuleConfig(IgniteLogicalIndexScan.class, "FilterIndexScanMergeRule", false);
+            .withScanRuleConfig(IgniteLogicalIndexScan.class, "FilterIndexScanMergeRule");
 
         /** */
         default Config withScanRuleConfig(
             Class<? extends ProjectableFilterableTableScan> scanCls,
-            String desc,
-            boolean skipCorrelated
+            String desc
         ) {
             return withDescription(desc)
                 .withOperandSupplier(b -> b.operand(LogicalFilter.class)
-                    .predicate(p -> !skipCorrelated || !RexUtils.hasCorrelation(p.getCondition()))
                     .oneInput(b1 -> b1.operand(scanCls).noInputs()))
                 .as(Config.class);
         }
+
+        /** Whether to split correlated and not correlated conditions and do not push correlated into scan. */
+        @Value.Default
+        default boolean isSkipCorrelated() {
+            return false;
+        }
+
+        /** Sets {@link #isSkipCorrelated()}. */
+        Config withSkipCorrelated(boolean skipCorrelated);
     }
 }

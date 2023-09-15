@@ -76,4 +76,25 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(12, 2)
             .check();
     }
+
+    /**
+     * Tests colocated join possible with the help of correlated distribution.
+     */
+    @Test
+    public void testCorrelatedDistribution() {
+        sql("CREATE TABLE dept(deptid INTEGER, name VARCHAR, PRIMARY KEY(deptid))");
+        sql("CREATE TABLE emp(empid INTEGER, deptid INTEGER, name VARCHAR, PRIMARY KEY(empid, deptid)) " +
+            "WITH AFFINITY_KEY=deptid");
+
+        sql("INSERT INTO dept VALUES (0, 'dept0'), (1, 'dept1'), (2, 'dept2')");
+        sql("INSERT INTO emp VALUES (0, 0, 'emp0'), (1, 0, 'emp1'), (2, 0, 'emp2'), " +
+            "(3, 2, 'emp3'), (4, 2, 'emp4'), (5, 3, 'emp5')");
+
+        assertQuery("SELECT deptid, (SELECT COUNT(*) FROM emp WHERE emp.deptid = dept.deptid) FROM dept")
+            .matches(QueryChecker.containsSubPlan("IgniteColocated"))
+            .returns(0, 3L)
+            .returns(1, 0L)
+            .returns(2, 2L)
+            .check();
+    }
 }

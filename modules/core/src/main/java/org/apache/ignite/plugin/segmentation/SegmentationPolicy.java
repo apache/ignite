@@ -46,7 +46,10 @@ public enum SegmentationPolicy {
      * {@link org.apache.ignite.events.EventType#EVT_NODE_SEGMENTED} event and it is up to user to
      * implement logic to handle this event.
      */
-    NOOP;
+    NOOP,
+
+    /** Use configured failure handler. It is default segmentation policy. */
+    USE_FAILURE_HANDLER;
 
     /** Enumerated values. */
     private static final SegmentationPolicy[] VALS = values();

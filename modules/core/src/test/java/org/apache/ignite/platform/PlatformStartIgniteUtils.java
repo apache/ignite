@@ -18,20 +18,19 @@
 package org.apache.ignite.platform;
 
 import java.security.Permissions;
-
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
-import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.create;
 
 /**
  * Ignite start/stop utils.
@@ -45,15 +44,25 @@ public class PlatformStartIgniteUtils {
      */
     public static void startWithSecurity(String name) throws IgniteException {
         TestSecurityPluginProvider securityPluginProvider = new TestSecurityPluginProvider(
-                "login1",
+            "login1",
+            "pass1",
+            ALL_PERMISSIONS,
+            false,
+            new TestSecurityData(
+                "CLIENT",
                 "pass1",
-                ALLOW_ALL,
-                false,
-                new TestSecurityData("CLIENT", "pass1",
-                        SecurityPermissionSetBuilder.create().defaultAllowAll(false)
-                                .appendCachePermissions("DEFAULT_CACHE", CACHE_READ, CACHE_PUT, CACHE_REMOVE)
-                                .appendCachePermissions("FORBIDDEN_CACHE")
-                                .build(), new Permissions())
+                create().defaultAllowAll(false)
+                    .appendCachePermissions("DEFAULT_CACHE", CACHE_READ, CACHE_PUT, CACHE_REMOVE)
+                    .appendCachePermissions("FORBIDDEN_CACHE")
+                    .build(),
+                new Permissions()
+            ),
+            new TestSecurityData(
+                "CLIENT_",
+                "pass1",
+                ALL_PERMISSIONS,
+                new Permissions()
+            )
         );
 
         IgniteConfiguration cfg = new IgniteConfiguration()

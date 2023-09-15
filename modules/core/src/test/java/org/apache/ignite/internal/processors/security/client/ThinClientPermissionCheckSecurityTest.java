@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 
 /**
  * Security tests for thin client.
@@ -38,7 +38,7 @@ public class ThinClientPermissionCheckSecurityTest extends ThinClientPermissionC
         return new TestAdditionalSecurityPluginProvider(
             "srv_" + instanceName,
             null,
-            ALLOW_ALL,
+            ALL_PERMISSIONS,
             false,
             true,
             clientData

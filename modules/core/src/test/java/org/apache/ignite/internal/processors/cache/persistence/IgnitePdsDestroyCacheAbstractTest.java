@@ -25,6 +25,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -118,7 +119,7 @@ public abstract class IgnitePdsDestroyCacheAbstractTest extends GridCommonAbstra
 
         ignite = startGrids(NODES);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         log.warning("Grid started");
 
@@ -153,7 +154,7 @@ public abstract class IgnitePdsDestroyCacheAbstractTest extends GridCommonAbstra
 
         ignite = startGrids(NODES);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         log.warning("Grid started");
 

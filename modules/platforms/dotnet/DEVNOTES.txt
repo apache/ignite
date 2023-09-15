@@ -24,7 +24,7 @@ Note that .NET Core SDK 3.1 and PowerShell must be installed first.
 
 The command below will build the binaries and NuGet packages with Maven:
 
-    ./mvnw clean install -am -pl modules/platforms/dotnet -DskipTests -P platforms
+    ./mvnw clean install -am -pl modules/platforms/dotnet -DskipTests -P build-dotnet
 
 
 Solutions and Projects

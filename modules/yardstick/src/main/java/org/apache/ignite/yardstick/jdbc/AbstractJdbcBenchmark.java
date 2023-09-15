@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -73,7 +74,7 @@ public abstract class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
         super.setUp(cfg);
 
         // activate cluster if it is not auto activated
-        ignite().cluster().active(true);
+        ignite().cluster().state(ClusterState.ACTIVE);
 
         if (url == null) {
             if (args.jdbcUrl().startsWith(JDBC_THIN_AUTO_FIND_PREFIX)) {

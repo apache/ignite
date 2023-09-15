@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
@@ -210,6 +211,90 @@ namespace Apache.Ignite.Core.Tests.Binary
                 marsh.Unmarshal<RandomFieldOrder>(bytes);
 
             }, Environment.ProcessorCount, 5);
+        }
+        
+        /// <summary>
+        /// Test serializing nested binarizable objects with different schemas.
+        /// </summary>
+        [Test]
+        public void TestSerializeNestedStructureWithDifferentSchemas()
+        {
+            var marsh = new Marshaller(new BinaryConfiguration(typeof(Item)));
+            
+            var simple = new Item(new List<string> { "f1", "f2" });
+            var nested = new Item(new List<string> { "f3" }, 
+                new List<Item> {new Item(new List<string> { "f1" })}); 
+
+            var simpleMarsh = marsh.Marshal(simple);
+            var nestedMarsh = marsh.Marshal(nested);
+            
+            Assert.AreEqual(new List<string> {"f1", "f2"}, marsh.Unmarshal<Item>(simpleMarsh).FieldNames);
+            Assert.IsEmpty(marsh.Unmarshal<Item>(simpleMarsh).Children);
+            
+            Assert.AreEqual(new List<string> { "f3" }, marsh.Unmarshal<Item>(nestedMarsh).FieldNames);
+            Assert.AreEqual(1, marsh.Unmarshal<Item>(nestedMarsh).Children.Count);
+            Assert.AreEqual(new List<string> { "f1" }, marsh.Unmarshal<Item>(nestedMarsh).Children[0].FieldNames);
+            Assert.IsEmpty(marsh.Unmarshal<Item>(nestedMarsh).Children[0].Children);
+        }
+    }
+
+    /// <summary>
+    /// A composite structure consisting of the specified fields and optional children of the same
+    /// <see cref="Item"/> type.
+    /// </summary>
+    class Item : IBinarizable
+    {
+        private List<string> _fieldNames;
+        private List<Item> _children;
+
+        public Item(List<string> fieldNames, List<Item> children)
+        {
+            _fieldNames = fieldNames;
+            _children = children;
+        }
+
+        public Item(List<string> fieldNames)
+            : this(fieldNames, new List<Item>())
+        {
+        }
+
+        public List<string> FieldNames
+        {
+            get { return _fieldNames;  }
+        }
+        
+        public List<Item> Children
+        {
+            get { return _children;  }
+        }
+
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            writer.WriteCollection(nameof(_children), _children);
+            writer.WriteCollection(nameof(_fieldNames), _fieldNames);
+
+            foreach (var name in _fieldNames)
+            {
+                writer.WriteString(name, name);
+            }
+        }
+
+        public void ReadBinary(IBinaryReader reader)
+        {
+            _children = (List<Item>)reader.ReadCollection(
+                nameof(_children),
+                size => new List<Item>(size),
+                (collection, obj) => ((List<Item>) collection).Add((Item) obj));
+            
+            _fieldNames = (List<string>)reader.ReadCollection(
+                nameof(_fieldNames),
+                size => new List<string>(size),
+                (collection, obj) => ((List<string>) collection).Add((string) obj));
+
+            foreach (var name in _fieldNames)
+            {
+                Assert.AreEqual(name, reader.ReadString(name));
+            }
         }
     }
 

@@ -30,6 +30,9 @@ public class IndexQueryContext {
     /** Index rows filter. */
     private final BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter;
 
+    /** Index row factory. */
+    private final BPlusTree.TreeRowFactory<IndexRow, IndexRow> rowFactory;
+
     /** */
     private final MvccSnapshot mvccSnapshot;
 
@@ -39,8 +42,19 @@ public class IndexQueryContext {
         BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter,
         MvccSnapshot mvccSnapshot
     ) {
+        this(cacheFilter, rowFilter, null, mvccSnapshot);
+    }
+
+    /** */
+    public IndexQueryContext(
+        IndexingQueryFilter cacheFilter,
+        BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter,
+        BPlusTree.TreeRowFactory<IndexRow, IndexRow> rowFactory,
+        MvccSnapshot mvccSnapshot
+    ) {
         this.cacheFilter = cacheFilter;
         this.rowFilter = rowFilter;
+        this.rowFactory = rowFactory;
         this.mvccSnapshot = mvccSnapshot;
     }
 
@@ -63,5 +77,12 @@ public class IndexQueryContext {
      */
     public BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter() {
         return rowFilter;
+    }
+
+    /**
+     * @return Index row factory.
+     */
+    public BPlusTree.TreeRowFactory<IndexRow, IndexRow> rowFactory() {
+        return rowFactory;
     }
 }

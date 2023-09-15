@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.baseline;
 
+import org.apache.ignite.cluster.ClusterState;
+
 /**
  * Full API cache tests when all online nodes in the cluster are in BaselineTopology.
  */
@@ -28,7 +30,7 @@ public class IgniteAllBaselineNodesOnlineFullApiSelfTest extends IgniteBaselineA
 
         startGrids(gridCount());
 
-        grid(0).active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
     }

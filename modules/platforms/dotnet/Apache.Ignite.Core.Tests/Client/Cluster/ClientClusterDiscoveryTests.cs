@@ -82,12 +82,14 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         /// Tests that originally known node can leave and client maintains connections to other cluster nodes.
         /// </summary>
         [Test]
-        public void TestClientMaintainsConnectionWhenOriginalNodeLeaves()
+        public void TestClientMaintainsConnectionWhenOriginalNodeLeaves(
+            [Values(true, false)] bool enablePartitionAwareness)
         {
             // Client knows about single server node initially.
             var ignite = Ignition.Start(GetIgniteConfiguration());
             var cfg = GetClientConfiguration();
             cfg.Endpoints = new[] {IPAddress.Loopback + ":10803"};
+            cfg.EnablePartitionAwareness = enablePartitionAwareness;
 
             // Client starts and discovers other server nodes.
             var client = Ignition.StartClient(cfg);

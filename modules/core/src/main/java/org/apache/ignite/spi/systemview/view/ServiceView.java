@@ -17,15 +17,19 @@
 
 package org.apache.ignite.spi.systemview.view;
 
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.service.ServiceInfo;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.services.ServiceDescriptor;
 
 /**
  * Service representation for a {@link SystemView}.
+ *
+ * @see ServiceDescriptor
  */
 public class ServiceView {
     /** Service descriptor. */
@@ -97,5 +101,10 @@ public class ServiceView {
     @Order(4)
     public UUID originNodeId() {
         return serviceInfo.originNodeId();
+    }
+
+    /** @return Map of number of service instances per node ID. */
+    public Map<UUID, Integer> topologySnapshot() {
+        return serviceInfo.topologySnapshot();
     }
 }

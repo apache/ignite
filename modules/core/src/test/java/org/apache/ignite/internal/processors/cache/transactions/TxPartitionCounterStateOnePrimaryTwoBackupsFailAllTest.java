@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -326,7 +327,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
             startGrid(txTop.get(PARTITION_ID).get2().get(backupsStartOrder[1]).name());
 
             try {
-                grid(0).cluster().active(true);
+                grid(0).cluster().state(ClusterState.ACTIVE);
             }
             catch (Throwable t) {
                 // Nodes are expected to stop during activation due to irrecoverable partition consistency.

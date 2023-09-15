@@ -68,7 +68,10 @@ public class SecurityPermissionSetBuilder {
     private boolean dfltAllowAll;
 
     /** */
-    public static final SecurityPermissionSet ALLOW_ALL = create().build();
+    public static final SecurityPermissionSet ALL_PERMISSIONS = create().build();
+
+    /** */
+    public static final SecurityPermissionSet NO_PERMISSIONS = create().defaultAllowAll(false).build();
 
     /**
      * Static factory method for create new permission builder.
@@ -242,5 +245,13 @@ public class SecurityPermissionSetBuilder {
         permSet.setSystemPermissions(unmodifiableSet(sysPerms));
 
         return permSet;
+    }
+
+    /**
+     * @param perms System permissions.
+     * @return {@link SecurityPermissionSet} instance with specified permissions added.
+     */
+    public static SecurityPermissionSet systemPermissions(SecurityPermission... perms) {
+        return create().defaultAllowAll(false).appendSystemPermissions(perms).build();
     }
 }

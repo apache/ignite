@@ -188,7 +188,8 @@ public class ConnectionClientPool {
     public GridCommunicationClient reserveClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
         assert node != null;
         assert (connIdx >= 0 && connIdx < cfg.connectionsPerNode())
-            || !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection())) : connIdx;
+            || !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection()))
+            || GridNioServerWrapper.isChannelConnIdx(connIdx) : "Wrong communication connection index: " + connIdx;
 
         if (locNodeSupplier.get().isClient()) {
             if (node.isClient()) {
@@ -363,9 +364,9 @@ public class ConnectionClientPool {
 
             ConnectionRequestFuture triggerFut = new ConnectionRequestFuture();
 
-            triggerFut.listen(f -> {
+            triggerFut.listen(() -> {
                 try {
-                    fut0.onDone(f.get());
+                    fut0.onDone(triggerFut.get());
                 }
                 catch (Throwable t) {
                     fut0.onDone(t);
@@ -493,7 +494,8 @@ public class ConnectionClientPool {
         }
 
         if (connIdx >= cfg.connectionsPerNode()) {
-            assert !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection()));
+            assert !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection()))
+                || GridNioServerWrapper.isChannelConnIdx(connIdx) : "Wrong communication connection index: " + connIdx;
 
             return;
         }

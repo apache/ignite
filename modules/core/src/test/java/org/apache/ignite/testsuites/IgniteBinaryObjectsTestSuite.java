@@ -23,6 +23,7 @@ import org.apache.ignite.internal.binary.BinaryBasicIdMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryBasicNameMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryConfigurationConsistencySelfTest;
 import org.apache.ignite.internal.binary.BinaryConfigurationCustomSerializerSelfTest;
+import org.apache.ignite.internal.binary.BinaryContextPredefinedTypesTest;
 import org.apache.ignite.internal.binary.BinaryEnumsSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldExtractionSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldsHeapSelfTest;
@@ -67,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRemoveTe
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRemoveWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataUpdatesFlowTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryTxCacheLocalEntriesSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryConfigurationWithAffinityKeyClientReconnectTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryObjectMetadataExchangeMultinodeTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryObjectUserClassloaderSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreBinariesDefaultMappersSelfTest;
@@ -166,6 +168,8 @@ import org.junit.runners.Suite;
     BinaryTxCacheLocalEntriesSelfTest.class,
     BinaryAtomicCacheLocalEntriesSelfTest.class,
 
+    GridCacheBinaryConfigurationWithAffinityKeyClientReconnectTest.class,
+
     // Byte order
     BinaryHeapStreamByteOrderSelfTest.class,
     BinaryAbstractOutputStreamTest.class,
@@ -173,7 +177,8 @@ import org.junit.runners.Suite;
 
     GridCacheBinaryObjectUserClassloaderSelfTest.class,
 
-    BinaryMetadataMoveLegacyFolderTest.class
+    BinaryMetadataMoveLegacyFolderTest.class,
+    BinaryContextPredefinedTypesTest.class,
 })
 public class IgniteBinaryObjectsTestSuite {
 }

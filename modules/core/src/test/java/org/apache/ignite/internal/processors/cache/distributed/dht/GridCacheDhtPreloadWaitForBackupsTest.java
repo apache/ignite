@@ -31,6 +31,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -166,7 +167,7 @@ public class GridCacheDhtPreloadWaitForBackupsTest extends GridCommonAbstractTes
         startGrids(2);
 
         if (persistenceEnabled())
-            grid(0).cluster().active(true);
+            grid(0).cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < cacheSize(); i++)
             grid(i % 2).cache("cache" + (1 + (i >> 3) % 3)).put(i, new byte[i]);
@@ -204,7 +205,7 @@ public class GridCacheDhtPreloadWaitForBackupsTest extends GridCommonAbstractTes
             startGrids(1);
 
             if (persistenceEnabled())
-                grid(0).cluster().active(true);
+                grid(0).cluster().state(ClusterState.ACTIVE);
 
             for (int i = 0; i < cacheSize(); i++)
                 grid(0).cache("cache" + (1 + (i >> 3) % 3)).put(i, new byte[i]);
@@ -253,7 +254,7 @@ public class GridCacheDhtPreloadWaitForBackupsTest extends GridCommonAbstractTes
         startGrids(2);
 
         if (persistenceEnabled())
-            grid(0).cluster().active(true);
+            grid(0).cluster().state(ClusterState.ACTIVE);
 
         grid(1).cache("cache1").destroy();
         grid(1).cache("cache2").destroy();
@@ -292,7 +293,7 @@ public class GridCacheDhtPreloadWaitForBackupsTest extends GridCommonAbstractTes
 
         startGrids(2);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         grid(0).context().distributedMetastorage().write(
             DistributedMetaStorageImpl.IGNITE_INTERNAL_KEY_PREFIX + "graceful.shutdown",
@@ -330,7 +331,7 @@ public class GridCacheDhtPreloadWaitForBackupsTest extends GridCommonAbstractTes
 
         startGrids(3);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         grid(0).context().distributedMetastorage().write(
             DistributedMetaStorageImpl.IGNITE_INTERNAL_KEY_PREFIX + "graceful.shutdown",
@@ -372,7 +373,7 @@ public class GridCacheDhtPreloadWaitForBackupsTest extends GridCommonAbstractTes
 
         startGrids(4);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         grid(0).context().distributedMetastorage().write(
             DistributedMetaStorageImpl.IGNITE_INTERNAL_KEY_PREFIX + "graceful.shutdown",
@@ -428,7 +429,7 @@ public class GridCacheDhtPreloadWaitForBackupsTest extends GridCommonAbstractTes
 
         grid(0).cluster().baselineAutoAdjustEnabled(false);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < cacheSize(); i++)
             grid(0).cache("cache" + (1 + (i >> 3) % 3)).put(i, i);
@@ -470,7 +471,7 @@ public class GridCacheDhtPreloadWaitForBackupsTest extends GridCommonAbstractTes
 
         startClientGrid(1);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         grid(1).close();
     }
@@ -487,7 +488,7 @@ public class GridCacheDhtPreloadWaitForBackupsTest extends GridCommonAbstractTes
 
         startGrids(1);
 
-        grid(0).cluster().active(false);
+        grid(0).cluster().state(ClusterState.INACTIVE);
 
         grid(0).close();
     }
@@ -506,7 +507,7 @@ public class GridCacheDhtPreloadWaitForBackupsTest extends GridCommonAbstractTes
 
         startGrids(nodesCnt);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < cacheSize(); i++)
             grid(i % 2).cache("cache" + (1 + (i >> 3) % 3)).put(i, i);
@@ -540,7 +541,7 @@ public class GridCacheDhtPreloadWaitForBackupsTest extends GridCommonAbstractTes
 
         ignite(0).cluster().baselineAutoAdjustEnabled(false);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         for (int i = nodesCnt / 2; i < nodesCnt; i++)
             startGrid(i);
@@ -577,7 +578,7 @@ public class GridCacheDhtPreloadWaitForBackupsTest extends GridCommonAbstractTes
 
         startGrids(nodesCnt);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < cacheSize(); i++)
             grid(i % 2).cache("cache" + (1 + (i >> 3) % 3)).put(i, i);
@@ -607,7 +608,7 @@ public class GridCacheDhtPreloadWaitForBackupsTest extends GridCommonAbstractTes
 
         startGrids(2);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < cacheSize(); i++)
             grid(i % 2).cache("cache" + (1 + (i >> 3) % 3)).put(i, i);
@@ -639,7 +640,7 @@ public class GridCacheDhtPreloadWaitForBackupsTest extends GridCommonAbstractTes
 
         startGrids(2);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < cacheSize(); i++)
             grid(i % 2).cache("cache" + (1 + (i >> 3) % 3)).put(i, i);
@@ -666,7 +667,7 @@ public class GridCacheDhtPreloadWaitForBackupsTest extends GridCommonAbstractTes
         startGrids(4);
 
         if (persistenceEnabled())
-            grid(0).cluster().active(true);
+            grid(0).cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < cacheSize(); i++)
             grid(i % 4).cache("cache" + (1 + (i >> 3) % 3)).put(i, new byte[i]);

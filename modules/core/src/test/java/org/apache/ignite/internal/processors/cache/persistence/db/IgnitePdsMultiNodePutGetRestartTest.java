@@ -110,7 +110,7 @@ public class IgnitePdsMultiNodePutGetRestartTest extends GridCommonAbstractTest 
         try {
             IgniteEx ig = grid(0);
 
-            ig.active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             checkPutGetSql(ig, true);
         }
@@ -127,7 +127,7 @@ public class IgnitePdsMultiNodePutGetRestartTest extends GridCommonAbstractTest 
         try {
             IgniteEx ig = grid(0);
 
-            ig.active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             checkPutGetSql(ig, false);
         }

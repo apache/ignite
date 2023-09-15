@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -173,7 +174,7 @@ public class IgniteClusterIdTagTest extends GridCommonAbstractTest {
 
         IgniteEx ig0 = startGrid(0);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         UUID id0 = ig0.cluster().id();
 
@@ -310,7 +311,7 @@ public class IgniteClusterIdTagTest extends GridCommonAbstractTest {
 
         String tag1 = ig1.cluster().tag();
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         stopAllGrids();
 
@@ -320,7 +321,7 @@ public class IgniteClusterIdTagTest extends GridCommonAbstractTest {
 
         assertEquals(tag1, ig0.cluster().tag());
 
-        ig1.cluster().active(true);
+        ig1.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx cl0 = startGrid("client0");
 

@@ -23,6 +23,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -70,7 +71,7 @@ public class IgniteChangingBaselineDownCachePutAllFailoverTest extends CachePutA
         startGrids(GRIDS_COUNT);
 
         grid(0).cluster().baselineAutoAdjustEnabled(false);
-        grid(0).active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
     }

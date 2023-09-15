@@ -135,6 +135,7 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
@@ -150,6 +151,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  * Query and index manager.
@@ -1868,7 +1870,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             // Get metadata from remote nodes.
             if (!nodes.isEmpty())
-                rmtFut = cctx.closures().callAsyncNoFailover(BROADCAST, Collections.singleton(job), nodes, true, 0);
+                rmtFut = cctx.closures().callAsync(
+                    BROADCAST,
+                    Collections.singleton(job),
+                    options(nodes)
+                        .withFailoverDisabled()
+                        .asSystemTask()
+                );
 
             // Get local metadata.
             IgniteInternalFuture<Collection<CacheSqlMetadata>> locFut = cctx.closures().callLocalSafe(job, true);
@@ -1968,7 +1976,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 if (!allNodesNew)
                     return sqlMetadata();
 
-                rmtFut = cctx.closures().callAsyncNoFailover(BROADCAST, Collections.singleton(job), nodes, true, 0);
+                rmtFut = cctx.closures().callAsync(
+                    BROADCAST,
+                    Collections.singleton(job),
+                    options(nodes)
+                        .withFailoverDisabled()
+                        .asSystemTask()
+                );
             }
 
             // Get local metadata.

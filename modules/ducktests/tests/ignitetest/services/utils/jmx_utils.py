@@ -29,7 +29,7 @@ def ignite_jmx_mixin(node, service):
     :param node: Ignite service node.
     :param service: Ignite service.
     """
-    setattr(node, 'pids', service.pids(node))
+    setattr(node, 'pids', service.pids(node, service.main_java_class))
     setattr(node, 'install_root', service.install_root)
     base_cls = node.__class__
     base_cls_name = node.__class__.__name__

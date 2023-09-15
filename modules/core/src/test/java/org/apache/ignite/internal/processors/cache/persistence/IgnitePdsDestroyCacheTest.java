@@ -69,7 +69,7 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
     public void testDestroyCaches() throws Exception {
         Ignite ignite = startGrids(NODES);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         startCachesDynamically(ignite);
 
@@ -85,7 +85,7 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
     public void testDestroyGroupCaches() throws Exception {
         Ignite ignite = startGrids(NODES);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         startGroupCachesDynamically(ignite);
 
@@ -102,7 +102,7 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
     public void testDestroyCachesAbruptly() throws Exception {
         Ignite ignite = startGrids(NODES);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         startCachesDynamically(ignite);
 
@@ -119,7 +119,7 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
     public void testDestroyGroupCachesAbruptly() throws Exception {
         Ignite ignite = startGrids(NODES);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         startGroupCachesDynamically(ignite);
 
@@ -140,7 +140,7 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
     private void doTestDestroyCacheOperationNotBlockingCheckpointTest() throws Exception {
         final IgniteEx ignite = startGrids(1);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         startGroupCachesDynamically(ignite);
 

@@ -47,7 +47,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_STOPPED;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_SET_STATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.DESTROY_CACHE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.GET_OR_CREATE_CACHE;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 
 /** Tests that security information specified in cache create/destroy events belongs to the operation initiator. */
 public class CacheCreateDestroyEventSecurityContextTest extends AbstractEventSecurityContextTest {
@@ -74,7 +74,7 @@ public class CacheCreateDestroyEventSecurityContextTest extends AbstractEventSec
     /** Tests cache create/destroy event security context in case operation is initiated from the {@link IgniteClient}. */
     @Test
     public void testIgniteClient() throws Exception {
-        operationInitiatorLogin = "thin_client";
+        operationInitiatorLogin = THIN_CLIENT_LOGIN;
 
         ClientConfiguration cfg = new ClientConfiguration()
             .setAddresses(Config.SERVER)
@@ -101,7 +101,7 @@ public class CacheCreateDestroyEventSecurityContextTest extends AbstractEventSec
     /** Tests cache create/destroy event security context in case operation is initiated from the {@link GridClient}. */
     @Test
     public void testGridClient() throws Exception {
-        operationInitiatorLogin = "grid_client";
+        operationInitiatorLogin = GRID_CLIENT_LOGIN;
 
         GridClientConfiguration cfg = new GridClientConfiguration()
             .setServers(singletonList("127.0.0.1:11211"))
@@ -120,7 +120,7 @@ public class CacheCreateDestroyEventSecurityContextTest extends AbstractEventSec
     public void testRestClient() throws Exception {
         String cacheName = "rest_client_cache";
 
-        operationInitiatorLogin = "rest_client";
+        operationInitiatorLogin = REST_CLIENT_LOGIN;
 
         checkCacheEvents(() -> sendRestRequest(GET_OR_CREATE_CACHE, cacheName, null), EVT_CACHE_STARTED);
         checkCacheEvents(() -> sendRestRequest(DESTROY_CACHE, cacheName, null), EVT_CACHE_STOPPED);
@@ -167,7 +167,7 @@ public class CacheCreateDestroyEventSecurityContextTest extends AbstractEventSec
         checkCacheEvents(
             () -> startGrid(getConfiguration(
                 operationInitiatorLogin,
-                    new TestSecurityPluginProvider(operationInitiatorLogin, "", ALLOW_ALL, false))
+                    new TestSecurityPluginProvider(operationInitiatorLogin, "", ALL_PERMISSIONS, false))
                 .setClientMode(isClient)
                 .setCacheConfiguration(cacheConfiguration()))
                 .close(),

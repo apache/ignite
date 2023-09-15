@@ -724,9 +724,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
 
     /**
      * Sets task timeout for the next executed task in the <b>current thread</b>.
-     * When task starts execution, the timeout is reset, so one timeout is used only once. You may use
-     * this method to set task name when executing jobs directly, without explicitly
-     * defining {@link ComputeTask}.
+     * When task starts execution, the timeout is reset, so one timeout is used only once.
      * <p>
      * Here is an example.
      * <pre class="brush:java">

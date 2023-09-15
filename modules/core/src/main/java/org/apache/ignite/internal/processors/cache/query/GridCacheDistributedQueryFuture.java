@@ -42,6 +42,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
+import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor.indexQueryText;
 
 /**
  * Distributed query future.
@@ -67,6 +68,9 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** Metadata for IndexQuery. */
     private final CompletableFuture<IndexQueryResultMeta> idxQryMetaFut;
+
+    /** Query start time in nanoseconds to measure duration. */
+    private final long startTimeNanos;
 
     /**
      * @param ctx Cache context.
@@ -109,6 +113,8 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
             reducer = qry.query().type() == TEXT ? new TextQueryReducer<>(streamsMap) : new UnsortedCacheQueryReducer<>(streamsMap);
         }
+
+        startTimeNanos = ctx.kernalContext().performanceStatistics().enabled() ? System.nanoTime() : 0;
     }
 
     /**
@@ -314,5 +320,29 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
             firstPageLatch.countDown();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean onDone(Collection<R> res, Throwable err) {
+        if (cctx.kernalContext().performanceStatistics().enabled() && startTimeNanos > 0) {
+            GridCacheQueryType type = qry.query().type();
+
+            String text;
+
+            if (type == INDEX)
+                text = indexQueryText(cctx.name(), qry.query().idxQryDesc());
+            else
+                text = cctx.name();
+
+            cctx.kernalContext().performanceStatistics().query(
+                type,
+                text,
+                reqId,
+                startTimeNanos,
+                System.nanoTime() - startTimeNanos,
+                err == null);
+        }
+
+        return super.onDone(res, err);
     }
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.util;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -32,7 +33,11 @@ import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.mxbean.ComputeMXBean;
 import org.apache.ignite.mxbean.QueryMXBean;
 import org.apache.ignite.mxbean.ServiceMXBean;
@@ -46,6 +51,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
 import static org.apache.ignite.util.KillCommandsTests.PAGES_CNT;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelClientConnection;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelContinuousQuery;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelSQLQuery;
@@ -81,6 +87,10 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
 
     /** Snapshot control JMX bean. */
     private static SnapshotMXBean snpMxBean;
+
+    /** */
+    private Consumer<T3<UUID, String, Long>> killScan = args ->
+        qryMBean.cancelScan(args.get1().toString(), args.get2(), args.get3());
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -146,8 +156,7 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testCancelScanQuery() throws Exception {
-        doTestScanQueryCancel(startCli, srvs, args ->
-            qryMBean.cancelScan(args.get1().toString(), args.get2(), args.get3()));
+        doTestScanQueryCancel(startCli, srvs, killScan);
     }
 
     /** @throws Exception If failed. */
@@ -178,7 +187,7 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     @Test
     public void testCancelContinuousQuery() throws Exception {
         doTestCancelContinuousQuery(startCli, srvs,
-            (nodeId, routineId) -> qryMBean.cancelContinuous(nodeId.toString(), routineId.toString()));
+            (nodeId, routineId) -> qryMBean.cancelContinuous(nodeId.toString(), routineId.toString()), killScan);
     }
 
     /** */
@@ -186,6 +195,24 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     public void testCancelSnapshot() {
         doSnapshotCancellationTest(startCli, srvs, startCli.cache(DEFAULT_CACHE_NAME),
             snpName -> snpMxBean.cancelSnapshot(snpName));
+    }
+
+    /** */
+    @Test
+    public void testCancelClientConnection() {
+        doTestCancelClientConnection(srvs, (nodeId, connId) -> {
+            ClientProcessorMXBean cliMxBean = getMxBean(
+                (nodeId == null ? srvs.get(1) : G.ignite(nodeId)).name(),
+                "Clients",
+                ClientListenerProcessor.class.getSimpleName(),
+                ClientProcessorMXBean.class
+            );
+
+            if (connId == null)
+                cliMxBean.dropAllConnections();
+            else
+                cliMxBean.dropConnection(connId);
+        } );
     }
 
     /** */

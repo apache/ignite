@@ -316,7 +316,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         Ignite prim = startGrids(srvNodes);
 
-        prim.cluster().active(true);
+        prim.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = prim.cache(DEFAULT_CACHE_NAME);
 
@@ -380,7 +380,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         Ignite prim = startGrids(srvNodes);
 
-        prim.cluster().active(true);
+        prim.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = prim.cache(DEFAULT_CACHE_NAME);
 
@@ -578,7 +578,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         Ignite crd = startGrids(SERVER_NODES);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         int[] primaryParts = crd.affinity(DEFAULT_CACHE_NAME).primaryPartitions(crd.cluster().localNode());
 
@@ -612,7 +612,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         startGrid(1);
         startNodeWithBlockingSupplying(2);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         TestRecordingCommunicationSpi spi0 = TestRecordingCommunicationSpi.spi(crd);
         TestRecordingCommunicationSpi spi2 = TestRecordingCommunicationSpi.spi(ignite(2));
@@ -733,7 +733,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         Ignite crd = startGridsMultiThreaded(SERVER_NODES);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         Ignite client = startClientGrid(CLIENT_GRID_NAME);
 
@@ -816,7 +816,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         startGrid(1);
         startGrid(2);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         Ignite client = startClientGrid(CLIENT_GRID_NAME);
 
@@ -931,7 +931,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         crd.cluster().baselineAutoAdjustEnabled(false);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         // Same name pattern as in test configuration.
         String consistentId = "node" + getTestIgniteInstanceName(3);
@@ -1096,7 +1096,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
     public void testLateAffinityChangeDuringExchange() throws Exception {
         backups = 2;
         Ignite crd = startGridsMultiThreaded(3);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -1249,7 +1249,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         final IgniteEx crd = startGrids(nodes);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         List<Integer> primaryKeys = primaryKeys(crd.cache(DEFAULT_CACHE_NAME), 1024);
 
@@ -1288,7 +1288,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         prim.cluster().baselineAutoAdjustEnabled(false);
 
-        prim.cluster().active(true);
+        prim.cluster().state(ClusterState.ACTIVE);
 
         for (int p = 0; p < partitions(); p++) {
             prim.cache(DEFAULT_CACHE_NAME).put(p, p);

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted.client;
 
 import java.util.UUID;
+import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
@@ -31,15 +32,15 @@ public class ClientInlineIndex extends AbstractClientIndex implements InlineInde
     /** */
     private final int inlineSize;
 
-    /** Index name. */
-    private final String name;
-
     /** Index id. */
     private final UUID id = UUID.randomUUID();
 
+    /** Index definition. */
+    private final IndexDefinition def;
+
     /** */
-    public ClientInlineIndex(String idxName, int inlineSize) {
-        name = idxName;
+    public ClientInlineIndex(IndexDefinition def, int inlineSize) {
+        this.def = def;
         this.inlineSize = inlineSize;
     }
 
@@ -92,6 +93,11 @@ public class ClientInlineIndex extends AbstractClientIndex implements InlineInde
     }
 
     /** {@inheritDoc} */
+    @Override public GridCursor<IndexRow> findFirstOrLast(IndexQueryContext qryCtx, boolean first) {
+        throw unsupported();
+    }
+
+    /** {@inheritDoc} */
     @Override public long count(int segment) {
         throw unsupported();
     }
@@ -118,6 +124,11 @@ public class ClientInlineIndex extends AbstractClientIndex implements InlineInde
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return name;
+        return def.idxName().idxName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IndexDefinition indexDefinition() {
+        return def;
     }
 }

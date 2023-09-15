@@ -39,6 +39,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -482,7 +483,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     private Set<Integer> prepareTopology(int nodes, boolean autoAdjust, P1<Event> lsnr, int... stopNodes) throws Exception {
         final IgniteEx crd = startGrids(nodes);
         crd.cluster().baselineAutoAdjustEnabled(autoAdjust);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         Affinity<Object> aff = ignite(0).affinity(CACHES[0]);
 

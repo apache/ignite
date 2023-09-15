@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Client message parser.
  */
-class GridNioClientParser implements GridNioParser {
+public class GridNioClientParser implements GridNioParser {
     /** */
     private static final int SES_META_DECODER = GridNioSessionMetaKey.nextUniqueKey();
 

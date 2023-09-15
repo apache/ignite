@@ -29,6 +29,7 @@ import java.util.function.Function;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -95,7 +96,7 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
         int nodeId = 0;
 
         IgniteEx crd = startGrid(nodeId);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         try (Transaction tx = crd.transactions().txStart()) {
             IgniteCache<Object, Object> cache = crd.cache(DEFAULT_CACHE_NAME);

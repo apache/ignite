@@ -121,14 +121,16 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
             IgniteEx ignite1 = grid(1);
 
             ignite0.context().cache().context().io().addCacheHandler(
-                0, TestBadMessage.class, new CI2<UUID, GridCacheMessage>() {
+                TestBadMessage.class,
+                new CI2<UUID, GridCacheMessage>() {
                     @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                         throw new RuntimeException("Test bad message exception");
                     }
                 });
 
             ignite1.context().cache().context().io().addCacheHandler(
-                0, TestBadMessage.class, new CI2<UUID, GridCacheMessage>() {
+                TestBadMessage.class,
+                new CI2<UUID, GridCacheMessage>() {
                     @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                         throw new RuntimeException("Test bad message exception");
                     }

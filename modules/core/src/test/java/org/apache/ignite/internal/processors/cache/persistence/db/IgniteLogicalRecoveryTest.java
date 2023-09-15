@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
@@ -37,6 +36,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -193,7 +193,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     public void testRecoveryOnJoinToActiveCluster() throws Exception {
         IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx node = grid(2);
 
@@ -225,7 +225,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     public void testRecoveryOnJoinToInactiveCluster() throws Exception {
         IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx node = grid(2);
 
@@ -239,11 +239,11 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         stopGrid(2, true);
 
-        crd.cluster().active(false);
+        crd.cluster().state(ClusterState.INACTIVE);
 
         node = startGrid(2);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -270,25 +270,12 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
-     */
-    @Test
-    public void testRecoveryWithMvccCaches() throws Exception {
-        List<CacheConfiguration> dynamicCaches = Lists.newArrayList(
-            cacheConfiguration(DYNAMIC_CACHE_PREFIX + 0, CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT),
-            cacheConfiguration(DYNAMIC_CACHE_PREFIX + 1, CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
-        );
-
-        doTestWithDynamicCaches(dynamicCaches);
-    }
-
-    /**
      * @param dynamicCaches Dynamic caches.
      */
     private void doTestWithDynamicCaches(List<CacheConfiguration> dynamicCaches) throws Exception {
         IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx node = grid(2);
 
@@ -324,7 +311,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
 
         crd.cluster().baselineAutoAdjustEnabled(false);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx node = grid(2);
 
@@ -359,7 +346,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     public void testRecoveryOnCrushDuringCheckpointOnNodeStart() throws Exception {
         IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3, false);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx node = grid(2);
 
@@ -471,18 +458,10 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         for (final Ignite node : nodes) {
             TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(node);
 
-            Set<Integer> mvccCaches = ((IgniteEx)node).context().cache().cacheGroups().stream()
-                .flatMap(group -> group.caches().stream())
-                .filter(cache -> cache.config().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
-                .map(GridCacheContext::groupId)
-                .collect(Collectors.toSet());
-
             List<Integer> rebalancedGroups = spi.recordedMessages(true).stream()
                 .map(msg -> (GridDhtPartitionDemandMessage)msg)
                 .map(GridCacheGroupIdMessage::groupId)
                 .filter(grpId -> grpId != sysCacheGroupId)
-                //TODO: remove following filter when failover for MVCC will be fixed.
-                .filter(grpId -> !mvccCaches.contains(grpId))
                 .distinct()
                 .collect(Collectors.toList());
 

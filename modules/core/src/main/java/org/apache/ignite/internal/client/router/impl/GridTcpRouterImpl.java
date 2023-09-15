@@ -23,10 +23,10 @@ import java.net.UnknownHostException;
 import java.nio.ByteOrder;
 import java.util.Collection;
 import java.util.UUID;
+import javax.cache.configuration.Factory;
 import javax.management.JMException;
 import javax.management.ObjectName;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -34,7 +34,6 @@ import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.router.GridTcpRouter;
 import org.apache.ignite.internal.client.router.GridTcpRouterConfiguration;
 import org.apache.ignite.internal.client.router.GridTcpRouterMBean;
-import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
@@ -118,14 +117,9 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
 
         SSLContext sslCtx;
 
-        try {
-            GridSslContextFactory sslCtxFactory = cfg.getSslContextFactory();
+        Factory<SSLContext> sslCtxFactory = cfg.getSslContextFactory();
 
-            sslCtx = sslCtxFactory == null ? null : sslCtxFactory.createSslContext();
-        }
-        catch (SSLException e) {
-            throw new IgniteException("Failed to create SSL context.", e);
-        }
+        sslCtx = sslCtxFactory == null ? null : sslCtxFactory.create();
 
         for (int port = cfg.getPort(), last = port + cfg.getPortRange(); port <= last; port++) {
             if (startTcpServer(hostAddr, port, lsnr, parser, cfg.isNoDelay(), sslCtx, cfg.isSslClientAuth(),

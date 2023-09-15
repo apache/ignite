@@ -20,7 +20,6 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.StringIndexKey;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Skip optimized String comparison implemented in {@link StringInlineIndexKeyType}.
@@ -40,7 +39,7 @@ public class StringNoCompareInlineIndexKeyType extends NullableInlineIndexKeyTyp
     }
 
     /** {@inheritDoc} */
-    @Override protected @Nullable StringIndexKey get0(long pageAddr, int off) {
+    @Override protected StringIndexKey get0(long pageAddr, int off) {
         return delegate.get0(pageAddr, off);
     }
 
@@ -55,7 +54,7 @@ public class StringNoCompareInlineIndexKeyType extends NullableInlineIndexKeyTyp
     }
 
     /** {@inheritDoc} */
-    @Override public boolean inlinedFullValue(long pageAddr, int off) {
-        return delegate.inlinedFullValue(pageAddr, off);
+    @Override public boolean inlinedFullValue(long pageAddr, int off, int maxSize) {
+        return delegate.inlinedFullValue(pageAddr, off, maxSize);
     }
 }

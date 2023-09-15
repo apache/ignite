@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Tests.Client.Compute
                 }
             }
 
-            Assert.IsEmpty(Client.GetActiveNotificationListeners());
+            TestUtils.WaitForTrueCondition(() => Client.GetActiveNotificationListeners().Count == 0);
         }
 
         /// <summary>

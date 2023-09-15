@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerPluginProvider;
@@ -45,7 +46,7 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
     public final void testPutRemoveAfterCheckpoint() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Object> cache = ignite.createCache(cacheConfiguration(DEFAULT_CACHE_NAME));
 
@@ -78,7 +79,7 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
     public final void testNotEmptyPds() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Object> cache = ignite.createCache(cacheConfiguration(DEFAULT_CACHE_NAME));
 
@@ -91,7 +92,7 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
 
         ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         cache = ignite.getOrCreateCache(cacheConfiguration(DEFAULT_CACHE_NAME));
 
@@ -111,7 +112,7 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
     public void testReusePages() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -132,7 +133,7 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
 
         ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -149,7 +150,7 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
     public void testRecovery() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -171,7 +172,7 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
 
         IgniteEx ignite0 = startGrid(0);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Object> cache = ignite0.cache(DEFAULT_CACHE_NAME);
 

@@ -57,15 +57,15 @@ class IndexQueryCriteriaClosure implements BPlusTree.TreeRowClosure<IndexRow, In
         long pageAddr,
         int idx
     ) throws IgniteCheckedException {
-        return !rowIsOutOfRange((InlineIndexTree)tree, io, pageAddr, idx, qry.lower(), qry.upper());
+        return rowMatchRange((InlineIndexTree)tree, io, pageAddr, idx, qry.lower(), qry.upper());
     }
 
     /**
      * Checks that {@code row} belongs to the range specified with {@code low} and {@code high}.
      *
-     * @return {@code true} if the row doesn't belong the range, otherwise {@code false}.
+     * @return {@code true} if the row belongs the range, otherwise {@code false}.
      */
-    private boolean rowIsOutOfRange(
+    private boolean rowMatchRange(
         InlineIndexTree tree,
         BPlusIO<IndexRow> io,
         long pageAddr,
@@ -85,7 +85,7 @@ class IndexQueryCriteriaClosure implements BPlusTree.TreeRowClosure<IndexRow, In
             IndexKeyQueryCondition keyCond = qry.keyCondition(keyIdx);
 
             if (keyCond == null)
-                return false;
+                return true;
 
             RangeIndexQueryCriterion c = keyCond.range();
             Set<IndexKey> inVals = keyCond.inVals();
@@ -99,7 +99,8 @@ class IndexQueryCriteriaClosure implements BPlusTree.TreeRowClosure<IndexRow, In
             if (inVals != null) {
                 IndexKey key = null;
 
-                if (keyType != null && keyType.type() != JAVA_OBJECT && keyType.inlinedFullValue(pageAddr, off + fieldOff))
+                if (keyType != null && keyType.type() != JAVA_OBJECT
+                    && keyType.inlinedFullValue(pageAddr, off + fieldOff, maxSize))
                     key = keyType.get(pageAddr, off + fieldOff, maxSize);
 
                 if (key == null) {
@@ -108,8 +109,8 @@ class IndexQueryCriteriaClosure implements BPlusTree.TreeRowClosure<IndexRow, In
                     key = row.key(keyIdx);
                 }
 
-                // Range boundaries were already checked for all IN values.
-                return !inVals.contains(key);
+                if (!inVals.contains(key))
+                    return false;
             }
 
             if (low != null && low.key(keyIdx) != null) {
@@ -117,10 +118,10 @@ class IndexQueryCriteriaClosure implements BPlusTree.TreeRowClosure<IndexRow, In
 
                 if (cmp == 0) {
                     if (!c.lowerIncl())
-                        return true;  // Exclude if field equals boundary field and criteria is excluding.
+                        return false;  // Exclude if field equals boundary field and criteria is excluding.
                 }
                 else if ((cmp < 0) ^ descOrder)
-                    return true;  // Out of bound. Either below 'low' margin or column with desc order.
+                    return false;  // Out of bound. Either below 'low' margin or column with desc order.
             }
 
             if (high != null && high.key(keyIdx) != null) {
@@ -128,17 +129,17 @@ class IndexQueryCriteriaClosure implements BPlusTree.TreeRowClosure<IndexRow, In
 
                 if (cmp == 0) {
                     if (!c.upperIncl())
-                        return true;  // Exclude if field equals boundary field and criteria is excluding.
+                        return false;  // Exclude if field equals boundary field and criteria is excluding.
                 }
                 else if ((cmp > 0) ^ descOrder)
-                    return true;  // Out of bound. Either above 'high' margin or column with desc order.
+                    return false;  // Out of bound. Either above 'high' margin or column with desc order.
             }
 
             if (keyType != null)
                 fieldOff += keyType.inlineSize(pageAddr, off + fieldOff);
         }
 
-        return false;
+        return true;
     }
 
     /**

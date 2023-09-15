@@ -97,7 +97,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     @Override protected void start0() throws IgniteCheckedException {
         dhtCtx = cctx.isNear() ? cctx.near().dht().context() : cctx;
 
-        boolean cleanupDisabled = cctx.kernalContext().isDaemon() ||
+        boolean cleanupDisabled =
             !cctx.config().isEagerTtl() ||
             CU.isUtilityCache(cctx.name()) ||
             cctx.dataStructuresCache() ||

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -34,12 +35,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.between;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
@@ -64,10 +67,14 @@ public class IndexQueryInCriterionTest extends GridCommonAbstractTest {
             .setKeyType(Integer.class.getName())
             .setValueType(Person.class.getName())
             .addQueryField("age", Integer.class.getName(), null)
-            .setIndexes(Collections.singleton(
+            .addQueryField("cnt", Integer.class.getName(), null)
+            .setIndexes(F.asList(
                 new QueryIndex()
                     .setName(IDX)
-                    .setFields(new LinkedHashMap<>(F.asMap("age", asc())))
+                    .setFields(new LinkedHashMap<>(F.asMap("age", asc()))),
+                new QueryIndex()
+                    .setName(IDX + "2")
+                    .setFields(new LinkedHashMap<>(F.asMap("age", asc(), "cnt", true)))
             ));
 
         CacheConfiguration<Integer, Person> ccfg = new CacheConfiguration<Integer, Person>()
@@ -93,16 +100,16 @@ public class IndexQueryInCriterionTest extends GridCommonAbstractTest {
             Random rnd = new Random();
 
             for (int i = 0; i < 10_000; i++) {
-                Person p = new Person(rnd.nextInt(100));
+                Person p = new Person(rnd.nextInt(100), rnd.nextInt(10));
 
                 stream.addData(i, p);
 
                 data.put(i, p);
             }
 
-            stream.addData(20_000, new Person(null));
+            stream.addData(20_000, new Person(null, null));
 
-            data.put(20_000, new Person(null));
+            data.put(20_000, new Person(null, null));
         }
     }
 
@@ -560,6 +567,30 @@ public class IndexQueryInCriterionTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testMultipleInsCriteria() {
+        T2<String, Integer>[] fields = new T2[]{new T2("age", 50), new T2("cnt", 5), new T2("_KEY", 1_000)};
+
+        for (int lteIdx = 0; lteIdx < 4; lteIdx++) {
+            IndexQueryCriterion[] crit = new IndexQueryCriterion[fields.length];
+
+            for (int fldIdx = 0; fldIdx < fields.length; fldIdx++) {
+                if (lteIdx == fldIdx)
+                    crit[fldIdx] = lte(fields[fldIdx].getKey(), fields[fldIdx].getValue());
+                else {
+                    crit[fldIdx] = in(
+                        fields[fldIdx].getKey(),
+                        IntStream.rangeClosed(0, fields[fldIdx].getValue()).boxed().collect(toSet()));
+                }
+            }
+
+            assertExpect(
+                new IndexQuery<Integer, Person>(Person.class).setCriteria(crit),
+                (k, p) -> k <= 1_000 && p.age <= 50 && p.cnt <= 5);
+        }
+    }
+
+    /** */
     private void assertExpect(IndexQuery<Integer, Person> qry, IgniteBiPredicate<Integer, Person> expectFunc) {
         assertExpect(qry, expectFunc, false);
     }
@@ -605,19 +636,25 @@ public class IndexQueryInCriterionTest extends GridCommonAbstractTest {
         @GridToStringInclude
         final Integer age;
 
+        /**  */
+        @GridToStringInclude
+        final Integer cnt;
+
         /** */
-        Person(Integer age) {
+        Person(Integer age, Integer cnt) {
             this.age = age;
+            this.cnt = cnt;
         }
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            return Objects.equals(age, ((Person)o).age);
+            return Objects.equals(age, ((Person)o).age)
+                && Objects.equals(cnt, ((Person)o).cnt);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return age;
+            return Objects.hash(age, cnt);
         }
 
         /** {@inheritDoc} */

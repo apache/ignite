@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Index spool node.
  */
-public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
+public class IndexSpoolNode<Row> extends MemoryTrackingNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** Scan. */
     private final ScanNode<Row> scan;
 
@@ -56,7 +56,7 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
         RuntimeIndex<Row> idx,
         ScanNode<Row> scan
     ) {
-        super(ctx, rowType);
+        super(ctx, rowType, idx instanceof HashAggregateNode ? HASH_MAP_ROW_OVERHEAD : ARRAY_ROW_OVERHEAD);
 
         this.idx = idx;
         this.scan = scan;
@@ -119,6 +119,8 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
 
         idx.push(row);
 
+        nodeMemoryTracker.onRowAdded(row);
+
         waiting--;
 
         if (waiting == 0)
@@ -172,12 +174,9 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
         ScanNode<Row> scan = new ScanNode<>(
             ctx,
             rowType,
-            idx.scan(
-                ctx,
-                rowType,
-                filter,
-                ranges
-            )
+            idx.scan(ctx, rowType, ranges),
+            filter,
+            null
         );
 
         return new IndexSpoolNode<>(ctx, rowType, idx, scan);
@@ -197,7 +196,9 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
         ScanNode<Row> scan = new ScanNode<>(
             ctx,
             rowType,
-            idx.scan(searchRow, filter)
+            idx.scan(searchRow),
+            filter,
+            null
         );
 
         return new IndexSpoolNode<>(ctx, rowType, idx, scan);

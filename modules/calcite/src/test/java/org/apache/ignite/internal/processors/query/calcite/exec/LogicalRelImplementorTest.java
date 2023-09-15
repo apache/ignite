@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelCollation;
@@ -44,9 +43,12 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.planner.TestTable;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
@@ -55,6 +57,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -73,7 +76,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
     private RelOptCluster cluster;
 
     /** */
-    private ScanAwareTable tbl;
+    private TestTable tbl;
 
     /** */
     private BaseQueryContext qctx;
@@ -101,7 +104,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
 
         RelDataType rowType = b.build();
 
-        tbl = new ScanAwareTable(rowType);
+        tbl = new ScannableTestTable(rowType);
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
         publicSchema.addTable("TBL", tbl);
@@ -126,10 +129,13 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             null,
             null,
             ArrayRowHandler.INSTANCE,
+            NoOpMemoryTracker.INSTANCE,
+            NoOpIoTracker.INSTANCE,
+            0,
             null
         ) {
             @Override public ColocationGroup group(long srcId) {
-                return ColocationGroup.forNodes(Collections.singletonList(nodeId));
+                return ColocationGroup.forNodes(Collections.emptyList());
             }
         };
 
@@ -147,12 +153,60 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests Index take-first execution plan is changed to Sort-Limit/Scan when index is unavailable.
+     */
+    @Test
+    public void testIndexFirstRewriter() {
+        checkIndexFirstOrLastRewriter(true);
+    }
+
+    /**
+     * Tests Index take-last execution plan is changed to Sort-Limit/Scan when index is unavailable.
+     */
+    @Test
+    public void testIndexLastRewriter() {
+        checkIndexFirstOrLastRewriter(false);
+    }
+
+    /**
+     * Tests Index take-last or take-first execution plan is changed to Sort-limit/Scan when index is unavailable.
+     */
+    private void checkIndexFirstOrLastRewriter(boolean first) {
+        int idxColumn = 2;
+
+        tbl.addIndex(QueryUtils.PRIMARY_KEY_INDEX, idxColumn);
+
+        IgniteIndexBound idxScan = new IgniteIndexBound(
+            qctx.catalogReader().getTable(F.asList("PUBLIC", "TBL")),
+            cluster,
+            cluster.traitSet(),
+            QueryUtils.PRIMARY_KEY_INDEX,
+            first,
+            ImmutableBitSet.of(idxColumn)
+        );
+
+        Node<?> node = relImplementor.visit(idxScan);
+
+        assertTrue(node instanceof ScanNode);
+        assertNull(node.sources());
+
+        tbl.markIndexRebuildInProgress(true);
+
+        node = relImplementor.visit(idxScan);
+
+        assertTrue(node instanceof SortNode);
+        assertEquals(1, (int)U.field(node, "limit"));
+        assertTrue(node.sources() != null && node.sources().size() == 1);
+        assertTrue(node.sources().get(0) instanceof ScanNode);
+    }
+
+    /**
      * Tests IndexCount execution plan is changed to Collect/Scan when index is unavailable.
      */
     @Test
     public void testIndexCountRewriter() {
         IgniteIndexCount idxCnt = new IgniteIndexCount(cluster, cluster.traitSet(),
-            qctx.catalogReader().getTable(F.asList("PUBLIC", "TBL")), QueryUtils.PRIMARY_KEY_INDEX);
+            qctx.catalogReader().getTable(F.asList("PUBLIC", "TBL")), QueryUtils.PRIMARY_KEY_INDEX, false);
 
         checkCollectNode(relImplementor.visit(idxCnt));
 
@@ -229,13 +283,13 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
         tbl.markIndexRebuildInProgress(true);
 
         Predicate<Node<Object[]>> isScanNoFilterNoProject =
-            node -> node instanceof ScanNode && !tbl.lastScanHasFilter && !tbl.lastScanHasProject;
+            node -> node instanceof ScanNode && !hasFilter(node) && !hasProject(node);
         Predicate<Node<Object[]>> isScanWithFilterNoProject =
-            node -> node instanceof ScanNode && tbl.lastScanHasFilter && !tbl.lastScanHasProject;
+            node -> node instanceof ScanNode && hasFilter(node) && !hasProject(node);
         Predicate<Node<Object[]>> isScanWithProjectNoFilter =
-            node -> node instanceof ScanNode && !tbl.lastScanHasFilter && tbl.lastScanHasProject;
+            node -> node instanceof ScanNode && !hasFilter(node) && hasProject(node);
         Predicate<Node<Object[]>> isScanWithFilterWithProject =
-            node -> node instanceof ScanNode && tbl.lastScanHasFilter && tbl.lastScanHasProject;
+            node -> node instanceof ScanNode && hasFilter(node) && hasProject(node);
 
         Predicate<Node<Object[]>> isSort = node -> node instanceof SortNode;
         Predicate<Node<Object[]>> isSpool = node -> node instanceof IndexSpoolNode;
@@ -363,28 +417,28 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class ScanAwareTable extends TestTable {
-        /** */
-        private volatile boolean lastScanHasFilter;
+    private boolean hasFilter(Node<?> node) {
+        return ((ScanNode<?>)node).filter() != null;
+    }
 
-        /** */
-        private volatile boolean lastScanHasProject;
+    /** */
+    private boolean hasProject(Node<?> node) {
+        return ((ScanNode<?>)node).rowTransformer() != null;
+    }
 
+    /** */
+    private static class ScannableTestTable extends TestTable {
         /** */
-        public ScanAwareTable(RelDataType rowType) {
-            super(rowType);
+        public ScannableTestTable(RelDataType type) {
+            super(type);
         }
 
         /** {@inheritDoc} */
         @Override public <Row> Iterable<Row> scan(
             ExecutionContext<Row> execCtx,
             ColocationGroup grp,
-            Predicate<Row> filter,
-            Function<Row, Row> transformer,
             ImmutableBitSet bitSet
         ) {
-            lastScanHasFilter = filter != null;
-            lastScanHasProject = transformer != null;
             return Collections.emptyList();
         }
     }

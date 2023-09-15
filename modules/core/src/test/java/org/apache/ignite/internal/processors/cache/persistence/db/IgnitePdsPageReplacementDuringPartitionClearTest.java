@@ -31,6 +31,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -108,7 +109,7 @@ public class IgnitePdsPageReplacementDuringPartitionClearTest extends GridCommon
         try {
             Ignite ig = ignite(0);
 
-            ig.cluster().active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             ig.cluster().baselineAutoAdjustEnabled(false);
 

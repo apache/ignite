@@ -17,6 +17,8 @@
 
 package org.apache.ignite.lang;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
@@ -34,5 +36,6 @@ import static java.lang.annotation.ElementType.TYPE;
  * removed, changed or stabilized in future Ignite releases (both minor and maintenance).
  */
 @Target(value = {TYPE, METHOD, ANNOTATION_TYPE, PACKAGE, FIELD})
+@Retention(RetentionPolicy.RUNTIME)
 public @interface IgniteExperimental {
 }

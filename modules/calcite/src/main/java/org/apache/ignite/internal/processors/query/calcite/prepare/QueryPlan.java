@@ -33,4 +33,9 @@ public interface QueryPlan {
      * Clones this plan.
      */
     QueryPlan copy();
+
+    /**
+     * Source query.
+     */
+    String query();
 }

@@ -48,12 +48,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  * JDBC result set implementation.
@@ -218,7 +221,7 @@ public class JdbcResultSet implements ResultSet {
     private void fetchPage() throws SQLException {
         JdbcConnection conn = (JdbcConnection)stmt.getConnection();
 
-        Ignite ignite = conn.ignite();
+        IgniteEx ignite = conn.ignite();
 
         UUID nodeId = conn.nodeId();
 
@@ -232,8 +235,13 @@ public class JdbcResultSet implements ResultSet {
             conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy(), updateMetadata, false);
 
         try {
-            JdbcQueryTaskResult res =
-                loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+            JdbcQueryTaskResult res = loc
+                ? qryTask.call()
+                : ignite.context().closure().callAsync(
+                    BALANCE,
+                    qryTask,
+                    options(ignite.cluster().forNodeId(nodeId).nodes())
+                ).get();
 
             finished = res.isFinished();
 
@@ -268,9 +276,18 @@ public class JdbcResultSet implements ResultSet {
                 JdbcConnection conn = (JdbcConnection)stmt.getConnection();
 
                 if (conn.isCloseCursorTaskSupported()) {
-                    Ignite ignite = conn.ignite();
+                    IgniteEx ignite = conn.ignite();
 
-                    ignite.compute(ignite.cluster().forNodeId(conn.nodeId())).call(new JdbcCloseCursorTask(uuid));
+                    try {
+                        ignite.context().closure().callAsync(
+                            BALANCE,
+                            new JdbcCloseCursorTask(uuid),
+                            options().withProjection(ignite.cluster().forNodeId(conn.nodeId()).nodes())
+                        ).get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw convertToSqlException(e, "Failed to query Ignite.");
+                    }
                 }
             }
         }

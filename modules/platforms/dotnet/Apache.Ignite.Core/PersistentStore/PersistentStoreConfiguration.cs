@@ -300,7 +300,7 @@ namespace Apache.Ignite.Core.PersistentStore
 
         /// <summary>
         /// Gets or sets a value indicating whether to enable persistent store metrics.
-        /// See <see cref="IIgnite.GetPersistentStoreMetrics"/>.
+        /// See <see cref="IIgnite.GetMemoryMetrics()"/>.
         /// </summary>
         public bool MetricsEnabled { get; set; }
 

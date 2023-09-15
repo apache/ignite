@@ -34,18 +34,14 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.EntryProcessorResourceInjectorProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -71,7 +67,6 @@ import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -122,7 +117,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     protected GridCacheVersion minVer;
 
     /** Flag indicating with TM commit happened. */
-    protected volatile int doneFlag;
+    private volatile int doneFlag;
 
     /** Committed versions, relative to base. */
     private Collection<GridCacheVersion> committedVers = Collections.emptyList();
@@ -133,11 +128,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /** Base for completed versions. */
     private GridCacheVersion completedBase;
 
-    /** Flag indicating that transformed values should be sent to remote nodes. */
-    private boolean sndTransformedVals;
-
     /** Commit error. */
-    protected volatile Throwable commitErr;
+    private volatile Throwable commitErr;
 
     /** Implicit transaction result. */
     protected GridCacheReturn implicitRes;
@@ -147,10 +139,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
     /** */
     @GridToStringInclude
-    protected IgniteTxLocalState txState;
+    protected final IgniteTxLocalState txState;
 
     /** */
-    protected CacheWriteSynchronizationMode syncMode;
+    private CacheWriteSynchronizationMode syncMode;
 
     /** */
     protected volatile boolean qryEnlisted;
@@ -363,14 +355,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /**
-     * @param snd {@code True} if values in tx entries should be replaced with transformed values and sent
-     * to remote nodes.
-     */
-    public void sendTransformedValues(boolean snd) {
-        sndTransformedVals = snd;
-    }
-
-    /**
      * @return {@code True} if should be committed after lock is acquired.
      */
     protected boolean commitAfterLock() {
@@ -381,8 +365,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     @Nullable @Override public GridTuple<CacheObject> peek(
         GridCacheContext cacheCtx,
         boolean failFast,
-        KeyCacheObject key
-    ) throws GridCacheFilterFailedException {
+        KeyCacheObject key) {
         IgniteTxEntry e = entry(cacheCtx.txKey(key));
 
         if (e != null)
@@ -494,7 +477,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     "[tx=" + CU.txString(this) +
                                     ", readyTopVer=" + top.readyTopologyVersion() +
                                     ", lostParts=" + top.lostPartitions() +
-                                    ", part=" + part.toString() + ']');
+                                    ", part=" + part + ']');
 
                                 throw new IgniteTxRollbackCheckedException("Failed to prepare a transaction on outdated " +
                                     "topology, please try again [timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
@@ -530,17 +513,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /**
-     * Gets cache entry for given key.
-     *
-     * @param cacheCtx Cache context.
-     * @param key Key.
-     * @return Cache entry.
-     */
-    protected GridCacheEntryEx entryEx(GridCacheContext cacheCtx, IgniteTxKey key) {
-        return cacheCtx.cache().entryEx(key.key());
-    }
-
-    /**
      * Gets cache entry for given key and topology version.
      *
      * @param cacheCtx Cache context.
@@ -567,7 +539,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         checkValid();
 
-        Collection<IgniteTxEntry> commitEntries = (near() || cctx.snapshot().needTxReadLogging()) ? allEntries() : writeEntries();
+        Collection<IgniteTxEntry> commitEntries = near() ? allEntries() : writeEntries();
 
         boolean empty = F.isEmpty(commitEntries) && !queryEnlisted();
 
@@ -583,7 +555,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             WALPointer ptr = null;
 
-            IgniteCheckedException err = null;
+            IgniteCheckedException err;
 
             cctx.database().checkpointReadLock();
 
@@ -622,10 +594,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                                 boolean updateNearCache = updateNearCache(cacheCtx, txEntry.key(), topVer);
 
-                                boolean metrics = true;
-
-                                if (!updateNearCache && cacheCtx.isNear() && txEntry.locallyMapped())
-                                    metrics = false;
+                                boolean metrics = updateNearCache || !cacheCtx.isNear() || !txEntry.locallyMapped();
 
                                 boolean evt = !isNearLocallyMapped(txEntry, false);
 
@@ -717,9 +686,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     // Nullify explicit version so that innerSet/innerRemove will work as usual.
                                     explicitVer = null;
 
-                                if (sndTransformedVals || conflictNeedResolve) {
-                                    assert sndTransformedVals && cacheCtx.isReplicated() || conflictNeedResolve;
-
+                                if (conflictNeedResolve) {
                                     txEntry.value(val, true, false);
                                     txEntry.op(op);
                                     txEntry.entryProcessors(null);
@@ -842,25 +809,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     cached.innerReload();
 
                                     if (updateNearCache)
-                                        updateNearEntrySafely(cacheCtx, txEntry.key(), entry -> entry.innerReload());
+                                        updateNearEntrySafely(cacheCtx, txEntry.key(), GridCacheEntryEx::innerReload);
                                 }
                                 else if (op == READ) {
-                                    CacheGroupContext grp = cacheCtx.group();
-
-                                    if (grp.logDataRecords() && cctx.snapshot().needTxReadLogging()) {
-                                        ptr = grp.wal().log(new DataRecord(new DataEntry(
-                                            cacheCtx.cacheId(),
-                                            txEntry.key(),
-                                            val,
-                                            op,
-                                            nearXidVersion(),
-                                            writeVersion(),
-                                            0,
-                                            txEntry.key().partition(),
-                                            txEntry.updateCounter(),
-                                            DataEntry.flags(CU.txOnPrimary(this)))));
-                                    }
-
                                     ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
                                     if (expiry != null) {
@@ -937,9 +888,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     boolean persistenceEnabled = CU.isPersistenceEnabled(cctx.kernalContext().config());
 
                     if (persistenceEnabled) {
-                        GridCacheDatabaseSharedManager dbManager = (GridCacheDatabaseSharedManager)cctx.database();
+                        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
 
-                        dbManager.getCheckpointer().skipCheckpointOnNodeStop(true);
+                        dbMgr.getCheckpointer().skipCheckpointOnNodeStop(true);
                     }
 
                     throw ex;
@@ -1328,9 +1279,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(txEntry.key(), key0, cacheVal,
                     val0, ver, txEntry.keepBinary(), txEntry.cached());
 
-                EntryProcessor<Object, Object, ?> entryProcessor = t.get1();
+                EntryProcessor<Object, Object, ?> entryProc = t.get1();
 
-                res = entryProcessor.process(invokeEntry, t.get2());
+                res = entryProc.process(invokeEntry, t.get2());
 
                 val0 = invokeEntry.getValue(txEntry.keepBinary());
 
@@ -1412,7 +1363,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param val Value.
      * @param expiryPlc Explicitly specified expiry policy.
      * @param invokeArgs Optional arguments for EntryProcessor.
-     * @param entryProcessor Entry processor.
+     * @param entryProc Entry processor.
      * @param entry Cache entry.
      * @param filter Filter.
      * @param filtersSet {@code True} if filter should be marked as set.
@@ -1424,7 +1375,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      */
     public final IgniteTxEntry addEntry(GridCacheOperation op,
         @Nullable CacheObject val,
-        @Nullable EntryProcessor entryProcessor,
+        @Nullable EntryProcessor entryProc,
         Object[] invokeArgs,
         GridCacheEntryEx entry,
         @Nullable ExpiryPolicy expiryPlc,
@@ -1455,12 +1406,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         IgniteTxEntry txEntry;
 
         if (old != null) {
-            if (entryProcessor != null) {
+            if (entryProc != null) {
                 assert val == null;
                 assert op == TRANSFORM;
 
                 // Will change the op.
-                old.addEntryProcessor(entryProcessor, invokeArgs);
+                old.addEntryProcessor(entryProc, invokeArgs);
             }
             else {
                 assert old.op() != TRANSFORM;
@@ -1498,7 +1449,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 this,
                 op,
                 val,
-                EntryProcessorResourceInjectorProxy.wrap(cctx.kernalContext(), entryProcessor),
+                EntryProcessorResourceInjectorProxy.wrap(cctx.kernalContext(), entryProc),
                 invokeArgs,
                 hasDrTtl ? drTtl : -1L,
                 entry,
@@ -1575,13 +1526,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
     }
 
-    /**
-     * @return Map of affected partitions: cacheId -> partId.
-     */
-    public Map<Integer, Set<Integer>> partsMap() {
-        return null;
-    }
-
     /** {@inheritDoc} */
     @Override public void touchPartition(int cacheId, int partId) {
         txState.touchPartition(cacheId, partId);
@@ -1612,9 +1556,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param key Key.
      * @param ttl TTL.
      * @param expireTime Expire time.
-     * @return {@code true} if tx entry exists for this key, {@code false} otherwise.
      */
-    boolean entryTtlDr(IgniteTxKey key, long ttl, long expireTime) {
+    void entryTtlDr(IgniteTxKey key, long ttl, long expireTime) {
         assert key != null;
         assert ttl >= 0;
 
@@ -1627,8 +1570,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             e.expiry(null);
         }
-
-        return e != null;
     }
 
     /**
@@ -1727,18 +1668,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /**
-     * Post-lock closure alias.
-     *
-     * @param <T> Return type.
-     */
-    protected abstract class PMC<T> extends PostMissClosure<T> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        // No-op.
-    }
-
-    /**
      * Post-lock closure.
      *
      * @param <T> Return type.
@@ -1748,10 +1677,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         private static final long serialVersionUID = 0L;
 
         /** Closure argument. */
-        private T arg;
+        private final T arg;
 
         /** Commit flag. */
-        private boolean commit;
+        private final boolean commit;
 
         /**
          * Creates a Post-Lock closure that will pass the argument given to the {@code postLock} method.
@@ -1781,10 +1710,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 setRollbackOnly();
 
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteInternalTx>, T>() {
-                        @Override public T apply(IgniteInternalFuture<IgniteInternalTx> f) {
-                            throw new GridClosureException(e);
-                        }
+                    return rollbackAsync().chain(() -> {
+                        throw new GridClosureException(e);
                     });
 
                 throw new GridClosureException(e);
@@ -1800,10 +1727,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 );
 
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteInternalTx>, T>() {
-                        @Override public T apply(IgniteInternalFuture<IgniteInternalTx> f) {
-                            throw ex;
-                        }
+                    return rollbackAsync().chain(() -> {
+                        throw ex;
                     });
 
                 throw ex;
@@ -1833,10 +1758,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             }
             catch (final IgniteCheckedException ex) {
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteInternalTx>, T>() {
-                        @Override public T apply(IgniteInternalFuture<IgniteInternalTx> f) {
-                            throw new GridClosureException(ex);
-                        }
+                    return rollbackAsync().chain(() -> {
+                        throw new GridClosureException(ex);
                     });
 
                 throw new GridClosureException(ex);
@@ -1904,48 +1827,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /**
-     * Post-lock closure.
-     *
-     * @param <T> Return type.
-     */
-    protected abstract class PostMissClosure<T> implements IgniteBiClosure<T, Exception, IgniteInternalFuture<T>> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** {@inheritDoc} */
-        @Override public final IgniteInternalFuture<T> apply(T t, Exception e) {
-            boolean rollback = true;
-
-            try {
-                if (e != null)
-                    throw new GridClosureException(e);
-
-                IgniteInternalFuture<T> fut = postMiss(t);
-
-                rollback = false;
-
-                return fut;
-            }
-            catch (IgniteCheckedException ex) {
-                throw new GridClosureException(ex);
-            }
-            finally {
-                if (rollback)
-                    setRollbackOnly();
-            }
-        }
-
-        /**
-         * Post lock callback.
-         *
-         * @param t Post-miss parameter.
-         * @return Future return value.
-         * @throws IgniteCheckedException If operation failed.
-         */
-        protected abstract IgniteInternalFuture<T> postMiss(T t) throws IgniteCheckedException;
-    }
-
-    /**
      * Clojure to perform operations with near cache entries.
      */
     @FunctionalInterface
@@ -1957,6 +1838,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
          * @throws IgniteCheckedException If operation is failed.
          * @throws GridCacheEntryRemovedException If entry is removed.
          */
-        public void apply(E entry) throws IgniteCheckedException, GridCacheEntryRemovedException;
+        void apply(E entry) throws IgniteCheckedException, GridCacheEntryRemovedException;
     }
 }

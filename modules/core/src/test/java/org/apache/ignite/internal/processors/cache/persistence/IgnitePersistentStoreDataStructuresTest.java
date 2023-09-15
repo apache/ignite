@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -89,7 +90,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     public void testQueue() throws Exception {
         Ignite ignite = startGrids(4);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteQueue<Object> queue = ignite.queue("testQueue", 100, new CollectionConfiguration());
 
@@ -100,7 +101,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         ignite = startGrids(4);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         queue = ignite.queue("testQueue", 0, null);
 
@@ -115,7 +116,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     public void testAtomic() throws Exception {
         Ignite ignite = startGrids(4);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteAtomicLong atomicLong = ignite.atomicLong("testLong", 0, true);
 
@@ -126,7 +127,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         ignite = startGrids(4);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         atomicLong = ignite.atomicLong("testLong", 0, false);
 
@@ -141,7 +142,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     public void testSequence() throws Exception {
         Ignite ignite = startGrids(4);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteAtomicSequence sequence = ignite.atomicSequence("testSequence", 0, true);
 
@@ -157,7 +158,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         ignite = startGrids(4);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         sequence = ignite.atomicSequence("testSequence", 0, false);
 
@@ -175,7 +176,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         Ignite ignite = startGrids(2);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         ignite.atomicSequence(seqName, 0, true);
 
@@ -216,7 +217,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     public void testSet() throws Exception {
         Ignite ignite = startGrids(4);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteSet<Object> set = ignite.set("testSet", new CollectionConfiguration());
 
@@ -229,7 +230,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         ignite = startGrids(4);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         set = ignite.set("testSet", null);
 
@@ -248,7 +249,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     public void testLockVolatility() throws Exception {
         Ignite ignite = startGrids(4);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteLock lock = ignite.reentrantLock("test", false, true, true);
 
@@ -258,7 +259,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         ignite = startGrids(4);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         lock = ignite.reentrantLock("test", false, true, false);
 
@@ -272,7 +273,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     public void testSemaphoreVolatility() throws Exception {
         Ignite ignite = startGrids(4);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteSemaphore sem = ignite.semaphore("test", 10, false, true);
 
@@ -282,7 +283,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         ignite = startGrids(4);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         sem = ignite.semaphore("test", 10, false, false);
 
@@ -296,7 +297,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     public void testLatchVolatility() throws Exception {
         Ignite ignite = startGrids(4);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCountDownLatch latch = ignite.countDownLatch("test", 10, false, true);
 
@@ -306,7 +307,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         ignite = startGrids(4);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         latch = ignite.countDownLatch("test", 10, false, false);
 

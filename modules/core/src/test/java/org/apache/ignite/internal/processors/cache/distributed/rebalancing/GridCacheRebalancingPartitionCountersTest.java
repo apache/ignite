@@ -26,6 +26,7 @@ import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -107,7 +108,7 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
     public void test() throws Exception {
         IgniteEx ignite = (IgniteEx)startGrids(3);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
 
@@ -119,7 +120,7 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
         IgniteEx node = (IgniteEx)ignite(problemNode);
         int[] primaryPartitions = node.affinity(CACHE_NAME).primaryPartitions(node.cluster().localNode());
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
 
         boolean primaryRemoved = false;
         for (int i = 0; i < PARTITIONS_CNT; i++) {
@@ -151,7 +152,7 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
 
         assertTrue(primaryRemoved);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 

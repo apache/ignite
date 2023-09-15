@@ -190,7 +190,7 @@ if (!$skipDotNet) {
 }
 
 if(!$skipDotNetCore) {
-    Build-Solution ".\Apache.Ignite\Apache.Ignite.DotNetCore.csproj" "bin\netcoreapp3.1"
+    Build-Solution ".\Apache.Ignite.DotNetCore.sln" "bin\net6.0"
 }
 
 

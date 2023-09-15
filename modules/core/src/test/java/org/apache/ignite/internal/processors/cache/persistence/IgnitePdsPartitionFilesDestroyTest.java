@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -149,7 +150,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
         IgniteEx crd = (IgniteEx)startGrids(2);
 
         crd.cluster().baselineAutoAdjustEnabled(false);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         int keysCnt = 50_000;
 
@@ -186,7 +187,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
 
         IgniteEx node = startGrid(1);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         int keysCnt = 50_000;
 
@@ -240,7 +241,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
 
         failFileIo = false;
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         int keysCnt = 50_000;
 
@@ -300,7 +301,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
 
         failFileIo = false;
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         int keysCnt = 50_000;
 
@@ -360,7 +361,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
     public void testDestroyWhenPartitionsAreEmpty() throws Exception {
         IgniteEx crd = (IgniteEx)startGrids(2);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         forceCheckpoint();
 

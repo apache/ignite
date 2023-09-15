@@ -114,5 +114,10 @@ public class IntersectNode<Row> extends AbstractSetOpNode<Row> {
 
             cntrs[0] -= amount;
         }
+
+        /** {@inheritDoc} */
+        @Override protected int countersSize() {
+            return inputsCnt;
+        }
     }
 }

@@ -26,6 +26,7 @@ from typing import NamedTuple
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
 from ignitetest.services.utils.auth import get_credentials, is_auth_enabled
+from ignitetest.services.utils.ignite_spec import envs_to_exports
 from ignitetest.services.utils.ssl.ssl_params import get_ssl_params, is_ssl_enabled, IGNITE_ADMIN_ALIAS
 from ignitetest.services.utils.jmx_utils import JmxClient
 from ignitetest.utils.version import V_2_11_0
@@ -176,7 +177,7 @@ class ControlUtility:
         """
         data = self.__run("--cache idle_verify --dump", node=node)
 
-        assert ('VisorIdleVerifyDumpTask successfully' in data), data
+        assert ('IdleVerifyDumpTask successfully' in data), data
 
         return re.search(r'/.*.txt', data).group(0)
 
@@ -218,6 +219,58 @@ class ControlUtility:
 
         raise TimeoutError(f'Failed to wait for the snapshot operation to complete: '
                            f'snapshot_name={snapshot_name} in {timeout_sec} seconds.')
+
+    def start_performance_statistics(self):
+        """
+        Start performance statistics collecting in the cluster.
+        """
+        output = self.__performance_statistics_cmd("start")
+
+        assert "Started." in output
+
+        return output
+
+    def stop_performance_statistics(self):
+        """
+        Stop performance statistics collecting in the cluster.
+        """
+        output = self.__performance_statistics_cmd("stop")
+
+        assert "Stopped." in output
+
+        return output
+
+    def rotate_performance_statistics(self):
+        """
+        Rotate performance statistics collecting in the cluster.
+        """
+        output = self.__performance_statistics_cmd("rotate")
+
+        assert "Rotated." in output
+
+        return output
+
+    def is_performance_statistics_enabled(self):
+        """
+        Check status of performance statistics collecting in the cluster.
+        """
+        output = self.__performance_statistics_cmd("status")
+
+        assert "Enabled." in output or "Disabled." in output
+
+        return "Enabled." in output
+
+    def run(self, cmd, node=None):
+        """
+        Run arbitrary control.sh subcommand.
+        :param cmd: Command line parameters for the control.sh.
+        :param node: Node to run the control.sh on.
+        :return: Output of the commands as a string.
+        """
+        return self.__run(cmd, node)
+
+    def __performance_statistics_cmd(self, sub_command):
+        return self.__run(f"--performance-statistics {sub_command}")
 
     @staticmethod
     def __tx_command(**kwargs):
@@ -321,9 +374,9 @@ class ControlUtility:
     def __parse_cluster_state(output):
         state_pattern = re.compile("Cluster state: (?P<cluster_state>[^\\s]+)")
         topology_pattern = re.compile("Current topology version: (?P<topology_version>\\d+)")
-        baseline_pattern = re.compile("Consistent(Id|ID)=(?P<consistent_id>[^\\s]+)"
-                                      "(,\\sA(ddress|DDRESS)=(?P<address>[^\\s]+))?"
-                                      ",\\sS(tate|TATE)=(?P<state>[^\\s]+)"
+        baseline_pattern = re.compile("Consistent(Id|ID)=(?P<consistent_id>[^\\s,]+)"
+                                      "(,\\sA(ddress|DDRESS)=(?P<address>[^\\s,]+))?"
+                                      ",\\sS(tate|TATE)=(?P<state>[^\\s,]+)"
                                       "(,\\sOrder=(?P<order>\\d+))?")
 
         match = state_pattern.search(output)
@@ -370,7 +423,19 @@ class ControlUtility:
         auth = ""
         if hasattr(self, "username"):
             auth = f" --user {self.username} --password {self.password} "
-        return self._cluster.script(f"{self.BASE_COMMAND} --host {node_ip} {cmd} {ssl} {auth}")
+
+        return "%s %s" % \
+               (envs_to_exports(self.__envs()),
+                self._cluster.script(f"{self.BASE_COMMAND} --host {node_ip} {cmd} {ssl} {auth}"))
+
+    def __envs(self):
+        """
+        :return: environment set.
+        """
+        return {
+            'EXCLUDE_TEST_CLASSES': 'true',
+            'CONTROL_JVM_OPTS': '-Dlog4j.configurationFile=file:' + self._cluster.log_config_file
+        }
 
     @staticmethod
     def __parse_output(raw_output):

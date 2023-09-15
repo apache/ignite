@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
@@ -951,6 +952,36 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
+     * Prepares this entry to unmarshall. In particular, this method initialize a cache context.
+     *
+     * @param ctx Cache context.
+     * @param topVer Topology version that is used to validate a cache context.
+     *               If this parameter is {@code null} then validation will be skipped.
+     * @param near Near flag.
+     * @throws IgniteCheckedException If un-marshalling failed.
+     */
+    public void prepareUnmarshal(
+        GridCacheSharedContext<?, ?> ctx,
+        AffinityTopologyVersion topVer,
+        boolean near
+    ) throws IgniteCheckedException {
+        if (this.ctx == null) {
+            GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(cacheId);
+
+            if (cacheCtx == null || (topVer != null && topVer.before(cacheCtx.startTopologyVersion())))
+                throw new CacheInvalidStateException(
+                    "Failed to perform cache operation (cache is stopped), cacheId=" + cacheId);
+
+            if (cacheCtx.isNear() && !near)
+                cacheCtx = cacheCtx.near().dht().context();
+            else if (!cacheCtx.isNear() && near)
+                cacheCtx = cacheCtx.dht().near().context();
+
+            this.ctx = cacheCtx;
+        }
+    }
+
+    /**
      * Unmarshalls entry.
      *
      * @param ctx Cache context.
@@ -964,20 +995,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         ClassLoader clsLdr
     ) throws IgniteCheckedException {
 
-        if (this.ctx == null) {
-            GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(cacheId);
-
-            if (cacheCtx == null)
-                throw new CacheInvalidStateException(
-                    "Failed to perform cache operation (cache is stopped), cacheId=" + cacheId);
-
-            if (cacheCtx.isNear() && !near)
-                cacheCtx = cacheCtx.near().dht().context();
-            else if (!cacheCtx.isNear() && near)
-                cacheCtx = cacheCtx.dht().near().context();
-
-            this.ctx = cacheCtx;
-        }
+        if (this.ctx == null)
+            prepareUnmarshal(ctx, null, near);
 
         CacheObjectValueContext coctx = this.ctx.cacheObjectContext();
 

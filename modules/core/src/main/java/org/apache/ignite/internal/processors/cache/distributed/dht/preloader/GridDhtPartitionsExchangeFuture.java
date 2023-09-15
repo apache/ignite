@@ -129,6 +129,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
+
 import static java.util.Collections.emptySet;
 import static java.util.stream.Stream.concat;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT;
@@ -152,6 +153,10 @@ import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterrup
 
 /**
  * Future for exchanging partition maps.
+ * <p>
+ * Note, that by default cache requests mapped to a stale topology version can be executed even if PME is in still in
+ * progress on back-up nodes but is finished on primary node. If this behaviour is unacceptable see
+ * {@link ExchangeContext#remapStaleCacheRequests()} flag for more details.
  */
 @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
 public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapter
@@ -887,8 +892,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (isDone())
             return;
 
-        assert !cctx.kernalContext().isDaemon();
-
         cctx.exchange().exchangerBlockingSectionBegin();
 
         try {
@@ -1076,17 +1079,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 default:
                     assert false;
-            }
-
-            if (cctx.localNode().isClient()) {
-                cctx.exchange().exchangerBlockingSectionBegin();
-
-                try {
-                    tryToPerformLocalSnapshotOperation();
-                }
-                finally {
-                    cctx.exchange().exchangerBlockingSectionEnd();
-                }
             }
 
             for (PartitionsExchangeAware comp : cctx.exchange().exchangeAwareComponents())
@@ -1806,30 +1798,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Try to start local snapshot operation if it is needed by discovery event
-     */
-    private void tryToPerformLocalSnapshotOperation() {
-        try {
-            long start = System.nanoTime();
-
-            IgniteInternalFuture fut = cctx.snapshot().tryStartLocalSnapshotOperation(firstDiscoEvt, exchId.topologyVersion());
-
-            if (fut != null) {
-                fut.get();
-
-                long end = System.nanoTime();
-
-                if (log.isInfoEnabled())
-                    log.info("Snapshot initialization completed [topVer=" + exchangeId().topologyVersion() +
-                        ", time=" + U.nanosToMillis(end - start) + "ms]");
-            }
-        }
-        catch (IgniteException | IgniteCheckedException e) {
-            U.error(log, "Error while starting snapshot operation", e);
-        }
-    }
-
-    /**
      * Change WAL mode if needed.
      */
     private void changeWalModeIfNeeded() {
@@ -2513,9 +2481,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 grpValidRes = m;
             }
 
-            if (!cctx.localNode().isClient())
-                tryToPerformLocalSnapshotOperation();
-
             if (err == null)
                 cctx.coordinators().onExchangeDone(events().discoveryCache());
 
@@ -2565,7 +2530,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         // Should execute this listener first, before any external listeners.
         // Listeners use stack as data structure.
-        listen(f -> {
+        listen(() -> {
             // Update last finished future in the first.
             cctx.exchange().lastFinishedFuture(this);
 
@@ -3041,7 +3006,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param msg Single partition info.
      */
     public void onReceiveSingleMessage(final ClusterNode node, final GridDhtPartitionsSingleMessage msg) {
-        assert !node.isDaemon() : node;
         assert msg != null;
         assert exchId.equals(msg.exchangeId()) : msg;
         assert !cctx.kernalContext().clientNode();
@@ -4279,7 +4243,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (hasPartitionToLog(supplyInfoMap, false)) {
                 log.info("Partitions weren't present in any history reservation: [" +
                     supplyInfoMap.entrySet().stream().map(entry ->
-                        "[grp=" + entry.getKey() + " part=[" + S.compact(entry.getValue().stream()
+                        "[grp=" + entry.getKey() + " part=[" + S.toStringSortedDistinct(entry.getValue().stream()
                             .filter(info -> !info.isHistoryReserved())
                             .map(info -> info.part()).collect(Collectors.toSet())) + "]]"
                     ).collect(Collectors.joining(", ")) + ']');
@@ -4436,7 +4400,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     public void onReceiveFullMessage(final ClusterNode node, final GridDhtPartitionsFullMessage msg) {
         assert msg != null;
         assert msg.exchangeId() != null : msg;
-        assert !node.isDaemon() : node;
 
         initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
             @Override public void apply(IgniteInternalFuture<Boolean> f) {
@@ -4461,7 +4424,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     public void onReceivePartitionRequest(final ClusterNode node, final GridDhtPartitionsSingleRequest msg) {
         assert !cctx.kernalContext().clientNode() || msg.restoreState();
-        assert !node.isDaemon() && !node.isClient() : node;
+        assert !node.isClient() : node;
 
         initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
             @Override public void apply(IgniteInternalFuture<Boolean> fut) {

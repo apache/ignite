@@ -59,10 +59,8 @@
                 <include>**/*.txt</include>
             </includes>
             <excludes>
-                <exclude>**/*hadoop*.bat</exclude>
                 <exclude>igniterouter.bat</exclude>
                 <exclude>**/build-classpath.bat</exclude>
-                <exclude>ignitevisorcmd.bat</exclude>
             </excludes>
         </fileSet>
 
@@ -74,11 +72,9 @@
                 <include>**/*.sh</include>
             </includes>
             <excludes>
-                <exclude>**/*hadoop*.sh</exclude>
                 <exclude>igniterouter.sh</exclude>
                 <exclude>**/build-classpath.sh</exclude>
                 <exclude>**/service.sh</exclude>
-                <exclude>ignitevisorcmd.sh</exclude>
             </excludes>
         </fileSet>
 

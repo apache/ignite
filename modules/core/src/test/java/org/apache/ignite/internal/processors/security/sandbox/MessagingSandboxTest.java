@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.junit.Test;
 
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 
 /**
  * Checks that a remote listener for IgniteMessaging is executed inside the sandbox.
@@ -46,7 +46,7 @@ public class MessagingSandboxTest extends AbstractSandboxTest {
 
     /** {@inheritDoc} */
     @Override protected void prepareCluster() throws Exception {
-        startGrid(SRV_SENDER, ALLOW_ALL, false);
+        startGrid(SRV_SENDER, ALL_PERMISSIONS, false);
 
         super.prepareCluster();
     }

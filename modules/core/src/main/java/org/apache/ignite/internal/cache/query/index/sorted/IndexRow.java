@@ -38,9 +38,9 @@ public interface IndexRow extends MvccVersionAware {
     public IndexKey key(int idx);
 
     /**
-     * @return Underlying keys.
+     * @return Keys count.
      */
-    public IndexKey[] keys();
+    public int keysCount();
 
     /**
      * @return Link to a cache row.
@@ -82,5 +82,5 @@ public interface IndexRow extends MvccVersionAware {
     /**
      * @return {@code True} for rows used for index search (as opposed to rows stored in {@link InlineIndexTree}.
      */
-    public boolean indexSearchRow();
+    public boolean indexPlainRow();
 }

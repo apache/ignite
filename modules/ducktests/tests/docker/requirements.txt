@@ -13,4 +13,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ducktape==0.8.2
+filelock==3.8.2
+ducktape==0.11.1

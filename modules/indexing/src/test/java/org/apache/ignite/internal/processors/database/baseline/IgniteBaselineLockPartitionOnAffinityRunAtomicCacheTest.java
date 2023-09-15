@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.database.baseline;
 
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -65,7 +66,7 @@ public class IgniteBaselineLockPartitionOnAffinityRunAtomicCacheTest extends Ign
 
         startGrids(gridCnt + 1);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         startGrid(gridCnt + 1);
 

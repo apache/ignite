@@ -44,6 +44,7 @@ import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
+import org.apache.ignite.internal.processors.cache.CacheClusterMetricsMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -319,7 +320,7 @@ public class CacheManager implements javax.cache.CacheManager {
                 throw new CacheException("Cache not found: " + cacheName);
 
             if (enabled)
-                registerCacheObject(cache.mxBean(), cacheName, CACHE_CONFIGURATION);
+                registerCacheObject(new CacheClusterMetricsMXBeanImpl(cache), cacheName, CACHE_CONFIGURATION);
             else
                 unregisterCacheObject(cacheName, CACHE_CONFIGURATION);
 
@@ -344,7 +345,7 @@ public class CacheManager implements javax.cache.CacheManager {
                 throw new CacheException("Cache not found: " + cacheName);
 
             if (enabled)
-                registerCacheObject(cache.mxBean(), cacheName, CACHE_STATISTICS);
+                registerCacheObject(new CacheClusterMetricsMXBeanImpl(cache), cacheName, CACHE_STATISTICS);
             else
                 unregisterCacheObject(cacheName, CACHE_STATISTICS);
 

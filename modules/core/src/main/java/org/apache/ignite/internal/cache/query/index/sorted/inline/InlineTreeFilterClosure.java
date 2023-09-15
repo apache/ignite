@@ -64,7 +64,7 @@ public class InlineTreeFilterClosure implements BPlusTree.TreeRowClosure<IndexRo
         GridCacheContext<?, ?> cctx,
         IgniteLogger log
     ) {
-        assert (cacheFilter != null || mvccSnapshot != null) && cctx != null;
+        assert (cacheFilter != null || mvccSnapshot != null || rowFilter != null) && cctx != null;
 
         this.cacheFilter = cacheFilter;
         this.rowFilter = rowFilter;

@@ -21,7 +21,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,7 +40,7 @@ public class OrphanedTestCollection {
     private static final String FINAL_MARK = "---";
 
     /** File to persist orphaned tests. */
-    private final Path path = initPath();
+    private final Path path = orphanedTestsFilePath();
 
     /** @return {@link Set} of orphaned test names. */
     public Set<String> getOrphanedTests() throws Exception {
@@ -93,31 +93,17 @@ public class OrphanedTestCollection {
     }
 
     /**
-     * Structure of Ignite modules is flat but there are some exceptions. Unfortunately it's impossible to
-     * get access to root directory of repository so use this hack to find it.
+     * Path to the common orphaned_tests.txt file.
      */
-    private static Path initPath() {
-        Path curPath = Paths.get("").toAbsolutePath();
-
-        while (!curPath.equals(curPath.getRoot())) {
-            if (curPath.resolve("modules").toFile().exists()) {
-                Path targetPath = curPath.resolve("target");
-
-                if (!targetPath.toFile().exists()) {
-                    try {
-                        Files.createDirectory(targetPath);
-                    }
-                    catch (IOException e) {
-                        throw new RuntimeException("Failed to create target directory.", e);
-                    }
-                }
-
-                return curPath.resolve("target").resolve("orphaned_tests.txt");
-            }
-
-            curPath = curPath.getParent();
+    private static Path orphanedTestsFilePath() {
+        try {
+            return Paths
+                .get(OrphanedTestCollection.class.getProtectionDomain().getCodeSource().getLocation().toURI())
+                .getParent()
+                .resolve("orphaned_tests.txt");
         }
-
-        throw new IllegalStateException("Can't find repository root directory.");
+        catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

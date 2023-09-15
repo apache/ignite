@@ -118,34 +118,6 @@ public class Ignition {
     }
 
     /**
-     * Sets daemon flag.
-     * <p>
-     * If daemon flag is set then all grid instances created by the factory will be
-     * daemon, i.e. the local node for these instances will be a daemon node. Note that
-     * if daemon flag is set - it will override the same settings in {@link org.apache.ignite.configuration.IgniteConfiguration#isDaemon()}.
-     * Note that you can set on and off daemon flag at will.
-     *
-     * @param daemon Daemon flag to set.
-     */
-    public static void setDaemon(boolean daemon) {
-        IgnitionEx.setDaemon(daemon);
-    }
-
-    /**
-     * Gets daemon flag.
-     * <p>
-     * If daemon flag it set then all grid instances created by the factory will be
-     * daemon, i.e. the local node for these instances will be a daemon node. Note that
-     * if daemon flag is set - it will override the same settings in {@link org.apache.ignite.configuration.IgniteConfiguration#isDaemon()}.
-     * Note that you can set on and off daemon flag at will.
-     *
-     * @return Daemon flag.
-     */
-    public static boolean isDaemon() {
-        return IgnitionEx.isDaemon();
-    }
-
-    /**
      * Sets client mode thread-local flag.
      * <p>
      * This flag used when node is started if {@link IgniteConfiguration#isClientMode()}

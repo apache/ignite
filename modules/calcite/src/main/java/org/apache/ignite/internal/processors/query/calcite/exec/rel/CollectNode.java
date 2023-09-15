@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.util.typedef.F;
 
 /** */
-public class CollectNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
+public class CollectNode<Row> extends MemoryTrackingNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** */
     private final Collector<Row> collector;
 
@@ -92,6 +92,7 @@ public class CollectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
         requested = 0;
         waiting = 0;
         collector.clear();
+        nodeMemoryTracker.reset();
     }
 
     /** {@inheritDoc} */
@@ -125,6 +126,9 @@ public class CollectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
         waiting--;
 
         collector.push(row);
+
+        if (collector.keepRows())
+            nodeMemoryTracker.onRowAdded(row);
 
         if (waiting == 0)
             source().request(waiting = IN_BUFFER_SIZE);
@@ -207,6 +211,11 @@ public class CollectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
             rowHandler.set(0, out, outData());
             return out;
         }
+
+        /** Flag indicating that collector can keep rows in memory. */
+        public boolean keepRows() {
+            return false;
+        }
     }
 
     /** */
@@ -238,6 +247,11 @@ public class CollectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
         @Override public void clear() {
             outBuf = new LinkedHashMap<>(cap);
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean keepRows() {
+            return true;
+        }
     }
 
     /** */
@@ -262,12 +276,20 @@ public class CollectNode<Row> extends AbstractNode<Row> implements SingleNode<Ro
 
         /** {@inheritDoc} */
         @Override public void push(Row row) {
-            outBuf.add(rowHandler.get(0, row));
+            if (rowHandler.columnCount(row) > 1)
+                outBuf.add(row);
+            else
+                outBuf.add(rowHandler.get(0, row));
         }
 
         /** {@inheritDoc} */
         @Override public void clear() {
             outBuf = new ArrayList<>(cap);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean keepRows() {
+            return true;
         }
     }
 

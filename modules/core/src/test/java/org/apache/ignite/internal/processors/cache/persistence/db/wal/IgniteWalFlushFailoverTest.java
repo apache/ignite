@@ -25,6 +25,7 @@ import java.nio.file.OpenOption;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -134,7 +135,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
         wal.setFileIOFactory(new FailingFileIOFactory(canFail));
 
         try {
-            grid.active(true);
+            grid.cluster().state(ClusterState.ACTIVE);
 
             IgniteCache<Object, Object> cache = grid.cache(TEST_CACHE);
 

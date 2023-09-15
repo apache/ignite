@@ -33,13 +33,11 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -91,28 +89,6 @@ public class IgniteNearClientCacheCloseTest extends GridCommonAbstractTest {
         nearCacheClose(4, false, TRANSACTIONAL);
 
         nearCacheClose(4, true, TRANSACTIONAL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testNearCacheCloseMvccTx1() throws Exception {
-        nearCacheClose(1, false, TRANSACTIONAL_SNAPSHOT);
-
-        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE))
-            nearCacheClose(1, true, TRANSACTIONAL_SNAPSHOT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testNearCacheCloseMvccTx2() throws Exception {
-        nearCacheClose(4, false, TRANSACTIONAL_SNAPSHOT);
-
-        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE))
-            nearCacheClose(4, true, TRANSACTIONAL_SNAPSHOT);
     }
 
     /**

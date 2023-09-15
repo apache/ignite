@@ -22,7 +22,11 @@ import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * MBean that provides access to performance statistics management.
+ *
+ * @see org.apache.ignite.internal.management.api.CommandMBean
+ * @deprecated Use managements API beans, instead.
  */
+@Deprecated
 @IgniteExperimental
 @MXBeanDescription("MBean provide access to performance statistics management.")
 public interface PerformanceStatisticsMBean {

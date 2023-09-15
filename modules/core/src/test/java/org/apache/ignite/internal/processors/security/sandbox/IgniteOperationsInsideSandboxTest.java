@@ -61,7 +61,7 @@ import org.junit.Test;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 
 /**
  * A user-defined code inside the sandbox can use the public API of Ignite without additional
@@ -132,11 +132,11 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
 
     /** {@inheritDoc} */
     @Override protected void prepareCluster() throws Exception {
-        startGrid(SRV, ALLOW_ALL, false);
+        startGrid(SRV, ALL_PERMISSIONS, false);
 
-        startGrid("srv_2", ALLOW_ALL, false);
+        startGrid("srv_2", ALL_PERMISSIONS, false);
 
-        startGrid(CLNT_ALLOWED_WRITE_PROP, ALLOW_ALL, true);
+        startGrid(CLNT_ALLOWED_WRITE_PROP, ALL_PERMISSIONS, true);
     }
 
     /** */

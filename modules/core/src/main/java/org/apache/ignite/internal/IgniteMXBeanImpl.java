@@ -53,7 +53,7 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
 
     /** {@inheritDoc} */
     @Override public boolean active() {
-        return kernal.active();
+        return kernal.cluster().state().active();
     }
 
     /** {@inheritDoc} */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.util.BitSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -44,7 +45,7 @@ public interface Reducer {
      *
      * @param nodesToSegmentsCnt Mapping of nodes to expected count of segments to scan.
      */
-    void setSources(Map<ClusterNode, Integer> nodesToSegmentsCnt);
+    void setSources(Map<ClusterNode, BitSet> nodesToSegmentsCnt);
 
     /**
      * @return Return source nodes for this merge index.

@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
@@ -34,10 +32,12 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
@@ -59,6 +59,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 @WithSystemProperty(key = "calcite.debug", value = "false")
 public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
+    /** */
+    protected static final Object[] NULL_RESULT = new Object[] { null };
+
     /** */
     protected static final String TABLE_NAME = "person";
 
@@ -84,8 +87,14 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
             for (String cacheName : ign.cacheNames())
                 ign.destroyCache(cacheName);
 
+            CalciteQueryProcessor qryProc = queryProcessor(((IgniteEx)ign));
+
             assertEquals("Not finished queries found [ignite=" + ign.name() + ']',
-                0, queryProcessor((IgniteEx)ign).queryRegistry().runningQueries().size());
+                0, qryProc.queryRegistry().runningQueries().size());
+
+            ExecutionServiceImpl<Object[]> execSvc = (ExecutionServiceImpl<Object[]>)qryProc.executionService();
+            assertEquals("Tracked memory must be 0 after test [ignite=" + ign.name() + ']',
+                0, execSvc.memoryTracker().allocated());
         }
 
         awaitPartitionMapExchange();
@@ -126,11 +135,16 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     protected List<List<?>> executeSql(String sql, Object... args) {
         CalciteQueryProcessor qryProc = Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
 
-        List<FieldsQueryCursor<List<?>>> cur = qryProc.query(null, "PUBLIC", sql, args);
+        List<FieldsQueryCursor<List<?>>> cur = qryProc.query(queryContext(), "PUBLIC", sql, args);
 
         try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
             return srvCursor.getAll();
         }
+    }
+
+    /** */
+    protected QueryContext queryContext() {
+        return null;
     }
 
     /**
@@ -140,8 +154,8 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
      * @param cls Exception class.
      * @param msg Error message.
      */
-    protected void assertThrows(String sql, Class<? extends Exception> cls, String msg) {
-        assertThrowsAnyCause(log, () -> executeSql(sql), cls, msg);
+    protected void assertThrows(String sql, Class<? extends Exception> cls, String msg, Object... args) {
+        assertThrowsAnyCause(log, () -> executeSql(sql, args), cls, msg);
     }
 
     /** */
@@ -154,7 +168,11 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Employer> person = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
             .setName(TABLE_NAME)
             .setSqlSchema("PUBLIC")
-            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName(TABLE_NAME)))
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class)
+                .setTableName(TABLE_NAME)
+                .addQueryField("ID", Integer.class.getName(), null)
+                .setKeyFieldName("ID")
+            ))
             .setCacheMode(cacheMode)
             .setBackups(backups)
         );
@@ -182,7 +200,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** */
     protected List<List<?>> sql(IgniteEx ignite, String sql, Object... params) {
-        List<FieldsQueryCursor<List<?>>> cur = queryProcessor(ignite).query(null, "PUBLIC", sql, params);
+        List<FieldsQueryCursor<List<?>>> cur = queryProcessor(ignite).query(queryContext(), "PUBLIC", sql, params);
 
         try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
             return srvCursor.getAll();
@@ -238,17 +256,30 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         @Override public <Row> Iterable<Row> scan(
             ExecutionContext<Row> execCtx,
             ColocationGroup grp,
-            Predicate<Row> filters,
             RangeIterable<Row> ranges,
-            Function<Row, Row> rowTransformer,
             @Nullable ImmutableBitSet requiredColumns
         ) {
-            return delegate.scan(execCtx, grp, filters, ranges, rowTransformer, requiredColumns);
+            return delegate.scan(execCtx, grp, ranges, requiredColumns);
         }
 
         /** {@inheritDoc} */
-        @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp) {
-            return delegate.count(ectx, grp);
+        @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp, boolean notNull) {
+            return delegate.count(ectx, grp, notNull);
+        }
+
+        /** {@inheritDoc} */
+        @Override public <Row> Iterable<Row> firstOrLast(
+            boolean first,
+            ExecutionContext<Row> ectx,
+            ColocationGroup grp,
+            @Nullable ImmutableBitSet requiredColumns
+        ) {
+            return delegate.firstOrLast(first, ectx, grp, requiredColumns);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isInlineScanPossible(@Nullable ImmutableBitSet requiredColumns) {
+            return delegate.isInlineScanPossible(requiredColumns);
         }
     }
 

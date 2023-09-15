@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -237,7 +238,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
 
         IgniteEx ig0 = (IgniteEx)startGrid();
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         IgniteWriteAheadLogManager wal = ig0.context().cache().context().wal();
 

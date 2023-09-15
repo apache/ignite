@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -114,7 +115,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
             g0.cluster().baselineAutoAdjustEnabled(false);
             startGrid(1);
 
-            g0.cluster().active(true);
+            g0.cluster().state(ClusterState.ACTIVE);
 
             awaitPartitionMapExchange();
 
@@ -246,7 +247,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
             IgniteEx g0 = startGrids(2);
 
             g0.cluster().baselineAutoAdjustEnabled(false);
-            g0.cluster().active(true);
+            g0.cluster().state(ClusterState.ACTIVE);
 
             awaitPartitionMapExchange();
 

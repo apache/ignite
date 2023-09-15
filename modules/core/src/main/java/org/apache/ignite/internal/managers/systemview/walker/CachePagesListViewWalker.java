@@ -58,6 +58,7 @@ public class CachePagesListViewWalker implements SystemViewRowAttributeWalker<Ca
         v.accept(4, "bucketSize", long.class);
         v.accept(5, "stripesCount", int.class);
         v.accept(6, "cachedPagesCount", int.class);
+        v.accept(7, "pageFreeSpace", int.class);
     }
 
     /** {@inheritDoc} */
@@ -69,10 +70,11 @@ public class CachePagesListViewWalker implements SystemViewRowAttributeWalker<Ca
         v.acceptLong(4, "bucketSize", row.bucketSize());
         v.acceptInt(5, "stripesCount", row.stripesCount());
         v.acceptInt(6, "cachedPagesCount", row.cachedPagesCount());
+        v.acceptInt(7, "pageFreeSpace", row.pageFreeSpace());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 7;
+        return 8;
     }
 }

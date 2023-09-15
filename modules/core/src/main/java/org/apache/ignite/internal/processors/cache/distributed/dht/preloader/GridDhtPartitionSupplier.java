@@ -273,8 +273,8 @@ public class GridDhtPartitionSupplier {
             if (sctx == null) {
                 if (log.isDebugEnabled())
                     log.debug("Starting supplying rebalancing [" + supplyRoutineInfo(topicId, nodeId, demandMsg) +
-                        ", fullPartitions=" + S.compact(demandMsg.partitions().fullSet()) +
-                        ", histPartitions=" + S.compact(demandMsg.partitions().historicalSet()) + "]");
+                        ", fullPartitions=" + S.toStringSortedDistinct(demandMsg.partitions().fullSet()) +
+                        ", histPartitions=" + S.toStringSortedDistinct(demandMsg.partitions().historicalSet()) + "]");
             }
             else
                 maxBatchesCnt = 1;
@@ -519,6 +519,10 @@ public class GridDhtPartitionSupplier {
                 U.error(log, "Failed to send supply error message ["
                     + supplyRoutineInfo(topicId, nodeId, demandMsg) + ']', t1);
             }
+
+            // There can be errors in case of concurrent caches stop. Do not trigger failure handler in these cases.
+            if (!grp.hasCaches())
+                return;
 
             // If fallback to full rebalance is possible then let's try to switch to it
             // instead of triggering failure handler.

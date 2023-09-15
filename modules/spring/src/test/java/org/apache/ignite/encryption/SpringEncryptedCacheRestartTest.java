@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
@@ -57,7 +58,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
             IgniteUtils.resolveIgnitePath(
                 "modules/spring/src/test/config/enc/enc-cache.xml").getAbsolutePath(), "grid-1");
 
-        g1.cluster().active(true);
+        g1.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -118,7 +119,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
             IgniteUtils.resolveIgnitePath(
                 "modules/spring/src/test/config/enc/enc-group-2.xml").getAbsolutePath(), "grid-1");
 
-        g1.cluster().active(true);
+        g1.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -191,7 +192,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
 
         IgniteEx g = (IgniteEx)IgnitionEx.start(IgniteUtils.resolveIgnitePath(cfg1).getAbsolutePath(), "grid-0");
 
-        g.cluster().active(true);
+        g.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache c = g.cache("encrypted");
 

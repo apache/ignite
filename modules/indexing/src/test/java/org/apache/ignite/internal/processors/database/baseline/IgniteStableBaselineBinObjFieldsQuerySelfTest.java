@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.database.baseline;
 
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -54,7 +55,7 @@ public class IgniteStableBaselineBinObjFieldsQuerySelfTest extends IgniteBinaryO
 
         startGrids(GRID_CNT + 1);
 
-        grid(0).active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         stopGrid(GRID_CNT);
 

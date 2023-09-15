@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Common
             _minor = reader.ReadByte();
             _maintenance = reader.ReadByte();
             _stage = reader.ReadString();
-            _releaseDate = BinaryUtils.JavaTicksToDateTime(reader.ReadLong());
+            _releaseDate = RevisionTimestampToDateTime(reader.ReadLong());
             _revHash = reader.ReadByteArray();
         }
 
@@ -205,6 +205,16 @@ namespace Apache.Ignite.Core.Common
         public override bool Equals(object obj)
         {
             return Equals(obj as IgniteProductVersion);
+        }
+
+        /// <summary>
+        /// Convert Java revision timestamp (seconds since epoch) to DateTime.
+        /// </summary>
+        /// <param name="revTs">Revision timestamp.</param>
+        /// <returns>Resulting DateTime.</returns>
+        private static DateTime RevisionTimestampToDateTime(long revTs)
+        {
+            return new DateTime(BinaryUtils.JavaDateTicks, DateTimeKind.Utc).AddSeconds(revTs);
         }
     }
 }

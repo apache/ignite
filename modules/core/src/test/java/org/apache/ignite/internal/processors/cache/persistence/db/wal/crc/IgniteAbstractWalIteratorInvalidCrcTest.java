@@ -25,6 +25,7 @@ import java.util.function.BiFunction;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -89,7 +90,7 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
 
         ignite = (IgniteEx)startGrid();
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, byte[]> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -103,7 +104,7 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
         for (int i = 0; i < insertingCnt; i++)
             cache.put(i, val);
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
     }
 
     /** {@inheritDoc} */

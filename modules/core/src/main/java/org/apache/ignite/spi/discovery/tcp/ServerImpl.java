@@ -43,6 +43,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
@@ -625,7 +626,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     topVer++;
 
-                    Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer,
+                    NavigableMap<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer,
                         Collections.unmodifiableList(top));
 
                     lsnr.onDiscovery(
@@ -1703,7 +1704,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             Collection<ClusterNode> top = upcast(ring.visibleNodes());
 
-            Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
+            NavigableMap<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
             lsnr.onDiscovery(
                 new DiscoveryNotification(type, topVer, node, top, hist, null, spanContainer)
@@ -1727,7 +1728,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param top Topology snapshot.
      * @return Copy of updated topology history.
      */
-    @Nullable private Map<Long, Collection<ClusterNode>> updateTopologyHistory(long topVer, Collection<ClusterNode> top) {
+    @Nullable private NavigableMap<Long, Collection<ClusterNode>> updateTopologyHistory(long topVer, Collection<ClusterNode> top) {
         synchronized (mux) {
             if (topHist.containsKey(topVer))
                 return null;
@@ -4251,7 +4252,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
                 else {
-                    if (!node.isClient() && !node.isDaemon()) {
+                    if (!node.isClient()) {
                         if (nodesIdsHist.contains(node.id())) {
                             try {
                                 trySendMessageDirectly(node, createTcpDiscoveryDuplicateIdMessage(locNodeId, node));
@@ -4947,7 +4948,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (msg.verified() && !locNodeId.equals(node.id())) {
-                if (!node.isClient() && !node.isDaemon() && nodesIdsHist.contains(node.id())) {
+                if (!node.isClient() && nodesIdsHist.contains(node.id())) {
                     U.warn(log, "Discarding node added message since local node has already seen " +
                         "joining node in topology [node=" + node + ", locNode=" + locNode + ", msg=" + msg + ']');
 
@@ -5066,8 +5067,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             // Node already connected to the cluster can apply joining nodes' disco data immediately
                             spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
 
-                            if (!node.isDaemon())
-                                spi.collectExchangeData(dataPacket);
+                            spi.collectExchangeData(dataPacket);
                         }
                         else if (spiState == CONNECTING)
                             // Node joining to the cluster should postpone applying disco data of other joiners till
@@ -5332,7 +5332,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     notifiedDiscovery.set(notified);
 
-                    if (!node.isClient() && !node.isDaemon())
+                    if (!node.isClient())
                         nodesIdsHist.add(node.id());
                 }
 
@@ -6368,7 +6368,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             TcpDiscoverySpiState spiState = spiStateCopy();
 
-            Map<Long, Collection<ClusterNode>> hist;
+            NavigableMap<Long, Collection<ClusterNode>> hist;
 
             synchronized (mux) {
                 hist = new TreeMap<>(topHist);

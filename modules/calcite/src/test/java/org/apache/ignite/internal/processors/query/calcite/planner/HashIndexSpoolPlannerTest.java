@@ -24,6 +24,7 @@ import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -226,5 +227,22 @@ public class HashIndexSpoolPlannerTest extends AbstractPlannerTest {
         assertNull(searchRow.get(0));
         assertTrue(searchRow.get(1) instanceof RexFieldAccess);
         assertNull(searchRow.get(2));
+    }
+
+    /**
+     * Test that hash spool can be used with not correlated condition (condition is pushed below the spool).
+     */
+    @Test
+    public void testCorrelatedFilterSplit() throws Exception {
+        TestTable tbl = createTable("TBL", IgniteDistributions.random(), "ID", Integer.class);
+        IgniteSchema publicSchema = createSchema(tbl);
+
+        String sql = "SELECT (SELECT id FROM tbl AS t2 WHERE t2.id < 50 AND t2.id = t1.id) FROM tbl AS t1";
+
+        assertPlan(sql, publicSchema,
+            hasChildThat(isInstanceOf(IgniteHashIndexSpool.class)
+                .and(s -> "=($0, $cor0.ID)".equals(s.condition().toString()))
+                .and(hasChildThat(isInstanceOf(IgniteTableScan.class)
+                    .and(t -> "<($t0, 50)".equals(t.condition().toString()))))));
     }
 }

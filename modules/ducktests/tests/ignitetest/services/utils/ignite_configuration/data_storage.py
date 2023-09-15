@@ -24,9 +24,11 @@ class DataRegionConfiguration(NamedTuple):
     """
     Ignite DataRegion Configuration
     """
+    cdc_enabled: bool = None
     name: str = "default"
     persistence_enabled: bool = False
     initial_size: int = 100 * 1024 * 1024
+    lazy_memory_allocation: bool = None
     max_size: int = 512 * 1024 * 1024
     metrics_enabled: bool = True
     metrics_rate_time_interval: int = None
@@ -36,14 +38,21 @@ class DataStorageConfiguration(NamedTuple):
     """
     Ignite DataStorage configuration
     """
+    cdc_wal_path: str = None
     checkpoint_frequency: int = None
     default: DataRegionConfiguration = DataRegionConfiguration()
     max_wal_archive_size: int = None
     metrics_enabled: bool = True
     metrics_rate_time_interval: int = None
+    page_size: int = None
     regions: list = []
+    wal_archive_path: str = None
     wal_buffer_size: int = None
     wal_compaction_enabled: bool = None
+    wal_force_archive_timeout: int = None
     wal_history_size: int = None
     wal_mode: str = None
     wal_segment_size: int = None
+    wal_page_compression: str = None
+    wal_page_compression_level: int = None
+    wal_path: str = None

@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -305,13 +306,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
-    @Override public DataStorageMetrics dataStorageMetrics() {
-        checkIgnite();
-
-        return g.dataStorageMetrics();
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteEncryption encryption() {
         checkIgnite();
 
@@ -338,11 +332,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     /** {@inheritDoc} */
     @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
         return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PersistenceMetrics persistentStoreMetrics() {
-        return DataStorageMetricsAdapter.valueOf(dataStorageMetrics());
     }
 
     /** {@inheritDoc} */
@@ -614,14 +603,14 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     @Override public boolean active() {
         checkIgnite();
 
-        return g.active();
+        return g.cluster().state().active();
     }
 
     /** {@inheritDoc} */
     @Override public void active(boolean active) {
         checkIgnite();
 
-        g.active(active);
+        g.cluster().state(active ? ClusterState.ACTIVE : ClusterState.INACTIVE);
     }
 
     /** {@inheritDoc} */

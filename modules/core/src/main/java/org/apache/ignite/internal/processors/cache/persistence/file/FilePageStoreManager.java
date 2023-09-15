@@ -25,7 +25,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
-import java.nio.file.StandardCopyOption;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,6 +59,7 @@ import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageStoreCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -70,7 +70,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManagerImpl;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridStripedReadWriteLock;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -350,22 +350,29 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void beginRecover() {
-        List<String> groupsWithWalDisabled = checkCachesWithDisabledWal();
+        List<CacheConfiguration> cacheCfgs = findCacheGroupsWithDisabledWal();
 
-        if (!groupsWithWalDisabled.isEmpty()) {
-            String errorMsg = "Cache groups with potentially corrupted partition files found. " +
-                "To cleanup them maintenance is needed, node will enter maintenance mode on next restart. " +
-                "Cleanup cache group folders manually or trigger maintenance action to do that and restart the node. " +
-                "Corrupted files are located in subdirectories " + groupsWithWalDisabled +
-                " in a work dir " + storeWorkDir;
+        if (!cacheCfgs.isEmpty()) {
+            List<String> cacheGroupNames = cacheCfgs.stream()
+                .map(ccfg -> ccfg.getGroupName() != null ? ccfg.getGroupName() : ccfg.getName())
+                .collect(Collectors.toList());
+
+            String errorMsg = "Ignite node with disabled WAL was stopped in the middle of a checkpoint, " +
+                "data files may be corrupted. Node will stop and enter the Maintenance Mode on next start. " +
+                "In the Maintenance Mode, use the Control Utility *persistence* command " +
+                "to clean and optionally back up corrupted files. When cleaning is done, restart the node manually. " +
+                "Possible corruption affects the following cache groups: " + cacheGroupNames;
 
             log.warning(errorMsg);
 
             try {
-                cctx.kernalContext().maintenanceRegistry().registerMaintenanceTask(
-                    new MaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME,
-                        "Corrupted cache groups found",
-                        groupsWithWalDisabled.stream().collect(Collectors.joining(File.separator)))
+                cctx.kernalContext().maintenanceRegistry()
+                    .registerMaintenanceTask(
+                        new MaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME,
+                            "Corrupted cache groups found",
+                            cacheCfgs.stream()
+                                .map(ccfg -> cacheWorkDir(ccfg).getName())
+                                .collect(Collectors.joining(File.separator)))
                 );
             }
             catch (IgniteCheckedException e) {
@@ -384,12 +391,12 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * Checks cache groups' settings and returns groups names with disabled WAL.
+     * Checks cache groups' settings and returns configurations of cache groups with disabled WAL.
      *
-     * @return List of cache groups names that had WAL disabled before node stop.
+     * @return List of cache groups' configurations that had WAL disabled before node stop.
      */
-    private List<String> checkCachesWithDisabledWal() {
-        List<String> corruptedCachesDirs = new ArrayList<>();
+    private List<CacheConfiguration> findCacheGroupsWithDisabledWal() {
+        List<CacheConfiguration> corruptedCacheGroups = new ArrayList<>();
 
         for (Integer grpDescId : idxCacheStores.keySet()) {
             CacheGroupDescriptor desc = cctx.cache().cacheGroupDescriptor(grpDescId);
@@ -402,17 +409,14 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     File dir = cacheWorkDir(desc.config());
 
                     if (Arrays.stream(
-                        dir.listFiles())
-                        .filter(f -> !f.getName().equals(CACHE_DATA_FILENAME))
-                        .count() > 0
-                    ) {
-                        corruptedCachesDirs.add(cacheDirName(desc.config()));
+                        dir.listFiles()).anyMatch(f -> !f.getName().equals(CACHE_DATA_FILENAME))) {
+                        corruptedCacheGroups.add(desc.config());
                     }
                 }
             }
         }
 
-        return corruptedCachesDirs;
+        return corruptedCacheGroups;
     }
 
     /** {@inheritDoc} */
@@ -433,17 +437,23 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void initialize(int cacheId, int partitions, String workingDir, PageMetrics pageMetrics)
+    @Override public void initialize(int cacheId, int partitions, String cacheName, PageMetrics pageMetrics)
         throws IgniteCheckedException {
         assert storeWorkDir != null;
 
         if (!idxCacheStores.containsKey(cacheId)) {
+            GridCacheContext<?, ?> cctx = this.cctx.cacheContext(cacheId);
+
             CacheStoreHolder holder = initDir(
-                new File(storeWorkDir, workingDir),
+                new File(storeWorkDir, cacheName),
                 cacheId,
+                cacheName,
                 partitions,
                 pageMetrics,
-                cctx.cacheContext(cacheId) != null && cctx.cacheContext(cacheId).config().isEncryptionEnabled()
+                cctx != null && cctx.config().isEncryptionEnabled(),
+                cctx != null
+                    ? cctx.group().caches().stream().map(GridCacheContext::name).collect(Collectors.toSet())
+                    : null
             );
 
             CacheStoreHolder old = idxCacheStores.put(cacheId, holder);
@@ -480,9 +490,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             CacheStoreHolder holder = initDir(
                 new File(storeWorkDir, MetaStorage.METASTORAGE_DIR_NAME),
                 grpId,
+                MetaStorage.METASTORAGE_CACHE_NAME,
                 MetaStorage.METASTORAGE_PARTITIONS.size(),
                 pageMetrics,
-                false);
+                false,
+                null);
 
             CacheStoreHolder old = idxCacheStores.put(grpId, holder);
 
@@ -582,9 +594,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return initDir(
             cacheWorkDir,
             grpDesc.groupId(),
+            ccfg.getName(),
             grpDesc.config().getAffinity().partitions(),
             pageMetrics,
-            ccfg.isEncryptionEnabled()
+            ccfg.isEncryptionEnabled(),
+            grpDesc.caches().keySet()
         );
     }
 
@@ -653,6 +667,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /**
      * @param cacheWorkDir Work directory.
      * @param grpId Group ID.
+     * @param cacheName Cache name.
      * @param partitions Number of partitions.
      * @param pageMetrics Page metrics.
      * @param encrypted {@code True} if this cache encrypted.
@@ -661,9 +676,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      */
     private CacheStoreHolder initDir(File cacheWorkDir,
         int grpId,
+        String cacheName,
         int partitions,
         PageMetrics pageMetrics,
-        boolean encrypted) throws IgniteCheckedException {
+        boolean encrypted,
+        Collection<String> grpCaches) throws IgniteCheckedException {
         try {
             boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir, log);
 
@@ -675,6 +692,25 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             }
 
             File idxFile = new File(cacheWorkDir, INDEX_FILE_NAME);
+
+            GridQueryProcessor qryProc = cctx.kernalContext().query();
+
+            if (qryProc.moduleEnabled()) {
+                boolean idxRecreating = grpCaches == null
+                    ? !qryProc.recreateCompleted(cacheName)
+                    : grpCaches.stream().anyMatch(name -> !qryProc.recreateCompleted(name));
+
+                if (idxFile.exists() && idxRecreating) {
+                    log.warning("Recreate of index.bin don't finish before node stop, index.bin can be inconsistent. " +
+                        "Removing it to recreate one more time [grpId=" + grpId + ", cacheName=" + cacheName + ']');
+
+                    if (!idxFile.delete()) {
+                        throw new IgniteCheckedException(
+                            "Failed to remove index.bin [grpId=" + grpId + ", cacheName=" + cacheName + ']'
+                        );
+                    }
+                }
+            }
 
             if (dirExisted && !idxFile.exists())
                 grpsWithoutIdx.add(grpId);
@@ -765,46 +801,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     throw new IgniteCheckedException("Failed to initialize cache working directory " +
                         "(a file with the same name already exists): " + cacheWorkDir.getAbsolutePath());
 
-                File lockF = new File(cacheWorkDir, IgniteCacheSnapshotManager.SNAPSHOT_RESTORE_STARTED_LOCK_FILENAME);
-
                 Path cacheWorkDirPath = cacheWorkDir.toPath();
 
                 Path tmp = cacheWorkDirPath.getParent().resolve(cacheWorkDir.getName() + TMP_SUFFIX);
 
-                if (Files.exists(tmp) && Files.isDirectory(tmp) &&
-                    Files.exists(tmp.resolve(IgniteCacheSnapshotManager.TEMP_FILES_COMPLETENESS_MARKER))) {
-
-                    U.warn(log, "Ignite node crashed during the snapshot restore process " +
-                        "(there is a snapshot restore lock file left for cache). But old version of cache was saved. " +
-                        "Trying to restore it. Cache - [" + cacheWorkDir.getAbsolutePath() + ']');
-
-                    U.delete(cacheWorkDir);
-
-                    try {
-                        Files.move(tmp, cacheWorkDirPath, StandardCopyOption.ATOMIC_MOVE);
-
-                        cacheWorkDirPath.resolve(IgniteCacheSnapshotManager.TEMP_FILES_COMPLETENESS_MARKER).toFile().delete();
-                    }
-                    catch (IOException e) {
-                        throw new IgniteCheckedException(e);
-                    }
-                }
-                else if (lockF.exists()) {
-                    U.warn(log, "Ignite node crashed during the snapshot restore process " +
-                        "(there is a snapshot restore lock file left for cache). Will remove both the lock file and " +
-                        "incomplete cache directory [cacheDir=" + cacheWorkDir.getAbsolutePath() + ']');
-
-                    boolean deleted = U.delete(cacheWorkDir);
-
-                    if (!deleted)
-                        throw new IgniteCheckedException("Failed to remove obsolete cache working directory " +
-                            "(remove the directory manually and make sure the work folder has correct permissions): " +
-                            cacheWorkDir.getAbsolutePath());
-
-                    cacheWorkDir.mkdirs();
-                }
-                else
-                    dirExisted = true;
+                dirExisted = true;
 
                 if (!cacheWorkDir.exists())
                     throw new IgniteCheckedException("Failed to initialize cache working directory " +
@@ -941,6 +942,14 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             return MetaStorage.METASTORAGE_CACHE_NAME;
         else
             throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + dir);
+    }
+
+    /**
+     * @param root Root directory.
+     * @return Array of cache data files.
+     */
+    public static File[] cacheDataFiles(File root) {
+        return root.listFiles(f -> f.getName().endsWith(CACHE_DATA_FILENAME));
     }
 
     /** {@inheritDoc} */

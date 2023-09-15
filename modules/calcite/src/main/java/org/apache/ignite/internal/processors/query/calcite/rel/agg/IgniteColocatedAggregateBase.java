@@ -57,10 +57,14 @@ public abstract class IgniteColocatedAggregateBase extends IgniteAggregate imple
     }
 
     /** {@inheritDoc} */
-    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughDistribution(RelTraitSet nodeTraits,
-        List<RelTraitSet> inTraits) {
-        if (TraitUtils.distribution(nodeTraits) == IgniteDistributions.single())
-            return Pair.of(nodeTraits, Commons.transform(inTraits, t -> t.replace(IgniteDistributions.single())));
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughDistribution(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits
+    ) {
+        IgniteDistribution distr = TraitUtils.distribution(nodeTraits);
+
+        if (distr == IgniteDistributions.single() || distr.function().correlated())
+            return Pair.of(nodeTraits, Commons.transform(inTraits, t -> t.replace(distr)));
 
         return null;
     }

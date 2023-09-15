@@ -22,12 +22,14 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /** */
-public class FragmentPlan implements QueryPlan {
+public class FragmentPlan extends AbstractQueryPlan {
     /** */
     private final IgniteRel root;
 
     /** */
-    public FragmentPlan(IgniteRel root) {
+    public FragmentPlan(String qry, IgniteRel root) {
+        super(qry);
+
         RelOptCluster cluster = Commons.emptyCluster();
 
         this.root = new Cloner(cluster).visit(root);

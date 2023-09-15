@@ -25,19 +25,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
-import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.management.cache.IndexRebuildStatusInfoContainer;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.visor.cache.index.IndexRebuildStatusInfoContainer;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -113,7 +111,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
 
         Ignite ignite = startGrids(GRIDS_NUM);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         createAndFillCache(ignite, "cache1", "group2");
         createAndFillCache(ignite, "cache2", "group1");
@@ -136,7 +134,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         injectTestSystemOut();
         idxRebuildsStartedNum.set(0);
 
-        final CommandHandler handler = new CommandHandler(createTestLogger());
+        final TestCommandHandler handler = newCommandHandler(createTestLogger());
 
         stopGrid(GRIDS_NUM - 1);
         stopGrid(GRIDS_NUM - 2);
@@ -171,7 +169,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         injectTestSystemOut();
         idxRebuildsStartedNum.set(0);
 
-        final CommandHandler handler = new CommandHandler(createTestLogger());
+        final TestCommandHandler handler = newCommandHandler(createTestLogger());
 
         stopGrid(GRIDS_NUM - 1);
         stopGrid(GRIDS_NUM - 2);
@@ -218,7 +216,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
      * @param handler CommandHandler used to run command.
      * @param nodeIds Ids to check.
      */
-    private void checkResult(CommandHandler handler, UUID... nodeIds) {
+    private void checkResult(TestCommandHandler handler, UUID... nodeIds) {
         String output = testOut.toString();
 
         Map<UUID, Set<IndexRebuildStatusInfoContainer>> cmdResult = handler.getLastOperationResult();
@@ -247,7 +245,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
             SchemaIndexCacheVisitorClosure clo, IndexRebuildCancelToken cancel) {
             idxRebuildsStartedNum.incrementAndGet();
 
-            fut.listen((CI1<IgniteInternalFuture<?>>)f -> idxRebuildsStartedNum.decrementAndGet());
+            fut.listen(() -> idxRebuildsStartedNum.decrementAndGet());
 
             super.startRebuild(cctx, fut, new BlockingSchemaIndexCacheVisitorClosure(clo), cancel);
         }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.math.BigDecimal;
 import java.sql.Date;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.Period;
 import java.util.Arrays;
@@ -106,6 +107,8 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertQuery("SELECT ARRAY_CONCAT_AGG(a ORDER BY CARDINALITY(a)) FROM " +
             "(SELECT 1 as id, ARRAY[3, 4, 5, 6] as a UNION SELECT 1 as id, ARRAY[1, 2] as a) GROUP BY id")
             .returns((IntStream.range(1, 7).boxed().collect(Collectors.toList()))).check();
+        assertExpression("EVERY(val = 1)").returns(true).check();
+        assertExpression("SOME(val = 1)").returns(true).check();
     }
 
     /** */
@@ -246,6 +249,8 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertExpression("UNIX_DATE(DATE '2021-01-01')").returns(18628).check();
         assertExpression("DATE_FROM_UNIX_DATE(18628)").returns(Date.valueOf("2021-01-01")).check();
         assertExpression("DATE('2021-01-01')").returns(Date.valueOf("2021-01-01")).check();
+        assertExpression("TIME(1, 10, 30)").returns(Time.valueOf("01:10:30")).check();
+        assertExpression("DATETIME(2021, 1, 1, 1, 10, 30)").returns(Timestamp.valueOf("2021-01-01 01:10:30")).check();
     }
 
     /** */

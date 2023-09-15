@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -114,7 +115,7 @@ public class ClientReconnectWithSqlTableConfiguredTest extends AbstractIndexingC
         IgniteEx client1 = startClientGrid(2);
         IgniteEx client2 = startClientGrid(3);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         client1.getOrCreateCache(createCacheConfiguration("test-cl1"));
         client2.getOrCreateCache(createCacheConfiguration("test-cl2"));

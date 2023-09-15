@@ -31,16 +31,14 @@ import org.apache.ignite.internal.processors.platform.client.ClientObjectNotific
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
+import org.apache.ignite.internal.processors.task.TaskExecutionOptions;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 
 import static org.apache.ignite.internal.processors.platform.client.ClientMessageParser.OP_COMPUTE_TASK_FINISHED;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_RESULT_CACHE;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID_PREDICATE;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  * Client compute task.
@@ -101,12 +99,18 @@ class ClientComputeTask implements ClientCloseableResource {
         IgnitePredicate<ClusterNode> nodePredicate = F.isEmpty(nodeIds) ? node -> !node.isClient() :
             F.nodeForNodeIds(nodeIds);
 
-        task.setThreadContext(TC_SUBGRID_PREDICATE, nodePredicate);
-        task.setThreadContext(TC_TIMEOUT, timeout);
-        task.setThreadContext(TC_NO_FAILOVER, (flags & NO_FAILOVER_FLAG_MASK) != 0);
-        task.setThreadContext(TC_NO_RESULT_CACHE, (flags & NO_RESULT_CACHE_FLAG_MASK) != 0);
+        TaskExecutionOptions opts = options()
+            .asPublicRequest()
+            .withProjectionPredicate(nodePredicate)
+            .withTimeout(timeout);
 
-        taskFut = task.execute(taskName, arg);
+        if ((flags & NO_FAILOVER_FLAG_MASK) != 0)
+            opts.withFailoverDisabled();
+
+        if ((flags & NO_RESULT_CACHE_FLAG_MASK) != 0)
+            opts.withResultCacheDisabled();
+
+        taskFut = task.execute(taskName, arg, opts);
 
         // Fail fast.
         if (taskFut.isDone() && taskFut.error() != null)
@@ -119,21 +123,21 @@ class ClientComputeTask implements ClientCloseableResource {
     void onResponseSent() {
         // Listener should be registered only after response for this task was sent, to ensure that client doesn't
         // receive notification before response for the task.
-        taskFut.listen(f -> {
+        taskFut.listen(() -> {
             try {
                 ClientNotification notification;
 
-                if (f.error() != null) {
-                    String msg = ctx.kernalContext().sqlListener().sendServerExceptionStackTraceToClient()
-                            ? f.error().getMessage() + U.nl() + X.getFullStackTrace(f.error())
-                            : f.error().getMessage();
+                if (taskFut.error() != null) {
+                    String msg = ctx.kernalContext().clientListener().sendServerExceptionStackTraceToClient()
+                            ? taskFut.error().getMessage() + U.nl() + X.getFullStackTrace(taskFut.error())
+                            : taskFut.error().getMessage();
 
                     notification = new ClientNotification(OP_COMPUTE_TASK_FINISHED, taskId, msg);
                 }
-                else if (f.isCancelled())
+                else if (taskFut.isCancelled())
                     notification = new ClientNotification(OP_COMPUTE_TASK_FINISHED, taskId, "Task was cancelled");
                 else
-                    notification = new ClientObjectNotification(OP_COMPUTE_TASK_FINISHED, taskId, f.result());
+                    notification = new ClientObjectNotification(OP_COMPUTE_TASK_FINISHED, taskId, taskFut.result());
 
                 ctx.notifyClient(notification);
             }

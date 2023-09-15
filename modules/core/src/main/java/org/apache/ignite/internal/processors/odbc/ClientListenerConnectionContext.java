@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.security.SecurityContext;
@@ -82,4 +83,9 @@ public interface ClientListenerConnectionContext {
      * @return Security context.
      */
     @Nullable SecurityContext securityContext();
+
+    /**
+     * Connection attributes.
+     */
+    Map<String, String> attributes();
 }

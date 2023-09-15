@@ -79,8 +79,29 @@ class SegmentCompressStorage {
         else
             this.lastCompressedIdx = lastMaxCompressedIdx;
 
+        notifyAll();
+
         if (compressedIdx > lastEnqueuedToCompressIdx)
             lastEnqueuedToCompressIdx = compressedIdx;
+    }
+
+    /**
+     * Method will wait activation of particular WAL segment index.
+     *
+     * @param awaitIdx absolute index {@link #lastCompressedIdx()}} to become true.
+     * @throws IgniteInterruptedCheckedException if interrupted.
+     */
+    public synchronized void awaitSegmentCompressed(long awaitIdx) throws IgniteInterruptedCheckedException {
+        while (lastCompressedIdx() < awaitIdx && !interrupted) {
+            try {
+                wait(2000);
+            }
+            catch (InterruptedException e) {
+                throw new IgniteInterruptedCheckedException(e);
+            }
+        }
+
+        checkInterrupted();
     }
 
     /**

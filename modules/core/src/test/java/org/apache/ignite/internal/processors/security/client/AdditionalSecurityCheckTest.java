@@ -50,7 +50,7 @@ public class AdditionalSecurityCheckTest extends CommonSecurityCheckTest {
         startGrid(2);
 
         assertEquals(3, ignite.cluster().topologyVersion());
-        assertFalse(ignite.cluster().active());
+        assertFalse(ignite.cluster().state().active());
 
         try (GridClient client = GridClientFactory.start(getGridClientConfiguration())) {
             assertTrue(client.connected());

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 /**
  * Query explain plan.
  */
-public class ExplainPlan implements QueryPlan {
+public class ExplainPlan extends AbstractQueryPlan {
     /** Column name. */
     public static final String PLAN_COL_NAME = "PLAN";
 
@@ -31,7 +31,9 @@ public class ExplainPlan implements QueryPlan {
     private final String plan;
 
     /** */
-    public ExplainPlan(String plan, FieldsMetadata fieldsMeta) {
+    public ExplainPlan(String qry, String plan, FieldsMetadata fieldsMeta) {
+        super(qry);
+
         this.fieldsMeta = fieldsMeta;
         this.plan = plan;
     }

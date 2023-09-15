@@ -20,7 +20,7 @@
 <!-- Full XML config with all properties having custom values. -->
 
 <igniteConfiguration
-              workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true'
+              workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' 
               isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml' autoGenerateIgniteInstanceName='true'
               peerAssemblyLoadingMode='CurrentAppDomain' longQueryWarningTimeout='1:2:3' isActiveOnStart='false'
               consistentId='someId012' redirectJavaConsoleOutput='false' authenticationEnabled='true' mvccVacuumFrequency='10000' mvccVacuumThreadCount='4'

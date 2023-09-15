@@ -27,8 +27,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexPlainRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
@@ -118,7 +118,7 @@ public class IndexFindBenchmark {
     /** */
     private static IndexRow searchRow(Object key, IndexKeyType type) {
         IndexKey[] keys = new IndexKey[] { IndexKeyFactory.wrap(key, type, null, null), null };
-        return new IndexSearchRowImpl(keys, null);
+        return new IndexPlainRowImpl(keys, null);
     }
 
     /** */

@@ -66,7 +66,7 @@ public class InlineRecommender {
     @SuppressWarnings({"ConditionalBreakInInfiniteLoop", "IfMayBeConditional"})
     public void recommend(IndexRow row, int currInlineSize) {
         // Do the check only for put operations.
-        if (row.indexSearchRow())
+        if (row.indexPlainRow())
             return;
 
         long invokeCnt = inlineSizeCalculationCntr.get();

@@ -29,6 +29,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteState;
 import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
@@ -79,7 +80,7 @@ public class ZookeeperDiscoverySegmentationAndConnectionRestoreTest extends Zook
 
         startGrid(1);
 
-        node0.cluster().active(true);
+        node0.cluster().state(ClusterState.ACTIVE);
 
         final IgniteEx client = startClientGrid(2);
 

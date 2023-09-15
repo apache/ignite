@@ -33,6 +33,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -174,7 +175,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         Ignite node = ignite(0);
 
-        node.active(true);
+        node.cluster().state(ClusterState.ACTIVE);
 
         node.createCaches(Arrays.asList(ccfgs1));
 
@@ -189,7 +190,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         node = ignite(0);
 
-        node.active(true);
+        node.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -234,7 +235,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         Ignite node = ignite(0);
 
-        node.cluster().active(true);
+        node.cluster().state(ClusterState.ACTIVE);
 
         node.createCaches(Arrays.asList(ccfgs1));
 
@@ -268,7 +269,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         node = ignite(0);
 
-        node.cluster().active(true);
+        node.cluster().state(ClusterState.ACTIVE);
 
         for (String cacheName : caches) {
             IgniteCache<Object, Object> cache = node.cache(cacheName);
@@ -297,7 +298,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         Ignite ignite = startGrid();
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         ignite.cache("c1").destroy();
 
@@ -315,7 +316,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         Ignite ignite = startGrid();
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         ignite.createCaches(Arrays.asList(ccfg1, ccfg2));
 
@@ -342,7 +343,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         Ignite ignite = startGrid();
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         ignite.createCaches(Arrays.asList(ccfg1, ccfg2));
 
@@ -426,7 +427,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         Ignite node = ignite(0);
 
-        node.active(true);
+        node.cluster().state(ClusterState.ACTIVE);
 
         if (!staticCaches)
             node.createCaches(Arrays.asList(ccfgs));
@@ -447,7 +448,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         node = startGrids(nodes);
 
-        node.active(true);
+        node.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 

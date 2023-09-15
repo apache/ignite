@@ -29,6 +29,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -135,7 +136,7 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
             Ignite ignite = startGridsMultiThreaded(GRIDS_CNT / 2, false);
 
             ignite.cluster().baselineAutoAdjustEnabled(false);
-            ignite.cluster().active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             List<Integer> toCp = movingKeysAfterJoin(ignite, DEFAULT_CACHE_NAME, 1,
                 node -> ((GridTestNode)node).setAttribute(GRP_ATTR, ODD_GRP), null);

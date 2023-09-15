@@ -24,6 +24,9 @@ import org.jetbrains.annotations.Nullable;
 
 /** Operation codes. */
 public enum ClientOperation {
+    /** Handshake */
+    HANDSHAKE(-1),
+
     /** Resource close. */
     RESOURCE_CLOSE(0),
 
@@ -194,6 +197,9 @@ public enum ClientOperation {
 
     /** Get nodes info by IDs. */
     CLUSTER_GROUP_GET_NODE_INFO(5101),
+
+    /** Get nodes endpoints. */
+    CLUSTER_GROUP_GET_NODE_ENDPOINTS(5102),
 
     /** Execute compute task. */
     COMPUTE_TASK_EXECUTE(6000),

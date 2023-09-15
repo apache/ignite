@@ -26,6 +26,7 @@ import org.apache.calcite.rel.core.Join;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.junit.Test;
@@ -2772,7 +2773,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
      */
     private IgniteSort sortOnTopOfScan(IgniteRel root, String tableName) {
         List<IgniteSort> sortNodes = findNodes(root, byClass(IgniteSort.class)
-            .and(node -> node.getInputs().size() == 1 && node.getInput(0) instanceof IgniteTableScan
+            .and(node -> node.getInputs().size() == 1 && node.getInput(0) instanceof ProjectableFilterableTableScan
                 && node.getInput(0).getTable().unwrap(TestTable.class).name().equals(tableName)));
 
         if (sortNodes.size() > 1)

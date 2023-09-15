@@ -31,6 +31,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -40,7 +41,6 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -161,7 +161,7 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
         try {
             final Ignite g = startGrids(2);
 
-            g.active(true);
+            g.cluster().state(ClusterState.ACTIVE);
 
             g.getOrCreateCache(getCacheConfiguration());
 
@@ -186,17 +186,10 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
 
                                 TestEntity entity = TestEntity.newTestEntity(locRandom);
 
-                                while (true) {
-                                    try (Transaction tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                                        cache.put(randomKey, entity);
+                                try (Transaction tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                    cache.put(randomKey, entity);
 
-                                        tx.commit();
-
-                                        break;
-                                    }
-                                    catch (Exception e) {
-                                        MvccFeatureChecker.assertMvccWriteConflict(e);
-                                    }
+                                    tx.commit();
                                 }
 
                                 operationCnt.increment();

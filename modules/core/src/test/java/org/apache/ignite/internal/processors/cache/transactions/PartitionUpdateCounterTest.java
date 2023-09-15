@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -386,7 +387,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
             IgniteEx grid0 = startGrid(0);
 
             grid0.cluster().baselineAutoAdjustEnabled(false);
-            grid0.cluster().active(true);
+            grid0.cluster().state(ClusterState.ACTIVE);
             grid0.cluster().baselineAutoAdjustEnabled(false);
 
             grid0.cache(DEFAULT_CACHE_NAME).put(0, 0);

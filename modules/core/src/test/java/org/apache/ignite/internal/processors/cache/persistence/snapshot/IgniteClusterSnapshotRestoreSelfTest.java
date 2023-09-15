@@ -51,13 +51,13 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
@@ -115,7 +115,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     public void testRestoreWithEmptyPartitions() throws Exception {
         int keysCnt = dfltCacheCfg.getAffinity().partitions() / 2;
 
-        Ignite ignite = startGridsWithSnapshot(1, keysCnt, false);
+        // Skip check because some partitions will be empty - keysCnt == parts/2.
+        Ignite ignite = startGridsWithSnapshot(1, keysCnt, false, true);
 
         ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
 
@@ -138,10 +139,11 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
             for (int i = 0; i < CACHE_KEYS_RANGE; i++)
                 ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-            ignite.context().cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, snpDir.toString()).get(TIMEOUT);
+            createAndCheckSnapshot(ignite, SNAPSHOT_NAME, snpDir.toString(), TIMEOUT);
 
             // Check snapshot.
-            IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, snpDir.getAbsolutePath()).get(TIMEOUT);
+            IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, snpDir.getAbsolutePath()).get(TIMEOUT)
+                .idleVerifyResult();
 
             StringBuilder sb = new StringBuilder();
             res.print(sb::append, true);
@@ -217,7 +219,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(),
             dfltCacheCfg.setBackups(0), cacheCfg1, cacheCfg2);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME, null, TIMEOUT);
 
         ignite.cache(CACHE1).destroy();
         ignite.cache(CACHE2).destroy();
@@ -309,7 +311,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         GridTestUtils.assertThrowsAnyCause(
             log,
-            () -> grid(1).snapshot().createSnapshot("NEW_SNAPSHOT").get(TIMEOUT),
+            () -> snp(grid(1)).createSnapshot("NEW_SNAPSHOT", null, false, onlyPrimary).get(TIMEOUT),
             IgniteException.class,
             "Cache group restore operation is currently in progress."
         );
@@ -416,7 +418,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     public void testClusterSnapshotRestoreRejectOnInActiveCluster() throws Exception {
         IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME, null, TIMEOUT);
 
         ignite.cluster().state(ClusterState.INACTIVE);
 
@@ -457,7 +459,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME, null, TIMEOUT);
 
         ignite.cache(CACHE1).destroy();
 
@@ -777,6 +779,43 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testUserClassRestored() throws Exception {
+        int nodes = 3;
+        int keysCnt = 1_000;
+
+        valBuilder = Account::new;
+
+        // Skip check because some partitions will be empty - keysCnt < parts.
+        startGridsWithSnapshot(nodes, keysCnt, false, true);
+
+        stopAllGrids();
+
+        cleanPersistenceDir(true);
+
+        dfltCacheCfg = null;
+
+        IgniteEx ign = startGrids(nodes);
+
+        ign.cluster().state(ClusterState.ACTIVE);
+
+        GridTestUtils.waitForCondition(() -> {
+            for (int n = 0; n < nodes; n++) {
+                if (grid(n).context().state().clusterState().transition())
+                    return false;
+            }
+
+            return true;
+        }, getTestTimeout());
+
+        ign.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
+
+        assertCacheKeys(ign.cache(DEFAULT_CACHE_NAME), keysCnt);
+    }
+
+    /**
      * @param state Cluster state.
      * @param procType The type of distributed process on which communication is blocked.
      * @param exCls Expected exception class.
@@ -861,6 +900,27 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
             hnd.accept(file);
 
             return delegate;
+        }
+    }
+
+    /** */
+    public static class Account {
+        /** */
+        private final int id;
+
+        /** */
+        Account(int id) {
+            this.id = id;
+        }
+
+        /** */
+        @Override public int hashCode() {
+            return id;
+        }
+
+        /** */
+        @Override public boolean equals(Object obj) {
+            return id == ((Account)obj).id;
         }
     }
 }

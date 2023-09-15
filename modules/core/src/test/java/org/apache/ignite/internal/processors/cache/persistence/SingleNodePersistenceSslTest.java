@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -66,8 +67,8 @@ public class SingleNodePersistenceSslTest extends GridCommonAbstractTest {
      */
     @Test
     public void testActivate() throws Exception {
-        startGrids(2).cluster().active(true);
+        startGrids(2).cluster().state(ClusterState.ACTIVE);
 
-        assertTrue(grid(0).cluster().active());
+        assertTrue(grid(0).cluster().state().active());
     }
 }

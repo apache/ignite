@@ -75,6 +75,8 @@
 
         <Logger name="com.amazonaws" level="WARN"/>
 
+        <Logger name="org.apache.ignite.internal.processors.odbc.ClientListenerNioListener" level="TRACE"/>
+
         <Root level="DEBUG">
             <AppenderRef ref="CONSOLE" level="DEBUG"/>
             <AppenderRef ref="CONSOLE_ERR" level="WARN"/>

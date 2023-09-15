@@ -53,7 +53,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
-import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -92,7 +91,6 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.h2.affinity.H2PartitionResolver;
@@ -103,8 +101,6 @@ import org.apache.ignite.internal.processors.query.h2.dml.DmlUpdateSingleEntryIt
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
-import org.apache.ignite.internal.processors.query.h2.mxbean.SqlQueryMXBean;
-import org.apache.ignite.internal.processors.query.h2.mxbean.SqlQueryMXBeanImpl;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
@@ -120,10 +116,13 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
+import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
+import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.schema.AbstractSchemaChangeListener;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
+import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
@@ -153,7 +152,6 @@ import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
-import org.h2.message.DbException;
 import org.h2.util.JdbcUtils;
 import org.h2.value.CompareMode;
 import org.jetbrains.annotations.Nullable;
@@ -256,8 +254,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** Schema manager. */
     private H2SchemaManager schemaMgr;
 
-    /** H2 Connection manager. */
-    private LongRunningQueryManager longRunningQryMgr;
+    /** Heavy queries tracker. */
+    private HeavyQueriesTracker heavyQryTracker;
 
     /** Discovery event listener. */
     private GridLocalEventListener discoLsnr;
@@ -266,7 +264,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private GridMessageListener qryLsnr;
 
     /** Distributed config. */
-    private DistributedSqlConfiguration distrCfg;
+    private DistributedIndexingConfiguration distrCfg;
 
     /** Functions manager. */
     private FunctionsManager funcMgr;
@@ -475,6 +473,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                         H2QueryInfo qryInfo = new H2QueryInfo(H2QueryInfo.QueryType.LOCAL, stmt, qry,
                             ctx.localNodeId(), qryId);
+
+                        if (ctx.performanceStatistics().enabled()) {
+                            ctx.performanceStatistics().queryProperty(
+                                GridCacheQueryType.SQL_FIELDS,
+                                qryInfo.nodeId(),
+                                qryInfo.queryId(),
+                                "Local plan",
+                                qryInfo.plan()
+                            );
+                        }
 
                         ResultSet rs = executeSqlQueryWithTimer(
                             stmt,
@@ -837,27 +845,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final H2QueryInfo qryInfo
     ) throws IgniteCheckedException {
         if (qryInfo != null)
-            longRunningQryMgr.registerQuery(qryInfo);
+            heavyQryTracker.startTracking(qryInfo);
 
         enableDataPageScan(dataPageScanEnabled);
 
+        Throwable err = null;
         try (
             TraceSurroundings ignored = MTC.support(ctx.tracing()
                 .create(SQL_QRY_EXECUTE, MTC.span())
                 .addTag(SQL_QRY_TEXT, () -> sql))
         ) {
-            ResultSet rs = executeSqlQuery(conn, stmt, timeoutMillis, cancel);
-
-            if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout())
-                qryInfo.printLogMessage(log, "Long running query is finished", null);
-
-            return rs;
+            return executeSqlQuery(conn, stmt, timeoutMillis, cancel);
         }
         catch (Throwable e) {
-            if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout()) {
-                qryInfo.printLogMessage(log, "Long running query is finished with error: "
-                    + e.getMessage(), null);
-            }
+            err = e;
 
             throw e;
         }
@@ -865,7 +866,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             CacheDataTree.setDataPageScanEnabled(false);
 
             if (qryInfo != null)
-                longRunningQryMgr.unregisterQuery(qryInfo);
+                heavyQryTracker.stopTracking(qryInfo, err);
         }
     }
 
@@ -978,7 +979,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, " +
                 "that the cluster is considered inactive by default if Ignite Persistent Store is used to " +
-                "let all the nodes join the cluster. To activate the cluster call Ignite.active(true).");
+                "let all the nodes join the cluster. To activate the cluster call" +
+                " Ignite.cluster().state(ClusterState.ACTIVE).");
         }
     }
 
@@ -1082,6 +1084,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     throw th;
                 }
             }
+
+            if (res.isEmpty())
+                throw new SqlParseException(qry.getSql(), 0, IgniteQueryErrorCode.PARSING, "Invalid SQL query.");
 
             return res;
         }
@@ -1806,22 +1811,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isConvertibleToColumnType(String schemaName, String tblName, String colName, Class<?> cls) {
-        GridH2Table table = schemaMgr.dataTable(schemaName, tblName);
-
-        if (table == null)
-            throw new IgniteSQLException("Table was not found [schemaName=" + schemaName + ", tableName=" + tblName + ']');
-
-        try {
-            return H2Utils.isConvertableToColumnType(cls, table.getColumn(colName).getType());
-        }
-        catch (DbException e) {
-            throw new IgniteSQLException("Colum with specified name was not found for the table [schemaName=" + schemaName +
-                ", tableName=" + tblName + ", colName=" + colName + ']', e);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery qry) throws SQLException {
         QueryParserResult parsed = parser.parse(schemaName, qry, true);
 
@@ -1878,7 +1867,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         connMgr = new ConnectionManager(ctx);
 
-        longRunningQryMgr = new LongRunningQueryManager(ctx);
+        heavyQryTracker = ctx.query().runningQueryManager().heavyQueriesTracker();
 
         parser = new QueryParser(this, connMgr, cmd -> cmdProc.isCommandSupported(cmd));
 
@@ -1914,7 +1903,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         JdbcUtils.serializer = h2Serializer();
 
-        distrCfg = new DistributedSqlConfiguration(ctx, log);
+        distrCfg = new DistributedIndexingConfiguration(ctx, log);
 
         funcMgr = new FunctionsManager(distrCfg);
 
@@ -2130,7 +2119,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         qryCtxRegistry.clearSharedOnLocalNodeStop();
 
-        longRunningQryMgr.stop();
         connMgr.stop();
 
         if (log.isDebugEnabled())
@@ -2797,24 +2785,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void registerMxBeans(IgniteMBeansManager mbMgr) throws IgniteCheckedException {
-        SqlQueryMXBean qryMXBean = new SqlQueryMXBeanImpl(ctx);
-
-        mbMgr.registerMBean("SQL Query", qryMXBean.getClass().getSimpleName(), qryMXBean, SqlQueryMXBean.class);
-    }
-
     /**
-     * @return Long running queries manager.
+     * @return Heavy queries tracker.
      */
-    public LongRunningQueryManager longRunningQueries() {
-        return longRunningQryMgr;
+    public HeavyQueriesTracker heavyQueriesTracker() {
+        return heavyQryTracker;
     }
 
     /**
      * @return Distributed SQL configuration.
      */
-    public DistributedSqlConfiguration distributedConfiguration() {
+    public DistributedIndexingConfiguration distributedConfiguration() {
         return distrCfg;
     }
 }

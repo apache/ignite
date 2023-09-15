@@ -65,11 +65,6 @@ namespace ignite
             return impl.Get()->IsClient();
         }
 
-        bool ClusterNode::IsDaemon() const
-        {
-            return impl.Get()->IsDaemon();
-        }
-
         bool ClusterNode::IsLocal() const
         {
             return impl.Get()->IsLocal();

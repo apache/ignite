@@ -39,7 +39,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -234,15 +233,10 @@ public class ComputeTaskInternalFuture<R> extends GridFutureAdapter<R> {
 
     /** {@inheritDoc} */
     @Override public boolean cancel() throws IgniteCheckedException {
-        ctx.security().authorize(ses.getTaskName(), SecurityPermission.TASK_CANCEL);
+        if (isCancelled())
+            return false;
 
-        if (onCancelled()) {
-            ctx.task().onCancelled(ses.getId());
-
-            return true;
-        }
-
-        return isCancelled();
+        return ctx.task().cancel(ses.getId());
     }
 
     /** {@inheritDoc} */

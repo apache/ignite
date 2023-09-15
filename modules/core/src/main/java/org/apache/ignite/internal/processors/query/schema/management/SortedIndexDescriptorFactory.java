@@ -45,6 +45,9 @@ public class SortedIndexDescriptorFactory extends AbstractIndexDescriptorFactory
     private static final InlineIndexFactory SORTED_IDX_FACTORY = InlineIndexFactory.INSTANCE;
 
     /** */
+    public static final String H2_TREE = "H2Tree";
+
+    /** */
     private final IgniteLogger log;
 
     /** */
@@ -97,7 +100,7 @@ public class SortedIndexDescriptorFactory extends AbstractIndexDescriptorFactory
 
             int typeId = cctx.binaryMarshaller() ? typeDesc.typeId() : typeDesc.valueClass().hashCode();
 
-            String treeName = BPlusTree.treeName(typeId + "_" + idxName, "H2Tree");
+            String treeName = BPlusTree.treeName(typeId + "_" + idxName, H2_TREE);
 
             if (!ctx.indexProcessor().useUnwrappedPk(cctx, treeName))
                 idxCols = wrappedCols;

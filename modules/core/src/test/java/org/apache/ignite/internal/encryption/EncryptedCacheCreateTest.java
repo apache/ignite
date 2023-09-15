@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import com.google.common.primitives.Bytes;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -56,7 +57,7 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
 
         startGrid(1);
 
-        igniteEx.cluster().active(true);
+        igniteEx.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
     }

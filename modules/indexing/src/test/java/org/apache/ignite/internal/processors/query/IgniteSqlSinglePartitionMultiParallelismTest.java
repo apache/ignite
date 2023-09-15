@@ -77,7 +77,7 @@ public class IgniteSqlSinglePartitionMultiParallelismTest extends AbstractIndexi
      * Check common case without partitions. Should be single result.
      */
     @Test
-    public void testSimpleCountQuery() throws Exception {
+    public void testSimpleCountQuery() {
         List<List<?>> results = runQuery("select count(*) from " + CACHE_NAME);
 
         Long res = (Long)results.get(0).get(0);
@@ -92,7 +92,7 @@ public class IgniteSqlSinglePartitionMultiParallelismTest extends AbstractIndexi
     @Test
     public void testWhereCountPartitionQuery() {
         for (int segment = 0; segment < CACHE_PARALLELISM; segment++) {
-            Integer keyForSegment = segmenKey(segment);
+            Integer keyForSegment = segmentKey(segment);
 
             List<List<?>> results = runQuery("select count(*) from " + CACHE_NAME + " where ID=" + keyForSegment);
 
@@ -108,8 +108,8 @@ public class IgniteSqlSinglePartitionMultiParallelismTest extends AbstractIndexi
      */
     @Test
     public void testWhereCountMultiPartitionsQuery() {
-        Integer keyFromFirstSegment = segmenKey(0);
-        Integer keyFromLastSegment = segmenKey(CACHE_PARALLELISM - 1);
+        Integer keyFromFirstSegment = segmentKey(0);
+        Integer keyFromLastSegment = segmentKey(CACHE_PARALLELISM - 1);
 
         List<List<?>> results = runQuery("select count(*) from " + CACHE_NAME + " where ID="
             + keyFromFirstSegment + " or ID=" + keyFromLastSegment);
@@ -128,10 +128,10 @@ public class IgniteSqlSinglePartitionMultiParallelismTest extends AbstractIndexi
      */
     @Test
     public void testMultiPartitionedRdcMonoPartitionedMap() {
-        Integer keyFromFirstSegment = segmenKey(0);
+        Integer keyFromFirstSegment = segmentKey(0);
 
         for (int i = 1; i < CACHE_PARALLELISM; i++) {
-            Integer keyFromAnotherSegment = segmenKey(i);
+            Integer keyFromAnotherSegment = segmentKey(i);
 
             List<List<?>> results = runQuery("select * from " + CACHE_NAME + " where ID="
                 + keyFromFirstSegment + " or ID=" + keyFromAnotherSegment);
@@ -144,7 +144,7 @@ public class IgniteSqlSinglePartitionMultiParallelismTest extends AbstractIndexi
      * @param segment Target index segment.
      * @return Cache key for target segment.
      */
-    protected Integer segmenKey(int segment) {
+    protected Integer segmentKey(int segment) {
         IgniteCache<Object, Object> cache = ignite(0).cache(CACHE_NAME);
         IgniteCacheProxyImpl proxy = cache.unwrap(IgniteCacheProxyImpl.class);
 

@@ -138,7 +138,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
     public void runIdleVerifyCheckCrcFailsOnNotIdleCluster(boolean allowOverwrite) throws Exception {
         IgniteEx ig = startGrids(2);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         int cntPreload = 100;
 

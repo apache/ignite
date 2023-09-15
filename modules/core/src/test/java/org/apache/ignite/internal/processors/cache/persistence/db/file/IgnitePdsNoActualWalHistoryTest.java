@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -104,7 +105,7 @@ public class IgnitePdsNoActualWalHistoryTest extends GridCommonAbstractTest {
         try {
             IgniteEx ignite = startGrid(1);
 
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
 
@@ -149,7 +150,7 @@ public class IgnitePdsNoActualWalHistoryTest extends GridCommonAbstractTest {
 
             ignite = startGrid(1);
 
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             cache = ignite.cache(CACHE_NAME);
 

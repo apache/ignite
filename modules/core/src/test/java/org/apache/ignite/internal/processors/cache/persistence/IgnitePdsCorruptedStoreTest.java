@@ -32,6 +32,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -164,9 +165,9 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
 
         stopGrid(0);
 
@@ -180,7 +181,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         try {
             startGrid(0);
 
-            ignite.cluster().active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
         }
         catch (Exception e) {
             // No-op.
@@ -196,7 +197,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     public void testMetaStorageCorruption() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         MetaStorage metaStorage = ignite.context().cache().context().database().metaStorage();
 
@@ -208,7 +209,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         try {
             startGrid(0);
 
-            ignite.cluster().active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
         }
         catch (Exception e) {
             // No-op.
@@ -224,7 +225,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     public void testCacheMetaCorruption() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteInternalCache cache = ignite.cachex(CACHE_NAME1);
 
@@ -236,14 +237,14 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
         corruptTreeRoot(ignite, (PageMemoryEx)cache.context().dataRegion().pageMemory(), grpId, partId);
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
 
         stopGrid(0);
 
         try {
             startGrid(0);
 
-            ignite.cluster().active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             cache.put(1, 1);
         }
@@ -308,13 +309,13 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
             return null;
         });
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteInternalCache<Integer, Integer> cache = ignite0.cachex(CACHE_NAME1);
 
         cache.put(1, 1);
 
-        ignite0.cluster().active(false);
+        ignite0.cluster().state(ClusterState.INACTIVE);
 
         FilePageStoreManager storeMgr = ((FilePageStoreManager)ignite0.context().cache().context().pageStore());
 
@@ -327,7 +328,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    ignite0.cluster().active(true);
+                    ignite0.cluster().state(ClusterState.ACTIVE);
                 }
                 catch (Exception ignore) {
                     // No-op.
@@ -347,7 +348,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     public void testCheckpointFailure() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         forceCheckpoint(); // Trigger empty checkpoint to make sure initial checkpoint on node start will finish.
 
@@ -409,7 +410,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     public void testWalFsyncWriteHeaderFailure() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         ignite.cache(CACHE_NAME1).put(0, 0);
 

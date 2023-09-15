@@ -24,17 +24,16 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
-import static org.apache.ignite.util.GridCommandHandlerTestUtils.addSslParams;
 
 /**
  * Command line handler test with SSL.
@@ -52,6 +51,13 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
         factory.setCipherSuites(cipherSuites);
 
         return factory;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        Assume.assumeTrue(commandHandler.equalsIgnoreCase(CLI_CMD_HND));
+
+        super.beforeTest();
     }
 
     /** {@inheritDoc} */
@@ -80,13 +86,13 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
 
         Ignite ignite = startGrids(1);
 
-        assertFalse(ignite.cluster().active());
+        assertFalse(ignite.cluster().state().active());
 
-        final CommandHandler cmd = new CommandHandler();
+        final TestCommandHandler cmd = newCommandHandler();
 
         List<String> params = new ArrayList<>();
 
-        addSslParams(params);
+        extendSslParams(params);
 
         if (!F.isEmpty(utilityCipherSuite)) {
             params.add("--ssl-cipher-suites");
@@ -98,9 +104,9 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
         assertEquals(expRes, execute(params));
 
         if (expRes == EXIT_CODE_OK)
-            assertTrue(ignite.cluster().active());
+            assertTrue(ignite.cluster().state().active());
         else
-            assertFalse(ignite.cluster().active());
+            assertFalse(ignite.cluster().state().active());
 
         assertEquals(EXIT_CODE_CONNECTION_FAILED, cmd.execute(Arrays.asList("--deactivate", "--yes")));
     }

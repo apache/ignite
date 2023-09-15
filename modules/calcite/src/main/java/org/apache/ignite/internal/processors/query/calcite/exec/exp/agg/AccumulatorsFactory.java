@@ -342,8 +342,6 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
 
         /** {@inheritDoc} */
         @Override public Accumulator<Row> accumulator() {
-            assert type == AggregateType.MAP;
-
             return accumulator;
         }
     }

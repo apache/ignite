@@ -191,9 +191,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (discoProtoVer == 2)
             routinesInfo = new ContinuousRoutinesInfo();
 
-        if (ctx.config().isDaemon())
-            return;
-
         retryDelay = ctx.config().getNetworkSendRetryDelay();
         retryCnt = ctx.config().getNetworkSendRetryCount();
 
@@ -376,9 +373,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
-            return;
-
         ctx.io().removeMessageListener(TOPIC_CONTINUOUS);
 
         for (IgniteThread thread : bufCheckThreads.values()) {
@@ -397,9 +391,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        if (ctx.isDaemon())
-            return;
-
         if (discoProtoVer == 2) {
             routinesInfo.collectJoiningNodeData(dataBag);
 
@@ -414,9 +405,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        if (ctx.isDaemon())
-            return;
-
         if (discoProtoVer == 2) {
             routinesInfo.collectGridNodeData(dataBag);
 
@@ -535,9 +523,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
         if (discoProtoVer == 2) {
-            if (ctx.isDaemon())
-                return;
-
             if (data.commonData() != null) {
                 ContinuousRoutinesCommonDiscoveryData commonData =
                     (ContinuousRoutinesCommonDiscoveryData)data.commonData();
@@ -569,7 +554,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param data received discovery data.
      */
     private void onDiscoveryDataReceivedV1(DiscoveryData data) {
-        if (!ctx.isDaemon() && data != null) {
+        if (data != null) {
             for (DiscoveryDataItem item : data.items) {
                 if (!locInfos.containsKey(item.routineId)) {
                     registerHandlerOnJoin(data.nodeId, item.routineId, item.prjPred,

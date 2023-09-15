@@ -67,7 +67,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
@@ -244,12 +243,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public <K1, V1> IgniteCache<K1, V1> withKeepBinary();
 
     /**
-     * By default atomic operations are allowed in transaction.
-     * To restrict transactions from operations with atomic caches you can set system property
-     * {@link IgniteSystemProperties#IGNITE_ALLOW_ATOMIC_OPS_IN_TX IGNITE_ALLOW_ATOMIC_OPS_IN_TX} to {@code false}.
-     * <p>
-     * If you want to use atomic operations inside transactions in case they are restricted by system property,
-     * you should allow it before transaction start.
+     * If you want to use atomic operations inside transactions you should allow it before transaction start.
+     * To enable this behavior by default you can set system property
+     * {@link IgniteSystemProperties#IGNITE_ALLOW_ATOMIC_OPS_IN_TX IGNITE_ALLOW_ATOMIC_OPS_IN_TX} to {@code true}.
      *
      * @param <V1> Type of the cache value.
      * @param <K1> Type of the cache key.
@@ -1619,20 +1615,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cache metrics.
      */
     public CacheMetrics localMetrics();
-
-    /**
-     * Gets whole cluster MxBean for this cache.
-     *
-     * @return MxBean.
-     */
-    public CacheMetricsMXBean mxBean();
-
-    /**
-     * Gets local MxBean for this cache.
-     *
-     * @return MxBean.
-     */
-    public CacheMetricsMXBean localMxBean();
 
     /**
      * Gets a collection of lost partition IDs.

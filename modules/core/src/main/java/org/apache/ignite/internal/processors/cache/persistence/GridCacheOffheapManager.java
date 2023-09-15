@@ -127,7 +127,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.processors.cache.GridCacheTtlManager.DFLT_UNWIND_THROTTLING_TIMEOUT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler.isWalDeltaRecordNeeded;
@@ -174,9 +173,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** Flag indicates that all group partitions have restored their state from page memory / disk. */
     private volatile boolean partitionStatesRestored;
-
-    /** */
-    private DataStorageMetricsImpl persStoreMetrics;
 
     /** {@inheritDoc} */
     @Override protected void initPendingTree(GridCacheContext cctx) throws IgniteCheckedException {
@@ -229,8 +225,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             ctx.diagnostic().pageLockTracker()
         );
 
-        persStoreMetrics = databaseSharedManager.dataStorageMetricsImpl();
-
         databaseSharedManager.addCheckpointListener(this, grp.dataRegion());
     }
 
@@ -266,7 +260,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
         assert grp.dataRegion().pageMemory() instanceof PageMemoryEx;
 
-        syncMetadata(ctx);
+        syncMetadata(ctx.executor());
     }
 
     /** {@inheritDoc} */
@@ -274,35 +268,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         assert F.size(cacheDataStores().iterator(), CacheDataStore::destroyed) == 0;
 
         // Optimization: reducing the holding time of checkpoint write lock.
-        syncMetadata(ctx, ctx.executor(), false);
-    }
-
-    /**
-     * Syncs and saves meta-information of all data structures to page memory.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    private void syncMetadata(Context ctx) throws IgniteCheckedException {
-        Executor execSvc = ctx.executor();
-
-        boolean needSnapshot = ctx.nextSnapshot() && ctx.needToSnapshot(grp.cacheOrGroupName());
-
-        if (needSnapshot) {
-            if (execSvc == null)
-                addPartitions(ctx);
-            else {
-                execSvc.execute(() -> {
-                    try {
-                        addPartitions(ctx);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-                });
-            }
-        }
-
-        syncMetadata(ctx, ctx.executor(), needSnapshot);
+        syncMetadata(ctx.executor());
     }
 
     /**
@@ -311,12 +277,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @param execSvc Executor service to run save process
      * @throws IgniteCheckedException If failed.
      */
-    private void syncMetadata(Context ctx, Executor execSvc, boolean needSnapshot) throws IgniteCheckedException {
+    private void syncMetadata(Executor execSvc) throws IgniteCheckedException {
         if (execSvc == null) {
             reuseList.saveMetadata(grp.statisticsHolderData());
 
             for (CacheDataStore store : cacheDataStores())
-                saveStoreMetadata(store, ctx, false, needSnapshot);
+                saveStoreMetadata(store, false);
         }
         else {
             execSvc.execute(() -> {
@@ -331,7 +297,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             for (CacheDataStore store : cacheDataStores())
                 execSvc.execute(() -> {
                     try {
-                        saveStoreMetadata(store, ctx, false, needSnapshot);
+                        saveStoreMetadata(store, false);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -349,9 +315,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      */
     private void saveStoreMetadata(
         CacheDataStore store,
-        Context ctx,
-        boolean beforeDestroy,
-        boolean needSnapshot
+        boolean beforeDestroy
     ) throws IgniteCheckedException {
         RowStore rowStore0 = store.rowStore();
 
@@ -500,42 +464,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         else
                             cntrsPageId = 0L;
 
-                        int pageCnt;
-
-                        if (needSnapshot) {
-                            pageCnt = this.ctx.pageStore().pages(grpId, store.partId());
-
-                            io.setCandidatePageCount(partMetaPageAddr, size == 0 ? 0 : pageCnt);
-
-                            if (state == OWNING) {
-                                assert part != null;
-
-                                if (!addPartition(
-                                    part,
-                                    ctx.partitionStatMap(),
-                                    partMetaPageAddr,
-                                    io,
-                                    grpId,
-                                    store.partId(),
-                                    this.ctx.pageStore().pages(grpId, store.partId()),
-                                    store.fullSize()
-                                ))
-                                    U.warn(log, "Partition was concurrently evicted grpId=" + grpId +
-                                        ", partitionId=" + part.id());
-                            }
-                            else if (state == MOVING || state == RENTING) {
-                                if (ctx.partitionStatMap().forceSkipIndexPartition(grpId)) {
-                                    if (log.isInfoEnabled())
-                                        log.info("Will not include SQL indexes to snapshot because there is " +
-                                            "a partition not in " + OWNING + " state [grp=" + grp.cacheOrGroupName() +
-                                            ", partId=" + store.partId() + ", state=" + state + ']');
-                                }
-                            }
-
-                            changed = true;
-                        }
-                        else
-                            pageCnt = io.getCandidatePageCount(partMetaPageAddr);
+                        int pageCnt = io.getCandidatePageCount(partMetaPageAddr);
 
                         if (changed && isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
                             wal.log(new MetaPageUpdatePartitionDataRecordV3(
@@ -566,11 +495,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     pageMem.releasePage(grpId, partMetaId, partMetaPage);
                 }
             }
-            else if (needSnapshot)
-                tryAddEmptyPartitionToSnapshot(store, ctx);
         }
-        else if (needSnapshot)
-            tryAddEmptyPartitionToSnapshot(store, ctx);
     }
 
     /** {@inheritDoc} */
@@ -721,22 +646,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             assert state != null;
 
             part.restoreState(state == EVICTED ? RENTING : state);
-        }
-    }
-
-    /**
-     * Check that we need to snapshot this partition and add it to map.
-     *
-     * @param store Store.
-     * @param ctx Snapshot context.
-     */
-    private void tryAddEmptyPartitionToSnapshot(CacheDataStore store, Context ctx) {
-        GridDhtLocalPartition locPart = getPartition(store);
-
-        if (locPart != null && locPart.state() == OWNING) {
-            ctx.partitionStatMap().put(
-                new GroupPartitionId(grp.groupId(), store.partId()),
-                new PagesAllocationRange(0, 0));
         }
     }
 
@@ -968,7 +877,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         ctx.database().checkpointReadLock();
 
         try {
-            saveStoreMetadata(store, null, true, false);
+            saveStoreMetadata(store, true);
         }
         finally {
             ctx.database().checkpointReadUnlock();
@@ -2445,6 +2354,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 CacheDataStore delegate0 = init0(true);
 
                 return delegate0 == null ? 0 : delegate0.updateCounter();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public long highestAppliedCounter() {
+            try {
+                CacheDataStore delegate0 = init0(true);
+
+                return delegate0 == null ? 0 : delegate0.highestAppliedCounter();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

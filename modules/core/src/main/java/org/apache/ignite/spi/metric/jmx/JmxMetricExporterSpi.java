@@ -26,6 +26,7 @@ import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -39,8 +40,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
 /**
  * <h2>Overview</h2>
  *
- * Ignite provides this built-in implementation of {@link MetricExporterSpi} it exports metrics as JMX beans. This
- * implementation works by `pull` architecture which means that after the Ignite node start it should respond to
+ * Ignite provides this default built-in implementation of {@link MetricExporterSpi} it exports metrics as JMX beans.
+ * This implementation works by `pull` architecture which means that after the Ignite node start it should respond to
  * incoming user request.
  *
  * <h2>Java Example</h2>
@@ -54,8 +55,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
  *          .setDefaultDataRegionConfiguration(
  *              new DataRegionConfiguration()
  *                  .setMaxSize(12_000_000)))
- *      .setIgniteInstanceName("jmxExampleInstanceName")
- *      .setMetricExporterSpi(new JmxMetricExporterSpi()));
+ *      .setIgniteInstanceName("jmxExampleInstanceName"));
  *
  *  String igniteInstanceName = ignite.name();
  *  String metricGroup = "io";
@@ -91,6 +91,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
  *
  * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry
+ * @see IgniteSystemProperties#IGNITE_MBEANS_DISABLED
  */
 public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExporterSpi {
     /** Metric registry. */

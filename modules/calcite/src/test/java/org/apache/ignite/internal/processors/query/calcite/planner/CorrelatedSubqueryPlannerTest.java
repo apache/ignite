@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Project;
@@ -34,8 +36,11 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedAggregateBase;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
@@ -223,6 +228,88 @@ public class CorrelatedSubqueryPlannerTest extends AbstractPlannerTest {
             assertEquals(Collections.singleton(correlates.get(1).getCorrelationId()),
                 RexUtils.extractCorrelationIds(projects.get(0).getProjects()));
         }
+    }
+
+    /**
+     * Test correlated distribution bypass set of nodes.
+     */
+    @Test
+    public void testCorrelatedDistribution() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("TA1", IgniteDistributions.affinity(0, "cache1", "hash"),
+                "A", Integer.class, "B", Integer.class, "C", Integer.class),
+            createTable("TA2", IgniteDistributions.affinity(1, "cache2", "hash"),
+                "A", Integer.class, "B", Integer.class, "C", Integer.class),
+            createTable("TH1", IgniteDistributions.hash(Arrays.asList(0, 1)),
+                "A", Integer.class, "B", Integer.class, "C", Integer.class),
+            createTable("TH2", IgniteDistributions.hash(Arrays.asList(1, 2)),
+                "A", Integer.class, "B", Integer.class, "C", Integer.class),
+            createTable("TH3", IgniteDistributions.hash(Arrays.asList(0, 2)),
+                "A", Integer.class, "B", Integer.class, "C", Integer.class)
+        );
+
+        Predicate<RelNode> colocatedPredicate = hasChildThat(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+            .and(input(0, isInstanceOf(IgniteTableScan.class)))
+            .and(input(1, isInstanceOf(IgniteColocatedAggregateBase.class)
+                .and(hasChildThat(isInstanceOf(IgniteExchange.class)).negate())
+            )));
+
+        // Affinity distribution.
+        String sql = "SELECT a FROM ta1 WHERE EXISTS (SELECT a FROM ta2 WHERE ta2.b = ta1.a)";
+        assertPlan(sql, schema, colocatedPredicate);
+
+        // Hash distribution on two columns.
+        sql = "SELECT a FROM th1 WHERE EXISTS (SELECT a FROM th2 WHERE th2.b = th1.a AND th2.c = th1.b)";
+        assertPlan(sql, schema, colocatedPredicate);
+
+        sql = "SELECT a FROM th1 WHERE EXISTS (SELECT a FROM th3 WHERE th3.a = th1.a AND th3.c = th1.b)";
+        assertPlan(sql, schema, colocatedPredicate);
+
+        // Additional AND condition in filter.
+        sql = "SELECT a FROM th1 WHERE EXISTS (SELECT a FROM th2 WHERE th2.b = th1.a AND th2.c = th1.b AND th2.a = 1)";
+        assertPlan(sql, schema, colocatedPredicate);
+
+        // Aggregate with affinity distribution.
+        sql = "SELECT (SELECT sum(a) FROM ta2 WHERE ta2.b = ta1.a) FROM ta1";
+        assertPlan(sql, schema, colocatedPredicate);
+
+        // Aggregate with set op with hash distribution on two columns.
+        sql = "SELECT (SELECT sum(a) FROM (" +
+            "   SELECT a FROM th2 WHERE th2.b = th1.a AND th2.c = th1.b " +
+            "   INTERSECT " +
+            "   SELECT a FROM th3 WHERE th3.a = th1.a AND th3.c = th1.b" +
+            ")) FROM th1";
+        assertPlan(sql, schema, colocatedPredicate);
+
+        // Condition on not colocated column.
+        sql = "SELECT a FROM ta1 WHERE EXISTS (SELECT a FROM ta2 WHERE ta2.a = ta1.a)";
+        assertPlan(sql, schema, colocatedPredicate.negate());
+
+        // Additional OR condition in filter.
+        sql = "SELECT a FROM th1 WHERE EXISTS (SELECT a FROM th2 WHERE th2.b = th1.a AND th2.c = th1.b OR th2.a = 1)";
+        assertPlan(sql, schema, colocatedPredicate.negate());
+
+        // Not full set of hash distribution keys.
+        sql = "SELECT a FROM th1 WHERE EXISTS (SELECT a FROM th2 WHERE th2.a = th1.a AND th2.c = th1.b)";
+        assertPlan(sql, schema, colocatedPredicate.negate());
+
+        sql = "SELECT a FROM th1 WHERE EXISTS (SELECT a FROM th2 WHERE th2.b = 1 AND th2.c = th1.b)";
+        assertPlan(sql, schema, colocatedPredicate.negate());
+
+        sql = "SELECT a FROM th1 WHERE EXISTS (SELECT a FROM th3 WHERE th3.a = th1.a AND th3.c = th1.c)";
+        assertPlan(sql, schema, colocatedPredicate.negate());
+
+        // Wrong order of hash distribution keys.
+        sql = "SELECT a FROM th1 WHERE EXISTS (SELECT a FROM th2 WHERE th2.c = th1.a AND th2.b = th1.b)";
+        assertPlan(sql, schema, colocatedPredicate.negate());
+
+        // One input of set-op has not full set of hash distribution keys.
+        sql = "SELECT (SELECT sum(a) FROM (" +
+            "   SELECT a FROM th2 WHERE th2.a = th1.a AND th2.c = th1.b " +
+            "   INTERSECT " +
+            "   SELECT a FROM th3 WHERE th3.a = th1.a AND th3.c = th1.b" +
+            ")) FROM th1";
+        assertPlan(sql, schema, colocatedPredicate.negate());
     }
 
     /** */

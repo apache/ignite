@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
 
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.runtime.CalciteContextException;
@@ -30,6 +31,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.ValidationException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -53,12 +55,16 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
     /** */
     private final DdlSqlToCommandConverter ddlConverter;
 
+    /** */
+    private final PlanExtractor planExtractor;
+
     /**
      * @param ctx Kernal.
      */
     public PrepareServiceImpl(GridKernalContext ctx) {
         super(ctx);
 
+        planExtractor = new PlanExtractor(ctx);
         ddlConverter = new DdlSqlToCommandConverter();
     }
 
@@ -105,6 +111,16 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
         catch (ValidationException | CalciteContextException e) {
             throw new IgniteSQLException("Failed to validate query. " + e.getMessage(), IgniteQueryErrorCode.PARSING, e);
         }
+        catch (RelOptPlanner.CannotPlanException e) {
+            // In most cases this exception is thrown if there is not enough time to produce any working plan
+            // (due to planning timeout).
+            IgniteSQLException ex = new IgniteSQLException("Failed to plan query",
+                IgniteQueryErrorCode.QUERY_CANCELED, new QueryCancelledException());
+
+            ex.addSuppressed(e);
+
+            throw ex;
+        }
     }
 
     /**
@@ -113,7 +129,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
     private QueryPlan prepareDdl(SqlNode sqlNode, PlanningContext ctx) {
         assert sqlNode instanceof SqlDdl : sqlNode == null ? "null" : sqlNode.getClass().getName();
 
-        return new DdlPlan(ddlConverter.convert((SqlDdl)sqlNode, ctx));
+        return new DdlPlan(ctx.query(), ddlConverter.convert((SqlDdl)sqlNode, ctx));
     }
 
     /**
@@ -132,7 +148,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         String plan = RelOptUtil.toString(igniteRel, SqlExplainLevel.ALL_ATTRIBUTES);
 
-        return new ExplainPlan(plan, explainFieldsMetadata(ctx));
+        return new ExplainPlan(ctx.query(), plan, explainFieldsMetadata(ctx));
     }
 
     /** */
@@ -151,6 +167,8 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         IgniteRel igniteRel = optimize(sqlNode, planner, log);
 
+        String plan = planExtractor.extract(igniteRel);
+
         // Extract parameters meta.
         FieldsMetadata params = DynamicParamTypeExtractor.go(igniteRel);
 
@@ -159,8 +177,8 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         QueryTemplate template = new QueryTemplate(fragments);
 
-        return new MultiStepQueryPlan(template, queryFieldsMetadata(ctx, validated.dataType(), validated.origins()),
-            params);
+        return new MultiStepQueryPlan(ctx.query(), plan, template, queryFieldsMetadata(ctx, validated.dataType(),
+                validated.origins(), validated.aliases()), params);
     }
 
     /** */
@@ -173,6 +191,8 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
         // Convert to Relational operators graph
         IgniteRel igniteRel = optimize(sqlNode, planner, log);
 
+        String plan = planExtractor.extract(igniteRel);
+
         // Extract parameters meta.
         FieldsMetadata params = DynamicParamTypeExtractor.go(igniteRel);
 
@@ -181,16 +201,20 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         QueryTemplate template = new QueryTemplate(fragments);
 
-        return new MultiStepDmlPlan(template, queryFieldsMetadata(ctx, igniteRel.getRowType(), null), params);
+        return new MultiStepDmlPlan(ctx.query(), plan, template, queryFieldsMetadata(ctx, igniteRel.getRowType(),
+                null, null), params);
     }
 
     /** */
-    private FieldsMetadata queryFieldsMetadata(PlanningContext ctx, RelDataType sqlType,
-        @Nullable List<List<String>> origins) {
-        RelDataType resultType = TypeUtils.getResultType(
-            ctx.typeFactory(), ctx.catalogReader(), sqlType, origins);
+    private FieldsMetadata queryFieldsMetadata(
+        PlanningContext ctx,
+        RelDataType sqlType,
+        @Nullable List<List<String>> origins,
+        @Nullable List<String> aliases
+    ) {
+        RelDataType resultType = TypeUtils.getResultType(ctx.typeFactory(), ctx.catalogReader(), sqlType, origins);
 
-        return new FieldsMetadataImpl(sqlType, resultType, origins);
+        return new FieldsMetadataImpl(sqlType, resultType, origins, aliases);
     }
 
     /** */
@@ -201,6 +225,6 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
         T2<String, RelDataType> planField = new T2<>(ExplainPlan.PLAN_COL_NAME, planStrDataType);
         RelDataType planDataType = factory.createStructType(singletonList(planField));
 
-        return queryFieldsMetadata(ctx, planDataType, null);
+        return queryFieldsMetadata(ctx, planDataType, null, null);
     }
 }

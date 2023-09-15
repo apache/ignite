@@ -33,7 +33,7 @@ namespace ignite
         {
             ClusterNodeImpl::ClusterNodeImpl(SharedPointer<InteropMemory> mem) :
                 mem(mem), addrs(new std::vector<std::string>), attrs(new std::map<std::string, int32_t>), hosts(new std::vector<std::string>),
-                isClient(false), isDaemon(false), isLocal(false), consistentId(new std::string)
+                isClient(false), isLocal(false), consistentId(new std::string)
             {
                 InteropInputStream stream(mem.Get());
                 BinaryReaderImpl reader(&stream);
@@ -46,7 +46,6 @@ namespace ignite
 
                 order = reader.ReadInt64();
                 isLocal = reader.ReadBool();
-                isDaemon = reader.ReadBool();
                 isClient = reader.ReadBool();
 
                 ReadConsistentId(reader);
@@ -97,11 +96,6 @@ namespace ignite
             bool ClusterNodeImpl::IsClient() const
             {
                 return isClient;
-            }
-
-            bool ClusterNodeImpl::IsDaemon() const
-            {
-                return isDaemon;
             }
 
             bool ClusterNodeImpl::IsLocal() const

@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -184,7 +185,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         if (log.isInfoEnabled())
             log.info("BTL before activation: " + cluster.currentBaselineTopology());
 
-        cluster.active(true);
+        cluster.state(ClusterState.ACTIVE);
 
         if (log.isInfoEnabled())
             log.info("BTL after activation: " + cluster.currentBaselineTopology());

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.standbycluster;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -50,7 +51,7 @@ public class IgniteChangeGlobalStateCacheTest extends IgniteChangeGlobalStateAbs
 
         stopAllPrimary();
 
-        ig1B.active(true);
+        ig1B.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<String, String> cache1B = ig1B.cache(cacheName);
         IgniteCache<String, String> cache2B = ig2B.cache(cacheName);
@@ -99,7 +100,7 @@ public class IgniteChangeGlobalStateCacheTest extends IgniteChangeGlobalStateAbs
 
         stopAllPrimary();
 
-        ig1B.active(true);
+        ig1B.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<String, String> cache1B = ig1B.cache(cacheName);
         IgniteCache<String, String> cache2B = ig2B.cache(cacheName);
@@ -134,11 +135,11 @@ public class IgniteChangeGlobalStateCacheTest extends IgniteChangeGlobalStateAbs
 
         cacheExp.put("key", "value");
 
-        assertTrue(ig1.active());
-        assertTrue(ig2.active());
-        assertTrue(ig3.active());
+        assertTrue(ig1.cluster().state().active());
+        assertTrue(ig2.cluster().state().active());
+        assertTrue(ig3.cluster().state().active());
 
-        ig2.active(false);
+        ig2.cluster().state(ClusterState.INACTIVE);
 
         IgniteEx ex1 = (IgniteEx)ig1;
         IgniteEx ex2 = (IgniteEx)ig2;
@@ -152,15 +153,15 @@ public class IgniteChangeGlobalStateCacheTest extends IgniteChangeGlobalStateAbs
         assertTrue(F.isEmpty(cache2.jcaches()));
         assertTrue(F.isEmpty(cache3.jcaches()));
 
-        assertTrue(!ig1.active());
-        assertTrue(!ig2.active());
-        assertTrue(!ig3.active());
+        assertTrue(!ig1.cluster().state().active());
+        assertTrue(!ig2.cluster().state().active());
+        assertTrue(!ig3.cluster().state().active());
 
-        ig3.active(true);
+        ig3.cluster().state(ClusterState.ACTIVE);
 
-        assertTrue(ig1.active());
-        assertTrue(ig2.active());
-        assertTrue(ig3.active());
+        assertTrue(ig1.cluster().state().active());
+        assertTrue(ig2.cluster().state().active());
+        assertTrue(ig3.cluster().state().active());
 
         IgniteCache<String, String> cacheAct = ig2.cache(chName);
 

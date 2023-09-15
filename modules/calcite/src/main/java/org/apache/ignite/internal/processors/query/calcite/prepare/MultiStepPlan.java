@@ -61,4 +61,9 @@ public interface MultiStepPlan extends QueryPlan {
      * @param ctx Planner context.
      */
     void init(MappingService mappingService, MappingQueryContext ctx);
+
+    /**
+     * @return Text representation of query plan
+     */
+    String textPlan();
 }

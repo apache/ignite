@@ -61,35 +61,6 @@
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>update-versions</id>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <phase>initialize</phase>
-                        <configuration>
-                            <target>
-                                <echo message="Update ignite.version in .NET" />
-
-                                <replaceregexp byline="true" encoding="UTF-8">
-                                    <regexp pattern="(\[assembly:\s*Assembly\w*Version\w*\(&quot;)\d+\.\d+\.\d+(\.\d+)?(&quot;\)\])" />
-                                    <substitution expression="\1${ignite.platform.full.version}\3" />
-                                    <fileset dir="${basedir}/">
-                                        <include name="**/SharedAssemblyInfo.cs" />
-                                    </fileset>
-                                </replaceregexp>
-
-                                <replaceregexp byline="true" encoding="UTF-8">
-                                    <regexp pattern="(\[assembly:\s*AssemblyInformationalVersion\w*\(&quot;).*?(&quot;\)\])" />
-                                    <substitution
-                                        expression="\1${ignite.majorVersion}.${ignite.minorVersion}.${ignite.incrementalVersion}\2" />
-                                    <fileset dir="${basedir}/">
-                                        <include name="**/SharedAssemblyInfo.cs" />
-                                    </fileset>
-                                </replaceregexp>
-                            </target>
-                        </configuration>
-                    </execution>
-                    <execution>
                         <id>build-dotnet</id>
                         <phase>generate-sources</phase>
                         <configuration>

@@ -119,10 +119,16 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     private final LongAdderMetric readPages;
 
     /** */
+    private final LongAdderMetric readPagesTime;
+
+    /** */
     private final LongAdderMetric writtenPages;
 
     /** */
     private final LongAdderMetric replacedPages;
+
+    /** */
+    private final LongAdderMetric pageReplaceTime;
 
     /** */
     private final AtomicLongMetric offHeapSize;
@@ -213,7 +219,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         MetricRegistry mreg = metricRegistry();
 
         allocRate = mreg.hitRateMetric("AllocationRate",
-            "Allocation rate (pages per second) averaged across rateTimeInternal.",
+            "Allocation rate (pages per second) averaged across rateTimeInterval.",
             60_000,
             5);
 
@@ -241,11 +247,17 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         readPages = mreg.longAdderMetric("PagesRead",
             "Number of pages read from last restart.");
 
+        readPagesTime = mreg.longAdderMetric("PagesReadTime",
+            "Total pages read time in nanoseconds since last restart.");
+
         writtenPages = mreg.longAdderMetric("PagesWritten",
             "Number of pages written from last restart.");
 
         replacedPages = mreg.longAdderMetric("PagesReplaced",
             "Number of pages replaced from last restart.");
+
+        pageReplaceTime = mreg.longAdderMetric("PagesReplaceTime",
+            "Total pages replace time in nanoseconds since last restart.");
 
         offHeapSize = mreg.longMetric("OffHeapSize",
             "Offheap size in bytes.");
@@ -519,24 +531,30 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     }
 
     /**
-     * Updates pageReplaceRate metric.
+     * Updates page replacement metrics.
      */
-    public void updatePageReplaceRate(long pageAge) {
+    public void onPageReplaced(long pageAge, long nanos) {
         if (metricsEnabled) {
             pageReplaceRate.increment();
 
             pageReplaceAge.add(pageAge);
 
             replacedPages.increment();
+
+            pageReplaceTime.add(nanos);
         }
     }
 
     /**
      * Updates page read.
+     *
+     * @param nanos Time consumed by page reading.
      */
-    public void onPageRead() {
-        if (metricsEnabled)
+    public void onPageRead(long nanos) {
+        if (metricsEnabled) {
             readPages.increment();
+            readPagesTime.add(nanos);
+        }
     }
 
     /**
@@ -783,8 +801,10 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         largeEntriesPages.reset();
         dirtyPages.reset();
         readPages.reset();
+        readPagesTime.reset();
         writtenPages.reset();
         replacedPages.reset();
+        pageReplaceTime.reset();
         offHeapSize.reset();
         checkpointBufSize.reset();
         allocRate.reset();

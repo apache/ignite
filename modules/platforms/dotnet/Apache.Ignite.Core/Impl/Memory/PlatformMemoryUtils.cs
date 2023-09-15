@@ -18,8 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Memory
 {
     using System;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Reflection;
     using System.Runtime.InteropServices;
 
     /// <summary>
@@ -82,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <returns>CalculateCapacity.</returns>
-        public static int GetCapacity(long memPtr) 
+        public static int GetCapacity(long memPtr)
         {
             return *((int*)(memPtr + MemHdrOffCap));
         }
@@ -92,7 +90,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <returns>Length.</returns>
-        public static int GetLength(long memPtr) 
+        public static int GetLength(long memPtr)
         {
             return *((int*)(memPtr + MemHdrOffLen));
         }
@@ -102,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <param name="len">Length.</param>
-        public static void SetLength(long memPtr, int len) 
+        public static void SetLength(long memPtr, int len)
         {
             *((int*)(memPtr + MemHdrOffLen)) = len;
         }
@@ -112,7 +110,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <returns>Flags.</returns>
-        public static int GetFlags(long memPtr) 
+        public static int GetFlags(long memPtr)
         {
             return *((int*)(memPtr + MemHdrOffFlags));
         }
@@ -122,7 +120,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <param name="flags">Flags.</param>
-        public static void SetFlags(long memPtr, int flags) 
+        public static void SetFlags(long memPtr, int flags)
         {
             *((int*)(memPtr + MemHdrOffFlags)) = flags;
         }
@@ -132,7 +130,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="flags">Flags.</param>
         /// <returns><c>True</c> if owned by Java.</returns>
-        public static bool IsExternal(int flags) 
+        public static bool IsExternal(int flags)
         {
             return (flags & FlagExt) != FlagExt;
         }
@@ -142,7 +140,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="flags">Flags.</param>
         /// <returns><c>True</c> if pooled.</returns>
-        public static bool IsPooled(int flags) 
+        public static bool IsPooled(int flags)
         {
             return (flags & FlagPooled) != 0;
         }
@@ -169,7 +167,7 @@ namespace Apache.Ignite.Core.Impl.Memory
 
         #endregion
 
-        #region UNPOOLED MEMORY 
+        #region UNPOOLED MEMORY
 
         /// <summary>
         /// Allocate unpooled memory chunk.
@@ -212,7 +210,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// Release unpooled memory chunk.
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
-        public static void ReleaseUnpooled(long memPtr) 
+        public static void ReleaseUnpooled(long memPtr)
         {
             Marshal.FreeHGlobal((IntPtr)GetData(memPtr));
             Marshal.FreeHGlobal((IntPtr)memPtr);
@@ -306,7 +304,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <param name="cap">CalculateCapacity.</param>
-        private static void AllocatePooled0(long memPtr, int cap) 
+        private static void AllocatePooled0(long memPtr, int cap)
         {
             long data = *((long*)memPtr);
 
@@ -337,7 +335,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <param name="cap">Minimum capacity.</param>
-        public static void ReallocatePooled(long memPtr, int cap) 
+        public static void ReallocatePooled(long memPtr, int cap)
         {
             long data = *((long*)memPtr);
 
@@ -355,7 +353,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// Release pooled memory chunk.
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
-        public static void ReleasePooled(long memPtr) 
+        public static void ReleasePooled(long memPtr)
         {
             SetFlags(memPtr, GetFlags(memPtr) ^ FlagAcquired);
         }
@@ -363,58 +361,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         #endregion
 
         #region MEMCPY
-
-        /** Array copy delegate. */
-        private delegate void MemCopy(byte* a1, byte* a2, int len);
-
-        /** memcpy function handle. */
-        private static readonly MemCopy Memcpy;
-
-        /** Whether src and dest arguments are inverted. */
-        [SuppressMessage("Microsoft.Performance", "CA1802:UseLiteralsWhereAppropriate")]
-        private static readonly bool MemcpyInverted;
-
-        /// <summary>
-        /// Static initializer.
-        /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
-        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
-        static PlatformMemoryUtils()
-        {
-            Type type = typeof(Buffer);
-
-            const BindingFlags flags = BindingFlags.Static | BindingFlags.NonPublic;
-            Type[] paramTypes = { typeof(byte*), typeof(byte*), typeof(int) };
-
-            // Assume .Net 4.5.
-            MethodInfo mthd = type.GetMethod("Memcpy", flags, null, paramTypes, null);
-
-            MemcpyInverted = true;
-
-            if (mthd == null)
-            {
-                // Assume .Net 4.0.
-                mthd = type.GetMethod("memcpyimpl", flags, null, paramTypes, null);
-
-                MemcpyInverted = false;
-
-                if (mthd == null)
-                    throw new InvalidOperationException("Unable to get memory copy function delegate.");
-            }
-
-            Memcpy = (MemCopy)Delegate.CreateDelegate(typeof(MemCopy), mthd);
-        }
-
-        /// <summary>
-        /// Unsafe memory copy routine.
-        /// </summary>
-        /// <param name="src">Source.</param>
-        /// <param name="dest">Destination.</param>
-        /// <param name="len">Length.</param>
-        public static void CopyMemory(void* src, void* dest, int len)
-        {
-            CopyMemory((byte*)src, (byte*)dest, len);
-        }
 
         /// <summary>
         /// Unsafe memory copy routine.
@@ -424,10 +370,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <param name="len">Length.</param>
         public static void CopyMemory(byte* src, byte* dest, int len)
         {
-            if (MemcpyInverted)
-                Memcpy.Invoke(dest, src, len);
-            else
-                Memcpy.Invoke(src, dest, len);
+            Buffer.MemoryCopy(src, dest, len, len);
         }
 
         #endregion

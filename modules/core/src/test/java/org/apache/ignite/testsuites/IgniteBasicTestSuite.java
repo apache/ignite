@@ -20,7 +20,6 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
-import org.apache.ignite.internal.ClusterProcessorCheckGlobalStateComputeRequestTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
 import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
 import org.apache.ignite.internal.GridLifecycleBeanSelfTest;
@@ -43,8 +42,6 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRende
 import org.apache.ignite.internal.processors.affinity.GridHistoryAffinityAssignmentTest;
 import org.apache.ignite.internal.processors.affinity.GridHistoryAffinityAssignmentTestNoOptimization;
 import org.apache.ignite.internal.processors.cache.GridLocalIgniteSerializationTest;
-import org.apache.ignite.internal.processors.cache.GridProjectionForCachesOnDaemonNodeSelfTest;
-import org.apache.ignite.internal.processors.cache.IgniteDaemonNodeMarshallerCacheTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheConcurrentReadWriteTest;
 import org.apache.ignite.internal.processors.cache.SetTxTimeoutOnPartitionMapExchangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.EvictPartitionInLogTest;
@@ -95,7 +92,6 @@ import org.junit.runners.Suite;
     IgniteMessagingWithClientTest.class,
     IgniteMessagingSendAsyncTest.class,
 
-    ClusterProcessorCheckGlobalStateComputeRequestTest.class,
     ClusterGroupSelfTest.class,
     GridMessagingSelfTest.class,
     GridMessagingNoPeerClassLoadingSelfTest.class,
@@ -112,7 +108,6 @@ import org.junit.runners.Suite;
     GridClosureSerializationTest.class,
     GridStartStopSelfTest.class,
     GridProjectionForCachesSelfTest.class,
-    GridProjectionForCachesOnDaemonNodeSelfTest.class,
     GridSpiLocalHostInjectionTest.class,
     GridLifecycleBeanSelfTest.class,
     GridStopWithCancelSelfTest.class,
@@ -124,7 +119,6 @@ import org.junit.runners.Suite;
     GridMessageListenSelfTest.class,
     GridFailFastNodeFailureDetectionSelfTest.class,
     IgniteSlowClientDetectionSelfTest.class,
-    IgniteDaemonNodeMarshallerCacheTest.class,
     IgniteMarshallerCacheConcurrentReadWriteTest.class,
     GridNodeMetricsLogSelfTest.class,
     GridLocalIgniteSerializationTest.class,

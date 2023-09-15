@@ -90,7 +90,6 @@ public class ClusterGroupTest extends AbstractThinClientTest {
             assertEquals(new HashSet<>(igniteNode.hostNames()), new HashSet<>(clientNode.hostNames()));
             assertEquals(igniteNode.order(), clientNode.order());
             assertEquals(igniteNode.version(), clientNode.version());
-            assertEquals(igniteNode.isDaemon(), clientNode.isDaemon());
             assertEquals(igniteNode.isClient(), clientNode.isClient());
         }
     }

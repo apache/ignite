@@ -34,7 +34,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
 
 /**
  * Client node implementation.
@@ -237,11 +236,6 @@ public class GridClientNodeImpl implements GridClientNode {
     /** {@inheritDoc} */
     @Override public boolean isClient() {
         return Objects.equals(attribute(ATTR_CLIENT_MODE), true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isDaemon() {
-        return "true".equals(attribute(ATTR_DAEMON));
     }
 
     /** {@inheritDoc} */

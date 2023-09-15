@@ -44,6 +44,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -55,9 +56,9 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -102,7 +103,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         final String cacheName = "test_multi_type";
 
         IgniteEx server = startGrid(0);
-        server.cluster().active(true);
+        server.cluster().state(ClusterState.ACTIVE);
 
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(cacheName);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 1));
@@ -168,18 +169,9 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
      */
     @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
-    public void testConcurrentUpdatesWithMvcc() throws Exception {
-        doTestConcurrentUpdates(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
-    public void testConcurrentUpdatesNoMvcc() throws Exception {
+    public void testConcurrentUpdates() throws Exception {
         try {
-            doTestConcurrentUpdates(false);
+            doTestConcurrentUpdates();
 
             throw new IllegalStateException("Expected to detect data inconsistency.");
         }
@@ -189,17 +181,15 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void doTestConcurrentUpdates(boolean enableMvcc) throws Exception {
+    private void doTestConcurrentUpdates() throws Exception {
         final String cacheName = "test_updates";
 
         IgniteEx server = startGrid(0);
-        server.cluster().active(true);
+        server.cluster().state(ClusterState.ACTIVE);
 
         CacheConfiguration<Long, Long> ccfg = new CacheConfiguration<>(cacheName);
         ccfg.setIndexedTypes(Long.class, Long.class);
-        ccfg.setAtomicityMode(enableMvcc ?
-            CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT :
-            CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         IgniteCache<Long, Long> cache = server.createCache(ccfg);
 
@@ -267,7 +257,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
                     tx.commit();
                 }
                 catch (CacheException e) {
-                    MvccFeatureChecker.assertMvccWriteConflict(e);
+                    assertTrue(e.getCause() instanceof TransactionSerializationException);
 
                     if (!e.getMessage().contains(
                         "Cannot serialize transaction due to write conflict (transaction is marked for rollback)"))
@@ -287,8 +277,8 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
             }
         }, 2, "query");
 
-        qryFut.listen((f) -> cancel.set(true));
-        updFut.listen((f) -> cancel.set(true));
+        qryFut.listen(() -> cancel.set(true));
+        updFut.listen(() -> cancel.set(true));
 
         long start = U.currentTimeMillis();
 
@@ -311,7 +301,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
 
         GridQueryProcessor.idxCls = DirectPageScanIndexing.class;
         IgniteEx server = startGrid(0);
-        server.cluster().active(true);
+        server.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx client = startClientGrid(1);
 

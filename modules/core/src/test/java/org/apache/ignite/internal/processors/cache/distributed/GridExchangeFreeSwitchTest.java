@@ -677,7 +677,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             startGrid(0); // Primary partition holder.
             startGrid(1); // Backup partition holder.
 
-            grid(0).cluster().active(true);
+            grid(0).cluster().state(ClusterState.ACTIVE);
 
             grid(1).close(); // Stopping backup partition holder.
 

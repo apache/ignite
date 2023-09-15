@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.UUID;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
@@ -60,6 +61,11 @@ public abstract class DistributionFunction {
 
     /** */
     public boolean affinity() {
+        return false;
+    }
+
+    /** */
+    public boolean correlated() {
         return false;
     }
 
@@ -139,6 +145,11 @@ public abstract class DistributionFunction {
     /** */
     public static DistributionFunction affinity(int cacheId, Object identity) {
         return new AffinityDistribution(cacheId, identity);
+    }
+
+    /** */
+    public static DistributionFunction correlated(CorrelationId corrId, IgniteDistribution delegate) {
+        return new CorrelatedDistribution(corrId, delegate);
     }
 
     /** */
@@ -314,6 +325,61 @@ public abstract class DistributionFunction {
         /** {@inheritDoc} */
         @Override protected String name0() {
             return "affinity[identity=" + identity + ", cacheId=" + cacheId + ']';
+        }
+    }
+
+    /**
+     * Correlated distribution, used to bypass set of nodes on the right hand of CNLJ and to be restored to
+     * original hash distribution (with remapped keys) by the filter node.
+     */
+    public static final class CorrelatedDistribution extends DistributionFunction {
+        /** */
+        private final CorrelationId corrId;
+
+        /** */
+        private final IgniteDistribution target;
+
+        /** */
+        private CorrelatedDistribution(CorrelationId corrId, IgniteDistribution target) {
+            this.corrId = corrId;
+            this.target = target;
+
+            assert target.getType() == RelDistribution.Type.HASH_DISTRIBUTED : target.getType();
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDistribution.Type type() {
+            return RelDistribution.Type.RANDOM_DISTRIBUTED;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <Row> Destination<Row> destination(
+            ExecutionContext<Row> ctx,
+            AffinityService affSrvc,
+            ColocationGroup target,
+            ImmutableIntList keys
+        ) {
+            throw new AssertionError("Correlated distribution should be converted to delegate before using");
+        }
+
+        /** */
+        public CorrelationId correlationId() {
+            return corrId;
+        }
+
+        /** */
+        public IgniteDistribution target() {
+            return target;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean correlated() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected String name0() {
+            return "correlated[corrId=" + corrId + ", target=" + target + ']';
         }
     }
 }

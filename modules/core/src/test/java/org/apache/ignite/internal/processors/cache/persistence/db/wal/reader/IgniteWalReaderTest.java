@@ -81,7 +81,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.wal.record.RecordUtils;
@@ -89,7 +88,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static java.util.Arrays.fill;
@@ -221,7 +219,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         Ignite ignite0 = startGrid();
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         Serializable consistentId = (Serializable)ignite0.cluster().localNode().consistentId();
 
@@ -343,7 +341,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         Ignite ignite = startGrid();
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         final IgniteEvents evts = ignite.events();
 
@@ -455,7 +453,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         Ignite ignite = startGrid();
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteEvents evts = ignite.events();
 
@@ -500,7 +498,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         Ignite ignite = startGrid();
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         final IgniteEvents evts = ignite.events();
 
@@ -581,7 +579,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     public void testTxFillWalAndExtractDataRecords() throws Exception {
         Ignite ignite0 = startGrid();
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         int cntEntries = 1000;
         int txCnt = 100;
@@ -683,7 +681,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     public void testFillWalWithDifferentTypes() throws Exception {
         Ignite ig = startGrid();
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> addlCache = ig.getOrCreateCache(CACHE_ADDL_NAME);
 
@@ -885,9 +883,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         Ignite ignite = startGrid();
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
 
         final String subfolderName = genDbSubfolderName(ignite, 0);
 
@@ -918,7 +916,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     public void testIteratorWithCurrentKernelContext() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         int cntEntries = 100;
 
@@ -1013,8 +1011,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRemoveOperationPresentedForDataEntryForAtomic() throws Exception {
-        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc());
-
         runRemoveOperationTest(CacheAtomicityMode.ATOMIC);
     }
 
@@ -1027,11 +1023,11 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     private void runRemoveOperationTest(CacheAtomicityMode mode) throws Exception {
         Ignite ignite = startGrid();
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         createCache2(ignite, mode);
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
 
         String subfolderName = genDbSubfolderName(ignite, 0);
 
@@ -1125,7 +1121,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         cache.putAll(map);
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
 
         String subfolderName1 = genDbSubfolderName(ignite, 0);
         String subfolderName2 = genDbSubfolderName(ignite1, 1);
@@ -1289,7 +1285,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         Ignite ignite = startGrid("node0");
         Ignite ignite1 = startGrid(1);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         Map<Object, IndexedObject> map = new TreeMap<>();
 
@@ -1300,7 +1296,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         ignite.cache(CACHE_NAME).putAll(map);
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
 
         String subfolderName1 = genDbSubfolderName(ignite, 0);
         String subfolderName2 = genDbSubfolderName(ignite1, 1);
@@ -1426,7 +1422,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     public void testCheckBoundsIterator() throws Exception {
         Ignite ignite = startGrid("node0");
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         try (IgniteDataStreamer<Integer, IndexedObject> st = ignite.dataStreamer(CACHE_NAME)) {
             st.allowOverwrite(true);

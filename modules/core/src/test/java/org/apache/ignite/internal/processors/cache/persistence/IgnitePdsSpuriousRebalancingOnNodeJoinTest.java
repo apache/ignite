@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -98,7 +99,7 @@ public class IgnitePdsSpuriousRebalancingOnNodeJoinTest extends GridCommonAbstra
         try {
             IgniteEx crd = startGrids(2);
 
-            crd.cluster().active(true);
+            crd.cluster().state(ClusterState.ACTIVE);
             crd.cluster().baselineAutoAdjustEnabled(false);
 
             List<Integer> moving = movingKeysAfterJoin(crd, DEFAULT_CACHE_NAME, 10);

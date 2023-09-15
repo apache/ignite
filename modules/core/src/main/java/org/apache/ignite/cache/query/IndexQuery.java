@@ -50,6 +50,9 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** Index name. */
     private final @Nullable String idxName;
 
+    /** Limit */
+    private int limit;
+
     /** Index query criteria. */
     private @Nullable List<IndexQueryCriterion> criteria;
 
@@ -150,6 +153,29 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
      */
     public String getIndexName() {
         return idxName;
+    }
+
+    /**
+     * Gets limit to response records count.
+     *
+     * @return Limit value.
+     */
+    public int getLimit() {
+        return limit;
+    }
+
+    /**
+     * Sets limit to response records count.
+     *
+     * @param limit POsitive limit to set.
+     * @return {@code this} For chaining.
+     */
+    public IndexQuery<K, V> setLimit(int limit) {
+        A.ensure(limit > 0, "Limit must be positive.");
+
+        this.limit = limit;
+
+        return this;
     }
 
     /**

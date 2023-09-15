@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Table spool node.
  */
-public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
+public class TableSpoolNode<Row> extends MemoryTrackingNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** How many rows are requested by downstream. */
     private int requested;
 
@@ -136,6 +136,8 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
         waiting--;
 
         rows.add(row);
+
+        nodeMemoryTracker.onRowAdded(row);
 
         if (waiting == 0)
             source().request(waiting = IN_BUFFER_SIZE);

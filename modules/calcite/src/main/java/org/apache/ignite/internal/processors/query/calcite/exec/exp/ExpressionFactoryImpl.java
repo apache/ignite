@@ -51,6 +51,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCorrelVariable;
+import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
@@ -536,6 +537,12 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                     b.append(", fldIdx=").append(fieldAccess.getField().getIndex());
 
                     return super.visitFieldAccess(fieldAccess);
+                }
+
+                @Override public RexNode visitDynamicParam(RexDynamicParam dynamicParam) {
+                    b.append(", paramType=").append(dynamicParam.getType().getFullTypeString());
+
+                    return super.visitDynamicParam(dynamicParam);
                 }
             }.apply(node);
         }

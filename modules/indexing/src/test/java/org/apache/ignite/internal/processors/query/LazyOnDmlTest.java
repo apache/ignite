@@ -75,7 +75,7 @@ public class LazyOnDmlTest extends AbstractIndexingCommonTest {
 
         Object[] paramTemplate = new Object[2];
 
-        for (CacheAtomicityMode atomicityMode : CacheAtomicityMode.values()) {
+        for (CacheAtomicityMode atomicityMode : CacheAtomicityMode._values()) {
             paramTemplate = Arrays.copyOf(paramTemplate, paramTemplate.length);
 
             paramTemplate[0] = atomicityMode;
@@ -185,7 +185,7 @@ public class LazyOnDmlTest extends AbstractIndexingCommonTest {
     /**
      */
     public void checkUpdateNotLazy(String sql) throws Exception {
-        try (AutoCloseable checker = CheckLazyIndexing.checkLazy(atomicityMode == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)) {
+        try (AutoCloseable checker = CheckLazyIndexing.checkLazy(false)) {
             List<List<?>> res = sql(sql).getAll();
 
             // Check that all rows updates only ones.

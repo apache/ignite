@@ -177,8 +177,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         else
             cfg.setCacheConfiguration();
 
-        if (segPlc != null)
-            cfg.setSegmentationPolicy(segPlc);
+        cfg.setSegmentationPolicy(segPlc != null ? segPlc : SegmentationPolicy.STOP);
 
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 

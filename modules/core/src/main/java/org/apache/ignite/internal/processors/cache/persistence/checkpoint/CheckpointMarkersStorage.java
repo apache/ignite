@@ -202,7 +202,7 @@ public class CheckpointMarkersStorage {
 
                 snap = JdkMarshaller.DEFAULT.unmarshal(bytes, null);
             }
-            catch (IOException e) {
+            catch (IOException | IgniteCheckedException e) {
                 log.error("Failed to unmarshal earliest checkpoint map snapshot", e);
 
                 if (!IgniteUtils.delete(snapshotFile)) {

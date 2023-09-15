@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.NestedLoopJo
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortAggregateExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortedIndexSpoolExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.TableSpoolExecutionTest;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.TimeCalculationExecutionTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -53,6 +54,7 @@ import org.junit.runners.Suite;
     IntersectExecutionTest.class,
     RuntimeSortedIndexTest.class,
     LimitExecutionTest.class,
+    TimeCalculationExecutionTest.class,
 })
 public class ExecutionTestSuite {
 }

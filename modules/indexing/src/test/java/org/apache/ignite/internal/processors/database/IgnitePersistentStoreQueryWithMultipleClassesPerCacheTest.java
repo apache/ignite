@@ -24,6 +24,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -99,7 +100,7 @@ public class IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest extends G
     public void testSimple() throws Exception {
         IgniteEx ig0 = startGrid(0);
 
-        ig0.active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         ig0.cache(CACHE_NAME).put(0, new Person(0));
 

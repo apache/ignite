@@ -21,7 +21,11 @@ import java.util.List;
 
 /**
  * MXBean interface that provides access to ODBC\JDBC\Thin client connections.
+ *
+ * @see org.apache.ignite.internal.management.api.CommandMBean
+ * @deprecated Use managements API beans, instead.
  */
+@Deprecated
 @MXBeanDescription("MBean that provides information about client connections.")
 public interface ClientProcessorMXBean {
     /**

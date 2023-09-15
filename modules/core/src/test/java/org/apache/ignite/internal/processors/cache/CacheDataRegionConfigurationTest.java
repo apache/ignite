@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -320,7 +321,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         startGrid("srv1");
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         //srv0 and srv1 print warning into the log as the threshold for cache in default cache group is broken
         assertTrue(cacheGrpLsnr0.check());
@@ -393,7 +394,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         startGrid("srv2");
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx cl = startGrid("client01");
 
@@ -450,7 +451,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         startGrid("srv1");
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         ignite0.createCache(
             new CacheConfiguration<>(DEFAULT_CACHE_NAME)
@@ -511,7 +512,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         IgniteEx ignite0 = startGrid("srv0");
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         assertFalse(cacheGrpLsnr0.check());
 
@@ -700,7 +701,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         IgniteEx clientNode = startClientGrid(optimize(clientCfg));
 
-        srvNode.cluster().active(true);
+        srvNode.cluster().state(ClusterState.ACTIVE);
 
         assertThrows(log, () -> {
             clientNode.getOrCreateCache(

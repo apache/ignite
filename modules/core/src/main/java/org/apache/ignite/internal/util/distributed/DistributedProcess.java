@@ -96,9 +96,9 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         GridKernalContext ctx,
         DistributedProcessType type,
         Function<I, IgniteInternalFuture<R>> exec,
-        CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish
+        CI3<UUID, Map<UUID, R>, Map<UUID, Throwable>> finish
     ) {
-        this(ctx, type, exec, finish, (id, req) -> new InitMessage<>(id, type, req));
+        this(ctx, type, exec, finish, (id, req) -> new InitMessage<>(id, type, req, false));
     }
 
     /**
@@ -112,7 +112,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         GridKernalContext ctx,
         DistributedProcessType type,
         Function<I, IgniteInternalFuture<R>> exec,
-        CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish,
+        CI3<UUID, Map<UUID, R>, Map<UUID, Throwable>> finish,
         BiFunction<UUID, I, ? extends InitMessage<I>> initMsgFactory
     ) {
         this.ctx = ctx;
@@ -142,26 +142,37 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
             }
 
             p.crdId = crd.id();
+            p.waitClnRes = msg.waitClientResults();
 
             if (crd.isLocal())
                 initCoordinator(p, topVer);
 
-            IgniteInternalFuture<R> fut = exec.apply((I)msg.request());
+            try {
+                IgniteInternalFuture<R> fut = exec.apply((I)msg.request());
 
-            fut.listen(f -> {
-                if (f.error() != null)
-                    p.resFut.onDone(f.error());
-                else
-                    p.resFut.onDone(f.result());
+                fut.listen(() -> {
+                    if (fut.error() != null)
+                        p.resFut.onDone(fut.error());
+                    else
+                        p.resFut.onDone(fut.result());
 
-                if (!ctx.clientNode()) {
-                    assert crd != null;
+                    if (!ctx.clientNode() || p.waitClnRes) {
+                        assert crd != null;
 
+                        sendSingleMessage(p);
+                    }
+                });
+
+                p.initFut.onDone();
+            }
+            catch (Throwable err) {
+                U.error(log, "Failed to handle InitMessage [id=" + p.id + ']', err);
+
+                p.resFut.onDone(err);
+
+                if (!ctx.clientNode())
                     sendSingleMessage(p);
-                }
-            });
-
-            p.initFut.onDone();
+            }
         });
 
         ctx.discovery().setCustomEventListener(FullMessage.class, (topVer, snd, msg0) -> {
@@ -180,9 +191,15 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 return;
             }
 
-            finish.apply(p.id, msg.result(), msg.error());
-
-            processes.remove(msg.processId());
+            try {
+                finish.apply(p.id, msg.result(), msg.error());
+            }
+            catch (Throwable err) {
+                U.error(log, "Failed to handle FullMessage [id=" + p.id + ']', err);
+            }
+            finally {
+                processes.remove(msg.processId());
+            }
         });
 
         ctx.io().addMessageListener(GridTopic.TOPIC_DISTRIBUTED_PROCESS, (nodeId, msg0, plc) -> {
@@ -198,7 +215,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
             UUID leftNodeId = evt.eventNode().id();
 
             for (Process p : processes.values()) {
-                p.initFut.listen(fut -> {
+                p.initFut.listen(() -> {
                     if (F.eq(leftNodeId, p.crdId)) {
                         ClusterNode crd = coordinator();
 
@@ -213,8 +230,8 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                         if (crd.isLocal())
                             initCoordinator(p, discoCache.version());
 
-                        if (!ctx.clientNode())
-                            p.resFut.listen(f -> sendSingleMessage(p));
+                        if (!ctx.clientNode() || p.waitClnRes)
+                            p.resFut.listen(() -> sendSingleMessage(p));
                     }
                     else if (F.eq(ctx.localNodeId(), p.crdId)) {
                         boolean isEmpty = false;
@@ -260,7 +277,9 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
             assert p.remaining.isEmpty();
 
-            p.remaining.addAll(F.viewReadOnly(ctx.discovery().serverNodes(topVer), F.node2id()));
+            p.remaining.addAll(F.viewReadOnly(
+                p.waitClnRes ? ctx.discovery().nodes(topVer) : ctx.discovery().serverNodes(topVer),
+                F.node2id()));
 
             p.initCrdFut.onDone();
         }
@@ -274,8 +293,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
     private void sendSingleMessage(Process p) {
         assert p.resFut.isDone();
 
-        SingleNodeMessage<R> singleMsg = new SingleNodeMessage<>(p.id, type, p.resFut.result(),
-            (Exception)p.resFut.error());
+        SingleNodeMessage<R> singleMsg = new SingleNodeMessage<>(p.id, type, p.resFut.result(), p.resFut.error());
 
         UUID crdId = p.crdId;
 
@@ -310,7 +328,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
     private void onSingleNodeMessageReceived(SingleNodeMessage<R> msg, UUID nodeId) {
         Process p = processes.computeIfAbsent(msg.processId(), id -> new Process(msg.processId()));
 
-        p.initCrdFut.listen(f -> {
+        p.initCrdFut.listen(() -> {
             boolean isEmpty;
 
             synchronized (mux) {
@@ -333,7 +351,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
     private void finishProcess(Process p) {
         HashMap<UUID, R> res = new HashMap<>();
 
-        HashMap<UUID, Exception> err = new HashMap<>();
+        HashMap<UUID, Throwable> err = new HashMap<>();
 
         p.singleMsgs.forEach((uuid, msg) -> {
             if (msg.hasError())
@@ -378,6 +396,9 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
         /** Remaining nodes ids to received single nodes result. */
         private final Set<UUID> remaining = new GridConcurrentHashSet<>();
+
+        /** If {@code true} it waits client nodes results, otherwise only server nodes results are awaited. */
+        private volatile boolean waitClnRes;
 
         /** Future for a local action result. */
         private final GridFutureAdapter<R> resFut = new GridFutureAdapter<>();
@@ -455,8 +476,18 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         RESTORE_CACHE_GROUP_SNAPSHOT_START,
 
         /**
+         * Cache group restore cache stop phase.
+         */
+        RESTORE_CACHE_GROUP_SNAPSHOT_STOP,
+
+        /**
          * Cache group restore rollback phase.
          */
-        RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK
+        RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK,
+
+        /**
+         * Incremental snapshot restore start phase.
+         */
+        RESTORE_INCREMENTAL_SNAPSHOT_START
     }
 }

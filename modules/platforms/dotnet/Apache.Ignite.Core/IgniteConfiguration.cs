@@ -153,9 +153,6 @@ namespace Apache.Ignite.Core
         private TimeSpan? _networkTimeout;
 
         /** */
-        private bool? _isDaemon;
-
-        /** */
         private bool? _javaPeerClassLoadingEnabled;
 
         /** */
@@ -334,7 +331,6 @@ namespace Apache.Ignite.Core
             writer.WriteTimeSpanAsLongNullable(_networkTimeout);
             writer.WriteString(WorkDirectory);
             writer.WriteString(Localhost);
-            writer.WriteBooleanNullable(_isDaemon);
             writer.WriteTimeSpanAsLongNullable(_failureDetectionTimeout);
             writer.WriteTimeSpanAsLongNullable(_clientFailureDetectionTimeout);
             writer.WriteTimeSpanAsLongNullable(_longQueryWarningTimeout);
@@ -740,7 +736,6 @@ namespace Apache.Ignite.Core
             _networkTimeout = r.ReadTimeSpanNullable();
             WorkDirectory = r.ReadString();
             Localhost = r.ReadString();
-            _isDaemon = r.ReadBooleanNullable();
             _failureDetectionTimeout = r.ReadTimeSpanNullable();
             _clientFailureDetectionTimeout = r.ReadTimeSpanNullable();
             _longQueryWarningTimeout = r.ReadTimeSpanNullable();
@@ -1296,22 +1291,6 @@ namespace Apache.Ignite.Core
         /// It is strongly recommended to set this parameter for all production environments.
         /// </summary>
         public string Localhost { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether this node should be a daemon node.
-        /// <para />
-        /// Daemon nodes are the usual grid nodes that participate in topology but not visible on the main APIs,
-        /// i.e. they are not part of any cluster groups.
-        /// <para />
-        /// Daemon nodes are used primarily for management and monitoring functionality that is built on Ignite
-        /// and needs to participate in the topology, but also needs to be excluded from the "normal" topology,
-        /// so that it won't participate in the task execution or in-memory data grid storage.
-        /// </summary>
-        public bool IsDaemon
-        {
-            get { return _isDaemon ?? default(bool); }
-            set { _isDaemon = value; }
-        }
 
         /// <summary>
         /// Gets or sets the user attributes for this node.

@@ -138,4 +138,14 @@ public interface CdcConsumer {
      * This method can be invoked only after {@link #start(MetricRegistry)}.
      */
     public void stop();
+
+    /**
+     * Checks that consumer still alive.
+     * This method helps to determine {@link CdcConsumer} errors in case {@link CdcEvent} is rare or source cluster is down.
+     *
+     * @return {@code True} in case consumer alive, {@code false} otherwise.
+     */
+    public default boolean alive() {
+        return true;
+    }
 }

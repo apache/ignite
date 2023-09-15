@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -1508,20 +1507,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Cache metrics.
      */
     public CacheMetrics localMetrics();
-
-    /**
-     * Gets whole cluster metrics (statistics) for this cache.
-     *
-     * @return Cache metrics.
-     */
-    public CacheMetricsMXBean clusterMxBean();
-
-    /**
-     * Gets local metrics (statistics) for this cache.
-     *
-     * @return Cache metrics.
-     */
-    public CacheMetricsMXBean localMxBean();
 
     /**
      * Gets number of cache entries stored in off-heap memory.

@@ -88,7 +88,7 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
         clientCache.put(0, 0);
         TestTcpClientChannel opCh = affinityChannel(0, gridCache);
 
-        assertOpOnChannel(dfltCh, ClientOperation.CACHE_PARTITIONS);
+        assertOpOnChannel(null, ClientOperation.CACHE_PARTITIONS);
         assertOpOnChannel(opCh, ClientOperation.CACHE_PUT);
 
         for (int i = 1; i < KEY_CNT; i++)

@@ -136,24 +136,19 @@ public class IgniteLimit extends SingleRel implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double inputRowCount = mq.getRowCount(getInput());
-
-        double lim = fetch != null ? doubleFromRex(fetch, inputRowCount * FETCH_IS_PARAM_FACTOR) : inputRowCount;
-        double off = offset != null ? doubleFromRex(offset, inputRowCount * OFFSET_IS_PARAM_FACTOR) : 0;
-
-        double rows = Math.min(lim + off, inputRowCount);
+        double rows = estimateRowCount(mq);
 
         return planner.getCostFactory().makeCost(rows, rows * IgniteCost.ROW_PASS_THROUGH_COST, 0);
     }
 
     /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
-        double inputRowCount = mq.getRowCount(getInput());
+        double inputRowCnt = mq.getRowCount(getInput());
 
-        double lim = fetch != null ? doubleFromRex(fetch, inputRowCount * FETCH_IS_PARAM_FACTOR) : inputRowCount;
-        double off = offset != null ? doubleFromRex(offset, inputRowCount * OFFSET_IS_PARAM_FACTOR) : 0;
+        double lim = fetch != null ? doubleFromRex(fetch, inputRowCnt * FETCH_IS_PARAM_FACTOR) : inputRowCnt;
+        double off = offset != null ? doubleFromRex(offset, inputRowCnt * OFFSET_IS_PARAM_FACTOR) : 0;
 
-        return Math.min(lim, inputRowCount - off);
+        return Math.max(0, Math.min(lim, inputRowCnt - off));
     }
 
     /**

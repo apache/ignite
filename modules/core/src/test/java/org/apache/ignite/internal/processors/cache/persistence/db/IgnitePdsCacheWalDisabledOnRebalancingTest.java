@@ -37,6 +37,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -176,7 +177,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
     public void testClientJoinsLeavesDuringRebalancing() throws Exception {
         Ignite ig0 = startGrids(2);
 
-        ig0.active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         for (int i = 1; i < 4; i++)
             fillCache(ig0.dataStreamer("cache" + i), CACHE_SIZE, GENERATING_FUNC);

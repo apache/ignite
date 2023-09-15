@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -32,10 +31,6 @@ import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.node.VisorNodePingTask;
-import org.apache.ignite.internal.visor.node.VisorNodePingTaskArg;
-import org.apache.ignite.internal.visor.node.VisorNodePingTaskResult;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
@@ -99,15 +94,6 @@ public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTe
         // Task with GridInternal should pass.
         assertEquals(TASK_RESULT, ignite.compute().execute(GridInternalTestTask.class.getName(), null));
 
-        // Visor task should pass.
-        UUID nid = ignite.cluster().localNode().id();
-
-        VisorNodePingTaskResult ping = ignite.compute()
-            .execute(VisorNodePingTask.class.getName(),
-                new VisorTaskArgument<>(nid, new VisorNodePingTaskArg(nid), false));
-
-        assertTrue(ping.isAlive());
-
         // Custom task should fail, because special test load balancer SPI returns null as balanced node.
         try {
             ignite.compute().execute(CustomTestTask.class.getName(), null);
@@ -131,15 +117,6 @@ public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTe
 
         // Task with GridInternal should pass.
         assertEquals(TASK_RESULT, ignite.compute().execute(GridInternalTestTask.class.getName(), null));
-
-        // Visor task should pass.
-        UUID nid = ignite.cluster().localNode().id();
-
-        VisorNodePingTaskResult ping = ignite.compute()
-            .execute(VisorNodePingTask.class.getName(),
-                new VisorTaskArgument<>(nid, new VisorNodePingTaskArg(nid), false));
-
-        assertTrue(ping.isAlive());
 
         // Custom task should pass.
         assertEquals(TASK_RESULT, ignite.compute().execute(CustomTestTask.class.getName(), null));

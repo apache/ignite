@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -92,7 +93,7 @@ public class IgnitePdsCacheDestroyDuringCheckpointTest extends GridCommonAbstrac
     @Test
     public void testCacheCreatePutCheckpointDestroy() throws Exception {
         IgniteEx ig = startGrid(0);
-        ig.active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         for (int j = 0; j < NUM_ITERATIONS; j++) {
             Ignite client = startClientGrid(1);

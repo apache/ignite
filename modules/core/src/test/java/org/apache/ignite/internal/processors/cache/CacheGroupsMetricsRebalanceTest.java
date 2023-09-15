@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -52,10 +51,6 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTask;
-import org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskArg;
-import org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskResult;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -456,23 +451,11 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         latch.await();
 
-        VisorNodeDataCollectorTaskArg taskArg = new VisorNodeDataCollectorTaskArg();
-        taskArg.setCacheGroups(Collections.emptySet());
-
-        VisorTaskArgument<VisorNodeDataCollectorTaskArg> arg = new VisorTaskArgument<>(
-            Collections.singletonList(ignite.cluster().localNode().id()),
-            taskArg,
-            false
-        );
-
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                VisorNodeDataCollectorTaskResult res = ignite.compute().execute(VisorNodeDataCollectorTask.class, arg);
-
                 CacheMetrics snapshot = ig.cache(CACHE1).metrics();
 
                 return snapshot.getRebalancedKeys() > snapshot.getEstimatedRebalancingKeys()
-                    && Double.compare(res.getRebalance().get(ignite.cluster().localNode().id()), 1.0) == 0
                     && snapshot.getRebalancingPartitionsCount() == 0;
             }
         }, 5000);

@@ -228,7 +228,8 @@ bool IsNonExisting(const ignite::IgniteError& err)
     std::string msg(err.GetText());
 
     if (msg.find("error:02001002") == std::string::npos &&
-        msg.find("error:2006D080") == std::string::npos)
+        msg.find("error:2006D080") == std::string::npos &&
+        msg.find("error:80000002") == std::string::npos)
         return false;
 
     if (msg.find("No such file or directory") == std::string::npos &&

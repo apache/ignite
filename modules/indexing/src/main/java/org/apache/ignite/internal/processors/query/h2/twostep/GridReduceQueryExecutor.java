@@ -55,6 +55,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -97,6 +98,7 @@ import org.h2.util.IntArray;
 import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
@@ -162,6 +164,9 @@ public class GridReduceQueryExecutor {
 
     /** Partition mapper. */
     private ReducePartitionMapper mapper;
+
+    /** Exactly one segment for limited scope of queries. */
+    private static final BitSet ONE_SEG = BitSet.valueOf(new byte[]{1});
 
     /**
      * @param ctx Context.
@@ -415,15 +420,13 @@ public class GridReduceQueryExecutor {
 
             final Collection<ClusterNode> nodes = mapping.nodes();
 
-            final Map<ClusterNode, Integer> nodeToSegmentsCnt = createNodeToSegmentsCountMapping(qry, mapping);
+            final Map<ClusterNode, BitSet> nodeToSegmentsCnt = createNodeToSegmentsCountMapping(qry, mapping);
 
             assert !F.isEmpty(nodes);
 
             H2PooledConnection conn = h2.connections().connection(schemaName);
 
             final long qryReqId = qryReqIdGen.incrementAndGet();
-
-            h2.runningQueryManager().trackRequestId(qryReqId);
 
             boolean release = true;
 
@@ -531,6 +534,16 @@ public class GridReduceQueryExecutor {
                         ReduceH2QueryInfo qryInfo = new ReduceH2QueryInfo(stmt, qry.originalSql(),
                             ctx.localNodeId(), qryId, qryReqId);
 
+                        if (ctx.performanceStatistics().enabled()) {
+                            ctx.performanceStatistics().queryProperty(
+                                GridCacheQueryType.SQL_FIELDS,
+                                qryInfo.nodeId(),
+                                qryInfo.queryId(),
+                                "Reduce phase plan",
+                                qryInfo.plan()
+                            );
+                        }
+
                         ResultSet res = h2.executeSqlQueryWithTimer(stmt,
                             conn,
                             rdc.query(),
@@ -606,14 +619,14 @@ public class GridReduceQueryExecutor {
      * @param mapping Nodes to partition mapping.
      * @return Mapping of node to segments.
      */
-    private Map<ClusterNode, Integer> createNodeToSegmentsCountMapping(GridCacheTwoStepQuery qry, ReducePartitionMapResult mapping) {
-        Map<ClusterNode, Integer> res = new HashMap<>();
+    private Map<ClusterNode, BitSet> createNodeToSegmentsCountMapping(GridCacheTwoStepQuery qry, ReducePartitionMapResult mapping) {
+        Map<ClusterNode, BitSet> res = new HashMap<>();
 
         Collection<ClusterNode> nodes = mapping.nodes();
 
         if (qry.explain() || qry.isReplicatedOnly()) {
             for (ClusterNode node : nodes) {
-                Integer prev = res.put(node, 1);
+                BitSet prev = res.put(node, ONE_SEG);
 
                 assert prev == null;
             }
@@ -633,12 +646,15 @@ public class GridReduceQueryExecutor {
                 for (int i = 0; i < parts.size(); i++)
                     bs.set(InlineIndexImpl.calculateSegment(segments, parts.get(i)));
 
-                Integer prev = res.put(node, bs.cardinality());
+                BitSet prev = res.put(node, bs);
 
                 assert prev == null;
             }
-            else
-                res.put(node, segments);
+            else {
+                BitSet whole = new BitSet(segments);
+                whole.set(0, segments, true);
+                res.put(node, whole);
+            }
         }
 
         return res;
@@ -754,7 +770,7 @@ public class GridReduceQueryExecutor {
         List<GridCacheSqlQuery> mapQueries,
         Collection<ClusterNode> nodes,
         int pageSize,
-        Map<ClusterNode, Integer> nodeToSegmentsCnt,
+        Map<ClusterNode, BitSet> nodeToSegmentsCnt,
         boolean skipMergeTbl,
         boolean explain,
         Boolean dataPageScanEnabled) {
@@ -795,7 +811,7 @@ public class GridReduceQueryExecutor {
 
                 replicatedQrysCnt++;
 
-                reducer.setSources(singletonMap(node, 1)); // Replicated tables can have only 1 segment.
+                reducer.setSources(singletonMap(node, ONE_SEG));
             }
             else
                 reducer.setSources(nodeToSegmentsCnt);
@@ -805,7 +821,7 @@ public class GridReduceQueryExecutor {
             r.reducers().add(reducer);
         }
 
-        int cnt = nodeToSegmentsCnt.values().stream().mapToInt(i -> i).sum();
+        int cnt = nodeToSegmentsCnt.values().stream().mapToInt(BitSet::cardinality).sum();
 
         r.init( (r.reducers().size() - replicatedQrysCnt) * cnt + replicatedQrysCnt);
 
@@ -929,8 +945,6 @@ public class GridReduceQueryExecutor {
         }
 
         final long reqId = qryReqIdGen.incrementAndGet();
-
-        h2.runningQueryManager().trackRequestId(reqId);
 
         final DmlDistributedUpdateRun r = new DmlDistributedUpdateRun(nodes.size());
 

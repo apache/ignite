@@ -101,13 +101,6 @@ namespace ignite
                 SP_ClusterGroupImpl ForClients();
 
                 /**
-                 *  Get a cluster group consisting from the daemon nodes
-                 *
-                 * @return Pointer to cluster group over nodes started in daemon mode.
-                 */
-                SP_ClusterGroupImpl ForDaemons();
-
-                /**
                  * Get cluster group for all data nodes that have the cache with the specified name running.
                  *
                  * @param cacheName Cache name.

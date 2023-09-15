@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -111,7 +112,7 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
             startGrid(i);
         }
 
-        ignite(0).active(true);
+        ignite(0).cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache1 = ignite(2).cache("c1");
 

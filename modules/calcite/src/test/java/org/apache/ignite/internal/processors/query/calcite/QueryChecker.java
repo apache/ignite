@@ -279,6 +279,9 @@ public abstract class QueryChecker {
     private List<List<?>> expectedResult;
 
     /** */
+    private int expectedResultSize = -1;
+
+    /** */
     private List<String> expectedColumnNames;
 
     /** */
@@ -320,6 +323,13 @@ public abstract class QueryChecker {
     }
 
     /** */
+    public QueryChecker resultSize(int size) {
+        expectedResultSize = size;
+
+        return this;
+    }
+
+    /** */
     public static Matcher<String> containsUnion(boolean all) {
         return CoreMatchers.containsString("IgniteUnionAll(all=[" + all + "])");
     }
@@ -351,7 +361,7 @@ public abstract class QueryChecker {
         QueryEngine engine = getEngine();
 
         List<FieldsQueryCursor<List<?>>> explainCursors =
-            engine.query(null, "PUBLIC", "EXPLAIN PLAN FOR " + qry);
+            engine.query(null, "PUBLIC", "EXPLAIN PLAN FOR " + qry, params);
 
         FieldsQueryCursor<List<?>> explainCursor = explainCursors.get(0);
         List<List<?>> explainRes = explainCursor.getAll();
@@ -379,6 +389,9 @@ public abstract class QueryChecker {
         }
 
         List<List<?>> res = cur.getAll();
+
+        if (expectedResultSize >= 0)
+            assertEquals("Unexpected result size", expectedResultSize, res.size());
 
         if (expectedResult != null) {
             if (!ordered) {

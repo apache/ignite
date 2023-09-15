@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -456,6 +457,76 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
             "WHEN MATCHED THEN UPDATE SET b = test1.b + 1 " +
             "WHEN NOT MATCHED THEN INSERT (a, b) VALUES (0, b)", IgniteSQLException.class,
             "Failed to MERGE some keys due to keys conflict");
+    }
+
+    /**
+     * Ensure that DML operations fails with proper errors on non-existent table
+     */
+    @Test
+    public void testFailureOnNonExistentTable() {
+        assertThrows("INSERT INTO NON_EXISTENT_TABLE(ID, NAME) VALUES (1, 'Name')",
+            IgniteSQLException.class,
+            "Object 'NON_EXISTENT_TABLE' not found");
+
+        assertThrows("UPDATE NON_EXISTENT_TABLE SET NAME ='NAME' WHERE ID = 1",
+            IgniteSQLException.class,
+            "Object 'NON_EXISTENT_TABLE' not found");
+
+        assertThrows("DELETE FROM NON_EXISTENT_TABLE WHERE ID = 1",
+            IgniteSQLException.class,
+            "Object 'NON_EXISTENT_TABLE' not found");
+
+        executeSql("CREATE TABLE PERSON(ID INT, PRIMARY KEY(id), NAME VARCHAR)");
+
+        assertThrows("" +
+                "MERGE INTO PERSON DST USING NON_EXISTENT_TABLE SRC ON DST.ID = SRC.ID" +
+                "    WHEN MATCHED THEN UPDATE SET NAME = SRC.NAME" +
+                "    WHEN NOT MATCHED THEN INSERT (ID, NAME) VALUES (SRC.ID, SRC.NAME)",
+            IgniteSQLException.class,
+            "Object 'NON_EXISTENT_TABLE' not found");
+
+        assertThrows("" +
+                "MERGE INTO NON_EXISTENT_TABLE DST USING PERSON SRC ON DST.ID = SRC.ID" +
+                "    WHEN MATCHED THEN UPDATE SET NAME = SRC.NAME" +
+                "    WHEN NOT MATCHED THEN INSERT (ID, NAME) VALUES (SRC.ID, SRC.NAME)",
+            IgniteSQLException.class,
+            "Object 'NON_EXISTENT_TABLE' not found");
+    }
+
+    /** */
+    @Test
+    public void testInsertMultipleDefaults() {
+        Stream.of(true, false).forEach(withPk -> {
+            try {
+                sql("CREATE TABLE integers(i INTEGER " + (withPk ? "PRIMARY KEY" : "") +
+                        " , col1 INTEGER DEFAULT 200, col2 INTEGER DEFAULT 300)");
+
+                sql("INSERT INTO integers (i) VALUES (0)");
+                sql("INSERT INTO integers VALUES (1, DEFAULT, DEFAULT)");
+                sql("INSERT INTO integers(i, col2) VALUES (2, DEFAULT), (3, 4), (4, DEFAULT)");
+                sql("INSERT INTO integers VALUES (5, DEFAULT, DEFAULT)");
+                sql("INSERT INTO integers VALUES (6, 4, DEFAULT)");
+                sql("INSERT INTO integers VALUES (7, 5, 5)");
+                sql("INSERT INTO integers(col1, i) VALUES (DEFAULT, 8)");
+                sql("INSERT INTO integers(i, col1) VALUES (9, DEFAULT)");
+
+                assertQuery("SELECT i, col1, col2 FROM integers ORDER BY i")
+                        .returns(0, 200, 300)
+                        .returns(1, 200, 300)
+                        .returns(2, 200, 300)
+                        .returns(3, 200, 4)
+                        .returns(4, 200, 300)
+                        .returns(5, 200, 300)
+                        .returns(6, 4, 300)
+                        .returns(7, 5, 5)
+                        .returns(8, 200, 300)
+                        .returns(9, 200, 300)
+                        .check();
+            }
+            finally {
+                sql("DROP TABLE IF EXISTS integers");
+            }
+        });
     }
 
     /** */

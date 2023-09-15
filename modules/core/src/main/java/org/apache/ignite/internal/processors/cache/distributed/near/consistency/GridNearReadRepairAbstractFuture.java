@@ -249,10 +249,10 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         if (REMAP_CALLS_UPD.compareAndSet(this, 0, 1)) {
             GridNearReadRepairAbstractFuture fut = remapFuture(topVer);
 
-            fut.listen(f -> {
+            fut.listen(() -> {
                 assert !isDone();
 
-                onDone(f.result(), f.error());
+                onDone(fut.result(), fut.error());
             });
         }
     }

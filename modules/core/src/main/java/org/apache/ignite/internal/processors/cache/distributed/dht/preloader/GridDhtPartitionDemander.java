@@ -398,7 +398,7 @@ public class GridDhtPartitionDemander {
             final RebalanceFuture fut = new RebalanceFuture(grp, lastExchangeFut, assignments, log, rebalanceId, next, lastCancelledTime);
 
             if (oldFut.isInitial())
-                fut.listen(f -> oldFut.onDone(f.result()));
+                fut.listen(() -> oldFut.onDone(fut.result()));
 
             if (forcedRebFut != null)
                 forcedRebFut.add(fut);
@@ -558,7 +558,7 @@ public class GridDhtPartitionDemander {
 
                 U.error(log, "Rebalancing routine has failed, some partitions could be unavailable for reading" +
                     " [" + demandRoutineInfo(nodeId, supplyMsg) +
-                    ", unavailablePartitions=" + S.compact(unstableParts) + ']', msgExc);
+                    ", unavailablePartitions=" + S.toStringSortedDistinct(unstableParts) + ']', msgExc);
 
                 fut.error(nodeId);
 
@@ -567,26 +567,15 @@ public class GridDhtPartitionDemander {
 
             fut.receivedBytes.addAndGet(supplyMsg.messageSize());
 
-            if (grp.sharedGroup()) {
-                for (GridCacheContext cctx : grp.caches()) {
-                    if (cctx.statisticsEnabled()) {
-                        long keysCnt = supplyMsg.keysForCache(cctx.cacheId());
-
-                        if (keysCnt != -1)
-                            cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(keysCnt);
-
-                        // Can not be calculated per cache.
-                        cctx.cache().metrics0().onRebalanceBatchReceived(supplyMsg.messageSize());
-                    }
-                }
-            }
-            else {
-                GridCacheContext cctx = grp.singleCacheContext();
-
+            for (GridCacheContext cctx : grp.caches()) {
                 if (cctx.statisticsEnabled()) {
-                    if (supplyMsg.estimatedKeysCount() != -1)
-                        cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(supplyMsg.estimatedKeysCount());
+                    long keysCnt = grp.sharedGroup() ? supplyMsg.keysForCache(cctx.cacheId()) :
+                        supplyMsg.estimatedKeysCount();
 
+                    if (keysCnt != -1)
+                        cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(keysCnt);
+
+                    // Can not be calculated per cache.
                     cctx.cache().metrics0().onRebalanceBatchReceived(supplyMsg.messageSize());
                 }
             }
@@ -1431,8 +1420,8 @@ public class GridDhtPartitionDemander {
                     log.info("Starting rebalance routine [" + grp.cacheOrGroupName() +
                         ", topVer=" + topVer +
                         ", supplier=" + supplierNode.id() +
-                        ", fullPartitions=" + S.compact(parts.fullSet()) +
-                        ", histPartitions=" + S.compact(parts.historicalSet()) +
+                        ", fullPartitions=" + S.toStringSortedDistinct(parts.fullSet()) +
+                        ", histPartitions=" + S.toStringSortedDistinct(parts.historicalSet()) +
                         ", rebalanceId=" + rebalanceId + ']');
 
                 ctx.io().sendOrderedMessage(supplierNode, msg.topic(),

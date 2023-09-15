@@ -34,9 +34,10 @@ public class PlatformRunnable extends PlatformAbstractFunc implements IgniteRunn
      *
      * @param func Platform func.
      * @param ptr Handle for local execution.
+     * @param name Platform function name.
      */
-    public PlatformRunnable(Object func, long ptr) {
-        super(func, ptr);
+    public PlatformRunnable(Object func, long ptr, String name) {
+        super(func, ptr, name);
     }
 
     /** <inheritdoc /> */

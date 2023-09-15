@@ -1264,14 +1264,17 @@ public class PlatformCallbackGateway {
      * Notifies about cache stop.
      *
      * @param cacheId Cache id.
+     * @param cancel Cancel flag.
+     * @param destroy Cache destroy flag.
      */
-    public void onCacheStopped(int cacheId) {
+    public void onCacheStopped(int cacheId, boolean cancel, boolean destroy) {
         // Ignore cache stop during grid stop.
         if (!tryEnter())
             return;
 
         try {
-            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.OnCacheStopped, cacheId);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr, PlatformCallbackOp.OnCacheStopped,
+                cacheId, cancel ? 1L : 0L, destroy ? 1L : 0L, null);
         }
         finally {
             leave();

@@ -23,7 +23,11 @@ import org.apache.ignite.spi.metric.HistogramMetric;
 
 /**
  * Metrics MXBean interface.
+ *
+ * @see org.apache.ignite.internal.management.api.CommandMBean
+ * @deprecated Use managements API beans, instead.
  */
+@Deprecated
 @MXBeanDescription("MBean that provides access to Ignite metrics management methods.")
 public interface MetricsMxBean {
     /**

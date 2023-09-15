@@ -61,6 +61,7 @@ import org.apache.calcite.sql.validate.SqlValidatorNamespace;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorTable;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
+import org.apache.calcite.util.Static;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
@@ -153,6 +154,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     private void validateTableModify(SqlNode table) {
         final SqlValidatorTable targetTable = getCatalogReader().getTable(((SqlIdentifier)table).names);
 
+        if (targetTable == null)
+            throw newValidationError(table, Static.RESOURCE.objectNotFound(table.toString()));
+
         if (!targetTable.unwrap(IgniteTable.class).isModifiable())
             throw newValidationError(table, IgniteResource.INSTANCE.modifyTableNotSupported(table.toString()));
     }
@@ -168,6 +172,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         final SqlNodeList selectList = new SqlNodeList(SqlParserPos.ZERO);
         final SqlIdentifier targetTable = (SqlIdentifier)call.getTargetTable();
         final SqlValidatorTable table = getCatalogReader().getTable(targetTable.names);
+
+        if (table == null)
+            throw newValidationError(call, Static.RESOURCE.objectNotFound(targetTable.toString()));
 
         SqlIdentifier alias = call.getAlias() != null ? call.getAlias() :
             new SqlIdentifier(deriveAlias(targetTable, 0), SqlParserPos.ZERO);
@@ -494,14 +501,14 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** {@inheritDoc} */
     @Override protected void inferUnknownTypes(RelDataType inferredType, SqlValidatorScope scope, SqlNode node) {
         if (node instanceof SqlDynamicParam && inferredType.equals(unknownType)) {
-            // Infer type of dynamic parameters of unknown type as OTHER.
-            // Parameter will be converted from Object class to required class in runtime.
-            // Such an approach helps to bypass some cases where parameter types can never be inferred (for example,
-            // in expression "CASE WHEN ... THEN ? ELSE ? END"), but also has new issues: if SQL function's method
-            // has overloads, it's not possible to find correct unique method to call, so random method will be choosen.
-            // For such functions operand type inference should be implemented to find the correct method
-            // (see https://issues.apache.org/jira/browse/CALCITE-4347).
-            setValidatedNodeType(node, typeFactory().createCustomType(Object.class));
+            if (parameters.length > ((SqlDynamicParam)node).getIndex()) {
+                Object param = parameters[((SqlDynamicParam)node).getIndex()];
+
+                setValidatedNodeType(node, (param == null) ? typeFactory().createSqlType(SqlTypeName.NULL) :
+                    typeFactory().toSql(typeFactory().createType(param.getClass())));
+            }
+            else
+                setValidatedNodeType(node, typeFactory().createCustomType(Object.class));
         }
         else if (node instanceof SqlCall) {
             final SqlValidatorScope newScope = scopes.get(node);

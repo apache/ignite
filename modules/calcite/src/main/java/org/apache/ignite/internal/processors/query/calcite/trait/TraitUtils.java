@@ -145,6 +145,10 @@ public class TraitUtils {
         if (fromTrait.satisfies(toTrait))
             return rel;
 
+        // Cannot enforce node to correlated distribution, this distribution is only set by trait propagation.
+        if (toTrait.function().correlated())
+            return null;
+
         // right now we cannot create a multi-column affinity
         // key object, thus this conversion is impossible
         if (toTrait.function().affinity() && toTrait.getKeys().size() > 1)

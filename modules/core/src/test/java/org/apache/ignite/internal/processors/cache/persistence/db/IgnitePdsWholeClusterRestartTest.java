@@ -26,6 +26,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -98,7 +99,7 @@ public class IgnitePdsWholeClusterRestartTest extends GridCommonAbstractTest {
     public void testRestarts() throws Exception {
         startGrids(GRID_CNT);
 
-        ignite(0).active(true);
+        ignite(0).cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -123,7 +124,7 @@ public class IgnitePdsWholeClusterRestartTest extends GridCommonAbstractTest {
                 startGrid(idx);
 
             try {
-                ignite(0).active(true);
+                ignite(0).cluster().state(ClusterState.ACTIVE);
 
                 for (int g = 0; g < GRID_CNT; g++) {
                     Ignite ig = ignite(g);

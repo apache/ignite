@@ -1024,19 +1024,16 @@ class ClientImpl extends TcpDiscoveryImpl {
         Map<Integer, CacheMetrics> cacheMetrics,
         long tsNanos
     ) {
-        boolean isLocDaemon = spi.locNode.isDaemon();
-
         assert nodeId != null;
         assert metrics != null;
-        assert isLocDaemon || cacheMetrics != null;
+        assert cacheMetrics != null;
 
         TcpDiscoveryNode node = nodeId.equals(getLocalNodeId()) ? locNode : rmtNodes.get(nodeId);
 
         if (node != null && node.visible()) {
             node.setMetrics(metrics);
 
-            if (!isLocDaemon)
-                node.setCacheMetrics(cacheMetrics);
+            node.setCacheMetrics(cacheMetrics);
 
             node.lastUpdateTimeNanos(tsNanos);
 
@@ -2647,19 +2644,16 @@ class ClientImpl extends TcpDiscoveryImpl {
             Map<Integer, CacheMetrics> cacheMetrics,
             long tsNanos
         ) {
-            boolean isLocDaemon = spi.locNode.isDaemon();
-
             assert nodeId != null;
             assert metrics != null;
-            assert isLocDaemon || cacheMetrics != null;
+            assert cacheMetrics != null;
 
             TcpDiscoveryNode node = nodeId.equals(getLocalNodeId()) ? locNode : rmtNodes.get(nodeId);
 
             if (node != null && node.visible()) {
                 node.setMetrics(metrics);
 
-                if (!isLocDaemon)
-                    node.setCacheMetrics(cacheMetrics);
+                node.setCacheMetrics(cacheMetrics);
 
                 node.lastUpdateTimeNanos(tsNanos);
 

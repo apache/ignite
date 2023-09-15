@@ -66,7 +66,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
 import static org.apache.ignite.internal.IgniteKernal.DFLT_LOG_CLASSPATH_CONTENT_ON_STARTUP;
@@ -96,7 +95,6 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
         ackAsciiLogo(log, cfg, rtBean);
         ackConfigUrl(log);
         ackConfiguration(log, cfg);
-        ackDaemon(log, cfg);
         ackOsInfo(log);
         ackLanguageRuntime(log, cfg);
         ackRemoteManagement(log, cfg);
@@ -144,7 +142,6 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
 
         ackSecurity(log, ignite);
         ackPerformanceSuggestions(log, igEx);
-        ackVisorConsole(log);
         ackClassPathContent(log);
         ackNodeInfo(log, igEx);
     }
@@ -220,14 +217,6 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
     void ackConfiguration(IgniteLogger log, IgniteConfiguration cfg) {
         if (log.isInfoEnabled())
             log.info(cfg.toString());
-    }
-
-    /**
-     * Acks daemon mode status.
-     */
-    void ackDaemon(IgniteLogger log, IgniteConfiguration cfg) {
-        if (log.isInfoEnabled())
-            log.info("Daemon mode: " + onOff(cfg.isDaemon() || IgniteSystemProperties.getBoolean(IGNITE_DAEMON)));
     }
 
     /**
@@ -531,13 +520,6 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
 
         ctx.performance().add("Disable assertions (remove '-ea' from JVM options)", !U.assertionsEnabled());
         ctx.performance().logSuggestions(log, ignite.name());
-    }
-
-    /**
-     * Print info about visor commandline console.
-     */
-    void ackVisorConsole(IgniteLogger log) {
-        U.quietAndInfo(log, "To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}");
     }
 
     /**

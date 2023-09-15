@@ -270,11 +270,6 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forDaemons() {
-        return cluster.forDaemons();
-    }
-
-    /** {@inheritDoc} */
     @Override public ClusterGroup forRandom() {
         return cluster.forRandom();
     }

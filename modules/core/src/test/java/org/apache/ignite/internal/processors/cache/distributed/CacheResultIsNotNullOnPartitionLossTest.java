@@ -32,6 +32,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
@@ -93,7 +94,7 @@ public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractT
         for (Integer i : list)
             startGrid(i);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
         grid(0).cluster().baselineAutoAdjustEnabled(false);
 
         client = startClientGrid(CLIENT_IDX);

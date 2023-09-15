@@ -338,6 +338,11 @@ public class CacheContinuousQueryEventBuffer {
         return res;
     }
 
+    /** */
+    int backupQueueSize() {
+        return backupQ.size();
+    }
+
     /**
      *
      */
@@ -404,10 +409,11 @@ public class CacheContinuousQueryEventBuffer {
                     if (e.isFiltered())
                         filtered++;
                     else {
-                        flushEntry = new CacheContinuousQueryEntry(e.cacheId(),
+                        flushEntry = new CacheContinuousQueryEntry(
+                            e.cacheId(),
                             e.eventType(),
                             e.key(),
-                            e.value(),
+                            e.newValue(),
                             e.oldValue(),
                             e.isKeepBinary(),
                             e.partition(),

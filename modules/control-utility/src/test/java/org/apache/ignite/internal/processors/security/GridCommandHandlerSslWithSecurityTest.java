@@ -28,16 +28,15 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.NoopConsole;
-import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.util.GridCommandHandlerFactoryAbstractTest;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
@@ -46,7 +45,7 @@ import static org.apache.ignite.testframework.GridTestUtils.sslTrustedFactory;
 /**
  * Command line handler test with SSL and security.
  */
-public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTest {
+public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFactoryAbstractTest {
     /** Login. */
     private final String login = "testUsr";
 
@@ -72,6 +71,13 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        Assume.assumeTrue(commandHandler.equalsIgnoreCase(CLI_CMD_HND));
+
+        super.beforeTest();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
@@ -89,18 +95,10 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
         System.setOut(new PrintStream(testOut));
     }
 
-    /**
-     * Flushes all Logger handlers to make log data available to test.
-     * @param hnd Command handler.
-     */
-    private void flushCommandOutput(CommandHandler hnd) {
-        U.<IgniteLoggerEx>field(hnd, "logger").flush();
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setPluginProviders(new TestSecurityPluginProvider(login, pwd, ALLOW_ALL, null, false))
+            .setPluginProviders(new TestSecurityPluginProvider(login, pwd, ALL_PERMISSIONS, null, false))
             .setSslContextFactory(sslTrustedFactory("node01", "trustone"))
             .setConnectorConfiguration(
                 new ConnectorConfiguration()
@@ -122,12 +120,12 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
 
         crd.cluster().state(ACTIVE);
 
-        CommandHandler cmd = new CommandHandler();
+        TestCommandHandler cmd = newCommandHandler();
 
         AtomicInteger keyStorePwdCnt = new AtomicInteger();
         AtomicInteger trustStorePwdCnt = new AtomicInteger();
 
-        cmd.console = new NoopConsole() {
+        ((CommandHandler)GridTestUtils.getFieldValue(cmd, "hnd")).console = new NoopConsole() {
             /** {@inheritDoc} */
             @Override public char[] readPassword(String fmt, Object... args) {
                 if (fmt.contains("keystore")) {
@@ -147,7 +145,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
 
         List<String> args = new ArrayList<>();
 
-        args.add(DEACTIVATE.text());
+        args.add("--deactivate");
         args.add("--force");
         args.add("--yes");
 
@@ -176,7 +174,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
 
         injectTestSystemOut();
 
-        CommandHandler hnd = new CommandHandler();
+        TestCommandHandler hnd = newCommandHandler();
 
         int exitCode = hnd.execute(Arrays.asList(
             "--state",
@@ -189,7 +187,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
 
         assertEquals(EXIT_CODE_OK, exitCode);
 
-        flushCommandOutput(hnd);
+        hnd.flushLogger();
 
         // Make sure all sensitive information is masked.
         String testOutput = testOut.toString();

@@ -32,11 +32,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -219,24 +217,6 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
     public void testPessimisticSerializable() throws Exception {
         checkDoubleGet(PESSIMISTIC, SERIALIZABLE, false);
         checkDoubleGet(PESSIMISTIC, SERIALIZABLE, true);
-    }
-
-    /** @throws Exception If failed. */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
-    @Test
-    public void testMvccPessimisticRepeatableReadNoPut() throws Exception {
-        atomicityMode = TRANSACTIONAL_SNAPSHOT;
-
-        checkDoubleGet(PESSIMISTIC, REPEATABLE_READ, false);
-    }
-
-    /** @throws Exception If failed. */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
-    @Test
-    public void testMvccPessimisticRepeatableReadWithPut() throws Exception {
-        atomicityMode = TRANSACTIONAL_SNAPSHOT;
-
-        checkDoubleGet(PESSIMISTIC, REPEATABLE_READ, true);
     }
 
     /**

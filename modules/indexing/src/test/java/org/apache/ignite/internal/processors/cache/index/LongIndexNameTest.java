@@ -27,6 +27,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -105,8 +106,8 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
      *
      */
     @NotNull private IgniteCache insertSomeData(Ignite ignite) {
-        if (!ignite.active())
-            ignite.active(true);
+        if (!ignite.cluster().state().active())
+            ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<String, Person> cache = ignite.cache("cache");
 

@@ -30,6 +30,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -93,7 +94,7 @@ public class StaticCacheDdlTest extends GridCommonAbstractTest {
         int size = 10;
 
         try (Ignite ignite = startGrid(0)) {
-            ignite.cluster().active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             insertData(ignite, PERSISTENT_CACHE_NAME, size);
             insertData(ignite, MEMORY_CACHE_NAME, size);
@@ -129,7 +130,7 @@ public class StaticCacheDdlTest extends GridCommonAbstractTest {
         int size = 10;
 
         try (Ignite ignite = startGrid(0)) {
-            ignite.cluster().active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             insertData(ignite, PERSISTENT_CACHE_NAME, size);
             insertData(ignite, MEMORY_CACHE_NAME, size);
@@ -162,7 +163,7 @@ public class StaticCacheDdlTest extends GridCommonAbstractTest {
         int size = 10;
 
         try (Ignite ignite = startGrid(0)) {
-            ignite.cluster().active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             insertData(ignite, PERSISTENT_CACHE_NAME, size);
             insertData(ignite, MEMORY_CACHE_NAME, size);

@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.EXPIRE_TIME_CALCULATE;
@@ -62,10 +63,13 @@ public class ClientCachePutAllConflictRequest extends ClientCacheDataRequest imp
             KeyCacheObject key = readCacheObject(reader, true);
             CacheObject val = readCacheObject(reader, false);
             GridCacheVersion ver = (GridCacheVersion)reader.readObjectDetached();
+            long expireTime = reader.readLong();
 
-            GridCacheDrInfo info = expPlc ?
-                new GridCacheDrExpirationInfo(val, ver, TTL_NOT_CHANGED, EXPIRE_TIME_CALCULATE) :
-                new GridCacheDrInfo(val, ver);
+            GridCacheDrInfo info = expireTime != CU.EXPIRE_TIME_ETERNAL ?
+                new GridCacheDrExpirationInfo(val, ver, CU.TTL_ETERNAL, expireTime) :
+                (expPlc
+                    ? new GridCacheDrExpirationInfo(val, ver, TTL_NOT_CHANGED, EXPIRE_TIME_CALCULATE)
+                    : new GridCacheDrInfo(val, ver));
 
             map.put(key, info);
         }

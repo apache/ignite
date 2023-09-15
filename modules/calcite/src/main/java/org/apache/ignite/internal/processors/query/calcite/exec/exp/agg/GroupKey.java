@@ -36,13 +36,8 @@ public class GroupKey {
     }
 
     /** */
-    public Object field(int idx) {
-        return fields[idx];
-    }
-
-    /** */
-    public int fieldsCount() {
-        return fields.length;
+    public Object[] fields() {
+        return fields;
     }
 
     /** {@inheritDoc} */
