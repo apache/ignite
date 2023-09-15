@@ -15,26 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.snapshot;
-
-import java.io.File;
-import org.apache.ignite.dump.Dump;
-import org.apache.ignite.dump.DumpConsumer;
+package org.apache.ignite.internal.commandline.dump;
 
 /**
- * Dump Reader application.
- * The application runs independently of Ignite node process and provides the ability to the {@link DumpConsumer} to consume
- * all data stored in cache dump ({@link Dump})
+ *
  */
-public class DumpReaderMain implements Runnable {
-    /** Dump consumer. */
-    private final DumpConsumer cnsmr;
+public class PrintDumpConsumer {
 
-    /** Dump directory. */
-    private final File dumpDirectory;
+    /** */
+    public enum OutputFormat {
+        /** */
+        JSON,
 
-    /** {@inheritDoc} */
-    @Override public void run() {
-        System.out.println("DumpReaderMain.run");
+        /** */
+        CSV,
+
+        /** */
+        XML
     }
 }

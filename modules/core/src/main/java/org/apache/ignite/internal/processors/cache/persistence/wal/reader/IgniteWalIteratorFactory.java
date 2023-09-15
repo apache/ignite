@@ -690,9 +690,9 @@ public class IgniteWalIteratorFactory {
     /**
      *
      */
-    private static class ConsoleLogger implements IgniteLogger {
+    public static class ConsoleLogger implements IgniteLogger {
         /** */
-        private static final ConsoleLogger INSTANCE = new ConsoleLogger();
+        public static final ConsoleLogger INSTANCE = new ConsoleLogger();
 
         /** */
         private static final PrintStream OUT = System.out;
