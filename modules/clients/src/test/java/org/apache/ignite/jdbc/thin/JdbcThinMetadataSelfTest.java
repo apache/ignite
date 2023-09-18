@@ -1160,11 +1160,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.PAGES_TIMESTAMP_HISTOGRAM.PAGES_COUNT.null"
                 ));
 
-            for (String col : expectedCols) {
-                if (!actualSystemCols.contains(col))
-                    System.out.println("col = " + col);
-            }
-
             Assert.assertEquals(expectedCols, actualSystemCols);
         }
     }
