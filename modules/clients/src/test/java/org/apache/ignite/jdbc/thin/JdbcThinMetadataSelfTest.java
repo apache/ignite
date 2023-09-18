@@ -419,6 +419,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             new TreeSet<>(Arrays.asList(
                 "SYS.METRICS",
                 "SYS.SERVICES",
+                "SYS.SNAPSHOT",
                 "SYS.CACHE_GROUPS",
                 "SYS.CACHES",
                 "SYS.TASKS",
@@ -896,6 +897,13 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.SERVICES.STATICALLY_CONFIGURED.null",
                 "SYS.SERVICES.SERVICE_ID.null",
                 "SYS.SERVICES.TOPOLOGY_SNAPSHOT.null",
+                "SYS.SNAPSHOT.BASELINE_NODES.null",
+                "SYS.SNAPSHOT.CACHE_GROUPS.null",
+                "SYS.SNAPSHOT.CONSISTENT_ID.null",
+                "SYS.SNAPSHOT.INCREMENT_INDEX.null",
+                "SYS.SNAPSHOT.NAME.null",
+                "SYS.SNAPSHOT.SNAPSHOT_RECORD_SEGMENT.null",
+                "SYS.SNAPSHOT.TYPE.null",
                 "SYS.TASKS.AFFINITY_CACHE_NAME.null",
                 "SYS.TASKS.INTERNAL.null",
                 "SYS.TASKS.END_TIME.null",
@@ -1151,6 +1159,11 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.PAGES_TIMESTAMP_HISTOGRAM.INTERVAL_END.null",
                 "SYS.PAGES_TIMESTAMP_HISTOGRAM.PAGES_COUNT.null"
                 ));
+
+            for (String col : expectedCols) {
+                if (!actualSystemCols.contains(col))
+                    System.out.println("col = " + col);
+            }
 
             Assert.assertEquals(expectedCols, actualSystemCols);
         }

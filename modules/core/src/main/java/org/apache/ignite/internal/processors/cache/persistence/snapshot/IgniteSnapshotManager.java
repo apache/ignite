@@ -1206,7 +1206,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 req.meta(meta);
 
-                File smf = new File(snpDir, snapshotMetaFileName(pdsSettings.folderName()));
+                File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
 
                 storeSnapshotMeta(req.meta(), smf);
 
@@ -2809,9 +2809,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** @param snpLocDir Snapshot local directory. */
     public void writeSnapshotDirectoryToMetastorage(File snpLocDir) {
-        if (currentCreateRequest().dump())
-            return;
-
         cctx.database().checkpointReadLock();
 
         try {
