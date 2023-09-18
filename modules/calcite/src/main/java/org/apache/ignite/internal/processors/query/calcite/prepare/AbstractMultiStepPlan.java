@@ -17,21 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.function.Function;
-import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
-import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationMappingException;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -46,9 +37,6 @@ public abstract class AbstractMultiStepPlan extends AbstractQueryPlan implements
 
     /** */
     protected final QueryTemplate queryTemplate;
-
-    /** */
-    protected ExecutionPlan executionPlan;
 
     /** */
     private final String textPlan;
@@ -70,11 +58,6 @@ public abstract class AbstractMultiStepPlan extends AbstractQueryPlan implements
     }
 
     /** {@inheritDoc} */
-    @Override public List<Fragment> fragments() {
-        return Objects.requireNonNull(executionPlan).fragments();
-    }
-
-    /** {@inheritDoc} */
     @Override public FieldsMetadata fieldsMetadata() {
         return fieldsMetadata;
     }
@@ -85,63 +68,29 @@ public abstract class AbstractMultiStepPlan extends AbstractQueryPlan implements
     }
 
     /** {@inheritDoc} */
-    @Override public FragmentMapping mapping(Fragment fragment) {
-        return fragment.mapping();
-    }
+    @Override public ExecutionPlan init(MappingService mappingService, MappingQueryContext ctx) {
+        ExecutionPlan executionPlan0 = queryTemplate.map(mappingService, ctx);
 
-    /** {@inheritDoc} */
-    @Override public ColocationGroup target(Fragment fragment) {
-        if (fragment.rootFragment())
-            return null;
+        if (!F.isEmpty(ctx.partitions()) && !F.isEmpty(executionPlan0.fragments())) {
+            List<Fragment> fragments = executionPlan0.fragments();
 
-        IgniteSender sender = (IgniteSender)fragment.root();
-        return mapping(sender.targetFragmentId()).findGroup(sender.exchangeId());
-    }
+            fragments = Commons.transform(fragments, f -> {
+                try {
+                    return f.filterByPartitions(ctx.partitions());
+                }
+                catch (ColocationMappingException e) {
+                    throw new FragmentMappingException("Failed to calculate physical distribution", f, f.root(), e);
+                }
+            });
 
-    /** {@inheritDoc} */
-    @Override public Map<Long, List<UUID>> remotes(Fragment fragment) {
-        List<IgniteReceiver> remotes = fragment.remotes();
+            return new ExecutionPlan(executionPlan0.topologyVersion(), fragments);
+        }
 
-        if (F.isEmpty(remotes))
-            return null;
-
-        HashMap<Long, List<UUID>> res = U.newHashMap(remotes.size());
-
-        for (IgniteReceiver remote : remotes)
-            res.put(remote.exchangeId(), mapping(remote.sourceFragmentId()).nodeIds());
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void init(MappingService mappingService, MappingQueryContext ctx) {
-        executionPlan = queryTemplate.map(mappingService, ctx);
-    }
-
-    /** */
-    private FragmentMapping mapping(long fragmentId) {
-        return Objects.requireNonNull(executionPlan).fragments().stream()
-            .filter(f -> f.fragmentId() == fragmentId)
-            .findAny().orElseThrow(() -> new IllegalStateException("Cannot find fragment with given ID. [" +
-                "fragmentId=" + fragmentId + ", " +
-                "fragments=" + fragments() + "]"))
-            .mapping();
+        return executionPlan0;
     }
 
     /** {@inheritDoc} */
     @Override public String textPlan() {
         return textPlan;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void transformFragments(@NotNull Function<Fragment, Fragment> clo) {
-        if (executionPlan != null) {
-            List<Fragment> fragments = executionPlan.fragments();
-
-            if (F.isEmpty(fragments))
-                return;
-
-            executionPlan = new ExecutionPlan(executionPlan.topologyVersion(), Commons.transform(fragments, clo));
-        }
     }
 }

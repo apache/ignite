@@ -17,14 +17,23 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import com.google.common.collect.ImmutableList;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
  */
-class ExecutionPlan {
+public class ExecutionPlan {
     /** */
     private final AffinityTopologyVersion ver;
 
@@ -45,5 +54,44 @@ class ExecutionPlan {
     /** */
     public List<Fragment> fragments() {
         return fragments;
+    }
+
+    /** */
+    public FragmentMapping mapping(Fragment fragment) {
+        return fragment.mapping();
+    }
+
+    /** */
+    public ColocationGroup target(Fragment fragment) {
+        if (fragment.rootFragment())
+            return null;
+
+        IgniteSender sender = (IgniteSender)fragment.root();
+        return mapping(sender.targetFragmentId()).findGroup(sender.exchangeId());
+    }
+
+    /** */
+    public Map<Long, List<UUID>> remotes(Fragment fragment) {
+        List<IgniteReceiver> remotes = fragment.remotes();
+
+        if (F.isEmpty(remotes))
+            return null;
+
+        HashMap<Long, List<UUID>> res = U.newHashMap(remotes.size());
+
+        for (IgniteReceiver remote : remotes)
+            res.put(remote.exchangeId(), mapping(remote.sourceFragmentId()).nodeIds());
+
+        return res;
+    }
+
+    /** */
+    private FragmentMapping mapping(long fragmentId) {
+        return fragments().stream()
+                .filter(f -> f.fragmentId() == fragmentId)
+                .findAny().orElseThrow(() -> new IllegalStateException("Cannot find fragment with given ID. [" +
+                        "fragmentId=" + fragmentId + ", " +
+                        "fragments=" + fragments() + "]"))
+                .mapping();
     }
 }
