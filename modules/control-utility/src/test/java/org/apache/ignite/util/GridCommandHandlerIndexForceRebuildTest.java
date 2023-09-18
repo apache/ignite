@@ -23,9 +23,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -40,6 +42,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFuture
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -220,7 +223,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
         LogListener lsnr2 = installRebuildCheckListener(grid(LAST_NODE_NUM), CACHE_NAME_NO_GRP);
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "indexes_force_rebuild",
-            "--node-id", grid(LAST_NODE_NUM).localNode().id().toString() + ',' + grid(0).localNode().id().toString(),
+            "--node-ids", grid(LAST_NODE_NUM).localNode().id().toString() + ',' + grid(0).localNode().id().toString(),
             "--cache-names", CACHE_NAME_NO_GRP));
 
         assertTrue(waitForIndexesRebuild(grid(0)));
@@ -231,6 +234,51 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
         removeLogListener(grid(0), lsnr1);
         removeLogListener(grid(LAST_NODE_NUM), lsnr2);
+    }
+
+    /**
+     * Checks invalid params.
+     */
+    @Test
+    public void testInvalidParams(){
+        injectTestSystemOut();
+
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--cache", "indexes_force_rebuild",
+                "--node-ids", grid(LAST_NODE_NUM).localNode().id().toString() + ',' + grid(0).localNode().id().toString(),
+                "--node-id", grid(LAST_NODE_NUM).localNode().id().toString(),
+                "--cache-names", CACHE_NAME_NO_GRP),
+            "Only one of [--node-ids, --node-id] allowed");
+
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--cache", "indexes_force_rebuild",
+                "--node-id", grid(LAST_NODE_NUM).localNode().id().toString(),
+                "--cache-names", CACHE_NAME_NO_GRP, "--group-names", CACHE_NAME_NO_GRP),
+            "Only one of [--group-names, --cache-names] allowed");
+    }
+
+    /**
+     * Checks index rebuild is launched on a random node when no node is is passed.
+     */
+    @Test
+    public void testNoNodeIdsSet() throws IgniteInterruptedCheckedException {
+        injectTestSystemOut();
+
+        List<LogListener> lsnrs = G.allGrids().stream().map(grid -> installRebuildCheckListener((IgniteEx)grid, CACHE_NAME_NO_GRP))
+            .collect(Collectors.toList());
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "indexes_force_rebuild", "--cache-names", CACHE_NAME_NO_GRP));
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        for (Ignite ig : G.allGrids()) {
+            waitForIndexesRebuild((IgniteEx)ig);
+
+            latch.countDown();
+        }
+
+        assertTrue(lsnrs.stream().filter(LogListener::check).count() == 1);
+
+        for (int i = 0; i < lsnrs.size(); ++i)
+            removeLogListener(grid(i), lsnrs.get(i));
     }
 
     /**

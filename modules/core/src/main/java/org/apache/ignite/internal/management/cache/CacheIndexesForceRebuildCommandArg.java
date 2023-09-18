@@ -28,13 +28,27 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @ArgumentGroup(value = {"cacheNames", "groupNames"}, onlyOneOf = true, optional = false)
+@ArgumentGroup(value = {"nodeId", "nodeIds"}, onlyOneOf = true, optional = true)
 public class CacheIndexesForceRebuildCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
 
     /** */
-    @Argument(description = "Specify node for indexes rebuild", example = "nodeId")
+    @Argument(
+        optional = true,
+        description = "ID of the node to run index rebuild on (deprecated. Use --node-ids instead). " +
+            "If not set, random node will be chosen"
+    )
     private UUID nodeId;
+
+    /** */
+    @Argument(
+        optional = true,
+        description = "Comma-separated list of nodes IDs to run index rebuild on. " +
+            "If not set, random node will be chosen",
+        example = "nodeId1,nodeId2,.."
+    )
+    private UUID[] nodeIds;
 
     /** */
     @Argument(description = "Comma-separated list of cache names for which indexes should be rebuilt",
@@ -51,6 +65,7 @@ public class CacheIndexesForceRebuildCommandArg extends IgniteDataTransferObject
         U.writeUuid(out, nodeId);
         U.writeArray(out, cacheNames);
         U.writeArray(out, groupNames);
+        U.writeArray(out, nodeIds);
     }
 
     /** {@inheritDoc} */
@@ -58,6 +73,7 @@ public class CacheIndexesForceRebuildCommandArg extends IgniteDataTransferObject
         nodeId = U.readUuid(in);
         cacheNames = U.readArray(in, String.class);
         groupNames = U.readArray(in, String.class);
+        nodeIds = U.readArray(in, UUID.class);
     }
 
     /** */
@@ -68,6 +84,16 @@ public class CacheIndexesForceRebuildCommandArg extends IgniteDataTransferObject
     /** */
     public void nodeId(UUID nodeId) {
         this.nodeId = nodeId;
+    }
+
+    /** */
+    public UUID[] nodeIds() {
+        return nodeIds;
+    }
+
+    /** */
+    public void nodeIds(UUID[] nodeIds) {
+        this.nodeIds = nodeIds;
     }
 
     /** */

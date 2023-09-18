@@ -24,22 +24,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Defines commands arguments restriction.
- * Group of {@link #value()} fields must be presented in Arguments.
- * If values from {@link #value()} not conform restrictions then error will be thrown.
- *
- * @see org.apache.ignite.internal.management.SystemViewCommandArg
+ * {@link Repeatable} container for the {@link ArgumentGroup}.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-@Repeatable(ArgumentGroups.class)
-public @interface ArgumentGroup {
-    /** @return Names of argument class fields to forms "group" restriction. */
-    public String[] value();
-
-    /** @return {@code True} if arguments is optional, {@code false} if required. */
-    public boolean optional();
-
-    /** @return {@code True} if only one of argument from group allowed. */
-    public boolean onlyOneOf() default false;
+@Target({ElementType.TYPE})
+public @interface ArgumentGroups {
+    /** Array of {@link ArgumentGroup} annotations. */
+    ArgumentGroup[] value();
 }

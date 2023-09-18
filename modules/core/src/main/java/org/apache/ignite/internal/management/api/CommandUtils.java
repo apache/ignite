@@ -39,6 +39,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -369,21 +370,28 @@ public class CommandUtils {
         List<Field> positionalParams = new ArrayList<>();
         List<Field> namedParams = new ArrayList<>();
 
-        ArgumentGroup argGrp = argCls.getAnnotation(ArgumentGroup.class);
+        ArgumentGroups argGroups = argCls.getAnnotation(ArgumentGroups.class);
 
-        Set<String> grpNames = argGrp != null
-            ? new HashSet<>(Arrays.asList(argGrp.value()))
-            : Collections.emptySet();
+        List<Set<String>> grpNames = argumentGroupsNames(argGroups);
 
-        List<Field> grpFlds = new ArrayList<>();
+        List<List<Field>> grpFlds = new ArrayList<>(grpNames.size());
+
+        if (!grpNames.isEmpty())
+            grpNames.forEach(gf -> grpFlds.add(grpFlds.size(), null));
 
         // Iterates classes from the roots.
         for (int i = classes.size() - 1; i >= 0; i--) {
             Field[] flds = classes.get(i).getDeclaredFields();
 
             for (Field fld : flds) {
-                if (grpNames.contains(fld.getName()))
-                    grpFlds.add(fld);
+                int argGrpIdx = argumentGroupIdx(grpNames, fld.getName());
+
+                if (argGrpIdx >= 0) {
+                    if (grpFlds.get(argGrpIdx) == null)
+                        grpFlds.set(argGrpIdx, new ArrayList<>());
+
+                    grpFlds.get(argGrpIdx).add(fld);
+                }
                 else if (fld.isAnnotationPresent(Positional.class))
                     positionalParams.add(fld);
                 else if (fld.isAnnotationPresent(Argument.class))
@@ -395,8 +403,27 @@ public class CommandUtils {
 
         namedParams.forEach(namedParamVisitor);
 
-        if (argGrp != null)
-            argumentGroupVisitor.accept(argGrp, grpFlds);
+        assert F.isEmpty(grpFlds) || argGroups != null;
+
+        for (int i = 0; i < grpFlds.size(); ++i)
+            argumentGroupVisitor.accept(argGroups.value()[i], grpFlds.get(i));
+    }
+
+    /** */
+    public static int argumentGroupIdx(List<? extends Set<String>> grpNames, String name) {
+        for (int i = 0; i < grpNames.size(); ++i) {
+            if (grpNames.get(i).contains(name))
+                return i;
+        }
+
+        return -1;
+    }
+
+    /** */
+    public static List<Set<String>> argumentGroupsNames(@Nullable ArgumentGroups argGrp) {
+        return argGrp == null
+            ? Collections.emptyList()
+            : Stream.of(argGrp.value()).map(grp -> new HashSet<>(Arrays.asList(grp.value()))).collect(Collectors.toList());
     }
 
     /**
@@ -676,8 +703,14 @@ public class CommandUtils {
                 })
             );
 
-            if (arg.argGrp != null && (!arg.grpOptional() && !arg.grpFldExists))
-                throw new IllegalArgumentException("One of " + toFormattedNames(argCls, arg.grpdFlds) + " required");
+            if (arg.argGrps != null) {
+                for (int grpIdx = 0; grpIdx < arg.argGrps.size(); ++grpIdx) {
+                    if (!arg.argGrps.get(grpIdx).optional() && !arg.grpFldExists[grpIdx]) {
+                        throw new IllegalArgumentException("One of " + toFormattedNames(argCls, arg.grpdFlds.get(grpIdx))
+                            + " required");
+                    }
+                }
+            }
 
             return arg.res;
         }
@@ -723,32 +756,33 @@ public class CommandUtils {
     /** */
     private static class ArgumentState<A extends IgniteDataTransferObject> implements BiConsumer<Field, Object> {
         /** */
-        final A res;
+        private final A res;
 
         /** */
-        final ArgumentGroup argGrp;
+        private final List<ArgumentGroup> argGrps;
 
         /** */
-        boolean grpFldExists;
+        private final @Nullable boolean[] grpFldExists;
 
         /** */
-        int idx;
+        private int idx;
 
         /** */
-        final Set<String> grpdFlds;
+        private final List<Set<String>> grpdFlds;
 
         /** */
         public ArgumentState(Class<A> argCls) throws InstantiationException, IllegalAccessException {
             res = argCls.newInstance();
-            argGrp = argCls.getAnnotation(ArgumentGroup.class);
-            grpdFlds = argGrp == null
-                ? Collections.emptySet()
-                : new HashSet<>(Arrays.asList(argGrp.value()));
-        }
 
-        /** */
-        public boolean grpOptional() {
-            return argGrp == null || argGrp.optional();
+            ArgumentGroups agrps = argCls.getAnnotation(ArgumentGroups.class);
+
+            argGrps = agrps == null ? Collections.emptyList() : Arrays.asList(agrps.value());
+
+            grpdFlds = argGrps == null
+                ? Collections.emptyList()
+                : argGrps.stream().map(grp -> new HashSet<>(Arrays.asList(grp.value()))).collect(Collectors.toList());
+
+            grpFldExists = argGrps == null ? null : new boolean[argGrps.size()];
         }
 
         /** */
@@ -762,10 +796,12 @@ public class CommandUtils {
 
         /** {@inheritDoc} */
         @Override public void accept(Field fld, Object val) {
-            boolean grpdFld = grpdFlds.contains(fld.getName());
+            int argGrpIdx = grpIdx(fld.getName());
+
+            ArgumentGroup argGrp = fldGrp(argGrpIdx);
 
             if (val == null) {
-                if (grpdFld || fld.getAnnotation(Argument.class).optional())
+                if (argGrp != null || fld.getAnnotation(Argument.class).optional())
                     return;
 
                 String name = fld.isAnnotationPresent(Positional.class)
@@ -778,14 +814,16 @@ public class CommandUtils {
             if (Objects.equals(val, get(fld)))
                 return;
 
-            if (grpdFld) {
-                if (grpFldExists && (argGrp != null && argGrp.onlyOneOf())) {
+            if (argGrp != null) {
+                assert grpFldExists != null;
+
+                if (grpFldExists[argGrpIdx] && argGrp.onlyOneOf()) {
                     throw new IllegalArgumentException(
-                        "Only one of " + toFormattedNames(res.getClass(), grpdFlds) + " allowed"
+                        "Only one of " + toFormattedNames(res.getClass(), grpdFlds.get(argGrpIdx)) + " allowed"
                     );
                 }
 
-                grpFldExists = true;
+                grpFldExists[argGrpIdx] = true;
             }
 
             set(fld, val);
@@ -821,6 +859,28 @@ public class CommandUtils {
 
                 throw new IgniteException(e);
             }
+        }
+
+        /** */
+        ArgumentGroup fldGrp(String fldName) {
+            return fldGrp(grpIdx(fldName));
+        }
+
+        /** */
+        private ArgumentGroup fldGrp(int argGrpIdx) {
+            assert argGrpIdx < 0 || argGrps != null;
+
+            return argGrpIdx < 0 ? null : argGrps.get(argGrpIdx);
+        }
+
+        /** */
+        private int grpIdx(String fldName) {
+            for (int i = 0; i < grpdFlds.size(); ++i) {
+                if (grpdFlds.get(i).contains(fldName))
+                    return i;
+            }
+
+            return -1;
         }
     }
 
