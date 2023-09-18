@@ -88,10 +88,9 @@ public class ExecutionPlan {
     /** */
     private FragmentMapping mapping(long fragmentId) {
         return fragments().stream()
-                .filter(f -> f.fragmentId() == fragmentId)
-                .findAny().orElseThrow(() -> new IllegalStateException("Cannot find fragment with given ID. [" +
-                        "fragmentId=" + fragmentId + ", " +
-                        "fragments=" + fragments() + "]"))
-                .mapping();
+            .filter(f -> f.fragmentId() == fragmentId)
+            .findAny().orElseThrow(() -> new IllegalStateException("Cannot find fragment with given ID. [" +
+                "fragmentId=" + fragmentId + ", " + "fragments=" + fragments() + "]"))
+            .mapping();
     }
 }

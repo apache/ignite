@@ -60,7 +60,7 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
     public static List<Object[]> parameters() {
         return Stream.of(true, false)
                 .flatMap(isLocal -> Stream.of(1, 2, 5, 10, 20)
-                .map(i -> new Object[]{isLocal, i}))
+                    .map(i -> new Object[]{isLocal, i}))
                 .collect(Collectors.toList());
     }
 
@@ -70,7 +70,7 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
 
         List<Integer> parts0 = IntStream.range(0, 1024).boxed().collect(Collectors.toList());
         Collections.shuffle(parts0);
-        parts = Ints.toArray(parts0.subList(0, 20));
+        parts = Ints.toArray(parts0.subList(0, partSz));
 
         log.info("Running tests with parts=" + Arrays.toString(parts));
     }
