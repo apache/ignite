@@ -61,6 +61,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_RUNNING_DIR_KEY;
 import static org.apache.ignite.platform.model.AccessLevel.SUPER;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -253,6 +254,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         for (SnapshotMetadata meta : metadata) {
             assertEquals(name, meta.snapshotName());
             assertTrue(meta.dump());
+            assertFalse(meta.cacheGroupIds().contains(CU.cacheId(UTILITY_CACHE_NAME)));
         }
 
         List<String> nodesDirs = dump.nodesDirectories();

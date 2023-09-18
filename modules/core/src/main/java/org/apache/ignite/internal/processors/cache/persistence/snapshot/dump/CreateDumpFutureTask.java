@@ -302,8 +302,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
     /** */
     private void clearDumpListener(CacheGroupContext gctx) {
-        if (gctx == null)
-            System.out.println("CreateDumpFutureTask.clearDumpListener");
         for (GridCacheContext<?, ?> cctx : gctx.caches())
             cctx.dumpListener(null);
     }
