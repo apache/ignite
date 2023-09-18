@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -647,27 +648,10 @@ public class CdcMain implements Runnable {
             if (files == null)
                 return;
 
-            Iterator<TypeMapping> changedMappings = Arrays.stream(files)
-                .map(f -> {
-                    String fileName = f.getName();
-
-                    int typeId = BinaryUtils.mappedTypeId(fileName);
-                    byte platformId = BinaryUtils.mappedFilePlatformId(fileName);
-
-                    T2<Integer, Byte> state = new T2<>(typeId, platformId);
-
-                    if (mappingsState.contains(state))
-                        return null;
-
-                    mappingsState.add(state);
-
-                    return (TypeMapping)new TypeMappingImpl(
-                        typeId,
-                        BinaryUtils.readMapping(f),
-                        platformId == 0 ? PlatformType.JAVA : PlatformType.DOTNET);
-                })
-                .filter(Objects::nonNull)
-                .iterator();
+            Iterator<TypeMapping> changedMappings = typeMappingIterator(
+                files,
+                tm -> mappingsState.add(new T2<>(tm.typeId(), (byte)tm.platformType().ordinal()))
+            );
 
             if (!changedMappings.hasNext())
                 return;
@@ -866,5 +850,27 @@ public class CdcMain implements Runnable {
     /** */
     public static String cdcInstanceName(String igniteInstanceName) {
         return "cdc-" + igniteInstanceName;
+    }
+
+    /**
+     * @param files Mapping files.
+     * @return Type mapping iterator.
+     */
+    public static Iterator<TypeMapping> typeMappingIterator(File[] files, Predicate<TypeMapping> filter) {
+        return Arrays.stream(files)
+            .map(f -> {
+                String fileName = f.getName();
+
+                int typeId = BinaryUtils.mappedTypeId(fileName);
+                byte platformId = BinaryUtils.mappedFilePlatformId(fileName);
+
+                return (TypeMapping)new TypeMappingImpl(
+                    typeId,
+                    BinaryUtils.readMapping(f),
+                    platformId == 0 ? PlatformType.JAVA : PlatformType.DOTNET);
+            })
+            .filter(filter)
+            .filter(Objects::nonNull)
+            .iterator();
     }
 }

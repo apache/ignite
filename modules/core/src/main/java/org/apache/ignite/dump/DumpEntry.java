@@ -19,6 +19,8 @@ package org.apache.ignite.dump;
 
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpedPartitionIterator;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**

@@ -17,11 +17,16 @@
 
 package org.apache.ignite.dump;
 
+import java.util.Iterator;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cdc.TypeMapping;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Consumer of {@link Dump}.
- * This consumer will receive all {@link DumpEntry} stored in cache dump during {@link DumpMain} application invocation.
+ * This consumer will receive all {@link DumpEntry} stored in cache dump during {@code IgniteDumpReader} application invocation.
  * The lifecycle of the consumer is the following:
  * <ul>
  *     <li>Start of the consumer {@link #start()}.</li>
@@ -35,6 +40,30 @@ public interface DumpConsumer {
      * Starts the consumer.
      */
     public void start();
+
+    /**
+     * Handles type mappings.
+     * @param mappings Mappings iterator.
+     */
+    void onMappings(Iterator<TypeMapping> mappings);
+
+    /**
+     * Handles binary types.
+     * @param types Binary types iterator.
+     */
+    void onTypes(Iterator<BinaryType> types);
+
+    /**
+     * Handles cache configs.
+     * @param caches Stored cache data.
+     */
+    void onCacheConfigs(Iterator<StoredCacheData> caches);
+
+    /**
+     * Handles cache data.
+     * @param data Cache data iterator.
+     */
+    void onData(Iterator<DumpEntry> data);
 
     /**
      * Stops the consumer.

@@ -19,17 +19,26 @@ package org.apache.ignite.internal.commandline.dump;
 
 import java.io.File;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.dump.Dump;
 import org.apache.ignite.dump.DumpConsumer;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpImpl;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpedPartitionIterator;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.ConsoleLogger;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
@@ -79,6 +88,12 @@ public class IgniteDumpReader implements Runnable {
     /** */
     public static final String CONSUMER = "--consumer";
 
+    /** */
+    public static final String THREADS = "--threads";
+
+    /** */
+    public static final int DFLT_THREADS_CNT = 1;
+
     /** Configuration. */
     private final DumpReaderConfiguration cfg;
 
@@ -103,8 +118,53 @@ public class IgniteDumpReader implements Runnable {
             GridKernalContext kctx = startStandaloneKernal(cfg.dir());
 
             Dump dump = new DumpImpl(kctx, cfg.dir());
+            DumpConsumer cnsmr = cfg.consumer();
+
+            cnsmr.start();
+
+            try {
+                File[] files = new File(cfg.dir(), DFLT_MARSHALLER_PATH).listFiles(BinaryUtils::notTmpFile);
+
+                if (files != null)
+                    cnsmr.onMappings(CdcMain.typeMappingIterator(files, tm -> true));
+
+                cnsmr.onTypes(kctx.cacheObjects().metadata().iterator());
+
+                Map<Integer, List<String>> grpToNodes = new HashMap<>();
+
+                for (SnapshotMetadata meta : dump.metadata()) {
+                    for (Integer grp : meta.cacheGroupIds())
+                        grpToNodes.computeIfAbsent(grp, key -> new ArrayList<>()).add(meta.folderName());
+                }
+
+                cnsmr.onCacheConfigs(grpToNodes.entrySet().stream()
+                    .flatMap(e -> dump.configs(e.getValue().get(0), e.getKey()).stream())
+                    .iterator());
+
+                ExecutorService execSvc = Executors.newFixedThreadPool(cfg.thCnt());
+
+                for (Map.Entry<Integer, List<String>> e : grpToNodes.entrySet()) {
+                    int grp = e.getKey();
+
+                    for (String node : e.getValue()) {
+                        for (int part : dump.partitions(node, grp)) {
+                            execSvc.submit(() -> {
+                                try (DumpedPartitionIterator iter = dump.iterator(node, grp, part)) {
+                                    cnsmr.onData(iter);
+                                }
+                                catch (Exception ex) {
+                                    throw new IgniteException(ex);
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+            finally {
+                cnsmr.stop();
+            }
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             throw new IgniteException(e);
         }
     }
@@ -146,7 +206,8 @@ public class IgniteDumpReader implements Runnable {
                 String.class
             ),
             optionalArg(USE_DATA_STREAMER, "Enables usage of data streamer to load dump data to cluster", boolean.class),
-            optionalArg(CONSUMER, "Class name of custom DumpConsumer. See javadoc for more details", String.class)
+            optionalArg(CONSUMER, "Class name of custom DumpConsumer. See javadoc for more details", String.class),
+            optionalArg(THREADS, "Count of threads to process data", Integer.class, () -> DFLT_THREADS_CNT)
         ));
 
         if (args.length == 0) {
@@ -201,7 +262,7 @@ public class IgniteDumpReader implements Runnable {
 
         }
 
-        return new DumpReaderConfiguration(dir, cnsmr);
+        return new DumpReaderConfiguration(dir, cnsmr, p.get(THREADS));
     }
 
     /** */
@@ -233,9 +294,13 @@ public class IgniteDumpReader implements Runnable {
         final DumpConsumer cnsmr;
 
         /** */
-        public DumpReaderConfiguration(File dir, DumpConsumer cnsmr) {
+        final int thCnt;
+
+        /** */
+        public DumpReaderConfiguration(File dir, DumpConsumer cnsmr, int thCnt) {
             this.dir = dir;
             this.cnsmr = cnsmr;
+            this.thCnt = thCnt;
         }
 
         /** */
@@ -246,6 +311,11 @@ public class IgniteDumpReader implements Runnable {
         /** */
         public DumpConsumer consumer() {
             return cnsmr;
+        }
+
+        /** */
+        public int thCnt() {
+            return thCnt;
         }
     }
 }

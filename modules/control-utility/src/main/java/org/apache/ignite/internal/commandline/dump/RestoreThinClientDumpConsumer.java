@@ -17,14 +17,19 @@
 
 package org.apache.ignite.internal.commandline.dump;
 
+import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.dump.DumpConsumer;
+import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -32,14 +37,17 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class RestoreThinClientDumpConsumer implements DumpConsumer {
     /** */
-    private final IgniteClient cli;
+    private final ClientConfiguration cfg;
+
+    /** */
+    private IgniteClient cli;
 
     /** Reader logger. */
     private final IgniteLogger log;
 
     /** */
     public RestoreThinClientDumpConsumer(ClientConfiguration cfg) {
-        cli = TcpIgniteClient.start(cfg);
+        this.cfg = cfg;
 
         try {
             IgniteConfiguration fakeCfg = new IgniteConfiguration();
@@ -55,11 +63,32 @@ public class RestoreThinClientDumpConsumer implements DumpConsumer {
 
     /** {@inheritDoc} */
     @Override public void start() {
+        cli = TcpIgniteClient.start(cfg);
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onMappings(Iterator<TypeMapping> mappings) {
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onTypes(Iterator<BinaryType> types) {
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onData(Iterator<DumpEntry> data) {
 
     }
 
     /** {@inheritDoc} */
     @Override public void stop() {
-
+        cli.close();
     }
 }

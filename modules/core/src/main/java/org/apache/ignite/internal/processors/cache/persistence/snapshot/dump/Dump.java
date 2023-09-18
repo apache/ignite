@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.dump;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.io.File;
 import java.io.IOException;
