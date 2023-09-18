@@ -206,8 +206,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     private void map() {
         // TODO Get rid of force keys request https://issues.apache.org/jira/browse/IGNITE-10251.
         if (cctx.group().preloader().needForceKeys()) {
-            assert !cctx.mvccEnabled();
-
             GridDhtFuture<Object> fut = cctx.group().preloader().request(
                 cctx,
                 Collections.singleton(key),

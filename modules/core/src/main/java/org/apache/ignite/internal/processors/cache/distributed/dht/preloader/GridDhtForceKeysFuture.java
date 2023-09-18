@@ -235,8 +235,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         boolean ret = false;
 
         if (mappings != null) {
-            assert !cctx.mvccEnabled(); // Should not happen when MVCC enabled.
-
             ClusterNode loc = cctx.localNode();
 
             int curTopVer = topCntr.get();

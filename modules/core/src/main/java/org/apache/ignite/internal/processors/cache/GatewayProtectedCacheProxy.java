@@ -239,11 +239,6 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         CacheOperationGate opGate = onEnter();
 
         try {
-            if (context().mvccEnabled()) {
-                throw new UnsupportedOperationException(
-                    "The TRANSACTIONAL_SNAPSHOT mode is incompatible with the read-repair feature.");
-            }
-
             if (context().isNear())
                 throw new UnsupportedOperationException("Read-repair is incompatible with near caches.");
 

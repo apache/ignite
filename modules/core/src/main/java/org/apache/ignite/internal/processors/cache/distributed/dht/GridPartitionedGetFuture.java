@@ -113,7 +113,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             recovery
         );
 
-        assert (mvccSnapshot == null) == !cctx.mvccEnabled();
+        assert mvccSnapshot == null;
 
         this.mvccSnapshot = mvccSnapshot;
         this.txLbl = txLbl;
@@ -422,9 +422,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         Map<K, V> locVals
     ) {
         // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
-        boolean fastLocGet = !cctx.mvccEnabled() &&
-            (!forcePrimary || affNodes.get(0).isLocal()) &&
-            cctx.reserveForFastLocalGet(part, topVer);
+        boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) && cctx.reserveForFastLocalGet(part, topVer);
 
         if (fastLocGet) {
             try {

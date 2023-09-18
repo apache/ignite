@@ -224,8 +224,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
     /** */
     private IndexQueryContext idxQryContext(QueryContext qctx) {
-        assert qctx != null || !cctx.mvccEnabled();
-
         if (qctx == null)
             return null;
 

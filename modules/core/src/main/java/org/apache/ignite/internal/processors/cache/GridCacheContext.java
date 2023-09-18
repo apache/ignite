@@ -114,6 +114,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_READ_LOAD_BALANCING;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -2123,7 +2124,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if mvcc is enabled for cache.
      */
     public boolean mvccEnabled() {
-        return grp.mvccEnabled();
+        assert !grp.mvccEnabled();
+
+        return false;
     }
 
     /**
