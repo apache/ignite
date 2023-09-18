@@ -766,7 +766,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         try {
             File binDir = binaryWorkDir(snpDir.getAbsolutePath(), folderName);
             File nodeDbDir = new File(snpDir.getAbsolutePath(), databaseRelativePath(folderName));
-            File smf = new File(snpDir, snapshotMetaFileName(folderName));
+            File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
 
             U.delete(binDir);
             U.delete(nodeDbDir);
