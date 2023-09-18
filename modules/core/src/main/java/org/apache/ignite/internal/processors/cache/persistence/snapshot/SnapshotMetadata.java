@@ -234,7 +234,7 @@ public class SnapshotMetadata implements Serializable {
         return onlyPrimary;
     }
 
-    /** @return If {@code true} then metadata describe cache dump. */
+    /** @return If {@code true} then metadata describes cache dump. */
     public boolean dump() {
         return dump;
     }

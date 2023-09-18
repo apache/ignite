@@ -61,7 +61,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.cachDataFilename;
+import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.cacheDataFilename;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
@@ -95,7 +95,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     private final Map<Long, PartitionDumpContext> dumpCtxs = new ConcurrentHashMap<>();
 
     /** Local node is primary for set of group partitions. */
-    private final Map<Integer, Set<Integer>> grpPrimaries = new ConcurrentHashMap();
+    private final Map<Integer, Set<Integer>> grpPrimaries = new ConcurrentHashMap<>();
 
     /**
      * @param cctx Cache context.
@@ -170,11 +170,16 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
             for (GridCacheContext<?, ?> cctx : gctx.caches())
                 cctx.dumpListener(this);
+
+            grpPrimaries.put(
+                grp,
+                gctx.affinity().primaryPartitions(gctx.shared().kernalContext().localNodeId(), gctx.affinity().lastVersion())
+            );
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected List<CompletableFuture<Void>> saveCacheConfigsCopy() {
+    @Override protected List<CompletableFuture<Void>> saveCacheConfigs() {
         return parts.keySet().stream().map(grp -> runAsync(() -> {
             CacheGroupContext gctx = cctx.cache().cacheGroup(grp);
 
@@ -190,7 +195,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 cacheData.queryEntities(desc.schema().entities());
                 cacheData.sql(desc.sql());
 
-                cctx.cache().configManager().writeCacheData(cacheData, new File(grpDir, cachDataFilename(cacheData.config())));
+                cctx.cache().configManager().writeCacheData(cacheData, new File(grpDir, cacheDataFilename(cacheData.config())));
             }
         })).collect(Collectors.toList());
     }
@@ -318,18 +323,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     private PartitionDumpContext dumpContext(int grp, int part) {
         return dumpCtxs.computeIfAbsent(
             toLong(grp, part),
-            key -> {
-                try {
-                    return new PartitionDumpContext(
-                        cctx.kernalContext().cache().cacheGroup(grp),
-                        part,
-                        new File(groupDirectory(cctx.cache().cacheGroup(grp)), PART_FILE_PREFIX + part + DUMP_FILE_EXT)
-                    );
-                }
-                catch (IOException | IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            }
+            key -> new PartitionDumpContext(cctx.kernalContext().cache().cacheGroup(grp), part)
         );
     }
 
@@ -368,34 +362,35 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         private final AtomicInteger writers = new AtomicInteger(1); // Iterator writing entries to this context, by default.
 
         /**
-         * @param gctx Group id.
+         * @param gctx Group context.
          * @param part Partition id.
-         * @param dumpFile Dump file path.
          */
-        public PartitionDumpContext(CacheGroupContext gctx, int part, File dumpFile) throws IOException {
+        public PartitionDumpContext(CacheGroupContext gctx, int part) {
             assert gctx != null;
 
-            this.part = part;
-            grp = gctx.groupId();
-            topVer = gctx.topology().lastTopologyChangeVersion();
+            try {
+                this.part = part;
+                grp = gctx.groupId();
+                topVer = gctx.topology().lastTopologyChangeVersion();
 
-            boolean primary = grpPrimaries.computeIfAbsent(
-                gctx.groupId(),
-                key -> gctx.affinity().primaryPartitions(gctx.shared().kernalContext().localNodeId(), topVer)
-            ).contains(part);
+                startVer = grpPrimaries.get(gctx.groupId()).contains(part) ? gctx.shared().versions().last() : null;
 
-            startVer = primary ? gctx.shared().versions().last() : null;
+                serdes = new DumpEntrySerializer();
+                changed = new HashMap<>();
 
-            serdes = new DumpEntrySerializer();
-            changed = new HashMap<>();
+                for (int cache : gctx.cacheIds())
+                    changed.put(cache, new GridConcurrentHashSet<>());
 
-            for (int cache : gctx.cacheIds())
-                changed.put(cache, new GridConcurrentHashSet<>());
+                File dumpFile = new File(groupDirectory(gctx), PART_FILE_PREFIX + part + DUMP_FILE_EXT);
 
-            if (!dumpFile.createNewFile())
-                throw new IgniteException("Dump file can't be created: " + dumpFile);
+                if (!dumpFile.createNewFile())
+                    throw new IgniteException("Dump file can't be created: " + dumpFile);
 
-            file = ioFactory.create(dumpFile);
+                file = ioFactory.create(dumpFile);
+            }
+            catch (IOException | IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
 
         /**

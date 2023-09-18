@@ -1408,7 +1408,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     storeWarnings(snpReq);
                 }
 
-                if (!req.dump()) {
+                if (req.dump())
+                    removeDumpLock(req.snapshotName());
+                else {
                     removeLastMetaStorageKey();
 
                     if (req.error() == null) {
@@ -1417,8 +1419,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         enableIncrementalSnapshotsCreation(grpIds);
                     }
                 }
-                else
-                    removeDumpLock(req.snapshotName());
             }
             catch (Exception e) {
                 throw F.wrap(e);
