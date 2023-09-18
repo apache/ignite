@@ -59,9 +59,9 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
     @Parameterized.Parameters(name = "local = {0}, partSz = {1}")
     public static List<Object[]> parameters() {
         return Stream.of(true, false)
-                .flatMap(isLocal -> Stream.of(1, 2, 5, 10, 20)
-                    .map(i -> new Object[]{isLocal, i}))
-                .collect(Collectors.toList());
+            .flatMap(isLocal -> Stream.of(1, 2, 5, 10, 20)
+                .map(i -> new Object[]{isLocal, i}))
+            .collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */
