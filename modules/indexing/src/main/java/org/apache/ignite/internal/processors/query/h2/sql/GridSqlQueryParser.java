@@ -1840,9 +1840,6 @@ public class GridSqlQueryParser {
                     if (cctx == null)
                         return false;
 
-                    if (cctx.mvccEnabled())
-                        return false;
-
                     if (cctx.isPartitioned())
                         return false;
 
