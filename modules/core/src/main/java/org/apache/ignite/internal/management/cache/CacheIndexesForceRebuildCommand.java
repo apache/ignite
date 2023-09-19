@@ -113,13 +113,13 @@ public class CacheIndexesForceRebuildCommand
             IndexForceRebuildTaskRes res = e.getValue();
 
             if (!F.isEmpty(res.notFoundCacheNames()))
-                notFound = storeResultsForNode(notFound, nodeId, res.notFoundCacheNames());
+                notFound = storeNodeResults(notFound, nodeId, res.notFoundCacheNames());
 
             if (!F.isEmpty(res.cachesWithRebuildInProgress()))
-                rebuilding = storeResultsForNode(rebuilding, nodeId, res.cachesWithRebuildInProgress());
+                rebuilding = storeNodeResults(rebuilding, nodeId, res.cachesWithRebuildInProgress());
 
             if (!F.isEmpty(res.cachesWithStartedRebuild()))
-                started = storeResultsForNode(started, nodeId, res.cachesWithStartedRebuild());
+                started = storeNodeResults(started, nodeId, res.cachesWithStartedRebuild());
             else {
                 if (notStarted == null)
                     notStarted = new HashSet<>();
@@ -179,7 +179,7 @@ public class CacheIndexesForceRebuildCommand
     }
 
     /** */
-    private static <T> Map<UUID, Set<T>> storeResultsForNode(Map<UUID, Set<T>> to, UUID nodeId, Collection<T> values) {
+    private static <T> Map<UUID, Set<T>> storeNodeResults(Map<UUID, Set<T>> to, UUID nodeId, Collection<T> values) {
         if (to == null)
             to = new HashMap<>();
 
