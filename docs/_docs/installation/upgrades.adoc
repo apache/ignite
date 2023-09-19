@@ -1,0 +1,13 @@
+= Version Upgrade
+
+Upgrade is an important part of the lifecycle of any software system. This page covers the basic recommendations for upgrading the Apache Ignite version.
+
+== Upgrading Nodes
+
+Updating node version is as simple as replacing the Apache Ignite binaries with a new version. However, there are several things to keep in mind when performing the upgrade:
+
+- Ignite cluster cannot have nodes that run on different Ignite versions. You need to stop the cluster and start it again on the new Ignite version.
+- It is possible to accidentally overwrite your persistent storage or other important data during the upgrade. It is recommended to move this data outside of intallation folder if you are planning upgrades:
+* The work directory is used to store application data and all data required for the node to work. You can change its location as described in tge link:setup#configuring-work-directory[Configuring Work Directory] section.
+* The persistent storage holds all information stored on the node. You can change its location as described in the link:persistence/native-persistence#configuring-persistent-storage-directory[Configuring Persistent Storage Directory] section.
+* WAL Archive os used to store WAL segments for recovery. You can change its location as described in link:persistence/native-persistence#wal-archive[WAL Archive] section.
