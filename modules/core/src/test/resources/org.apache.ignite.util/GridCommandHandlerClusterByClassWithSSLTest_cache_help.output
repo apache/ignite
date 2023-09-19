@@ -97,10 +97,11 @@ Arguments: --cache help --yes
       --node-id nodeId  - Specify node for job execution. If not specified explicitly, info will be gathered from all nodes.
 
   Triggers rebuild of all indexes for specified caches or cache groups:
-    control.(sh|bat) --cache indexes_force_rebuild --node-id nodeId --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
+    control.(sh|bat) --cache indexes_force_rebuild --node-id nodeId|--node-ids nodeId1,...nodeIdN --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
 
     Parameters:
-      --node-id nodeId                        - Specify node for indexes rebuild.
+      --node-id nodeId                        - Specify node for indexes rebuild (deprecated. Use --node-ids instead).
+      --node-ids nodeId1,...nodeIdN           - Comma-separated list of nodes ids to run index rebuild on.
       --cache-names cacheName1,...cacheNameN  - Comma-separated list of cache names for which indexes should be rebuilt.
       --group-names groupName1,...groupNameN  - Comma-separated list of cache group names for which indexes should be rebuilt.
 

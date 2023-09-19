@@ -24,11 +24,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * {@link Repeatable} container for the {@link ArgumentGroup}.
+ * {@link Repeatable} container for {@link ArgumentGroup}.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
-public @interface ArgumentGroups {
+public @interface ArgumentGroupsHolder {
     /** Array of {@link ArgumentGroup} annotations. */
     ArgumentGroup[] value();
 }

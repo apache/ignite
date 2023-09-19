@@ -39,7 +39,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -370,14 +369,11 @@ public class CommandUtils {
         List<Field> positionalParams = new ArrayList<>();
         List<Field> namedParams = new ArrayList<>();
 
-        ArgumentGroups argGroups = argCls.getAnnotation(ArgumentGroups.class);
+        List<ArgumentGroup> argGprs = argumentGroups(argCls);
 
-        List<Set<String>> grpNames = argumentGroupsNames(argGroups);
+        List<Set<String>> grpNames = argumentGroupsValues(argGprs);
 
-        List<List<Field>> grpFlds = new ArrayList<>(grpNames.size());
-
-        if (!grpNames.isEmpty())
-            grpNames.forEach(gf -> grpFlds.add(grpFlds.size(), null));
+        List<List<Field>> grpFlds = grpNames.isEmpty() ? Collections.emptyList() : new ArrayList<>(grpNames.size());
 
         // Iterates classes from the roots.
         for (int i = classes.size() - 1; i >= 0; i--) {
@@ -403,27 +399,55 @@ public class CommandUtils {
 
         namedParams.forEach(namedParamVisitor);
 
-        assert F.isEmpty(grpFlds) || argGroups != null;
-
         for (int i = 0; i < grpFlds.size(); ++i)
-            argumentGroupVisitor.accept(argGroups.value()[i], grpFlds.get(i));
+            argumentGroupVisitor.accept(argGprs.get(i), grpFlds.get(i));
     }
 
-    /** */
-    public static int argumentGroupIdx(List<? extends Set<String>> grpNames, String name) {
-        for (int i = 0; i < grpNames.size(); ++i) {
-            if (grpNames.get(i).contains(name))
+    /**
+     * @return List of declared {@link ArgumentGroup} at {@code cls}. Singleton list if only one argument group is
+     * declared. Empty list if no argument group is declared.
+     */
+    private static List<ArgumentGroup> argumentGroups(Class<?> cls) {
+        ArgumentGroup singleGrp = cls.getAnnotation(ArgumentGroup.class);
+
+        if (singleGrp != null) {
+            assert cls.getAnnotation(ArgumentGroupsHolder.class) == null;
+
+            return Collections.singletonList(singleGrp);
+        }
+
+        ArgumentGroupsHolder grps = cls.getAnnotation(ArgumentGroupsHolder.class);
+
+        return grps == null ? Collections.emptyList() : Arrays.asList(grps.value());
+    }
+
+    /**
+     * @return Sets list of {@link ArgumentGroup#value()} declared at {@code cls}.
+     */
+    public static List<Set<String>> argumentGroupsValues(Class<?> cls) {
+        return argumentGroupsValues(argumentGroups(cls));
+    }
+
+    /**
+     * @return Sets list of {@link ArgumentGroup#value()} holding in {@code argGrps}.
+     * @see #argumentGroupsValues(Class)
+     */
+    public static List<Set<String>> argumentGroupsValues(List<ArgumentGroup> argGrps) {
+        return argGrps.stream().map(grp -> new HashSet<>(Arrays.asList(grp.value())))
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * @return Index of first value set in {@code argGrpValues} containing {@code name}. -1 if not found.
+     * @see #argumentGroupsValues(Class)
+     */
+    public static int argumentGroupIdx(List<? extends Set<String>> argGrpValues, String name) {
+        for (int i = 0; i < argGrpValues.size(); ++i) {
+            if (argGrpValues.get(i).contains(name))
                 return i;
         }
 
         return -1;
-    }
-
-    /** */
-    public static List<Set<String>> argumentGroupsNames(@Nullable ArgumentGroups argGrp) {
-        return argGrp == null
-            ? Collections.emptyList()
-            : Stream.of(argGrp.value()).map(grp -> new HashSet<>(Arrays.asList(grp.value()))).collect(Collectors.toList());
     }
 
     /**
@@ -703,12 +727,10 @@ public class CommandUtils {
                 })
             );
 
-            if (arg.argGrps != null) {
-                for (int grpIdx = 0; grpIdx < arg.argGrps.size(); ++grpIdx) {
-                    if (!arg.argGrps.get(grpIdx).optional() && !arg.grpFldExists[grpIdx]) {
-                        throw new IllegalArgumentException("One of " + toFormattedNames(argCls, arg.grpdFlds.get(grpIdx))
-                            + " required");
-                    }
+            for (int grpIdx = 0; grpIdx < arg.argGrps.size(); ++grpIdx) {
+                if (!arg.argGrps.get(grpIdx).optional() && !arg.grpFldExists[grpIdx]) {
+                    throw new IllegalArgumentException("One of " + toFormattedNames(argCls, arg.grpdFlds.get(grpIdx))
+                        + " required");
                 }
             }
 
@@ -774,15 +796,11 @@ public class CommandUtils {
         public ArgumentState(Class<A> argCls) throws InstantiationException, IllegalAccessException {
             res = argCls.newInstance();
 
-            ArgumentGroups agrps = argCls.getAnnotation(ArgumentGroups.class);
+            argGrps = argumentGroups(argCls);
 
-            argGrps = agrps == null ? Collections.emptyList() : Arrays.asList(agrps.value());
+            grpdFlds = argumentGroupsValues(argGrps);
 
-            grpdFlds = argGrps == null
-                ? Collections.emptyList()
-                : argGrps.stream().map(grp -> new HashSet<>(Arrays.asList(grp.value()))).collect(Collectors.toList());
-
-            grpFldExists = argGrps == null ? null : new boolean[argGrps.size()];
+            grpFldExists = argGrps.isEmpty() ? null : new boolean[argGrps.size()];
         }
 
         /** */
@@ -796,9 +814,11 @@ public class CommandUtils {
 
         /** {@inheritDoc} */
         @Override public void accept(Field fld, Object val) {
-            int argGrpIdx = grpIdx(fld.getName());
+            int argGrpIdx = argumentGroupIdx(grpdFlds, fld.getName());
 
-            ArgumentGroup argGrp = fldGrp(argGrpIdx);
+            assert argGrpIdx < argGrps.size();
+
+            ArgumentGroup argGrp = argGrpIdx < 0 ? null : argGrps.get(argGrpIdx);
 
             if (val == null) {
                 if (argGrp != null || fld.getAnnotation(Argument.class).optional())
@@ -859,28 +879,6 @@ public class CommandUtils {
 
                 throw new IgniteException(e);
             }
-        }
-
-        /** */
-        ArgumentGroup fldGrp(String fldName) {
-            return fldGrp(grpIdx(fldName));
-        }
-
-        /** */
-        private ArgumentGroup fldGrp(int argGrpIdx) {
-            assert argGrpIdx < 0 || argGrps != null;
-
-            return argGrpIdx < 0 ? null : argGrps.get(argGrpIdx);
-        }
-
-        /** */
-        private int grpIdx(String fldName) {
-            for (int i = 0; i < grpdFlds.size(); ++i) {
-                if (grpdFlds.get(i).contains(fldName))
-                    return i;
-            }
-
-            return -1;
         }
     }
 

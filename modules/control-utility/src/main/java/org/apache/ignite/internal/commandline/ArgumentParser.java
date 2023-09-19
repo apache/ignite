@@ -38,7 +38,6 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
-import org.apache.ignite.internal.management.api.ArgumentGroups;
 import org.apache.ignite.internal.management.api.CliSubcommandsWithPrefix;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandUtils;
@@ -350,7 +349,7 @@ public class ArgumentParser {
             (name, val) -> {}
         );
 
-        List<Set<String>> grpdFlds = CommandUtils.argumentGroupsNames(cmdPath.peek().argClass().getAnnotation(ArgumentGroups.class));
+        List<Set<String>> grpdFlds = CommandUtils.argumentGroupsValues(cmdPath.peek().argClass());
 
         Consumer<Field> namedArgCb = fld -> namedArgs.add(
             toArg.apply(fld, CommandUtils.argumentGroupIdx(grpdFlds, fld.getName()) >= 0

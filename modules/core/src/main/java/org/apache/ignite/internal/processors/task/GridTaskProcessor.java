@@ -568,7 +568,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
                 if (!ComputeTask.class.isAssignableFrom(taskCls))
                     throw new IgniteCheckedException("Failed to auto-deploy task (deployed class is not a task) " +
-                        "[taskName=" + taskName + ", depCls=" + taskCls + ']');
+                        "[taskName=" +
+                        taskName + ", depCls=" + taskCls + ']');
             }
             catch (IgniteCheckedException e) {
                 deployEx = e;

@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -26,28 +28,35 @@ import java.util.stream.Collectors;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 
 /** Index force rebuild. */
-public class CacheIndexesForceRebuildCommand implements ComputeCommand<CacheIndexesForceRebuildCommandArg, Map<UUID, IndexForceRebuildTaskRes>> {
+public class CacheIndexesForceRebuildCommand
+    implements ComputeCommand<CacheIndexesForceRebuildCommandArg, Map<UUID, IndexForceRebuildTaskRes>> {
     /** */
-    private static final String PREF_REBUILDING = "WARNING: These caches have indexes rebuilding in progress:";
+    public static final String PREF_REBUILDING = "WARNING: These caches have indexes rebuilding in progress:";
 
     /** */
-    private static final String PREF_CACHES_NOT_FOUND = "WARNING: These caches were not found:";
+    public static final String PREF_CACHES_NOT_FOUND = "WARNING: These caches were not found:";
 
     /** */
     private static final String PREF_GROUPS_NOT_FOUND = "WARNING: These cache groups were not found:";
 
     /** */
-    private static final String PREF_REBUILD_STARTED = "Indexes rebuild was started for these caches:";
+    public static final String PREF_REBUILD_STARTED = "Indexes rebuild was started for these caches:";
 
     /** */
-    private static final String PREF_REBUILD_NOT_STARTED = "WARNING: Indexes rebuild was not started for any cache. " +
-        "Check command input";
+    public static final String PREF_REBUILD_NOT_STARTED_SINGLE = "WARNING: Indexes rebuild was not started for " +
+        "any cache. Check command input";
+
+    /** */
+    public static final String PREF_REBUILD_NOT_STARTED = "WARNING: Indexes rebuild was not started for " +
+        "any cache on the following nodes. Check the command input:";
 
     /** {@inheritDoc} */
     @Override public String description() {
@@ -88,81 +97,114 @@ public class CacheIndexesForceRebuildCommand implements ComputeCommand<CacheInde
         Map<UUID, IndexForceRebuildTaskRes> results,
         Consumer<String> printer
     ) {
-        /**
-         * @param results Rebuild task results.
-         * @param logger  IgniteLogger to print to.
-         */
-        if (results.size() == 1) {
+        if (F.isEmpty(arg.nodeIds())) {
             printSingleResult(arg, results.values().iterator().next(), printer);
 
             return;
         }
 
-        StringBuilder notFound = new StringBuilder();
-        StringBuilder rebuilding = new StringBuilder();
-        StringBuilder started = new StringBuilder();
-        StringBuilder notStarted = new StringBuilder();
+        Map<UUID, Set<String>> notFound = null;
+        Map<UUID, Set<IndexRebuildStatusInfoContainer>> rebuilding = null;
+        Map<UUID, Set<IndexRebuildStatusInfoContainer>> started = null;
+        Set<UUID> notStarted = null;
 
-        results.forEach((node, res) -> {
-            if (!F.isEmpty(res.notFoundCacheNames())) {
-                if (notFound.length() == 0)
-                    notFound.append(arg.groupNames() == null ? PREF_CACHES_NOT_FOUND : PREF_GROUPS_NOT_FOUND);
+        for (Map.Entry<UUID, IndexForceRebuildTaskRes> e : results.entrySet()) {
+            UUID nodeId = e.getKey();
+            IndexForceRebuildTaskRes res = e.getValue();
 
-                newNodeLog(notFound, node);
+            if (!F.isEmpty(res.notFoundCacheNames()))
+                notFound = storeResultsForNode(notFound, nodeId, res.notFoundCacheNames());
 
-                notFound.append(res.notFoundCacheNames().stream().sorted().collect(Collectors.joining(",")));
-            }
+            if (!F.isEmpty(res.cachesWithRebuildInProgress()))
+                rebuilding = storeResultsForNode(rebuilding, nodeId, res.cachesWithRebuildInProgress());
 
-            if (!F.isEmpty(res.cachesWithRebuildInProgress())) {
-                if (rebuilding.length() == 0)
-                    rebuilding.append(PREF_REBUILDING);
-
-                printInfos(rebuilding, node, res.cachesWithRebuildInProgress());
-            }
-
-            if (F.isEmpty(res.cachesWithStartedRebuild())) {
-                if (notStarted.length() == 0)
-                    notStarted.append(PREF_REBUILD_NOT_STARTED).append(':');
-
-                notStarted.append(node).append(',');
-            }
+            if (!F.isEmpty(res.cachesWithStartedRebuild()))
+                started = storeResultsForNode(started, nodeId, res.cachesWithStartedRebuild());
             else {
-                if (started.length() == 0)
-                    started.append(PREF_REBUILD_STARTED);
+                if (notStarted == null)
+                    notStarted = new HashSet<>();
 
-                printInfos(started, node, res.cachesWithStartedRebuild());
+                notStarted.add(nodeId);
             }
-        });
+        }
 
-        if (notStarted.length() > 0)
-            notStarted.delete(notStarted.length() - 1, notStarted.length());
+        SB b = new SB();
 
-        StringBuilder res = new StringBuilder();
+        boolean nl = false;
 
-        if (notFound.length() > 0)
-            res.append(notFound).append(U.nl());
+        if (!F.isEmpty(notFound)) {
+            nl = header(b, arg.groupNames() == null ? PREF_CACHES_NOT_FOUND : PREF_GROUPS_NOT_FOUND, nl);
 
-        if (rebuilding.length() > 0)
-            res.append(rebuilding).append(U.nl());
+            for (Map.Entry<UUID, Set<String>> e : notFound.entrySet())
+                printNodeEntryPrefix(b, e.getKey()).a(e.getValue().stream().sorted().collect(Collectors.joining(","))).a('.');
+        }
 
-        if (notStarted.length() > 0)
-            res.append(notStarted).append(U.nl());
+        if (!F.isEmpty(rebuilding)) {
+            nl = header(b, PREF_REBUILDING, nl);
 
-        if (started.length() > 0)
-            res.append(started).append(U.nl());
+            for (Map.Entry<UUID, Set<IndexRebuildStatusInfoContainer>> e : rebuilding.entrySet())
+                pringCachesInfos(b, e.getKey(), e.getValue());
+        }
 
-        printer.accept(res.toString());
+        if (!F.isEmpty(started)) {
+            nl = header(b, PREF_REBUILD_STARTED, nl);
+
+            for (Map.Entry<UUID, Set<IndexRebuildStatusInfoContainer>> e : started.entrySet())
+                pringCachesInfos(b, e.getKey(), e.getValue());
+
+            b.a(U.nl());
+        }
+
+        if (!F.isEmpty(notStarted)) {
+            header(b, PREF_REBUILD_NOT_STARTED, nl);
+
+            printListEntryNl(b).a(notStarted.stream().map(UUID::toString).collect(Collectors.joining(","))).a('.');
+        }
+
+        printer.accept(b.toString());
+    }
+
+    /**
+     * Prints new header {@code text} to {@code b} and puts new lines before if required by {@code newLineReuired}.
+     *
+     * @return {@code  True}. After any header arised new lines are required for the next header.
+     */
+    private static boolean header(SB b, String text, boolean newLineReuired) {
+        if (newLineReuired)
+            b.a(U.nl()).a(U.nl());
+
+        b.a(text);
+
+        return true;
     }
 
     /** */
-    private void printSingleResult(
+    private static <T> Map<UUID, Set<T>> storeResultsForNode(Map<UUID, Set<T>> to, UUID nodeId, Collection<T> values) {
+        if (to == null)
+            to = new HashMap<>();
+
+        to.compute(nodeId, (nid, nodeValues) -> {
+            if (nodeValues == null)
+                nodeValues = new HashSet<>();
+
+            nodeValues.addAll(values);
+
+            return nodeValues;
+        });
+
+        return to;
+    }
+
+    /**
+     * Prints result if only single node was requested with 'node-id'.
+     */
+    private static void printSingleResult(
         CacheIndexesForceRebuildCommandArg arg,
         IndexForceRebuildTaskRes res,
         Consumer<String> printer
     ) {
         if (!F.isEmpty(res.notFoundCacheNames())) {
-            String warning = arg.groupNames() == null ?
-                PREF_CACHES_NOT_FOUND : PREF_GROUPS_NOT_FOUND;
+            String warning = arg.groupNames() == null ? PREF_CACHES_NOT_FOUND : PREF_GROUPS_NOT_FOUND;
 
             printer.accept(warning);
 
@@ -188,31 +230,35 @@ public class CacheIndexesForceRebuildCommand implements ComputeCommand<CacheInde
             printInfos(res.cachesWithStartedRebuild(), printer);
         }
         else
-            printer.accept(PREF_REBUILD_NOT_STARTED);
+            printer.accept(PREF_REBUILD_NOT_STARTED_SINGLE);
 
         printer.accept("");
     }
 
     /** */
-    private static StringBuilder newNodeLog(StringBuilder b, UUID nodeId) {
-        return b.append(U.nl()).append(INDENT).append("Node ").append(nodeId).append(':').append(INDENT);
+    private static GridStringBuilder printNodeEntryPrefix(SB b, UUID nodeId) {
+        return printListEntryKeySeparator(printListEntryNl(b).a("Node ").a(nodeId));
     }
 
     /** */
-    private static void printInfos(StringBuilder b, UUID node, Set<IndexRebuildStatusInfoContainer> infos) {
-        infos.stream()
-            .sorted(IndexRebuildStatusInfoContainer.comparator())
-            .forEach(rebuildStatusInfo -> newNodeLog(b, node).append(rebuildStatusInfo.toString()).append("; "));
-
-        if (!infos.isEmpty()) {
-            b.delete(b.length() - 2, b.length());
-
-            b.append('.');
-        }
+    private static GridStringBuilder printListEntryKeySeparator(GridStringBuilder b) {
+        return b.a(':').a(INDENT);
     }
 
     /** */
-    private void printInfos(Collection<IndexRebuildStatusInfoContainer> infos, Consumer<String> printer) {
+    private static GridStringBuilder printListEntryNl(SB b) {
+        return b.a(U.nl()).a(INDENT);
+    }
+
+    /** */
+    private static void pringCachesInfos(SB b, UUID node, Set<IndexRebuildStatusInfoContainer> infos) {
+        printNodeEntryPrefix(b, node).a(infos.stream().sorted(IndexRebuildStatusInfoContainer.comparator())
+            .map(IndexRebuildStatusInfoContainer::toString)
+            .collect(Collectors.joining("; "))).a('.');
+    }
+
+    /** */
+    private static void printInfos(Collection<IndexRebuildStatusInfoContainer> infos, Consumer<String> printer) {
         infos.stream()
             .sorted(IndexRebuildStatusInfoContainer.comparator())
             .forEach(rebuildStatusInfo -> printer.accept(INDENT + rebuildStatusInfo.toString()));

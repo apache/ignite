@@ -27,26 +27,20 @@ import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
+@ArgumentGroup(value = {"nodeId", "nodeIds"}, onlyOneOf = true, optional = false)
 @ArgumentGroup(value = {"cacheNames", "groupNames"}, onlyOneOf = true, optional = false)
-@ArgumentGroup(value = {"nodeId", "nodeIds"}, onlyOneOf = true, optional = true)
 public class CacheIndexesForceRebuildCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
 
     /** */
-    @Argument(
-        optional = true,
-        description = "ID of the node to run index rebuild on (deprecated. Use --node-ids instead). " +
-            "If not set, random node will be chosen"
-    )
+    @Argument(description = "Specify node for indexes rebuild (deprecated. Use --node-ids instead)", example = "nodeId")
     private UUID nodeId;
 
     /** */
     @Argument(
-        optional = true,
-        description = "Comma-separated list of nodes IDs to run index rebuild on. " +
-            "If not set, random node will be chosen",
-        example = "nodeId1,nodeId2,.."
+        description = "Comma-separated list of nodes ids to run index rebuild on",
+        example = "nodeId1,...nodeIdN"
     )
     private UUID[] nodeIds;
 
