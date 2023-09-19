@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -42,8 +41,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
-import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -588,32 +585,9 @@ public class MvccUtils {
      */
     private static <R> R invoke(GridCacheContext cctx, long link, MvccClosure<R> clo, MvccSnapshot snapshot)
         throws IgniteCheckedException {
-        assert cctx.mvccEnabled();
+        assert false; // !mvcc enabled
 
-        PageMemory pageMem = cctx.dataRegion().pageMemory();
-        int grpId = cctx.groupId();
-
-        int pageSize = pageMem.realPageSize(grpId);
-
-        long pageId = pageId(link);
-        int itemId = itemId(link);
-        long page = pageMem.acquirePage(grpId, pageId);
-
-        try {
-            long pageAddr = pageMem.readLock(grpId, pageId, page);
-
-            try {
-                DataPageIO dataIo = DataPageIO.VERSIONS.forPage(pageAddr);
-
-                return invoke(cctx, dataIo, pageAddr, itemId, pageSize, clo, snapshot);
-            }
-            finally {
-                pageMem.readUnlock(grpId, pageId, page);
-            }
-        }
-        finally {
-            pageMem.releasePage(grpId, pageId, page);
-        }
+        return null;
     }
 
     /**
@@ -660,18 +634,6 @@ public class MvccUtils {
     public static boolean isVisible(GridCacheContext cctx, MvccSnapshot snapshot, DataPageIO dataIo,
         long pageAddr, int itemId, int pageSize) throws IgniteCheckedException {
         return invoke(cctx, dataIo, pageAddr, itemId, pageSize, isVisible, snapshot);
-    }
-
-    /**
-     * Throw an {@link UnsupportedOperationException} if this cache is transactional and MVCC is enabled with
-     * appropriate message about corresponding operation type.
-     * @param cctx Cache context.
-     * @param opType operation type to mention in error message.
-     */
-    public static void verifyMvccOperationSupport(GridCacheContext<?, ?> cctx, String opType) {
-        if (cctx.mvccEnabled())
-            throw new UnsupportedOperationException(opType + " operations are not supported on transactional " +
-                "caches when MVCC is enabled.");
     }
 
     /**
@@ -786,25 +748,6 @@ public class MvccUtils {
      */
     public static boolean mvccEnabled(GridKernalContext ctx) {
         return ctx.coordinators().mvccEnabled();
-    }
-
-    /**
-     * Initialises MVCC filter and returns MVCC query tracker if needed.
-     * @param cctx Cache context.
-     * @param autoStartTx Start transaction flag.
-     * @return MVCC query tracker.
-     * @throws IgniteCheckedException If failed.
-     */
-    @NotNull public static MvccQueryTracker mvccTracker(GridCacheContext cctx, boolean autoStartTx)
-        throws IgniteCheckedException {
-        assert cctx != null && cctx.mvccEnabled();
-
-        GridNearTxLocal tx = tx(cctx.kernalContext());
-
-        if (tx == null && autoStartTx)
-            tx = txStart(cctx, 0);
-
-        return mvccTracker(cctx, tx);
     }
 
     /**

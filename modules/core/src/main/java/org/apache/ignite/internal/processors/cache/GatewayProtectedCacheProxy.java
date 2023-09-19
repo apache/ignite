@@ -51,7 +51,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.GridKernalState;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -145,8 +144,6 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         CacheOperationGate opGate = onEnter();
 
         try {
-            MvccUtils.verifyMvccOperationSupport(delegate.context(), "withExpiryPolicy");
-
             return new GatewayProtectedCacheProxy<>(delegate, opCtx.withExpiryPolicy(plc), lock);
         }
         finally {
