@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.internal.processors.query.schema;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.QueryEngineConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
@@ -38,7 +38,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 
 /** */
-public class IndexWithSameNameTest extends GridCommonAbstractTest {
+public abstract class IndexWithSameNameTestBase extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -59,11 +59,16 @@ public class IndexWithSameNameTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setSqlConfiguration(new SqlConfiguration()
-                .setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration().setDefault(true)))
+                .setQueryEnginesConfiguration(getEngineConfiguration()))
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(true)));
     }
+
+    /**
+     *
+     */
+    protected abstract QueryEngineConfiguration getEngineConfiguration();
 
     /**
      *

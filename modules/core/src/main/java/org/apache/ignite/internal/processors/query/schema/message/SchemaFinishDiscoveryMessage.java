@@ -96,7 +96,6 @@ public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage
         this.proposeMsg = proposeMsg;
     }
 
-
     /**
      * @return <code>True</code> if message in no-op.
      */
