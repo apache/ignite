@@ -445,7 +445,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @Nullable @Override public List<GridCacheEntryInfo> allVersionsInfo() throws IgniteCheckedException {
-        assert cctx.mvccEnabled();
+        assert false; // assert mvcc enabled
 
         lockEntry();
 
@@ -1028,10 +1028,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             deletedUnlocked(false);
                     }
                     else {
-                        if (cctx.mvccEnabled())
-                            cctx.offheap().mvccRemoveAll(this);
-                        else
-                            removeValue();
+                        removeValue();
 
                         if (cctx.deferredDelete() && !isInternal() && !detached() && !deletedUnlocked())
                             deletedUnlocked(true);
@@ -2342,10 +2339,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     ", val=" + val + ']');
             }
 
-            if (cctx.mvccEnabled())
-                cctx.offheap().mvccRemoveAll(this);
-            else
-                removeValue();
+            removeValue();
         }
         finally {
             unlockEntry();

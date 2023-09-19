@@ -176,7 +176,6 @@ import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.op
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
-import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
@@ -871,9 +870,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 ctx.shared().database().checkpointReadLock();
 
                 try {
-                    cacheVal = ctx.mvccEnabled()
-                        ? e.mvccPeek(modes.heap && !modes.offheap)
-                        : e.peek(modes.heap, modes.offheap, topVer, null);
+                    cacheVal = e.peek(modes.heap, modes.offheap, topVer, null);
                 }
                 catch (GridCacheEntryRemovedException ignore) {
                     if (log.isDebugEnabled())
@@ -1943,8 +1940,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             tx = checkCurrentTx();
         }
 
-        if (ctx.mvccEnabled() || tx == null || tx.implicit()) {
-            assert (mvccSnapshot == null) == !ctx.mvccEnabled();
+        if (tx == null || tx.implicit()) {
+            assert mvccSnapshot == null;
 
             Map<KeyCacheObject, EntryGetResult> misses = null;
 
@@ -2299,10 +2296,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** */
     protected GridNearTxLocal checkCurrentTx() {
-        if (!ctx.mvccEnabled())
-            return ctx.tm().threadLocalTx(ctx);
-
-        return MvccUtils.tx(ctx.kernalContext(), null);
+        return ctx.tm().threadLocalTx(ctx);
     }
 
     /**
@@ -4240,11 +4234,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     true,
                     op.single(),
                     ctx.systemTx() ? ctx : null,
-                    ctx.mvccEnabled() ? PESSIMISTIC : OPTIMISTIC,
-                    ctx.mvccEnabled() ? REPEATABLE_READ : READ_COMMITTED,
+                    OPTIMISTIC,
+                    READ_COMMITTED,
                     tCfg.getDefaultTxTimeout(),
                     !ctx.skipStore(),
-                    ctx.mvccEnabled(),
+                    false,
                     0,
                     null
                 );
@@ -4358,11 +4352,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     true,
                     op.single(),
                     ctx.systemTx() ? ctx : null,
-                    ctx.mvccEnabled() ? PESSIMISTIC : OPTIMISTIC,
-                    ctx.mvccEnabled() ? REPEATABLE_READ : READ_COMMITTED,
+                    OPTIMISTIC,
+                    READ_COMMITTED,
                     txCfg.getDefaultTxTimeout(),
                     !skipStore,
-                    ctx.mvccEnabled(),
+                    false,
                     0,
                     null);
 
@@ -5387,11 +5381,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 true,
                 op.single(),
                 ctx.systemTx() ? ctx : null,
-                ctx.mvccEnabled() ? PESSIMISTIC : OPTIMISTIC,
-                ctx.mvccEnabled() ? REPEATABLE_READ : READ_COMMITTED,
+                OPTIMISTIC,
+                READ_COMMITTED,
                 CU.transactionConfiguration(ctx, ctx.kernalContext().config()).getDefaultTxTimeout(),
                 opCtx == null || !opCtx.skipStore(),
-                ctx.mvccEnabled(),
+                false,
                 0,
                 null);
 
