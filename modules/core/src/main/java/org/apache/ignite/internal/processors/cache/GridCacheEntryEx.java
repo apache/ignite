@@ -190,11 +190,6 @@ public interface GridCacheEntryEx {
     @Nullable public GridCacheEntryInfo info();
 
     /**
-     * @return Entry info for each MVCC version.
-     */
-    @Nullable public List<GridCacheEntryInfo> allVersionsInfo() throws IgniteCheckedException;
-
-    /**
      * Invalidates this entry.
      *
      * @param newVer New version to set.
