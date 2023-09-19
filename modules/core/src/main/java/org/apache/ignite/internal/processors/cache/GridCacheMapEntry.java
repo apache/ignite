@@ -3045,7 +3045,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             else
                 update = storeValue(val, expTime, ver, p, row);
 
-
             if (update) {
                 update(val, expTime, ttl, ver, true);
 
