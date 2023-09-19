@@ -2370,35 +2370,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridCacheContext<?, ?> cctx = dml.plan().cacheContext();
 
-        boolean transactional = cctx != null && cctx.mvccEnabled();
-
-        int maxRetryCnt = transactional ? 1 : DFLT_UPDATE_RERUN_ATTEMPTS;
-
-        for (int i = 0; i < maxRetryCnt; i++) {
+        for (int i = 0; i < DFLT_UPDATE_RERUN_ATTEMPTS; i++) {
             CacheOperationContext opCtx = cctx != null ? DmlUtils.setKeepBinaryContext(cctx) : null;
 
             UpdateResult r;
 
             try {
-                if (transactional)
-                    r = executeUpdateTransactional(
-                        qryId,
-                        qryDesc,
-                        qryParams,
-                        dml,
-                        loc,
-                        cancel
-                    );
-                else
-                    r = executeUpdateNonTransactional(
-                        qryId,
-                        qryDesc,
-                        qryParams,
-                        dml,
-                        loc,
-                        filters,
-                        cancel
-                    );
+                r = executeUpdateNonTransactional(
+                    qryId,
+                    qryDesc,
+                    qryParams,
+                    dml,
+                    loc,
+                    filters,
+                    cancel
+                );
             }
             finally {
                 if (opCtx != null)
