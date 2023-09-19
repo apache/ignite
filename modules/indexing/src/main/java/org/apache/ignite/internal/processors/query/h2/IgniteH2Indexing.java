@@ -1410,7 +1410,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Query results cursor.
      */
     private Iterable<List<?>> lockSelectedRows(Iterable<List<?>> cur, GridCacheContext cctx, int pageSize, long timeout) {
-        assert false; // !mvcc enabled.
+        assert false; // ex mvcc code, should never happen
 
         return null;
     }

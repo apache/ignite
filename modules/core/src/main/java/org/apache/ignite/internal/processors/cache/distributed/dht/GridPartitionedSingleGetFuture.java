@@ -427,7 +427,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         AffinityTopologyVersion topVer,
         List<ClusterNode> affNodes
     ) {
-        // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
         boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) && cctx.reserveForFastLocalGet(part, topVer);
 
         if (fastLocGet) {

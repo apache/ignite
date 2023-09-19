@@ -585,7 +585,7 @@ public class MvccUtils {
      */
     private static <R> R invoke(GridCacheContext cctx, long link, MvccClosure<R> clo, MvccSnapshot snapshot)
         throws IgniteCheckedException {
-        assert false; // !mvcc enabled
+        assert false; // ex mvcc code, should never happen
 
         return null;
     }
