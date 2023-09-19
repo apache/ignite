@@ -3233,14 +3233,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** {@inheritDoc} */
     @Override public boolean queryEnlisted() {
-        if (!txState.mvccEnabled())
-            return false;
-        else if (qryEnlisted)
-            return true;
-        else if (mappings.single())
-            return !mappings.empty() && mappings.singleMapping().queryUpdate();
-        else
-            return mappings.mappings().stream().anyMatch(GridDistributedTxMapping::queryUpdate);
+        return false;
     }
 
     /**
