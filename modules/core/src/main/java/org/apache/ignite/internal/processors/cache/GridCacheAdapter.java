@@ -767,16 +767,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 IgniteCacheOffheapManager offheapMgr = ctx.isNear() ? ctx.near().dht().context().offheap() : ctx.offheap();
 
-                MvccSnapshot mvccSnapshot = ctx.mvccEnabled() ? MvccUtils.MVCC_MAX_SNAPSHOT : null;
-
                 its.add(offheapMgr.cacheEntriesIterator(ctx, modes.primary, modes.backup, topVer, ctx.keepBinary(),
-                        mvccSnapshot, null));
+                        null, null));
             }
         }
         else if (modes.heap) {
-            if (ctx.mvccEnabled())
-                return F.emptyIterator();
-
             if (modes.near && ctx.isNear())
                 its.add(ctx.near().nearEntries().iterator());
 
