@@ -375,6 +375,8 @@ public class CommandUtils {
 
         List<List<Field>> grpFlds = grpNames.isEmpty() ? Collections.emptyList() : new ArrayList<>(grpNames.size());
 
+        grpNames.forEach(gf -> grpFlds.add(grpFlds.size(), null));
+
         // Iterates classes from the roots.
         for (int i = classes.size() - 1; i >= 0; i--) {
             Field[] flds = classes.get(i).getDeclaredFields();
