@@ -88,7 +88,6 @@ import org.apache.ignite.internal.transactions.IgniteTxSerializationCheckedExcep
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridClosureException;
-import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.lang.GridTuple3;
@@ -125,7 +124,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicR
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_MAX_SNAPSHOT;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compareIgnoreOpCounter;
-import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.NO_KEY;
 import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx.addConflictVersion;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 
@@ -441,77 +439,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
 
         return info;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public List<GridCacheEntryInfo> allVersionsInfo() throws IgniteCheckedException {
-        assert false; // assert mvcc enabled
-
-        lockEntry();
-
-        try {
-            if (obsolete())
-                return Collections.emptyList();
-
-            GridCursor<? extends CacheDataRow> cur =
-                cctx.offheap().dataStore(localPartition()).mvccAllVersionsCursor(cctx, key, NO_KEY);
-
-            List<GridCacheEntryInfo> res = new ArrayList<>();
-
-            while (cur.next()) {
-                CacheDataRow row = cur.get();
-
-                GridCacheMvccEntryInfo info = new GridCacheMvccEntryInfo();
-
-                info.key(key);
-                info.value(row.value());
-                info.cacheId(cctx.cacheId());
-                info.version(row.version());
-                info.setNew(false);
-                info.setDeleted(false);
-
-                byte txState = row.mvccTxState() != TxState.NA ? row.mvccTxState() :
-                    MvccUtils.state(cctx, row.mvccCoordinatorVersion(), row.mvccCounter(),
-                        row.mvccOperationCounter());
-
-                if (txState == TxState.ABORTED)
-                    continue;
-
-                info.mvccVersion(row.mvccCoordinatorVersion(), row.mvccCounter(), row.mvccOperationCounter());
-                info.mvccTxState(txState);
-
-                byte newTxState = row.newMvccTxState() != TxState.NA ? row.newMvccTxState() :
-                    MvccUtils.state(cctx, row.newMvccCoordinatorVersion(), row.newMvccCounter(),
-                        row.newMvccOperationCounter());
-
-                if (newTxState != TxState.ABORTED) {
-                    info.newMvccVersion(row.newMvccCoordinatorVersion(),
-                        row.newMvccCounter(),
-                        row.newMvccOperationCounter());
-
-                    info.newMvccTxState(newTxState);
-                }
-
-                long expireTime = row.expireTime();
-
-                long ttl;
-
-                ttl = expireTime == CU.EXPIRE_TIME_ETERNAL ? CU.TTL_ETERNAL : expireTime - U.currentTimeMillis();
-
-                if (ttl < 0)
-                    ttl = CU.TTL_MINIMUM;
-
-                info.ttl(ttl);
-                info.expireTime(expireTime);
-
-                res.add(info);
-            }
-
-            return res;
-        }
-        finally {
-            unlockEntry();
-        }
     }
 
     /** {@inheritDoc} */
