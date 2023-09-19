@@ -131,7 +131,7 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean mvccEnabled() {
+    public boolean mvccEnabled() {
         return mvccEnabled;
     }
 
