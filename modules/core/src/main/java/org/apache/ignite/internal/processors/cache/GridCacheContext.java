@@ -2120,15 +2120,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code True} if mvcc is enabled for cache.
-     */
-    public boolean mvccEnabled() {
-        assert !grp.mvccEnabled();
-
-        return false;
-    }
-
-    /**
      * @param part Partition.
      * @param topVer Topology version.
      * @return {@code True} if partition is available locally.
