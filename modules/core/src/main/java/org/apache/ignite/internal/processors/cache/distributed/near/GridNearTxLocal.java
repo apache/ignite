@@ -603,10 +603,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     ) {
         assert key != null;
 
-        if (cacheCtx.mvccEnabled())
-            return mvccPutAllAsync0(cacheCtx, Collections.singletonMap(key, val),
-                entryProc == null ? null : Collections.singletonMap(key, entryProc), invokeArgs, retval, filter);
-
         try {
             beforePut(cacheCtx, retval, false);
 
@@ -858,9 +854,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable Map<KeyCacheObject, GridCacheDrInfo> drMap,
         final boolean retval
     ) {
-        if (cacheCtx.mvccEnabled())
-            return mvccPutAllAsync0(cacheCtx, map, invokeMap, invokeArgs, retval, null);
-
         try {
             beforePut(cacheCtx, retval, false);
         }
@@ -1703,9 +1696,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean retval,
         @Nullable final CacheEntryPredicate filter,
         boolean singleRmv) {
-        if (cacheCtx.mvccEnabled())
-            return mvccRemoveAllAsync0(cacheCtx, keys, retval, filter);
-
         try {
             checkUpdatesAllowed(cacheCtx);
         }
@@ -1930,87 +1920,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
-     * Internal method for remove operations in Mvcc mode.
-     *
-     * @param cacheCtx Cache context.
-     * @param keys Keys to remove.
-     * @param retval Flag indicating whether a value should be returned.
-     * @param filter Filter.
-     * @return Future for asynchronous remove.
-     */
-    @SuppressWarnings("unchecked")
-    private <K, V> IgniteInternalFuture<GridCacheReturn> mvccRemoveAllAsync0(
-        final GridCacheContext cacheCtx,
-        @Nullable final Collection<? extends K> keys,
-        final boolean retval,
-        @Nullable final CacheEntryPredicate filter
-    ) {
-        try {
-            MvccUtils.requestSnapshot(this);
-
-            beforeRemove(cacheCtx, retval);
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture(e);
-        }
-
-        if (F.isEmpty(keys)) {
-            if (implicit()) {
-                try {
-                    commit();
-                }
-                catch (IgniteCheckedException e) {
-                    return new GridFinishedFuture<>(e);
-                }
-            }
-
-            return new GridFinishedFuture<>(new GridCacheReturn(localResult(), true));
-        }
-
-        init();
-
-        Set<KeyCacheObject> enlisted = new HashSet<>(keys.size());
-
-        try {
-            for (Object key : keys) {
-                if (isRollbackOnly())
-                    return new GridFinishedFuture<>(timedOut() ? timeoutException() : rollbackException());
-
-                if (key == null) {
-                    rollback();
-
-                    throw new NullPointerException("Null key.");
-                }
-
-                KeyCacheObject cacheKey = cacheCtx.toCacheKeyObject(key);
-
-                enlisted.add(cacheKey);
-            }
-
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture(e);
-        }
-
-        return updateAsync(cacheCtx, new UpdateSourceIterator<KeyCacheObject>() {
-
-            private final Iterator<KeyCacheObject> it = enlisted.iterator();
-
-            @Override public EnlistOperation operation() {
-                return EnlistOperation.DELETE;
-            }
-
-            @Override public boolean hasNextX() {
-                return it.hasNext();
-            }
-
-            @Override public KeyCacheObject nextX() {
-                return it.next();
-            }
-        }, retval, filter, remainingTime());
-    }
-
-    /**
      * @param cacheCtx Cache context.
      * @param cacheIds Involved cache ids.
      * @param parts Partitions.
@@ -2207,9 +2116,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean needVer) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.emptyMap());
-
-        if (cacheCtx.mvccEnabled() && !isOperationAllowed(true))
-            return txTypeMismatchFinishFuture();
 
         init();
 
@@ -4811,14 +4717,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @throws IgniteCheckedException If failed.
      */
     private void beforePut(GridCacheContext cacheCtx, boolean retval, boolean mvccOp) throws IgniteCheckedException {
-        assert !mvccOp || cacheCtx.mvccEnabled();
+        assert !mvccOp;
 
         checkUpdatesAllowed(cacheCtx);
 
         cacheCtx.checkSecurity(SecurityPermission.CACHE_PUT);
-
-        if (cacheCtx.mvccEnabled() && !isOperationAllowed(mvccOp))
-            throw new IgniteCheckedException(TX_TYPE_MISMATCH_ERR_MSG);
 
         if (retval)
             needReturnValue(true);
@@ -4826,27 +4729,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         checkValid();
 
         init();
-    }
-
-    /**
-     * @param cacheCtx Cache context.
-     * @param retval Return value flag.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void beforeRemove(GridCacheContext cacheCtx, boolean retval) throws IgniteCheckedException {
-        assert cacheCtx.mvccEnabled();
-
-        checkUpdatesAllowed(cacheCtx);
-
-        cacheCtx.checkSecurity(SecurityPermission.CACHE_REMOVE);
-
-        if (cacheCtx.mvccEnabled() && !isOperationAllowed(true))
-            throw new IgniteCheckedException(TX_TYPE_MISMATCH_ERR_MSG);
-
-        if (retval)
-            needReturnValue(true);
-
-        checkValid();
     }
 
     /**
