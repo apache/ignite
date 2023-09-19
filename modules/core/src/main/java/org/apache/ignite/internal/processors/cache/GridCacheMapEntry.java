@@ -2864,10 +2864,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             long delta = expireTime - U.currentTimeMillis();
 
             if (delta <= 0) {
-                if (cctx.mvccEnabled())
-                    cctx.offheap().mvccRemoveAll(this);
-                else
-                    removeValue();
+                removeValue();
 
                 return true;
             }
@@ -3042,45 +3039,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         }
                     }
 
-                    if (cctx.mvccEnabled()) {
-                        assert !preload;
-
-                        cctx.offheap().mvccInitialValue(this, val, ver, expTime, mvccVer, newMvccVer);
-                    }
-                    else
-                        storeValue(val, expTime, ver, null, row);
+                    storeValue(val, expTime, ver, null, row);
                 }
             }
-            else {
-                if (cctx.mvccEnabled()) {
-                    // cannot identify whether the entry is exist on the fly
-                    unswap(false);
+            else
+                update = storeValue(val, expTime, ver, p, row);
 
-                    if (update = p.apply(null)) {
-                        // If entry is already unswapped and we are modifying it, we must run deletion callbacks for old value.
-                        long oldExpTime = expireTimeUnlocked();
-                        long delta = (oldExpTime == 0 ? 0 : oldExpTime - U.currentTimeMillis());
-
-                        if (delta < 0) {
-                            if (onExpired(this.val, null)) {
-                                if (cctx.deferredDelete()) {
-                                    deferred = true;
-                                    oldVer = this.ver;
-                                }
-                                else if (val == null)
-                                    obsolete = true;
-                            }
-                        }
-
-                        assert !preload;
-
-                        cctx.offheap().mvccInitialValue(this, val, ver, expTime, mvccVer, newMvccVer);
-                    }
-                }
-                else
-                    // Optimization to access storage only once.
-                    update = storeValue(val, expTime, ver, p, row);
-            }
 
             if (update) {
                 update(val, expTime, ttl, ver, true);
@@ -3102,34 +3066,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     updateCntr = nextPartitionCounter(topVer, true, true, null);
 
                 if (walEnabled) {
-                    if (cctx.mvccEnabled()) {
-                        cctx.group().wal().log(new MvccDataRecord(new MvccDataEntry(
-                            cctx.cacheId(),
-                            key,
-                            val,
-                            val == null ? DELETE : GridCacheOperation.CREATE,
-                            null,
-                            ver,
-                            expireTime,
-                            partition(),
-                            updateCntr,
-                            mvccVer == null ? MvccUtils.INITIAL_VERSION : mvccVer
-                        )));
-                    }
-                    else {
-                        cctx.group().wal().log(new DataRecord(new DataEntry(
-                            cctx.cacheId(),
-                            key,
-                            val,
-                            val == null ? DELETE : GridCacheOperation.CREATE,
-                            null,
-                            ver,
-                            expireTime,
-                            partition(),
-                            updateCntr,
-                            DataEntry.flags(primary, preload, fromStore)
-                        )));
-                    }
+                    cctx.group().wal().log(new DataRecord(new DataEntry(
+                        cctx.cacheId(),
+                        key,
+                        val,
+                        val == null ? DELETE : GridCacheOperation.CREATE,
+                        null,
+                        ver,
+                        expireTime,
+                        partition(),
+                        updateCntr,
+                        DataEntry.flags(primary, preload, fromStore)
+                    )));
                 }
 
                 drReplicate(drType, val, ver, topVer);
@@ -3748,10 +3696,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (log.isTraceEnabled())
             log.trace("onExpired clear [key=" + key + ", entry=" + System.identityHashCode(this) + ']');
 
-        if (cctx.mvccEnabled())
-            cctx.offheap().mvccRemoveAll(this);
-        else
-            removeValue();
+        removeValue();
 
         if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
             cctx.events().addEvent(partition(),
