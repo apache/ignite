@@ -317,7 +317,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean mvccEnabled() {
+    public boolean mvccEnabled() {
         return false;
     }
 
