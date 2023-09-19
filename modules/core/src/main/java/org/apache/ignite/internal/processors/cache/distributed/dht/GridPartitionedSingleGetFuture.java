@@ -190,7 +190,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         @Nullable MvccSnapshot mvccSnapshot
     ) {
         assert key != null;
-        assert mvccSnapshot == null || cctx.mvccEnabled();
+        assert mvccSnapshot == null;
 
         AffinityTopologyVersion lockedTopVer = cctx.shared().lockedTopologyVersion(null);
 
