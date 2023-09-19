@@ -68,8 +68,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -1989,10 +1987,10 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         try {
                             if (entry.initialValue(info.value(),
                                 info.version(),
-                                cacheCtx.mvccEnabled() ? ((MvccVersionAware)info).mvccVersion() : null,
-                                cacheCtx.mvccEnabled() ? ((MvccUpdateVersionAware)info).newMvccVersion() : null,
-                                cacheCtx.mvccEnabled() ? ((MvccVersionAware)info).mvccTxState() : TxState.NA,
-                                cacheCtx.mvccEnabled() ? ((MvccUpdateVersionAware)info).newMvccTxState() : TxState.NA,
+                                null,
+                                null,
+                                TxState.NA,
+                                TxState.NA,
                                 info.ttl(),
                                 info.expireTime(),
                                 true,

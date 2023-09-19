@@ -55,8 +55,6 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLo
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -1351,10 +1349,10 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             try {
                                 if (entry.initialValue(info.value(),
                                     info.version(),
-                                    cctx.mvccEnabled() ? ((MvccVersionAware)info).mvccVersion() : null,
-                                    cctx.mvccEnabled() ? ((MvccUpdateVersionAware)info).newMvccVersion() : null,
-                                    cctx.mvccEnabled() ? ((MvccVersionAware)entry).mvccTxState() : TxState.NA,
-                                    cctx.mvccEnabled() ? ((MvccUpdateVersionAware)entry).newMvccTxState() : TxState.NA,
+                                    null,
+                                    null,
+                                    TxState.NA,
+                                    TxState.NA,
                                     info.ttl(),
                                     info.expireTime(),
                                     true,
