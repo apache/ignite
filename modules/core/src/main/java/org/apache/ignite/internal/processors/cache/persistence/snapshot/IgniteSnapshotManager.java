@@ -766,7 +766,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         try {
             File binDir = binaryWorkDir(snpDir.getAbsolutePath(), folderName);
             File nodeDbDir = new File(snpDir.getAbsolutePath(), databaseRelativePath(folderName));
-            File smf = new File(snpDir, snapshotMetaFileName());
+            File smf = new File(snpDir, snapshotMetaFileName(folderName));
 
             U.delete(binDir);
             U.delete(nodeDbDir);
@@ -954,7 +954,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             SnapshotMetadata meta;
 
             try {
-                meta = readSnapshotMetadata(new File(snapshotLocalDir(req.snapshotName(), req.snapshotPath()), snapshotMetaFileName()));
+                meta = readSnapshotMetadata(new File(
+                    snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
+                    snapshotMetaFileName(cctx.localNode().consistentId().toString())
+                ));
 
                 checkIncrementalCanBeCreated(req.snapshotName(), req.snapshotPath(), meta);
             }
@@ -1055,7 +1058,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 markWalFut.result()
             );
 
-            storeSnapshotMeta(incMeta, new File(incSnpDir, snapshotMetaFileName()));
+            storeSnapshotMeta(
+                incMeta,
+                new File(incSnpDir, snapshotMetaFileName(pdsSettings.folderName()))
+            );
 
             return new SnapshotOperationResponse();
         });
@@ -1100,7 +1106,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Nullable String snpPath,
         int incIdx
     ) throws IgniteCheckedException, IOException {
-        return readFromFile(new File(incrementalSnapshotLocalDir(snpName, snpPath, incIdx), snapshotMetaFileName()));
+        return readFromFile(new File(
+            incrementalSnapshotLocalDir(snpName, snpPath, incIdx),
+            snapshotMetaFileName(pdsSettings.folderName())
+        ));
     }
 
     /**
@@ -1197,7 +1206,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 req.meta(meta);
 
-                File smf = new File(snpDir, snapshotMetaFileName());
+                File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
 
                 storeSnapshotMeta(req.meta(), smf);
 
@@ -1438,8 +1447,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return;
 
         File snpDir = snapshotLocalDir(snpReq.snapshotName(), snpReq.snapshotPath());
-        File tempSmf = new File(snpDir, snapshotMetaFileName() + SNAPSHOT_METAFILE_TMP_EXT);
-        File smf = new File(snpDir, snapshotMetaFileName());
+        File tempSmf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()) +
+            SNAPSHOT_METAFILE_TMP_EXT);
+        File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
 
         try {
             storeSnapshotMeta(snpReq.meta(), tempSmf);
@@ -2555,11 +2565,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "cache groups stopped: " + retain));
             }
         }
-    }
-
-    /** @return Snapshot metadata file name. */
-    private String snapshotMetaFileName() {
-        return snapshotMetaFileName(pdsSettings.folderName());
     }
 
     /**
