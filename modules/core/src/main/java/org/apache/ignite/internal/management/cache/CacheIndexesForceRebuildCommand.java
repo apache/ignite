@@ -167,7 +167,7 @@ public class CacheIndexesForceRebuildCommand
     /**
      * Prints new header {@code text} to {@code b} and puts new lines before if required by {@code newLineReuired}.
      *
-     * @return {@code True}. After any header arised new lines are required for the next header.
+     * @return {@code True}. After any arised header new lines are required for a next header.
      */
     private static boolean header(SB b, String text, boolean newLineReuired) {
         if (newLineReuired)
