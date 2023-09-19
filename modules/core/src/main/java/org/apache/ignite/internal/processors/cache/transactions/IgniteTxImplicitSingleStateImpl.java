@@ -316,7 +316,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         return entry != null ? entry.get(0) : null;
     }
 
-    /** {@inheritDoc} */
+    /** MVCC Enabled */
     public boolean mvccEnabled() {
         return false;
     }

@@ -130,7 +130,7 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
         assert false;
     }
 
-    /** {@inheritDoc} */
+    /** MVCC Enabled */
     public boolean mvccEnabled() {
         return mvccEnabled;
     }
