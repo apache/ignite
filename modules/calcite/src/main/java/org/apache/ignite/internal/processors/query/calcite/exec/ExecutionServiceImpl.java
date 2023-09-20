@@ -76,15 +76,14 @@ import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
-import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
-import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
 import org.apache.ignite.internal.processors.query.calcite.prepare.DdlPlan;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ExecutionPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadataImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
@@ -561,22 +560,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     ) {
         qry.mapping();
 
-        MappingQueryContext mapCtx = Commons.mapContext(locNodeId, topologyVersion(), qry.context().isLocal());
+        MappingQueryContext mapCtx = Commons.mapContext(locNodeId, topologyVersion(), qry.context());
 
-        plan.init(mappingSvc, mapCtx);
+        ExecutionPlan execPlan = plan.init(mappingSvc, mapCtx);
 
-        List<Fragment> fragments = plan.fragments();
-
-        if (!F.isEmpty(qry.context().partitions())) {
-            fragments = Commons.transform(fragments, f -> {
-                try {
-                    return f.filterByPartitions(qry.context().partitions());
-                }
-                catch (ColocationMappingException e) {
-                    throw new FragmentMappingException("Failed to calculate physical distribution", f, f.root(), e);
-                }
-            });
-        }
+        List<Fragment> fragments = execPlan.fragments();
 
         // Local execution
         Fragment fragment = F.first(fragments);
@@ -584,13 +572,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         if (U.assertionsEnabled()) {
             assert fragment != null;
 
-            FragmentMapping mapping = plan.mapping(fragment);
+            FragmentMapping mapping = execPlan.mapping(fragment);
 
             assert mapping != null;
 
             List<UUID> nodes = mapping.nodeIds();
 
-            assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(localNodeId())
+            assert nodes != null && (nodes.size() == 1 && F.first(nodes).equals(localNodeId()) || nodes.isEmpty())
                     : "nodes=" + nodes + ", localNode=" + localNodeId();
         }
 
@@ -603,9 +591,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         FragmentDescription fragmentDesc = new FragmentDescription(
             fragment.fragmentId(),
-            plan.mapping(fragment),
-            plan.target(fragment),
-            plan.remotes(fragment));
+            execPlan.mapping(fragment),
+            execPlan.target(fragment),
+            execPlan.remotes(fragment));
 
         ExecutionContext<Row> ectx = new ExecutionContext<>(
             qry.context(),
@@ -624,7 +612,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
             exchangeService(), failureProcessor()).go(fragment.root());
 
-        qry.run(ectx, plan, node);
+        qry.run(ectx, execPlan, plan.fieldsMetadata(), node);
 
         Map<UUID, Long> fragmentsPerNode = fragments.stream()
             .skip(1)
@@ -636,9 +624,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             fragment = fragments.get(i);
             fragmentDesc = new FragmentDescription(
                 fragment.fragmentId(),
-                plan.mapping(fragment),
-                plan.target(fragment),
-                plan.remotes(fragment));
+                execPlan.mapping(fragment),
+                execPlan.target(fragment),
+                execPlan.remotes(fragment));
 
             Throwable ex = null;
             byte[] parametersMarshalled = null;
