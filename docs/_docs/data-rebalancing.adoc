@@ -127,20 +127,22 @@ tab:C++[unsupported]
 
 == Other Properties
 
-The following table lists the properties of `CacheConfiguration` related to rebalancing:
+The following table lists the properties of `IgniteConfiguration` related to rebalancing:
 
 [CAUTION]
 ====
-`rebalanceDelay` and related API's are deprecated and will be removed in the next releases.
+`AVAILABLE_PROC_CNT` -  Default core size of public thread pool.
+
 ====
 
 [cols="1,4,1",opts="header"]
 |===
 | Property | Description  | Default Value
-| `rebalanceDelay` | A delay in milliseconds before the rebalancing process starts after a node joins or leaves the topology. Rebalancing delay is useful if you plan to restart nodes or start multiple nodes at once or one after another and don't want to repartition and rebalance the data until all nodes are started.
-|0 (no delay)
+| `rebalanceThreadPoolSize` |Rebalance thread pool size. Limit of threads used for rebalance. | min(4, max(1, AVAILABLE_PROC_CNT / 4))
 
 |`rebalanceBatchSize` | The size in bytes of a single rebalance message. The rebalancing algorithm splits the data on every node into multiple batches prior to sending it to other nodes. | 512KB
+
+|`rebalanceBatchesPrefetchCnt` | Rebalance batches prefetch count. | 3
 
 |`rebalanceThrottle`  | See <<#throttling>>.| 0 (throttling disabled)
 
