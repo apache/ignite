@@ -520,19 +520,13 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static String invokeCheckCommand(IgniteEx ign, String name) {
-        Object[] args = {name};
+    public static String invokeCheckCommand(IgniteEx ign, String name) throws IgniteCheckedException {
+        StringBuffer buf = new StringBuffer();
 
-        String[] signature = new String[args.length];
+        ign.context().cache().context().snapshotMgr().checkSnapshot(name, null).get(60_000)
+            .print(line -> buf.append(line).append(System.lineSeparator()));
 
-        Arrays.fill(signature, String.class.getName());
-
-        try {
-            return (String)mngmntBean(ign, "Dump", "Check").invoke(INVOKE, args, signature);
-        }
-        catch (MBeanException | ReflectionException e) {
-            throw new IgniteException(e);
-        }
+        return buf.toString();
     }
 
     /** */
