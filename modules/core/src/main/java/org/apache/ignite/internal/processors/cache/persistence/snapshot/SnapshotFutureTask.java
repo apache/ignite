@@ -455,7 +455,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
     }
 
     /** {@inheritDoc} */
-    @Override protected List<CompletableFuture<Void>> saveCacheConfigsCopy() {
+    @Override protected List<CompletableFuture<Void>> saveCacheConfigs() {
         // Send configuration files of all cache groups.
         return ccfgSndrs.stream()
             .map(ccfgSndr -> runAsync(ccfgSndr::sendCacheConfig))

@@ -754,19 +754,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param snpDir Snapshot dir.
-     * @param folderName Local node folder name (see {@link U#maskForFileName} with consistent id).
+     * @param pdsSettings PDS settings.
      */
-    public void deleteSnapshot(File snpDir, String folderName) {
+    public void deleteSnapshot(File snpDir, PdsFolderSettings<?> pdsSettings) {
         if (!snpDir.exists())
             return;
 
         if (!snpDir.isDirectory())
             return;
 
+        String folderName = pdsSettings.folderName();
+
         try {
             File binDir = binaryWorkDir(snpDir.getAbsolutePath(), folderName);
             File nodeDbDir = new File(snpDir.getAbsolutePath(), databaseRelativePath(folderName));
-            File smf = new File(snpDir, snapshotMetaFileName(folderName));
+            File smf = new File(snpDir, snapshotMetaFileName(U.maskForFileName(pdsSettings.consistentId().toString())));
 
             U.delete(binDir);
             U.delete(nodeDbDir);
@@ -1206,7 +1208,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 req.meta(meta);
 
-                File smf = new File(snpDir, snapshotMetaFileName(pdsSettings.folderName()));
+                File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
 
                 storeSnapshotMeta(req.meta(), smf);
 
@@ -1396,7 +1398,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     if (req.incremental())
                         U.delete(incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.incrementIndex()));
                     else
-                        deleteSnapshot(snapshotLocalDir(req.snapshotName(), req.snapshotPath()), pdsSettings.folderName());
+                        deleteSnapshot(snapshotLocalDir(req.snapshotName(), req.snapshotPath()), pdsSettings);
                 }
                 else if (!F.isEmpty(req.warnings())) {
                     // Pass the warnings further to the next stage for the case when snapshot started from not coordinator.
@@ -1408,7 +1410,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     storeWarnings(snpReq);
                 }
 
-                if (!req.dump()) {
+                if (req.dump())
+                    removeDumpLock(req.snapshotName());
+                else {
                     removeLastMetaStorageKey();
 
                     if (req.error() == null) {
@@ -1417,8 +1421,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         enableIncrementalSnapshotsCreation(grpIds);
                     }
                 }
-                else
-                    removeDumpLock(req.snapshotName());
             }
             catch (Exception e) {
                 throw F.wrap(e);
@@ -2456,7 +2458,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (INC_SNP_NAME_PATTERN.matcher(snpDir.getName()).matches() && snpDir.getAbsolutePath().contains(INC_SNP_DIR))
             U.delete(snpDir);
         else
-            deleteSnapshot(snpDir, pdsSettings.folderName());
+            deleteSnapshot(snpDir, pdsSettings);
 
         if (log.isInfoEnabled()) {
             log.info("Previous attempt to create snapshot fail due to the local node crash. All resources " +
@@ -2809,9 +2811,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** @param snpLocDir Snapshot local directory. */
     public void writeSnapshotDirectoryToMetastorage(File snpLocDir) {
-        if (currentCreateRequest().dump())
-            return;
-
         cctx.database().checkpointReadLock();
 
         try {
@@ -4291,7 +4290,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     log.info("The Local snapshot sender closed. All resources released [dbNodeSnpDir=" + dbDir + ']');
             }
             else {
-                deleteSnapshot(snpLocDir, pdsSettings.folderName());
+                deleteSnapshot(snpLocDir, pdsSettings);
 
                 if (log.isDebugEnabled())
                     log.debug("Local snapshot sender closed due to an error occurred: " + th.getMessage());

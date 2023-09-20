@@ -2360,6 +2360,9 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** */
     public void dumpListener(DumpEntryChangeListener dumpEntryChangeLsnr) {
+        assert this.dumpLsnr == null || dumpEntryChangeLsnr == null;
+        assert cacheType == CacheType.USER;
+
         this.dumpLsnr = dumpEntryChangeLsnr;
     }
 
