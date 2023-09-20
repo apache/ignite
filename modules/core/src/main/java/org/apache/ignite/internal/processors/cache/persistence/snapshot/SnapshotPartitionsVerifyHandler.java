@@ -106,8 +106,18 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         SnapshotMetadata meta = opCtx.metadata();
 
-        Set<Integer> grps = F.isEmpty(opCtx.groups()) ? new HashSet<>(meta.partitions().keySet()) :
-            opCtx.groups().stream().map(CU::cacheId).collect(Collectors.toSet());
+        Set<Integer> grps = F.isEmpty(opCtx.groups())
+            ? new HashSet<>(meta.partitions().keySet())
+            : opCtx.groups().stream().map(CU::cacheId).collect(Collectors.toSet());
+
+        if (type() == SnapshotHandlerType.CREATE) {
+            grps = grps.stream().filter(grp -> grp == MetaStorage.METASTORAGE_CACHE_ID ||
+                CU.affinityNode(
+                    cctx.localNode(),
+                    cctx.kernalContext().cache().cacheGroupDescriptor(grp).config().getNodeFilter()
+                )
+            ).collect(Collectors.toSet());
+        }
 
         Set<File> partFiles = new HashSet<>();
 

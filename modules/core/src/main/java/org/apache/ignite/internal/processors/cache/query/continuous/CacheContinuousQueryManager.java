@@ -434,7 +434,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                 cctx.cacheId(),
                 evtType,
                 key,
-                (!internal && evtType == REMOVED && lsnr.oldValueRequired()) ? oldVal : newVal,
+                newVal,
                 lsnr.oldValueRequired() ? oldVal : null,
                 lsnr.keepBinary(),
                 partId,
@@ -496,7 +496,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                     cctx.cacheId(),
                     EXPIRED,
                     key,
-                    lsnr.oldValueRequired() ? oldVal : null,
+                    null,
                     lsnr.oldValueRequired() ? oldVal : null,
                     lsnr.keepBinary(),
                     e.partition(),
@@ -1433,16 +1433,8 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         }
 
         /** {@inheritDoc} */
-        @Override public Object getValue() {
+        @Override public Object getNewValue() {
             return val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object unwrap(Class cls) {
-            if (cls.isAssignableFrom(getClass()))
-                return cls.cast(this);
-
-            throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
         }
 
         /** {@inheritDoc} */

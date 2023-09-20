@@ -56,9 +56,9 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -169,18 +169,9 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
      */
     @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
-    public void testConcurrentUpdatesWithMvcc() throws Exception {
-        doTestConcurrentUpdates(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
-    public void testConcurrentUpdatesNoMvcc() throws Exception {
+    public void testConcurrentUpdates() throws Exception {
         try {
-            doTestConcurrentUpdates(false);
+            doTestConcurrentUpdates();
 
             throw new IllegalStateException("Expected to detect data inconsistency.");
         }
@@ -190,7 +181,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void doTestConcurrentUpdates(boolean enableMvcc) throws Exception {
+    private void doTestConcurrentUpdates() throws Exception {
         final String cacheName = "test_updates";
 
         IgniteEx server = startGrid(0);
@@ -198,9 +189,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
 
         CacheConfiguration<Long, Long> ccfg = new CacheConfiguration<>(cacheName);
         ccfg.setIndexedTypes(Long.class, Long.class);
-        ccfg.setAtomicityMode(enableMvcc ?
-            CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT :
-            CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         IgniteCache<Long, Long> cache = server.createCache(ccfg);
 
@@ -268,7 +257,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
                     tx.commit();
                 }
                 catch (CacheException e) {
-                    MvccFeatureChecker.assertMvccWriteConflict(e);
+                    assertTrue(e.getCause() instanceof TransactionSerializationException);
 
                     if (!e.getMessage().contains(
                         "Cannot serialize transaction due to write conflict (transaction is marked for rollback)"))

@@ -1628,10 +1628,6 @@ public final class IgniteSystemProperties {
         defaults = "" + DFLT_ALLOW_START_CACHES_IN_PARALLEL)
     public static final String IGNITE_ALLOW_START_CACHES_IN_PARALLEL = "IGNITE_ALLOW_START_CACHES_IN_PARALLEL";
 
-    /** For test purposes only. Force Mvcc mode. */
-    @SystemProperty("For test purposes only. Force Mvcc mode")
-    public static final String IGNITE_FORCE_MVCC_MODE_IN_TESTS = "IGNITE_FORCE_MVCC_MODE_IN_TESTS";
-
     /**
      * Allows to log additional information about all restored partitions after binary and logical recovery phases.
      *

@@ -342,5 +342,10 @@ public final class HeavyQueriesTracker {
             if (bigResults)
                 LT.warn(log, BIG_RESULT_SET_MSG + qryInfo.queryInfo("fetched=" + fetchedSize));
         }
+
+        /** */
+        public long fetchedSize() {
+            return fetchedSize;
+        }
     }
 }
