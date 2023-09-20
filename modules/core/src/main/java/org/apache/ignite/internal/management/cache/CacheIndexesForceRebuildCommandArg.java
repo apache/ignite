@@ -27,7 +27,7 @@ import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-@ArgumentGroup(value = {"nodeId", "nodeIds"}, onlyOneOf = true, optional = false)
+@ArgumentGroup(value = {"nodeIds", "allNodes", "nodeId"}, onlyOneOf = true, optional = false)
 @ArgumentGroup(value = {"cacheNames", "groupNames"}, onlyOneOf = true, optional = false)
 public class CacheIndexesForceRebuildCommandArg extends IgniteDataTransferObject {
     /** */
@@ -43,6 +43,10 @@ public class CacheIndexesForceRebuildCommandArg extends IgniteDataTransferObject
         example = "nodeId1,...nodeIdN"
     )
     private UUID[] nodeIds;
+
+    /** Flag to launch index rebuild on all nodes. */
+    @Argument(description = "Rebuild index on all nodes")
+    private boolean allNodes;
 
     /** */
     @Argument(description = "Comma-separated list of cache names for which indexes should be rebuilt",
@@ -60,6 +64,7 @@ public class CacheIndexesForceRebuildCommandArg extends IgniteDataTransferObject
         U.writeArray(out, cacheNames);
         U.writeArray(out, groupNames);
         U.writeArray(out, nodeIds);
+        out.writeBoolean(allNodes);
     }
 
     /** {@inheritDoc} */
@@ -68,6 +73,7 @@ public class CacheIndexesForceRebuildCommandArg extends IgniteDataTransferObject
         cacheNames = U.readArray(in, String.class);
         groupNames = U.readArray(in, String.class);
         nodeIds = U.readArray(in, UUID.class);
+        allNodes = in.readBoolean();
     }
 
     /** */
@@ -83,6 +89,16 @@ public class CacheIndexesForceRebuildCommandArg extends IgniteDataTransferObject
     /** */
     public UUID[] nodeIds() {
         return nodeIds;
+    }
+
+    /** */
+    public void allNodes(boolean allNodes) {
+        this.allNodes = allNodes;
+    }
+
+    /** */
+    public boolean allNodes() {
+        return allNodes;
     }
 
     /** */

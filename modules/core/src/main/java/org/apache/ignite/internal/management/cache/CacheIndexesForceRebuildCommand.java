@@ -75,20 +75,26 @@ public class CacheIndexesForceRebuildCommand
 
     /** {@inheritDoc} */
     @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, CacheIndexesForceRebuildCommandArg arg) {
-        Collection<GridClientNode> res = arg.nodeIds() != null
-            ? CommandUtils.nodes(arg.nodeIds(), nodes)
-            : CommandUtils.nodeOrNull(arg.nodeId(), nodes);
+        Collection<GridClientNode> res;
+        if (arg.allNodes())
+            res = nodes.stream().filter(n -> !n.isClient()).collect(Collectors.toList());
+        else {
+            res = arg.nodeIds() != null
+                ? CommandUtils.nodes(arg.nodeIds(), nodes)
+                : CommandUtils.node(arg.nodeId(), nodes);
 
-        if (!F.isEmpty(res)) {
-            for (GridClientNode n : res) {
-                if (n != null && n.isClient())
-                    throw new IllegalArgumentException("Please, specify server node id");
+            if (!F.isEmpty(res)) {
+                for (GridClientNode n : res) {
+                    if (n != null && n.isClient())
+                        throw new IllegalArgumentException("Please, specify only server node ids");
+                }
             }
-
-            return res;
         }
 
-        return null;
+        if (F.isEmpty(res))
+            throw new IllegalArgumentException("Please, specify oat least one server node");
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -97,7 +103,7 @@ public class CacheIndexesForceRebuildCommand
         Map<UUID, IndexForceRebuildTaskRes> results,
         Consumer<String> printer
     ) {
-        if (F.isEmpty(arg.nodeIds())) {
+        if (arg.nodeId() != null) {
             printSingleResult(arg, results.values().iterator().next(), printer);
 
             return;

@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFuture
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -245,7 +247,19 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
                 "--node-ids", grid(LAST_NODE_NUM).localNode().id().toString() + ',' + grid(0).localNode().id().toString(),
                 "--node-id", grid(LAST_NODE_NUM).localNode().id().toString(),
                 "--cache-names", CACHE_NAME_NO_GRP),
-            "Only one of [--node-ids, --node-id] allowed");
+            "Only one of [--node-ids, --all-nodes, --node-id] allowed");
+
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--cache", "indexes_force_rebuild",
+                "--node-ids", grid(LAST_NODE_NUM).localNode().id().toString() + ',' + grid(0).localNode().id().toString(),
+                "--all-nodes",
+                "--cache-names", CACHE_NAME_NO_GRP),
+            "Only one of [--node-ids, --all-nodes, --node-id] allowed");
+
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--cache", "indexes_force_rebuild",
+                "--all-nodes",
+                "--node-id", grid(LAST_NODE_NUM).localNode().id().toString(),
+                "--cache-names", CACHE_NAME_NO_GRP),
+            "Only one of [--node-ids, --all-nodes, --node-id] allowed");
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--cache", "indexes_force_rebuild",
                 "--node-id", grid(LAST_NODE_NUM).localNode().id().toString(),
@@ -313,7 +327,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     }
 
     /**
-     * Checks output of index rebuilding launched on several nodes using 'nodes-ids'.
+     * Checks output of index rebuilding launched on several nodes using '--nodes-ids'.
      */
     @Test
     public void testIndexRebuildOutputTwoNodes() throws Exception {
@@ -340,6 +354,38 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
             blockRebuildIdx.remove(CACHE_NAME_2_1);
 
             assertTrue(waitForIndexesRebuild(grid(LAST_NODE_NUM)));
+        }
+    }
+
+    /**
+     * Checks output of index rebuilding launched on all nodes using '--all-nodes'.
+     */
+    @Test
+    public void testIndexRebuildAllNodes() throws IgniteInterruptedCheckedException {
+        injectTestSystemOut();
+
+        LogListener[] cacheLsnrs = new LogListener[GRIDS_NUM];
+
+        try {
+            for (int i = 0; i < GRIDS_NUM; i++)
+                cacheLsnrs[i] = installRebuildCheckListener(grid(i), CACHE_NAME_1_1);
+
+            assertEquals(EXIT_CODE_OK, execute("--cache", "indexes_force_rebuild", "--all-nodes", "--cache-names",
+                CACHE_NAME_1_1));
+
+            String outputStr = testOut.toString();
+
+            validateOutputIndicesRebuildWasStarted(outputStr, F.asMap(GRP_NAME_1, F.asList(CACHE_NAME_1_1)), GRIDS_NUM);
+
+            for (Ignite ig : G.allGrids())
+                waitForIndexesRebuild((IgniteEx)ig);
+
+            for (LogListener lsnr : cacheLsnrs)
+                assertTrue(lsnr.check());
+        }
+        finally {
+            for (int i = 0; i < GRIDS_NUM; i++)
+                removeLogListener(grid(i), cacheLsnrs[i]);
         }
     }
 
@@ -620,7 +666,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      *                   expected as for '--node-ids'.
      * @param cacheNames Cache names to print.
      */
-    private void validateOutputCacheNamesNotFound(String outputStr, @Nullable Integer nodesCnt, String... cacheNames) {
+    private static void validateOutputCacheNamesNotFound(String outputStr, @Nullable Integer nodesCnt, String... cacheNames) {
         validateOutput(
             outputStr,
             CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND,
@@ -648,7 +694,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      * @param strings List of strings.
      * @return Formated text.
      */
-    private String makeStringListWithIndent(String... strings) {
+    private static String makeStringListWithIndent(String... strings) {
         return INDENT + String.join(U.nl() + INDENT, strings);
     }
 
