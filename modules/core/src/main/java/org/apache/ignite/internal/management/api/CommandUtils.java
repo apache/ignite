@@ -435,8 +435,14 @@ public class CommandUtils {
      * @see #argumentGroupsValues(Class)
      */
     public static List<Set<String>> argumentGroupsValues(List<ArgumentGroup> argGrps) {
-        return argGrps.stream().map(grp -> new HashSet<>(Arrays.asList(grp.value())))
+        List<Set<String>> res = argGrps.stream().map(grp -> new HashSet<>(Arrays.asList(grp.value())))
             .collect(Collectors.toList());
+
+        // Checks that argument groups values have no same entries.
+        assert F.flatCollections(res).stream().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+            .entrySet().stream().noneMatch(e -> e.getValue() > 1) : "Argument groups " + argGrps + " have not unique arguments";
+
+        return res;
     }
 
     /**
