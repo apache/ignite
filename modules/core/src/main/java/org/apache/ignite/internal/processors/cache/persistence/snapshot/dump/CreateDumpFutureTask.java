@@ -424,10 +424,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                         reasonToSkip = "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
                     else {
                         synchronized (this) {
-                            if (closed) // Partition already saved in dump.
-                                reasonToSkip = "partition already saved";
-                            else
-                                write(cache, expireTime, key, val);
+                            write(cache, expireTime, key, val);
                         }
 
                         changedCnt.increment();
@@ -491,8 +488,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         /** */
         private void write(int cache, long expireTime, KeyCacheObject key, CacheObject val) {
-            assert !closed;
-
             try {
                 ByteBuffer buf = serdes.writeToBuffer(cache, expireTime, key, val, cctx.cacheObjectContext(cache));
 
@@ -510,12 +505,12 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 return;
 
             synchronized (this) {
-                closed = true;
+                closed = true; // New listener invocations prohibited.
             }
 
             writers.decrementAndGet();
 
-            while (writers.get() > 0)
+            while (writers.get() > 0) // Waiting for all on the fly listeners to complete.
                 LockSupport.parkNanos(1_000_000);
 
             U.closeQuiet(file);
