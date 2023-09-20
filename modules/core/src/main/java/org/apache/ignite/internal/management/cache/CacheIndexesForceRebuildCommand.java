@@ -167,7 +167,7 @@ public class CacheIndexesForceRebuildCommand
     /**
      * Prints new header {@code text} to {@code b} and puts new lines before if required by {@code newLineReuired}.
      *
-     * @return {@code True}. After any arised header new lines are required for a next header.
+     * @return {@code True}. After any header new lines are required before a next header.
      */
     private static boolean header(SB b, String text, boolean newLineReuired) {
         if (newLineReuired)
@@ -196,7 +196,7 @@ public class CacheIndexesForceRebuildCommand
     }
 
     /**
-     * Prints result if only single node was requested with 'node-id'.
+     * Prints result if only single node was requested with '--node-id' instead of '--node-ids'.
      */
     private static void printSingleResult(
         CacheIndexesForceRebuildCommandArg arg,

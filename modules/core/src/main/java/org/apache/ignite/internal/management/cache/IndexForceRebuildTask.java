@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -121,6 +122,15 @@ public class IndexForceRebuildTask extends VisorMultiNodeTask<CacheIndexesForceR
     @Override protected Map<UUID, IndexForceRebuildTaskRes> reduce0(List<ComputeJobResult> results)
         throws IgniteException {
 
-        return results.stream().collect(Collectors.toMap(r -> r.getNode().id(), ComputeJobResult::getData));
+        Map<UUID, IndexForceRebuildTaskRes> res = new HashMap<>();
+
+        for (ComputeJobResult jobRes : results) {
+            if (jobRes.getException() != null)
+                throw jobRes.getException();
+
+            res.put(jobRes.getNode().id(), jobRes.getData());
+        }
+
+        return res;
     }
 }

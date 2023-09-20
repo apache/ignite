@@ -443,7 +443,7 @@ public class CommandUtils {
      * @return Index of first value set in {@code argGrpValues} containing {@code name}. -1 if not found.
      * @see #argumentGroupsValues(Class)
      */
-    public static int argumentGroupIdx(List<? extends Set<String>> argGrpValues, String name) {
+    public static int argumentGroupIdx(List<Set<String>> argGrpValues, String name) {
         for (int i = 0; i < argGrpValues.size(); ++i) {
             if (argGrpValues.get(i).contains(name))
                 return i;
