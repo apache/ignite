@@ -222,7 +222,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
     /** */
     private boolean isSingleRowLookup(IndexRow lower, IndexRow upper) throws IgniteCheckedException {
-        return !cctx.mvccEnabled() && def.primary() && lower != null && isFullSchemaSearch(lower) && checkRowsTheSame(lower, upper);
+        return def.primary() && lower != null && isFullSchemaSearch(lower) && checkRowsTheSame(lower, upper);
     }
 
     /**
@@ -474,8 +474,6 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             : qryCtx.cacheFilter().forCache(cctx.cache().name());
 
         MvccSnapshot v = qryCtx.mvccSnapshot();
-
-        assert !cctx.mvccEnabled() || v != null;
 
         if (cacheFilter == null && v == null && qryCtx.rowFilter() == null)
             return null;
