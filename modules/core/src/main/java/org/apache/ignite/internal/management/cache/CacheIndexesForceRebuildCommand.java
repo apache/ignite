@@ -76,6 +76,7 @@ public class CacheIndexesForceRebuildCommand
     /** {@inheritDoc} */
     @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, CacheIndexesForceRebuildCommandArg arg) {
         Collection<GridClientNode> res;
+
         if (arg.allNodes())
             res = nodes.stream().filter(n -> !n.isClient()).collect(Collectors.toList());
         else {
