@@ -792,7 +792,8 @@ public class SnapshotRestoreProcess {
                         ctx.compress().checkPageCompressionSupported(path.toPath(), meta.pageSize());
                     }
                     catch (Exception e) {
-                        String grpWithCompr = req.groups().stream().filter(s -> meta.isGroupWithCompresion(CU.cacheId(grpName)))
+                        String grpWithCompr = F.isEmpty(req.groups()) ? ""
+                            : req.groups().stream().filter(s -> meta.isGroupWithCompresion(CU.cacheId(grpName)))
                             .collect(Collectors.joining(", "));
 
                         String msg = "Requested cache groups [" + grpWithCompr + "] for restore " +
