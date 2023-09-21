@@ -43,10 +43,6 @@ import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -536,24 +532,6 @@ public class GridDhtPartitionSupplier {
 
         info.key(row.key());
         info.cacheId(row.cacheId());
-
-        if (grp.mvccEnabled()) {
-            assert row.mvccCoordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA;
-
-            // Rows from rebalance iterator have actual states already.
-            if (row.mvccTxState() != TxState.COMMITTED)
-                return null;
-
-            ((MvccVersionAware)info).mvccVersion(row);
-            ((GridCacheMvccEntryInfo)info).mvccTxState(TxState.COMMITTED);
-
-            if (row.newMvccCoordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA &&
-                row.newMvccTxState() == TxState.COMMITTED) {
-                ((MvccUpdateVersionAware)info).newMvccVersion(row);
-                ((GridCacheMvccEntryInfo)info).newMvccTxState(TxState.COMMITTED);
-            }
-        }
-
         info.value(row.value());
         info.version(row.version());
         info.expireTime(row.expireTime());
