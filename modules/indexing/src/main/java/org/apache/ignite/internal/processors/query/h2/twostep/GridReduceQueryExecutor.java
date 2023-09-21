@@ -80,7 +80,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRespo
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
-import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
 import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
@@ -88,7 +87,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionException;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
@@ -102,8 +100,6 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery.EMPTY_PARAMS;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.mergeTableIdentifier;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.ERROR;
@@ -369,14 +365,6 @@ public class GridReduceQueryExecutor {
         // Partitions are not supported for queries over all replicated caches.
         if (parts != null && qry.isReplicatedOnly())
             throw new CacheException("Partitions are not supported for replicated caches");
-
-        try {
-            if (qry.mvccEnabled())
-                checkActive(tx(ctx));
-        }
-        catch (IgniteTxAlreadyCompletedCheckedException e) {
-            throw new TransactionAlreadyCompletedException(e.getMessage(), e);
-        }
 
         final boolean singlePartMode = parts != null && parts.length == 1;
 
