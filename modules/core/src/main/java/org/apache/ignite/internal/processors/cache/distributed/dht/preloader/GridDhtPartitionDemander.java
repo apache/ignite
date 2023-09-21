@@ -637,13 +637,9 @@ public class GridDhtPartitionDemander {
                                 );
 
                                 try {
-                                    if (grp.mvccEnabled())
-                                        mvccPreloadEntries(topVer, node, p, infosWrap);
-                                    else {
-                                        preloadEntries(topVer, part, infosWrap);
+                                    preloadEntries(topVer, part, infosWrap);
 
-                                        rebalanceFut.onReceivedKeys(p, e.getValue().infos().size(), node);
-                                    }
+                                    rebalanceFut.onReceivedKeys(p, e.getValue().infos().size(), node);
                                 }
                                 catch (GridDhtInvalidPartitionException ignored) {
                                     if (log.isDebugEnabled())
