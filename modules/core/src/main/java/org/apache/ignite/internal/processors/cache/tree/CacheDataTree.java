@@ -187,7 +187,6 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         GridCacheSharedContext shared = grp.shared();
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)shared.database();
         PageStore pageStore = db.getPageStore(grpId, partId);
-        boolean mvccEnabled = grp.mvccEnabled();
         int pageSize = pageSize();
 
         long startPageId = ((PageMemoryEx)pageMem).partitionMetaPageId(grp.groupId(), partId);
@@ -267,7 +266,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
                             for (int i = 0; i < rowsCnt; i++) {
                                 if (c == null || c.applyMvcc(io, pageAddr, i, pageSize)) {
-                                    DataRow row = mvccEnabled ? new MvccDataRow() : new DataRow();
+                                    DataRow row = new DataRow();
 
                                     row.initFromDataPage(
                                         io,

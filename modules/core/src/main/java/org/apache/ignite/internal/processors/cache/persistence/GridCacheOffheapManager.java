@@ -1057,9 +1057,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (partCntrs == null || partCntrs.isEmpty())
             return null;
 
-        if (grp.mvccEnabled()) // TODO IGNITE-7384
-            return super.historicalIterator(partCntrs, missing);
-
         GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager)grp.shared().database();
 
         Map<Integer, Long> partsCounters = new HashMap<>();
@@ -1214,7 +1211,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         grp.dataRegion().pageMemory(),
                         globalRemoveId(),
                         reuseListForIndex(name),
-                        grp.mvccEnabled()
+                        false
                     );
 
                     indexStorage.dropIndex(name);
