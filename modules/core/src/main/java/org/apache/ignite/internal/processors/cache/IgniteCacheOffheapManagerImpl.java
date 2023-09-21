@@ -129,8 +129,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.INITIAL
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_BIT_OFF;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_KEY_ABSENT_BEFORE_OFF;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_MASK;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compare;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isVisible;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccVersionIsValid;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.state;
@@ -3267,80 +3265,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      */
     private static final class MvccApplyChangesHandler extends PageHandler<MvccDataRow, Boolean> {
         /** */
-        private final CacheGroupContext grp;
-
-        /** */
         private MvccApplyChangesHandler(CacheGroupContext grp) {
-            this.grp = grp;
         }
 
         /** {@inheritDoc} */
         @Override public Boolean run(int cacheId, long pageId, long page, long pageAddr, PageIO io, Boolean walPlc,
             MvccDataRow newRow, int itemId, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-            assert grp.mvccEnabled();
+            assert false; // ex mvcc code.
 
-            DataPageIO iox = (DataPageIO)io;
-
-            PageMemory pageMem = grp.dataRegion().pageMemory();
-            IgniteWriteAheadLogManager wal = grp.shared().wal();
-
-            int off = iox.getPayloadOffset(pageAddr, itemId,
-                pageMem.realPageSize(grp.groupId()), MVCC_INFO_SIZE);
-
-            long crd = iox.mvccCoordinator(pageAddr, off);
-            long cntr = iox.mvccCounter(pageAddr, off);
-            int opCntrAndHint = iox.rawMvccOperationCounter(pageAddr, off);
-            int opCntr = opCntrAndHint & MVCC_OP_COUNTER_MASK;
-            byte txState = (byte)(opCntrAndHint >>> MVCC_HINTS_BIT_OFF);
-
-            long newCrd = iox.newMvccCoordinator(pageAddr, off);
-            long newCntr = iox.newMvccCounter(pageAddr, off);
-            int newOpCntrAndHint = iox.rawNewMvccOperationCounter(pageAddr, off);
-            int newOpCntr = newOpCntrAndHint & MVCC_OP_COUNTER_MASK;
-            byte newTxState = (byte)(newOpCntrAndHint >>> MVCC_HINTS_BIT_OFF);
-
-            assert crd == newRow.mvccCoordinatorVersion();
-            assert cntr == newRow.mvccCounter();
-            assert opCntr == newRow.mvccOperationCounter();
-
-            assert newRow.mvccTxState() != TxState.NA : newRow.mvccTxState();
-
-            if (txState != newRow.mvccTxState() && newRow.mvccTxState() != TxState.NA) {
-                assert txState == TxState.NA : txState;
-
-                iox.rawMvccOperationCounter(pageAddr, off, opCntr | (newRow.mvccTxState() << MVCC_HINTS_BIT_OFF));
-
-                if (isWalDeltaRecordNeeded(pageMem, cacheId, pageId, page, wal, walPlc))
-                    wal.log(new DataPageMvccUpdateTxStateHintRecord(cacheId, pageId, itemId, newRow.mvccTxState()));
-            }
-
-            if (compare(newCrd,
-                newCntr,
-                newOpCntr,
-                newRow.newMvccCoordinatorVersion(),
-                newRow.newMvccCounter(),
-                newRow.newMvccOperationCounter()) != 0) {
-
-                assert newRow.newMvccTxState() == TxState.NA || newRow.newMvccCoordinatorVersion() != MVCC_CRD_COUNTER_NA;
-
-                iox.updateNewVersion(pageAddr, off, newRow.newMvccCoordinatorVersion(), newRow.newMvccCounter(),
-                    newRow.newMvccOperationCounter(), newRow.newMvccTxState());
-
-                if (isWalDeltaRecordNeeded(pageMem, cacheId, pageId, page, wal, walPlc))
-                    wal.log(new DataPageMvccMarkUpdatedRecord(cacheId, pageId, itemId,
-                        newRow.newMvccCoordinatorVersion(), newRow.newMvccCounter(),
-                        newRow.newMvccOperationCounter() | (newRow.newMvccTxState() << MVCC_HINTS_BIT_OFF)));
-            }
-            else if (newTxState != newRow.newMvccTxState() && newRow.newMvccTxState() != TxState.NA) {
-                assert newTxState == TxState.NA : newTxState;
-
-                iox.rawNewMvccOperationCounter(pageAddr, off, newOpCntr | (newRow.newMvccTxState() << MVCC_HINTS_BIT_OFF));
-
-                if (isWalDeltaRecordNeeded(pageMem, cacheId, pageId, page, wal, walPlc))
-                    wal.log(new DataPageMvccUpdateNewTxStateHintRecord(cacheId, pageId, itemId, newRow.newMvccTxState()));
-            }
-
-            return TRUE;
+            return false;
         }
     }
 }
