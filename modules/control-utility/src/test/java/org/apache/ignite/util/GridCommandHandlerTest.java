@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -52,6 +53,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
@@ -2391,6 +2395,75 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
         assertContains(log, testOut.toString(), "MOVING partitions");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheIdleVerifyExpiringEntries() throws Exception {
+        IgniteEx ignite = startGrids(3);
+
+        ignite.cluster().state(ACTIVE);
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setBackups(1));
+
+        Random rnd = new Random();
+
+        // Put without expiry policy.
+        for (int i = 0; i < 5_000; i++)
+            cache.put(i, i);
+
+        // Put with expiry policy.
+        for (int i = 5_000; i < 10_000; i++) {
+            ExpiryPolicy expPol = new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, rnd.nextInt(1_000)));
+            cache.withExpiryPolicy(expPol).put(i, i);
+        }
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+
+        assertContains(log, testOut.toString(), "no conflicts have been found");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheIdleVerifyDumpExpiringEntries() throws Exception {
+        IgniteEx ignite = startGrids(3);
+
+        ignite.cluster().state(ACTIVE);
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAffinity(new RendezvousAffinityFunction(false, 1))
+            .setBackups(1));
+
+        for (int i = 0; i < 5_000; i++)
+            cache.put(i, i);
+
+        for (int i = 5_000; i < 10_000; i++)
+            cache.withExpiryPolicy(new CreatedExpiryPolicy(new Duration(TimeUnit.HOURS, 1))).put(i, i);
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump"));
+
+        assertDumpContains("size=5000");
+    }
+
+    /** */
+    private void assertDumpContains(String val) throws IOException {
+        Matcher fileNameMatcher = dumpFileNameMatcher();
+
+        assertTrue(fileNameMatcher.find());
+
+        String dumpContent = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+        assertContains(log, dumpContent, val);
     }
 
     /** */

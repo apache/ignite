@@ -89,7 +89,8 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
             if (other == null)
                 return;
 
-            if (val.size() != other.size() || !Objects.equals(val.updateCounter(), other.updateCounter()))
+            if ((!val.hasExpiringEntries() && !other.hasExpiringEntries() && val.size() != other.size())
+                || !Objects.equals(val.updateCounter(), other.updateCounter()))
                 wrnGrps.add(part.groupId());
         }));
 
