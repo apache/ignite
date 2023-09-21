@@ -267,11 +267,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public boolean mvccEnabled() {
-        return mvccEnabled;
-    }
-
-    /** {@inheritDoc} */
     @Override public void preProcessCacheConfiguration(CacheConfiguration ccfg) {
         if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
             if (!mvccSupported)
