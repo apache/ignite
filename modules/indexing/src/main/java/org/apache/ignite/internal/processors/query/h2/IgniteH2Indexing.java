@@ -160,7 +160,6 @@ import static java.lang.Math.min;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.requestSnapshot;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
@@ -2075,14 +2074,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void onClientDisconnect() throws IgniteCheckedException {
-        if (!mvccEnabled(ctx))
-            return;
-
-        GridNearTxLocal tx = tx(ctx);
-
-        if (tx != null)
-            cmdProc.doRollback(tx);
+    @Override public void onClientDisconnect() {
+        // No-op.
     }
 
     /** {@inheritDoc} */

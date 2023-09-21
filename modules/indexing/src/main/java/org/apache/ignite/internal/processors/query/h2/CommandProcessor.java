@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.bulkload.BulkLoadParser;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadStreamerWriter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -89,7 +88,6 @@ import org.h2.command.dml.NoOperation;
 import org.h2.table.Column;
 import org.h2.value.DataType;
 import org.h2.value.Value;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.convert;
@@ -606,34 +604,6 @@ public class CommandProcessor extends SqlCommandProcessor {
 
             default:
                 return DataType.getTypeClassName(type);
-        }
-    }
-
-    /**
-     * Rollback and properly close transaction.
-     * @param tx Transaction.
-     * @throws IgniteCheckedException if failed.
-     */
-    public void doRollback(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
-        try {
-            tx.rollback();
-        }
-        finally {
-            closeTx(tx);
-        }
-    }
-
-    /**
-     * Properly close transaction.
-     * @param tx Transaction.
-     * @throws IgniteCheckedException if failed.
-     */
-    private void closeTx(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
-        try {
-            tx.close();
-        }
-        finally {
-            ctx.cache().context().tm().resetContext();
         }
     }
 
