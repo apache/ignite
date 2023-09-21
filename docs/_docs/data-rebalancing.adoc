@@ -16,7 +16,7 @@
 
 == Overview
 
-When a new node joins the cluster, some of the partitions are relocated to the new node so that the data remains distributed equally in the cluster. This process is called _data rebalancing_.
+When a new node joins the cluster, some partitions are relocated to the new node so that the data remains distributed equally in the cluster. This process is called _data rebalancing_.
 
 If an existing node permanently leaves the cluster and backups are not configured, you lose the partitions stored on this node.
 When backups are configured, one of the backup copies of the lost partitions becomes a primary partition and the rebalancing process is initiated.
@@ -28,20 +28,9 @@ In pure in-memory clusters, the default behavior is to start rebalancing immedia
 In clusters with persistence, the baseline topology has to be changed manually (default behavior), or can be changed automatically when link:clustering/baseline-topology#baseline-topology-autoadjustment[automatic baseline adjustment] is enabled.
 ====
 
-Rebalancing is configured per cache.
+== Configuring Rebalancing Properties
 
-== Configuring Rebalancing Mode
-
-Ignite supports both synchronous and asynchronous rebalancing.
-In the synchronous mode, any operation on the cache data is blocked until rebalancing is finished.
-In the asynchronous mode, the rebalancing process is done asynchronously.
-You can also disable rebalancing for a particular cache.
-
-To change the rebalancing mode, set one of the following values in the cache configuration.
-
-- `SYNC` — Synchronous rebalancing mode. In this mode, any call to the cache public API is blocked until rebalancing is finished.
-- `ASYNC` — Asynchronous rebalancing mode. Distributed caches are available immediately and load all necessary data from other available cluster nodes in the background.
-- `NONE` — In this mode no rebalancing takes place, which means that caches are either loaded on demand from the persistent storage whenever data is accessed, or populated explicitly.
+Rebalancing is configured per ignite cluster configuration.
 
 :javaFile: {javaCodeDir}/RebalancingConfiguration.java
 :xmlFile: code-snippets/xml/rebalancing-config.xml
@@ -51,17 +40,17 @@ To change the rebalancing mode, set one of the following values in the cache con
 tab:XML[]
 [source,xml]
 ----
-include::{xmlFile}[tags=!*;ignite-config;mode,indent=0]
+include::{xmlFile}[tags=!*;ignite-config;timeout;order;delay;indent=0]
 ----
 tab:Java[]
 [source,java]
 ----
-include::{javaFile}[tags=!*;ignite-config;mode,indent=0]
+include::{javaFile}[tags=!*;ignite-config;timeout;order;delay;indent=0;]
 ----
 tab:C#/.NET[]
 [source,csharp]
 ----
-include::code-snippets/dotnet/DataRebalancing.cs[tag=RebalanceMode,indent=0]
+include::code-snippets/dotnet/DataRebalancing.cs[tag=RebalanceProperty,indent=0]
 ----
 tab:C++[unsupported]
 --
@@ -131,8 +120,7 @@ The following table lists the properties of `IgniteConfiguration` related to reb
 
 [CAUTION]
 ====
-`AVAILABLE_PROC_CNT` -  Default core size of public thread pool.
-
+`rebalanceDelay` and related API's are deprecated and will be removed in the next releases.
 ====
 
 [cols="1,4,1",opts="header"]
@@ -149,6 +137,9 @@ The following table lists the properties of `IgniteConfiguration` related to reb
 | `rebalanceOrder` | The order in which rebalancing should be done. Rebalance order can be set to a non-zero value for caches with SYNC or ASYNC rebalance modes only. Rebalancing for caches with smaller rebalance order is completed first. By default, rebalancing is not ordered. | 0
 
 |`rebalanceTimeout` | Timeout for pending rebalancing messages when they are exchanged between the nodes. | 10 seconds
+
+| `rebalanceDelay` | [Deprecated]  A delay in milliseconds before the rebalancing process starts after a node joins or leaves the topology. Rebalancing delay is useful if you plan to restart nodes or start multiple nodes at once or one after another and don't want to repartition and rebalance the data until all nodes are started.
+| 0 (no delay)
 |===
 
 

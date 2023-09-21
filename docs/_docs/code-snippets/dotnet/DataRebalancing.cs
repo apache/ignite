@@ -17,30 +17,24 @@
 
 using System;
 using Apache.Ignite.Core;
-using Apache.Ignite.Core.Cache.Configuration;
 
 namespace dotnet_helloworld
 {
     class DataRebalancing
     {
-        public static void RebalanceMode()
+        public static void RebalanceProperty()
         {
-            // tag::RebalanceMode[]
+            // tag::RebalanceProperty[]
             IgniteConfiguration cfg = new IgniteConfiguration
             {
-                CacheConfiguration = new[]
-                {
-                    new CacheConfiguration
-                    {
-                        Name = "mycache",
-                        RebalanceMode = CacheRebalanceMode.Sync
-                    }
-                }
+                RebalanceOrder = 0,
+                RebalanceTimeout = 10,
+                RebalanceDelay = 0
             };
 
             // Start a node.
             var ignite = Ignition.Start(cfg);
-            // end::RebalanceMode[]
+            // end::RebalanceProperty[]
         }
 
         public static void RebalanceThrottle()
@@ -48,15 +42,9 @@ namespace dotnet_helloworld
             // tag::RebalanceThrottle[]
             IgniteConfiguration cfg = new IgniteConfiguration
             {
-                CacheConfiguration = new[]
-                {
-                    new CacheConfiguration
-                    {
-                        Name = "mycache",
-                        RebalanceBatchSize = 2 * 1024 * 1024,
-                        RebalanceThrottle = new TimeSpan(0, 0, 0, 0, 100)
-                    }
-                }
+              RebalanceBatchSize = 2 * 1024 * 1024,
+              RebalanceThrottle = new TimeSpan(0, 0, 0, 0, 100),
+              RebalanceBatchesPrefetchCnt = 3
             };
 
             // Start a node.
