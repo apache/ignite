@@ -359,8 +359,6 @@ public class GridReduceQueryExecutor {
         Boolean dataPageScanEnabled,
         int pageSize
     ) {
-        assert !qry.mvccEnabled() || mvccTracker != null;
-
         if (pageSize <= 0)
             pageSize = Query.DFLT_PAGE_SIZE;
 

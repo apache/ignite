@@ -1686,9 +1686,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             };
         }
         else {
-            assert !twoStepQry.mvccEnabled() || !F.isEmpty(twoStepQry.cacheIds());
-            assert twoStepQry.mvccEnabled() == (mvccTracker != null);
-
             iter = new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
                     try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_ITER_OPEN, MTC.span()))) {
