@@ -25,6 +25,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -39,14 +40,22 @@ public class ValidateIndexesTaskResult extends VisorDataTransferObject {
     /** Results from cluster. */
     private Map<UUID, ValidateIndexesJobResult> results;
 
+    /** Map of node id to consistent id. */
+    private @Nullable Map<UUID, Object> consistentIds;
+
     /**
      * @param results Results.
      * @param exceptions Exceptions.
+     * @param consistentIds Map of node id to consistent id.
      */
-    public ValidateIndexesTaskResult(Map<UUID, ValidateIndexesJobResult> results,
-        Map<UUID, Exception> exceptions) {
+    public ValidateIndexesTaskResult(
+        Map<UUID, ValidateIndexesJobResult> results,
+        Map<UUID, Exception> exceptions,
+        Map<UUID, Object> consistentIds
+    ) {
         this.exceptions = exceptions;
         this.results = results;
+        this.consistentIds = consistentIds;
     }
 
     /**
@@ -69,16 +78,25 @@ public class ValidateIndexesTaskResult extends VisorDataTransferObject {
         return results;
     }
 
+    /**
+     * @return Consistent id of node with id {@cod nodeId}. {@code Null} if {@code nodeId} is not found in the results.
+     */
+    public @Nullable Object consistentId(UUID nodeId) {
+        return consistentIds == null ? null : consistentIds.get(nodeId);
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeMap(out, exceptions);
         U.writeMap(out, results);
+        U.writeMap(out, consistentIds);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         exceptions = U.readMap(in);
         results = U.readMap(in);
+        consistentIds = U.readMap(in);
     }
 
     /** {@inheritDoc} */
