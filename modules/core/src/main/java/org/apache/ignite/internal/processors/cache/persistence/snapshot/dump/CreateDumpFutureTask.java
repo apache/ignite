@@ -132,7 +132,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     /** {@inheritDoc} */
     @Override public boolean start() {
         try {
-            log.info("Start cache dump [name=" + snpName + ", grps=" + parts.keySet() + ']');
+            if (log.isInfoEnabled())
+                log.info("Start cache dump [name=" + snpName + ", grps=" + parts.keySet() + ']');
 
             createDumpLock();
 
@@ -212,7 +213,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         CacheGroupContext gctx = cctx.kernalContext().cache().cacheGroup(grp);
 
-        log.info("Start group dump [name=" + name + ", id=" + grp + ']');
+        if (log.isInfoEnabled())
+            log.info("Start group dump [name=" + name + ", id=" + grp + ']');
 
         return grpParts.stream().map(part -> runAsync(() -> {
             long entriesCnt0 = 0;
@@ -242,11 +244,13 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 if (remain == 0) {
                     clearDumpListener(gctx);
 
-                    log.info("Finish group dump [name=" + name +
-                        ", id=" + grp +
-                        ", time=" + (System.currentTimeMillis() - start) +
-                        ", iteratorEntriesCount=" + entriesCnt +
-                        ", changedEntriesCount=" + changedEntriesCnt + ']');
+                    if (log.isInfoEnabled()) {
+                        log.info("Finish group dump [name=" + name +
+                            ", id=" + grp +
+                            ", time=" + (System.currentTimeMillis() - start) +
+                            ", iteratorEntriesCount=" + entriesCnt +
+                            ", changedEntriesCount=" + changedEntriesCnt + ']');
+                    }
                 }
                 else if (log.isDebugEnabled()) {
                     log.debug("Finish group partition dump [name=" + name +
@@ -424,10 +428,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                         reasonToSkip = "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
                     else {
                         synchronized (this) {
-                            if (closed) // Partition already saved in dump.
-                                reasonToSkip = "partition already saved";
-                            else
-                                write(cache, expireTime, key, val);
+                            write(cache, expireTime, key, val);
                         }
 
                         changedCnt.increment();
@@ -491,8 +492,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         /** */
         private void write(int cache, long expireTime, KeyCacheObject key, CacheObject val) {
-            assert !closed;
-
             try {
                 ByteBuffer buf = serdes.writeToBuffer(cache, expireTime, key, val, cctx.cacheObjectContext(cache));
 
@@ -506,16 +505,16 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         /** {@inheritDoc} */
         @Override public void close() {
-            if (closed)
-                return;
-
             synchronized (this) {
+                if (closed)
+                    return;
+
                 closed = true;
             }
 
             writers.decrementAndGet();
 
-            while (writers.get() > 0)
+            while (writers.get() > 0) // Waiting for all on the fly listeners to complete.
                 LockSupport.parkNanos(1_000_000);
 
             U.closeQuiet(file);

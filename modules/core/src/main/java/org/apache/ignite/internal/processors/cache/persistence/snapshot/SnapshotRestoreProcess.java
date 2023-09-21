@@ -794,7 +794,7 @@ public class SnapshotRestoreProcess {
                     catch (Exception e) {
                         String grpWithCompr = F.isEmpty(req.groups()) ? ""
                             : req.groups().stream().filter(s -> meta.isGroupWithCompresion(CU.cacheId(grpName)))
-                            .collect(Collectors.joining(", "));
+                                .collect(Collectors.joining(", "));
 
                         String msg = "Requested cache groups [" + grpWithCompr + "] for restore " +
                             "from snapshot '" + meta.snapshotName() + "' are compressed while " +

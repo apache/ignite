@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -168,7 +169,7 @@ public class Dump {
         return new DumpedPartitionIterator() {
             DumpEntry next;
 
-            Set<Integer> partKeys = new HashSet<>();
+            Set<KeyCacheObject> partKeys = new HashSet<>();
 
             /** {@inheritDoc} */
             @Override public boolean hasNext() {
@@ -203,7 +204,7 @@ public class Dump {
                      * During dumping entry can be dumped twice: by partition iterator and change listener.
                      * Excluding duplicates keys from iteration.
                      */
-                    while (next != null && !partKeys.add(next.key().hashCode()))
+                    while (next != null && !partKeys.add(next.key()))
                         next = serializer.read(dumpFile, group, part);
 
                     if (next == null)
