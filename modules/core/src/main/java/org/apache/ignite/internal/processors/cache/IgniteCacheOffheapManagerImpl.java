@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -89,7 +88,6 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateData
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateResult;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.ResultType;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccDataPageClosure;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccFirstRowTreeClosure;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccMaxSearchRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccMinSearchRow;
@@ -118,7 +116,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -129,14 +126,11 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.INITIAL_VERSION;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_BIT_OFF;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_KEY_ABSENT_BEFORE_OFF;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_MASK;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compare;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compareNewVersion;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isVisible;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccVersionIsValid;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.state;
@@ -642,15 +636,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         assert row == null || row.value() != null : row;
 
         return row;
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<IgniteBiTuple<Object, MvccVersion>> mvccAllVersions(GridCacheContext cctx, KeyCacheObject key)
-        throws IgniteCheckedException {
-        CacheDataStore dataStore = dataStore(cctx, key);
-
-        return dataStore != null ? dataStore.mvccFindAllVersions(cctx, key) :
-            Collections.emptyList();
     }
 
     /** {@inheritDoc} */
@@ -1652,7 +1637,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          */
         private boolean canUpdateOldRow(GridCacheContext cctx, @Nullable CacheDataRow oldRow, DataRow dataRow)
             throws IgniteCheckedException {
-            if (oldRow == null || cctx.queries().enabled() || grp.mvccEnabled())
+            if (oldRow == null || cctx.queries().enabled())
                 return false;
 
             if (oldRow.expireTime() != dataRow.expireTime())
@@ -2458,14 +2443,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public void updateTxState(GridCacheContext cctx, CacheSearchRow row)
             throws IgniteCheckedException {
-            assert grp.mvccEnabled();
-            assert mvccVersionIsValid(row.mvccCoordinatorVersion(), row.mvccCounter(), row.mvccOperationCounter()) : row;
-
-            // Need an extra lookup because the row may be already cleaned by another thread.
-            CacheDataRow row0 = dataTree.findOne(row, CacheDataRowAdapter.RowData.LINK_ONLY);
-
-            if (row0 != null)
-                rowStore.updateDataRow(row0.link(), mvccUpdateTxStateHint, null, grp.statisticsHolderData());
+            assert false; // ex mvcc code.
         }
 
         /** {@inheritDoc} */
@@ -2745,65 +2723,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-            CacheDataRow row;
-
-            if (grp.mvccEnabled()) {
-                MvccFirstRowTreeClosure clo = new MvccFirstRowTreeClosure(cctx);
-
-                dataTree.iterate(
-                    new MvccMaxSearchRow(cacheId, key),
-                    new MvccMinSearchRow(cacheId, key),
-                    clo
-                );
-
-                row = clo.row();
-            }
-            else
-                row = dataTree.findOne(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY);
+            CacheDataRow row = dataTree.findOne(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY);
 
             afterRowFound(row, key);
 
             return row;
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<IgniteBiTuple<Object, MvccVersion>> mvccFindAllVersions(
-            GridCacheContext cctx,
-            KeyCacheObject key
-        ) throws IgniteCheckedException {
-            assert grp.mvccEnabled();
-
-            // Note: this method is intended for testing only.
-
-            key.valueBytes(cctx.cacheObjectContext());
-
-            int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
-
-            GridCursor<CacheDataRow> cur = dataTree.find(
-                new MvccMaxSearchRow(cacheId, key),
-                new MvccMinSearchRow(cacheId, key)
-            );
-
-            List<IgniteBiTuple<Object, MvccVersion>> res = new ArrayList<>();
-
-            long crd = MVCC_CRD_COUNTER_NA;
-            long cntr = MVCC_COUNTER_NA;
-            int opCntr = MVCC_OP_COUNTER_NA;
-
-            while (cur.next()) {
-                CacheDataRow row = cur.get();
-
-                if (compareNewVersion(row, crd, cntr, opCntr) != 0) // deleted row
-                    res.add(F.t(null, row.newMvccVersion()));
-
-                res.add(F.t(row.value(), row.mvccVersion()));
-
-                crd = row.mvccCoordinatorVersion();
-                cntr = row.mvccCounter();
-                opCntr = row.mvccOperationCounter();
-            }
-
-            return res;
         }
 
         /** {@inheritDoc} */

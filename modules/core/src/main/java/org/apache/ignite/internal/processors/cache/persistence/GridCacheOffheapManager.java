@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -2712,17 +2711,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 return delegate.mvccFind(cctx, key, snapshot);
 
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<IgniteBiTuple<Object, MvccVersion>> mvccFindAllVersions(GridCacheContext cctx, KeyCacheObject key)
-            throws IgniteCheckedException {
-            CacheDataStore delegate = init0(true);
-
-            if (delegate != null)
-                return delegate.mvccFindAllVersions(cctx, key);
-
-            return Collections.emptyList();
         }
 
         /** {@inheritDoc} */
