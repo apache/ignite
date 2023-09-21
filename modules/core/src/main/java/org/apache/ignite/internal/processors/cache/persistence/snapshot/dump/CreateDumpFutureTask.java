@@ -207,7 +207,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         AtomicLong entriesCnt = new AtomicLong();
         AtomicLong changedEntriesCnt = new AtomicLong();
-        AtomicLong partsRemain = new AtomicLong(grpParts.size());
 
         String name = cctx.cache().cacheGroup(grp).cacheOrGroupName();
 
@@ -216,7 +215,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         if (log.isInfoEnabled())
             log.info("Start group dump [name=" + name + ", id=" + grp + ']');
 
-        return grpParts.stream().map(part -> runAsync(() -> {
+        List<CompletableFuture<Void>> futs = grpParts.stream().map(part -> runAsync(() -> {
             long entriesCnt0 = 0;
 
             try (PartitionDumpContext dumpCtx = dumpContext(grp, part)) {
@@ -239,20 +238,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 entriesCnt.addAndGet(entriesCnt0);
                 changedEntriesCnt.addAndGet(dumpCtx.changedCnt.intValue());
 
-                long remain = partsRemain.decrementAndGet();
-
-                if (remain == 0) {
-                    clearDumpListener(gctx);
-
-                    if (log.isInfoEnabled()) {
-                        log.info("Finish group dump [name=" + name +
-                            ", id=" + grp +
-                            ", time=" + (System.currentTimeMillis() - start) +
-                            ", iteratorEntriesCount=" + entriesCnt +
-                            ", changedEntriesCount=" + changedEntriesCnt + ']');
-                    }
-                }
-                else if (log.isDebugEnabled()) {
+                if (log.isDebugEnabled()) {
                     log.debug("Finish group partition dump [name=" + name +
                         ", id=" + grp +
                         ", part=" + part +
@@ -263,6 +249,22 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 }
             }
         })).collect(Collectors.toList());
+
+        int futsSize = futs.size();
+
+        CompletableFuture.allOf(futs.toArray(new CompletableFuture[futsSize])).whenComplete((res, t) -> {
+            clearDumpListener(gctx);
+
+            if (log.isInfoEnabled()) {
+                log.info("Finish group dump [name=" + name +
+                    ", id=" + grp +
+                    ", time=" + (System.currentTimeMillis() - start) +
+                    ", iteratorEntriesCount=" + entriesCnt +
+                    ", changedEntriesCount=" + changedEntriesCnt + ']');
+            }
+        });
+
+        return futs;
     }
 
     /** {@inheritDoc} */
