@@ -52,7 +52,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
@@ -538,9 +537,6 @@ public class PageMemoryTracker implements IgnitePlugin {
         assert pageStoreMgr != null;
 
         long totalAllocated = pageStoreMgr.pagesAllocated(MetaStorage.METASTORAGE_CACHE_ID);
-
-        if (MvccUtils.mvccEnabled(gridCtx))
-            totalAllocated += pageStoreMgr.pagesAllocated(TxLog.TX_LOG_CACHE_ID);
 
         for (CacheGroupContext ctx : gridCtx.cache().cacheGroups())
             totalAllocated += pageStoreMgr.pagesAllocated(ctx.groupId());
