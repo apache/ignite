@@ -2837,19 +2837,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 upperRow = upper != null ? new SearchRow(CU.UNDEFINED_CACHE_ID, upper) : null;
             }
 
-            GridCursor<? extends CacheDataRow> cursor;
-
-            if (snapshot != null) {
-                assert grp.mvccEnabled();
-
-                GridCacheContext cctx = grp.sharedGroup() ? grp.shared().cacheContext(cacheId) : grp.singleCacheContext();
-
-                cursor = dataTree.find(lowerRow, upperRow, new MvccFirstVisibleRowTreeClosure(cctx, snapshot), x);
-            }
-            else
-                cursor = dataTree.find(lowerRow, upperRow, x);
-
-            return cursor;
+            return dataTree.find(lowerRow, upperRow, x);
         }
 
         /** {@inheritDoc} */
