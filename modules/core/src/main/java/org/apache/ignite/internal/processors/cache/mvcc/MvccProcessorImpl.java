@@ -1182,12 +1182,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 cleanupQueue = null;
             }
 
-            if (workers == null) {
-                if (log.isDebugEnabled() && mvccEnabled())
-                    log.debug("Attempting to stop inactive vacuum.");
-
+            if (workers == null)
                 return;
-            }
 
             assert queue != null;
 
