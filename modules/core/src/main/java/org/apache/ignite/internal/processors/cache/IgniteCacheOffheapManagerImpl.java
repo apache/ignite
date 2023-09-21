@@ -2794,17 +2794,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         @Override public GridCursor<? extends CacheDataRow> cursor(MvccSnapshot mvccSnapshot)
             throws IgniteCheckedException {
 
-            GridCursor<? extends CacheDataRow> cursor;
-            if (mvccSnapshot != null) {
-                assert grp.mvccEnabled();
-
-                cursor = dataTree.find(null, null,
-                    new MvccFirstVisibleRowTreeClosure(grp.singleCacheContext(), mvccSnapshot), null);
-            }
-            else
-                cursor = dataTree.find(null, null);
-
-            return cursor;
+            return dataTree.find(null, null);
         }
 
         /** {@inheritDoc} */
