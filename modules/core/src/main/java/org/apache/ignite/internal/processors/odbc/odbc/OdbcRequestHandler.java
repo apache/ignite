@@ -28,8 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
-
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -38,7 +36,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -57,7 +54,6 @@ import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -191,25 +187,12 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerResponse handle(ClientListenerRequest req0) {
-        assert req0 != null;
+    @Override public ClientListenerResponse handle(ClientListenerRequest req) {
+        assert req != null;
 
-        assert req0 instanceof OdbcRequest;
+        assert req instanceof OdbcRequest;
 
-        OdbcRequest req = (OdbcRequest)req0;
-
-        if (!MvccUtils.mvccEnabled(ctx))
-            return doHandle(req);
-        else {
-            GridFutureAdapter<ClientListenerResponse> fut = worker.process(req);
-
-            try {
-                return fut.get();
-            }
-            catch (IgniteCheckedException e) {
-                return exceptionToResult(e);
-            }
-        }
+        return doHandle((OdbcRequest)req);
     }
 
     /**
