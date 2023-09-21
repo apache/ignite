@@ -159,7 +159,6 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.requestSnapshot;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
@@ -410,8 +409,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean inTx,
         int timeout
     ) {
-        assert !select.mvccEnabled() || mvccTracker != null;
-
         String qry;
 
         if (select.forUpdate())
@@ -1210,28 +1207,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             boolean inTx = false;
 
-            if (select.mvccEnabled()) {
-                mvccCctx = ctx.cache().context().cacheContext(select.mvccCacheId());
-
-                if (mvccCctx == null)
-                    throw new IgniteCheckedException("Cache has been stopped concurrently [cacheId=" +
-                        select.mvccCacheId() + ']');
-
-                boolean autoStartTx = !qryParams.autoCommit() && tx(ctx) == null;
-
-                // Start new user tx in case of autocommit == false.
-                if (autoStartTx)
-                    txStart(ctx, qryParams.timeout());
-
-                tx = tx(ctx);
-
-                checkActive(tx);
-
-                inTx = tx != null;
-
-                tracker = MvccUtils.mvccTracker(mvccCctx, tx);
-            }
-
             int timeout = operationTimeout(qryParams.timeout(), tx);
 
             Iterable<List<?>> iter = executeSelect0(
@@ -1344,8 +1319,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean inTx,
         int timeout
     ) {
-        assert !select.mvccEnabled() || mvccTracker != null;
-
         // Check security.
         if (ctx.security().enabled())
             checkSecurity(select.cacheIds());
