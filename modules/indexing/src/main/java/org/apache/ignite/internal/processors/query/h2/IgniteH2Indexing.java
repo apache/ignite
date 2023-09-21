@@ -1120,7 +1120,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Exception failReason = null;
 
         try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_DML_QRY_EXECUTE, MTC.span()))) {
-            if (!dml.mvccEnabled() && !updateInTxAllowed && ctx.cache().context().tm().inUserTx()) {
+            if (!updateInTxAllowed && ctx.cache().context().tm().inUserTx()) {
                 throw new IgniteSQLException("DML statements are not allowed inside a transaction over " +
                     "cache(s) with TRANSACTIONAL atomicity mode (change atomicity mode to " +
                     "TRANSACTIONAL_SNAPSHOT or disable this error message with system property " +
