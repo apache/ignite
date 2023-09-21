@@ -51,6 +51,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Query;
 import org.h2.table.Column;
+
 import static org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel.isCollocated;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst.TRUE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.AVG;
@@ -317,7 +318,6 @@ public class GridSqlQuerySplitter {
         }
 
         List<Integer> cacheIds = H2Utils.collectCacheIds(idx, null, splitter.tbls);
-        boolean mvccEnabled = H2Utils.collectMvccEnabled(idx, cacheIds);
         boolean replicatedOnly = splitter.mapSqlQrys.stream().noneMatch(GridCacheSqlQuery::isPartitioned);
         boolean treatReplicatedAsPartitioned = splitter.mapSqlQrys.stream().anyMatch(GridCacheSqlQuery::treatReplicatedAsPartitioned);
 
@@ -336,7 +336,7 @@ public class GridSqlQuerySplitter {
             replicatedOnly,
             splitter.extractor.mergeMapQueries(splitter.mapSqlQrys),
             cacheIds,
-            mvccEnabled,
+            false,
             locSplit,
             treatReplicatedAsPartitioned
         );

@@ -806,8 +806,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private GridCloseableIterator scanIterator(final GridCacheQueryAdapter<?> qry, IgniteClosure transformer,
         boolean locNode)
         throws IgniteCheckedException {
-        assert !cctx.mvccEnabled() || qry.mvccSnapshot() != null;
-
         final IgniteBiPredicate<K, V> keyValFilter = qry.scanFilter();
         final InternalScanFilter<K, V> intFilter = keyValFilter != null ? new InternalScanFilter<>(keyValFilter) : null;
 
