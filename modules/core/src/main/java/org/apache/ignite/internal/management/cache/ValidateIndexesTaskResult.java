@@ -22,6 +22,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
@@ -55,6 +57,10 @@ public class ValidateIndexesTaskResult extends VisorDataTransferObject {
     ) {
         this.exceptions = exceptions;
         this.results = results;
+
+        assert consistentIds == null || Stream.concat(results.keySet().stream(), exceptions.keySet().stream())
+            .collect(Collectors.toSet()).equals(consistentIds.keySet());
+
         this.consistentIds = consistentIds;
     }
 
