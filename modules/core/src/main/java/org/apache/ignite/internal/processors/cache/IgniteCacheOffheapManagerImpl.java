@@ -45,7 +45,6 @@ import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdatedRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateNewTxStateHintRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateTxStateHintRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -128,7 +127,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.INITIAL_VERSION;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_BIT_OFF;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_KEY_ABSENT_BEFORE_OFF;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isVisible;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccVersionIsValid;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.state;
@@ -3157,42 +3155,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      */
     private static final class MvccMarkUpdatedHandler extends PageHandler<MvccUpdateDataRow, Boolean> {
         /** */
-        private final CacheGroupContext grp;
-
-        /** */
         private MvccMarkUpdatedHandler(CacheGroupContext grp) {
-            this.grp = grp;
         }
 
         /** {@inheritDoc} */
         @Override public Boolean run(int cacheId, long pageId, long page, long pageAddr, PageIO io, Boolean walPlc,
             MvccUpdateDataRow updateDataRow, int itemId, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-            assert grp.mvccEnabled();
+            assert false; // ex mvcc code.
 
-            PageMemory pageMem = grp.dataRegion().pageMemory();
-            IgniteWriteAheadLogManager wal = grp.shared().wal();
-
-            DataPageIO iox = (DataPageIO)io;
-
-            int off = iox.getPayloadOffset(pageAddr, itemId,
-                pageMem.realPageSize(grp.groupId()), MVCC_INFO_SIZE);
-
-            long newCrd = iox.newMvccCoordinator(pageAddr, off);
-            long newCntr = iox.newMvccCounter(pageAddr, off);
-            int newOpCntr = iox.rawNewMvccOperationCounter(pageAddr, off);
-
-            assert newCrd == MVCC_CRD_COUNTER_NA || state(grp, newCrd, newCntr, newOpCntr) == TxState.ABORTED;
-
-            int keyAbsentBeforeFlag = updateDataRow.isKeyAbsentBefore() ? (1 << MVCC_KEY_ABSENT_BEFORE_OFF) : 0;
-
-            iox.updateNewVersion(pageAddr, off, updateDataRow.mvccCoordinatorVersion(), updateDataRow.mvccCounter(),
-                updateDataRow.mvccOperationCounter() | keyAbsentBeforeFlag, TxState.NA);
-
-            if (isWalDeltaRecordNeeded(pageMem, cacheId, pageId, page, wal, walPlc))
-                wal.log(new DataPageMvccMarkUpdatedRecord(cacheId, pageId, itemId,
-                    updateDataRow.mvccCoordinatorVersion(), updateDataRow.mvccCounter(), updateDataRow.mvccOperationCounter()));
-
-            return TRUE;
+            return false;
         }
     }
 
