@@ -324,17 +324,8 @@ public class GridDhtPartitionSupplier {
 
             long batchesCnt = 0;
 
-            CacheDataRow prevRow = null;
-
             while (iter.hasNext()) {
-                CacheDataRow row = iter.peek();
-
-                // Prevent mvcc entry history splitting into separate batches.
-                boolean canFlushHistory = !grp.mvccEnabled() ||
-                    prevRow != null && ((grp.sharedGroup() && row.cacheId() != prevRow.cacheId()) ||
-                        !row.key().equals(prevRow.key()));
-
-                if (canFlushHistory && supplyMsg.messageSize() >= msgMaxSize) {
+                if (supplyMsg.messageSize() >= msgMaxSize) {
                     if (++batchesCnt >= maxBatchesCnt) {
                         saveSupplyContext(contextId,
                             iter,
@@ -357,9 +348,7 @@ public class GridDhtPartitionSupplier {
                     }
                 }
 
-                row = iter.next();
-
-                prevRow = row;
+                CacheDataRow row = iter.next();
 
                 int part = row.partition();
 
