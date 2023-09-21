@@ -122,6 +122,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
@@ -1467,9 +1468,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.busyLock = busyLock;
             this.log = log;
 
-            PartitionUpdateCounter delegate = grp.mvccEnabled() ? new PartitionUpdateCounterMvccImpl(grp) :
-                !grp.persistenceEnabled() || grp.hasAtomicCaches() ? new PartitionUpdateCounterVolatileImpl(grp) :
-                    new PartitionUpdateCounterTrackingImpl(grp);
+            PartitionUpdateCounter delegate = !grp.persistenceEnabled() || grp.hasAtomicCaches() ?
+                new PartitionUpdateCounterVolatileImpl(grp) :
+                new PartitionUpdateCounterTrackingImpl(grp);
 
             pCntr = grp.shared().logger(PartitionUpdateCounterDebugWrapper.class).isDebugEnabled() ?
                 new PartitionUpdateCounterDebugWrapper(partId, delegate) : new PartitionUpdateCounterErrorWrapper(partId, delegate);
@@ -1547,18 +1548,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @return {@code True} if there are no items in the store.
          */
         @Override public boolean isEmpty() {
-            try {
-                /*
-                 * TODO https://issues.apache.org/jira/browse/IGNITE-10082
-                 * Using of counters is cheaper than tree operations. Return size checking after the ticked is resolved.
-                 */
-                return grp.mvccEnabled() ? dataTree.isEmpty() : storageSize.sum() == 0;
-            }
-            catch (IgniteCheckedException e) {
-                U.error(grp.shared().logger(IgniteCacheOffheapManagerImpl.class), "Failed to perform operation.", e);
-
-                return false;
-            }
+            return storageSize.sum() == 0;
         }
 
         /** {@inheritDoc} */
