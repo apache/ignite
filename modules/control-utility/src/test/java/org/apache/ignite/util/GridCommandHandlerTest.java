@@ -2429,32 +2429,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, testOut.toString(), "no conflicts have been found");
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testCacheIdleVerifyDumpExpiringEntries() throws Exception {
-        IgniteEx ignite = startGrids(3);
-
-        ignite.cluster().state(ACTIVE);
-
-        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setAffinity(new RendezvousAffinityFunction(false, 1))
-            .setBackups(1));
-
-        for (int i = 0; i < 5_000; i++)
-            cache.put(i, i);
-
-        for (int i = 5_000; i < 10_000; i++)
-            cache.withExpiryPolicy(new CreatedExpiryPolicy(new Duration(TimeUnit.HOURS, 1))).put(i, i);
-
-        injectTestSystemOut();
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump"));
-
-        assertDumpContains("size=5000");
-    }
-
     /** */
     private void assertDumpContains(String val) throws IOException {
         Matcher fileNameMatcher = dumpFileNameMatcher();

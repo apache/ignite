@@ -278,7 +278,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                         // partition size (size can include entries to expire, which were already expired on other nodes
                         // to the moment of snapshot creation), so we need to skip size comparison if there are entries
                         // to expire exist.
-                        if (skipHash() && hasExpiringEntries(pageStore, pageBuff, io.getPendingTreeRoot(pageAddr)))
+                        if (hasExpiringEntries(snpCtx, pageStore, pageBuff, io.getPendingTreeRoot(pageAddr)))
                             hash.hasExpiringEntries(true);
 
                         res.put(key, hash);
@@ -305,7 +305,12 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** */
-    private boolean hasExpiringEntries(PageStore pageStore, ByteBuffer pageBuff, long pendingTreeMetaId) throws IgniteCheckedException {
+    private boolean hasExpiringEntries(
+        GridKernalContext ctx,
+        PageStore pageStore,
+        ByteBuffer pageBuff,
+        long pendingTreeMetaId
+    ) throws IgniteCheckedException {
         if (pendingTreeMetaId == 0)
             return false;
 
@@ -314,6 +319,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         pageBuff.clear();
         pageStore.read(pendingTreeMetaId, pageBuff, true);
 
+        if (PageIO.getCompressionType(pageBuff) != CompressionProcessor.UNCOMPRESSED_PAGE)
+            ctx.compress().decompressPage(pageBuff, pageStore.getPageSize());
+
         BPlusMetaIO treeIO = BPlusMetaIO.VERSIONS.forPage(pageAddr);
 
         int rootLvl = treeIO.getRootLevel(pageAddr);
@@ -321,6 +329,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         pageBuff.clear();
         pageStore.read(rootId, pageBuff, true);
+
+        if (PageIO.getCompressionType(pageBuff) != CompressionProcessor.UNCOMPRESSED_PAGE)
+            ctx.compress().decompressPage(pageBuff, pageStore.getPageSize());
 
         BPlusIO<?> rootIO = PageIO.getPageIO(pageBuff);
 

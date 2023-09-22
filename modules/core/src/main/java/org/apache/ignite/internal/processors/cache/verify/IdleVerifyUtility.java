@@ -304,17 +304,8 @@ public class IdleVerifyUtility {
         while (it.hasNextX()) {
             CacheDataRow row = it.nextX();
 
-            if (row.expireTime() > 0) {
-                // Decrement partition size only to be more accurate when dumping partition state. Partition size is
-                // not compared during conflicts detection, only hashes and partition counters are compared.
-                // We can't guarantee equality of partition size on each node, since entries are concurrently expiring,
-                // and some entry can be expired after we get partSize and before we iterate over this entry by
-                // partition iterator (entry is skipped by iterator). We can provide such a guarantee only if we
-                // temporarely disable expiring.
-                partSize--;
-
+            if (row.expireTime() > 0)
                 continue;
-            }
 
             partHash += row.key().hashCode();
             partVerHash += row.version().hashCode(); // Detects ABA problem.
