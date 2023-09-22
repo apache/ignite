@@ -79,6 +79,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTran
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntryChangeListener;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -283,6 +284,9 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Recovery mode flag. */
     private volatile boolean recoveryMode;
+
+    /** Dump callback. */
+    private volatile DumpEntryChangeListener dumpLsnr;
 
     /** */
     private final boolean disableTriggeringCacheInterceptorOnConflict =
@@ -2339,6 +2343,19 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public AtomicReference<IgniteInternalFuture<Boolean>> lastRemoveAllJobFut() {
         return lastRmvAllJobFut;
+    }
+
+    /** */
+    public DumpEntryChangeListener dumpListener() {
+        return dumpLsnr;
+    }
+
+    /** */
+    public void dumpListener(DumpEntryChangeListener dumpEntryChangeLsnr) {
+        assert this.dumpLsnr == null || dumpEntryChangeLsnr == null;
+        assert cacheType == CacheType.USER;
+
+        this.dumpLsnr = dumpEntryChangeLsnr;
     }
 
     /** {@inheritDoc} */

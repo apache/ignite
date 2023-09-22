@@ -541,8 +541,12 @@ public class GridLocalConfigManager {
     public File cacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
         File cacheWorkDir = cacheWorkDir(ccfg);
 
-        return ccfg.getGroupName() == null ? new File(cacheWorkDir, CACHE_DATA_FILENAME) :
-            new File(cacheWorkDir, ccfg.getName() + CACHE_DATA_FILENAME);
+        return new File(cacheWorkDir, cacheDataFilename(ccfg));
+    }
+
+    /** @return Name of cache data filename. */
+    public static String cacheDataFilename(CacheConfiguration<?, ?> ccfg) {
+        return ccfg.getGroupName() == null ? CACHE_DATA_FILENAME : (ccfg.getName() + CACHE_DATA_FILENAME);
     }
 
     /**

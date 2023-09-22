@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntryChangeListener;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -1466,6 +1467,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             assert ttl >= 0 : ttl;
             assert expireTime >= 0 : expireTime;
 
+            DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
+
+            if (dumpLsnr != null)
+                dumpLsnr.beforeChange(cctx, key, old, extras == null ? CU.EXPIRE_TIME_ETERNAL : extras.expireTime(), ver);
+
             // Detach value before index update.
             val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
@@ -1658,6 +1664,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     return new GridCacheUpdateTxResult(false, logPtr);
                 }
             }
+
+            DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
+
+            if (dumpLsnr != null)
+                dumpLsnr.beforeChange(cctx, key, old, extras == null ? CU.EXPIRE_TIME_ETERNAL : extras.expireTime(), ver);
 
             removeValue();
 
@@ -3601,6 +3612,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         if (mvccExtras() != null)
             return false;
+
+        DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
+
+        if (dumpLsnr != null)
+            dumpLsnr.beforeChange(cctx, key, expiredVal, extras == null ? CU.TTL_MINIMUM : extras.expireTime(), ver);
 
         if (cctx.deferredDelete() && !detached() && !isInternal()) {
             if (!deletedUnlocked() && !isStartVersion()) {
@@ -6008,6 +6024,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
             }
 
+            DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
+
+            if (dumpLsnr != null) {
+                dumpLsnr.beforeChange(
+                    cctx,
+                    entry.key,
+                    oldVal,
+                    entry.extras == null ? CU.EXPIRE_TIME_ETERNAL : entry.extras.expireTime(),
+                    entry.ver
+                );
+            }
+
             updated = cctx.kernalContext().cacheObjects().prepareForCache(updated, cctx);
 
             if (writeThrough)
@@ -6109,6 +6137,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     return;
                 }
+            }
+
+            DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
+
+            if (dumpLsnr != null) {
+                dumpLsnr.beforeChange(
+                    cctx,
+                    entry.key,
+                    oldVal,
+                    entry.extras == null ? CU.EXPIRE_TIME_ETERNAL : entry.extras.expireTime(),
+                    entry.ver
+                );
             }
 
             if (writeThrough)

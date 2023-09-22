@@ -376,7 +376,7 @@ public class SqlCdcTest extends AbstractCdcTest {
     }
 
     /** */
-    static List<List<?>> executeSql(IgniteEx node, String sqlText, Object... args) {
+    public static List<List<?>> executeSql(IgniteEx node, String sqlText, Object... args) {
         return node.context().query().querySqlFields(new SqlFieldsQuery(sqlText).setArgs(args), true).getAll();
     }
 

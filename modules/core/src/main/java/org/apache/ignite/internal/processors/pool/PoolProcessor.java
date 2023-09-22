@@ -516,19 +516,19 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         rebalanceExecSvc.allowCoreThreadTimeOut(true);
 
+        snpExecSvc = createExecutorService(
+            SNAPSHOT_RUNNER_THREAD_PREFIX,
+            cfg.getIgniteInstanceName(),
+            cfg.getSnapshotThreadPoolSize(),
+            cfg.getSnapshotThreadPoolSize(),
+            DFLT_THREAD_KEEP_ALIVE_TIME,
+            new LinkedBlockingQueue<>(),
+            GridIoPolicy.UNDEFINED,
+            excHnd);
+
+        snpExecSvc.allowCoreThreadTimeOut(true);
+
         if (CU.isPersistenceEnabled(ctx.config())) {
-            snpExecSvc = createExecutorService(
-                SNAPSHOT_RUNNER_THREAD_PREFIX,
-                cfg.getIgniteInstanceName(),
-                cfg.getSnapshotThreadPoolSize(),
-                cfg.getSnapshotThreadPoolSize(),
-                DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<>(),
-                GridIoPolicy.UNDEFINED,
-                excHnd);
-
-            snpExecSvc.allowCoreThreadTimeOut(true);
-
             reencryptExecSvc = createExecutorService(
                 "reencrypt",
                 ctx.igniteInstanceName(),

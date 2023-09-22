@@ -15,28 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.snapshot;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 
-/** */
-public class SnapshotFinishedFutureTask extends AbstractSnapshotFutureTask<Void> {
-    /**
-     * @param e Finished snapshot task future with particular exception.
-     */
-    public SnapshotFinishedFutureTask(IgniteCheckedException e) {
-        super(null, null, null, null, null, null);
+/**
+ * Single cache entry from dump.
+ */
+public interface DumpEntry {
+    /** @return Cache id. */
+    public int cacheId();
 
-        onDone(e);
-    }
+    /** @return Expiration time. */
+    public long expireTime();
 
-    /** {@inheritDoc} */
-    @Override public boolean start() {
-        return false;
-    }
+    /** @return Key. */
+    public KeyCacheObject key();
 
-    /** {@inheritDoc} */
-    @Override public void acceptException(Throwable th) {
-        onDone(th);
-    }
+    /** @return Value. */
+    public CacheObject value();
 }
