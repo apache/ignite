@@ -23,19 +23,23 @@ namespace dotnet_helloworld
 {
     class DataRebalancing
     {
-        public static void RebalanceProperty()
+        public static void RebalanceMode()
         {
-            // tag::RebalanceProperty[]
+            // tag::RebalanceMode[]
             IgniteConfiguration cfg = new IgniteConfiguration
             {
-                RebalanceOrder = 0,
-                RebalanceTimeout = 10,
-                RebalanceDelay = 0
+                CacheConfiguration = new[]
+
+                new CacheConfiguration
+                {
+                        Name = "mycache",
+                        RebalanceMode = CacheRebalanceMode.Sync
+                }
             };
 
             // Start a node.
             var ignite = Ignition.Start(cfg);
-            // end::RebalanceProperty[]
+            // end::RebalanceMode[]
         }
 
         public static void RebalanceThrottle()
@@ -51,26 +55,6 @@ namespace dotnet_helloworld
             // Start a node.
             var ignite = Ignition.Start(cfg);
             // end::RebalanceThrottle[]
-        }
-
-        public static void RebalanceMode()
-        {
-            // tag::RebalanceMode[]
-            IgniteConfiguration cfg = new IgniteConfiguration
-            {
-                CacheConfiguration = new[]
-                {
-                    new CacheConfiguration
-                    {
-                        Name = "mycache",
-                        RebalanceMode = CacheRebalanceMode.Sync
-                    }
-                }
-           };
-
-            // Start a node.
-            var ignite = Ignition.Start(cfg);
-            // end::RebalanceMode[]
         }
     }
 }

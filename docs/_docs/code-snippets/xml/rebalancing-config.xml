@@ -19,9 +19,9 @@
     <!-- tag::ignite-config[] -->
     <bean class="org.apache.ignite.configuration.IgniteConfiguration" id="ignite.cfg">
         <!-- tag::pool-size[] -->
-
         <property name="rebalanceThreadPoolSize" value="4"/>
         <!-- end::pool-size[] -->
+
         <!-- tag::throttling[] -->
         <!-- Set batch size. -->
         <property name="rebalanceBatchSize" value="#{2 * 1024 * 1024}"/>
@@ -30,18 +30,7 @@
         <!-- Set throttle interval. -->
         <property name="rebalanceThrottle" value="100"/>
         <!-- end::throttling[] -->
-        <!-- tag::order[] -->
-        <!-- enable rebalance order -->
-        <property name="rebalanceOrder" value="0"/>
-        <!-- end::order[] -->
-        <!-- tag::timeout[] -->
-        <!-- enable rebalance timeout -->
-        <property name="rebalanceTimeout" value="10"/>
-        <!-- end::timeout[] -->
-        <!-- tag::delay[] -->
-        <!-- enable rebalance delay -->
-        <property name="rebalanceDelay" value="0"/>
-        <!-- end::delay[] -->
+
         <!-- tag::mode[] -->
         <property name="cacheConfiguration">
             <list>

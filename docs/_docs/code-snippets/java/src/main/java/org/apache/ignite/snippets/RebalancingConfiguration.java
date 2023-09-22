@@ -37,18 +37,6 @@ public class RebalancingConfiguration {
 
         cfg.setRebalanceThreadPoolSize(4);
         //end::pool-size[]
-        //tag::order[]
-
-        cfg.setRebalanceOrder(0);
-        //end::order[]
-        //tag::timeout[]
-
-        cfg.setRebalanceTimeout(10);
-        //end::timeout[]
-        //tag::delay[]
-
-        cfg.setRebalanceDelay(10);
-        //end::delay[]
         //tag::throttling[]
 
         cfg.setRebalanceBatchSize(2 * 1024 * 1024);

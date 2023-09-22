@@ -64,7 +64,7 @@ include::code-snippets/dotnet/DataRebalancing.cs[tag=RebalanceMode,indent=0]
 tab:C++[unsupported]
 --
 
-== Configuring Rebalance Thread Pool
+== Configuring Rebalance Thread Pool [[threadpool]]
 
 By default, rebalancing is performed in one thread on each node.
 It means that at each point in time only one thread is used to transfer batches from one node to another, or to process batches coming from the remote node.
@@ -125,28 +125,6 @@ tab:C++[unsupported]
 
 == Other Properties
 
-== Configuring Rebalancing Properties
-
-[tabs]
---
-tab:XML[]
-[source,xml]
-----
-include::{xmlFile}[tags=!*;ignite-config;timeout;order;delay;indent=0]
-----
-tab:Java[]
-[source,java]
-----
-include::{javaFile}[tags=!*;ignite-config;timeout;order;delay;indent=0;]
-----
-tab:C#/.NET[]
-[source,csharp]
-----
-include::code-snippets/dotnet/DataRebalancing.cs[tag=RebalanceProperty,indent=0]
-----
-tab:C++[unsupported]
---
-
 The following table lists the properties of `IgniteConfiguration` related to rebalancing:
 
 [CAUTION]
@@ -157,7 +135,7 @@ The following table lists the properties of `IgniteConfiguration` related to reb
 [cols="1,4,1",opts="header"]
 |===
 | Property | Description  | Default Value
-| `rebalanceThreadPoolSize` |Rebalance thread pool size. Limit of threads used for rebalance. | min(4, max(1, AVAILABLE_PROC_CNT / 4))
+| `rebalanceThreadPoolSize` |Rebalance thread pool size. Limit of threads used for rebalance. See <<#threadpool>> | min(4, max(1, AVAILABLE_PROC_CNT / 4))
 
 |`rebalanceBatchSize` | The size in bytes of a single rebalance message. The rebalancing algorithm splits the data on every node into multiple batches prior to sending it to other nodes. | 512KB
 
