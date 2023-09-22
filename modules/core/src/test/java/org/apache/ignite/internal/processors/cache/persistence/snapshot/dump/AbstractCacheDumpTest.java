@@ -20,11 +20,8 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -446,76 +443,6 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
         for (GridCacheContext<?, ?> cctx : gctx.caches())
             assertNull(cctx.dumpListener());
-
-        String msg = invokeCheckCommand(ign, name);
-        String expMsg = "The check procedure has finished, no conflicts have been found.\n\n";
-
-        if (!Objects.equals(msg, expMsg)) {
-            Dump dump = new Dump(
-                ign.context(),
-                new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name)
-            );
-
-            CacheObjectContext coCtx = ign.context().cache().context().cacheObjectContext(CU.cacheId(DEFAULT_CACHE_NAME));
-            CacheObjectContext coCtx0 = ign.context().cache().context().cacheObjectContext(CU.cacheId(CACHE_0));
-            CacheObjectContext coCtx1 = ign.context().cache().context().cacheObjectContext(CU.cacheId(CACHE_1));
-
-            Map<String, List<Set<Object>>> keys = new HashMap<>();
-
-            for (String nodeDir : dump.nodesDirectories()) {
-                for (int part : dump.partitions(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME))) {
-                    try (DumpedPartitionIterator iter = dump.iterator(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME), part)) {
-
-                        Set<Object> partKeys = new HashSet<>();
-
-                        while (iter.hasNext())
-                            partKeys.add(iter.next().key().value(coCtx, false));
-
-                        keys.computeIfAbsent(DEFAULT_CACHE_NAME + "-" + part, key -> new ArrayList<>())
-                            .add(partKeys);
-                    }
-                }
-
-                for (int part : dump.partitions(nodeDir, CU.cacheId(GRP))) {
-                    try (DumpedPartitionIterator iter = dump.iterator(nodeDir, CU.cacheId(GRP), part)) {
-                        Set<Object> partKeys = new HashSet<>();
-
-                        while (iter.hasNext()) {
-                            DumpEntry e = iter.next();
-                            partKeys.add(e.key().value(e.cacheId() == CU.cacheId(CACHE_0) ? coCtx0 : coCtx1, false));
-                        }
-
-                        keys.computeIfAbsent(GRP + "-" + part, key -> new ArrayList<>())
-                            .add(partKeys);
-                    }
-                }
-            }
-
-            for (Map.Entry<String, List<Set<Object>>> partCopies : keys.entrySet()) {
-                String part = partCopies.getKey();
-
-                assertEquals(backups + 1, partCopies.getValue().size());
-
-                for (int i = 0; i <= backups; i++) {
-                    Set<Object> a = partCopies.getValue().get(i);
-                    Set<Object> b = partCopies.getValue().get((i + 1) % (backups + 1));
-
-                    if (!Objects.equals(a, b)) {
-                        log.error(part + " DIFF (b - a):");
-                        for (Object b0 : b) {
-                            if (!a.contains(b0))
-                                log.error(b0.toString());
-                        }
-
-                        log.error(part + " DIFF (a - b):");
-                        for (Object a0 : a) {
-                            if (!b.contains(a0))
-                                log.error(a0.toString());
-                        }
-                    }
-                }
-            }
-        }
 
         assertEquals("The check procedure has finished, no conflicts have been found.\n\n", invokeCheckCommand(ign, name));
     }
