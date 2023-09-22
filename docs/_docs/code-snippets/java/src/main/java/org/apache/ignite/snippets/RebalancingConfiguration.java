@@ -58,6 +58,13 @@ public class RebalancingConfiguration {
 
         //end::throttling[]
 
+        CacheConfiguration cacheCfg = new CacheConfiguration("mycache");
+        //tag::mode[]
+
+        cacheCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
+
+        //end::mode[]
+
         // Start a node.
         Ignite ignite = Ignition.start(cfg);
         //end::ignite-config[]

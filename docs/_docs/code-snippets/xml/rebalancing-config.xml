@@ -42,6 +42,17 @@
         <!-- enable rebalance delay -->
         <property name="rebalanceDelay" value="0"/>
         <!-- end::delay[] -->
+        <!-- tag::mode[] -->
+        <property name="cacheConfiguration">
+            <list>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="mycache"/>
+                    <!-- enable synchronous rebalance mode -->
+                    <property name="rebalanceMode" value="SYNC"/>
+                </bean>
+            </list>
+        </property>
+        <!-- end::mode[] -->
 
         <!-- tag::discovery[] -->
         <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
