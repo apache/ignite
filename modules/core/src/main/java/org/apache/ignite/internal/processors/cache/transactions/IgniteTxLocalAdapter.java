@@ -404,9 +404,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         try {
             cctx.tm().prepareTx(this, entries);
-
-            if (txState().mvccEnabled())
-                calculatePartitionUpdateCounters();
         }
         catch (IgniteCheckedException e) {
             throw e;
@@ -859,7 +856,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                 }
 
-                if (!txState.mvccEnabled() && txCounters != null) {
+                if (txCounters != null) {
                     cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters());
 
                     for (IgniteTxEntry entry : commitEntries) {
@@ -1614,20 +1611,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      */
     public boolean queryEnlisted() {
         return qryEnlisted;
-    }
-
-    /**
-     * Marks that there are entries, enlisted by query.
-     */
-    public void markQueryEnlisted() {
-        assert mvccSnapshot != null && txState.mvccEnabled();
-
-        if (!qryEnlisted) {
-            qryEnlisted = true;
-
-            if (!cctx.localNode().isClient())
-                cctx.coordinators().registerLocalTransaction(mvccSnapshot.coordinatorVersion(), mvccSnapshot.counter());
-        }
     }
 
     /**

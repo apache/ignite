@@ -28,10 +28,12 @@ import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.dump.DumpEntry;
@@ -140,6 +142,28 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
     /** */
     @Test
+    public void testConcurrentDumpCreationThrows() throws Exception {
+        doTestConcurrentOperations(ignite -> {
+            assertThrows(
+                null,
+                () -> createDump(ignite, "other_dump"),
+                IgniteException.class,
+                "Create snapshot request has been rejected. The previous snapshot operation was not completed."
+            );
+
+            if (persistence) {
+                assertThrows(
+                    null,
+                    () -> ignite.snapshot().createSnapshot("other_snapshot").get(getTestTimeout()),
+                    IgniteException.class,
+                    "Create snapshot request has been rejected. The previous snapshot operation was not completed."
+                );
+            }
+        });
+    }
+
+    /** */
+    @Test
     public void testWithConcurrentInserts() throws Exception {
         doTestConcurrentOperations(ignite -> {
             for (int i = KEYS_CNT * 10; i < KEYS_CNT * 10 + 3; i++) {
@@ -178,6 +202,34 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
                 assertTrue(cli.cache(CACHE_1).containsKey(new Key(i)));
 
                 insertOrUpdate(cli, i);
+            }
+        });
+    }
+
+    /** */
+    @Test
+    public void testWithConcurrentEntryProcessor() throws Exception {
+        doTestConcurrentOperations(ignite -> {
+            for (int i = KEYS_CNT * 10; i < KEYS_CNT * 10 + 3; i++) {
+                assertFalse(ignite.cache(DEFAULT_CACHE_NAME).containsKey(i));
+
+                ignite.<Integer, Integer>cache(DEFAULT_CACHE_NAME).invoke(i, new CacheEntryProcessor<Integer, Integer, Void>() {
+                    @Override public Void process(MutableEntry<Integer, Integer> entry, Object... arguments) {
+                        entry.setValue(entry.getKey());
+                        return null;
+                    }
+                });
+            }
+
+            for (int i = 0; i < 3; i++) {
+                assertTrue(ignite.cache(DEFAULT_CACHE_NAME).containsKey(i));
+
+                ignite.<Integer, Integer>cache(DEFAULT_CACHE_NAME).invoke(i, new CacheEntryProcessor<Integer, Integer, Void>() {
+                    @Override public Void process(MutableEntry<Integer, Integer> entry, Object... arguments) {
+                        entry.setValue(entry.getKey() + 1);
+                        return null;
+                    }
+                });
             }
         });
     }

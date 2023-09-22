@@ -62,7 +62,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.cachDataFilename;
+import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.cacheDataFilename;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
@@ -96,7 +96,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     private final Map<Long, PartitionDumpContext> dumpCtxs = new ConcurrentHashMap<>();
 
     /** Local node is primary for set of group partitions. */
-    private final Map<Integer, Set<Integer>> grpPrimaries = new ConcurrentHashMap();
+    private final Map<Integer, Set<Integer>> grpPrimaries = new ConcurrentHashMap<>();
 
     /**
      * @param cctx Cache context.
@@ -133,7 +133,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     /** {@inheritDoc} */
     @Override public boolean start() {
         try {
-            log.info("Start cache dump [name=" + snpName + ", grps=" + parts.keySet() + ']');
+            if (log.isInfoEnabled())
+                log.info("Start cache dump [name=" + snpName + ", grps=" + parts.keySet() + ']');
 
             createDumpLock();
 
@@ -171,11 +172,16 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
             for (GridCacheContext<?, ?> cctx : gctx.caches())
                 cctx.dumpListener(this);
+
+            grpPrimaries.put(
+                grp,
+                gctx.affinity().primaryPartitions(gctx.shared().kernalContext().localNodeId(), gctx.affinity().lastVersion())
+            );
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected List<CompletableFuture<Void>> saveCacheConfigsCopy() {
+    @Override protected List<CompletableFuture<Void>> saveCacheConfigs() {
         return parts.keySet().stream().map(grp -> runAsync(() -> {
             CacheGroupContext gctx = cctx.cache().cacheGroup(grp);
 
@@ -191,7 +197,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 cacheData.queryEntities(desc.schema().entities());
                 cacheData.sql(desc.sql());
 
-                cctx.cache().configManager().writeCacheData(cacheData, new File(grpDir, cachDataFilename(cacheData.config())));
+                cctx.cache().configManager().writeCacheData(cacheData, new File(grpDir, cacheDataFilename(cacheData.config())));
             }
         })).collect(Collectors.toList());
     }
@@ -202,15 +208,15 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         AtomicLong entriesCnt = new AtomicLong();
         AtomicLong changedEntriesCnt = new AtomicLong();
-        AtomicLong partsRemain = new AtomicLong(grpParts.size());
 
         String name = cctx.cache().cacheGroup(grp).cacheOrGroupName();
 
         CacheGroupContext gctx = cctx.kernalContext().cache().cacheGroup(grp);
 
-        log.info("Start group dump [name=" + name + ", id=" + grp + ']');
+        if (log.isInfoEnabled())
+            log.info("Start group dump [name=" + name + ", id=" + grp + ']');
 
-        return grpParts.stream().map(part -> runAsync(() -> {
+        List<CompletableFuture<Void>> futs = grpParts.stream().map(part -> runAsync(() -> {
             long entriesCnt0 = 0;
 
             try (PartitionDumpContext dumpCtx = dumpContext(grp, part)) {
@@ -233,18 +239,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 entriesCnt.addAndGet(entriesCnt0);
                 changedEntriesCnt.addAndGet(dumpCtx.changedCnt.intValue());
 
-                long remain = partsRemain.decrementAndGet();
-
-                if (remain == 0) {
-                    clearDumpListener(gctx);
-
-                    log.info("Finish group dump [name=" + name +
-                        ", id=" + grp +
-                        ", time=" + (System.currentTimeMillis() - start) +
-                        ", iteratorEntriesCount=" + entriesCnt +
-                        ", changedEntriesCount=" + changedEntriesCnt + ']');
-                }
-                else if (log.isDebugEnabled()) {
+                if (log.isDebugEnabled()) {
                     log.debug("Finish group partition dump [name=" + name +
                         ", id=" + grp +
                         ", part=" + part +
@@ -255,6 +250,22 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 }
             }
         })).collect(Collectors.toList());
+
+        int futsSize = futs.size();
+
+        CompletableFuture.allOf(futs.toArray(new CompletableFuture[futsSize])).whenComplete((res, t) -> {
+            clearDumpListener(gctx);
+
+            if (log.isInfoEnabled()) {
+                log.info("Finish group dump [name=" + name +
+                    ", id=" + grp +
+                    ", time=" + (System.currentTimeMillis() - start) +
+                    ", iteratorEntriesCount=" + entriesCnt +
+                    ", changedEntriesCount=" + changedEntriesCnt + ']');
+            }
+        });
+
+        return futs;
     }
 
     /** {@inheritDoc} */
@@ -319,18 +330,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     private PartitionDumpContext dumpContext(int grp, int part) {
         return dumpCtxs.computeIfAbsent(
             toLong(grp, part),
-            key -> {
-                try {
-                    return new PartitionDumpContext(
-                        cctx.kernalContext().cache().cacheGroup(grp),
-                        part,
-                        new File(groupDirectory(cctx.cache().cacheGroup(grp)), PART_FILE_PREFIX + part + DUMP_FILE_EXT)
-                    );
-                }
-                catch (IOException | IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            }
+            key -> new PartitionDumpContext(cctx.kernalContext().cache().cacheGroup(grp), part)
         );
     }
 
@@ -369,34 +369,35 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         private final AtomicInteger writers = new AtomicInteger(1); // Iterator writing entries to this context, by default.
 
         /**
-         * @param gctx Group id.
+         * @param gctx Group context.
          * @param part Partition id.
-         * @param dumpFile Dump file path.
          */
-        public PartitionDumpContext(CacheGroupContext gctx, int part, File dumpFile) throws IOException {
+        public PartitionDumpContext(CacheGroupContext gctx, int part) {
             assert gctx != null;
 
-            this.part = part;
-            grp = gctx.groupId();
-            topVer = gctx.topology().lastTopologyChangeVersion();
+            try {
+                this.part = part;
+                grp = gctx.groupId();
+                topVer = gctx.topology().lastTopologyChangeVersion();
 
-            boolean primary = grpPrimaries.computeIfAbsent(
-                gctx.groupId(),
-                key -> gctx.affinity().primaryPartitions(gctx.shared().kernalContext().localNodeId(), topVer)
-            ).contains(part);
+                startVer = grpPrimaries.get(gctx.groupId()).contains(part) ? gctx.shared().versions().last() : null;
 
-            startVer = primary ? gctx.shared().versions().last() : null;
+                serdes = new DumpEntrySerializer();
+                changed = new HashMap<>();
 
-            serdes = new DumpEntrySerializer();
-            changed = new HashMap<>();
+                for (int cache : gctx.cacheIds())
+                    changed.put(cache, new GridConcurrentHashSet<>());
 
-            for (int cache : gctx.cacheIds())
-                changed.put(cache, new GridConcurrentHashSet<>());
+                File dumpFile = new File(groupDirectory(gctx), PART_FILE_PREFIX + part + DUMP_FILE_EXT);
 
-            if (!dumpFile.createNewFile())
-                throw new IgniteException("Dump file can't be created: " + dumpFile);
+                if (!dumpFile.createNewFile())
+                    throw new IgniteException("Dump file can't be created: " + dumpFile);
 
-            file = ioFactory.create(dumpFile);
+                file = ioFactory.create(dumpFile);
+            }
+            catch (IOException | IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
 
         /**
@@ -416,32 +417,25 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         ) {
             String reasonToSkip = null;
 
-            if (closed) // Partition already saved in dump.
-                reasonToSkip = "partition already saved";
-            else {
-                writers.getAndIncrement();
+            writers.getAndIncrement();
 
-                try {
-                    if (startVer != null && ver.isGreater(startVer))
-                        reasonToSkip = "greater version";
-                    else if (!changed.get(cache).add(key)) // Entry changed several time during dump.
-                        reasonToSkip = "changed several times";
-                    else if (val == null)
-                        reasonToSkip = "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
-                    else {
-                        synchronized (this) {
-                            if (closed) // Partition already saved in dump.
-                                reasonToSkip = "partition already saved";
-                            else
-                                write(cache, expireTime, key, val);
-                        }
+            try {
+                if (closed) // Partition already saved in dump.
+                    reasonToSkip = "partition already saved";
+                else if (startVer != null && ver.isGreater(startVer))
+                    reasonToSkip = "greater version";
+                else if (!changed.get(cache).add(key)) // Entry changed several time during dump.
+                    reasonToSkip = "changed several times";
+                else if (val == null)
+                    reasonToSkip = "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
+                else {
+                    write(cache, expireTime, key, val);
 
-                        changedCnt.increment();
-                    }
+                    changedCnt.increment();
                 }
-                finally {
-                    writers.decrementAndGet();
-                }
+            }
+            finally {
+                writers.decrementAndGet();
             }
 
             if (log.isTraceEnabled()) {
@@ -477,11 +471,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 written = false;
             else if (changed.get(cache).contains(key))
                 written = false;
-            else {
-                synchronized (this) {
-                    write(cache, expireTime, key, val);
-                }
-            }
+            else
+                write(cache, expireTime, key, val);
 
             if (log.isTraceEnabled()) {
                 log.trace("Iterator [" +
@@ -496,9 +487,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         }
 
         /** */
-        private void write(int cache, long expireTime, KeyCacheObject key, CacheObject val) {
-            assert !closed;
-
+        private synchronized void write(int cache, long expireTime, KeyCacheObject key, CacheObject val) {
             try {
                 ByteBuffer buf = serdes.writeToBuffer(cache, expireTime, key, val, cctx.cacheObjectContext(cache));
 
@@ -512,16 +501,16 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         /** {@inheritDoc} */
         @Override public void close() {
-            if (closed)
-                return;
-
             synchronized (this) {
+                if (closed)
+                    return;
+
                 closed = true;
             }
 
             writers.decrementAndGet();
 
-            while (writers.get() > 0)
+            while (writers.get() > 0) // Waiting for all on the fly listeners to complete.
                 LockSupport.parkNanos(1_000_000);
 
             U.closeQuiet(file);

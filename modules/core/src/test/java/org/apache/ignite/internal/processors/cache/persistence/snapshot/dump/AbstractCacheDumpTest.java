@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,9 +31,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
-import javax.management.DynamicMBean;
-import javax.management.MBeanException;
-import javax.management.ReflectionException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -70,7 +66,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.management.api.CommandMBean.INVOKE;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_RUNNING_DIR_KEY;
 import static org.apache.ignite.platform.model.AccessLevel.SUPER;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -265,6 +261,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         for (SnapshotMetadata meta : metadata) {
             assertEquals(name, meta.snapshotName());
             assertTrue(meta.dump());
+            assertFalse(meta.cacheGroupIds().contains(CU.cacheId(UTILITY_CACHE_NAME)));
         }
 
         List<String> nodesDirs = dump.nodesDirectories();
@@ -523,51 +520,17 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static String invokeCheckCommand(IgniteEx ign, String name) {
-        Object[] args = {name};
+    public static String invokeCheckCommand(IgniteEx ign, String name) throws IgniteCheckedException {
+        StringBuffer buf = new StringBuffer();
 
-        String[] signature = new String[args.length];
+        ign.context().cache().context().snapshotMgr().checkSnapshot(name, null).get(60_000)
+            .print(line -> buf.append(line).append(System.lineSeparator()));
 
-        Arrays.fill(signature, String.class.getName());
-
-        try {
-            return (String)mngmntBean(ign, "Dump", "Check").invoke(INVOKE, args, signature);
-        }
-        catch (MBeanException | ReflectionException e) {
-            throw new IgniteException(e);
-        }
+        return buf.toString();
     }
 
     /** */
     void createDump(IgniteEx ign, String name) {
-        Object[] args = {name};
-
-        String[] signature = new String[args.length];
-
-        Arrays.fill(signature, String.class.getName());
-
-        try {
-            String res = (String)mngmntBean(ign, "Dump", "Create").invoke(INVOKE, args, signature);
-
-            assertEquals("Dump \"" + name + "\" was created.\n", res);
-        }
-        catch (MBeanException | ReflectionException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /** */
-    static DynamicMBean mngmntBean(IgniteEx ign, String... path) {
-        DynamicMBean mbean = getMxBean(
-            ign.context().igniteInstanceName(),
-            "management",
-            Arrays.asList(path).subList(0, path.length - 1),
-            path[path.length - 1],
-            DynamicMBean.class
-        );
-
-        assertNotNull(mbean);
-
-        return mbean;
+        ign.snapshot().createDump(name).get();
     }
 }

@@ -78,7 +78,7 @@ abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
         assert snpSndr.executor() != null : "Executor service must be not null.";
 
         this.cctx = cctx;
-        this.log = cctx.logger(AbstractSnapshotFutureTask.class);
+        this.log = cctx.logger(this.getClass());
         this.srcNodeId = srcNodeId;
         this.reqId = reqId;
         this.snpName = snpName;

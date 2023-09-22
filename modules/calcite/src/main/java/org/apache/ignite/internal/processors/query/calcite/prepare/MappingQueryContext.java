@@ -42,15 +42,19 @@ public class MappingQueryContext {
     private final boolean isLocal;
 
     /** */
+    private final int[] parts;
+
+    /** */
     public MappingQueryContext(UUID locNodeId, AffinityTopologyVersion topVer) {
-        this(locNodeId, topVer, false);
+        this(locNodeId, topVer, false, null);
     }
 
     /** */
-    public MappingQueryContext(UUID locNodeId, AffinityTopologyVersion topVer, boolean isLocal) {
+    public MappingQueryContext(UUID locNodeId, AffinityTopologyVersion topVer, boolean isLocal, int[] parts) {
         this.locNodeId = locNodeId;
         this.topVer = topVer;
         this.isLocal = isLocal;
+        this.parts = parts;
     }
 
     /** */
@@ -66,6 +70,11 @@ public class MappingQueryContext {
     /** */
     public boolean isLocal() {
         return isLocal;
+    }
+
+    /** */
+    public int[] partitions() {
+        return parts;
     }
 
     /** Creates a cluster. */

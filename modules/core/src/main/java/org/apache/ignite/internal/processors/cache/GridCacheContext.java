@@ -2120,15 +2120,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if it is possible to directly read offheap instead of using {@link GridCacheEntryEx#innerGet}.
      */
     public boolean readNoEntry(@Nullable IgniteCacheExpiryPolicy expiryPlc, boolean readers) {
-        return mvccEnabled()
-                || (!config().isOnheapCacheEnabled() && !readers && expiryPlc == null && config().getPlatformCacheConfiguration() == null);
-    }
-
-    /**
-     * @return {@code True} if mvcc is enabled for cache.
-     */
-    public boolean mvccEnabled() {
-        return grp.mvccEnabled();
+        return !config().isOnheapCacheEnabled() && !readers && expiryPlc == null && config().getPlatformCacheConfiguration() == null;
     }
 
     /**
@@ -2360,6 +2352,9 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** */
     public void dumpListener(DumpEntryChangeListener dumpEntryChangeLsnr) {
+        assert this.dumpLsnr == null || dumpEntryChangeLsnr == null;
+        assert cacheType == CacheType.USER;
+
         this.dumpLsnr = dumpEntryChangeLsnr;
     }
 

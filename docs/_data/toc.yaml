@@ -51,6 +51,8 @@
         url: installation/kubernetes/gke-deployment
   - title: VMWare
     url: installation/vmware-installation
+  - title: Version Upgrade
+    url: installation/upgrades
 - title: Setting Up
   items:
     - title: Understanding Configuration

@@ -26,7 +26,6 @@ import org.apache.ignite.internal.management.cdc.CdcCommand;
 import org.apache.ignite.internal.management.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand;
 import org.apache.ignite.internal.management.diagnostic.DiagnosticCommand;
-import org.apache.ignite.internal.management.dump.DumpCommand;
 import org.apache.ignite.internal.management.encryption.EncryptionCommand;
 import org.apache.ignite.internal.management.kill.KillCommand;
 import org.apache.ignite.internal.management.meta.MetaCommand;
@@ -72,8 +71,7 @@ public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
             new DefragmentationCommand(),
             new PerformanceStatisticsCommand(),
             new ConsistencyCommand(),
-            new CdcCommand(),
-            new DumpCommand()
+            new CdcCommand()
         );
     }
 

@@ -164,13 +164,16 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 ", meta=" + meta + ']');
         }
 
+        // This will throw if compression disabled. Calculation before other checks.
+        boolean punchHoleEnabled = isPunchHoleEnabled(opCtx, grpDirs.keySet());
+
         if (!opCtx.check()) {
             log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
 
             return Collections.emptyMap();
         }
 
-        return meta.dump() ? checkDumpFiles(opCtx, partFiles) : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles);
+        return meta.dump() ? checkDumpFiles(opCtx, partFiles) : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles, punchHoleEnabled);
     }
 
     /** */
@@ -178,10 +181,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         SnapshotHandlerContext opCtx,
         Map<Integer, File> grpDirs,
         SnapshotMetadata meta,
-        Set<File> partFiles
+        Set<File> partFiles,
+        boolean punchHoleEnabled
     ) throws IgniteCheckedException {
-        boolean punchHoleEnabled = isPunchHoleEnabled(opCtx, grpDirs.keySet());
-
         Map<PartitionKeyV2, PartitionHashRecordV2> res = new ConcurrentHashMap<>();
         ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
             .order(ByteOrder.nativeOrder()));

@@ -78,7 +78,7 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
     }
 
     /** */
-    protected abstract List<CompletableFuture<Void>> saveCacheConfigsCopy();
+    protected abstract List<CompletableFuture<Void>> saveCacheConfigs();
 
     /** */
     protected abstract List<CompletableFuture<Void>> saveGroup(int grpId, Set<Integer> grpParts) throws IgniteCheckedException;
@@ -105,7 +105,7 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
     /**
      * @return {@code true} if current task requested to be stopped.
      */
-    boolean stopping() {
+    protected boolean stopping() {
         return err.get() != null;
     }
 
@@ -191,7 +191,7 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
             futs.add(runAsync(() -> snpSndr.sendBinaryMeta(binTypesCopy)));
             // Process marshaller meta.
             futs.add(runAsync(() -> snpSndr.sendMarshallerMeta(mappingsCopy)));
-            futs.addAll(saveCacheConfigsCopy());
+            futs.addAll(saveCacheConfigs());
 
             for (Map.Entry<Integer, Set<Integer>> grpParts : processed.entrySet())
                 futs.addAll(saveGroup(grpParts.getKey(), grpParts.getValue()));
