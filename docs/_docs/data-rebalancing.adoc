@@ -28,7 +28,18 @@ In pure in-memory clusters, the default behavior is to start rebalancing immedia
 In clusters with persistence, the baseline topology has to be changed manually (default behavior), or can be changed automatically when link:clustering/baseline-topology#baseline-topology-autoadjustment[automatic baseline adjustment] is enabled.
 ====
 
-== Configuring Rebalancing Properties
+== Configuring Rebalancing Mode
+
+Ignite supports both synchronous and asynchronous rebalancing.
+In the synchronous mode, any operation on the cache data is blocked until rebalancing is finished.
+In the asynchronous mode, the rebalancing process is done asynchronously.
+You can also disable rebalancing for a particular cache.
+
+To change the rebalancing mode, set one of the following values in the cache configuration.
+
+- `SYNC` — Synchronous rebalancing mode. In this mode, any call to the cache public API is blocked until rebalancing is finished.
+- `ASYNC` — Asynchronous rebalancing mode. Distributed caches are available immediately and load all necessary data from other available cluster nodes in the background.
+- `NONE` — In this mode no rebalancing takes place, which means that caches are either loaded on demand from the persistent storage whenever data is accessed, or populated explicitly.
 
 :javaFile: {javaCodeDir}/RebalancingConfiguration.java
 :xmlFile: code-snippets/xml/rebalancing-config.xml
@@ -38,17 +49,17 @@ In clusters with persistence, the baseline topology has to be changed manually (
 tab:XML[]
 [source,xml]
 ----
-include::{xmlFile}[tags=!*;ignite-config;timeout;order;delay;indent=0]
+include::{xmlFile}[tags=!*;ignite-config;mode,indent=0]
 ----
 tab:Java[]
 [source,java]
 ----
-include::{javaFile}[tags=!*;ignite-config;timeout;order;delay;indent=0;]
+include::{javaFile}[tags=!*;ignite-config;mode,indent=0]
 ----
 tab:C#/.NET[]
 [source,csharp]
 ----
-include::code-snippets/dotnet/DataRebalancing.cs[tag=RebalanceProperty,indent=0]
+include::code-snippets/dotnet/DataRebalancing.cs[tag=RebalanceMode,indent=0]
 ----
 tab:C++[unsupported]
 --
@@ -112,38 +123,29 @@ include::code-snippets/dotnet/DataRebalancing.cs[tag=RebalanceThrottle,indent=0]
 tab:C++[unsupported]
 --
 
-== Configuring Rebalancing Mode
+== Other Properties
 
-Ignite supports both synchronous and asynchronous rebalancing.
-In the synchronous mode, any operation on the cache data is blocked until rebalancing is finished.
-In the asynchronous mode, the rebalancing process is done asynchronously.
-You can also disable rebalancing for a particular cache.
+== Configuring Rebalancing Properties
 
-To change the rebalancing mode, set one of the following values in the cache configuration.
-
-- `SYNC` — Synchronous rebalancing mode. In this mode, any call to the cache public API is blocked until rebalancing is finished.
-- `ASYNC` — Asynchronous rebalancing mode. Distributed caches are available immediately and load all necessary data from other available cluster nodes in the background.
-- `NONE` — In this mode no rebalancing takes place, which means that caches are either loaded on demand from the persistent storage whenever data is accessed, or populated explicitly.
-
+[tabs]
+--
 tab:XML[]
 [source,xml]
 ----
-include::{xmlFile}[tags=!*;ignite-config;mode,indent=0]
+include::{xmlFile}[tags=!*;ignite-config;timeout;order;delay;indent=0]
 ----
 tab:Java[]
 [source,java]
 ----
-include::{javaFile}[tags=!*;ignite-config;mode,indent=0]
+include::{javaFile}[tags=!*;ignite-config;timeout;order;delay;indent=0;]
 ----
 tab:C#/.NET[]
 [source,csharp]
 ----
-include::code-snippets/dotnet/DataRebalancing.cs[tag=RebalanceMode,indent=0]
+include::code-snippets/dotnet/DataRebalancing.cs[tag=RebalanceProperty,indent=0]
 ----
 tab:C++[unsupported]
 --
-
-== Other Properties
 
 The following table lists the properties of `IgniteConfiguration` related to rebalancing:
 

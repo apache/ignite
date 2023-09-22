@@ -18,6 +18,8 @@ package org.apache.ignite.snippets;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 
 public class RebalancingConfiguration {
@@ -38,17 +40,14 @@ public class RebalancingConfiguration {
         //tag::order[]
 
         cfg.setRebalanceOrder(0);
-
         //end::order[]
         //tag::timeout[]
 
         cfg.setRebalanceTimeout(10);
-
         //end::timeout[]
         //tag::delay[]
 
         cfg.setRebalanceDelay(10);
-
         //end::delay[]
         //tag::throttling[]
 
@@ -58,13 +57,12 @@ public class RebalancingConfiguration {
 
         //end::throttling[]
 
-        CacheConfiguration cacheCfg = new CacheConfiguration("mycache");
         //tag::mode[]
+        CacheConfiguration cacheCfg = new CacheConfiguration("mycache");
 
         cacheCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
         //end::mode[]
-
         // Start a node.
         Ignite ignite = Ignition.start(cfg);
         //end::ignite-config[]
