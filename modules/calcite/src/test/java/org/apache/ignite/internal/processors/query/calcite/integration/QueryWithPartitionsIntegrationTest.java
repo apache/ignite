@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteCache;
@@ -53,12 +52,16 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
     public boolean local;
 
     /** */
-    @Parameterized.Parameters(name = "local = {0}")
+    @Parameterized.Parameter(1)
+    public int partSz;
+
+    /** */
+    @Parameterized.Parameters(name = "local = {0}, partSz = {1}")
     public static List<Object[]> parameters() {
-        return ImmutableList.of(
-                new Object[]{true},
-                new Object[]{false}
-        );
+        return Stream.of(true, false)
+            .flatMap(isLocal -> Stream.of(1, 2, 5, 10, 20)
+                .map(i -> new Object[]{isLocal, i}))
+            .collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */
@@ -67,7 +70,7 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
 
         List<Integer> parts0 = IntStream.range(0, 1024).boxed().collect(Collectors.toList());
         Collections.shuffle(parts0);
-        parts = Ints.toArray(parts0.subList(0, 20));
+        parts = Ints.toArray(parts0.subList(0, partSz));
 
         log.info("Running tests with parts=" + Arrays.toString(parts));
     }

@@ -288,7 +288,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
      */
     @SuppressWarnings("unchecked")
     private void preparePessimistic() {
-        assert !tx.implicitSingle() || tx.txState().mvccEnabled(); // Non-mvcc implicit-single tx goes fast commit way.
+        assert !tx.implicitSingle();
 
         Map<UUID, GridDistributedTxMapping> mappings = new HashMap<>();
 
@@ -298,58 +298,44 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
         Map<UUID, Collection<UUID>> txNodes;
 
-        if (tx.txState().mvccEnabled()) {
-            Collection<GridDistributedTxMapping> mvccMappings = tx.implicitSingle()
-                ? Collections.singleton(tx.mappings().singleMapping()) : tx.mappings().mappings();
+        GridDhtTxMapping txMapping = new GridDhtTxMapping();
 
-            txNodes = new HashMap<>(mvccMappings.size());
+        for (IgniteTxEntry txEntry : tx.allEntries()) {
+            txEntry.clearEntryReadVersion();
 
-            for (GridDistributedTxMapping m : mvccMappings) {
-                mappings.put(m.primary().id(), m);
+            GridCacheContext cacheCtx = txEntry.context();
 
-                txNodes.put(m.primary().id(), m.backups());
-            }
-        }
-        else {
-            GridDhtTxMapping txMapping = new GridDhtTxMapping();
+            if (cacheCtx.isNear())
+                hasNearCache = true;
 
-            for (IgniteTxEntry txEntry : tx.allEntries()) {
-                txEntry.clearEntryReadVersion();
+            List<ClusterNode> nodes;
 
-                GridCacheContext cacheCtx = txEntry.context();
+            GridDhtPartitionTopology top = cacheCtx.topology();
+            nodes = top.nodes(cacheCtx.affinity().partition(txEntry.key()), topVer);
 
-                if (cacheCtx.isNear())
-                    hasNearCache = true;
+            if (F.isEmpty(nodes)) {
+                onDone(new ClusterTopologyServerNotFoundException("Failed to map keys to nodes (partition " +
+                    "is not mapped to any node) [key=" + txEntry.key() +
+                    ", partition=" + cacheCtx.affinity().partition(txEntry.key()) + ", topVer=" + topVer + ']'));
 
-                List<ClusterNode> nodes;
-
-                GridDhtPartitionTopology top = cacheCtx.topology();
-                nodes = top.nodes(cacheCtx.affinity().partition(txEntry.key()), topVer);
-
-                if (F.isEmpty(nodes)) {
-                    onDone(new ClusterTopologyServerNotFoundException("Failed to map keys to nodes (partition " +
-                        "is not mapped to any node) [key=" + txEntry.key() +
-                        ", partition=" + cacheCtx.affinity().partition(txEntry.key()) + ", topVer=" + topVer + ']'));
-
-                    return;
-                }
-
-                ClusterNode primary = nodes.get(0);
-
-                GridDistributedTxMapping nodeMapping = mappings.get(primary.id());
-
-                if (nodeMapping == null)
-                    mappings.put(primary.id(), nodeMapping = new GridDistributedTxMapping(primary));
-
-                txEntry.nodeId(primary.id());
-
-                nodeMapping.add(txEntry);
-
-                txMapping.addMapping(nodes);
+                return;
             }
 
-            txNodes = txMapping.transactionNodes();
+            ClusterNode primary = nodes.get(0);
+
+            GridDistributedTxMapping nodeMapping = mappings.get(primary.id());
+
+            if (nodeMapping == null)
+                mappings.put(primary.id(), nodeMapping = new GridDistributedTxMapping(primary));
+
+            txEntry.nodeId(primary.id());
+
+            nodeMapping.add(txEntry);
+
+            txMapping.addMapping(nodes);
         }
+
+        txNodes = txMapping.transactionNodes();
 
         tx.transactionNodes(txNodes);
 

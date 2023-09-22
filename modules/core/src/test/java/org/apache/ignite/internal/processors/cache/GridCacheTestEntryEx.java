@@ -295,12 +295,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public List<GridCacheEntryInfo> allVersionsInfo()
-        throws IgniteCheckedException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean valid(AffinityTopologyVersion topVer) {
         return true;
     }

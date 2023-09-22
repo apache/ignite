@@ -142,9 +142,6 @@ public class CdcCacheDataResendTask extends VisorMultiNodeTask<CdcResendCommandA
                         ", dataRegionName=" + cache.context().dataRegion().config().getName() + ']');
                 }
 
-                if (cache.context().mvccEnabled())
-                    throw new UnsupportedOperationException("The TRANSACTIONAL_SNAPSHOT mode is not supported.");
-
                 caches.add(cache);
             }
 

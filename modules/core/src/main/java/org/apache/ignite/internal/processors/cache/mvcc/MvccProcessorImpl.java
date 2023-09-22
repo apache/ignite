@@ -325,15 +325,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** {@inheritDoc} */
     @Override public void onCacheStop(final GridCacheContext cctx) {
-        if (cctx.mvccEnabled() && txLog != null) {
-            assert mvccEnabled && mvccSupported;
-
-            boolean hasMvccCaches = ctx.cache().cacheDescriptors().values().stream()
-                .anyMatch(c -> c.cacheConfiguration().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT);
-
-            if (!hasMvccCaches)
-                stopTxLog();
-        }
+        // No-op.
     }
 
 

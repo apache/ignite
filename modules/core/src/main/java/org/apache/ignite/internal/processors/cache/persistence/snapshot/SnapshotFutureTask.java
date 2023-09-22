@@ -95,10 +95,10 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
     private final ThreadLocal<ByteBuffer> locBuff;
 
     /** Snapshot working directory on file system. */
-    protected final File tmpSnpWorkDir;
+    private final File tmpSnpWorkDir;
 
     /** IO factory which will be used for creating snapshot delta-writers. */
-    protected final FileIOFactory ioFactory;
+    private final FileIOFactory ioFactory;
 
     /**
      * The length of file size per each cache partition file.

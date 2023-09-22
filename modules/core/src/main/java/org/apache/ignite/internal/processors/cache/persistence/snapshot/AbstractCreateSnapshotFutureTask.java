@@ -105,7 +105,7 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
     /**
      * @return {@code true} if current task requested to be stopped.
      */
-    boolean stopping() {
+    protected boolean stopping() {
         return err.get() != null;
     }
 
