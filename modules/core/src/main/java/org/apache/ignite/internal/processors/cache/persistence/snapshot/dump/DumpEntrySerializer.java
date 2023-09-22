@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -40,7 +41,7 @@ public class DumpEntrySerializer {
     public static final int HEADER_SZ = Integer.BYTES + Integer.BYTES;
 
     /** */
-    private ByteBuffer buf;
+    private final ConcurrentMap<Long, ByteBuffer> thLocBufs;
 
     /** */
     private final FastCrc crc = new FastCrc();
@@ -51,9 +52,11 @@ public class DumpEntrySerializer {
     /** Cache object processor. */
     private IgniteCacheObjectProcessor co;
 
-    /** */
-    public DumpEntrySerializer() {
-        buf = ByteBuffer.allocate(100);
+    /**
+     * @param thLocBufs Thread local buffers.
+     */
+    public DumpEntrySerializer(ConcurrentMap<Long, ByteBuffer> thLocBufs) {
+        this.thLocBufs = thLocBufs;
     }
 
     /** */
@@ -93,6 +96,8 @@ public class DumpEntrySerializer {
 
         int fullSz = dataSz + /*extra bytes for row size*/Integer.BYTES + /*CRC*/Integer.BYTES;
 
+        ByteBuffer buf = threadLocalBuffer();
+
         if (buf.capacity() < fullSz)
             buf = ByteBuffer.allocate(fullSz);
         else
@@ -131,6 +136,8 @@ public class DumpEntrySerializer {
      */
     public DumpEntry read(FileIO dumpFile, int grp, int part) throws IOException, IgniteCheckedException {
         assert cctx != null : "Set kernalContext first";
+
+        ByteBuffer buf = threadLocalBuffer();
 
         buf.position(0);
         buf.limit(HEADER_SZ);
@@ -213,6 +220,11 @@ public class DumpEntrySerializer {
                 return val;
             }
         };
+    }
+
+    /** @return Thread local buffer. */
+    private ByteBuffer threadLocalBuffer() {
+        return thLocBufs.computeIfAbsent(Thread.currentThread().getId(), id -> ByteBuffer.allocate(100));
     }
 
     /** */

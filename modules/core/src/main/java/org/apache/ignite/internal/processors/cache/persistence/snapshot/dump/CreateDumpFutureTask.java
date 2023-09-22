@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -36,7 +37,9 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -96,6 +99,14 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
     /** Local node is primary for set of group partitions. */
     private final Map<Integer, Set<Integer>> grpPrimaries = new ConcurrentHashMap<>();
+
+    /**
+     * Map shared across all instances of {@link PartitionDumpContext} and {@link DumpEntrySerializer}.
+     * We use per thread buffer because number of threads is fewer then number of partitions.
+     * Regular count of partitions is {@link RendezvousAffinityFunction#DFLT_PARTITION_COUNT}
+     * and thread is {@link IgniteConfiguration#DFLT_PUBLIC_THREAD_CNT} whic is significantly less.
+     */
+    private final ConcurrentMap<Long, ByteBuffer> thLocBufs = new ConcurrentHashMap<>();
 
     /**
      * @param cctx Cache context.
@@ -298,7 +309,10 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             }
 
             closeFut = CompletableFuture.runAsync(
-                () -> onDone(new SnapshotFutureTaskResult(taken, null), err0),
+                () -> {
+                    thLocBufs.clear();
+                    onDone(new SnapshotFutureTaskResult(taken, null), err0);
+                },
                 cctx.kernalContext().pools().getSystemExecutorService()
             );
         }
@@ -329,7 +343,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     private PartitionDumpContext dumpContext(int grp, int part) {
         return dumpCtxs.computeIfAbsent(
             toLong(grp, part),
-            key -> new PartitionDumpContext(cctx.kernalContext().cache().cacheGroup(grp), part)
+            key -> new PartitionDumpContext(cctx.kernalContext().cache().cacheGroup(grp), part, thLocBufs)
         );
     }
 
@@ -359,7 +373,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         private final AffinityTopologyVersion topVer;
 
         /** Partition serializer. */
-        DumpEntrySerializer serdes;
+        private final DumpEntrySerializer serdes;
 
         /** If {@code true} context is closed. */
         volatile boolean closed;
@@ -370,8 +384,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         /**
          * @param gctx Group context.
          * @param part Partition id.
+         * @param thLocBufs Thread local buffers.
          */
-        public PartitionDumpContext(CacheGroupContext gctx, int part) {
+        public PartitionDumpContext(CacheGroupContext gctx, int part, ConcurrentMap<Long, ByteBuffer> thLocBufs) {
             assert gctx != null;
 
             try {
@@ -381,7 +396,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
                 startVer = grpPrimaries.get(gctx.groupId()).contains(part) ? gctx.shared().versions().last() : null;
 
-                serdes = new DumpEntrySerializer();
+                serdes = new DumpEntrySerializer(thLocBufs);
                 changed = new HashMap<>();
 
                 for (int cache : gctx.cacheIds())
@@ -519,8 +534,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 LockSupport.parkNanos(1_000_000);
 
             U.closeQuiet(file);
-
-            serdes = null;
         }
     }
 

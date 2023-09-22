@@ -21,6 +21,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -29,9 +30,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
@@ -67,9 +72,17 @@ public class Dump {
     private final GridKernalContext cctx;
 
     /**
+     * Map shared across all instances of {@link DumpEntrySerializer}.
+     * We use per thread buffer because number of threads is fewer then number of partitions.
+     * Regular count of partitions is {@link RendezvousAffinityFunction#DFLT_PARTITION_COUNT}
+     * and thread is {@link IgniteConfiguration#DFLT_PUBLIC_THREAD_CNT} whic is significantly less.
+     */
+    private final ConcurrentMap<Long, ByteBuffer> thLocBufs = new ConcurrentHashMap<>();
+
+    /**
      * @param dumpDir Dump directory.
      */
-    public Dump(GridKernalContext cctx, File dumpDir) throws IgniteCheckedException {
+    public Dump(GridKernalContext cctx, File dumpDir) {
         this.cctx = cctx;
         this.dumpDir = dumpDir;
 
@@ -162,7 +175,7 @@ public class Dump {
             throw new RuntimeException(e);
         }
 
-        DumpEntrySerializer serializer = new DumpEntrySerializer();
+        DumpEntrySerializer serializer = new DumpEntrySerializer(thLocBufs);
 
         serializer.kernalContext(cctx);
 
