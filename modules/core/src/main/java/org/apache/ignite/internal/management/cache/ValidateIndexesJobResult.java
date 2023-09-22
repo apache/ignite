@@ -20,7 +20,6 @@ package org.apache.ignite.internal.management.cache;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
