@@ -430,10 +430,14 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                         reasonToSkip = "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
                     else {
                         synchronized (this) {
-                            write(cache, expireTime, key, val);
-                        }
+                            if (closed) // Partition already saved in dump.
+                                reasonToSkip = "partition already saved";
+                            else {
+                                write(cache, expireTime, key, val);
 
-                        changedCnt.increment();
+                                changedCnt.increment();
+                            }
+                        }
                     }
                 }
                 finally {
