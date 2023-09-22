@@ -53,8 +53,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpImpl;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpedPartitionIterator;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility;
@@ -319,7 +317,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         SnapshotHandlerContext opCtx,
         Set<File> partFiles
     ) throws IgniteCheckedException {
-        Dump dump = new DumpImpl(cctx.kernalContext(), opCtx.snapshotDirectory());
+        Dump dump = new Dump(cctx.kernalContext(), opCtx.snapshotDirectory());
 
         Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
             cctx.snapshotMgr().snapshotExecutorService(),
@@ -352,7 +350,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         try {
             String node = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
 
-            try (DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part)) {
+            try (Dump.DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part)) {
                 long size = 0;
 
                 VerifyPartitionContext ctx = new VerifyPartitionContext();

@@ -74,7 +74,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
  * Directories structure is same as a full snapshot but each partitions saved in "part-0.dump" file.
  * Files structure is a set of {@link DumpEntry} written one by one.
  *
- * @see DumpImpl
+ * @see Dump
  * @see DumpEntry
  */
 public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask implements DumpEntryChangeListener {

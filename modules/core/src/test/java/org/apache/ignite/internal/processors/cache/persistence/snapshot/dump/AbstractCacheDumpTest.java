@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.DumpedPartitionIterator;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -428,7 +429,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     public static Dump dump(IgniteEx ign, String name) throws IgniteCheckedException {
-        return new DumpImpl(
+        return new Dump(
             ign.context(),
             new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name)
         );
@@ -450,7 +451,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         String expMsg = "The check procedure has finished, no conflicts have been found.\n\n";
 
         if (!Objects.equals(msg, expMsg)) {
-            Dump dump = new DumpImpl(
+            Dump dump = new Dump(
                 ign.context(),
                 new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name)
             );

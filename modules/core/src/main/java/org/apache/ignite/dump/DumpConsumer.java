@@ -61,9 +61,11 @@ public interface DumpConsumer {
 
     /**
      * Handles cache data.
+     * @param grp Group id.
+     * @param part Partition.
      * @param data Cache data iterator.
      */
-    void onData(Iterator<DumpEntry> data);
+    void onPartition(int grp, int part, Iterator<DumpEntry> data);
 
     /**
      * Stops the consumer.

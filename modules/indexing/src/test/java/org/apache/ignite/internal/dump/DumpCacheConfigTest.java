@@ -26,7 +26,7 @@ import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpedPartitionIterator;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.DumpedPartitionIterator;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
