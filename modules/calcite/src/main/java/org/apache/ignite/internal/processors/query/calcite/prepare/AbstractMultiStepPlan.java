@@ -17,8 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
-import org.apache.ignite.internal.processors.query.calcite.exec.PartitionExtractor;
+import com.google.common.primitives.Ints;
+import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionPruningContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMappingException;
@@ -92,28 +97,36 @@ public abstract class AbstractMultiStepPlan extends AbstractQueryPlan implements
                 }
             });
 
-            return new ExecutionPlan(executionPlan0.topologyVersion(), fragments);
+            return new ExecutionPlan(executionPlan0.topologyVersion(), fragments, executionPlan0.partitionNodes());
         }
         else if (!mapCtx.isLocal() && mapCtx.unwrap(BaseQueryContext.class) != null) {
             BaseQueryContext qryCtx = mapCtx.unwrap(BaseQueryContext.class);
 
             List<Fragment> fragments = executionPlan0.fragments();
+            List<PartitionNode> partNodes = executionPlan0.partitionNodes();
 
-            fragments = Commons.transform(fragments, f -> {
-                int[] parts = new PartitionExtractor(affSvc, qryCtx.typeFactory(), mapCtx.queryParameters()).go(f);
+            fragments = Commons.transform(Pair.zip(fragments, partNodes), pair -> {
+                Fragment fragment = pair.left;
+                PartitionNode partNode = pair.right;
 
-                if (F.isEmpty(parts))
-                    return f;
+                Collection<Integer> parts0 = partNode.apply(new PartitionPruningContext(affSvc,
+                        new BaseDataContext(qryCtx.typeFactory()), mapCtx.queryParameters()));
+
+                if (F.isEmpty(parts0))
+                    return fragment;
+
+                int[] parts = Ints.toArray(parts0);
+                Arrays.sort(parts);
 
                 try {
-                    return f.filterByPartitions(parts);
+                    return fragment.filterByPartitions(parts);
                 }
                 catch (ColocationMappingException e) {
-                    throw new FragmentMappingException("Failed to calculate physical distribution", f, f.root(), e);
+                    throw new FragmentMappingException("Failed to calculate physical distribution", fragment, fragment.root(), e);
                 }
             });
 
-            return new ExecutionPlan(executionPlan0.topologyVersion(), fragments);
+            return new ExecutionPlan(executionPlan0.topologyVersion(), fragments, partNodes);
         }
 
         return executionPlan0;

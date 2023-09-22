@@ -26,6 +26,7 @@ import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -97,6 +98,13 @@ public class MappingQueryContext implements Context {
     /** */
     public Map<String, Object> queryParameters() {
         return params;
+    }
+
+    /** */
+    public IgniteTypeFactory typeFactory() {
+        BaseQueryContext qryCtx = unwrap(BaseQueryContext.class);
+
+        return qryCtx != null ? qryCtx.typeFactory() : BaseQueryContext.TYPE_FACTORY;
     }
 
     /** Creates a cluster. */

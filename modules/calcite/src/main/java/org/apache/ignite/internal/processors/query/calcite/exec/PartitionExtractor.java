@@ -18,15 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
-import com.google.common.primitives.Ints;
 import com.google.common.primitives.Primitives;
-import org.apache.calcite.DataContext;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
@@ -37,19 +32,11 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionAllNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionLiteralNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionOperandNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionParameterNode;
-import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionPruningContext;
-import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
-import org.apache.ignite.internal.processors.query.calcite.prepare.BaseDataContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteRelShuttle;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -57,37 +44,22 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
-import org.apache.ignite.internal.processors.query.calcite.schema.CacheColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
-import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class PartitionExtractor extends IgniteRelShuttle {
     /** */
-    private final AffinityService affSvc;
-
-    /** */
     private final IgniteTypeFactory typeFactory;
-
-    /** */
-    private final DataContext dataContext;
-
-    /** */
-    private final Map<String, Object> params;
 
     /** */
     private PartitionNode partNode;
 
     /** */
-    public PartitionExtractor(AffinityService affSvc, IgniteTypeFactory typeFactory, Map<String, Object> params) {
-        this.affSvc = affSvc;
+    public PartitionExtractor(IgniteTypeFactory typeFactory) {
         this.typeFactory = typeFactory;
-        dataContext = new BaseDataContext(typeFactory);
-        this.params = params;
     }
 
     /** {@inheritDoc} */
@@ -105,31 +77,16 @@ public class PartitionExtractor extends IgniteRelShuttle {
     }
 
     /** */
-    public int[] go(Fragment fragment) {
+    public PartitionNode go(Fragment fragment) {
         if (!(fragment.root() instanceof IgniteSender))
-            return null;
+            return PartitionAllNode.INSTANCE;
 
         if (fragment.mapping() == null || !fragment.mapping().colocated())
-            return null;
+            return PartitionAllNode.INSTANCE;
 
         visit(fragment.root());
 
-        if (partNode != null) {
-            partNode = partNode.optimize();
-
-            Collection<Integer> parts = partNode.apply(new PartitionPruningContext(affSvc, dataContext, params));
-
-            if (F.isEmpty(parts))
-                return null;
-
-            int[] parts0 = Ints.toArray(parts);
-
-            Arrays.sort(parts0);
-
-            return parts0;
-        }
-
-        return null;
+        return partNode != null ? partNode : PartitionAllNode.INSTANCE;
     }
 
     /** */
@@ -215,46 +172,5 @@ public class PartitionExtractor extends IgniteRelShuttle {
             default:
                 return PartitionAllNode.INSTANCE;
         }
-    }
-
-    /** */
-    private Object createKey(IgniteTable tbl, ImmutableIntList keys, Object... args) {
-        List<CacheColumnDescriptor> descriptors = tbl.descriptor().columnDescriptors()
-                .stream().map(d -> (CacheColumnDescriptor)d).collect(Collectors.toList());
-
-        List<CacheColumnDescriptor> keyDescriptors = keys.stream().map(idx -> descriptors.get(idx + 2))
-                .collect(Collectors.toList());
-
-        GridCacheContext<?, ?> cctx = ((CacheTableDescriptor)tbl.descriptor()).cacheContext();
-        GridQueryTypeDescriptor typeDesc = ((CacheTableDescriptor)tbl.descriptor()).typeDescription();
-
-        if (args == null)
-            return null;
-
-        Object key;
-        if (args.length > 1) {
-            key = TypeUtils.createObject(cctx, typeDesc.keyTypeName(), typeDesc.keyClass());
-
-            for (int i = 0; i < args.length; ++i) {
-                CacheColumnDescriptor desc = keyDescriptors.get(i);
-
-                try {
-                    desc.set(key, TypeUtils.fromInternal(dataContext, args[i], desc.storageType()));
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            }
-        }
-        else {
-            CacheColumnDescriptor desc = keyDescriptors.get(0);
-
-            key = TypeUtils.fromInternal(dataContext, args[0], desc.storageType());
-        }
-
-        if (cctx.binaryMarshaller() && key instanceof BinaryObjectBuilder)
-            key = ((BinaryObjectBuilder)key).build();
-
-        return key;
     }
 }
