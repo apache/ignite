@@ -78,6 +78,12 @@ public class GridCommandHandlerIndexingCheckSizeTest extends GridCommandHandlerC
     /** */
     public static final String CHECK_SIZES = "--check-sizes";
 
+    @Override protected void beforeTestsStarted() throws Exception {
+        cleanPersistenceDir();
+
+        super.beforeTestsStarted();
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -477,7 +483,7 @@ public class GridCommandHandlerIndexingCheckSizeTest extends GridCommandHandlerC
 
         Map<String, ValidateIndexesCheckSizeResult> valIdxCheckSizeResults =
             ((ValidateIndexesTaskResult)lastOperationResult).results().get(node.localNode().id())
-                .checkSizeResult();
+                .result().checkSizeResult();
 
         assertEquals(rmvByTbl.size(), valIdxCheckSizeResults.size());
 

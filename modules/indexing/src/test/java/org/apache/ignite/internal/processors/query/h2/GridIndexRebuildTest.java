@@ -45,7 +45,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.ComputeTaskInternalFuture;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandArg;
-import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
 import org.apache.ignite.internal.management.cache.ValidateIndexesTask;
 import org.apache.ignite.internal.management.cache.ValidateIndexesTaskResult;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -230,14 +229,14 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         ValidateIndexesTaskResult res = exec.get();
 
-        Map<UUID, ValidateIndexesJobResult> results = res.results();
+        Map<UUID, ValidateIndexesTaskResult.ExtendedValidateIndexesJobResult> results = res.results();
 
         boolean hasIssue = false;
 
-        for (ValidateIndexesJobResult jobResult : results.values()) {
-            System.err.println(jobResult);
+        for (ValidateIndexesTaskResult.ExtendedValidateIndexesJobResult jr : results.values()) {
+            System.err.println(jr.result());
 
-            hasIssue |= jobResult.hasIssues();
+            hasIssue |= jr.result().hasIssues();
         }
 
         assertFalse(hasIssue);
@@ -329,14 +328,14 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         ValidateIndexesTaskResult res = execute.get();
 
-        Map<UUID, ValidateIndexesJobResult> results = res.results();
+        Map<UUID, ValidateIndexesTaskResult.ExtendedValidateIndexesJobResult> results = res.results();
 
         boolean hasIssue = false;
 
-        for (ValidateIndexesJobResult jobResult : results.values()) {
-            System.err.println(jobResult);
+        for (ValidateIndexesTaskResult.ExtendedValidateIndexesJobResult jr : results.values()) {
+            System.err.println(jr.result());
 
-            hasIssue |= jobResult.hasIssues();
+            hasIssue |= jr.result().hasIssues();
         }
 
         assertFalse(hasIssue);

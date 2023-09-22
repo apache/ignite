@@ -23,10 +23,12 @@ import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -36,12 +38,12 @@ public class ValidateIndexesTaskResult extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Results from cluster. */
-    private Map<UUID, ValidateIndexesJobResult> results;
+    private Map<UUID, ExtendedValidateIndexesJobResult> results;
 
     /**
      * @param results Results.
      */
-    public ValidateIndexesTaskResult(Map<UUID, ValidateIndexesJobResult> results) {
+    public ValidateIndexesTaskResult(Map<UUID, ExtendedValidateIndexesJobResult> results) {
         this.results = results;
     }
 
@@ -63,7 +65,7 @@ public class ValidateIndexesTaskResult extends VisorDataTransferObject {
     /**
      * @return Results from cluster.
      */
-    public Map<UUID, ValidateIndexesJobResult> results() {
+    public Map<UUID, ExtendedValidateIndexesJobResult> results() {
         return results;
     }
 
@@ -80,5 +82,69 @@ public class ValidateIndexesTaskResult extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ValidateIndexesTaskResult.class, this);
+    }
+
+    /** */
+    public static final class ExtendedValidateIndexesJobResult extends IgniteDataTransferObject {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Job result. */
+        private ValidateIndexesJobResult result;
+
+        /** Node consistent id. */
+        private @Nullable Object consistentId;
+
+        /** Job exception. */
+        private @Nullable Exception exception;
+
+        /** Ctor. */
+        public ExtendedValidateIndexesJobResult(ValidateIndexesJobResult result, @Nullable Object consistentId,
+            @Nullable Exception exception) {
+            this.result = result;
+            this.consistentId = consistentId;
+            this.exception = exception;
+        }
+
+        /** For externalization only. */
+        public ExtendedValidateIndexesJobResult() {
+            // No-op.
+        }
+
+        /** */
+        public ValidateIndexesJobResult result(){
+            return result;
+        }
+
+        /** @return Node consistent id. */
+        public @Nullable Object consistentId() {
+            return consistentId;
+        }
+
+        /** @return Job exception. */
+        public @Nullable Exception exception() {
+            return exception;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+            result.writeExternalData(out);
+
+            out.writeObject(exception);
+            out.writeObject(consistentId);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void readExternalData(
+            byte protoVer,
+            ObjectInput in
+        ) throws IOException, ClassNotFoundException {
+            result = new ValidateIndexesJobResult();
+
+            result.readExternal(in);
+
+            exception = (Exception)in.readObject();
+            consistentId = in.readObject();
+        }
     }
 }

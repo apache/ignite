@@ -67,16 +67,17 @@ public class CacheValidateIndexesCommand
         boolean errors = CommandUtils.printErrorsWithConsistentIds(res0.exceptions(), "Index validation failed on nodes:",
             printer);
 
-        for (Map.Entry<UUID, ValidateIndexesJobResult> nodeEntry : res0.results().entrySet()) {
-            ValidateIndexesJobResult jobRes = nodeEntry.getValue();
+        for (Map.Entry<UUID, ValidateIndexesTaskResult.ExtendedValidateIndexesJobResult> nodeEntry : res0.results().entrySet()) {
+            ValidateIndexesTaskResult.ExtendedValidateIndexesJobResult jobResE = nodeEntry.getValue();
+            ValidateIndexesJobResult jobRes = jobResE.result();
 
-            if (!jobRes.hasIssues() || jobRes.exception() != null)
+            if (!jobRes.hasIssues() || jobResE.exception() != null)
                 continue;
 
             errors = true;
 
             printer.accept("Index issues found on node " + nodeEntry.getKey()
-                + (jobRes.consistentId() == null ? "" : " [consistentId='" + jobRes.consistentId() + "']") + ':');
+                + (jobResE.consistentId() == null ? "" : " [consistentId='" + jobResE.consistentId() + "']") + ':');
 
             for (IndexIntegrityCheckIssue is : jobRes.integrityCheckFailures())
                 printer.accept(INDENT + is);

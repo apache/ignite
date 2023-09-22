@@ -385,24 +385,26 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
                 log.error("Exception while validation indexes on node id=" + e.getKey().get1().toString(), e.getValue());
         }
 
-        for (Map.Entry<UUID, ValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
-            if (nodeEntry.getValue().hasIssues()) {
+        for (Map.Entry<UUID, ValidateIndexesTaskResult.ExtendedValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
+            ValidateIndexesJobResult jobRes = nodeEntry.getValue().result();
+
+            if (jobRes.hasIssues()) {
                 log.error("Validate indexes issues had been found on node id=" + nodeEntry.getKey().toString());
 
-                log.error("Integrity check failures: " + nodeEntry.getValue().integrityCheckFailures().size());
+                log.error("Integrity check failures: " + jobRes.integrityCheckFailures().size());
 
-                nodeEntry.getValue().integrityCheckFailures().forEach(f -> log.error(f.toString()));
+                jobRes.integrityCheckFailures().forEach(f -> log.error(f.toString()));
 
-                logIssuesFromMap("Partition results", nodeEntry.getValue().partitionResult());
+                logIssuesFromMap("Partition results", jobRes.partitionResult());
 
-                logIssuesFromMap("Index validation issues", nodeEntry.getValue().indexResult());
+                logIssuesFromMap("Index validation issues", jobRes.indexResult());
             }
         }
 
         assertTrue(taskRes.exceptions().isEmpty());
 
-        for (ValidateIndexesJobResult res : taskRes.results().values())
-            assertFalse(res.hasIssues());
+        for (ValidateIndexesTaskResult.ExtendedValidateIndexesJobResult res : taskRes.results().values())
+            assertFalse(res.result().hasIssues());
     }
 
     /**
