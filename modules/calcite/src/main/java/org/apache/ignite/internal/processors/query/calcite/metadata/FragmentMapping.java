@@ -27,7 +27,6 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.query.calcite.message.MarshalableMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MarshallingContext;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -86,14 +85,6 @@ public class FragmentMapping implements MarshalableMessage {
     /** */
     public boolean colocated() {
         return colocationGroups.isEmpty() || colocationGroups.size() == 1;
-    }
-
-    /** */
-    public FragmentMapping prune(IgniteRel rel) {
-        if (colocationGroups.size() != 1)
-            return this;
-
-        return new FragmentMapping(F.first(colocationGroups).prune(rel));
     }
 
     /** */

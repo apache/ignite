@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
+import org.apache.ignite.internal.processors.query.calcite.exec.PartitionExtractor;
+import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
@@ -68,15 +70,43 @@ public abstract class AbstractMultiStepPlan extends AbstractQueryPlan implements
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutionPlan init(MappingService mappingService, MappingQueryContext ctx) {
-        ExecutionPlan executionPlan0 = queryTemplate.map(mappingService, ctx);
+    @Override public ExecutionPlan init(
+        MappingService mappingService,
+        AffinityService affSvc,
+        MappingQueryContext mapCtx
+    ) {
+        ExecutionPlan executionPlan0 = queryTemplate.map(mappingService, mapCtx);
 
-        if (!F.isEmpty(ctx.partitions()) && !F.isEmpty(executionPlan0.fragments())) {
+        if (F.isEmpty(executionPlan0.fragments()))
+            return executionPlan0;
+
+        if (!F.isEmpty(mapCtx.partitions())) {
             List<Fragment> fragments = executionPlan0.fragments();
 
             fragments = Commons.transform(fragments, f -> {
                 try {
-                    return f.filterByPartitions(ctx.partitions());
+                    return f.filterByPartitions(mapCtx.partitions());
+                }
+                catch (ColocationMappingException e) {
+                    throw new FragmentMappingException("Failed to calculate physical distribution", f, f.root(), e);
+                }
+            });
+
+            return new ExecutionPlan(executionPlan0.topologyVersion(), fragments);
+        }
+        else if (!mapCtx.isLocal() && mapCtx.unwrap(BaseQueryContext.class) != null) {
+            BaseQueryContext qryCtx = mapCtx.unwrap(BaseQueryContext.class);
+
+            List<Fragment> fragments = executionPlan0.fragments();
+
+            fragments = Commons.transform(fragments, f -> {
+                int[] parts = new PartitionExtractor(affSvc, qryCtx.typeFactory(), mapCtx.queryParameters()).go(f);
+
+                if (F.isEmpty(parts))
+                    return f;
+
+                try {
+                    return f.filterByPartitions(parts);
                 }
                 catch (ColocationMappingException e) {
                     throw new FragmentMappingException("Failed to calculate physical distribution", f, f.root(), e);

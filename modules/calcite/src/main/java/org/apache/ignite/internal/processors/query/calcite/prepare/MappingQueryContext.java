@@ -17,18 +17,26 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
+import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Query mapping context.
  */
-public class MappingQueryContext {
+public class MappingQueryContext implements Context {
+    /** */
+    private final Context parent;
+
     /** */
     private final UUID locNodeId;
 
@@ -36,25 +44,30 @@ public class MappingQueryContext {
     private final AffinityTopologyVersion topVer;
 
     /** */
+    private final Map<String, Object> params;
+
+    /** */
     private RelOptCluster cluster;
 
     /** */
-    private final boolean isLocal;
-
-    /** */
-    private final int[] parts;
-
-    /** */
-    public MappingQueryContext(UUID locNodeId, AffinityTopologyVersion topVer) {
-        this(locNodeId, topVer, false, null);
+    public MappingQueryContext(
+        UUID locNodeId,
+        AffinityTopologyVersion topVer
+    ) {
+        this(null, locNodeId, topVer, null);
     }
 
     /** */
-    public MappingQueryContext(UUID locNodeId, AffinityTopologyVersion topVer, boolean isLocal, int[] parts) {
+    public MappingQueryContext(
+        BaseQueryContext parent,
+        UUID locNodeId,
+        AffinityTopologyVersion topVer,
+        Map<String, Object> params
+    ) {
         this.locNodeId = locNodeId;
         this.topVer = topVer;
-        this.isLocal = isLocal;
-        this.parts = parts;
+        this.parent = parent;
+        this.params = !F.isEmpty(params) ? Collections.unmodifiableMap(params) : Collections.emptyMap();
     }
 
     /** */
@@ -69,12 +82,21 @@ public class MappingQueryContext {
 
     /** */
     public boolean isLocal() {
-        return isLocal;
+        BaseQueryContext qryCtx = unwrap(BaseQueryContext.class);
+
+        return qryCtx != null && qryCtx.isLocal();
     }
 
     /** */
     public int[] partitions() {
-        return parts;
+        BaseQueryContext qryCtx = unwrap(BaseQueryContext.class);
+
+        return qryCtx != null ? qryCtx.partitions() : null;
+    }
+
+    /** */
+    public Map<String, Object> queryParameters() {
+        return params;
     }
 
     /** Creates a cluster. */
@@ -87,5 +109,13 @@ public class MappingQueryContext {
         }
 
         return cluster;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <C> @Nullable C unwrap(Class<C> aCls) {
+        if (aCls == getClass())
+            return aCls.cast(this);
+
+        return parent != null ? parent.unwrap(aCls) : null;
     }
 }

@@ -159,7 +159,7 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
      * Prunes involved partitions (hence nodes, involved in query execution) if possible.
      */
     public FragmentMapping fragmentMapping(IgniteFilter rel, RelMetadataQuery mq, MappingQueryContext ctx) {
-        return _fragmentMapping(rel.getInput(), mq, ctx).prune(rel);
+        return _fragmentMapping(rel.getInput(), mq, ctx);
     }
 
     /**
@@ -189,7 +189,7 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
      */
     public FragmentMapping fragmentMapping(IgniteIndexScan rel, RelMetadataQuery mq, MappingQueryContext ctx) {
         return FragmentMapping.create(rel.sourceId(),
-            rel.getTable().unwrap(IgniteTable.class).colocationGroup(ctx)).prune(rel);
+            rel.getTable().unwrap(IgniteTable.class).colocationGroup(ctx));
     }
 
     /**

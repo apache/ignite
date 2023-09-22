@@ -18,20 +18,25 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Primitives;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
@@ -51,10 +56,12 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -79,6 +86,9 @@ public class PartitionExtractor extends IgniteRelShuttle {
     private boolean stopExtract = false;
 
     /** */
+    private long sourceId = Long.MIN_VALUE;
+
+    /** */
     public PartitionExtractor(AffinityService affSvc, IgniteTypeFactory typeFactory, Map<String, Object> params) {
         this.affSvc = affSvc;
         this.typeFactory = typeFactory;
@@ -88,10 +98,17 @@ public class PartitionExtractor extends IgniteRelShuttle {
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteIndexScan rel) {
-        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
-
         if (stopExtract)
             return rel;
+
+        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
+//        if (sourceId != Long.MIN_VALUE && sourceId != rel.sourceId()) {
+//            stopExtract = true;
+//
+//            return rel;
+//        }
+//
+//        sourceId = rel.sourceId();
 
         if (!tbl.descriptor().distribution().function().affinity()) {
             stopExtract = true;
@@ -101,7 +118,45 @@ public class PartitionExtractor extends IgniteRelShuttle {
 
         List<SearchBounds> bounds = rel.searchBounds();
 
-        if (F.isEmpty(bounds))
+        if (F.isEmpty(bounds) && !isProperCondition(rel))
+            return rel;
+
+        int cacheId = ((CacheTableDescriptor)tbl.descriptor()).cacheInfo().cacheId();
+        Set<Integer> parts0 = getConditionKeys(rel).stream().filter(Objects::nonNull)
+            .map(key -> affSvc.affinity(cacheId).applyAsInt(key))
+            .collect(Collectors.toSet());
+
+        if (parts == null) {
+            parts = parts0;
+        }
+        else {
+            parts.addAll(parts0);
+        }
+
+        return rel;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteTableScan rel) {
+        if (stopExtract)
+            return rel;
+
+        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
+        if (!tbl.descriptor().distribution().function().affinity()) {
+            stopExtract = true;
+
+            return rel;
+        }
+
+//        if (sourceId != Long.MIN_VALUE && sourceId != rel.sourceId()) {
+//            stopExtract = true;
+//
+//            return rel;
+//        }
+
+        sourceId = rel.sourceId();
+
+        if (!isProperCondition(rel))
             return rel;
 
         int cacheId = ((CacheTableDescriptor)tbl.descriptor()).cacheInfo().cacheId();
@@ -119,30 +174,79 @@ public class PartitionExtractor extends IgniteRelShuttle {
         return rel;
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteTableScan rel) {
-        stopExtract = true;
-
-        return processNode(rel);
-    }
-
     /** */
     public int[] go(Fragment fragment) {
         if (!(fragment.root() instanceof IgniteSender))
             return null;
 
+        if (fragment.mapping() == null || !fragment.mapping().colocated())
+            return null;
+
         visit(fragment.root());
 
-        return !F.isEmpty(parts) ? Ints.toArray(parts) : null;
+        if (!F.isEmpty(parts)) {
+            int[] parts0 = Ints.toArray(parts);
+
+            Arrays.sort(parts0);
+
+            return parts0;
+        }
+
+        return null;
+    }
+
+    /** */
+    private boolean isProperCondition(ProjectableFilterableTableScan rel) {
+        RexNode condition = rel.condition();
+
+        if (condition == null)
+            return false;
+
+        if (!condition.isA(SqlKind.OR))
+            return false;
+
+        ImmutableIntList keys = ((IgniteRel)rel).distribution().getKeys();
+
+        if (keys.size() > 1)
+            return false;
+
+        List<RexNode> operands = ((RexCall)condition).getOperands();
+
+        return operands.stream()
+            .flatMap(node -> {
+                if (node.isA(SqlKind.SEARCH)) {
+                    RexNode newNode = RexUtil.expandSearch(Commons.emptyCluster().getRexBuilder(), null, node);
+                    if (newNode.isA(SqlKind.OR)) {
+                        return ((RexCall)newNode).getOperands().stream();
+                    }
+                }
+                return Stream.of(node);
+            })
+            .allMatch(cond -> {
+                if (!cond.isA(SqlKind.EQUALS))
+                    return false;
+
+                List<RexNode> kv = ((RexCall)cond).getOperands();
+
+                if (kv.size() != 2)
+                    return false;
+
+                if (!kv.get(0).isA(SqlKind.LOCAL_REF))
+                    return false;
+
+                int idx = ((RexLocalRef)kv.get(0)).getIndex();
+
+                return idx == keys.get(0);
+            });
     }
 
     /**
      *
      */
-    private List<Object> getConditionKeys(IgniteIndexScan rel) {
-        ImmutableIntList keys = rel.distribution().getKeys();
+    private List<Object> getConditionKeys(IgniteRel rel) {
+        assert rel instanceof IgniteIndexScan || rel instanceof IgniteTableScan;
 
-        List<SearchBounds> bounds = rel.searchBounds();
+        ImmutableIntList keys = rel.distribution().getKeys();
 
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
         RelDataType rowType = tbl.getRowType(typeFactory);
@@ -160,38 +264,73 @@ public class PartitionExtractor extends IgniteRelShuttle {
         GridCacheContext<?, ?> cctx = ((CacheTableDescriptor)tbl.descriptor()).cacheContext();
         GridQueryTypeDescriptor typeDesc = ((CacheTableDescriptor)tbl.descriptor()).typeDescription();
 
-        return keys.stream()
+        List<List<Object>> extrKeys;
+        if (rel instanceof IgniteIndexScan && !F.isEmpty(((IgniteIndexScan)rel).searchBounds())) {
+            List<SearchBounds> bounds = ((IgniteIndexScan)rel).searchBounds();
+
+            extrKeys = keys.stream()
                 .map(idx -> Pair.of(bounds.get(idx + 2), types.get(idx + 2)))
-                .map(b -> extractExacts(b.left, b.right))
-                .map(fields -> {
-                    if (F.isEmpty(fields))
-                        return null;
+                .map(b -> extractExacts(b.left, b.right)).collect(Collectors.toList());
+        }
+        else {
+            assert keys.size() == 1;
 
-                    Object key = TypeUtils.createObject(cctx, typeDesc.keyTypeName(), typeDesc.keyClass());
+            RexNode condition = ((ProjectableFilterableTableScan)rel).condition();
 
-                    if (fields.size() > 1) {
-                        for (int i = 0; i < fields.size(); ++i) {
-                            CacheColumnDescriptor desc = keyDescriptors.get(i);
-
-                            try {
-                                desc.set(key, TypeUtils.fromInternal(dataContext, fields.get(i), desc.storageType()));
-                            }
-                            catch (IgniteCheckedException e) {
-                                throw new IgniteException(e);
-                            }
+            List<RexNode> operands = ((RexCall)condition).getOperands().stream()
+                .flatMap(node -> {
+                    if (node.isA(SqlKind.SEARCH)) {
+                        RexNode newNode = RexUtil.expandSearch(Commons.emptyCluster().getRexBuilder(), null, node);
+                        if (newNode.isA(SqlKind.OR)) {
+                            return ((RexCall)newNode).getOperands().stream();
                         }
                     }
-                    else {
-                        CacheColumnDescriptor desc = keyDescriptors.get(0);
-
-                        return TypeUtils.fromInternal(dataContext, fields.get(0), desc.storageType());
-                    }
-
-                    if (cctx.binaryMarshaller() && key instanceof BinaryObjectBuilder)
-                        key = ((BinaryObjectBuilder)key).build();
-
-                    return key;
+                    return Stream.of(node);
                 }).collect(Collectors.toList());
+
+            extrKeys = ImmutableList.of(operands.stream().map(cond -> Pair.of((RexCall)cond, types.get(2)))
+                .map(b -> extractEquals(b.left, b.right)).collect(Collectors.toList()));
+        }
+
+        int condSz = extrKeys.stream().map(List::size).max(Integer::compareTo).orElse(0);
+
+        if (condSz == 0)
+            return ImmutableList.of();
+
+        if (!extrKeys.stream().map(List::size).allMatch(sz -> sz == condSz))
+            return ImmutableList.of();
+
+        List<Object> res = new ArrayList<>();
+        for (int i = 0; i < condSz; ++i) {
+            Object key;
+
+            if (extrKeys.size() > 1) {
+                key = TypeUtils.createObject(cctx, typeDesc.keyTypeName(), typeDesc.keyClass());
+
+                for (int j = 0; j < extrKeys.size(); ++j) {
+                    CacheColumnDescriptor desc = keyDescriptors.get(j);
+
+                    try {
+                        desc.set(key, TypeUtils.fromInternal(dataContext, extrKeys.get(j).get(i), desc.storageType()));
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }
+            }
+            else {
+                CacheColumnDescriptor desc = keyDescriptors.get(0);
+
+                key = TypeUtils.fromInternal(dataContext, extrKeys.get(0).get(i), desc.storageType());
+            }
+
+            if (cctx.binaryMarshaller() && key instanceof BinaryObjectBuilder)
+                key = ((BinaryObjectBuilder)key).build();
+
+            res.add(key);
+        }
+
+        return res;
     }
 
     /** */
@@ -227,6 +366,25 @@ public class PartitionExtractor extends IgniteRelShuttle {
 
         if (bound.getKind() == SqlKind.DYNAMIC_PARAM) {
             int idx = ((RexDynamicParam)bound).getIndex();
+
+            return TypeUtils.toInternal(dataContext, params.get("?" + idx), colType);
+        }
+
+        return null;
+    }
+
+    /** */
+    private Object extractEquals(RexCall cond, Class<?> colType) {
+        if (!cond.isA(SqlKind.EQUALS) && cond.getOperands().size() != 2)
+            return null;
+
+        RexNode val = cond.getOperands().get(1);
+
+        if (val.isA(SqlKind.LITERAL))
+            return ((RexLiteral)val).getValueAs(colType);
+
+        if (val.isA(SqlKind.DYNAMIC_PARAM)) {
+            int idx = ((RexDynamicParam)val).getIndex();
 
             return TypeUtils.toInternal(dataContext, params.get("?" + idx), colType);
         }
