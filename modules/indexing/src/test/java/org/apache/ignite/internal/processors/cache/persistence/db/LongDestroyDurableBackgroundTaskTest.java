@@ -83,6 +83,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.CallbackExecutorLogListener;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -380,8 +381,8 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
             ignite.compute().execute(ValidateIndexesTask.class.getName(), new VisorTaskArgument<>(nodeIds, taskArg, false));
 
         if (!taskRes.exceptions().isEmpty()) {
-            for (Map.Entry<UUID, Exception> e : taskRes.exceptions().entrySet())
-                log.error("Exception while validation indexes on node id=" + e.getKey().toString(), e.getValue());
+            for (Map.Entry<IgniteBiTuple<UUID, Object>, Exception> e : taskRes.exceptions().entrySet())
+                log.error("Exception while validation indexes on node id=" + e.getKey().get1().toString(), e.getValue());
         }
 
         for (Map.Entry<UUID, ValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {

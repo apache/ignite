@@ -52,20 +52,18 @@ public class ValidateIndexesTask extends VisorMultiNodeTask<CacheValidateIndexes
 
     /** {@inheritDoc} */
     @Nullable @Override protected ValidateIndexesTaskResult reduce0(List<ComputeJobResult> list) throws IgniteException {
-        Map<UUID, Exception> exceptions = new HashMap<>();
         Map<UUID, ValidateIndexesJobResult> jobResults = new HashMap<>();
         Map<UUID, Object> consistentIds = new HashMap<>();
 
         for (ComputeJobResult res : list) {
             consistentIds.put(res.getNode().id(), res.getNode().consistentId());
 
-            if (res.getException() != null)
-                exceptions.put(res.getNode().id(), res.getException());
-            else
-                jobResults.put(res.getNode().id(), res.getData());
+            ValidateIndexesJobResult jobRes = res.getException() == null ? res.getData() : new ValidateIndexesJobResult();
+
+            jobResults.put(res.getNode().id(), jobRes.exception(res.getException()).consistentId(res.getNode().consistentId()));
         }
 
-        return new ValidateIndexesTaskResult(jobResults, exceptions, consistentIds);
+        return new ValidateIndexesTaskResult(jobResults);
     }
 
     /** {@inheritDoc} */

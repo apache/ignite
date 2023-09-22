@@ -21,6 +21,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -544,13 +546,34 @@ public class CommandUtils {
      * @return true if errors were printed.
      */
     public static boolean printErrors(Map<UUID, Exception> exceptions, String infoMsg, Consumer<String> printer) {
+        Map<IgniteBiTuple<UUID, Object>, Exception> exp0 = exceptions.entrySet().stream()
+            .map(e->new AbstractMap.SimpleEntry<>(new IgniteBiTuple<>(e.getKey(), null), e.getValue()))
+            .collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue));
+
+        return printErrorsWithConsistentIds(exp0, infoMsg, printer);
+    }
+
+    /**
+     * Prints exception messages to log
+     *
+     * @param exceptions map containing node ids/consistentIds and exceptions.
+     * @param infoMsg single message to log.
+     * @param printer Printer to use.
+     * @return true if errors were printed.
+     */
+    public static boolean printErrorsWithConsistentIds(
+        Map<IgniteBiTuple<UUID, Object>, Exception> exceptions,
+        String infoMsg,
+        Consumer<String> printer
+    ) {
         if (F.isEmpty(exceptions))
             return false;
 
         printer.accept(infoMsg);
 
-        for (Map.Entry<UUID, Exception> e : exceptions.entrySet()) {
-            printer.accept(INDENT + "Node ID: " + e.getKey());
+        for (Map.Entry<IgniteBiTuple<UUID, Object>, Exception> e : exceptions.entrySet()) {
+            printer.accept(INDENT + "Node ID: " + e.getKey().get1() +
+                (e.getKey().get2() == null ? "" : " [consistentId='" + e.getKey().get2() + "']"));
 
             printer.accept(INDENT + "Exception message:");
             printer.accept(DOUBLE_INDENT + e.getValue().getMessage());

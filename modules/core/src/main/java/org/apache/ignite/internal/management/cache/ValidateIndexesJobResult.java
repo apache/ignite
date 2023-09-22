@@ -20,9 +20,11 @@ package org.apache.ignite.internal.management.cache;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -57,6 +59,14 @@ public class ValidateIndexesJobResult extends IgniteDataTransferObject {
     @GridToStringInclude
     private Map<String, ValidateIndexesCheckSizeResult> checkSizeRes;
 
+    /** Node consistent id. */
+    @GridToStringExclude
+    private @Nullable Object consistentId;
+
+    /** Job exception. */
+    @GridToStringExclude
+    private @Nullable Exception exception;
+
     /**
      * Constructor.
      *
@@ -78,7 +88,7 @@ public class ValidateIndexesJobResult extends IgniteDataTransferObject {
     }
 
     /**
-     * For externalization only.
+     * Constructor.
      */
     public ValidateIndexesJobResult() {
     }
@@ -123,12 +133,38 @@ public class ValidateIndexesJobResult extends IgniteDataTransferObject {
             (checkSizeRes != null && checkSizeRes.entrySet().stream().anyMatch(e -> !e.getValue().issues().isEmpty()));
     }
 
+    /** */
+    public ValidateIndexesJobResult consistentId(Object consistentId) {
+        this.consistentId = consistentId;
+
+        return this;
+    }
+
+    /** @return Node consistent id. */
+    public @Nullable Object consistentId() {
+        return consistentId;
+    }
+
+    /** */
+    public ValidateIndexesJobResult exception(Exception exception) {
+        this.exception = exception;
+
+        return this;
+    }
+
+    /** @return Job exception. */
+    public @Nullable Exception exception() {
+        return exception;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         writeMap(out, partRes);
         writeMap(out, idxRes);
         writeCollection(out, integrityCheckFailures);
         writeMap(out, checkSizeRes);
+        out.writeObject(exception);
+        out.writeObject(consistentId);
     }
 
     /** {@inheritDoc} */
@@ -140,6 +176,8 @@ public class ValidateIndexesJobResult extends IgniteDataTransferObject {
         idxRes = readMap(in);
         integrityCheckFailures = readCollection(in);
         checkSizeRes = readMap(in);
+        exception = (Exception)in.readObject();
+        consistentId = in.readObject();
     }
 
     /** {@inheritDoc} */
