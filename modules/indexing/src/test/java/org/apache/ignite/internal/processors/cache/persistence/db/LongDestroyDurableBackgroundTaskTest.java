@@ -32,6 +32,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -65,7 +66,6 @@ import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandAr
 import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
 import org.apache.ignite.internal.management.cache.ValidateIndexesPartitionResult;
 import org.apache.ignite.internal.management.cache.ValidateIndexesTask;
-import org.apache.ignite.internal.management.cache.ValidateIndexesTaskResult;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -83,7 +83,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.CallbackExecutorLogListener;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -377,31 +376,32 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         taskArg.checkCrc(true);
         taskArg.checkSizes(true);
 
-        ValidateIndexesTaskResult taskRes =
+        Collection<ValidateIndexesJobResult> taskRes =
             ignite.compute().execute(ValidateIndexesTask.class.getName(), new VisorTaskArgument<>(nodeIds, taskArg, false));
 
-        if (!taskRes.exceptions().isEmpty()) {
-            for (Map.Entry<IgniteBiTuple<UUID, Object>, Exception> e : taskRes.exceptions().entrySet())
-                log.error("Exception while validation indexes on node id=" + e.getKey().get1().toString(), e.getValue());
-        }
+        Map<UUID, Exception> exeptions = taskRes.stream().filter(r -> r.exception() != null)
+            .collect(Collectors.toMap(ValidateIndexesJobResult::nodeId, ValidateIndexesJobResult::exception));
 
-        for (Map.Entry<UUID, ValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
-            if (nodeEntry.getValue().hasIssues()) {
-                log.error("Validate indexes issues had been found on node id=" + nodeEntry.getKey().toString());
+        for (Map.Entry<UUID, Exception> e : exeptions.entrySet())
+            log.error("Exception while validation indexes on node id=" + e.getKey().toString(), e.getValue());
 
-                log.error("Integrity check failures: " + nodeEntry.getValue().integrityCheckFailures().size());
+        for (ValidateIndexesJobResult nodeEntry : taskRes) {
+            if (nodeEntry.hasIssues()) {
+                log.error("Validate indexes issues had been found on node id=" + nodeEntry.nodeId());
 
-                nodeEntry.getValue().integrityCheckFailures().forEach(f -> log.error(f.toString()));
+                log.error("Integrity check failures: " + nodeEntry.integrityCheckFailures().size());
 
-                logIssuesFromMap("Partition results", nodeEntry.getValue().partitionResult());
+                nodeEntry.integrityCheckFailures().forEach(f -> log.error(f.toString()));
 
-                logIssuesFromMap("Index validation issues", nodeEntry.getValue().indexResult());
+                logIssuesFromMap("Partition results", nodeEntry.partitionResult());
+
+                logIssuesFromMap("Index validation issues", nodeEntry.indexResult());
             }
         }
 
-        assertTrue(taskRes.exceptions().isEmpty());
+        assertTrue(exeptions.isEmpty());
 
-        for (ValidateIndexesJobResult res : taskRes.results().values())
+        for (ValidateIndexesJobResult res : taskRes)
             assertFalse(res.hasIssues());
     }
 

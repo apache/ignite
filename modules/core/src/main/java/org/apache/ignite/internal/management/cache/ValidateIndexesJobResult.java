@@ -22,8 +22,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -58,12 +58,16 @@ public class ValidateIndexesJobResult extends IgniteDataTransferObject {
     @GridToStringInclude
     private Map<String, ValidateIndexesCheckSizeResult> checkSizeRes;
 
+    /** Node id. */
+    @GridToStringInclude
+    private UUID nodeId;
+
     /** Node consistent id. */
-    @GridToStringExclude
+    @GridToStringInclude
     private @Nullable Object consistentId;
 
     /** Job exception. */
-    @GridToStringExclude
+    @GridToStringInclude
     private @Nullable Exception exception;
 
     /**
@@ -133,22 +137,28 @@ public class ValidateIndexesJobResult extends IgniteDataTransferObject {
     }
 
     /** */
-    public ValidateIndexesJobResult consistentId(Object consistentId) {
+    public ValidateIndexesJobResult nodeIds(UUID nodeId, @Nullable Object consistentId) {
+        this.nodeId = nodeId;
         this.consistentId = consistentId;
 
         return this;
     }
 
-    /** @return Node consistent id. */
-    public @Nullable Object consistentId() {
-        return consistentId;
-    }
-
     /** */
-    public ValidateIndexesJobResult exception(Exception exception) {
+    public ValidateIndexesJobResult exception(@Nullable Exception exception) {
         this.exception = exception;
 
         return this;
+    }
+
+    /** @return Node id. */
+    public UUID nodeId() {
+        return nodeId;
+    }
+
+    /** @return Node consistent id. */
+    public @Nullable Object consistentId() {
+        return consistentId;
     }
 
     /** @return Job exception. */
@@ -162,8 +172,10 @@ public class ValidateIndexesJobResult extends IgniteDataTransferObject {
         writeMap(out, idxRes);
         writeCollection(out, integrityCheckFailures);
         writeMap(out, checkSizeRes);
-        out.writeObject(exception);
+
+        out.writeObject(nodeId);
         out.writeObject(consistentId);
+        out.writeObject(exception);
     }
 
     /** {@inheritDoc} */
@@ -175,8 +187,10 @@ public class ValidateIndexesJobResult extends IgniteDataTransferObject {
         idxRes = readMap(in);
         integrityCheckFailures = readCollection(in);
         checkSizeRes = readMap(in);
-        exception = (Exception)in.readObject();
+
+        nodeId = (UUID)in.readObject();
         consistentId = in.readObject();
+        exception = (Exception)in.readObject();
     }
 
     /** {@inheritDoc} */

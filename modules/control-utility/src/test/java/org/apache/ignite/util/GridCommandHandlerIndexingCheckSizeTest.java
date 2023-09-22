@@ -39,7 +39,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommand;
 import org.apache.ignite.internal.management.cache.ValidateIndexesCheckSizeIssue;
 import org.apache.ignite.internal.management.cache.ValidateIndexesCheckSizeResult;
-import org.apache.ignite.internal.management.cache.ValidateIndexesTaskResult;
+import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.util.GridCommandHandlerIndexingUtils.Organization;
@@ -476,8 +476,8 @@ public class GridCommandHandlerIndexingCheckSizeTest extends GridCommandHandlerC
         assertContains(log, out, "Size check");
 
         Map<String, ValidateIndexesCheckSizeResult> valIdxCheckSizeResults =
-            ((ValidateIndexesTaskResult)lastOperationResult).results().get(node.localNode().id())
-                .checkSizeResult();
+            ((Collection<ValidateIndexesJobResult>)lastOperationResult).stream()
+                .filter(r -> r.nodeId().equals(node.localNode().id())).findAny().get().checkSizeResult();
 
         assertEquals(rmvByTbl.size(), valIdxCheckSizeResults.size());
 

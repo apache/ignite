@@ -20,12 +20,11 @@ package org.apache.ignite.internal.management.cache;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -46,24 +45,13 @@ import org.jetbrains.annotations.Nullable;
 @GridInternal
 @InterruptibleVisorTask
 public class ValidateIndexesTask extends VisorMultiNodeTask<CacheValidateIndexesCommandArg,
-    ValidateIndexesTaskResult, ValidateIndexesJobResult> {
+    Collection<ValidateIndexesJobResult>, ValidateIndexesJobResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override protected ValidateIndexesTaskResult reduce0(List<ComputeJobResult> list) throws IgniteException {
-        Map<UUID, ValidateIndexesJobResult> jobResults = new HashMap<>();
-        Map<UUID, Object> consistentIds = new HashMap<>();
-
-        for (ComputeJobResult res : list) {
-            consistentIds.put(res.getNode().id(), res.getNode().consistentId());
-
-            ValidateIndexesJobResult jobRes = res.getException() == null ? res.getData() : new ValidateIndexesJobResult();
-
-            jobResults.put(res.getNode().id(), jobRes.exception(res.getException()).consistentId(res.getNode().consistentId()));
-        }
-
-        return new ValidateIndexesTaskResult(jobResults);
+    @Nullable @Override protected Collection<ValidateIndexesJobResult> reduce0(List<ComputeJobResult> list) throws IgniteException {
+        return list.stream().map(ValidateIndexesTask::extracJobResult).collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */
@@ -92,6 +80,18 @@ public class ValidateIndexesTask extends VisorMultiNodeTask<CacheValidateIndexes
         }
 
         return ret;
+    }
+
+    /**
+     * @param cr Compute result.
+     * @return Enchansed node job result.
+     */
+    private static ValidateIndexesJobResult extracJobResult(ComputeJobResult cr) {
+        ValidateIndexesJobResult res = cr.getException() == null
+            ? cr.getData()
+            : new ValidateIndexesJobResult();
+
+        return res.nodeIds(cr.getNode().id(), cr.getNode().consistentId()).exception(cr.getException());
     }
 
     /**

@@ -19,8 +19,8 @@ package org.apache.ignite.internal.management.cache;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
@@ -32,7 +32,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.join;
 
 /** Validates indexes attempting to read each indexed entry. */
 public class CacheValidateIndexesCommand
-    implements ComputeCommand<CacheValidateIndexesCommandArg, ValidateIndexesTaskResult> {
+    implements ComputeCommand<CacheValidateIndexesCommandArg, Collection<ValidateIndexesJobResult>> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Validates indexes for the specified caches/cache groups on an idle cluster " +
@@ -61,21 +61,24 @@ public class CacheValidateIndexesCommand
     /** {@inheritDoc} */
     @Override public void printResult(
         CacheValidateIndexesCommandArg arg,
-        ValidateIndexesTaskResult res0,
+        Collection<ValidateIndexesJobResult> results,
         Consumer<String> printer
     ) {
-        boolean errors = CommandUtils.printErrorsWithConsistentIds(res0.exceptions(), "Index validation failed on nodes:",
-            printer);
+        boolean errors = CommandUtils.printErrorsWithConsistentIds(
+            results.stream().filter(r -> r.exception() != null)
+                .collect(Collectors.toMap(jr -> CommandUtils.nodeFullId(jr.nodeId(), jr.consistentId()),
+                    ValidateIndexesJobResult::exception)),
+            "Index validation failed on nodes:",
+            printer
+        );
 
-        for (Map.Entry<UUID, ValidateIndexesJobResult> nodeEntry : res0.results().entrySet()) {
-            ValidateIndexesJobResult jobRes = nodeEntry.getValue();
-
+        for (ValidateIndexesJobResult jobRes : results) {
             if (!jobRes.hasIssues() || jobRes.exception() != null)
                 continue;
 
             errors = true;
 
-            printer.accept("Index issues found on node " + nodeEntry.getKey()
+            printer.accept("Index issues found on node " + jobRes.nodeId()
                 + (jobRes.consistentId() == null ? "" : " [consistentId='" + jobRes.consistentId() + "']") + ':');
 
             for (IndexIntegrityCheckIssue is : jobRes.integrityCheckFailures())
