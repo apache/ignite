@@ -374,7 +374,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         private final AffinityTopologyVersion topVer;
 
         /** Partition serializer. */
-        DumpEntrySerializer serdes;
+        private final DumpEntrySerializer serdes;
 
         /** If {@code true} context is closed. */
         volatile boolean closed;
@@ -535,8 +535,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 LockSupport.parkNanos(1_000_000);
 
             U.closeQuiet(file);
-
-            serdes = null;
         }
     }
 

@@ -42,7 +42,7 @@ public class DumpEntrySerializer {
     public static final int HEADER_SZ = Integer.BYTES + Integer.BYTES;
 
     /** */
-    private ConcurrentMap<Long, ByteBuffer> thLocBufs;
+    private final ConcurrentMap<Long, ByteBuffer> thLocBufs;
 
     /** */
     private final FastCrc crc = new FastCrc();
