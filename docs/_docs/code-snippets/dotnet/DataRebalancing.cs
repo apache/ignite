@@ -57,5 +57,25 @@ namespace dotnet_helloworld
             var ignite = Ignition.Start(cfg);
             // end::RebalanceThrottle[]
         }
+
+        public static void RebalanceMode()
+        {
+            // tag::RebalanceMode[]
+            IgniteConfiguration cfg = new IgniteConfiguration
+            {
+                CacheConfiguration = new[]
+                {
+                    new CacheConfiguration
+                    {
+                        Name = "mycache",
+                        RebalanceMode = CacheRebalanceMode.Sync
+                    }
+                }
+           };
+
+            // Start a node.
+            var ignite = Ignition.Start(cfg);
+            // end::RebalanceMode[]
+        }
     }
 }
