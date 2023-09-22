@@ -29,11 +29,12 @@ namespace dotnet_helloworld
             IgniteConfiguration cfg = new IgniteConfiguration
             {
                 CacheConfiguration = new[]
-
-                new CacheConfiguration
                 {
+                    new CacheConfiguration
+                    {
                         Name = "mycache",
                         RebalanceMode = CacheRebalanceMode.Sync
+                    }
                 }
             };
 

@@ -37,13 +37,6 @@ public class RebalancingConfiguration {
 
         cfg.setRebalanceThreadPoolSize(4);
         //end::pool-size[]
-        //tag::throttling[]
-
-        cfg.setRebalanceBatchSize(2 * 1024 * 1024);
-        cfg.setRebalanceBatchesPrefetchCnt(3);
-        cfg.setRebalanceThrottle(100);
-
-        //end::throttling[]
 
         //tag::mode[]
         CacheConfiguration cacheCfg = new CacheConfiguration("mycache");
@@ -51,8 +44,16 @@ public class RebalancingConfiguration {
         cacheCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
         //end::mode[]
+        //tag::throttling[]
+
+        cfg.setRebalanceBatchSize(2 * 1024 * 1024);
+        cfg.setRebalanceBatchesPrefetchCnt(3);
+        cfg.setRebalanceThrottle(100);
+
+        //end::throttling[]
         // Start a node.
         Ignite ignite = Ignition.start(cfg);
+
         //end::ignite-config[]
 
         ignite.close();

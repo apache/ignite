@@ -21,16 +21,6 @@
         <!-- tag::pool-size[] -->
         <property name="rebalanceThreadPoolSize" value="4"/>
         <!-- end::pool-size[] -->
-
-        <!-- tag::throttling[] -->
-        <!-- Set batch size. -->
-        <property name="rebalanceBatchSize" value="#{2 * 1024 * 1024}"/>
-        <!-- Set batches prefetch count. -->
-        <property name="rebalanceBatchesPrefetchCnt" value="3"/>
-        <!-- Set throttle interval. -->
-        <property name="rebalanceThrottle" value="100"/>
-        <!-- end::throttling[] -->
-
         <!-- tag::mode[] -->
         <property name="cacheConfiguration">
             <list>
@@ -42,6 +32,14 @@
             </list>
         </property>
         <!-- end::mode[] -->
+        <!-- tag::throttling[] -->
+        <!-- Set batch size. -->
+        <property name="rebalanceBatchSize" value="#{2 * 1024 * 1024}"/>
+        <!-- Set batches prefetch count. -->
+        <property name="rebalanceBatchesPrefetchCnt" value="3"/>
+        <!-- Set throttle interval. -->
+        <property name="rebalanceThrottle" value="100"/>
+        <!-- end::throttling[] -->
 
         <!-- tag::discovery[] -->
         <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
