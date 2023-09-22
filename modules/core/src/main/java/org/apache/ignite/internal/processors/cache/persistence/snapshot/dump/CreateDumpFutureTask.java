@@ -417,25 +417,29 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         ) {
             String reasonToSkip = null;
 
-            writers.getAndIncrement();
+            if (closed) // Quick exit. Partition already saved in dump.
+                reasonToSkip = "partition already saved";
+            else {
+                writers.getAndIncrement();
 
-            try {
-                if (closed) // Partition already saved in dump.
-                    reasonToSkip = "partition already saved";
-                else if (startVer != null && ver.isGreater(startVer))
-                    reasonToSkip = "greater version";
-                else if (!changed.get(cache).add(key)) // Entry changed several time during dump.
-                    reasonToSkip = "changed several times";
-                else if (val == null)
-                    reasonToSkip = "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
-                else {
-                    write(cache, expireTime, key, val);
+                try {
+                    if (closed) // Partition already saved in dump.
+                        reasonToSkip = "partition already saved";
+                    else if (startVer != null && ver.isGreater(startVer))
+                        reasonToSkip = "greater version";
+                    else if (!changed.get(cache).add(key)) // Entry changed several time during dump.
+                        reasonToSkip = "changed several times";
+                    else if (val == null)
+                        reasonToSkip = "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
+                    else {
+                        write(cache, expireTime, key, val);
 
-                    changedCnt.increment();
+                        changedCnt.increment();
+                    }
                 }
-            }
-            finally {
-                writers.decrementAndGet();
+                finally {
+                    writers.decrementAndGet();
+                }
             }
 
             if (log.isTraceEnabled()) {
@@ -487,21 +491,23 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         }
 
         /** */
-        private synchronized void write(int cache, long expireTime, KeyCacheObject key, CacheObject val) {
-            try {
-                ByteBuffer buf = serdes.writeToBuffer(cache, expireTime, key, val, cctx.cacheObjectContext(cache));
+        private void write(int cache, long expireTime, KeyCacheObject key, CacheObject val) {
+            synchronized (serdes) { // Prevent concurrent access to the dump file.
+                try {
+                    ByteBuffer buf = serdes.writeToBuffer(cache, expireTime, key, val, cctx.cacheObjectContext(cache));
 
-                if (file.writeFully(buf) != buf.limit())
-                    throw new IgniteException("Can't write row");
-            }
-            catch (IOException | IgniteCheckedException e) {
-                throw new IgniteException(e);
+                    if (file.writeFully(buf) != buf.limit())
+                        throw new IgniteException("Can't write row");
+                }
+                catch (IOException | IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
             }
         }
 
         /** {@inheritDoc} */
         @Override public void close() {
-            synchronized (this) {
+            synchronized (this) { // Prevent concurrent close invocation.
                 if (closed)
                     return;
 

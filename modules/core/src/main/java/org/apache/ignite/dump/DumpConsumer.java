@@ -61,6 +61,10 @@ public interface DumpConsumer {
 
     /**
      * Handles cache data.
+     * Note, there can be several copies of group partition in the dump.
+     * This can happen if dump contains data from several nodes.
+     * In this case callback will be invoked several time for the same pair of [grp, part] values.
+     *
      * @param grp Group id.
      * @param part Partition.
      * @param data Cache data iterator.
