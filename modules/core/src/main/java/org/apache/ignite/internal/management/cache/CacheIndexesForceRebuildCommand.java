@@ -165,7 +165,7 @@ public class CacheIndexesForceRebuildCommand
         if (!F.isEmpty(notStarted)) {
             header(b, PREF_REBUILD_NOT_STARTED, nl);
 
-            printListEntryNl(b).a(notStarted.stream().map(UUID::toString).collect(Collectors.joining(","))).a('.');
+            b.nl().a(INDENT).a(notStarted.stream().map(UUID::toString).collect(Collectors.joining(","))).a('.');
         }
 
         printer.accept(b.toString());
@@ -244,17 +244,7 @@ public class CacheIndexesForceRebuildCommand
 
     /** */
     private static GridStringBuilder printNodeEntryPrefix(SB b, UUID nodeId) {
-        return printListEntryKeySeparator(printListEntryNl(b).a("Node ").a(nodeId));
-    }
-
-    /** */
-    private static GridStringBuilder printListEntryKeySeparator(GridStringBuilder b) {
-        return b.a(':').a(INDENT);
-    }
-
-    /** */
-    private static GridStringBuilder printListEntryNl(SB b) {
-        return b.a(U.nl()).a(INDENT);
+        return b.nl().a(INDENT).a("Node ").a(nodeId).a(':').a(INDENT);
     }
 
     /** */
