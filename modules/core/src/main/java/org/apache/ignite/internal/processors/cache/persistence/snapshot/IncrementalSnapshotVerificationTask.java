@@ -48,7 +48,7 @@ import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -378,7 +378,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                             null,
                             0,
                             null,
-                            new IdleVerifyUtility.VerifyPartitionContext(e.getValue())
+                            new VerifyPartitionContext(e.getValue())
                         )
                     ));
 
