@@ -54,11 +54,15 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Sorted index implementation.
  */
 public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
+    /** */
+    public static final String INDEX_METRIC_PREFIX = "index";
+
     /** Unique ID. */
     private final UUID id = UUID.randomUUID();
 
@@ -553,6 +557,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                 }
 
                 cctx.kernalContext().metric().remove(stats.metricRegistryName());
+                cctx.kernalContext().metric().remove(metricName(INDEX_METRIC_PREFIX, def.idxName().fullName()));
 
                 if (cctx.group().persistenceEnabled() ||
                     cctx.shared().kernalContext().state().clusterState().state() != INACTIVE) {
