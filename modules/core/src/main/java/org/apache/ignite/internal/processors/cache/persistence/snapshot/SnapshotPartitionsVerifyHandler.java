@@ -55,7 +55,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dum
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntry;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
@@ -335,15 +334,10 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 new PartitionKeyV2(CU.cacheId(grpName), part, grpName),
                 false,
                 cctx.localNode().consistentId(),
-                0,
-                0,
                 null,
                 0,
                 PartitionHashRecordV2.PartitionState.OWNING,
-                0,
-                0,
-                0,
-                0
+                new VerifyPartitionContext()
             );
         }
 
@@ -358,7 +352,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 while (iter.hasNext()) {
                     DumpEntry e = iter.next();
 
-                    IdleVerifyUtility.updateVerifyContext(e.key(), e.value(), null, ctx);
+                    ctx.update(e.key(), e.value(), null, ctx);
 
                     size++;
                 }
@@ -367,15 +361,10 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                     new PartitionKeyV2(CU.cacheId(grpName), part, grpName),
                     false,
                     cctx.localNode().consistentId(),
-                    ctx.partHash,
-                    ctx.partVerHash,
                     null,
                     size,
                     PartitionHashRecordV2.PartitionState.OWNING,
-                    ctx.cf,
-                    ctx.noCf,
-                    ctx.binary,
-                    ctx.regular
+                    ctx
                 );
             }
         }

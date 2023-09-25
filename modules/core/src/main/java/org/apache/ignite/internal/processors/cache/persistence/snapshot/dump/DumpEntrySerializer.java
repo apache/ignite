@@ -99,9 +99,9 @@ public class DumpEntrySerializer {
         ByteBuffer buf = threadLocalBuffer();
 
         if (buf.capacity() < fullSz)
-            buf = ByteBuffer.allocate(fullSz);
+            buf = enlargeThreadLocalBuffer(fullSz);
         else
-            buf.limit(fullSz);
+            buf.rewind().limit(fullSz);
 
         buf.position(Integer.BYTES); // CRC value.
         buf.putInt(dataSz);
@@ -153,7 +153,7 @@ public class DumpEntrySerializer {
         int dataSz = buf.getInt();
 
         if (buf.capacity() < dataSz + HEADER_SZ) {
-            buf = ByteBuffer.allocate(dataSz + HEADER_SZ);
+            buf = enlargeThreadLocalBuffer(dataSz + HEADER_SZ);
 
             buf.position(HEADER_SZ - Integer.BYTES);
             buf.putInt(dataSz); // Required for CRC check.
@@ -225,6 +225,15 @@ public class DumpEntrySerializer {
     /** @return Thread local buffer. */
     private ByteBuffer threadLocalBuffer() {
         return thLocBufs.computeIfAbsent(Thread.currentThread().getId(), id -> ByteBuffer.allocate(100));
+    }
+
+    /** @return Thread local buffer. */
+    private ByteBuffer enlargeThreadLocalBuffer(int sz) {
+        ByteBuffer buf = ByteBuffer.allocate(sz);
+
+        thLocBufs.put(Thread.currentThread().getId(), buf);
+
+        return buf;
     }
 
     /** */
