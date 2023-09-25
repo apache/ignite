@@ -557,10 +557,10 @@ public class CommandUtils {
     /**
      * Prints single node exception message to the log.
      *
-     * @param printer      Printer to use.
-     * @param nodeId       Node id.
+     * @param printer Printer to use.
+     * @param nodeId Node id.
      * @param consistentId Node consistent id.
-     * @param err          Exception.
+     * @param err Exception.
      */
     public static void printNodeError(Consumer<String> printer, UUID nodeId, @Nullable Object consistentId,
         Exception err) {
