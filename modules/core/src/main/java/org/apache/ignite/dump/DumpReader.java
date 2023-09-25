@@ -24,7 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cdc.CdcMain;
@@ -32,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.DumpedPartitionIterator;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 
 /**
@@ -39,7 +42,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARS
  * The application runs independently of Ignite node process and provides the ability to the {@link DumpConsumer} to consume
  * all data stored in cache dump ({@link Dump})
  */
-public class IgniteDumpReader implements Runnable {
+public class DumpReader implements Runnable {
     /** Configuration. */
     private final DumpReaderConfiguration cfg;
 
@@ -50,7 +53,7 @@ public class IgniteDumpReader implements Runnable {
      * @param cfg Dump reader configuration.
      * @param kctx Kernal context.
      */
-    public IgniteDumpReader(DumpReaderConfiguration cfg, GridKernalContext kctx) {
+    public DumpReader(DumpReaderConfiguration cfg, GridKernalContext kctx) {
         this.cfg = cfg;
         this.kctx = kctx;
     }
@@ -84,22 +87,48 @@ public class IgniteDumpReader implements Runnable {
 
                 ExecutorService execSvc = Executors.newFixedThreadPool(cfg.threadCount());
 
+                IgniteLogger log = kctx.log(DumpReader.class);
+                AtomicBoolean skip = new AtomicBoolean(false);
+
                 for (Map.Entry<Integer, List<String>> e : grpToNodes.entrySet()) {
                     int grp = e.getKey();
 
                     for (String node : e.getValue()) {
                         for (int part : dump.partitions(node, grp)) {
                             execSvc.submit(() -> {
+                                if (skip.get()) {
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Skip partition due to previous error [node=" + node + ", grp=" + grp +
+                                            ", part=" + part + ']');
+                                    }
+
+                                    return;
+                                }
+
                                 try (DumpedPartitionIterator iter = dump.iterator(node, grp, part)) {
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Consuming partition [node=" + node + ", grp=" + grp +
+                                            ", part=" + part + ']');
+                                    }
+
                                     cnsmr.onPartition(grp, part, iter);
                                 }
                                 catch (Exception ex) {
+                                    skip.set(cfg.failFast());
+
+                                    log.error("Error consuming partition [node=" + node + ", grp=" + grp +
+                                        ", part=" + part + ']', ex);
+
                                     throw new IgniteException(ex);
                                 }
                             });
                         }
                     }
                 }
+
+                execSvc.shutdown();
+
+                execSvc.awaitTermination(cfg.timeout().toMillis(), MILLISECONDS);
             }
             finally {
                 cnsmr.stop();

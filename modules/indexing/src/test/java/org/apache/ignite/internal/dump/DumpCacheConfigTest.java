@@ -17,24 +17,27 @@
 
 package org.apache.ignite.internal.dump;
 
+import java.io.File;
 import java.util.Collection;
-import java.util.List;
+import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.dump.DumpEntry;
+import org.apache.ignite.dump.DumpReader;
+import org.apache.ignite.dump.DumpReaderConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.DumpedPartitionIterator;
-import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.TestDumpConsumer;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.cdc.SqlCdcTest.executeSql;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.DMP_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.KEYS_CNT;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.dump;
 
 /** */
 public class DumpCacheConfigTest extends GridCommonAbstractTest {
@@ -69,57 +72,77 @@ public class DumpCacheConfigTest extends GridCommonAbstractTest {
     private void checkDump(IgniteEx srv, String name, boolean first) throws Exception {
         srv.snapshot().createDump(name).get(10_000L);
 
-        int grpId = CU.cacheId("T1");
-        int cnt = 0;
+        AtomicInteger cnt = new AtomicInteger();
 
-        Dump dump = dump(srv, name);
+        TestDumpConsumer cnsmr = new TestDumpConsumer() {
+            @Override public void onTypes(Iterator<BinaryType> types) {
+                super.onTypes(types);
 
-        for (String nodeDir : dump.nodesDirectories()) {
-            for (int part : dump.partitions(nodeDir, grpId)) {
-                try (DumpedPartitionIterator iter = dump.iterator(nodeDir, grpId, part)) {
-                    while (iter.hasNext()) {
-                        DumpEntry e = iter.next();
+                assertTrue(types.hasNext());
 
-                        assertNotNull(e);
+                BinaryType type = types.next();
 
-                        int id = e.key().value(null, false);
+                assertFalse(types.hasNext());
 
-                        BinaryObject val = (BinaryObject)e.value();
-
-                        assertNotNull(val);
-                        assertEquals("Name-" + id, val.field("NAME"));
-
-                        cnt++;
-                    }
-                }
+                assertTrue(type.typeName().startsWith("SQL_PUBLIC_T1"));
             }
 
-            List<StoredCacheData> ccfgs = dump.configs(nodeDir, grpId);
+            @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
+                super.onCacheConfigs(caches);
 
-            assertNotNull(ccfgs);
-            assertEquals(1, ccfgs.size());
-            assertTrue(ccfgs.get(0).sql());
+                assertTrue(caches.hasNext());
 
-            CacheConfiguration ccfg = ccfgs.get(0).config();
+                StoredCacheData data = caches.next();
 
-            assertEquals("T1", ccfg.getName());
+                assertFalse(caches.hasNext());
 
-            Collection<QueryEntity> qes = ccfgs.get(0).queryEntities();
+                assertTrue(data.sql());
 
-            assertNotNull(qes);
-            assertEquals(1, qes.size());
+                CacheConfiguration ccfg = data.config();
 
-            QueryEntity qe = qes.iterator().next();
+                assertEquals("T1", ccfg.getName());
 
-            assertNotNull(qe);
-            assertEquals("T1", qe.getTableName());
-            assertEquals(first ? 2 : 3, qe.getFields().size());
-            assertTrue(qe.getFields().containsKey("ID"));
-            assertTrue(qe.getFields().containsKey("NAME"));
-            if (!first)
-                assertTrue(qe.getFields().containsKey("ADDRESS"));
-        }
+                Collection<QueryEntity> qes = data.queryEntities();
 
-        assertEquals(first ? KEYS_CNT : (KEYS_CNT * 2), cnt);
+                assertNotNull(qes);
+                assertEquals(1, qes.size());
+
+                QueryEntity qe = qes.iterator().next();
+
+                assertNotNull(qe);
+                assertEquals("T1", qe.getTableName());
+                assertEquals(first ? 2 : 3, qe.getFields().size());
+                assertTrue(qe.getFields().containsKey("ID"));
+                assertTrue(qe.getFields().containsKey("NAME"));
+                if (!first)
+                    assertTrue(qe.getFields().containsKey("ADDRESS"));
+            }
+
+            @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
+                while (data.hasNext()) {
+                    DumpEntry e = data.next();
+
+                    assertNotNull(e);
+
+                    int id = e.key().value(null, false);
+
+                    BinaryObject val = (BinaryObject)e.value();
+
+                    assertNotNull(val);
+                    assertEquals("Name-" + id, val.field("NAME"));
+
+                    cnt.incrementAndGet();
+                }
+            }
+        };
+
+        new DumpReader(new DumpReaderConfiguration(
+            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), srv.configuration().getSnapshotPath(), false), name),
+            cnsmr
+        ), srv.context()).run();
+
+        assertEquals(first ? KEYS_CNT : (KEYS_CNT * 2), cnt.get());
+
+        cnsmr.check();
     }
 }

@@ -39,7 +39,7 @@ public interface DumpConsumer {
     /**
      * Starts the consumer.
      */
-    public void start();
+    void start();
 
     /**
      * Handles type mappings.
@@ -61,6 +61,7 @@ public interface DumpConsumer {
 
     /**
      * Handles cache data.
+     * This method can be invoced by several threads concurrently.
      * Note, there can be several copies of group partition in the dump.
      * This can happen if dump contains data from several nodes.
      * In this case callback will be invoked several time for the same pair of [grp, part] values.
@@ -68,6 +69,7 @@ public interface DumpConsumer {
      * @param grp Group id.
      * @param part Partition.
      * @param data Cache data iterator.
+     * @see DumpReaderConfiguration#threadCount()
      */
     void onPartition(int grp, int part, Iterator<DumpEntry> data);
 
@@ -75,5 +77,5 @@ public interface DumpConsumer {
      * Stops the consumer.
      * This method can be invoked only after {@link #start()}.
      */
-    public void stop();
+    void stop();
 }

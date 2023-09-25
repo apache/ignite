@@ -105,7 +105,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
      * Map shared across all instances of {@link PartitionDumpContext} and {@link DumpEntrySerializer}.
      * We use per thread buffer because number of threads is fewer then number of partitions.
      * Regular count of partitions is {@link RendezvousAffinityFunction#DFLT_PARTITION_COUNT}
-     * and thread is {@link IgniteConfiguration#DFLT_PUBLIC_THREAD_CNT} whic is significantly less.
+     * and thread is {@link IgniteConfiguration#DFLT_PUBLIC_THREAD_CNT} which is significantly less.
      */
     private final ConcurrentMap<Long, ByteBuffer> thLocBufs = new ConcurrentHashMap<>();
 

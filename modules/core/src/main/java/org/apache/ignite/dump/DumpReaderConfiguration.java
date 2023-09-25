@@ -18,12 +18,13 @@
 package org.apache.ignite.dump;
 
 import java.io.File;
+import java.time.Duration;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
- * Configuration class of {@link IgniteDumpReader}.
+ * Configuration class of {@link DumpReader}.
  *
- * @see IgniteDumpReader
+ * @see DumpReader
  * @see DumpConsumer
  */
 @IgniteExperimental
@@ -37,15 +38,33 @@ public class DumpReaderConfiguration {
     /** Count of threads to consume dumped partitions. */
     private final int thCnt;
 
+    /** Timeout of dump reader. 1 week, by default. */
+    private final Duration timeout;
+
+    /** Stop processing partitions if consumer fail to process one. */
+    private final boolean failFast;
+
+    /**
+     * @param dir Root dump directory.
+     * @param cnsmr Dump consumer.
+     */
+    public DumpReaderConfiguration(File dir, DumpConsumer cnsmr) {
+        this(dir, cnsmr, 1, Duration.ofDays(7), true);
+    }
+
     /**
      * @param dir Root dump directory.
      * @param cnsmr Dump consumer.
      * @param thCnt Count of threads to consume dumped partitions.
+     * @param timeout Timeout of dump reader invocation.
+     * @param failFast Stop processing partitions if consumer fail to process one.
      */
-    public DumpReaderConfiguration(File dir, DumpConsumer cnsmr, int thCnt) {
+    public DumpReaderConfiguration(File dir, DumpConsumer cnsmr, int thCnt, Duration timeout, boolean failFast) {
         this.dir = dir;
         this.cnsmr = cnsmr;
         this.thCnt = thCnt;
+        this.timeout = timeout;
+        this.failFast = failFast;
     }
 
     /** @return Root dump directiory. */
@@ -61,5 +80,15 @@ public class DumpReaderConfiguration {
     /** @return Count of threads to consume dumped partitions. */
     public int threadCount() {
         return thCnt;
+    }
+
+    /** @return Timeout of dump reader invocation. */
+    public Duration timeout() {
+        return timeout;
+    }
+
+    /** @return {@code True} if stop processing after first consumer error. */
+    public boolean failFast() {
+        return failFast;
     }
 }

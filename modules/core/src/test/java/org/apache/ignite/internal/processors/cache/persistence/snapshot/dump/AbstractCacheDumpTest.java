@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -33,13 +34,16 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.dump.DumpConsumer;
 import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -460,5 +464,87 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     /** */
     void createDump(IgniteEx ign, String name) {
         ign.snapshot().createDump(name).get();
+    }
+
+    /** */
+    public abstract static class TestDumpConsumer implements DumpConsumer {
+        /** */
+        private boolean started;
+
+        /** */
+        private boolean stopped;
+
+        /** */
+        private boolean typesCb;
+
+        /** */
+        private boolean mappingcCb;
+
+        /** */
+        private boolean cacheCfgCb;
+
+        /** {@inheritDoc} */
+        @Override public void start() {
+            assertFalse(started);
+            assertFalse(mappingcCb);
+            assertFalse(typesCb);
+            assertFalse(cacheCfgCb);
+            assertFalse(stopped);
+
+            started = true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMappings(Iterator<TypeMapping> mappings) {
+            assertTrue(started);
+            assertFalse(mappingcCb);
+            assertFalse(typesCb);
+            assertFalse(cacheCfgCb);
+            assertFalse(stopped);
+
+            mappingcCb = true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTypes(Iterator<BinaryType> types) {
+            assertTrue(started);
+            assertTrue(mappingcCb);
+            assertFalse(typesCb);
+            assertFalse(cacheCfgCb);
+            assertFalse(stopped);
+
+            typesCb = true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
+            assertTrue(started);
+            assertTrue(mappingcCb);
+            assertTrue(typesCb);
+            assertFalse(cacheCfgCb);
+            assertFalse(stopped);
+
+            cacheCfgCb = true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void stop() {
+            assertTrue(started);
+            assertTrue(typesCb);
+            assertTrue(mappingcCb);
+            assertTrue(cacheCfgCb);
+            assertFalse(stopped);
+
+            stopped = true;
+        }
+
+        /** */
+        public void check() {
+            assertTrue(started);
+            assertTrue(typesCb);
+            assertTrue(mappingcCb);
+            assertTrue(cacheCfgCb);
+            assertTrue(stopped);
+        }
     }
 }
