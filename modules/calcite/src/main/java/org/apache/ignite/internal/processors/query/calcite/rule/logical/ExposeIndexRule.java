@@ -108,8 +108,10 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
     /**
      * @return Actual indixes list and prune-table-scan flag if any index is forced to use.
      */
-    private IgniteBiTuple<List<IgniteLogicalIndexScan>, Boolean> processHints(TableScan scan,
-        List<IgniteLogicalIndexScan> indexes) {
+    private IgniteBiTuple<List<IgniteLogicalIndexScan>, Boolean> processHints(
+        TableScan scan,
+        List<IgniteLogicalIndexScan> indexes
+    ) {
         assert !F.isEmpty(indexes);
 
         Set<String> tblIdxNames = indexes.stream().map(AbstractIndexScan::indexName).collect(Collectors.toSet());
