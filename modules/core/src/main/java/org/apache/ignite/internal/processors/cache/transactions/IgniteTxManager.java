@@ -90,7 +90,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearOptimisticTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinishedMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
@@ -137,7 +136,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
-import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TX;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
@@ -3224,10 +3222,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     log.debug("Processing node failed event [locNodeId=" + cctx.localNodeId() +
                         ", failedNodeId=" + evtNodeId + ']');
 
-                // Null means that recovery voting is not needed.
-                GridCompoundFuture<IgniteInternalTx, Void> allTxFinFut = isMvccRecoveryMessageRequired()
-                    ? new GridCompoundFuture<>() : null;
-
                 for (final IgniteInternalTx tx : activeTransactions()) {
                     if ((tx.near() && !tx.local() && tx.originatingNodeId().equals(evtNodeId))
                         || (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId))) {
@@ -3257,11 +3251,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                                     tx.rollbackAsync();
                             }
                         }
-
-                        // Await only mvcc transactions initiated by failed client node.
-                        if (allTxFinFut != null && tx.eventNodeId().equals(evtNodeId)
-                            && tx.mvccSnapshot() != null)
-                            allTxFinFut.add(tx.finishFuture());
                     }
                 }
 
@@ -3271,55 +3260,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                 if (log.isInfoEnabled() && preparedTxCnt.get() > 0)
                     doneFut.listen(this::finishAndRecordTimings);
-
-                if (allTxFinFut == null)
-                    return;
-
-                allTxFinFut.markInitialized();
-
-                // Send vote to mvcc coordinator when all recovering transactions have finished.
-                allTxFinFut.listen(() -> {
-                    // If mvcc coordinator issued snapshot for recovering transaction has failed during recovery,
-                    // then there is no need to send messages to new coordinator.
-                    try {
-                        cctx.kernalContext().io().sendToGridTopic(
-                            mvccCrd.nodeId(),
-                            TOPIC_CACHE_COORDINATOR,
-                            new MvccRecoveryFinishedMessage(evtNodeId),
-                            SYSTEM_POOL);
-                    }
-                    catch (ClusterTopologyCheckedException e) {
-                        if (log.isInfoEnabled())
-                            log.info("Mvcc coordinator issued snapshots for recovering transactions " +
-                                "has left the cluster (will ignore) [locNodeId=" + cctx.localNodeId() +
-                                    ", failedNodeId=" + evtNodeId +
-                                    ", mvccCrdNodeId=" + mvccCrd.nodeId() + ']');
-                    }
-                    catch (IgniteCheckedException e) {
-                        log.warning("Failed to notify mvcc coordinator that all recovering transactions were " +
-                            "finished [locNodeId=" + cctx.localNodeId() +
-                            ", failedNodeId=" + evtNodeId +
-                            ", mvccCrdNodeId=" + mvccCrd.nodeId() + ']', e);
-                    }
-                });
             }
             finally {
                 cctx.kernalContext().gateway().readUnlock();
             }
-        }
-
-        /**
-         * Determines need to send a recovery message or not.
-         *
-         * @return True if message required, false otherwise.
-         */
-        private boolean isMvccRecoveryMessageRequired() {
-            ClusterNode mvccCrdNode = null;
-
-            if (mvccCrd != null && mvccCrd.nodeId() != null)
-                mvccCrdNode = cctx.node(mvccCrd.nodeId());
-
-            return node.isClient() && mvccCrdNode != null && cctx.kernalContext().coordinators().mvccEnabled();
         }
 
         /**
