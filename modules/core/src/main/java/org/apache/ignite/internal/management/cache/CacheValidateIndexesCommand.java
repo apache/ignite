@@ -81,8 +81,8 @@ public class CacheValidateIndexesCommand
             errors = true;
 
             printer.accept("Index issues found on node " + nodeEntry.getKey().id()
-                + (nodeEntry.getKey().consistentId() == null ? ""
-                : " [consistentId='" + nodeEntry.getKey().consistentId() + "']") + ':');
+                + (nodeEntry.getKey().consistentId() == null ? "" : " [consistentId='" + nodeEntry.getKey().consistentId()
+                + "']") + ':');
 
             for (IndexIntegrityCheckIssue is : jobRes.integrityCheckFailures())
                 printer.accept(INDENT + is);

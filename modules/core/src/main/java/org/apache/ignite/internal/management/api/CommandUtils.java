@@ -549,7 +549,7 @@ public class CommandUtils {
 
         printer.accept(infoMsg);
 
-        exceptions.forEach((nodeId, value) -> printNodeError(printer, nodeId, null, value));
+        exceptions.forEach((nodeId, err) -> printNodeError(printer, nodeId, null, err));
 
         return true;
     }
@@ -562,8 +562,12 @@ public class CommandUtils {
      * @param consistentId Node consistent id.
      * @param err Exception.
      */
-    public static void printNodeError(Consumer<String> printer, UUID nodeId, @Nullable Object consistentId,
-        Exception err) {
+    public static void printNodeError(
+        Consumer<String> printer,
+        UUID nodeId,
+        @Nullable Object consistentId,
+        Exception err
+    ) {
         printer.accept(INDENT + "Node ID: " + nodeId + (consistentId == null ? "" : " [consistentId='" + consistentId + "']"));
         printer.accept(INDENT + "Exception message:");
         printer.accept(DOUBLE_INDENT + err.getMessage());
