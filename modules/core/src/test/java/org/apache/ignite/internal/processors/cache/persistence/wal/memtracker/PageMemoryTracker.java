@@ -52,7 +52,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
@@ -65,7 +64,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.Compactab
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.processors.cache.tree.AbstractDataLeafIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -75,8 +73,6 @@ import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.mockito.Mockito;
 
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_CACHE_ID_DATA_REF_MVCC_LEAF;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA_REF_MVCC_LEAF;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -542,9 +538,6 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         long totalAllocated = pageStoreMgr.pagesAllocated(MetaStorage.METASTORAGE_CACHE_ID);
 
-        if (MvccUtils.mvccEnabled(gridCtx))
-            totalAllocated += pageStoreMgr.pagesAllocated(TxLog.TX_LOG_CACHE_ID);
-
         for (CacheGroupContext ctx : gridCtx.cache().cacheGroups())
             totalAllocated += pageStoreMgr.pagesAllocated(ctx.groupId());
 
@@ -684,20 +677,6 @@ public class PageMemoryTracker implements IgnitePlugin {
         ByteBuffer rmtBuf = GridUnsafe.wrapPointer(actualPageAddr, pageSize);
 
         PageIO pageIo = PageIO.getPageIO(actualPageAddr);
-
-        if (pageIo.getType() == T_DATA_REF_MVCC_LEAF || pageIo.getType() == T_CACHE_ID_DATA_REF_MVCC_LEAF) {
-            assert cacheProc.cacheGroup(fullPageId.groupId()).mvccEnabled();
-
-            AbstractDataLeafIO io = (AbstractDataLeafIO)pageIo;
-
-            int cnt = io.getMaxCount(actualPageAddr, pageSize);
-
-            // Reset lock info as there is no sense to log it into WAL.
-            for (int i = 0; i < cnt; i++) {
-                io.setMvccLockCoordinatorVersion(expPageAddr, i, io.getMvccLockCoordinatorVersion(actualPageAddr, i));
-                io.setMvccLockCounter(expPageAddr, i, io.getMvccLockCounter(actualPageAddr, i));
-            }
-        }
 
         // Compare only meaningful data.
         if (pageIo instanceof CompactablePageIO) {
