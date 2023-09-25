@@ -154,7 +154,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         this.idxRowCache = idxRowCache;
 
-        mvccEnabled = grpCtx.mvccEnabled();
+        mvccEnabled = false;
 
         if (!initNew) {
             // Init from metastore.

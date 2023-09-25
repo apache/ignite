@@ -482,11 +482,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         return writeView != null && writeView.size() == 1 ? F.firstValue(writeView) : null;
     }
 
-    /** MVCC Enabled */
-    public boolean mvccEnabled() {
-        return Boolean.TRUE == mvccEnabled;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean useMvccCaching(int cacheId) {
         return mvccCachingCacheIds.contains(cacheId);

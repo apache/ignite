@@ -51,7 +51,6 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -196,17 +195,6 @@ public interface IgniteCacheOffheapManager {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot mvccSnapshot)
-        throws IgniteCheckedException;
-
-    /**
-     * For testing only.
-     *
-     * @param cctx Cache context.
-     * @param key Key.
-     * @return All stored versions for given key.
-     * @throws IgniteCheckedException If failed.
-     */
-    public List<IgniteBiTuple<Object, MvccVersion>> mvccAllVersions(GridCacheContext cctx, KeyCacheObject key)
         throws IgniteCheckedException;
 
     /**
@@ -981,17 +969,6 @@ public interface IgniteCacheOffheapManager {
          * @throws IgniteCheckedException If failed.
          */
         public CacheDataRow mvccFind(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot snapshot)
-            throws IgniteCheckedException;
-
-        /**
-         * For testing only.
-         *
-         * @param cctx Cache context.
-         * @param key Key.
-         * @return All stored versions for given key.
-         * @throws IgniteCheckedException If failed.
-         */
-        List<IgniteBiTuple<Object, MvccVersion>> mvccFindAllVersions(GridCacheContext cctx, KeyCacheObject key)
             throws IgniteCheckedException;
 
         /**

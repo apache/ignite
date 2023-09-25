@@ -743,14 +743,6 @@ public class MvccUtils {
     }
 
     /**
-     * @param ctx Grid kernal context.
-     * @return Whether MVCC is enabled or not.
-     */
-    public static boolean mvccEnabled(GridKernalContext ctx) {
-        return ctx.coordinators().mvccEnabled();
-    }
-
-    /**
      * Initialises MVCC filter and returns MVCC query tracker if needed.
      * @param cctx Cache context.
      * @param tx Transaction.
