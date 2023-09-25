@@ -2430,17 +2430,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** */
-    private void assertDumpContains(String val) throws IOException {
-        Matcher fileNameMatcher = dumpFileNameMatcher();
-
-        assertTrue(fileNameMatcher.find());
-
-        String dumpContent = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
-
-        assertContains(log, dumpContent, val);
-    }
-
-    /** */
     @Test
     public void testCacheSequence() throws Exception {
         Ignite ignite = startGrid();

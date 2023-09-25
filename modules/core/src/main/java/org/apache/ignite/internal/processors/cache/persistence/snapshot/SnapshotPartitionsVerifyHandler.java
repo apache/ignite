@@ -274,10 +274,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
                         assert hash != null : "OWNING must have hash: " + key;
 
-                        // If we skip hash calculation we don't iterate over all entries and can't calculate real
-                        // partition size (size can include entries to expire, which were already expired on other nodes
-                        // to the moment of snapshot creation), so we need to skip size comparison if there are entries
-                        // to expire exist.
+                        // We should skip size comparison if there are entries to expire exist.
                         if (hasExpiringEntries(snpCtx, pageStore, pageBuff, io.getPendingTreeRoot(pageAddr)))
                             hash.hasExpiringEntries(true);
 
