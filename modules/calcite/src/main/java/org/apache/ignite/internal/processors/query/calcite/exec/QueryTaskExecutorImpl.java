@@ -28,7 +28,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
 
 /**
- * TODO use {@link StripedExecutor}, registered in core pols.
+ * Query task executor.
  */
 public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskExecutor, Thread.UncaughtExceptionHandler {
     /** */
