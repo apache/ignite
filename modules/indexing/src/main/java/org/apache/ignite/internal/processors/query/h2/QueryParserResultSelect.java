@@ -147,13 +147,6 @@ public class QueryParserResultSelect {
     }
 
     /**
-     * @return Whether this is a SELECT for MVCC caches.
-     */
-    public boolean mvccEnabled() {
-        return mvccCacheId != null;
-    }
-
-    /**
      * @return Whether this is FOR UPDATE query.
      */
     public boolean forUpdate() {

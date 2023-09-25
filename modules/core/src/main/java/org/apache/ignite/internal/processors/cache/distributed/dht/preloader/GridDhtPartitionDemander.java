@@ -637,13 +637,9 @@ public class GridDhtPartitionDemander {
                                 );
 
                                 try {
-                                    if (grp.mvccEnabled())
-                                        mvccPreloadEntries(topVer, node, p, infosWrap);
-                                    else {
-                                        preloadEntries(topVer, part, infosWrap);
+                                    preloadEntries(topVer, part, infosWrap);
 
-                                        rebalanceFut.onReceivedKeys(p, e.getValue().infos().size(), node);
-                                    }
+                                    rebalanceFut.onReceivedKeys(p, e.getValue().infos().size(), node);
                                 }
                                 catch (GridDhtInvalidPartitionException ignored) {
                                     if (log.isDebugEnabled())
@@ -896,7 +892,6 @@ public class GridDhtPartitionDemander {
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     private boolean preloadEntry(CacheDataRow row, AffinityTopologyVersion topVer) throws IgniteCheckedException {
-        assert !grp.mvccEnabled();
         assert ctx.database().checkpointLockIsHeldByThread();
 
         GridCacheContext<?, ?> cctx = grp.sharedGroup() ? ctx.cacheContext(row.cacheId()) : grp.singleCacheContext();

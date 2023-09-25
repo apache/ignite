@@ -81,6 +81,7 @@ public class Dump {
     private final ConcurrentMap<Long, ByteBuffer> thLocBufs = new ConcurrentHashMap<>();
 
     /**
+     * @param cctx Kernal context.
      * @param dumpDir Dump directory.
      */
     public Dump(GridKernalContext cctx, File dumpDir) {

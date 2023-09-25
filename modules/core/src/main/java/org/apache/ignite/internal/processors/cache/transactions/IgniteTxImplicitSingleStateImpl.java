@@ -316,11 +316,6 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         return entry != null ? entry.get(0) : null;
     }
 
-    /** MVCC Enabled */
-    public boolean mvccEnabled() {
-        return false;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean useMvccCaching(int cacheId) {
         assert cacheCtx == null || cacheCtx.cacheId() == cacheId;
