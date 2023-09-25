@@ -38,7 +38,6 @@ import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -140,7 +139,7 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
      * @param cache Cache.
      */
     private void testInvoke(final IgniteCache<Object, Object> cache) throws Exception {
-        Class<? extends Exception> exp = grid("client").transactions().tx() == null || ((IgniteCacheProxy)cache).context().mvccEnabled()
+        Class<? extends Exception> exp = grid("client").transactions().tx() == null
             ? EntryProcessorException.class
             : NonSerializableException.class;
 
@@ -176,7 +175,7 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
         assertNotNull(epRes);
 
         // In transactions EP will be invoked locally.
-        Class<? extends Exception> exp = grid("client").transactions().tx() == null || ((IgniteCacheProxy)cache).context().mvccEnabled()
+        Class<? extends Exception> exp = grid("client").transactions().tx() == null
             ? EntryProcessorException.class
             : NonSerializableException.class;
 

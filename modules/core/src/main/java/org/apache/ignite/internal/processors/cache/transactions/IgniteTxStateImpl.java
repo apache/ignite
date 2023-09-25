@@ -222,11 +222,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
         this.recovery = recovery;
 
-        if (mvccEnabled != null && mvccEnabled != cacheCtx.mvccEnabled())
-            throw new IgniteCheckedException("Failed to enlist new cache to existing transaction " +
-                "(caches with different mvcc settings can't be enlisted in one transaction).");
-
-        mvccEnabled = cacheCtx.mvccEnabled();
+        mvccEnabled = false;
 
         // Check if we can enlist new cache to transaction.
         if (!activeCacheIds.contains(cacheId)) {
@@ -253,12 +249,8 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
                     ", cacheSystem=" + cacheCtx.systemTx() +
                     ", txSystem=" + tx.system() + ']');
             }
-            else {
+            else
                 activeCacheIds.add(cacheId);
-
-                if (cacheCtx.mvccEnabled() && (cacheCtx.hasContinuousQueryListeners(tx) || cacheCtx.isDrEnabled()))
-                    mvccCachingCacheIds.add(cacheId);
-            }
 
             if (activeCacheIds.size() == 1)
                 tx.activeCachesDeploymentEnabled(cacheCtx.deploymentEnabled());
@@ -490,8 +482,8 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         return writeView != null && writeView.size() == 1 ? F.firstValue(writeView) : null;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean mvccEnabled() {
+    /** MVCC Enabled */
+    public boolean mvccEnabled() {
         return Boolean.TRUE == mvccEnabled;
     }
 

@@ -203,6 +203,11 @@ namespace ignite
 
                     int8_t eventTypeByte = reader.ReadInt8();
                     this->eventType = CacheEntryEventType::FromInt8(eventTypeByte);
+
+                    if ((eventType == CacheEntryEventType::EXPIRED || eventType == CacheEntryEventType::REMOVED) && hasOldValue) {
+                        this->hasValue = true;
+                        this->val = oldVal;
+                    }
                 }
 
                 /** Old value. */

@@ -72,7 +72,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
         tx.activeCachesDeploymentEnabled(cacheCtx.deploymentEnabled());
 
-        useMvccCaching = cacheCtx.mvccEnabled() && (cacheCtx.isDrEnabled() || cacheCtx.hasContinuousQueryListeners(tx));
+        useMvccCaching = false;
     }
 
     /** {@inheritDoc} */
@@ -316,11 +316,9 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         return entry != null ? entry.get(0) : null;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean mvccEnabled() {
-        GridCacheContext ctx0 = cacheCtx;
-
-        return ctx0 != null && ctx0.mvccEnabled();
+    /** MVCC Enabled */
+    public boolean mvccEnabled() {
+        return false;
     }
 
     /** {@inheritDoc} */
