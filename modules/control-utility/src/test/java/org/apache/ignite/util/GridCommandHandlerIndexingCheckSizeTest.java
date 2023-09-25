@@ -476,7 +476,7 @@ public class GridCommandHandlerIndexingCheckSizeTest extends GridCommandHandlerC
         assertContains(log, out, "Size check");
 
         Map<String, ValidateIndexesCheckSizeResult> valIdxCheckSizeResults =
-            ((ValidateIndexesTaskResult)lastOperationResult).results().get(node.localNode().id())
+            ((ValidateIndexesTaskResult)lastOperationResult).results().get(node.localNode())
                 .checkSizeResult();
 
         assertEquals(rmvByTbl.size(), valIdxCheckSizeResults.size());
