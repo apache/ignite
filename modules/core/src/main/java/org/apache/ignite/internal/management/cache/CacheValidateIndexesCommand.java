@@ -69,7 +69,7 @@ public class CacheValidateIndexesCommand
         if (errors) {
             printer.accept("Index validation failed on nodes:");
 
-            res0.exceptions().forEach((node, value) -> CommandUtils.printNodeError(printer, node.id(), node.consistentId(), value));
+            res0.exceptions().forEach((node, err) -> CommandUtils.printNodeError(printer, node.id(), node.consistentId(), err));
         }
 
         for (Map.Entry<ClusterNode, ValidateIndexesJobResult> nodeEntry : res0.results().entrySet()) {
