@@ -660,8 +660,8 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     /**
      * Validates control.sh output when caches by name not found.
      *
-     * @param outputStr  CLI {@code control.sh} utility output.
-     * @param nodesCnt   Expected number of lines in {@code outputStr} after {@code prefix}. {@code Null} means
+     * @param outputStr CLI {@code control.sh} utility output.
+     * @param nodesCnt Expected number of lines in {@code outputStr} after {@code prefix}. {@code Null} means
      *                   single node command, the output is expected as for '--node-id'. Otherwise, the outout is
      *                   expected as for '--node-ids'.
      * @param cacheNames Cache names to print.
