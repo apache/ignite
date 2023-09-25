@@ -549,15 +549,25 @@ public class CommandUtils {
 
         printer.accept(infoMsg);
 
-        for (Map.Entry<UUID, Exception> e : exceptions.entrySet()) {
-            printer.accept(INDENT + "Node ID: " + e.getKey());
-
-            printer.accept(INDENT + "Exception message:");
-            printer.accept(DOUBLE_INDENT + e.getValue().getMessage());
-            printer.accept("");
-        }
+        exceptions.forEach((nodeId, value) -> printNodeError(printer, nodeId, null, value));
 
         return true;
+    }
+
+    /**
+     * Prints single node exception message to the log.
+     *
+     * @param printer      Printer to use.
+     * @param nodeId       Node id.
+     * @param consistentId Node consistent id.
+     * @param err          Exception.
+     */
+    public static void printNodeError(Consumer<String> printer, UUID nodeId, @Nullable Object consistentId,
+        Exception err) {
+        printer.accept(INDENT + "Node ID: " + nodeId + (consistentId == null ? "" : " [consistentId='" + consistentId + "']"));
+        printer.accept(INDENT + "Exception message:");
+        printer.accept(DOUBLE_INDENT + err.getMessage());
+        printer.accept("");
     }
 
     /** */

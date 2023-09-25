@@ -380,13 +380,13 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
             ignite.compute().execute(ValidateIndexesTask.class.getName(), new VisorTaskArgument<>(nodeIds, taskArg, false));
 
         if (!taskRes.exceptions().isEmpty()) {
-            for (Map.Entry<UUID, Exception> e : taskRes.exceptions().entrySet())
-                log.error("Exception while validation indexes on node id=" + e.getKey().toString(), e.getValue());
+            for (Map.Entry<ClusterNode, Exception> e : taskRes.exceptions().entrySet())
+                log.error("Exception while validation indexes on node id=" + e.getKey().id().toString(), e.getValue());
         }
 
-        for (Map.Entry<UUID, ValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
+        for (Map.Entry<ClusterNode, ValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
             if (nodeEntry.getValue().hasIssues()) {
-                log.error("Validate indexes issues had been found on node id=" + nodeEntry.getKey().toString());
+                log.error("Validate indexes issues had been found on node id=" + nodeEntry.getKey().id().toString());
 
                 log.error("Integrity check failures: " + nodeEntry.getValue().integrityCheckFailures().size());
 
