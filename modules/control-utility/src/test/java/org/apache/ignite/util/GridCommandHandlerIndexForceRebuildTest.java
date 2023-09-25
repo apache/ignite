@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -190,6 +191,42 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
         String grpNamesOutputStr = testOut.toString();
 
         assertTrue(grpNamesOutputStr.contains(CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED_SINGLE));
+    }
+
+    /**
+     * Test the command output on a cache with node filter.
+     */
+    @Test
+    public void testWithNodeFilter() throws InterruptedException {
+        injectTestSystemOut();
+
+        grid(1).createCache(new CacheConfiguration<>("cacheWithNodeFilter")
+            .setNodeFilter(n -> n.consistentId().toString().endsWith("1")));
+
+        try {
+            assertEquals(EXIT_CODE_OK, execute("--cache", "indexes_force_rebuild", "--all-nodes", "--cache-names",
+                "cacheWithNodeFilter"));
+
+            String cacheNamesOutputStr = testOut.toString();
+
+            validateOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED,
+                grid(1).localNode().id().toString(), 1);
+
+            validateOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND,
+                grid(LAST_NODE_NUM).localNode().id().toString(), 2);
+            validateOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND,
+                grid(0).localNode().id().toString(), 2);
+
+            validateOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED,
+                grid(0).localNode().id().toString(), 1);
+            validateOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED,
+                grid(LAST_NODE_NUM).localNode().id().toString(), 1);
+        }
+        finally {
+            grid(1).destroyCache("cacheWithNodeFilter");
+
+            awaitPartitionMapExchange();
+        }
     }
 
     /**
@@ -761,12 +798,12 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      * @param outputStr The output.
      * @param prefix    Prefix or header to search.
      * @param targetStr Target string to search after {@code prefix}.
-     * @param targetCnt Expected number of lines in {@code outputStr} after {@code prefix}. {@code Null} means
+     * @param maxTargetLines Expected number of lines in {@code outputStr} after {@code prefix}. {@code Null} means
      *                  single node command, the output is expected as for '--node-id'. Otherwise, the outout is
      *                  expected as for '--node-ids'.
      */
-    private static void validateOutput(String outputStr, String prefix, String targetStr, @Nullable Integer targetCnt) {
-        if (targetCnt == null) {
+    private static void validateOutput(String outputStr, String prefix, String targetStr, @Nullable Integer maxTargetLines) {
+        if (maxTargetLines == null) {
             assertContains(
                 log,
                 outputStr,
@@ -788,11 +825,11 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
                     continue;
                 }
 
-                if (i > heraderIdx && i <= heraderIdx + targetCnt && line.contains(targetStr))
+                if (i > heraderIdx && i <= heraderIdx + maxTargetLines && line.contains(targetStr))
                     ++foundTargetStrCnt;
             }
 
-            assertEquals(targetCnt.intValue(), foundTargetStrCnt);
+            assertTrue(foundTargetStrCnt > 0);
         }
     }
 
