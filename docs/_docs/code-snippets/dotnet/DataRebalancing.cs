@@ -48,9 +48,9 @@ namespace dotnet_helloworld
             // tag::RebalanceThrottle[]
             IgniteConfiguration cfg = new IgniteConfiguration
             {
-              RebalanceBatchSize = 2 * 1024 * 1024,
-              RebalanceThrottle = new TimeSpan(0, 0, 0, 0, 100),
-              RebalanceBatchesPrefetchCnt = 3
+                RebalanceBatchSize = 2 * 1024 * 1024,
+                RebalanceThrottle = new TimeSpan(0, 0, 0, 0, 100),
+                RebalanceBatchesPrefetchCount = 3
             };
 
             // Start a node.

@@ -36,7 +36,7 @@
         <!-- Set batch size. -->
         <property name="rebalanceBatchSize" value="#{2 * 1024 * 1024}"/>
         <!-- Set batches prefetch count. -->
-        <property name="rebalanceBatchesPrefetchCnt" value="3"/>
+        <property name="rebalanceBatchesPrefetchCount" value="3"/>
         <!-- Set throttle interval. -->
         <property name="rebalanceThrottle" value="100"/>
         <!-- end::throttling[] -->

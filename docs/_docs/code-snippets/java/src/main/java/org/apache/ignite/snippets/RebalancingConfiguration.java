@@ -47,7 +47,7 @@ public class RebalancingConfiguration {
         //tag::throttling[]
 
         cfg.setRebalanceBatchSize(2 * 1024 * 1024);
-        cfg.setRebalanceBatchesPrefetchCnt(3);
+        cfg.setRebalanceBatchesPrefetchCount(3);
         cfg.setRebalanceThrottle(100);
 
         //end::throttling[]

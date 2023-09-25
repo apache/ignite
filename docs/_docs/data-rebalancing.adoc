@@ -139,7 +139,7 @@ The following table lists the properties of `IgniteConfiguration` related to reb
 
 |`rebalanceBatchSize` | The size in bytes of a single rebalance message. The rebalancing algorithm splits the data on every node into multiple batches prior to sending it to other nodes. | 512KB
 
-|`rebalanceBatchesPrefetchCnt` | Rebalance batches prefetch count. | 3
+|`rebalanceBatchesPrefetchCount` | Rebalance batches prefetch count. | 3
 
 |`rebalanceThrottle`  | See <<#throttling>>.| 0 (throttling disabled)
 
