@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManag
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.platform.model.User;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -58,6 +59,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.DMP_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.KEYS_CNT;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.USER_FACTORY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.dump;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.invokeCheckCommand;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
@@ -234,8 +236,8 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
 
-        int correuptedPart = 1;
-        int corruptedKey = partitionKeys(cache, correuptedPart, 1, 0).get(0);
+        int corruptedPart = 1;
+        int corruptedKey = partitionKeys(cache, corruptedPart, 1, 0).get(0);
 
         cache.put(corruptedKey, corruptedKey);
 
@@ -285,7 +287,42 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             invokeCheckCommand(ign, DMP_NAME),
             "Conflict partition: PartitionKeyV2 [grpId=" + CU.cacheId(DEFAULT_CACHE_NAME) +
                 ", grpName=" + DEFAULT_CACHE_NAME +
-                ", partId=" + correuptedPart + "]"
+                ", partId=" + corruptedPart + "]"
         );
+    }
+
+    /** */
+    @Test
+    public void testCheckOnEmptyNode() throws Exception {
+        String id = "test";
+
+        IgniteEx ign = startGrid(getConfiguration(id).setConsistentId(id));
+
+        IgniteCache<Integer, Integer> cache = ign.createCache(new CacheConfiguration<Integer, Integer>()
+            .setName(DEFAULT_CACHE_NAME)
+            .setBackups(1)
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC));
+
+        IgniteCache<Integer, User> cache2 = ign.createCache(new CacheConfiguration<Integer, User>()
+            .setName("users")
+            .setBackups(1)
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC));
+
+        IntStream.range(0, KEYS_CNT).forEach(i -> {
+            cache.put(i, i);
+            cache2.put(i, USER_FACTORY.apply(i));
+        });
+
+        ign.snapshot().createDump(DMP_NAME).get();
+
+        assertEquals("The check procedure has finished, no conflicts have been found.\n\n", invokeCheckCommand(ign, DMP_NAME));
+
+        stopAllGrids();
+
+        cleanPersistenceDir(true);
+
+        ign = startGrid(getConfiguration(id).setConsistentId(id));
+
+        assertEquals("The check procedure has finished, no conflicts have been found.\n\n", invokeCheckCommand(ign, DMP_NAME));
     }
 }

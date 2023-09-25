@@ -316,15 +316,35 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         SnapshotHandlerContext opCtx,
         Set<File> partFiles
     ) throws IgniteCheckedException {
-        Dump dump = new Dump(cctx.kernalContext(), opCtx.snapshotDirectory());
-
-        Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
-            cctx.snapshotMgr().snapshotExecutorService(),
-            partFiles,
-            part -> caclucateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()))
+        GridKernalContext snpCtx = cctx.snapshotMgr().createStandaloneKernalContext(
+            cctx.kernalContext().compress(),
+            opCtx.snapshotDirectory(),
+            opCtx.metadata().folderName()
         );
 
-        return partitionHashRecordV2s.stream().collect(Collectors.toMap(PartitionHashRecordV2::partitionKey, r -> r));
+        for (GridComponent comp : snpCtx)
+            comp.start();
+
+        try {
+            Dump dump = new Dump(snpCtx, opCtx.snapshotDirectory());
+
+            Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
+                cctx.snapshotMgr().snapshotExecutorService(),
+                partFiles,
+                part -> caclucateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()))
+            );
+
+            return partitionHashRecordV2s.stream().collect(Collectors.toMap(PartitionHashRecordV2::partitionKey, r -> r));
+        }
+        catch (Throwable t) {
+            log.error("Error executing handler: ", t);
+
+            throw t;
+        }
+        finally {
+            for (GridComponent comp : snpCtx)
+                comp.stop(true);
+        }
     }
 
     /** */

@@ -88,7 +88,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     public static final String DMP_NAME = "dump";
 
     /** */
-    protected static final IntFunction<User> USER_FACTORY = i ->
+    static final IntFunction<User> USER_FACTORY = i ->
         new User(i, ACL.values()[Math.abs(i) % ACL.values().length], new Role("Role" + i, SUPER));
 
     /** */
