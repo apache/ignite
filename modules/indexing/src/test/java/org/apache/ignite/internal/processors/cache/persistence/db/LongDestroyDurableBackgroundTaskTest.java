@@ -384,9 +384,9 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
                 log.error("Exception while validation indexes on node id=" + e.getKey().id().toString(), e.getValue());
         }
 
-        taskRes.results().forEach((nodeId, res) -> {
+        taskRes.results().forEach((nodeInfo, res) -> {
             if (res.hasIssues()) {
-                log.error("Validate indexes issues had been found on node id=" + nodeId.id().toString());
+                log.error("Validate indexes issues had been found on node id=" + nodeInfo.id().toString());
 
                 log.error("Integrity check failures: " + res.integrityCheckFailures().size());
 
