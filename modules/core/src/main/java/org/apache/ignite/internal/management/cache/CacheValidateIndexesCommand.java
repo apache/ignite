@@ -20,7 +20,6 @@ package org.apache.ignite.internal.management.cache;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Consumer;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
@@ -72,7 +71,7 @@ public class CacheValidateIndexesCommand
             res0.exceptions().forEach((node, err) -> CommandUtils.printNodeError(printer, node.id(), node.consistentId(), err));
         }
 
-        for (Map.Entry<ClusterNode, ValidateIndexesJobResult> nodeEntry : res0.results().entrySet()) {
+        for (Map.Entry<ValidateIndexesTaskResult.NodeFullId, ValidateIndexesJobResult> nodeEntry : res0.results().entrySet()) {
             ValidateIndexesJobResult jobRes = nodeEntry.getValue();
 
             if (!jobRes.hasIssues())

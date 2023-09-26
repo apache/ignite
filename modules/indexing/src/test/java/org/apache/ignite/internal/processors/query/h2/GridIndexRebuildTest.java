@@ -37,7 +37,6 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -231,7 +230,7 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         ValidateIndexesTaskResult res = exec.get();
 
-        Map<ClusterNode, ValidateIndexesJobResult> results = res.results();
+        Map<?, ValidateIndexesJobResult> results = res.results();
 
         boolean hasIssue = false;
 
@@ -330,7 +329,7 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         ValidateIndexesTaskResult res = execute.get();
 
-        Map<ClusterNode, ValidateIndexesJobResult> results = res.results();
+        Map<?, ValidateIndexesJobResult> results = res.results();
 
         boolean hasIssue = false;
 

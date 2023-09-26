@@ -20,7 +20,10 @@ package org.apache.ignite.internal.management.cache;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serializable;
 import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -34,18 +37,18 @@ public class ValidateIndexesTaskResult extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Exceptions. */
-    private Map<ClusterNode, Exception> exceptions;
+    private Map<NodeFullId, Exception> exceptions;
 
     /** Results from cluster. */
-    private Map<ClusterNode, ValidateIndexesJobResult> results;
+    private Map<NodeFullId, ValidateIndexesJobResult> results;
 
     /**
      * @param results Results.
      * @param exceptions Exceptions.
      */
     public ValidateIndexesTaskResult(
-        Map<ClusterNode, ValidateIndexesJobResult> results,
-        Map<ClusterNode, Exception> exceptions
+        Map<NodeFullId, ValidateIndexesJobResult> results,
+        Map<NodeFullId, Exception> exceptions
     ) {
         this.exceptions = exceptions;
         this.results = results;
@@ -60,14 +63,14 @@ public class ValidateIndexesTaskResult extends VisorDataTransferObject {
     /**
      * @return Exceptions.
      */
-    public Map<ClusterNode, Exception> exceptions() {
+    public Map<NodeFullId, Exception> exceptions() {
         return exceptions;
     }
 
     /**
      * @return Results from cluster.
      */
-    public Map<ClusterNode, ValidateIndexesJobResult> results() {
+    public Map<NodeFullId, ValidateIndexesJobResult> results() {
         return results;
     }
 
@@ -86,5 +89,58 @@ public class ValidateIndexesTaskResult extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ValidateIndexesTaskResult.class, this);
+    }
+
+    /** */
+    public static NodeFullId nodeFullId(ClusterNode clusterNode) {
+        return new NodeFullId(clusterNode.id(), (Serializable)clusterNode.consistentId());
+    }
+
+    /**
+     * Holds node id and consistent id.
+     */
+    public static final class NodeFullId implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final UUID id;
+
+        /** */
+        private final Serializable consistentId;
+
+        /** */
+        private NodeFullId(UUID id, Serializable consistentId) {
+            this.id = id;
+            this.consistentId = consistentId;
+        }
+
+        /** */
+        public UUID id() {
+            return id;
+        }
+
+        /** */
+        public Object consistentId() {
+            return consistentId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            NodeFullId id1 = (NodeFullId)o;
+
+            return id.equals(id1.id) && consistentId.equals(id1.consistentId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(id, consistentId);
+        }
     }
 }
