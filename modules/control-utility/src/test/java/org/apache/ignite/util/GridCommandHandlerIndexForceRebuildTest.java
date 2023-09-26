@@ -27,6 +27,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -68,6 +70,7 @@ import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.breakSqlInd
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.complexIndexEntity;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFillCache;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFillThreeFieldsEntryCache;
+import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.personEntity;
 
 /**
  * Test for --cache indexes_force_rebuild command. Uses single cluster per suite.
@@ -197,13 +200,20 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      * Test the command output on a cache with node filter.
      */
     @Test
-    public void testWithNodeFilter() throws InterruptedException {
+    public void testWithNodeFilter() throws Exception {
         injectTestSystemOut();
 
-        grid(1).createCache(new CacheConfiguration<>("cacheWithNodeFilter")
-            .setNodeFilter(n -> n.consistentId().toString().endsWith("1")));
-
         try {
+            grid(1).createCache(new CacheConfiguration<>("cacheWithNodeFilter")
+                .setNodeFilter(n -> n.consistentId().toString().endsWith("1"))
+                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                .setBackups(1)
+                .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+                .setQueryEntities(Collections.singletonList(personEntity())));
+
+            for (int i = 0; i < 100; ++i)
+                grid(1).cache("cacheWithNodeFilter").put(i, new Person(i * 10, "Name_" + 1));
+
             assertEquals(EXIT_CODE_OK, execute("--cache", "indexes_force_rebuild", "--all-nodes", "--cache-names",
                 "cacheWithNodeFilter"));
 
@@ -221,6 +231,8 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
                 grid(0).localNode().id().toString(), 1);
             validateOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED,
                 grid(LAST_NODE_NUM).localNode().id().toString(), 1);
+
+            waitForIndexesRebuild(grid(1));
         }
         finally {
             grid(1).destroyCache("cacheWithNodeFilter");
