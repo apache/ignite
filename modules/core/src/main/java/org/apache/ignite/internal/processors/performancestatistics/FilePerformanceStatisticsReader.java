@@ -52,7 +52,9 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.PAGES_WRITE_THROTTLE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_PROPERTY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_ROWS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheOperation;
@@ -305,6 +307,45 @@ public class FilePerformanceStatisticsReader {
 
             return true;
         }
+        else if (opType == QUERY_ROWS) {
+            String action = readCacheableString(buf);
+
+            if (action == null || buf.remaining() < 1 + 16 + 8 + 8)
+                return false;
+
+            GridCacheQueryType qryType = GridCacheQueryType.fromOrdinal(buf.get());
+            UUID uuid = readUuid(buf);
+            long id = buf.getLong();
+            long rows = buf.getLong();
+
+            for (PerformanceStatisticsHandler handler : curHnd)
+                handler.queryRows(nodeId, qryType, uuid, id, action, rows);
+
+            return true;
+        }
+        else if (opType == QUERY_PROPERTY) {
+            String name = readCacheableString(buf);
+
+            if (name == null)
+                return false;
+
+            String val = readCacheableString(buf);
+
+            if (val == null)
+                return false;
+
+            if (buf.remaining() < 1 + 16 + 8)
+                return false;
+
+            GridCacheQueryType qryType = GridCacheQueryType.fromOrdinal(buf.get());
+            UUID uuid = readUuid(buf);
+            long id = buf.getLong();
+
+            for (PerformanceStatisticsHandler handler : curHnd)
+                handler.queryProperty(nodeId, qryType, uuid, id, name, val);
+
+            return true;
+        }
         else if (opType == TASK) {
             if (buf.remaining() < 1)
                 return false;
@@ -536,6 +577,32 @@ public class FilePerformanceStatisticsReader {
             forwardRead.found = true;
 
         return str;
+    }
+
+    /**
+     * Reads cacheable string from byte buffer.
+     *
+     * @return String or {@code null} in case of buffer underflow.
+     */
+    private String readCacheableString(ByteBuffer buf) {
+        if (buf.remaining() < 1 + 4)
+            return null;
+
+        boolean cached = buf.get() != 0;
+
+        if (cached) {
+            int hash = buf.getInt();
+
+            return knownStrs.get(hash);
+        }
+        else {
+            int textLen = buf.getInt();
+
+            if (buf.remaining() < textLen)
+                return null;
+
+            return readString(buf, textLen);
+        }
     }
 
     /** Reads {@link UUID} from buffer. */

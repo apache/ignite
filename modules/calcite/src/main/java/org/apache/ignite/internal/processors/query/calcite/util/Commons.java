@@ -459,11 +459,11 @@ public final class Commons {
 
     /** */
     public static MappingQueryContext mapContext(UUID locNodeId, AffinityTopologyVersion topVer) {
-        return mapContext(locNodeId, topVer, false);
+        return new MappingQueryContext(locNodeId, topVer, false, null);
     }
 
     /** */
-    public static MappingQueryContext mapContext(UUID locNodeId, AffinityTopologyVersion topVer, boolean isLocal) {
-        return new MappingQueryContext(locNodeId, topVer, isLocal);
+    public static MappingQueryContext mapContext(UUID locNodeId, AffinityTopologyVersion topVer, BaseQueryContext ctx) {
+        return new MappingQueryContext(locNodeId, topVer, ctx.isLocal(), ctx.partitions());
     }
 }

@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -159,9 +158,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.Collections.singletonList;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD;
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager.TX_SIZE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.requestSnapshot;
@@ -473,6 +470,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                         H2QueryInfo qryInfo = new H2QueryInfo(H2QueryInfo.QueryType.LOCAL, stmt, qry,
                             ctx.localNodeId(), qryId);
+
+                        if (ctx.performanceStatistics().enabled()) {
+                            ctx.performanceStatistics().queryProperty(
+                                GridCacheQueryType.SQL_FIELDS,
+                                qryInfo.nodeId(),
+                                qryInfo.queryId(),
+                                "Local plan",
+                                qryInfo.plan()
+                            );
+                        }
 
                         ResultSet rs = executeSqlQueryWithTimer(
                             stmt,
@@ -1403,57 +1410,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Query results cursor.
      */
     private Iterable<List<?>> lockSelectedRows(Iterable<List<?>> cur, GridCacheContext cctx, int pageSize, long timeout) {
-        assert cctx != null && cctx.mvccEnabled();
+        assert false; // ex mvcc code, should never happen
 
-        GridNearTxLocal tx = tx(ctx);
-
-        if (tx == null)
-            throw new IgniteSQLException("Failed to perform SELECT FOR UPDATE operation: transaction has already finished.");
-
-        Collection<List<?>> rowsCache = new ArrayList<>();
-
-        UpdateSourceIterator srcIt = new UpdateSourceIterator<KeyCacheObject>() {
-            private Iterator<List<?>> it = cur.iterator();
-
-            @Override public EnlistOperation operation() {
-                return EnlistOperation.LOCK;
-            }
-
-            @Override public boolean hasNextX() throws IgniteCheckedException {
-                return it.hasNext();
-            }
-
-            @Override public KeyCacheObject nextX() throws IgniteCheckedException {
-                List<?> res = it.next();
-
-                // nextX() can be called from the different threads.
-                synchronized (rowsCache) {
-                    rowsCache.add(res.subList(0, res.size() - 1));
-
-                    if (rowsCache.size() > TX_SIZE_THRESHOLD) {
-                        throw new IgniteCheckedException("Too many rows are locked by SELECT FOR UPDATE statement. " +
-                            "Consider locking fewer keys or increase the limit by setting a " +
-                            IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD + " system property. Current value is " +
-                            TX_SIZE_THRESHOLD + " rows.");
-                    }
-                }
-
-                // The last column is expected to be a _key.
-                return cctx.toCacheKeyObject(res.get(res.size() - 1));
-            }
-        };
-
-        IgniteInternalFuture<Long> fut = tx.updateAsync(cctx, srcIt, pageSize,
-            timeout, true);
-
-        try {
-            fut.get();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-
-        return rowsCache;
+        return null;
     }
 
     /**
@@ -2283,7 +2242,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             GridCacheContext<?, ?> cctx = plan.cacheContext();
 
             // For MVCC case, let's enlist batch elements one by one.
-            if (plan.hasRows() && plan.mode() == UpdateMode.INSERT && !cctx.mvccEnabled()) {
+            if (plan.hasRows() && plan.mode() == UpdateMode.INSERT) {
                 CacheOperationContext opCtx = DmlUtils.setKeepBinaryContext(cctx);
 
                 try {
@@ -2411,35 +2370,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridCacheContext<?, ?> cctx = dml.plan().cacheContext();
 
-        boolean transactional = cctx != null && cctx.mvccEnabled();
-
-        int maxRetryCnt = transactional ? 1 : DFLT_UPDATE_RERUN_ATTEMPTS;
-
-        for (int i = 0; i < maxRetryCnt; i++) {
+        for (int i = 0; i < DFLT_UPDATE_RERUN_ATTEMPTS; i++) {
             CacheOperationContext opCtx = cctx != null ? DmlUtils.setKeepBinaryContext(cctx) : null;
 
             UpdateResult r;
 
             try {
-                if (transactional)
-                    r = executeUpdateTransactional(
-                        qryId,
-                        qryDesc,
-                        qryParams,
-                        dml,
-                        loc,
-                        cancel
-                    );
-                else
-                    r = executeUpdateNonTransactional(
-                        qryId,
-                        qryDesc,
-                        qryParams,
-                        dml,
-                        loc,
-                        filters,
-                        cancel
-                    );
+                r = executeUpdateNonTransactional(
+                    qryId,
+                    qryDesc,
+                    qryParams,
+                    dml,
+                    loc,
+                    filters,
+                    cancel
+                );
             }
             finally {
                 if (opCtx != null)

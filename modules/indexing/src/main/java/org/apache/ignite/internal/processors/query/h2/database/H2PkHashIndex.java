@@ -109,8 +109,6 @@ public class H2PkHashIndex extends GridH2IndexBase {
             seg = qctx.segment();
         }
 
-        assert !cctx.mvccEnabled() || mvccSnapshot != null;
-
         KeyCacheObject lowerObj = lower != null ? cctx.toCacheKeyObject(lower.getValue(0).getObject()) : null;
         KeyCacheObject upperObj = upper != null ? cctx.toCacheKeyObject(upper.getValue(0).getObject()) : null;
 

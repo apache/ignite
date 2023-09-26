@@ -116,13 +116,13 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private final String taskName;
 
     /** Whether to deserialize binary objects. */
-    private boolean deserializeBinary;
+    private final boolean deserializeBinary;
 
     /** Skip values flag. */
-    private boolean skipVals;
+    private final boolean skipVals;
 
     /** Expiry policy. */
-    private IgniteCacheExpiryPolicy expiryPlc;
+    private final IgniteCacheExpiryPolicy expiryPlc;
 
     /** Flag indicating that get should be done on a locked topology version. */
     private final boolean canRemap;
@@ -134,7 +134,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private final boolean keepCacheObjects;
 
     /** */
-    private boolean recovery;
+    private final boolean recovery;
 
     /** */
     @GridToStringInclude
@@ -190,7 +190,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         @Nullable MvccSnapshot mvccSnapshot
     ) {
         assert key != null;
-        assert mvccSnapshot == null || cctx.mvccEnabled();
+        assert mvccSnapshot == null;
 
         AffinityTopologyVersion lockedTopVer = cctx.shared().lockedTopologyVersion(null);
 
@@ -215,7 +215,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         this.recovery = recovery;
         this.topVer = topVer;
         this.mvccSnapshot = mvccSnapshot;
-        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
+        deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         this.txLbl = txLbl;
 
@@ -427,10 +427,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         AffinityTopologyVersion topVer,
         List<ClusterNode> affNodes
     ) {
-        // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
-        boolean fastLocGet = !cctx.mvccEnabled() &&
-            (!forcePrimary || affNodes.get(0).isLocal()) &&
-            cctx.reserveForFastLocalGet(part, topVer);
+        boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) && cctx.reserveForFastLocalGet(part, topVer);
 
         if (fastLocGet) {
             try {
@@ -703,9 +700,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (invalidParts) {
             addNodeAsInvalid(cctx.node(nodeId));
 
-            if (canRemap) {
+            if (canRemap)
                 awaitVersionAndRemap(rmtTopVer);
-            }
             else
                 map(topVer);
 
@@ -826,7 +822,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
             onDone(new ClusterTopologyCheckedException("Failed to remap key to a new node after " +
                 MAX_REMAP_CNT + " attempts (key got remapped to the same node) [key=" + key + ", node=" +
-                (node0 != null ? U.toShortString(node0) : node0) + ", invalidNodes=" + invalidNodes + ']'));
+                (node0 != null ? U.toShortString(node0) : null) + ", invalidNodes=" + invalidNodes + ']'));
 
             return false;
         }
@@ -890,12 +886,11 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param topVer Topology version.
      */
     private void awaitVersionAndRemap(AffinityTopologyVersion topVer) {
-        IgniteInternalFuture<AffinityTopologyVersion> awaitTopologyVersionFuture =
-            cctx.shared().exchange().affinityReadyFuture(topVer);
+        IgniteInternalFuture<AffinityTopologyVersion> awaitTopVerFut = cctx.shared().exchange().affinityReadyFuture(topVer);
 
-        awaitTopologyVersionFuture.listen(() -> {
+        awaitTopVerFut.listen(() -> {
             try {
-                remap(awaitTopologyVersionFuture.get());
+                remap(awaitTopVerFut.get());
             }
             catch (IgniteCheckedException e) {
                 onDone(e);

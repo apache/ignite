@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheLeakTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLifecycleAwareSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMissingCommitVersionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMixedPartitionExchangeSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheMvccFlagsTest;
 import org.apache.ignite.internal.processors.cache.GridCacheNearTxStoreExceptionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapAtomicMultiThreadedUpdateSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapMultiThreadedUpdateSelfTest;
@@ -202,7 +201,6 @@ public class IgniteCacheTestSuite10 {
         GridTestUtils.addTestIfNeeded(suite, GridCacheConcurrentGetCacheOnClientTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, GridCacheLeakTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCacheMvccFlagsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheReturnValueTransferSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheSlowTxWarnTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheTtlManagerLoadTest.class, ignoredTests);

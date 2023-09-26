@@ -50,8 +50,9 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ExecutionPlan;
+import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
-import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.running.TrackableQuery;
@@ -197,14 +198,14 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
     /**
      * Starts execution phase for the query and setup remote fragments.
      */
-    public void run(ExecutionContext<RowT> ctx, MultiStepPlan plan, Node<RowT> root) {
+    public void run(ExecutionContext<RowT> ctx, ExecutionPlan plan, FieldsMetadata metadata, Node<RowT> root) {
         synchronized (mux) {
             if (state == QueryState.CLOSED)
                 throw queryCanceledException();
 
             planningTime = U.currentTimeMillis() - startTs;
 
-            RootNode<RowT> rootNode = new RootNode<>(ctx, plan.fieldsMetadata().rowType(), this::tryClose);
+            RootNode<RowT> rootNode = new RootNode<>(ctx, metadata.rowType(), this::tryClose);
             rootNode.register(root);
 
             addFragment(new RunningFragment<>(F.first(plan.fragments()).root(), rootNode, ctx));

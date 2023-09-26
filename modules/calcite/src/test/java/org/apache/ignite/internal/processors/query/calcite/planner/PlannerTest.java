@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGr
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ExecutionPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
@@ -314,7 +315,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         IgniteRel phys = physicalPlan(ctx);
 
-        MultiStepPlan plan = splitPlan(phys);
+        ExecutionPlan plan = splitPlan(phys);
 
         List<Fragment> fragments = plan.fragments();
         assertEquals(2, fragments.size());
@@ -359,16 +360,14 @@ public class PlannerTest extends AbstractPlannerTest {
     }
 
     /** */
-    private MultiStepPlan splitPlan(IgniteRel phys) {
+    private ExecutionPlan splitPlan(IgniteRel phys) {
         assertNotNull(phys);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(null, new QueryTemplate(new Splitter().go(phys)), null, null);
+        MultiStepPlan plan = new MultiStepQueryPlan(null, null, new QueryTemplate(new Splitter().go(phys)), null, null);
 
         assertNotNull(plan);
 
-        plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
-
-        return plan;
+        return plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
     }
 
     /**
@@ -378,7 +377,7 @@ public class PlannerTest extends AbstractPlannerTest {
         BaseQueryContext qctx,
         PlanningContext ctx,
         TestIoManager mgr,
-        MultiStepPlan plan,
+        ExecutionPlan plan,
         Fragment fragment,
         UUID qryId,
         UUID nodeId

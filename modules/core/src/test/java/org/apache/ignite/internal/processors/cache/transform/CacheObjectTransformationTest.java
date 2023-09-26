@@ -45,7 +45,7 @@ public class CacheObjectTransformationTest extends AbstractCacheObjectTransforma
     public static Collection<?> parameters() {
         List<Object[]> res = new ArrayList<>();
 
-        for (CacheAtomicityMode mode : new CacheAtomicityMode[] {CacheAtomicityMode.TRANSACTIONAL, CacheAtomicityMode.ATOMIC})
+        for (CacheAtomicityMode mode : CacheAtomicityMode._values())
             res.add(new Object[] {mode});
 
         return res;

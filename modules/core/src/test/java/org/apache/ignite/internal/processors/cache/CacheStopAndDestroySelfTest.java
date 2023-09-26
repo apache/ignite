@@ -44,9 +44,9 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
@@ -267,8 +267,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNearDoubleDestroy() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
         startGridsMultiThreaded(gridCount());
 
         nearDestroy();
@@ -552,8 +550,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNearClose() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
         startGridsMultiThreaded(gridCount());
 
         IgniteCache<String, String> cache0 = grid(0).getOrCreateCache(getNearConfig());
@@ -630,8 +626,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNearCloseWithTry() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
         startGridsMultiThreaded(gridCount());
 
         String curVal = null;
