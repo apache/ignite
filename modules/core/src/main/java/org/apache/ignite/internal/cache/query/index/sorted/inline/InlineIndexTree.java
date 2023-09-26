@@ -43,6 +43,7 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
@@ -53,7 +54,11 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMeta
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -61,10 +66,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceTask;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BPLUS_TREE_DISABLE_METRICS;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl.INDEX_METRIC_PREFIX;
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.CANT_BE_COMPARE;
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.COMPARE_UNSUPPORTED;
 import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.mergeTasks;
 import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.toMaintenanceTask;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * BPlusTree where nodes stores inlined index keys.
@@ -139,7 +147,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             PageIdAllocator.FLAG_IDX,
             grpCtx.shared().kernalContext().failure(),
             grpCtx.shared().diagnostic().pageLockTracker(),
-            pageIoResolver
+            pageIoResolver,
+            wrapper(def)
         );
 
         this.grpCtx = grpCtx;
@@ -666,5 +675,70 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         return super.lockRetryErrorMessage(op) + " Problem with the index [cacheName=" + idxName.cacheName() +
             ", schemaName=" + idxName.schemaName() + ", tblName=" + idxName.tableName() + ", idxName=" +
             idxName.idxName() + ']';
+    }
+
+    /** */
+    private static PageHandlerWrapper<Result> wrapper(SortedIndexDefinition def) {
+        if (def == null || def.cacheInfo().cacheContext() == null)
+            return null;
+
+        if (IgniteSystemProperties.getBoolean(IGNITE_BPLUS_TREE_DISABLE_METRICS))
+            return null;
+
+        return new PageHandlerWrapper<Result>() {
+            @Override public PageHandler<?, Result> wrap(BPlusTree<?, ?> tree, PageHandler<?, Result> hnd) {
+                GridCacheContext<?, ?> cctx = def.cacheInfo().cacheContext();
+
+                MetricRegistry mreg = cctx.shared().kernalContext().metric().registry(
+                    metricName(INDEX_METRIC_PREFIX, def.idxName().fullName()));
+
+                LongAdderMetric cnt = mreg.longAdderMetric(hnd.getClass().getSimpleName() + "Count",
+                    "Count of " + hnd.getClass().getSimpleName() + " operations");
+                LongAdderMetric time = mreg.longAdderMetric(hnd.getClass().getSimpleName() + "Time",
+                    "Total time of " + hnd.getClass().getSimpleName() + " operations (nanoseconds)");
+
+                return new PageHandler<Object, Result>() {
+                    @Override public Result run(
+                        int cacheId,
+                        long pageId,
+                        long page,
+                        long pageAddr,
+                        PageIO io,
+                        Boolean walPlc,
+                        Object arg,
+                        int intArg,
+                        IoStatisticsHolder statHolder
+                    ) throws IgniteCheckedException {
+                        if (!cctx.statisticsEnabled()) {
+                            return ((PageHandler<Object, Result>)hnd).run(cacheId, pageId, page, pageAddr, io, walPlc,
+                                arg, intArg, statHolder);
+                        }
+
+                        long ts = System.nanoTime();
+
+                        try {
+                            return ((PageHandler<Object, Result>)hnd).run(cacheId, pageId, page, pageAddr, io, walPlc,
+                                arg, intArg, statHolder);
+                        }
+                        finally {
+                            cnt.increment();
+                            time.add(System.nanoTime() - ts);
+                        }
+                    }
+
+                    @Override public boolean releaseAfterWrite(
+                        int cacheId,
+                        long pageId,
+                        long page,
+                        long pageAddr,
+                        Object arg,
+                        int intArg
+                    ) {
+                        return ((PageHandler<Object, Result>)hnd).releaseAfterWrite(cacheId, pageId, page, pageAddr,
+                            arg, intArg);
+                    }
+                };
+            }
+        };
     }
 }
