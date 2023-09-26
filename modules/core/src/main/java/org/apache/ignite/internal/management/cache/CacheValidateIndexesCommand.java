@@ -71,7 +71,7 @@ public class CacheValidateIndexesCommand
             res0.exceptions().forEach((node, err) -> CommandUtils.printNodeError(printer, node.id(), node.consistentId(), err));
         }
 
-        for (Map.Entry<ValidateIndexesTaskResult.NodeFullId, ValidateIndexesJobResult> nodeEntry : res0.results().entrySet()) {
+        for (Map.Entry<ValidateIndexesTaskResult.NodeInfo, ValidateIndexesJobResult> nodeEntry : res0.results().entrySet()) {
             ValidateIndexesJobResult jobRes = nodeEntry.getValue();
 
             if (!jobRes.hasIssues())

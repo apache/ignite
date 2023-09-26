@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.management.cache;
 
+import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -28,6 +30,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -37,41 +40,50 @@ public class ValidateIndexesTaskResult extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Exceptions. */
-    private Map<NodeFullId, Exception> exceptions;
+    private @Nullable Map<NodeInfo, Exception> exceptions;
 
     /** Results from cluster. */
-    private Map<NodeFullId, ValidateIndexesJobResult> results;
+    private @Nullable Map<NodeInfo, ValidateIndexesJobResult> results;
 
     /**
-     * @param results Results.
-     * @param exceptions Exceptions.
+     * Adds single node job result.
      */
-    public ValidateIndexesTaskResult(
-        Map<NodeFullId, ValidateIndexesJobResult> results,
-        Map<NodeFullId, Exception> exceptions
-    ) {
-        this.exceptions = exceptions;
-        this.results = results;
+    public void addResult(ClusterNode clusterNode, ValidateIndexesJobResult jobResult) {
+        if (results == null)
+            results = new HashMap<>();
+
+        results.put(new NodeInfo(clusterNode.id(), clusterNode.consistentId()), jobResult);
     }
 
     /**
-     * For externalization only.
+     * @return Single node job result or {@code null} if not found.
      */
-    public ValidateIndexesTaskResult() {
-    }
-
-    /**
-     * @return Exceptions.
-     */
-    public Map<NodeFullId, Exception> exceptions() {
-        return exceptions;
+    public @Nullable ValidateIndexesJobResult jobResult(ClusterNode clusterNode) {
+        return results == null ? null : results.get(new NodeInfo(clusterNode.id(), clusterNode.consistentId()));
     }
 
     /**
      * @return Results from cluster.
      */
-    public Map<NodeFullId, ValidateIndexesJobResult> results() {
+    public @Nullable Map<NodeInfo, ValidateIndexesJobResult> results() {
         return results;
+    }
+
+    /**
+     * Adds single node job failure.
+     */
+    public void addException(ClusterNode clusterNode, Exception exception) {
+        if (exceptions == null)
+            exceptions = new HashMap<>();
+
+        exceptions.put(new NodeInfo(clusterNode.id(), clusterNode.consistentId()), exception);
+    }
+
+    /**
+     * @return Exceptions.
+     */
+    public @Nullable Map<NodeInfo, Exception> exceptions() {
+        return exceptions;
     }
 
     /** {@inheritDoc} */
@@ -91,15 +103,10 @@ public class ValidateIndexesTaskResult extends VisorDataTransferObject {
         return S.toString(ValidateIndexesTaskResult.class, this);
     }
 
-    /** */
-    public static NodeFullId nodeFullId(ClusterNode clusterNode) {
-        return new NodeFullId(clusterNode.id(), (Serializable)clusterNode.consistentId());
-    }
-
     /**
      * Holds node id and consistent id.
      */
-    public static final class NodeFullId implements Serializable {
+    public static final class NodeInfo implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -107,10 +114,12 @@ public class ValidateIndexesTaskResult extends VisorDataTransferObject {
         private final UUID id;
 
         /** */
-        private final Serializable consistentId;
+        private final Object consistentId;
 
         /** */
-        private NodeFullId(UUID id, Serializable consistentId) {
+        private NodeInfo(UUID id, Object consistentId) {
+            assert consistentId instanceof Serializable || consistentId instanceof Externalizable;
+
             this.id = id;
             this.consistentId = consistentId;
         }
@@ -133,7 +142,7 @@ public class ValidateIndexesTaskResult extends VisorDataTransferObject {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            NodeFullId id1 = (NodeFullId)o;
+            NodeInfo id1 = (NodeInfo)o;
 
             return id.equals(id1.id) && consistentId.equals(id1.consistentId);
         }
