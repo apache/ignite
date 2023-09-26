@@ -299,7 +299,7 @@ public class IdleVerifyUtility {
         while (it.hasNextX()) {
             CacheDataRow row = it.nextX();
 
-            ctx.update(row.key(), row.value(), row.version(), ctx);
+            ctx.update(row.key(), row.value(), row.version());
         }
 
         return new PartitionHashRecordV2(
@@ -389,27 +389,26 @@ public class IdleVerifyUtility {
         public void update(
             KeyCacheObject key,
             CacheObject val,
-            @Nullable GridCacheVersion ver,
-            VerifyPartitionContext ctx
+            @Nullable GridCacheVersion ver
         ) throws IgniteCheckedException {
-            ctx.partHash += key.hashCode();
+            partHash += key.hashCode();
 
             if (ver != null)
-                ctx.partVerHash += ver.hashCode(); // Detects ABA problem.
+                partVerHash += ver.hashCode(); // Detects ABA problem.
 
             // Object context is not required since the valueBytes have been read directly from page.
-            ctx.partHash += Arrays.hashCode(val.valueBytes(null));
+            partHash += Arrays.hashCode(val.valueBytes(null));
 
             if (key.cacheObjectType() == TYPE_BINARY) {
-                ctx.binary++;
+                binary++;
 
                 if (((BinaryObjectEx)key).isFlagSet(FLAG_COMPACT_FOOTER))
-                    ctx.cf++;
+                    cf++;
                 else
-                    ctx.noCf++;
+                    noCf++;
             }
             else
-                ctx.regular++;
+                regular++;
         }
     }
 }
