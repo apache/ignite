@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -59,14 +60,14 @@ public class ValidateIndexesTaskResult extends VisorDataTransferObject {
      * @return Single node job result or {@code null} if not found.
      */
     public @Nullable ValidateIndexesJobResult jobResult(ClusterNode clusterNode) {
-        return results == null ? null : results.get(new NodeInfo(clusterNode.id(), clusterNode.consistentId()));
+        return results().get(new NodeInfo(clusterNode.id(), clusterNode.consistentId()));
     }
 
     /**
      * @return Results from cluster.
      */
-    public @Nullable Map<NodeInfo, ValidateIndexesJobResult> results() {
-        return results;
+    public Map<NodeInfo, ValidateIndexesJobResult> results() {
+        return results == null ? Collections.emptyMap() : results;
     }
 
     /**
@@ -82,8 +83,8 @@ public class ValidateIndexesTaskResult extends VisorDataTransferObject {
     /**
      * @return Exceptions.
      */
-    public @Nullable Map<NodeInfo, Exception> exceptions() {
-        return exceptions;
+    public Map<NodeInfo, Exception> exceptions() {
+        return exceptions == null ? Collections.emptyMap() : exceptions;
     }
 
     /** {@inheritDoc} */
