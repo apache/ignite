@@ -22,8 +22,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Primitives;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexLiteral;
@@ -32,6 +32,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionAllNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionLiteralNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionNode;
@@ -92,7 +93,7 @@ public class PartitionExtractor extends IgniteRelShuttle {
 
     /** */
     private void processScan(IgniteRel rel) {
-        if (partNode == PartitionAllNode.INSTANCE)
+        if (partNode == PartitionNoneNode.INSTANCE)
             return;
 
         assert rel instanceof ProjectableFilterableTableScan;
@@ -101,7 +102,7 @@ public class PartitionExtractor extends IgniteRelShuttle {
 
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
 
-        if (!tbl.descriptor().distribution().function().affinity()) {
+        if (!tbl.descriptor().distribution().function().affinity() || tbl.distribution().getKeys().size() != 1) {
             partNode = PartitionAllNode.INSTANCE;
 
             return;
@@ -109,25 +110,31 @@ public class PartitionExtractor extends IgniteRelShuttle {
 
         RelDataType rowType = tbl.getRowType(typeFactory);
 
+        ImmutableIntList keys = ImmutableIntList.copyOf(rel.distribution().getKeys());
         List<Class<?>> types = new ArrayList<>(rowType.getFieldCount());
-        for (RelDataType type : RelOptUtil.getFieldTypeList(rowType))
-            types.add(Primitives.wrap((Class<?>)typeFactory.getJavaClass(type)));
+
+        for (RelDataTypeField field : rowType.getFieldList()) {
+            if (QueryUtils.KEY_FIELD_NAME.equals(field.getName()))
+                keys = keys.append(field.getIndex());
+
+            types.add(Primitives.wrap((Class<?>)typeFactory.getJavaClass(field.getType())));
+        }
 
         int cacheId = ((CacheTableDescriptor)tbl.descriptor()).cacheInfo().cacheId();
 
-        PartitionNode partNode0 = processCondition(condition, types, rel.distribution().getKeys(), cacheId);
+        PartitionNode partNode0 = processCondition(condition, types, keys, cacheId);
 
         if (partNode == null) {
             partNode = partNode0;
         }
         else {
-            partNode = PartitionOperandNode.createOrOperandNode(ImmutableList.of(partNode0, partNode));
+            partNode = PartitionOperandNode.createAndOperandNode(ImmutableList.of(partNode0, partNode));
         }
     }
 
     /** */
     private PartitionNode processCondition(RexNode condition, List<Class<?>> types, ImmutableIntList keys, int cacheId) {
-        if (!(condition instanceof RexCall) || keys.size() != 1)
+        if (!(condition instanceof RexCall))
             return PartitionAllNode.INSTANCE;
 
         SqlKind opKind = condition.getKind();

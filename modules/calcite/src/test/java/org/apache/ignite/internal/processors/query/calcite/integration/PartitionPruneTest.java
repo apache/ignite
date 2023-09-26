@@ -115,13 +115,12 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
         super.beforeTestsStarted();
 
         sql("CREATE TABLE T1(ID INT, IDX_VAL VARCHAR, VAL VARCHAR, PRIMARY KEY(ID)) WITH cache_name=t1_cache,backups=1");
-        sql("CREATE TABLE T2(ID INT, T1_ID INT, IDX_VAL VARCHAR, VAL VARCHAR, PRIMARY KEY(ID, T1_ID)) WITH " +
-                "cache_name=t2_cache,backups=1,affinity_key=t1_id");
+        sql("CREATE TABLE T2(ID INT, AK INT, IDX_VAL VARCHAR, VAL VARCHAR, PRIMARY KEY(ID, AK)) WITH " +
+                "cache_name=t2_cache,backups=1,affinity_key=AK");
         sql("CREATE TABLE DICT(ID INT PRIMARY KEY, IDX_VAL VARCHAR, VAL VARCHAR) WITH template=replicated,cache_name=dict_cache");
 
         sql("CREATE INDEX T1_IDX ON T1(IDX_VAL)");
         sql("CREATE INDEX T2_IDX ON T2(IDX_VAL)");
-        sql("CREATE INDEX T2_AFF ON T2(T1_ID)");
         sql("CREATE INDEX DICT_IDX ON DICT(IDX_VAL)");
 
         Stream.of("T1", "DICT").forEach(tableName -> {
@@ -130,6 +129,25 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
 
             for (int i = 0; i < 10000; ++i) {
                 sb.append("(").append(i).append(", ")
+                        .append("'name_").append(i).append("', ")
+                        .append("'name_").append(i).append("')");
+
+                if (i < ENTRIES_COUNT - 1)
+                    sb.append(",");
+            }
+
+            sql(sb.toString());
+
+            assertEquals(ENTRIES_COUNT, client.getOrCreateCache(tableName + "_CACHE").size(CachePeekMode.PRIMARY));
+        });
+
+        Stream.of("T2").forEach(tableName -> {
+            StringBuilder sb = new StringBuilder("INSERT INTO ").append(tableName)
+                    .append("(ID, AK, IDX_VAL, VAL) VALUES ");
+
+            for (int i = 0; i < 10000; ++i) {
+                sb.append("(").append(i).append(", ")
+                        .append(i).append(",")
                         .append("'name_").append(i).append("', ")
                         .append("'name_").append(i).append("')");
 
@@ -293,6 +311,63 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
             testSelect(i, false, "_KEY");
             testSelect(i, false, "ID");
         });
+    }
+
+    /** */
+    @Test
+    public void testSimpleJoin() {
+        // Key (not alias).
+//        execute("SELECT * FROM T1 INNER JOIN DICT ON T1.ID = DICT.ID WHERE T1.ID = ?",
+//            (res) -> {
+//                assertPartitions(partition("T1_CACHE", 123));
+//                assertNodes(node("T1_CACHE", 123));
+//                assertEquals(1, res.size());
+//                assertEquals(123, res.get(0).get(0));
+//            },
+//            123
+//        );
+
+        // Key (not alias).
+        execute("SELECT * FROM T1 INNER JOIN T2 ON T1.ID = T2.AK WHERE T1.ID = ?",
+            (res) -> {
+                assertPartitions(partition("T1_CACHE", 123));
+                assertNodes(node("T1_CACHE", 123));
+                assertEquals(1, res.size());
+                assertEquals(123, res.get(0).get(0));
+            },
+            123
+        );
+
+        // Key (alias).
+        execute("SELECT * FROM T1 INNER JOIN T2 ON T1.ID = T2.AK WHERE T1._KEY = ?",
+            (res) -> {
+                assertPartitions(partition("T1_CACHE", 125));
+                assertNodes(node("T1_CACHE", 125));
+
+                assertEquals(1, res.size());
+                assertEquals(125, res.get(0).get(0));
+            },
+            125
+        );
+
+        // Non-affinity key.
+        execute("SELECT * FROM T1 INNER JOIN T2 ON T1.ID = T2.AK WHERE T2.ID = ?",
+            (res) -> {
+                assertEquals(1, res.size());
+                assertEquals(125, res.get(0).get(0));
+            },
+            125
+        );
+
+        // Affinity key.
+        execute("SELECT * FROM T1 INNER JOIN T2 ON T1.ID = T2.AK WHERE T2.AK = ?",
+            (res) -> {
+                assertPartitions(partition("T2_CACHE", 125));
+                assertEquals(1, res.size());
+                assertEquals(125, res.get(0).get(0));
+            },
+            125
+        );
     }
 
     /** */
