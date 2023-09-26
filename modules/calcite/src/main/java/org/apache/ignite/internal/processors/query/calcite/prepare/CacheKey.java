@@ -39,7 +39,10 @@ public class CacheKey {
     /** */
     private final Class<?>[] paramTypes;
 
-    /** */
+    /**
+     * Additional query or engine parameters like {@link SqlFieldsQuery#isEnforceJoinOrder()} changing the query plan.
+     * Must have correct equals() and hashCode().
+     */
     private final Map<Class<?>, Object> queryParams;
 
     /**
@@ -48,7 +51,8 @@ public class CacheKey {
      * @param contextKey Optional context key to differ queries with and without/different flags, having an impact
      *                   on result plan (like LOCAL flag)
      * @param params Dynamic parameters.
-     * @param params Qury parameters like {@link SqlFieldsQuery#isEnforceJoinOrder()}.
+     * @param params Additional query or engine parameters like {@link SqlFieldsQuery#isEnforceJoinOrder()} changing
+     *               the query plan. Must have correct equals() and hashCode().
      */
     public CacheKey(String schemaName, String query, Object contextKey, Object[] params,
         Map<Class<?>, Object> queryParams) {
@@ -97,7 +101,7 @@ public class CacheKey {
         int result = schemaName.hashCode();
         result = 31 * result + query.hashCode();
         result = 31 * result + (contextKey != null ? contextKey.hashCode() : 0);
-        result = 31 * result + (queryParams != null ? Objects.hashCode(queryParams) : 0);
+        result = 31 * result + Objects.hashCode(queryParams);
         result = 31 * result + Arrays.deepHashCode(paramTypes);
         return result;
     }

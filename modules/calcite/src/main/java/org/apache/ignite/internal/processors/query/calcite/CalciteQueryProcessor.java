@@ -35,7 +35,6 @@ import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDynamicParam;
@@ -439,7 +438,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                         AtomicBoolean miss = new AtomicBoolean();
 
                         plan = queryPlanCache().queryPlan(
-                                new CacheKey(schema.getName(), sql, contextKey(qryCtx), params, queryParams(qryCtx)),
+                                new CacheKey(schema.getName(), sql, contextKey(qryCtx), params, additionalQueryParams(qryCtx)),
                                 () -> {
                                     miss.set(true);
 
@@ -480,7 +479,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         assert schema != null : "Schema not found: " + schemaName;
 
         QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql, contextKey(qryCtx), params,
-            queryParams(qryCtx)));
+            additionalQueryParams(qryCtx)));
 
         if (plan != null) {
             parserMetrics.countCacheHit();
@@ -503,7 +502,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 if (qryList.size() == 1) {
                     plan0 = queryPlanCache().queryPlan(
                         // Use source SQL to avoid redundant parsing next time.
-                        new CacheKey(schema.getName(), sql, contextKey(qryCtx), params, queryParams(qryCtx)),
+                        new CacheKey(schema.getName(), sql, contextKey(qryCtx), params, additionalQueryParams(qryCtx)),
                         () -> prepareSvc.prepareSingle(sqlNode, qry.planningContext())
                     );
                 }
@@ -520,7 +519,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     }
 
     /** */
-    private static Map<Class<?>, Object> queryParams(QueryContext ctx) {
+    private static Map<Class<?>, Object> additionalQueryParams(QueryContext ctx) {
         SqlFieldsQuery sqlFieldsQuery = ctx.unwrap(SqlFieldsQuery.class);
 
         if (sqlFieldsQuery == null)
@@ -531,7 +530,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         if (sqlFieldsQuery.isEnforceJoinOrder()) {
             res = new HashMap<>();
 
-            res.put(RelHint.class, Collections.singletonList(RelHint.builder(HintDefinition.ORDERED_JOINS.name())));
+            res.put(HintDefinition.class, Collections.singletonList(HintDefinition.ORDERED_JOINS));
         }
 
         return res;
