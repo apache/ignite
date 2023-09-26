@@ -270,7 +270,7 @@ public class RunningQueryManager {
             qry,
             qryType,
             schemaName,
-            System.currentTimeMillis(),
+            U.currentTimeMillis(),
             ctx.performanceStatistics().enabled() ? System.nanoTime() : 0,
             cancel,
             loc,

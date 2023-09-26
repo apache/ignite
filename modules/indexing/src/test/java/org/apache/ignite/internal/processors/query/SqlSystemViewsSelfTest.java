@@ -30,6 +30,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -67,6 +68,7 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
@@ -84,6 +86,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.systemview.view.SqlQueryView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.sql.SqlTableView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
@@ -93,6 +97,7 @@ import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
+import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_QRY_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.MB;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertNotEquals;
@@ -666,6 +671,43 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         sql = "SELECT SQL FROM " + systemSchemaName() + ".SQL_QUERIES WHERE QUERY_ID='UNKNOWN'";
 
         assertTrue(cache.query(new SqlFieldsQuery(sql)).getAll().isEmpty());
+    }
+
+    /**
+     * Test running queries system view.
+     */
+    @Test
+    public void testRunningQueriesViewWith() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        IgniteCache cache = ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setIndexedTypes(Integer.class, String.class));
+
+        String sql = "SELECT SQL, QUERY_ID, SCHEMA_NAME, LOCAL, START_TIME, DURATION, SUBJECT_ID FROM " +
+            systemSchemaName() + ".SQL_QUERIES";
+
+        int numThread = 10;
+        CountDownLatch countDownLatch = new CountDownLatch(numThread);
+
+        IgniteInternalFuture<List<List<?>>> future = GridTestUtils.runAsync(() -> {
+            while (countDownLatch.getCount() > 0) {
+                cache.query(new SqlFieldsQuery(sql).setLocal(true));
+
+                countDownLatch.countDown();
+            }
+        });
+
+        future.get(5000);
+
+        IgniteInternalFuture future1 = GridTestUtils.runAsync(() -> {
+            SystemView<SqlQueryView> srvView = ignite.context().systemView().view(SQL_QRY_VIEW);
+
+            for (SqlQueryView sqlQueryView : srvView) {
+                assertTrue(sqlQueryView.duration() >= 0);
+            }
+        });
+
+        future1.get();
     }
 
     /**
