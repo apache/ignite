@@ -43,7 +43,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.DumpedPartitionIterator;
@@ -86,7 +88,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     public static final String DMP_NAME = "dump";
 
     /** */
-    protected static final IntFunction<User> USER_FACTORY = i ->
+    static final IntFunction<User> USER_FACTORY = i ->
         new User(i, ACL.values()[Math.abs(i) % ACL.values().length], new Role("Role" + i, SUPER));
 
     /** */
@@ -241,6 +243,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     void checkDump(IgniteEx ign, String name) throws Exception {
+        checkDumpWithCommand(ign, name, backups);
+
         if (persistence)
             assertNull(ign.context().cache().context().database().metaStorage().read(SNP_RUNNING_DIR_KEY));
 
@@ -425,6 +429,31 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             ign.context(),
             new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name)
         );
+    }
+
+    /** */
+    public static void checkDumpWithCommand(IgniteEx ign, String name, int backups) throws Exception {
+        CacheGroupContext gctx = ign.context().cache().cacheGroup(CU.cacheId(DEFAULT_CACHE_NAME));
+
+        for (GridCacheContext<?, ?> cctx : gctx.caches())
+            assertNull(cctx.dumpListener());
+
+        gctx = ign.context().cache().cacheGroup(CU.cacheId(GRP));
+
+        for (GridCacheContext<?, ?> cctx : gctx.caches())
+            assertNull(cctx.dumpListener());
+
+        assertEquals("The check procedure has finished, no conflicts have been found.\n\n", invokeCheckCommand(ign, name));
+    }
+
+    /** */
+    public static String invokeCheckCommand(IgniteEx ign, String name) throws IgniteCheckedException {
+        StringBuffer buf = new StringBuffer();
+
+        ign.context().cache().context().snapshotMgr().checkSnapshot(name, null).get(60_000)
+            .print(line -> buf.append(line).append(System.lineSeparator()));
+
+        return buf.toString();
     }
 
     /** */

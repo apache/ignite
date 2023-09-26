@@ -36,13 +36,17 @@ import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerificationTask.HashHolder;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.F;
@@ -278,63 +282,34 @@ public class IdleVerifyUtility {
             return new PartitionHashRecordV2(partKey,
                 isPrimary,
                 consId,
-                0,
-                0,
                 updCntr,
                 state == GridDhtPartitionState.MOVING ?
                     PartitionHashRecordV2.MOVING_PARTITION_SIZE : 0,
                 state == GridDhtPartitionState.MOVING ?
                     PartitionHashRecordV2.PartitionState.MOVING : PartitionHashRecordV2.PartitionState.LOST,
-                0,
-                0,
-                0,
-                0);
+                new VerifyPartitionContext()
+            );
         }
 
         if (state != GridDhtPartitionState.OWNING)
             return null;
 
-        int partHash = 0;
-        int partVerHash = 0;
-        int cf = 0;
-        int noCf = 0;
-        int binary = 0;
-        int regular = 0;
+        VerifyPartitionContext ctx = new VerifyPartitionContext();
 
         while (it.hasNextX()) {
             CacheDataRow row = it.nextX();
 
-            partHash += row.key().hashCode();
-            partVerHash += row.version().hashCode(); // Detects ABA problem.
-
-            // Object context is not required since the valueBytes have been read directly from page.
-            partHash += Arrays.hashCode(row.value().valueBytes(null));
-
-            if (row.key().cacheObjectType() == TYPE_BINARY) {
-                binary++;
-
-                if (((BinaryObjectEx)row.key()).isFlagSet(FLAG_COMPACT_FOOTER))
-                    cf++;
-                else
-                    noCf++;
-            }
-            else
-                regular++;
+            ctx.update(row.key(), row.value(), row.version(), ctx);
         }
 
         return new PartitionHashRecordV2(
             partKey,
             isPrimary,
             consId,
-            partHash,
-            partVerHash,
             updCntr,
             partSize,
             PartitionHashRecordV2.PartitionState.OWNING,
-            cf,
-            noCf,
-            binary,
-            regular
+            ctx
         );
     }
 
@@ -375,5 +350,66 @@ public class IdleVerifyUtility {
     /** */
     private IdleVerifyUtility() {
         /* No-op. */
+    }
+
+    /** */
+    public static class VerifyPartitionContext {
+        /** */
+        public int partHash;
+
+        /** */
+        public int partVerHash;
+
+        /** */
+        public int cf;
+
+        /** */
+        public int noCf;
+
+        /** */
+        public int binary;
+
+        /** */
+        public int regular;
+
+        /** */
+        public VerifyPartitionContext() {
+            // No-op.
+        }
+
+        /**
+         * @param hash Incremental snapshot hash holder.
+         */
+        public VerifyPartitionContext(HashHolder hash) {
+            this.partHash = hash.hash;
+            this.partVerHash = hash.verHash;
+        }
+
+        /** */
+        public void update(
+            KeyCacheObject key,
+            CacheObject val,
+            @Nullable GridCacheVersion ver,
+            VerifyPartitionContext ctx
+        ) throws IgniteCheckedException {
+            ctx.partHash += key.hashCode();
+
+            if (ver != null)
+                ctx.partVerHash += ver.hashCode(); // Detects ABA problem.
+
+            // Object context is not required since the valueBytes have been read directly from page.
+            ctx.partHash += Arrays.hashCode(val.valueBytes(null));
+
+            if (key.cacheObjectType() == TYPE_BINARY) {
+                ctx.binary++;
+
+                if (((BinaryObjectEx)key).isFlagSet(FLAG_COMPACT_FOOTER))
+                    ctx.cf++;
+                else
+                    ctx.noCf++;
+            }
+            else
+                ctx.regular++;
+        }
     }
 }

@@ -19,18 +19,16 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Objects;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Serialization logic for dump.
@@ -40,26 +38,28 @@ public class DumpEntrySerializer {
     public static final int HEADER_SZ = Integer.BYTES + Integer.BYTES;
 
     /** */
-    private ByteBuffer buf;
+    private final ConcurrentMap<Long, ByteBuffer> thLocBufs;
 
     /** */
     private final FastCrc crc = new FastCrc();
 
-    /** Kernal context. */
-    private @Nullable GridKernalContext cctx;
-
     /** Cache object processor. */
     private IgniteCacheObjectProcessor co;
 
-    /** */
-    public DumpEntrySerializer() {
-        buf = ByteBuffer.allocate(100);
+    /** Fake context. */
+    private CacheObjectContext fakeCacheObjCtx;
+
+    /**
+     * @param thLocBufs Thread local buffers.
+     */
+    public DumpEntrySerializer(ConcurrentMap<Long, ByteBuffer> thLocBufs) {
+        this.thLocBufs = thLocBufs;
     }
 
     /** */
     public void kernalContext(GridKernalContext cctx) {
-        this.cctx = cctx;
         co = cctx.cacheObjects();
+        fakeCacheObjCtx = new CacheObjectContext(cctx, null, null, false, false, false, false, false);
     }
 
     /**
@@ -93,10 +93,12 @@ public class DumpEntrySerializer {
 
         int fullSz = dataSz + /*extra bytes for row size*/Integer.BYTES + /*CRC*/Integer.BYTES;
 
+        ByteBuffer buf = threadLocalBuffer();
+
         if (buf.capacity() < fullSz)
-            buf = ByteBuffer.allocate(fullSz);
+            buf = enlargeThreadLocalBuffer(fullSz);
         else
-            buf.limit(fullSz);
+            buf.rewind().limit(fullSz);
 
         buf.position(Integer.BYTES); // CRC value.
         buf.putInt(dataSz);
@@ -130,7 +132,9 @@ public class DumpEntrySerializer {
      * @return dump entry.
      */
     public DumpEntry read(FileIO dumpFile, int grp, int part) throws IOException, IgniteCheckedException {
-        assert cctx != null : "Set kernalContext first";
+        assert co != null : "Set kernalContext first";
+
+        ByteBuffer buf = threadLocalBuffer();
 
         buf.position(0);
         buf.limit(HEADER_SZ);
@@ -146,7 +150,7 @@ public class DumpEntrySerializer {
         int dataSz = buf.getInt();
 
         if (buf.capacity() < dataSz + HEADER_SZ) {
-            buf = ByteBuffer.allocate(dataSz + HEADER_SZ);
+            buf = enlargeThreadLocalBuffer(dataSz + HEADER_SZ);
 
             buf.position(HEADER_SZ - Integer.BYTES);
             buf.putInt(dataSz); // Required for CRC check.
@@ -176,14 +180,7 @@ public class DumpEntrySerializer {
 
         buf.get(keyBytes, 0, keyBytes.length);
 
-        GridCacheContext<?, ?> cacheCtx = Objects.requireNonNull(
-            cctx.cache().cacheGroup(grp).shared().cacheContext(cache),
-            "Can't find cache context!"
-        );
-
-        CacheObjectContext coCtx = Objects.requireNonNull(cacheCtx.cacheObjectContext(), "Can't find cache object context!");
-
-        KeyCacheObject key = co.toKeyCacheObject(coCtx, keyType, keyBytes);
+        KeyCacheObject key = co.toKeyCacheObject(fakeCacheObjCtx, keyType, keyBytes);
 
         if (key.partition() == -1)
             key.partition(part);
@@ -194,7 +191,7 @@ public class DumpEntrySerializer {
 
         buf.get(valBytes, 0, valBytes.length);
 
-        CacheObject val = co.toCacheObject(coCtx, valType, valBytes);
+        CacheObject val = co.toCacheObject(fakeCacheObjCtx, valType, valBytes);
 
         return new DumpEntry() {
             @Override public int cacheId() {
@@ -213,6 +210,20 @@ public class DumpEntrySerializer {
                 return val;
             }
         };
+    }
+
+    /** @return Thread local buffer. */
+    private ByteBuffer threadLocalBuffer() {
+        return thLocBufs.computeIfAbsent(Thread.currentThread().getId(), id -> ByteBuffer.allocate(100));
+    }
+
+    /** @return Thread local buffer. */
+    private ByteBuffer enlargeThreadLocalBuffer(int sz) {
+        ByteBuffer buf = ByteBuffer.allocate(sz);
+
+        thLocBufs.put(Thread.currentThread().getId(), buf);
+
+        return buf;
     }
 
     /** */

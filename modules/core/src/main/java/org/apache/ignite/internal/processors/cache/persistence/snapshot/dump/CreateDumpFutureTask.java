@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -36,7 +37,9 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -96,6 +99,14 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
     /** Local node is primary for set of group partitions. */
     private final Map<Integer, Set<Integer>> grpPrimaries = new ConcurrentHashMap<>();
+
+    /**
+     * Map shared across all instances of {@link PartitionDumpContext} and {@link DumpEntrySerializer}.
+     * We use per thread buffer because number of threads is fewer then number of partitions.
+     * Regular count of partitions is {@link RendezvousAffinityFunction#DFLT_PARTITION_COUNT}
+     * and thread is {@link IgniteConfiguration#DFLT_PUBLIC_THREAD_CNT} whic is significantly less.
+     */
+    private final ConcurrentMap<Long, ByteBuffer> thLocBufs = new ConcurrentHashMap<>();
 
     /**
      * @param cctx Cache context.
@@ -298,7 +309,10 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             }
 
             closeFut = CompletableFuture.runAsync(
-                () -> onDone(new SnapshotFutureTaskResult(taken, null), err0),
+                () -> {
+                    thLocBufs.clear();
+                    onDone(new SnapshotFutureTaskResult(taken, null), err0);
+                },
                 cctx.kernalContext().pools().getSystemExecutorService()
             );
         }
@@ -329,7 +343,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     private PartitionDumpContext dumpContext(int grp, int part) {
         return dumpCtxs.computeIfAbsent(
             toLong(grp, part),
-            key -> new PartitionDumpContext(cctx.kernalContext().cache().cacheGroup(grp), part)
+            key -> new PartitionDumpContext(cctx.kernalContext().cache().cacheGroup(grp), part, thLocBufs)
         );
     }
 
@@ -359,7 +373,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         private final AffinityTopologyVersion topVer;
 
         /** Partition serializer. */
-        DumpEntrySerializer serdes;
+        private final DumpEntrySerializer serdes;
 
         /** If {@code true} context is closed. */
         volatile boolean closed;
@@ -370,8 +384,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         /**
          * @param gctx Group context.
          * @param part Partition id.
+         * @param thLocBufs Thread local buffers.
          */
-        public PartitionDumpContext(CacheGroupContext gctx, int part) {
+        public PartitionDumpContext(CacheGroupContext gctx, int part, ConcurrentMap<Long, ByteBuffer> thLocBufs) {
             assert gctx != null;
 
             try {
@@ -381,7 +396,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
                 startVer = grpPrimaries.get(gctx.groupId()).contains(part) ? gctx.shared().versions().last() : null;
 
-                serdes = new DumpEntrySerializer();
+                serdes = new DumpEntrySerializer(thLocBufs);
                 changed = new HashMap<>();
 
                 for (int cache : gctx.cacheIds())
@@ -416,28 +431,24 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         ) {
             String reasonToSkip = null;
 
-            if (closed) // Partition already saved in dump.
+            if (closed) // Quick exit. Partition already saved in dump.
                 reasonToSkip = "partition already saved";
             else {
                 writers.getAndIncrement();
 
                 try {
-                    if (startVer != null && ver.isGreater(startVer))
+                    if (closed) // Partition already saved in dump.
+                        reasonToSkip = "partition already saved";
+                    else if (startVer != null && ver.isGreater(startVer))
                         reasonToSkip = "greater version";
                     else if (!changed.get(cache).add(key)) // Entry changed several time during dump.
                         reasonToSkip = "changed several times";
                     else if (val == null)
                         reasonToSkip = "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
                     else {
-                        synchronized (this) {
-                            if (closed) // Partition already saved in dump.
-                                reasonToSkip = "partition already saved";
-                            else {
-                                write(cache, expireTime, key, val);
+                        write(cache, expireTime, key, val);
 
-                                changedCnt.increment();
-                            }
-                        }
+                        changedCnt.increment();
                     }
                 }
                 finally {
@@ -478,11 +489,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 written = false;
             else if (changed.get(cache).contains(key))
                 written = false;
-            else {
-                synchronized (this) {
-                    write(cache, expireTime, key, val);
-                }
-            }
+            else
+                write(cache, expireTime, key, val);
 
             if (log.isTraceEnabled()) {
                 log.trace("Iterator [" +
@@ -498,20 +506,22 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         /** */
         private void write(int cache, long expireTime, KeyCacheObject key, CacheObject val) {
-            try {
-                ByteBuffer buf = serdes.writeToBuffer(cache, expireTime, key, val, cctx.cacheObjectContext(cache));
+            synchronized (serdes) { // Prevent concurrent access to the dump file.
+                try {
+                    ByteBuffer buf = serdes.writeToBuffer(cache, expireTime, key, val, cctx.cacheObjectContext(cache));
 
-                if (file.writeFully(buf) != buf.limit())
-                    throw new IgniteException("Can't write row");
-            }
-            catch (IOException | IgniteCheckedException e) {
-                throw new IgniteException(e);
+                    if (file.writeFully(buf) != buf.limit())
+                        throw new IgniteException("Can't write row");
+                }
+                catch (IOException | IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
             }
         }
 
         /** {@inheritDoc} */
         @Override public void close() {
-            synchronized (this) {
+            synchronized (this) { // Prevent concurrent close invocation.
                 if (closed)
                     return;
 
@@ -524,8 +534,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 LockSupport.parkNanos(1_000_000);
 
             U.closeQuiet(file);
-
-            serdes = null;
         }
     }
 

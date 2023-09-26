@@ -30,10 +30,21 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
+import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
+import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.platform.model.User;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -48,9 +59,12 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.DMP_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.KEYS_CNT;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.USER_FACTORY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.dump;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.invokeCheckCommand;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntrySerializer.HEADER_SZ;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** */
@@ -208,5 +222,107 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 "Data corrupted"
             );
         }
+    }
+
+    /** */
+    @Test
+    public void testCheckFailOnCorruptedData() throws Exception {
+        IgniteEx ign = (IgniteEx)startGridsMultiThreaded(2);
+
+        IgniteCache<Integer, Integer> cache = ign.createCache(new CacheConfiguration<Integer, Integer>()
+            .setName(DEFAULT_CACHE_NAME)
+            .setBackups(1)
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC));
+
+        IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
+
+        int corruptedPart = 1;
+        int corruptedKey = partitionKeys(cache, corruptedPart, 1, 0).get(0);
+
+        cache.put(corruptedKey, corruptedKey);
+
+        IgniteInternalCache<Integer, Object> cachex = ign.cachex(DEFAULT_CACHE_NAME);
+
+        GridCacheVersionManager mgr = cachex.context().shared().versions();
+
+        GridCacheAdapter<Integer, Integer> adapter = (GridCacheAdapter<Integer, Integer>)cachex.<Integer, Integer>cache();
+
+        GridCacheEntryEx entry = adapter.entryEx(corruptedKey);
+
+        entry.innerUpdate(
+            mgr.next(entry.context().kernalContext().discovery().topologyVersion()),
+            ign.localNode().id(),
+            ign.localNode().id(),
+            GridCacheOperation.UPDATE,
+            new UserCacheObjectImpl(corruptedKey + 1, null),
+            null,
+            false,
+            false,
+            false,
+            false,
+            null,
+            false,
+            false,
+            false,
+            false,
+            false,
+            AffinityTopologyVersion.NONE,
+            null,
+            GridDrType.DR_NONE,
+            0,
+            0,
+            null,
+            false,
+            false,
+            null,
+            null,
+            null,
+            null,
+            false);
+
+        ign.snapshot().createDump(DMP_NAME).get();
+
+        assertContains(
+            null,
+            invokeCheckCommand(ign, DMP_NAME),
+            "Conflict partition: PartitionKeyV2 [grpId=" + CU.cacheId(DEFAULT_CACHE_NAME) +
+                ", grpName=" + DEFAULT_CACHE_NAME +
+                ", partId=" + corruptedPart + "]"
+        );
+    }
+
+    /** */
+    @Test
+    public void testCheckOnEmptyNode() throws Exception {
+        String id = "test";
+
+        IgniteEx ign = startGrid(getConfiguration(id).setConsistentId(id));
+
+        IgniteCache<Integer, Integer> cache = ign.createCache(new CacheConfiguration<Integer, Integer>()
+            .setName(DEFAULT_CACHE_NAME)
+            .setBackups(1)
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC));
+
+        IgniteCache<Integer, User> cache2 = ign.createCache(new CacheConfiguration<Integer, User>()
+            .setName("users")
+            .setBackups(1)
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC));
+
+        IntStream.range(0, KEYS_CNT).forEach(i -> {
+            cache.put(i, i);
+            cache2.put(i, USER_FACTORY.apply(i));
+        });
+
+        ign.snapshot().createDump(DMP_NAME).get();
+
+        assertEquals("The check procedure has finished, no conflicts have been found.\n\n", invokeCheckCommand(ign, DMP_NAME));
+
+        stopAllGrids();
+
+        cleanPersistenceDir(true);
+
+        ign = startGrid(getConfiguration(id).setConsistentId(id));
+
+        assertEquals("The check procedure has finished, no conflicts have been found.\n\n", invokeCheckCommand(ign, DMP_NAME));
     }
 }

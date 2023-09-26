@@ -51,8 +51,11 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntry;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -167,7 +170,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             return Collections.emptyMap();
         }
 
-        return meta.dump() ? checkDumpFiles() : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles, punchHoleEnabled);
+        return meta.dump() ? checkDumpFiles(opCtx, partFiles) : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles, punchHoleEnabled);
     }
 
     /** */
@@ -309,8 +312,85 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** */
-    private Map<PartitionKeyV2, PartitionHashRecordV2> checkDumpFiles() {
-        return Collections.emptyMap();
+    private Map<PartitionKeyV2, PartitionHashRecordV2> checkDumpFiles(
+        SnapshotHandlerContext opCtx,
+        Set<File> partFiles
+    ) throws IgniteCheckedException {
+        GridKernalContext snpCtx = cctx.snapshotMgr().createStandaloneKernalContext(
+            cctx.kernalContext().compress(),
+            opCtx.snapshotDirectory(),
+            opCtx.metadata().folderName()
+        );
+
+        for (GridComponent comp : snpCtx)
+            comp.start();
+
+        try {
+            Dump dump = new Dump(snpCtx, opCtx.snapshotDirectory());
+
+            Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
+                cctx.snapshotMgr().snapshotExecutorService(),
+                partFiles,
+                part -> caclucateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()))
+            );
+
+            return partitionHashRecordV2s.stream().collect(Collectors.toMap(PartitionHashRecordV2::partitionKey, r -> r));
+        }
+        catch (Throwable t) {
+            log.error("Error executing handler: ", t);
+
+            throw t;
+        }
+        finally {
+            for (GridComponent comp : snpCtx)
+                comp.stop(true);
+        }
+    }
+
+    /** */
+    private PartitionHashRecordV2 caclucateDumpedPartitionHash(Dump dump, String grpName, int part) {
+        if (skipHash()) {
+            return new PartitionHashRecordV2(
+                new PartitionKeyV2(CU.cacheId(grpName), part, grpName),
+                false,
+                cctx.localNode().consistentId(),
+                null,
+                0,
+                PartitionHashRecordV2.PartitionState.OWNING,
+                new VerifyPartitionContext()
+            );
+        }
+
+        try {
+            String node = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
+
+            try (Dump.DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part)) {
+                long size = 0;
+
+                VerifyPartitionContext ctx = new VerifyPartitionContext();
+
+                while (iter.hasNext()) {
+                    DumpEntry e = iter.next();
+
+                    ctx.update(e.key(), e.value(), null, ctx);
+
+                    size++;
+                }
+
+                return new PartitionHashRecordV2(
+                    new PartitionKeyV2(CU.cacheId(grpName), part, grpName),
+                    false,
+                    cctx.localNode().consistentId(),
+                    null,
+                    size,
+                    PartitionHashRecordV2.PartitionState.OWNING,
+                    ctx
+                );
+            }
+        }
+        catch (Exception e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */
