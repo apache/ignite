@@ -42,6 +42,9 @@ public class PartitionParameterNode extends PartitionSingleNode {
 
         Object val = TypeUtils.toInternal(ctx.dataContext(), ctx.resolveParameter(idx), colType);
 
+        if (val == null)
+            return null;
+
         AffinityService affSvc = ctx.affinityService();
 
         return affSvc.affinity(cacheId()).applyAsInt(val);

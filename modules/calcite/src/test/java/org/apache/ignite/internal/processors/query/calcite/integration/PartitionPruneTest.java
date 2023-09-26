@@ -26,8 +26,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CachePeekMode;
@@ -139,80 +142,199 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
             assertEquals(ENTRIES_COUNT, client.getOrCreateCache(tableName + "_CACHE").size(CachePeekMode.PRIMARY));
         });
 
-        INTERCEPTED_START_REQUEST_COUNT.reset();
-        INTERCEPTED_PARTS.clear();
-        INTERCEPTED_NODES.clear();
+        clearIntercepted();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        INTERCEPTED_START_REQUEST_COUNT.reset();
-        INTERCEPTED_PARTS.clear();
-        INTERCEPTED_NODES.clear();
+        clearIntercepted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int nodeCount() {
+        return 8;
     }
 
     /** */
     @Test
-    public void testSimplePlanning() {
-//        String sqlStr = "select * from T1 join T2 " +
-//                " on T1.ID=T2.ID where T1.ID = 10 and T2.IDX_VAL <= 'test_1'";
-
-//        String sqlStr = "select * from T1, T2 " +
-//                " where T1._KEY = ? and T2.T1_ID = ? and T2.IDX_VAL <= ?";
-        //String sqlStr = "select * from T1 where T1.ID = ? AND (T1.ID = ? or T1.ID = ? or T1.ID = ?)";
-
-//        execute("select * from T1 where ID = ? OR ID = ?",
-//            res -> {
-//                assertPartitions(partition("T1_CACHE", 123), partition("T1_CACHE", 125));
-//
-//                assertTrue(res.size() == 2);
-//            },
-//            123, 125);
-
-        execute("select * from T1 join DICT on T1.ID = DICT.ID where T1.ID in (?, ?)",
+    public void testSimple() {
+        execute("select * from T1 where T1.ID = ?",
             res -> {
-                //assertPartitions(partition("T1_CACHE", 123), partition("T1_CACHE", 125));
-                assertPartitions(partition("T1_CACHE", 123), partition("T1_CACHE", 125));
-                assertTrue(res.size() == 2);
+                assertPartitions(partition("T1_CACHE", 123));
+                assertNodes(node("T1_CACHE", 123));
+
+                assertEquals(1, res.size());
+                assertEquals("name_123", res.get(0).get(1));
             },
-            123, 125);
+            123);
+
+        execute("select * from T1 where T1.ID = ? and T1.ID = ?",
+            res -> {
+                assertPartitions(partition("T1_CACHE", 123));
+                assertNodes(node("T1_CACHE", 123));
+
+                assertEquals(1, res.size());
+                assertEquals("name_123", res.get(0).get(1));
+            },
+            123, 123);
+    }
+
+    /** */
+    @Test
+    public void testNullsInCondition() {
+        execute("select * from T1 where T1.ID is NULL",
+            res -> {
+                assertPartitions();
+                assertNodes();
+
+                assertTrue(res.isEmpty());
+            });
+
+        execute("select * from T1 where T1.ID = ?",
+            res -> {
+                assertPartitions();
+                assertNodes();
+
+                assertTrue(res.isEmpty());
+            }, new Object[]{ null });
+
+        execute("select * from T1 where T1.ID is NULL and T1.ID = ?",
+            res -> {
+                assertPartitions();
+                assertNodes();
+
+                assertTrue(res.isEmpty());
+            }, 123);
+
+        execute("select * from T1 where T1.ID = ? and T1.ID = ?",
+            res -> {
+                assertPartitions();
+                assertNodes();
+
+                assertTrue(res.isEmpty());
+            }, null, 123);
+
+        execute("select * from T1 where T1.ID is NULL or T1.ID = ?",
+            res -> {
+                assertPartitions(partition("T1_CACHE", 123));
+                assertNodes(node("T1_CACHE", 123));
+
+                assertEquals(1, res.size());
+                assertEquals("name_123", res.get(0).get(1));
+            }, 123);
+
+        execute("select * from T1 where T1.ID = ? or T1.ID = ?",
+            res -> {
+                assertPartitions(partition("T1_CACHE", 123));
+                assertNodes(node("T1_CACHE", 123));
+
+                assertEquals(1, res.size());
+                assertEquals("name_123", res.get(0).get(1));
+            }, null, 123);
+    }
+
+    /** */
+    @Test
+    public void testEmptyConditions() {
+        execute("select * from T1 where T1.ID = ? and T1.ID = ?",
+            res -> {
+                assertPartitions();
+                assertNodes();
+
+                assertTrue(res.isEmpty());
+            },
+            123, 518);
+
+        execute("select * from T1 where T1.ID = ? and (T1.ID = ? OR T1.ID = ? OR T1.ID = ?)",
+            res -> {
+                assertPartitions();
+                assertNodes();
+
+                assertTrue(res.isEmpty());
+            },
+            123, 518, 781, 295);
+
+        execute("select * from T1 where (T1.ID = ? OR T1.ID = ?) AND (T1.ID = ? OR T1.ID = ?)",
+            res -> {
+                assertPartitions();
+                assertNodes();
+
+                assertTrue(res.isEmpty());
+            },
+            123, 518, 781, 295);
+
+        execute("select * from T1 where (T1.ID = ? AND T1.ID = ?) OR (T1.ID = ? AND T1.ID = ?)",
+            res -> {
+                assertPartitions();
+                assertNodes();
+
+                assertTrue(res.isEmpty());
+            },
+            123, 518, 781, 295);
     }
 
     /** */
     @Test
     public void testSelectIn() {
-        execute("select * from T1 where T1.ID in (?, ?)",
+        IntStream.of(2, 6).forEach(i -> {
+            testSelect(i, true, "_KEY");
+            testSelect(i, true, "ID");
+        });
+    }
+
+
+    /** */
+    @Test
+    public void testSelectOr() {
+        testSelect(1, false, "_KEY");
+        testSelect(1, false, "ID");
+
+        IntStream.of(2, 6).forEach(i -> {
+            testSelect(i, false, "_KEY");
+            testSelect(i, false, "ID");
+        });
+    }
+
+    /** */
+    private void testSelect(int sz, boolean withIn, String column) {
+        assertTrue(sz >= 1);
+        int[] values = ThreadLocalRandom.current().ints(0, ENTRIES_COUNT).distinct().limit(sz).toArray();
+
+        StringBuilder query;
+
+        if (!withIn || sz == 1)
+            query = new StringBuilder("select * from T1 where ");
+        else
+            query = new StringBuilder("select * from T1 where T1.").append(column).append(" in (");
+
+        for (int i = 0; i < sz; ++i) {
+            if (!withIn || sz == 1)
+                query.append("T1.").append(column).append("= ?");
+            else
+                query.append('?');
+
+            if (sz == 1)
+                break;
+
+            if (i == sz - 1)
+                query.append(!withIn ? "" : ")");
+            else
+                query.append(!withIn ? " OR " : ", ");
+        }
+
+        execute(query.toString(),
             res -> {
-                assertPartitions(partition("T1_CACHE", 123), partition("T1_CACHE", 125));
+                assertPartitions(IntStream.of(values).map(i -> partition("T1_CACHE", i)).toArray());
+                assertNodes(IntStream.of(values).mapToObj(i -> node("T1_CACHE", i)).toArray(ClusterNode[]::new));
 
-                assertTrue(res.size() == 2);
+                assertTrue(res.size() == values.length);
+
+                assertEquals(
+                    IntStream.of(values).sorted().boxed().collect(Collectors.toList()),
+                    res.stream().map(row -> row.get(0)).sorted().collect(Collectors.toList())
+                );
             },
-            123, 125);
-
-        execute("select * from T1 where T1.ID in (?, ?)",
-            res -> {
-                assertPartitions(partition("T1_CACHE", 123), partition("T1_CACHE", 125));
-
-                assertTrue(res.size() == 2);
-            },
-            123, 125);
-
-        execute("select * from T1 where T1.ID in (?, ?, ?)",
-            res -> {
-                assertPartitions(partition("T1_CACHE", 123), partition("T1_CACHE", 125), partition("T1_CACHE", 127));
-
-                assertTrue(res.size() == 3);
-            },
-            123, 125, 127);
-
-        execute("select * from T1 where T1.ID in (?, ?, ?, ?)",
-                res -> {
-                    assertPartitions(partition("T1_CACHE", 123), partition("T1_CACHE", 125), partition("T1_CACHE", 127),
-                            partition("T1_CACHE", 128));
-
-                    assertTrue(res.size() == 4);
-                },
-                123, 125, 127, 128);
+            IntStream.of(values).boxed().toArray(Integer[]::new));
     }
 
     /** */
@@ -220,11 +342,12 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
         log.info(">>> TEST COMBINATION: \"" + sql + "\"");
 
         // Execute query as is.
-        log.info("Execute \"" + sql + "\"");
+        log.info("Execute \"" + sql + "\" with args " + Arrays.toString(args));
 
         List<List<?>> res = sql(sql, args);
 
         resConsumer.accept(res);
+        clearIntercepted();
 
         // Start filling arguments recursively.
         if (args != null && args.length > 0)
@@ -260,7 +383,8 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
             // Prepare new SQL and arguments.
             int paramPos = paramPoss.get(i);
 
-            String newSql = sql.substring(0, paramPos) + args[i] + sql.substring(paramPos + 1);
+            String newSql = sql.substring(0, paramPos) + (args[i] instanceof String ? "'" + args[i] + "'" : args[i])
+                    + sql.substring(paramPos + 1);
 
             Object[] newArgs = new Object[args.length - 1];
 
@@ -278,6 +402,7 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
                 List<List<?>> res = sql(newSql, newArgs);
 
                 resConsumer.accept(res);
+                clearIntercepted();
             }
 
             // Continue recursively.
@@ -309,7 +434,7 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
     /** */
     protected ClusterNode node(String cacheName, Object key) {
         return G.allGrids().stream()
-            .filter(ign -> ign.affinity(cacheName).isPrimary(ign.cluster().node(), key))
+            .filter(ign -> ign.affinity(cacheName).isPrimary(ign.cluster().localNode(), key))
             .map(ign -> ign.cluster().localNode()).findFirst().orElse(null);
     }
 
@@ -327,4 +452,10 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
                 expNodes0, actualNodes);
     }
 
+    /** */
+    protected static void clearIntercepted() {
+        INTERCEPTED_START_REQUEST_COUNT.reset();
+        INTERCEPTED_PARTS.clear();
+        INTERCEPTED_NODES.clear();
+    }
 }

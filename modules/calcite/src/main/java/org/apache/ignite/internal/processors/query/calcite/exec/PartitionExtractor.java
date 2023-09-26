@@ -35,6 +35,7 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionAllNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionLiteralNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionNoneNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionOperandNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionParameterNode;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
@@ -133,11 +134,24 @@ public class PartitionExtractor extends IgniteRelShuttle {
         List<RexNode> operands = ((RexCall)condition).getOperands();
 
         switch (opKind) {
+            case IS_NULL:
+                RexNode left = operands.get(0);
+
+                if (!left.isA(SqlKind.LOCAL_REF))
+                    return PartitionAllNode.INSTANCE;
+
+                int idx = ((RexLocalRef)left).getIndex();
+
+                if (!keys.contains(idx))
+                    return PartitionAllNode.INSTANCE;
+                else
+                    return PartitionNoneNode.INSTANCE;
+
             case EQUALS:
                 if (operands.size() != 2)
                     return PartitionAllNode.INSTANCE;
 
-                RexNode left = operands.get(0);
+                left = operands.get(0);
                 RexNode right = operands.get(1);
 
                 if (!left.isA(SqlKind.LOCAL_REF))
@@ -146,7 +160,7 @@ public class PartitionExtractor extends IgniteRelShuttle {
                 if (!right.isA(SqlKind.LITERAL) && !right.isA(SqlKind.DYNAMIC_PARAM))
                     return PartitionAllNode.INSTANCE;
 
-                int idx = ((RexLocalRef)left).getIndex();
+                idx = ((RexLocalRef)left).getIndex();
 
                 if (!keys.contains(idx))
                     return PartitionAllNode.INSTANCE;

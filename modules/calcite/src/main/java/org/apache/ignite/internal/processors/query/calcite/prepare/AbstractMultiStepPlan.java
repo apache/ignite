@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapp
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -112,11 +113,12 @@ public abstract class AbstractMultiStepPlan extends AbstractQueryPlan implements
                 Collection<Integer> parts0 = partNode.apply(new PartitionPruningContext(affSvc,
                         new BaseDataContext(qryCtx.typeFactory()), mapCtx.queryParameters()));
 
-                if (F.isEmpty(parts0))
+                if (parts0 == null)
                     return fragment;
 
-                int[] parts = Ints.toArray(parts0);
-                Arrays.sort(parts);
+                int[] parts = !parts0.isEmpty() ? Ints.toArray(parts0) : U.EMPTY_INTS;
+                if (parts.length > 1)
+                    Arrays.sort(parts);
 
                 try {
                     return fragment.filterByPartitions(parts);
