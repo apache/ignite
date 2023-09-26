@@ -130,11 +130,6 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
         assert false;
     }
 
-    /** MVCC Enabled */
-    public boolean mvccEnabled() {
-        return mvccEnabled;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean useMvccCaching(int cacheId) {
         return mvccCachingCacheIds.contains(cacheId);

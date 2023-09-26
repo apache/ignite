@@ -159,8 +159,6 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.requestSnapshot;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
@@ -411,8 +409,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean inTx,
         int timeout
     ) {
-        assert !select.mvccEnabled() || mvccTracker != null;
-
         String qry;
 
         if (select.forUpdate())
@@ -1121,7 +1117,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Exception failReason = null;
 
         try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_DML_QRY_EXECUTE, MTC.span()))) {
-            if (!dml.mvccEnabled() && !updateInTxAllowed && ctx.cache().context().tm().inUserTx()) {
+            if (!updateInTxAllowed && ctx.cache().context().tm().inUserTx()) {
                 throw new IgniteSQLException("DML statements are not allowed inside a transaction over " +
                     "cache(s) with TRANSACTIONAL atomicity mode (change atomicity mode to " +
                     "TRANSACTIONAL_SNAPSHOT or disable this error message with system property " +
@@ -1210,28 +1206,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             GridCacheContext mvccCctx = null;
 
             boolean inTx = false;
-
-            if (select.mvccEnabled()) {
-                mvccCctx = ctx.cache().context().cacheContext(select.mvccCacheId());
-
-                if (mvccCctx == null)
-                    throw new IgniteCheckedException("Cache has been stopped concurrently [cacheId=" +
-                        select.mvccCacheId() + ']');
-
-                boolean autoStartTx = !qryParams.autoCommit() && tx(ctx) == null;
-
-                // Start new user tx in case of autocommit == false.
-                if (autoStartTx)
-                    txStart(ctx, qryParams.timeout());
-
-                tx = tx(ctx);
-
-                checkActive(tx);
-
-                inTx = tx != null;
-
-                tracker = MvccUtils.mvccTracker(mvccCctx, tx);
-            }
 
             int timeout = operationTimeout(qryParams.timeout(), tx);
 
@@ -1345,8 +1319,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean inTx,
         int timeout
     ) {
-        assert !select.mvccEnabled() || mvccTracker != null;
-
         // Check security.
         if (ctx.security().enabled())
             checkSecurity(select.cacheIds());
@@ -1687,9 +1659,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             };
         }
         else {
-            assert !twoStepQry.mvccEnabled() || !F.isEmpty(twoStepQry.cacheIds());
-            assert twoStepQry.mvccEnabled() == (mvccTracker != null);
-
             iter = new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
                     try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_ITER_OPEN, MTC.span()))) {
@@ -2075,14 +2044,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void onClientDisconnect() throws IgniteCheckedException {
-        if (!mvccEnabled(ctx))
-            return;
-
-        GridNearTxLocal tx = tx(ctx);
-
-        if (tx != null)
-            cmdProc.doRollback(tx);
+    @Override public void onClientDisconnect() {
+        // No-op.
     }
 
     /** {@inheritDoc} */

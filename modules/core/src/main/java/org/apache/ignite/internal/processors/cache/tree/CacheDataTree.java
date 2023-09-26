@@ -24,7 +24,6 @@ import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
@@ -38,11 +37,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageP
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataInnerIO;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataLeafIO;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataInnerIO;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccDataPageClosure;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -53,7 +47,6 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
 import static org.apache.ignite.internal.util.GridArrays.clearTail;
 
@@ -187,7 +180,6 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         GridCacheSharedContext shared = grp.shared();
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)shared.database();
         PageStore pageStore = db.getPageStore(grpId, partId);
-        boolean mvccEnabled = grp.mvccEnabled();
         int pageSize = pageSize();
 
         long startPageId = ((PageMemoryEx)pageMem).partitionMetaPageId(grp.groupId(), partId);
@@ -267,7 +259,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
                             for (int i = 0; i < rowsCnt; i++) {
                                 if (c == null || c.applyMvcc(io, pageAddr, i, pageSize)) {
-                                    DataRow row = mvccEnabled ? new MvccDataRow() : new DataRow();
+                                    DataRow row = new DataRow();
 
                                     row.initFromDataPage(
                                         io,
@@ -323,9 +315,6 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
      * @return Tree inner IO.
      */
     private static IOVersions<? extends AbstractDataInnerIO> innerIO(CacheGroupContext grp) {
-        if (grp.mvccEnabled())
-            return grp.sharedGroup() ? MvccCacheIdAwareDataInnerIO.VERSIONS : MvccDataInnerIO.VERSIONS;
-
         return grp.sharedGroup() ? CacheIdAwareDataInnerIO.VERSIONS : DataInnerIO.VERSIONS;
     }
 
@@ -334,9 +323,6 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
      * @return Tree leaf IO.
      */
     private static IOVersions<? extends AbstractDataLeafIO> leafIO(CacheGroupContext grp) {
-        if (grp.mvccEnabled())
-            return grp.sharedGroup() ? MvccCacheIdAwareDataLeafIO.VERSIONS : MvccDataLeafIO.VERSIONS;
-
         return grp.sharedGroup() ? CacheIdAwareDataLeafIO.VERSIONS : DataLeafIO.VERSIONS;
     }
 
@@ -350,9 +336,6 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     /** {@inheritDoc} */
     @Override protected int compare(BPlusIO<CacheSearchRow> iox, long pageAddr, int idx, CacheSearchRow row)
         throws IgniteCheckedException {
-        assert !grp.mvccEnabled() || row.mvccCoordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA
-            || (row.getClass() == SearchRow.class && row.key() == null) : row;
-
         RowLinkIO io = (RowLinkIO)iox;
 
         int cmp;
@@ -390,16 +373,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
         cmp = compareKeys(row.key(), link);
 
-        if (cmp != 0 || !grp.mvccEnabled())
-            return cmp;
-
-        long crd = io.getMvccCoordinatorVersion(pageAddr, idx);
-        long cntr = io.getMvccCounter(pageAddr, idx);
-        int opCntr = io.getMvccOperationCounter(pageAddr, idx);
-
-        assert MvccUtils.mvccVersionIsValid(crd, cntr, opCntr);
-
-        return -MvccUtils.compare(crd, cntr, opCntr, row); // descending order
+        return cmp;
     }
 
     /** {@inheritDoc} */
@@ -413,15 +387,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
         CacheDataRowAdapter.RowData x = asRowData(flags);
 
-        if (grp.mvccEnabled()) {
-            long mvccCrdVer = rowIo.getMvccCoordinatorVersion(pageAddr, idx);
-            long mvccCntr = rowIo.getMvccCounter(pageAddr, idx);
-            int mvccOpCntr = rowIo.getMvccOperationCounter(pageAddr, idx);
-
-            return rowStore.mvccRow(cacheId, hash, link, x, mvccCrdVer, mvccCntr, mvccOpCntr);
-        }
-        else
-            return rowStore.dataRow(cacheId, hash, link, x);
+        return rowStore.dataRow(cacheId, hash, link, x);
     }
 
     /** {@inheritDoc} */
@@ -455,9 +421,6 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
                 if (data.nextLink() == 0) {
                     long addr = pageAddr + data.offset();
-
-                    if (grp.mvccEnabled())
-                        addr += MVCC_INFO_SIZE; // Skip MVCC info.
 
                     if (grp.storeCacheIdInDataPage())
                         addr += 4; // Skip cache id.
@@ -504,8 +467,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             releasePage(pageId, page);
         }
 
-        // TODO GG-11768.
-        CacheDataRowAdapter other = grp.mvccEnabled() ? new MvccDataRow(link) : new CacheDataRowAdapter(link);
+        CacheDataRowAdapter other = new CacheDataRowAdapter(link);
         other.initFromLink(grp, CacheDataRowAdapter.RowData.KEY_ONLY);
 
         byte[] bytes1 = other.key().valueBytes(grp.cacheObjectContext());
