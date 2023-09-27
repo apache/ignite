@@ -288,13 +288,6 @@ public class CacheGroupContext {
     }
 
     /**
-     * @return Mvcc flag.
-     */
-    public boolean mvccEnabled() {
-        return mvccEnabled;
-    }
-
-    /**
      * @return {@code True} if this is cache group for one of system caches.
      */
     public boolean systemCache() {

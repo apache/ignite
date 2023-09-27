@@ -41,7 +41,36 @@ public class MetadataIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void columnNames() {
-        createAndPopulateTable();
+        sql("CREATE TABLE person (ID INT PRIMARY KEY, NAME VARCHAR, SALARY DOUBLE)");
+        sql("CREATE TABLE address (ID INT PRIMARY KEY, PERSON_ID INT, DATA VARCHAR)");
+
+        assertQuery("select salary , *, name, * from person order by person.name")
+            .columnNames("SALARY", "ID", "NAME", "SALARY", "NAME", "ID", "NAME", "SALARY")
+            .check();
+
+        assertQuery("select salary as salary10, * from person where id = 10 union select salary, * from person where id <> 10")
+            .columnNames("SALARY10", "ID", "NAME", "SALARY")
+            .check();
+
+        assertQuery("select *, salary as \"SaLaRy\", * from person")
+            .columnNames("ID", "NAME", "SALARY", "SaLaRy", "ID", "NAME", "SALARY")
+            .check();
+
+        assertQuery("select salary * 2, *, salary / 2, * from person")
+            .columnNames("SALARY * 2", "ID", "NAME", "SALARY", "SALARY / 2", "ID", "NAME", "SALARY")
+            .check();
+
+        assertQuery("select *, trim(name) from person")
+            .columnNames("ID", "NAME", "SALARY", "TRIM(BOTH ' ' FROM NAME)")
+            .check();
+
+        assertQuery("select salary * 2, * , trim(name) from person")
+            .columnNames("SALARY * 2", "ID", "NAME", "SALARY", "TRIM(BOTH ' ' FROM NAME)")
+            .check();
+
+        assertQuery("select p.*, salary / 2, a.* from person p, address a where p.id = a.person_id")
+            .columnNames("ID", "NAME", "SALARY", "SALARY / 2", "ID", "PERSON_ID", "DATA")
+            .check();
 
         assertQuery("select count(_key), _key from person group by _key")
             .columnNames("COUNT(_KEY)", "_KEY")

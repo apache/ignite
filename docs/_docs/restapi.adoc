@@ -2936,3 +2936,26 @@ The command returns 'true' if the query was closed successfully.
 ----
 
 
+=== Probe
+
+Returns whether Ignite kernal as started.
+
+
+*Request:*::
++
+[source,shell]
+----
+http://host:port/ignite?cmd=probe
+----
+
+*Response:*::
+Returns HTTP Status code 200 if kernal has started, and 503 otherwise
++
+[source,json]
+----
+{
+  "error": "",
+  "response": "grid has started",
+  "successStatus": 0
+}
+----
