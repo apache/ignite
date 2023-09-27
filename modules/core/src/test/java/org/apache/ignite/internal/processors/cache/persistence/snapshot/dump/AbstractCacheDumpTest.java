@@ -338,10 +338,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
                         if (e.cacheId() == CU.cacheId(CACHE_0))
                             assertEquals(USER_FACTORY.apply((Integer)e.key()), e.value());
-                        else {
-                            assertNotNull(e.key());
-                            assertNotNull(e.value());
-                        }
+                        else
+                            assertEquals(((Key)e.key()).getId() + "", ((Value)e.value()).getVal());
 
                         grpDumpSz++;
                     }
