@@ -39,7 +39,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.query.calcite.hint.Hint;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
@@ -75,7 +75,7 @@ public class PlannerHelper {
 
             root = extractRootHints(root, 0);
 
-            planner.setDisabledRules(Hint.options(root.hints, HintDefinition.DISABLE_RULE));
+            planner.setDisabledRules(HintUtils.options(root.hints, HintDefinition.DISABLE_RULE));
 
             RelNode rel = root.rel;
 
@@ -134,8 +134,8 @@ public class PlannerHelper {
         assert depth >= 0;
 
         if (rootRel.hints.isEmpty()) {
-            if (!Hint.allRelHints(rootRel.rel).isEmpty())
-                rootRel = rootRel.withHints(Hint.allRelHints(rootRel.rel));
+            if (!HintUtils.allRelHints(rootRel.rel).isEmpty())
+                rootRel = rootRel.withHints(HintUtils.allRelHints(rootRel.rel));
             else if (rootRel.rel instanceof SetOp) {
                 Collection<RelHint> hints1 = extractRootHints(rootRel.withRel(rootRel.rel.getInput(0)), depth + 1).hints;
                 Collection<RelHint> hints2 = extractRootHints(rootRel.withRel(rootRel.rel.getInput(1)), depth + 1).hints;

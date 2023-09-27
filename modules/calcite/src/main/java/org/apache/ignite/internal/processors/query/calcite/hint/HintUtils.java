@@ -36,9 +36,9 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Base class for working with Calcite's SQL hints.
  */
-public final class Hint {
+public final class HintUtils {
     /** */
-    private Hint() {
+    private HintUtils() {
         // No-op.
     }
 

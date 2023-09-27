@@ -26,7 +26,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.hint.Hint;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
@@ -52,7 +52,7 @@ public class HashAggregateConverterRule {
 
     /** */
     static boolean isExpandedDistinct(LogicalAggregate rel) {
-        return Hint.hasHint(rel, EXPAND_DISTINCT_AGG)
+        return HintUtils.hasHint(rel, EXPAND_DISTINCT_AGG)
             && rel.getAggCallList().stream().anyMatch(AggregateCall::isDistinct);
     }
 
