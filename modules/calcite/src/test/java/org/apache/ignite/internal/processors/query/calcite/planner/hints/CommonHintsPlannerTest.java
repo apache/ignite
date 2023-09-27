@@ -105,8 +105,6 @@ public class CommonHintsPlannerTest extends AbstractPlannerTest {
 
         assertTrue(lsnr.check());
 
-        lsnrLog.registerListener(lsnr);
-
         lsnrLog.clearListeners();
 
         lsnr = LogListener.matches("Hint 'EXPAND_DISTINCT_AGG' can't have any key-value option").build();
