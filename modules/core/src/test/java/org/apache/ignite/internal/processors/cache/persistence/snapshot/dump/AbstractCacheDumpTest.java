@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -45,6 +44,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.dump.DumpConsumer;
 import org.apache.ignite.dump.DumpEntry;
+import org.apache.ignite.dump.DumpReader;
+import org.apache.ignite.dump.DumpReaderConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -53,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.DumpedPartitionIterator;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -270,49 +270,59 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
         assertEquals(nodes, nodesDirs.size());
 
-        Set<Integer> keys = new HashSet<>();
-        int dfltDumpSz = 0;
-        int grpDumpSz = 0;
-
         CacheObjectContext coCtx = ign.context().cache().context().cacheObjectContext(CU.cacheId(DEFAULT_CACHE_NAME));
         CacheObjectContext coCtx0 = ign.context().cache().context().cacheObjectContext(CU.cacheId(CACHE_0));
         CacheObjectContext coCtx1 = ign.context().cache().context().cacheObjectContext(CU.cacheId(CACHE_1));
 
-        for (String nodeDir : nodesDirs) {
-            List<StoredCacheData> ccfgs = dump.configs(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME));
+        TestDumpConsumer cnsmr = new TestDumpConsumer() {
+            final Set<Integer> keys = new HashSet<>();
 
-            assertNotNull(ccfgs);
-            assertEquals(1, ccfgs.size());
+            int dfltDumpSz;
 
-            assertEquals(DEFAULT_CACHE_NAME, ccfgs.get(0).configuration().getName());
-            assertFalse(ccfgs.get(0).sql());
-            assertTrue(ccfgs.get(0).queryEntities().isEmpty());
+            int grpDumpSz;
 
-            ccfgs = dump.configs(nodeDir, CU.cacheId(GRP));
+            @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
+                super.onCacheConfigs(caches);
 
-            assertNotNull(ccfgs);
-            assertEquals(2, ccfgs.size());
+                boolean[] cachesFound = new boolean[3];
 
-            ccfgs.sort(Comparator.comparing(d -> d.config().getName()));
+                caches.forEachRemaining(data -> {
+                    if (data.config().getName().equals(DEFAULT_CACHE_NAME)) {
+                        assertFalse(cachesFound[0]);
+                        cachesFound[0] = true;
 
-            CacheConfiguration ccfg0 = ccfgs.get(0).configuration();
-            CacheConfiguration ccfg1 = ccfgs.get(1).configuration();
+                        assertEquals(DEFAULT_CACHE_NAME, data.config().getName());
+                        assertFalse(data.sql());
+                        assertTrue(data.queryEntities().isEmpty());
+                    }
+                    else if (data.config().getName().equals(CACHE_0)) {
+                        assertFalse(cachesFound[1]);
+                        cachesFound[1] = true;
 
-            assertEquals(GRP, ccfg0.getGroupName());
-            assertEquals(CACHE_0, ccfg0.getName());
+                        assertEquals(GRP, data.configuration().getGroupName());
+                        assertEquals(CACHE_0, data.configuration().getName());
+                        assertFalse(data.sql());
+                        assertTrue(data.queryEntities().isEmpty());
+                    }
+                    else if (data.config().getName().equals(CACHE_1)) {
+                        assertFalse(cachesFound[2]);
+                        cachesFound[2] = true;
 
-            assertEquals(GRP, ccfg1.getGroupName());
-            assertEquals(CACHE_1, ccfg1.getName());
+                        assertEquals(GRP, data.configuration().getGroupName());
+                        assertEquals(CACHE_1, data.configuration().getName());
+                        assertFalse(data.sql());
+                        assertTrue(data.queryEntities().isEmpty());
+                    }
+                    else
+                        throw new IgniteException("Unknown cache");
+                });
 
-            assertFalse(ccfgs.get(0).sql());
-            assertFalse(ccfgs.get(1).sql());
-            assertTrue(ccfgs.get(0).queryEntities().isEmpty());
-            assertTrue(ccfgs.get(1).queryEntities().isEmpty());
+                for (boolean found : cachesFound)
+                    assertTrue(found);
+            }
 
-            List<Integer> parts = dump.partitions(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME));
-
-            for (int part : parts) {
-                try (DumpedPartitionIterator iter = dump.iterator(nodeDir, CU.cacheId(DEFAULT_CACHE_NAME), part)) {
+            @Override public void onPartition(int grp, int part, Iterator<DumpEntry> iter) {
+                if (grp == CU.cacheId(DEFAULT_CACHE_NAME)) {
                     while (iter.hasNext()) {
                         DumpEntry e = iter.next();
 
@@ -323,27 +333,40 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                         dfltDumpSz++;
                     }
                 }
-            }
-
-            parts = dump.partitions(nodeDir, CU.cacheId(GRP));
-
-            for (int part : parts) {
-                try (DumpedPartitionIterator iter = dump.iterator(nodeDir, CU.cacheId(GRP), part)) {
+                else {
                     while (iter.hasNext()) {
                         DumpEntry e = iter.next();
 
-                        checkGroupEntry(e, coCtx0, coCtx1);
+                        assertNotNull(e);
+
+                        if (e.cacheId() == CU.cacheId(CACHE_0))
+                            assertEquals(USER_FACTORY.apply(e.key().value(coCtx0, true)), e.value().value(coCtx0, true));
+                        else {
+                            assertNotNull(e.key().<Key>value(coCtx1, true));
+                            assertNotNull(e.value().<Value>value(coCtx1, true));
+                        }
 
                         grpDumpSz++;
                     }
                 }
             }
-        }
 
-        assertEquals(KEYS_CNT + KEYS_CNT * backups, dfltDumpSz);
-        assertEquals(2 * (KEYS_CNT + KEYS_CNT * backups), grpDumpSz);
+            @Override public void check() {
+                super.check();
 
-        IntStream.range(0, KEYS_CNT).forEach(key -> assertTrue(keys.contains(key)));
+                assertEquals(KEYS_CNT + KEYS_CNT * backups, dfltDumpSz);
+                assertEquals(2 * (KEYS_CNT + KEYS_CNT * backups), grpDumpSz);
+
+                IntStream.range(0, KEYS_CNT).forEach(key -> assertTrue(keys.contains(key)));
+            }
+        };
+
+        new DumpReader(new DumpReaderConfiguration(
+            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name),
+            cnsmr
+        ), ign.context()).run();
+
+        cnsmr.check();
     }
 
     /** */
@@ -353,18 +376,6 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         Integer key = e.key().<Integer>value(coCtx, true);
 
         assertEquals(key, e.value().<Integer>value(coCtx, true));
-    }
-
-    /** */
-    protected void checkGroupEntry(DumpEntry e, CacheObjectContext coCtx0, CacheObjectContext coCtx1) {
-        assertNotNull(e);
-
-        if (e.cacheId() == CU.cacheId(CACHE_0))
-            assertEquals(USER_FACTORY.apply(e.key().value(coCtx0, true)), e.value().value(coCtx0, true));
-        else {
-            assertNotNull(e.key().<Key>value(coCtx1, true));
-            assertNotNull(e.value().<Value>value(coCtx1, true));
-        }
     }
 
     /** */
