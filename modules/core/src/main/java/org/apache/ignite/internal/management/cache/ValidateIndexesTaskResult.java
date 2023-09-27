@@ -17,14 +17,21 @@
 
 package org.apache.ignite.internal.management.cache;
 
+import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serializable;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -34,39 +41,50 @@ public class ValidateIndexesTaskResult extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Exceptions. */
-    private Map<UUID, Exception> exceptions;
+    private @Nullable Map<NodeInfo, Exception> exceptions;
 
     /** Results from cluster. */
-    private Map<UUID, ValidateIndexesJobResult> results;
+    private @Nullable Map<NodeInfo, ValidateIndexesJobResult> results;
 
     /**
-     * @param results Results.
-     * @param exceptions Exceptions.
+     * Adds single node job result.
      */
-    public ValidateIndexesTaskResult(Map<UUID, ValidateIndexesJobResult> results,
-        Map<UUID, Exception> exceptions) {
-        this.exceptions = exceptions;
-        this.results = results;
+    public void addResult(ClusterNode clusterNode, ValidateIndexesJobResult jobResult) {
+        if (results == null)
+            results = new HashMap<>();
+
+        results.put(new NodeInfo(clusterNode.id(), clusterNode.consistentId()), jobResult);
     }
 
     /**
-     * For externalization only.
+     * @return Single node job result or {@code null} if not found.
      */
-    public ValidateIndexesTaskResult() {
-    }
-
-    /**
-     * @return Exceptions.
-     */
-    public Map<UUID, Exception> exceptions() {
-        return exceptions;
+    public @Nullable ValidateIndexesJobResult jobResult(ClusterNode clusterNode) {
+        return results().get(new NodeInfo(clusterNode.id(), clusterNode.consistentId()));
     }
 
     /**
      * @return Results from cluster.
      */
-    public Map<UUID, ValidateIndexesJobResult> results() {
-        return results;
+    public Map<NodeInfo, ValidateIndexesJobResult> results() {
+        return results == null ? Collections.emptyMap() : results;
+    }
+
+    /**
+     * Adds single node job failure.
+     */
+    public void addException(ClusterNode clusterNode, Exception exception) {
+        if (exceptions == null)
+            exceptions = new HashMap<>();
+
+        exceptions.put(new NodeInfo(clusterNode.id(), clusterNode.consistentId()), exception);
+    }
+
+    /**
+     * @return Exceptions.
+     */
+    public Map<NodeInfo, Exception> exceptions() {
+        return exceptions == null ? Collections.emptyMap() : exceptions;
     }
 
     /** {@inheritDoc} */
@@ -84,5 +102,55 @@ public class ValidateIndexesTaskResult extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ValidateIndexesTaskResult.class, this);
+    }
+
+    /**
+     * Holds node id and consistent id.
+     */
+    public static final class NodeInfo implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final UUID id;
+
+        /** */
+        private final Object consistentId;
+
+        /** */
+        private NodeInfo(UUID id, Object consistentId) {
+            assert consistentId instanceof Serializable || consistentId instanceof Externalizable;
+
+            this.id = id;
+            this.consistentId = consistentId;
+        }
+
+        /** */
+        public UUID id() {
+            return id;
+        }
+
+        /** */
+        public Object consistentId() {
+            return consistentId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            NodeInfo id1 = (NodeInfo)o;
+
+            return id.equals(id1.id) && consistentId.equals(id1.consistentId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(id, consistentId);
+        }
     }
 }
