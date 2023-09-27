@@ -2199,6 +2199,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         sharedCtx.addCacheContext(cacheCtx);
 
+        log.error("TEST | initCacheContext '" + cfg.getName() + "' on " + ctx.config().getIgniteInstanceName());
+
         caches.put(cacheCtx.name(), cache);
 
         // Intentionally compare Boolean references using '!=' below to check if the flag has been explicitly set.
@@ -2604,6 +2606,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheAdapter<?, ?> cache = caches.remove(cacheName);
 
         if (cache != null) {
+            log.error("TEST | prepareCacheStop on " + ctx.config().getIgniteInstanceName() + ", cache exists");
+
             GridCacheContext<?, ?> ctx = cache.context();
 
             sharedCtx.removeCacheContext(ctx);
@@ -2612,9 +2616,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             stopCache(cache, true, callDestroy, clearCache, clearDbObjects);
         }
-        else
+        else {
+            log.error("TEST | prepareCacheStop on " + ctx.config().getIgniteInstanceName() + ", cache NOT exists");
+
             // Try to unregister query structures for not started caches.
             ctx.query().onCacheStop(cacheName);
+        }
     }
 
     /**

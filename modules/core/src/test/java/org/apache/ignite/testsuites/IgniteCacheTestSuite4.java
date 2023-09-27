@@ -86,7 +86,7 @@ import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheMultinodeTe
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartCoordinatorFailoverTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartFailTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartNoExchangeTimeoutTest;
-import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartSelfTest;
+import org.apache.ignite.internal.processors.cache.TestNodeRestartsAfterDeletionOfNodeFilteredCache;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartStopConcurrentTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheWithConfigStartSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicClientCacheStartSelfTest;
@@ -219,7 +219,7 @@ public class IgniteCacheTestSuite4 {
 
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheTxPreloadNoWriteTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite, IgniteDynamicCacheStartSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, TestNodeRestartsAfterDeletionOfNodeFilteredCache.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteDynamicCacheMultinodeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteDynamicCacheStartFailTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteDynamicCacheStartCoordinatorFailoverTest.class, ignoredTests);

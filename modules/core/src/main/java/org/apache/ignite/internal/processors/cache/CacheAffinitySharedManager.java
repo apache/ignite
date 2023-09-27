@@ -883,6 +883,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         fut.timeBag().finishGlobalStage("Update caches registry");
 
+        log.error("TEST | onCacheChangeRequest on " + cctx.kernalContext().config().getIgniteInstanceName());
+
         processCacheStartRequests(fut, crd, exchActions);
 
         Set<Integer> stoppedGrps = processCacheStopRequests(fut, crd, exchActions);
@@ -956,6 +958,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             NearCacheConfiguration nearCfg = null;
 
             if (req.locallyConfigured() || (cctx.localNodeId().equals(req.initiatingNodeId()) && !exchActions.activate())) {
+                log.error("TEST | processCacheStartRequest1 on " + this.cctx.kernalContext().config().getIgniteInstanceName());
+
                 startCache = true;
 
                 nearCfg = req.nearCacheConfiguration();
@@ -973,9 +977,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     assert cacheProxy.isRestarting()
                         : "Cache has non restarting proxy " + cacheProxy;
 
+                    log.error("TEST | processCacheStartRequest2 on " + this.cctx.kernalContext().config().getIgniteInstanceName());
+
                     startCache = true;
                 }
                 else {
+                    log.error("TEST | processCacheStartRequest3 on " + this.cctx.kernalContext().config().getIgniteInstanceName());
+
                     startCache = CU.affinityNode(cctx.localNode(),
                         cacheDesc.groupDescriptor().config().getNodeFilter());
                 }
