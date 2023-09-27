@@ -61,7 +61,7 @@ public class DumpReader implements Runnable {
     /** {@inheritDoc} */
     @Override public void run() {
         try {
-            Dump dump = new Dump(kctx, cfg.dumpRoot());
+            Dump dump = new Dump(kctx, cfg.dumpRoot(), cfg.keepBinary());
             DumpConsumer cnsmr = cfg.consumer();
 
             cnsmr.start();

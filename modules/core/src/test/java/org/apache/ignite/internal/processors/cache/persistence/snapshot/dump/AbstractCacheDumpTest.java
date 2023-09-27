@@ -50,7 +50,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
@@ -68,6 +67,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_THREAD_CNT;
+import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_TIMEOUT;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_RUNNING_DIR_KEY;
 import static org.apache.ignite.platform.model.AccessLevel.SUPER;
@@ -270,10 +271,6 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
         assertEquals(nodes, nodesDirs.size());
 
-        CacheObjectContext coCtx = ign.context().cache().context().cacheObjectContext(CU.cacheId(DEFAULT_CACHE_NAME));
-        CacheObjectContext coCtx0 = ign.context().cache().context().cacheObjectContext(CU.cacheId(CACHE_0));
-        CacheObjectContext coCtx1 = ign.context().cache().context().cacheObjectContext(CU.cacheId(CACHE_1));
-
         TestDumpConsumer cnsmr = new TestDumpConsumer() {
             final Set<Integer> keys = new HashSet<>();
 
@@ -326,9 +323,9 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                     while (iter.hasNext()) {
                         DumpEntry e = iter.next();
 
-                        checkDefaultCacheEntry(e, coCtx);
+                        checkDefaultCacheEntry(e);
 
-                        keys.add(e.key().<Integer>value(coCtx, true));
+                        keys.add((Integer)e.key());
 
                         dfltDumpSz++;
                     }
@@ -340,10 +337,10 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                         assertNotNull(e);
 
                         if (e.cacheId() == CU.cacheId(CACHE_0))
-                            assertEquals(USER_FACTORY.apply(e.key().value(coCtx0, true)), e.value().value(coCtx0, true));
+                            assertEquals(USER_FACTORY.apply((Integer)e.key()), e.value());
                         else {
-                            assertNotNull(e.key().<Key>value(coCtx1, true));
-                            assertNotNull(e.value().<Value>value(coCtx1, true));
+                            assertNotNull(e.key());
+                            assertNotNull(e.value());
                         }
 
                         grpDumpSz++;
@@ -363,19 +360,20 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
         new DumpReader(new DumpReaderConfiguration(
             new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name),
-            cnsmr
+            cnsmr,
+            DFLT_THREAD_CNT, DFLT_TIMEOUT, true, false
         ), ign.context()).run();
 
         cnsmr.check();
     }
 
     /** */
-    protected void checkDefaultCacheEntry(DumpEntry e, CacheObjectContext coCtx) {
+    protected void checkDefaultCacheEntry(DumpEntry e) {
         assertNotNull(e);
 
-        Integer key = e.key().<Integer>value(coCtx, true);
+        Integer key = (Integer)e.key();
 
-        assertEquals(key, e.value().<Integer>value(coCtx, true));
+        assertEquals(key, e.value());
     }
 
     /** */
@@ -443,7 +441,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     public static Dump dump(IgniteEx ign, String name) throws IgniteCheckedException {
         return new Dump(
             ign.context(),
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name)
+            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name),
+            true
         );
     }
 

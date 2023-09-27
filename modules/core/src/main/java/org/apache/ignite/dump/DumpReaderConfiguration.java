@@ -19,6 +19,8 @@ package org.apache.ignite.dump;
 
 import java.io.File;
 import java.time.Duration;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
@@ -29,6 +31,12 @@ import org.apache.ignite.lang.IgniteExperimental;
  */
 @IgniteExperimental
 public class DumpReaderConfiguration {
+    /** Default timeout. */
+    public static final Duration DFLT_TIMEOUT = Duration.ofDays(7);
+
+    /** Default thread count. */
+    public static final int DFLT_THREAD_CNT = 1;
+
     /** Root dump directory. */
     private final File dir;
 
@@ -44,12 +52,15 @@ public class DumpReaderConfiguration {
     /** Stop processing partitions if consumer fail to process one. */
     private final boolean failFast;
 
+    /** If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}. */
+    private final boolean keepBinary;
+
     /**
      * @param dir Root dump directory.
      * @param cnsmr Dump consumer.
      */
     public DumpReaderConfiguration(File dir, DumpConsumer cnsmr) {
-        this(dir, cnsmr, 1, Duration.ofDays(7), true);
+        this(dir, cnsmr, DFLT_THREAD_CNT, DFLT_TIMEOUT, true, true);
     }
 
     /**
@@ -58,13 +69,15 @@ public class DumpReaderConfiguration {
      * @param thCnt Count of threads to consume dumped partitions.
      * @param timeout Timeout of dump reader invocation.
      * @param failFast Stop processing partitions if consumer fail to process one.
+     * @param keepBinary If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}.
      */
-    public DumpReaderConfiguration(File dir, DumpConsumer cnsmr, int thCnt, Duration timeout, boolean failFast) {
+    public DumpReaderConfiguration(File dir, DumpConsumer cnsmr, int thCnt, Duration timeout, boolean failFast, boolean keepBinary) {
         this.dir = dir;
         this.cnsmr = cnsmr;
         this.thCnt = thCnt;
         this.timeout = timeout;
         this.failFast = failFast;
+        this.keepBinary = keepBinary;
     }
 
     /** @return Root dump directiory. */
@@ -90,5 +103,10 @@ public class DumpReaderConfiguration {
     /** @return {@code True} if stop processing after first consumer error. */
     public boolean failFast() {
         return failFast;
+    }
+
+    /** @return If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}. */
+    public boolean keepBinary() {
+        return keepBinary;
     }
 }

@@ -47,7 +47,9 @@ import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -367,7 +369,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             comp.start();
 
         try {
-            Dump dump = new Dump(snpCtx, opCtx.snapshotDirectory());
+            Dump dump = new Dump(snpCtx, opCtx.snapshotDirectory(), true);
 
             Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
                 cctx.snapshotMgr().snapshotExecutorService(),
@@ -405,7 +407,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         try {
             String node = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
 
-            try (Dump.DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part)) {
+            try (Dump.DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part, true)) {
                 long size = 0;
 
                 VerifyPartitionContext ctx = new VerifyPartitionContext();
@@ -413,7 +415,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 while (iter.hasNext()) {
                     DumpEntry e = iter.next();
 
-                    ctx.update(e.key(), e.value(), null);
+                    ctx.update((KeyCacheObject)e.key(), (CacheObject)e.value(), null);
 
                     size++;
                 }

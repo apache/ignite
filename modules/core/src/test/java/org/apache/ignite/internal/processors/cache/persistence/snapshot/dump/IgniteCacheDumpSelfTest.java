@@ -39,7 +39,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -453,8 +452,8 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void checkDefaultCacheEntry(DumpEntry e, CacheObjectContext coCtx) {
-        super.checkDefaultCacheEntry(e, coCtx);
+    @Override protected void checkDefaultCacheEntry(DumpEntry e) {
+        super.checkDefaultCacheEntry(e);
 
         if (explicitTtl != null) {
             assertTrue("Expire time must be set", e.expireTime() != 0);

@@ -50,6 +50,9 @@ public class DumpEntrySerializer {
     /** Fake context. */
     private CacheObjectContext fakeCacheObjCtx;
 
+    /** If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}. */
+    private boolean keepBinary;
+
     /**
      * @param thLocBufs Thread local buffers.
      */
@@ -61,6 +64,13 @@ public class DumpEntrySerializer {
     public void kernalContext(GridKernalContext cctx) {
         co = cctx.cacheObjects();
         fakeCacheObjCtx = new CacheObjectContext(cctx, null, null, false, false, false, false, false);
+    }
+
+    /**
+     * @param keepBinary If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}.
+     */
+    public void keepBinary(boolean keepBinary) {
+        this.keepBinary = keepBinary;
     }
 
     /**
@@ -194,6 +204,9 @@ public class DumpEntrySerializer {
 
         CacheObject val = co.toCacheObject(fakeCacheObjCtx, valType, valBytes);
 
+        Object key0 = keepBinary ? key : key.value(fakeCacheObjCtx, false);
+        Object val0 = keepBinary ? val : val.value(fakeCacheObjCtx, false);
+
         return new DumpEntry() {
             @Override public int cacheId() {
                 return cache;
@@ -203,12 +216,12 @@ public class DumpEntrySerializer {
                 return expireTime;
             }
 
-            @Override public KeyCacheObject key() {
-                return key;
+            @Override public Object key() {
+                return key0;
             }
 
-            @Override public CacheObject value() {
-                return val;
+            @Override public Object value() {
+                return val0;
             }
         };
     }

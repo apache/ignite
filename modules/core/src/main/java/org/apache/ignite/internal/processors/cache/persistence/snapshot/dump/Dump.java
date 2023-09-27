@@ -39,6 +39,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -72,6 +73,9 @@ public class Dump {
     /** Kernal context. */
     private final GridKernalContext cctx;
 
+    /** If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}. */
+    private final boolean keepBinary;
+
     /**
      * Map shared across all instances of {@link DumpEntrySerializer}.
      * We use per thread buffer because number of threads is fewer then number of partitions.
@@ -83,10 +87,12 @@ public class Dump {
     /**
      * @param cctx Kernal context.
      * @param dumpDir Dump directory.
+     * @param keepBinary If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}.
      */
-    public Dump(GridKernalContext cctx, File dumpDir) {
+    public Dump(GridKernalContext cctx, File dumpDir, boolean keepBinary) {
         this.cctx = cctx;
         this.dumpDir = dumpDir;
+        this.keepBinary = keepBinary;
 
         File binaryMeta = new File(dumpDir, DFLT_BINARY_METADATA_PATH);
         File marshaller = new File(dumpDir, DFLT_MARSHALLER_PATH);
@@ -165,7 +171,7 @@ public class Dump {
      * @param excludeDuplicates Skip entries that was dumped twice - by iterator and change listener.
      * @return Dump iterator.
      */
-    DumpedPartitionIterator iterator(String node, int group, int part, boolean excludeDuplicates) {
+    public DumpedPartitionIterator iterator(String node, int group, int part, boolean excludeDuplicates) {
         FileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
         FileIO dumpFile;
@@ -180,11 +186,12 @@ public class Dump {
         DumpEntrySerializer serializer = new DumpEntrySerializer(thLocBufs);
 
         serializer.kernalContext(cctx);
+        serializer.keepBinary(keepBinary);
 
         return new DumpedPartitionIterator() {
             DumpEntry next;
 
-            Set<KeyCacheObject> partKeys = new HashSet<>();
+            Set<Object> partKeys = new HashSet<>();
 
             /** {@inheritDoc} */
             @Override public boolean hasNext() {
