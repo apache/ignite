@@ -30,7 +30,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -68,7 +67,6 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
@@ -679,10 +677,14 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     @Test
     public void testRunningQueriesViewDuration() throws Exception {
         IgniteEx ignite = startGrid(0);
+
         SqlFieldsQuery sql = new SqlFieldsQuery("SELECT * FROM (VALUES (1),(2))").setPageSize(1);
+
         for (int i = 0; i < 5; i++) {
             ignite.context().query().querySqlFields(sql, true).iterator().hasNext();
+
             SystemView<SqlQueryView> view = ignite.context().systemView().view(SQL_QRY_VIEW);
+
             view.forEach(v -> assertTrue(v.duration() >= 0));
         }
     }
