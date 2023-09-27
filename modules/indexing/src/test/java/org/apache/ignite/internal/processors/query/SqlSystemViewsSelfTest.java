@@ -674,40 +674,17 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Test running queries system view.
+     * Test running queries duration in system view.
      */
     @Test
-    public void testRunningQueriesViewWith() throws Exception {
+    public void testRunningQueriesViewDuration() throws Exception {
         IgniteEx ignite = startGrid(0);
-
-        IgniteCache cache = ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setIndexedTypes(Integer.class, String.class));
-
-        String sql = "SELECT SQL, QUERY_ID, SCHEMA_NAME, LOCAL, START_TIME, DURATION, SUBJECT_ID FROM " +
-            systemSchemaName() + ".SQL_QUERIES";
-
-        int numThread = 10;
-        CountDownLatch countDownLatch = new CountDownLatch(numThread);
-
-        IgniteInternalFuture<List<List<?>>> future = GridTestUtils.runAsync(() -> {
-            while (countDownLatch.getCount() > 0) {
-                cache.query(new SqlFieldsQuery(sql).setLocal(true));
-
-                countDownLatch.countDown();
-            }
-        });
-
-        future.get(5000);
-
-        IgniteInternalFuture future1 = GridTestUtils.runAsync(() -> {
-            SystemView<SqlQueryView> srvView = ignite.context().systemView().view(SQL_QRY_VIEW);
-
-            for (SqlQueryView sqlQueryView : srvView) {
-                assertTrue(sqlQueryView.duration() >= 0);
-            }
-        });
-
-        future1.get();
+        SqlFieldsQuery sql = new SqlFieldsQuery("SELECT * FROM (VALUES (1),(2))").setPageSize(1);
+        for (int i = 0; i < 5; i++) {
+            ignite.context().query().querySqlFields(sql, true).iterator().hasNext();
+            SystemView<SqlQueryView> view = ignite.context().systemView().view(SQL_QRY_VIEW);
+            view.forEach(v -> assertTrue(v.duration() >= 0));
+        }
     }
 
     /**
