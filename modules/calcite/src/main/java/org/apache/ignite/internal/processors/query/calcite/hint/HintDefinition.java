@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.hint;
 
 import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintPredicates;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 
 /**
  * Holds supported SQL hints and their settings.

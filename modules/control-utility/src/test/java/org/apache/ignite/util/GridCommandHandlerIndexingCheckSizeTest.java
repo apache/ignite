@@ -436,7 +436,12 @@ public class GridCommandHandlerIndexingCheckSizeTest extends GridCommandHandlerC
         );
 
         String out = testOut.toString();
+
         assertContains(log, out, "issues found (listed above)");
+
+        assertContains(log, out, String.format("Index issues found on node %s [consistentId='%s']:",
+            crd.localNode().id().toString(), crd.localNode().consistentId()));
+
         assertNotContains(log, out, "Size check");
     }
 
@@ -471,8 +476,7 @@ public class GridCommandHandlerIndexingCheckSizeTest extends GridCommandHandlerC
         assertContains(log, out, "Size check");
 
         Map<String, ValidateIndexesCheckSizeResult> valIdxCheckSizeResults =
-            ((ValidateIndexesTaskResult)lastOperationResult).results().get(node.localNode().id())
-                .checkSizeResult();
+            ((ValidateIndexesTaskResult)lastOperationResult).jobResult(node.localNode()).checkSizeResult();
 
         assertEquals(rmvByTbl.size(), valIdxCheckSizeResults.size());
 

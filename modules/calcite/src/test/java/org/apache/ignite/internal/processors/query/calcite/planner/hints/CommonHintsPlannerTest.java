@@ -81,8 +81,6 @@ public class CommonHintsPlannerTest extends AbstractPlannerTest {
 
         assertTrue(lsnr.check());
 
-        lsnrLog.registerListener(lsnr);
-
         lsnrLog.clearListeners();
 
         lsnr = LogListener.matches("Hint 'DISABLE_RULE' can't have any key-value option").build();
@@ -106,8 +104,6 @@ public class CommonHintsPlannerTest extends AbstractPlannerTest {
         physicalPlan("SELECT /*+ EXPAND_DISTINCT_AGG(OPTION) */ MAX(VAL) FROM TBL", schema);
 
         assertTrue(lsnr.check());
-
-        lsnrLog.registerListener(lsnr);
 
         lsnrLog.clearListeners();
 
