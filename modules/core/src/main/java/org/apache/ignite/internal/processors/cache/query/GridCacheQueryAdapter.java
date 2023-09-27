@@ -48,10 +48,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -70,6 +68,7 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SET;
@@ -626,20 +625,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         final GridCacheQueryManager qryMgr = cctx.queries();
 
         MvccQueryTracker mvccTracker = null;
-
-        if (cctx.mvccEnabled() && mvccSnapshot == null) {
-            GridNearTxLocal tx = cctx.tm().userTx();
-
-            if (tx != null)
-                mvccSnapshot = MvccUtils.requestSnapshot(tx);
-            else {
-                mvccTracker = MvccUtils.mvccTracker(cctx, null);
-
-                mvccSnapshot = mvccTracker.snapshot();
-            }
-
-            assert mvccSnapshot != null;
-        }
 
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 

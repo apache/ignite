@@ -71,10 +71,8 @@ public class IndexesRebuildTask {
         boolean recreate = pageStore == null || !pageStore.hasIndexStore(cctx.groupId());
 
         if (recreate) {
-            boolean mvccEnabled = cctx.mvccEnabled();
-
             // If there are no index store, rebuild all indexes.
-            clo = row -> cctx.queries().store(row, null, mvccEnabled);
+            clo = row -> cctx.queries().store(row, null, false);
         }
         else {
             Collection<InlineIndex> toRebuild = cctx.kernalContext().indexProcessor().treeIndexes(cctx.name(), !force);

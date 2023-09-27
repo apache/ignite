@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -813,44 +812,6 @@ public class H2Utils {
         }
 
         return caches0.isEmpty() ? Collections.emptyList() : new ArrayList<>(caches0);
-    }
-
-    /**
-     * Collect MVCC enabled flag.
-     *
-     * @param idx Indexing.
-     * @param cacheIds Cache IDs.
-     * @return {@code True} if indexing is enabled.
-     */
-    public static boolean collectMvccEnabled(IgniteH2Indexing idx, List<Integer> cacheIds) {
-        if (cacheIds.isEmpty())
-            return false;
-
-        GridCacheSharedContext sharedCtx = idx.kernalContext().cache().context();
-
-        GridCacheContext cctx0 = null;
-
-        boolean mvccEnabled = false;
-
-        for (int i = 0; i < cacheIds.size(); i++) {
-            Integer cacheId = cacheIds.get(i);
-
-            GridCacheContext cctx = sharedCtx.cacheContext(cacheId);
-
-            if (cctx == null) {
-                throw new IgniteSQLException("Failed to find cache [cacheId=" + cacheId + ']',
-                    IgniteQueryErrorCode.TABLE_NOT_FOUND);
-            }
-
-            if (i == 0) {
-                mvccEnabled = cctx.mvccEnabled();
-                cctx0 = cctx;
-            }
-            else if (cctx.mvccEnabled() != mvccEnabled)
-                MvccUtils.throwAtomicityModesMismatchException(cctx0.config(), cctx.config());
-        }
-
-        return mvccEnabled;
     }
 
     /**

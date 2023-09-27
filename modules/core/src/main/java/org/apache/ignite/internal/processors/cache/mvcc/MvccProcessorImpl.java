@@ -57,7 +57,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -268,11 +267,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public boolean mvccEnabled() {
-        return mvccEnabled;
-    }
-
-    /** {@inheritDoc} */
     @Override public void preProcessCacheConfiguration(CacheConfiguration ccfg) {
         if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
             if (!mvccSupported)
@@ -325,15 +319,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** {@inheritDoc} */
     @Override public void onCacheStop(final GridCacheContext cctx) {
-        if (cctx.mvccEnabled() && txLog != null) {
-            assert mvccEnabled && mvccSupported;
-
-            boolean hasMvccCaches = ctx.cache().cacheDescriptors().values().stream()
-                .anyMatch(c -> c.cacheConfiguration().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT);
-
-            if (!hasMvccCaches)
-                stopTxLog();
-        }
+        // No-op.
     }
 
 
@@ -1191,12 +1177,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 cleanupQueue = null;
             }
 
-            if (workers == null) {
-                if (log.isDebugEnabled() && mvccEnabled())
-                    log.debug("Attempting to stop inactive vacuum.");
-
+            if (workers == null)
                 return;
-            }
 
             assert queue != null;
 
@@ -1296,25 +1278,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                                             // no-op
                                         }
                                     };
-
-                                for (CacheGroupContext grp : ctx.cache().cacheGroups()) {
-                                    if (grp.mvccEnabled()) {
-                                        grp.topology().readLock();
-
-                                        try {
-                                            for (GridDhtLocalPartition part : grp.topology().localPartitions()) {
-                                                VacuumTask task = new VacuumTask(snapshot, part);
-
-                                                cleanupQueue.offer(task);
-
-                                                res0.add(task);
-                                            }
-                                        }
-                                        finally {
-                                            grp.topology().readUnlock();
-                                        }
-                                    }
-                                }
 
                                 res0.markInitialized();
 

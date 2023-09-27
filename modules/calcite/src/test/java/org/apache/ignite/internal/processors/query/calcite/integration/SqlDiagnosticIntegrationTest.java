@@ -53,10 +53,12 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest;
+import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.Query;
 import org.apache.ignite.internal.processors.query.calcite.QueryRegistry;
+import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -73,6 +75,7 @@ import static org.apache.ignite.internal.processors.authentication.Authenticatio
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.withSecurityContextOnAllNodes;
 import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.cleanPerformanceStatisticsDir;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.startCollectStatistics;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.stopCollectStatisticsAndRead;
@@ -300,6 +303,23 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         assertEquals(0, ((LongMetric)mreg1.findMetric("success")).value());
         assertEquals(0, ((LongMetric)mreg1.findMetric("failed")).value());
         assertEquals(0, ((LongMetric)mreg1.findMetric("canceled")).value());
+    }
+
+    /** */
+    @Test
+    public void testThreadPoolMetrics() {
+        String regName = metricName(PoolProcessor.THREAD_POOLS, QueryTaskExecutorImpl.THREAD_POOL_NAME);
+        MetricRegistry mreg = client.context().metric().registry(regName);
+
+        LongMetric tasksCnt = mreg.findMetric("CompletedTaskCount");
+
+        tasksCnt.reset();
+
+        assertEquals(0, tasksCnt.value());
+
+        sql("SELECT 'test'");
+
+        assertTrue(tasksCnt.value() > 0);
     }
 
     /** */
