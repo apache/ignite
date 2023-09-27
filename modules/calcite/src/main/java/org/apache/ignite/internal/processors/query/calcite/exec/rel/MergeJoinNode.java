@@ -60,13 +60,21 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     protected boolean inLoop;
 
     /**
+     * Flag indicating that at least one of the inputs has exchange underneath. In this case we can't prematurely end
+     * downstream if one of the inputs is drained, we need to wait for both inputs, since async message from remote
+     * node can reopen closed inbox, which can cause memory leaks.
+     */
+    protected final boolean distributed;
+
+    /**
      * @param ctx Execution context.
      * @param comp Join expression.
      */
-    private MergeJoinNode(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp) {
+    private MergeJoinNode(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp, boolean distributed) {
         super(ctx, rowType);
 
         this.comp = comp;
+        this.distributed = distributed;
         handler = ctx.rowHandler();
     }
 
@@ -207,35 +215,35 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
     /** */
     @NotNull public static <Row> MergeJoinNode<Row> create(ExecutionContext<Row> ctx, RelDataType outputRowType, RelDataType leftRowType,
-        RelDataType rightRowType, JoinRelType joinType, Comparator<Row> comp) {
+        RelDataType rightRowType, JoinRelType joinType, Comparator<Row> comp, boolean distributed) {
         switch (joinType) {
             case INNER:
-                return new InnerJoin<>(ctx, outputRowType, comp);
+                return new InnerJoin<>(ctx, outputRowType, comp, distributed);
 
             case LEFT: {
                 RowHandler.RowFactory<Row> rightRowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rightRowType);
 
-                return new LeftJoin<>(ctx, outputRowType, comp, rightRowFactory);
+                return new LeftJoin<>(ctx, outputRowType, comp, distributed, rightRowFactory);
             }
 
             case RIGHT: {
                 RowHandler.RowFactory<Row> leftRowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), leftRowType);
 
-                return new RightJoin<>(ctx, outputRowType, comp, leftRowFactory);
+                return new RightJoin<>(ctx, outputRowType, comp, distributed, leftRowFactory);
             }
 
             case FULL: {
                 RowHandler.RowFactory<Row> leftRowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), leftRowType);
                 RowHandler.RowFactory<Row> rightRowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rightRowType);
 
-                return new FullOuterJoin<>(ctx, outputRowType, comp, leftRowFactory, rightRowFactory);
+                return new FullOuterJoin<>(ctx, outputRowType, comp, distributed, leftRowFactory, rightRowFactory);
             }
 
             case SEMI:
-                return new SemiJoin<>(ctx, outputRowType, comp);
+                return new SemiJoin<>(ctx, outputRowType, comp, distributed);
 
             case ANTI:
-                return new AntiJoin<>(ctx, outputRowType, comp);
+                return new AntiJoin<>(ctx, outputRowType, comp, distributed);
 
             default:
                 throw new IllegalStateException("Join type \"" + joinType + "\" is not supported yet");
@@ -263,9 +271,10 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param rowType Row type.
          * @param comp Join expression comparator.
+         * @param distributed If one of the inputs has exchange underneath.
          */
-        public InnerJoin(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp) {
-            super(ctx, rowType, comp);
+        public InnerJoin(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp, boolean distributed) {
+            super(ctx, rowType, comp, distributed);
         }
 
         /** {@inheritDoc} */
@@ -384,8 +393,10 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
             if (requested > 0 && ((waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty())
                 || (waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty() && rightMaterialization == null))
             ) {
-                requested = 0;
-                downstream().end();
+                if (!distributed || (waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING)) {
+                    requested = 0;
+                    downstream().end();
+                }
             }
         }
     }
@@ -417,10 +428,17 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param rowType Row type.
          * @param comp Join expression comparator.
+         * @param distributed If one of the inputs has exchange underneath.
          * @param rightRowFactory Right row factory.
          */
-        public LeftJoin(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp, RowHandler.RowFactory<Row> rightRowFactory) {
-            super(ctx, rowType, comp);
+        public LeftJoin(
+            ExecutionContext<Row> ctx,
+            RelDataType rowType,
+            Comparator<Row> comp,
+            boolean distributed,
+            RowHandler.RowFactory<Row> rightRowFactory
+        ) {
+            super(ctx, rowType, comp, distributed);
 
             this.rightRowFactory = rightRowFactory;
         }
@@ -562,8 +580,10 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                 leftSource().request(waitingLeft = IN_BUFFER_SIZE);
 
             if (requested > 0 && waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
-                requested = 0;
-                downstream().end();
+                if (!distributed || (waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING)) {
+                    requested = 0;
+                    downstream().end();
+                }
             }
         }
     }
@@ -595,10 +615,17 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param rowType Row type.
          * @param comp Join expression comparator.
+         * @param distributed If one of the inputs has exchange underneath.
          * @param leftRowFactory Left row factory.
          */
-        public RightJoin(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp, RowHandler.RowFactory<Row> leftRowFactory) {
-            super(ctx, rowType, comp);
+        public RightJoin(
+            ExecutionContext<Row> ctx,
+            RelDataType rowType,
+            Comparator<Row> comp,
+            boolean distributed,
+            RowHandler.RowFactory<Row> leftRowFactory
+        ) {
+            super(ctx, rowType, comp, distributed);
 
             this.leftRowFactory = leftRowFactory;
         }
@@ -749,8 +776,10 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                 leftSource().request(waitingLeft = IN_BUFFER_SIZE);
 
             if (requested > 0 && waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty() && rightMaterialization == null) {
-                requested = 0;
-                downstream().end();
+                if (!distributed || (waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING)) {
+                    requested = 0;
+                    downstream().end();
+                }
             }
         }
     }
@@ -788,12 +817,19 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param rowType Row type.
          * @param comp Join expression comparator.
+         * @param distributed If one of the inputs has exchange underneath.
          * @param leftRowFactory Left row factory.
          * @param rightRowFactory Right row factory.
          */
-        public FullOuterJoin(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp,
-            RowHandler.RowFactory<Row> leftRowFactory, RowHandler.RowFactory<Row> rightRowFactory) {
-            super(ctx, rowType, comp);
+        public FullOuterJoin(
+            ExecutionContext<Row> ctx,
+            RelDataType rowType,
+            Comparator<Row> comp,
+            boolean distributed,
+            RowHandler.RowFactory<Row> leftRowFactory,
+            RowHandler.RowFactory<Row> rightRowFactory
+        ) {
+            super(ctx, rowType, comp, distributed);
 
             this.leftRowFactory = leftRowFactory;
             this.rightRowFactory = rightRowFactory;
@@ -995,9 +1031,10 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param rowType Row type.
          * @param comp Join expression comparator.
+         * @param distributed If one of the inputs has exchange underneath.
          */
-        public SemiJoin(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp) {
-            super(ctx, rowType, comp);
+        public SemiJoin(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp, boolean distributed) {
+            super(ctx, rowType, comp, distributed);
         }
 
         /** {@inheritDoc} */
@@ -1053,8 +1090,10 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
             if (requested > 0 && ((waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty()
                 || (waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty())))
             ) {
-                requested = 0;
-                downstream().end();
+                if (!distributed || (waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING)) {
+                    requested = 0;
+                    downstream().end();
+                }
             }
         }
     }
@@ -1071,9 +1110,10 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
          * @param ctx Execution context.
          * @param rowType Row type.
          * @param comp Join expression comparator.
+         * @param distributed If one of the inputs has exchange underneath.
          */
-        public AntiJoin(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp) {
-            super(ctx, rowType, comp);
+        public AntiJoin(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp, boolean distributed) {
+            super(ctx, rowType, comp, distributed);
         }
 
         /** {@inheritDoc} */
@@ -1130,8 +1170,10 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                 leftSource().request(waitingLeft = IN_BUFFER_SIZE);
 
             if (requested > 0 && waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
-                requested = 0;
-                downstream().end();
+                if (!distributed || (waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING)) {
+                    requested = 0;
+                    downstream().end();
+                }
             }
         }
     }

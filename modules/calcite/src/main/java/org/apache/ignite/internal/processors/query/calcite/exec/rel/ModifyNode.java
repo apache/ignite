@@ -216,11 +216,11 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     private IgniteSQLException conflictKeysException(List<Object> conflictKeys) {
         if (op == TableModify.Operation.INSERT) {
             return new IgniteSQLException("Failed to INSERT some keys because they are already in cache. " +
-                "[keys=" + conflictKeys + ']', DUPLICATE_KEY);
+                "[cache=" + desc.cacheContext().name() + ", keys=" + conflictKeys + ']', DUPLICATE_KEY);
         }
         else {
             return new IgniteSQLException("Failed to MERGE some keys due to keys conflict or concurrent updates. " +
-                "[keys=" + conflictKeys + ']', CONCURRENT_UPDATE);
+                "[cache=" + desc.cacheContext().name() + ", keys=" + conflictKeys + ']', CONCURRENT_UPDATE);
         }
     }
 

@@ -229,7 +229,6 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
 
         GridTestUtils.assertThrowsWithCause(() -> assertQuery("SELECT t._key, (SELECT x FROM " +
                 "TABLE(system_range(1, 5))) FROM person t").check(), IllegalArgumentException.class);
-
         GridTestUtils.assertThrowsWithCause(() -> assertQuery("SELECT t._key, (SELECT x FROM " +
                 "TABLE(system_range(t._key, t._key + 1))) FROM person t").check(), IllegalArgumentException.class);
 
