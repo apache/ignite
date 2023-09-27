@@ -96,6 +96,10 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
     @GridToStringExclude
     private int regKeys;
 
+    /** If partition has entries to expire. */
+    @GridToStringExclude
+    private boolean hasExpiringEntries;
+
     /**
      * @param partKey Partition key.
      * @param isPrimary Is primary.
@@ -210,6 +214,16 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         return regKeys;
     }
 
+    /** */
+    public boolean hasExpiringEntries() {
+        return hasExpiringEntries;
+    }
+
+    /** */
+    public void hasExpiringEntries(boolean hasExpiringEntries) {
+        this.hasExpiringEntries = hasExpiringEntries;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeObject(partKey);
@@ -224,6 +238,7 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         out.writeInt(noCfKeys);
         out.writeInt(binKeys);
         out.writeInt(regKeys);
+        out.writeBoolean(hasExpiringEntries);
     }
 
     /** {@inheritDoc} */
@@ -246,6 +261,7 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         noCfKeys = in.readInt();
         binKeys = in.readInt();
         regKeys = in.readInt();
+        hasExpiringEntries = in.readBoolean();
     }
 
     /** {@inheritDoc} */

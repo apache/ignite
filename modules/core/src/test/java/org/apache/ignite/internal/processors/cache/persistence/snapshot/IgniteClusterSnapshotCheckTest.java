@@ -36,7 +36,11 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -598,6 +602,32 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         int createdThreads = Thread.activeCount() - activeThreadsCntBefore;
 
         assertTrue("Threads created: " + createdThreads, createdThreads < iterations);
+    }
+
+    /** */
+    @Test
+    public void testClusterSnapshotCheckWithExpiring() throws Exception {
+        IgniteEx ignite = startGrids(3);
+
+        ignite.cluster().state(ACTIVE);
+
+        IgniteCache<Object, Object> cache = ignite.getOrCreateCache(new CacheConfiguration<>("expCache")
+            .setAffinity(new RendezvousAffinityFunction(false, 32)).setBackups(1));
+
+        Random rnd = new Random();
+
+        for (int i = 0; i < 10_000; i++) {
+            cache.withExpiryPolicy(new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS,
+                rnd.nextInt(10_000)))).put(i, i);
+        }
+
+        long timeout = getTestTimeout();
+
+        snp(ignite).createSnapshot(SNAPSHOT_NAME).get(timeout);
+
+        SnapshotPartitionsVerifyTaskResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get(timeout);
+
+        assertFalse(res.idleVerifyResult().hasConflicts());
     }
 
     /**

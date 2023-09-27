@@ -299,6 +299,9 @@ public class IdleVerifyUtility {
         while (it.hasNextX()) {
             CacheDataRow row = it.nextX();
 
+            if (row.expireTime() > 0)
+                continue;
+
             ctx.update(row.key(), row.value(), row.version());
         }
 
