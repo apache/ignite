@@ -160,6 +160,8 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
             assertEquals(ENTRIES_COUNT, client.getOrCreateCache(tableName + "_CACHE").size(CachePeekMode.PRIMARY));
         });
 
+        sql("ANALYZE PUBLIC.T1(ID), PUBLIC.T2(ID,AK), PUBLIC.DICT(ID) WITH \"NULLS=0,DISTINCT=10000,TOTAL=10000\"");
+
         clearIntercepted();
     }
 
@@ -176,6 +178,16 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testSimple() {
+        execute("select count(*) from T1 where T1.ID = ?",
+            res -> {
+                assertPartitions(partition("T1_CACHE", 123));
+                assertNodes(node("T1_CACHE", 123));
+
+                assertEquals(1, res.size());
+                assertEquals(1L, res.get(0).get(0));
+            },
+            123);
+
         execute("select * from T1 where T1.ID = ?",
             res -> {
                 assertPartitions(partition("T1_CACHE", 123));
@@ -317,17 +329,6 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
     @Test
     public void testSimpleJoin() {
         // Key (not alias).
-//        execute("SELECT * FROM T1 INNER JOIN DICT ON T1.ID = DICT.ID WHERE T1.ID = ?",
-//            (res) -> {
-//                assertPartitions(partition("T1_CACHE", 123));
-//                assertNodes(node("T1_CACHE", 123));
-//                assertEquals(1, res.size());
-//                assertEquals(123, res.get(0).get(0));
-//            },
-//            123
-//        );
-
-        // Key (not alias).
         execute("SELECT * FROM T1 INNER JOIN T2 ON T1.ID = T2.AK WHERE T1.ID = ?",
             (res) -> {
                 assertPartitions(partition("T1_CACHE", 123));
@@ -402,7 +403,7 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
                 assertPartitions(IntStream.of(values).map(i -> partition("T1_CACHE", i)).toArray());
                 assertNodes(IntStream.of(values).mapToObj(i -> node("T1_CACHE", i)).toArray(ClusterNode[]::new));
 
-                assertTrue(res.size() == values.length);
+                assertEquals(values.length, res.size());
 
                 assertEquals(
                     IntStream.of(values).sorted().boxed().collect(Collectors.toList()),

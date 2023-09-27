@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.stream.Collectors;
-import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Primitives;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -57,7 +59,7 @@ public class PartitionExtractor extends IgniteRelShuttle {
     private final IgniteTypeFactory typeFactory;
 
     /** */
-    private PartitionNode partNode;
+    private final Deque<PartitionNode> stack = new ArrayDeque<>();
 
     /** */
     public PartitionExtractor(IgniteTypeFactory typeFactory) {
@@ -78,6 +80,22 @@ public class PartitionExtractor extends IgniteRelShuttle {
         return rel;
     }
 
+    /** {@inheritDoc} */
+    @Override protected IgniteRel processNode(IgniteRel rel) {
+        IgniteRel res = super.processNode(rel);
+
+        List<PartitionNode> operands = new ArrayList<>();
+        for (int i = 0; i < rel.getInputs().size(); ++i)
+            operands.add(stack.pop());
+
+        if (rel instanceof IgniteUnionAll)
+            stack.push(PartitionOperandNode.createOrOperandNode(operands));
+        else
+            stack.push(PartitionOperandNode.createAndOperandNode(operands));
+
+        return res;
+    }
+
     /** */
     public PartitionNode go(Fragment fragment) {
         if (!(fragment.root() instanceof IgniteSender))
@@ -88,31 +106,27 @@ public class PartitionExtractor extends IgniteRelShuttle {
 
         visit(fragment.root());
 
-        return partNode != null ? partNode : PartitionAllNode.INSTANCE;
+        return stack.isEmpty() ? PartitionAllNode.INSTANCE : stack.pop();
     }
 
     /** */
     private void processScan(IgniteRel rel) {
-        if (partNode == PartitionNoneNode.INSTANCE)
-            return;
-
         assert rel instanceof ProjectableFilterableTableScan;
 
         RexNode condition = ((ProjectableFilterableTableScan)rel).condition();
 
-        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
-
-        if (!tbl.descriptor().distribution().function().affinity() || tbl.distribution().getKeys().size() != 1) {
-            partNode = PartitionAllNode.INSTANCE;
+        if (!rel.distribution().function().affinity() || rel.distribution().getKeys().size() != 1) {
+            stack.push(PartitionAllNode.INSTANCE);
 
             return;
         }
 
-        RelDataType rowType = tbl.getRowType(typeFactory);
-
         ImmutableIntList keys = ImmutableIntList.copyOf(rel.distribution().getKeys());
-        List<Class<?>> types = new ArrayList<>(rowType.getFieldCount());
+        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
+        RelDataType rowType = tbl.getRowType(typeFactory);
+        int cacheId = ((CacheTableDescriptor)tbl.descriptor()).cacheInfo().cacheId();
 
+        List<Class<?>> types = new ArrayList<>(rowType.getFieldCount());
         for (RelDataTypeField field : rowType.getFieldList()) {
             if (QueryUtils.KEY_FIELD_NAME.equals(field.getName()))
                 keys = keys.append(field.getIndex());
@@ -120,16 +134,9 @@ public class PartitionExtractor extends IgniteRelShuttle {
             types.add(Primitives.wrap((Class<?>)typeFactory.getJavaClass(field.getType())));
         }
 
-        int cacheId = ((CacheTableDescriptor)tbl.descriptor()).cacheInfo().cacheId();
+        PartitionNode partNode = processCondition(condition, types, keys, cacheId);
 
-        PartitionNode partNode0 = processCondition(condition, types, keys, cacheId);
-
-        if (partNode == null) {
-            partNode = partNode0;
-        }
-        else {
-            partNode = PartitionOperandNode.createAndOperandNode(ImmutableList.of(partNode0, partNode));
-        }
+        stack.push(partNode);
     }
 
     /** */
@@ -141,7 +148,7 @@ public class PartitionExtractor extends IgniteRelShuttle {
         List<RexNode> operands = ((RexCall)condition).getOperands();
 
         switch (opKind) {
-            case IS_NULL:
+            case IS_NULL: {
                 RexNode left = operands.get(0);
 
                 if (!left.isA(SqlKind.LOCAL_REF))
@@ -153,12 +160,12 @@ public class PartitionExtractor extends IgniteRelShuttle {
                     return PartitionAllNode.INSTANCE;
                 else
                     return PartitionNoneNode.INSTANCE;
-
-            case EQUALS:
+            }
+            case EQUALS: {
                 if (operands.size() != 2)
                     return PartitionAllNode.INSTANCE;
 
-                left = operands.get(0);
+                RexNode left = operands.get(0);
                 RexNode right = operands.get(1);
 
                 if (!left.isA(SqlKind.LOCAL_REF))
@@ -167,7 +174,7 @@ public class PartitionExtractor extends IgniteRelShuttle {
                 if (!right.isA(SqlKind.LITERAL) && !right.isA(SqlKind.DYNAMIC_PARAM))
                     return PartitionAllNode.INSTANCE;
 
-                idx = ((RexLocalRef)left).getIndex();
+                int idx = ((RexLocalRef)left).getIndex();
 
                 if (!keys.contains(idx))
                     return PartitionAllNode.INSTANCE;
@@ -178,6 +185,7 @@ public class PartitionExtractor extends IgniteRelShuttle {
                     return new PartitionLiteralNode(cacheId, (RexLiteral)right, fldType);
                 else
                     return new PartitionParameterNode(cacheId, (RexDynamicParam)right, fldType);
+            }
             case SEARCH:
                 RexNode condition0 = RexUtil.expandSearch(Commons.emptyCluster().getRexBuilder(), null, condition);
 
