@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
-import org.apache.ignite.internal.processors.cache.mvcc.DeadlockDetectionManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
@@ -210,7 +209,6 @@ public class GridCacheSharedContext<K, V> {
      * @param jtaMgr JTA manager.
      * @param storeSesLsnrs Store session listeners.
      * @param mvccCachingMgr Mvcc caching manager.
-     * @param deadlockDetectionMgr Deadlock detection manager.
      */
     public GridCacheSharedContext(
         GridKernalContext kernalCtx,
@@ -231,7 +229,6 @@ public class GridCacheSharedContext<K, V> {
         CacheJtaManagerAdapter jtaMgr,
         Collection<CacheStoreSessionListener> storeSesLsnrs,
         MvccCachingManager mvccCachingMgr,
-        DeadlockDetectionManager deadlockDetectionMgr,
         CacheDiagnosticManager diagnosticMgr,
         CacheObjectTransformerManager transMgr
     ) {
