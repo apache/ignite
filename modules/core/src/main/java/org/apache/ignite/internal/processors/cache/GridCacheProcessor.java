@@ -2262,7 +2262,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ", mode=" + cfg.getCacheMode() +
                 ", atomicity=" + cfg.getAtomicityMode() +
                 ", backups=" + cfg.getBackups() +
-                ", mvcc=" + cacheCtx.mvccEnabled() +
                 (expPlcInfo != null ? ", " + expPlcInfo : "") + ']');
         }
 
@@ -2345,7 +2344,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ", mode=" + cfg.getCacheMode() +
                 ", atomicity=" + cfg.getAtomicityMode() +
                 ", backups=" + cfg.getBackups() +
-                ", mvcc=" + cacheCtx.mvccEnabled() +
                 (expPlcInfo != null ? ", " + expPlcInfo : "") + ']');
         }
 

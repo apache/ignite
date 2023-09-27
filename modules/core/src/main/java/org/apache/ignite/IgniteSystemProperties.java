@@ -1437,6 +1437,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_BPLUS_TREE_LOCK_RETRIES = "IGNITE_BPLUS_TREE_LOCK_RETRIES";
 
     /**
+     * Disables secondary indexes B+Tree metrics.
+     */
+    @SystemProperty(value = "Disables secondary indexes B+Tree metrics", defaults = "false")
+    public static final String IGNITE_BPLUS_TREE_DISABLE_METRICS = "IGNITE_BPLUS_TREE_DISABLE_METRICS";
+
+    /**
      * Amount of memory reserved in the heap at node start, which can be dropped to increase the chances of success when
      * handling OutOfMemoryError.
      *

@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.Ignite
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQueryP2PDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.index.ArrayIndexTest;
+import org.apache.ignite.internal.processors.cache.index.BPlusTreeMetricsTest;
 import org.apache.ignite.internal.processors.cache.index.BasicIndexMultinodeTest;
 import org.apache.ignite.internal.processors.cache.index.BasicIndexTest;
 import org.apache.ignite.internal.processors.cache.index.ComplexPrimaryKeyUnwrapSelfTest;
@@ -203,6 +204,7 @@ import org.junit.runners.Suite;
     ArrayIndexTest.class,
     BasicIndexMultinodeTest.class,
     IndexMetricsTest.class,
+    BPlusTreeMetricsTest.class,
 
     // Misc tests.
     QueryEntityValidationSelfTest.class,

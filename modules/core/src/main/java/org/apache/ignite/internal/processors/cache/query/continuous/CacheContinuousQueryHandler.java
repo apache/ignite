@@ -685,18 +685,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 assert !skipEvt || evt == null;
                 assert skipEvt || part == -1 && cntr == -1; // part == -1 && cntr == -1 means skip counter.
 
-                if (!cctx.mvccEnabled())
-                    return true;
-
-                assert locInitUpdCntrs != null;
-
-                cntr = skipEvt ? cntr : evt.getPartitionUpdateCounter();
-                part = skipEvt ? part : evt.partitionId();
-
-                T2<Long, Long> initCntr = locInitUpdCntrs.get(part);
-
-                // Do not notify listener if entry was updated before the query is started.
-                return initCntr == null || cntr >= initCntr.get2();
+                return true;
             }
         };
 

@@ -490,7 +490,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                     Set<GridDhtLocalPartition> reservedParts = new HashSet<>();
 
                     try {
-                        assert !txState.mvccEnabled() || mvccSnapshot != null : "Mvcc is not initialized: " + this;
+                        assert mvccSnapshot == null;
 
                         Collection<IgniteTxEntry> entries = near() ? allEntries() : writeEntries();
 
