@@ -17,24 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.calcite.hint;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.rel.hint.HintOptionChecker;
 import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintPredicates;
-import org.apache.calcite.rel.rules.CoreRules;
-import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
+import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 
 /**
  * Holds supported SQL hints and their settings.
  */
 public enum HintDefinition {
-    /** Sets the query engine like H2 or Calcite. */
+    /** Sets the query engine like H2 or Calcite. Is preprocessed by regexp. */
     QUERY_ENGINE,
 
-    /** Disables certain converter rules. */
+    /** Disables planner rules. */
     DISABLE_RULE,
 
     /** Forces expanding of distinct aggregates to join. */
@@ -45,7 +39,7 @@ public enum HintDefinition {
         }
 
         /** {@inheritDoc} */
-        @Override public HintOptionChecker optionsChecker() {
+        @Override public HintOptionsChecker optionsChecker() {
             return HintsConfig.OPTS_CHECK_EMPTY;
         }
     },
@@ -58,14 +52,21 @@ public enum HintDefinition {
         }
 
         /** {@inheritDoc} */
-        @Override public HintOptionChecker optionsChecker() {
+        @Override public HintOptionsChecker optionsChecker() {
             return HintsConfig.OPTS_CHECK_EMPTY;
+        }
+    },
+
+    /** Forces index usage. */
+    FORCE_INDEX {
+        /** {@inheritDoc} */
+        @Override public HintPredicate predicate() {
+            return NO_INDEX.predicate();
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<RelOptRule> disabledRules() {
-            // CoreRules#JOIN_COMMUTE also disables the same CoreRules.JOIN_COMMUTE_OUTER.
-            return Arrays.asList(CoreRules.JOIN_COMMUTE, JoinPushThroughJoinRule.LEFT, JoinPushThroughJoinRule.RIGHT);
+        @Override public HintOptionsChecker optionsChecker() {
+            return NO_INDEX.optionsChecker();
         }
     };
 
@@ -77,16 +78,9 @@ public enum HintDefinition {
     }
 
     /**
-     * @return Hint options validator.
+     * @return {@link HintOptionsChecker}.
      */
-    HintOptionChecker optionsChecker() {
+    HintOptionsChecker optionsChecker() {
         return HintsConfig.OPTS_CHECK_PLAIN;
-    }
-
-    /**
-     * @return Rules to excluded by current hint.
-     */
-    public Collection<RelOptRule> disabledRules() {
-        return Collections.emptyList();
     }
 }

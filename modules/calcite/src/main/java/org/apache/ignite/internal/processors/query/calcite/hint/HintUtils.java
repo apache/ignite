@@ -20,18 +20,24 @@ package org.apache.ignite.internal.processors.query.calcite.hint;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.calcite.rel.logical.LogicalAggregate;
+import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.EXPAND_DISTINCT_AGG;
 
 /**
  * Base class for working with Calcite's SQL hints.
@@ -44,36 +50,21 @@ public final class HintUtils {
 
     /**
      * @return Combined list options of all {@code hints} filtered with {@code hintDef}.
-     * @see #filterHints(Collection, Collection)
+     * @see #filterHints(RelNode, Collection, List)
      */
-    public static Collection<String> options(Collection<RelHint> hints, HintDefinition hintDef) {
-        return F.flatCollections(filterHints(hints, Collections.singletonList(hintDef)).stream()
+    public static Collection<String> options(RelNode rel, Collection<RelHint> hints, HintDefinition hintDef) {
+        return F.flatCollections(filterHints(rel, hints, Collections.singletonList(hintDef)).stream()
             .map(h -> h.listOptions).collect(Collectors.toList()));
     }
 
     /**
-     * @return Hints filtered with {@code hintDefs} and suitable for {@code rel} including the additional query hints.
+     * @return Hints filtered with {@code hintDefs} and suitable for {@code rel}.
      * @see HintStrategyTable#apply(List, RelNode)
-     * @see PlanningContext#hints()
+     * @see #filterHints(RelNode, Collection, List)
      */
     public static List<RelHint> hints(RelNode rel, HintDefinition... hintDefs) {
-        RelOptCluster c = rel.getCluster();
-
-        Collection<RelHint> hints = Commons.planContext(rel).hints().isEmpty()
-            ? allRelHints(rel)
-            : Stream.concat(Commons.planContext(rel).hints().stream(), allRelHints(rel).stream())
-                .collect(Collectors.toList());
-
-        return c.getHintStrategies().apply(filterHints(hints, Arrays.asList(hintDefs)), rel);
-    }
-
-    /**
-     * @return {@code True} if the query has a suitable hint for {@code rel} defined by {@code hintDefs}.
-     * {@code False} otherwise.
-     * @see HintStrategyTable#apply(List, RelNode)
-     */
-    public static boolean hasHint(RelNode rel, HintDefinition... hintDefs) {
-        return !hints(rel, hintDefs).isEmpty();
+        return rel.getCluster().getHintStrategies()
+            .apply(filterHints(rel, allRelHints(rel), Arrays.asList(hintDefs)), rel);
     }
 
     /**
@@ -85,14 +76,66 @@ public final class HintUtils {
     }
 
     /**
-     * @return Distinct hints within {@code hints} filtered with {@code hintDefs} and removed inherit pathes.
+     * @return Distinct hints within {@code hints} filtered with {@code hintDefs}, {@link HintOptionsChecker} and
+     * removed inherit pathes.
+     * @see HintOptionsChecker
      * @see RelHint#inheritPath
      */
-    private static List<RelHint> filterHints(Collection<RelHint> hints, Collection<HintDefinition> hintDefs) {
-        Set<String> hintNames = hintDefs.stream().map(Enum::name).collect(Collectors.toSet());
+    private static List<RelHint> filterHints(RelNode rel, Collection<RelHint> hints, List<HintDefinition> hintDefs) {
+        Set<String> requiredHintDefs = hintDefs.stream().map(Enum::name).collect(Collectors.toSet());
 
-        return hints.stream().filter(h -> hintNames.contains(h.hintName))
-            .map(h -> RelHint.builder(h.hintName).hintOptions(h.listOptions).build()).distinct()
-            .collect(Collectors.toList());
+        List<RelHint> res = hints.stream().filter(h -> requiredHintDefs.contains(h.hintName))
+            .map(h -> {
+                RelHint.Builder rb = RelHint.builder(h.hintName);
+
+                if (!h.listOptions.isEmpty())
+                    rb.hintOptions(h.listOptions);
+                else if (!h.kvOptions.isEmpty())
+                    rb.hintOptions(h.kvOptions);
+
+                return rb.build();
+            }).distinct().collect(Collectors.toList());
+
+        // Validate hint options.
+        Iterator<RelHint> it = res.iterator();
+
+        while (it.hasNext()) {
+            RelHint hint = it.next();
+
+            String optsErr = HintDefinition.valueOf(hint.hintName).optionsChecker().apply(hint);
+
+            if (!F.isEmpty(optsErr)) {
+                skippedHint(rel, hint, optsErr);
+
+                it.remove();
+            }
+        }
+
+        return res;
+    }
+
+    /**
+     * @return {@code True} if {@code rel} is hinted with {@link HintDefinition#EXPAND_DISTINCT_AGG}.
+     * {@code False} otherwise.
+     */
+    public static boolean isExpandDistinctAggregate(LogicalAggregate rel) {
+        return !hints(rel, EXPAND_DISTINCT_AGG).isEmpty()
+            && rel.getAggCallList().stream().anyMatch(AggregateCall::isDistinct);
+    }
+
+    /**
+     * Logs skipped hint.
+     */
+    public static void skippedHint(RelNode relNode, RelHint hint, String reason) {
+        IgniteLogger log = Commons.context(relNode).unwrap(BaseQueryContext.class).logger();
+
+        if (log.isDebugEnabled()) {
+            String hintOptions = hint.listOptions.isEmpty() ? "" : "with options "
+                + hint.listOptions.stream().map(o -> '\'' + o + '\'').collect(Collectors.joining(","))
+                + ' ';
+
+            log.debug(String.format("Skipped hint '%s' %sfor relation operator '%s'. %s", hint.hintName,
+                hintOptions, RelOptUtil.toString(relNode, SqlExplainLevel.EXPPLAN_ATTRIBUTES).trim(), reason));
+        }
     }
 }

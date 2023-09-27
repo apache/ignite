@@ -17,37 +17,22 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.io.StringWriter;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.prepare.CalciteCatalogReader;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.util.CancelFlag;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Planning context.
@@ -61,9 +46,6 @@ public final class PlanningContext implements Context {
 
     /** */
     private final Object[] parameters;
-
-    /** */
-    private final Collection<RelHint> hints;
 
     /** */
     private final CancelFlag cancelFlag = new CancelFlag(new AtomicBoolean());
@@ -80,12 +62,6 @@ public final class PlanningContext implements Context {
     /** */
     private final long plannerTimeout;
 
-    /** */
-    private final Map<IgniteBiTuple<RelHint, RelNode>, SkippedHint> skippedHints = new ConcurrentHashMap<>();
-
-    /** */
-    private final @Nullable IgniteLogger log;
-
     /**
      * Private constructor, used by a builder.
      */
@@ -93,9 +69,7 @@ public final class PlanningContext implements Context {
         Context parentCtx,
         String qry,
         Object[] parameters,
-        long plannerTimeout,
-        @Nullable Collection<RelHint> hints,
-        @Nullable IgniteLogger log
+        long plannerTimeout
     ) {
         this.qry = qry;
         this.parameters = parameters;
@@ -103,10 +77,6 @@ public final class PlanningContext implements Context {
         this.parentCtx = parentCtx;
         startTs = U.currentTimeMillis();
         this.plannerTimeout = plannerTimeout;
-
-        this.hints = hints == null ? Collections.emptyList() : hints;
-
-        this.log = log;
     }
 
     /**
@@ -137,13 +107,6 @@ public final class PlanningContext implements Context {
      */
     public String schemaName() {
         return schema().getName();
-    }
-
-    /**
-     * @return Additional hints of the query.
-     */
-    public Collection<RelHint> hints() {
-        return hints;
     }
 
     /**
@@ -248,75 +211,6 @@ public final class PlanningContext implements Context {
     }
 
     /**
-     * Stores skipped hint and the reason. Also, logs the issue.
-     */
-    public void skippedHint(RelNode relNode, RelHint hint, String reason) {
-        skippedHints.compute(new IgniteBiTuple<>(hint, relNode), (k, sh) -> {
-            if (sh == null) {
-                sh = new SkippedHint(hint.hintName, hint.listOptions, reason);
-
-                if (log != null) {
-                    String hintOptions = hint.listOptions.isEmpty() ? "" : "with options "
-                        + hint.listOptions.stream().map(o -> '\'' + o + '\'').collect(Collectors.joining(","))
-                        + ' ';
-
-                    log.info(String.format("Skipped hint '%s' %sfor relation operator '%s'. %s", hint.hintName,
-                        hintOptions, RelOptUtil.toString(relNode, SqlExplainLevel.EXPPLAN_ATTRIBUTES).trim(), reason));
-                }
-            }
-
-            return sh;
-        });
-    }
-
-    /** */
-    public void dumpHints(StringWriter w) {
-        if (F.isEmpty(skippedHints))
-            return;
-
-        w.append(U.nl()).append(U.nl())
-            .append("Skipped hints:");
-
-        skippedHints.forEach((relAndHint, sh) -> {
-            w.append(U.nl())
-                .append("\t- '").append(sh.hintName).append('\'');
-
-            if (!sh.options.isEmpty()) {
-                w.append(" with options ").append(sh.options.stream().map(o -> '\'' + o + '\'')
-                    .collect(Collectors.joining(",")));
-            }
-
-            w.append(" for relation operator '")
-                .append(RelOptUtil.toString(relAndHint.getValue(), SqlExplainLevel.EXPPLAN_ATTRIBUTES))
-                .append("'. ").append(sh.reason);
-
-            if (!sh.reason.endsWith("."))
-                w.append('.');
-        });
-    }
-
-    /**
-     * Holds skipped hint description.
-     */
-    private static class SkippedHint {
-        /** */
-        private final String hintName;
-
-        /** Hint options. */
-        private final List<String> options;
-
-        /** */
-        private final String reason;
-
-        /** */
-        private SkippedHint(String hintName, List<String> options, String reason) {
-            this.hintName = hintName;
-            this.options = options;
-            this.reason = reason;
-        }
-    }
-
-    /**
      * Planner context builder.
      */
     @SuppressWarnings("PublicInnerClass")
@@ -333,12 +227,6 @@ public final class PlanningContext implements Context {
         /** */
         private long plannerTimeout;
 
-        /** */
-        private IgniteLogger log;
-
-        /** */
-        private Collection<RelHint> hints = Collections.emptyList();
-
         /**
          * @param parentCtx Parent context.
          * @return Builder for chaining.
@@ -354,15 +242,6 @@ public final class PlanningContext implements Context {
          */
         public Builder query(@NotNull String qry) {
             this.qry = qry;
-            return this;
-        }
-
-        /**
-         * @param hints Additional query hints.
-         * @return Builder for chaining.
-         */
-        public Builder hints(Collection<RelHint> hints) {
-            this.hints = hints;
             return this;
         }
 
@@ -387,22 +266,12 @@ public final class PlanningContext implements Context {
         }
 
         /**
-         * @param log Logger.
-         *
-         * @return Builder for chaining.
-         */
-        public Builder log(IgniteLogger log) {
-            this.log = log;
-            return this;
-        }
-
-        /**
          * Builds planner context.
          *
          * @return Planner context.
          */
         public PlanningContext build() {
-            return new PlanningContext(parentCtx, qry, parameters, plannerTimeout, hints, log);
+            return new PlanningContext(parentCtx, qry, parameters, plannerTimeout);
         }
     }
 }

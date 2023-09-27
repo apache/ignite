@@ -407,8 +407,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
         ((VolcanoPlanner)planner).dump(new PrintWriter(w));
 
-        ctx.dumpHints(w);
-
         return w.toString();
     }
 

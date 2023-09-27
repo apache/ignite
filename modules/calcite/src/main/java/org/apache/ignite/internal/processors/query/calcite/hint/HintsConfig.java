@@ -18,12 +18,11 @@
 package org.apache.ignite.internal.processors.query.calcite.hint;
 
 import java.util.Arrays;
-import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.rel.hint.HintOptionChecker;
 import org.apache.calcite.rel.hint.HintStrategy;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.util.Litmus;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides configuration of the supported SQL hints.
@@ -34,25 +33,41 @@ public final class HintsConfig {
         // No-op.
     }
 
+    /** Allows no key-value option. */
+    static final HintOptionsChecker OPTS_CHECK_NO_KV = new HintOptionsChecker() {
+        /** {@inheritDoc} */
+        @Override public @Nullable String apply(RelHint hint) {
+            return hint.kvOptions.isEmpty()
+                ? null
+                : String.format("Hint '%s' can't have any key-value option (not supported).", hint.hintName);
+        }
+    };
+
     /** Allows no option. */
-    static final HintOptionChecker OPTS_CHECK_EMPTY = new HintOptionChecker() {
-        @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
-            return errorHandler.check(
-                hint.kvOptions.isEmpty() && hint.listOptions.isEmpty(),
-                "Hint '{}' can't have any option.",
-                hint.hintName
-            );
+    static final HintOptionsChecker OPTS_CHECK_EMPTY = new HintOptionsChecker() {
+        @Override public @Nullable String apply(RelHint hint) {
+            String noKv = OPTS_CHECK_NO_KV.apply(hint);
+
+            if (noKv != null)
+                return noKv;
+
+            return hint.kvOptions.isEmpty() && hint.listOptions.isEmpty()
+                ? null
+                : String.format("Hint '%s' can't have any option.", hint.hintName);
         }
     };
 
     /** Allows only plain options. */
-    static final HintOptionChecker OPTS_CHECK_PLAIN = new HintOptionChecker() {
-        @Override public boolean checkOptions(RelHint hint, Litmus errorHandler) {
-            return errorHandler.check(
-                hint.kvOptions.isEmpty() && !hint.listOptions.isEmpty(),
-                "Hint '{}' must have at least one plain option and no any key-value option.",
-                hint.hintName
-            );
+    static final HintOptionsChecker OPTS_CHECK_PLAIN = new HintOptionsChecker() {
+        @Override public @Nullable String apply(RelHint hint) {
+            String noKv = OPTS_CHECK_NO_KV.apply(hint);
+
+            if (noKv != null)
+                return noKv;
+
+            return !hint.listOptions.isEmpty()
+                ? null
+                : String.format("Hint '%s' must have at least one option.", hint.hintName);
         }
     };
 
@@ -62,13 +77,8 @@ public final class HintsConfig {
     public static HintStrategyTable buildHintTable() {
         HintStrategyTable.Builder b = HintStrategyTable.builder().errorHandler(Litmus.IGNORE);
 
-        RelOptRule[] disabledRulesTpl = new RelOptRule[0];
-
         Arrays.stream(HintDefinition.values()).forEach(hintDef ->
-            b.hintStrategy(hintDef.name(), HintStrategy.builder(hintDef.predicate())
-                .optionChecker(hintDef.optionsChecker())
-                .excludedRules(hintDef.disabledRules().toArray(disabledRulesTpl))
-                .build()));
+            b.hintStrategy(hintDef.name(), HintStrategy.builder(hintDef.predicate()).build()));
 
         return b.build();
     }

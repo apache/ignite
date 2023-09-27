@@ -23,6 +23,9 @@ import org.apache.ignite.internal.processors.query.calcite.planner.TestTable;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.apache.logging.log4j.Level;
 import org.junit.Test;
 
 /**
@@ -45,12 +48,75 @@ public class CommonHintsPlannerTest extends AbstractPlannerTest {
         schema = createSchema(tbl);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        ((GridTestLog4jLogger)log).setLevel(Level.INFO);
+    }
+
     /**
-     * Tests hint 'DISABLE_RULE' works for whole query despite it is not set for the all the root nodes.
+     * Tests hint 'DISABLE_RULE' works for whole query despite it is not set for the root node.
      */
     @Test
     public void testDisableRuleInHeader() throws Exception {
-        assertPlan("SELECT /*+ DISABLE_RULE('ExposeIndexRule') */ VAL FROM TBL where val=1 UNION ALL " +
-            "SELECT VAL FROM TBL where ID=1", schema, nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)).negate());
+        assertPlan("SELECT /*+ DISABLE_RULE('ExposeIndexRule') */ VAL FROM TBL UNION ALL " +
+            "SELECT VAL FROM TBL", schema, nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)).negate());
+
+        assertPlan("SELECT VAL FROM TBL where val=1 UNION ALL " +
+                "SELECT /*+ DISABLE_RULE('ExposeIndexRule') */ VAL FROM TBL", schema,
+            nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)).negate());
+    }
+
+    /** */
+    @Test
+    public void testWrongParamsDisableRule() throws Exception {
+        LogListener lsnr = LogListener.matches("Hint 'DISABLE_RULE' must have at least one option").build();
+
+        lsnrLog.registerListener(lsnr);
+
+        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
+
+        physicalPlan("SELECT /*+ DISABLE_RULE */ VAL FROM TBL", schema);
+
+        assertTrue(lsnr.check());
+
+        lsnrLog.registerListener(lsnr);
+
+        lsnrLog.clearListeners();
+
+        lsnr = LogListener.matches("Hint 'DISABLE_RULE' can't have any key-value option").build();
+
+        lsnrLog.registerListener(lsnr);
+
+        physicalPlan("SELECT /*+ DISABLE_RULE(a='b') */ VAL FROM TBL", schema);
+
+        assertTrue(lsnr.check());
+    }
+
+    /** */
+    @Test
+    public void testWrongParamsExpandDistinct() throws Exception {
+        LogListener lsnr = LogListener.matches("Hint 'EXPAND_DISTINCT_AGG' can't have any option").build();
+
+        lsnrLog.registerListener(lsnr);
+
+        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
+
+        physicalPlan("SELECT /*+ EXPAND_DISTINCT_AGG(OPTION) */ MAX(VAL) FROM TBL", schema);
+
+        assertTrue(lsnr.check());
+
+        lsnrLog.registerListener(lsnr);
+
+        lsnrLog.clearListeners();
+
+        lsnr = LogListener.matches("Hint 'EXPAND_DISTINCT_AGG' can't have any key-value option").build();
+
+        lsnrLog.registerListener(lsnr);
+
+        physicalPlan("SELECT /*+ EXPAND_DISTINCT_AGG(a='b') */ MAX(VAL) FROM TBL", schema);
+
+        assertTrue(lsnr.check());
     }
 }

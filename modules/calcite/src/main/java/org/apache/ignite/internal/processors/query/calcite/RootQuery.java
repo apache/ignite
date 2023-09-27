@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
-import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExecutionPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
@@ -313,12 +312,12 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
             if (pctx == null) {
                 state = QueryState.PLANNING;
 
-                pctx = addQueryParams(PlanningContext.builder())
+                pctx = PlanningContext.builder()
                     .parentContext(ctx)
                     .query(sql)
                     .parameters(params)
                     .plannerTimeout(plannerTimeout)
-                    .log(log).build();
+                    .build();
 
                 try {
                     cancel.add(() -> pctx.unwrap(CancelFlag.class).requestCancel());
@@ -330,16 +329,6 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
 
             return pctx;
         }
-    }
-
-    /** */
-    private PlanningContext.Builder addQueryParams(PlanningContext.Builder builder) {
-        SqlFieldsQuery sqlFieldsQuery = ctx.unwrap(SqlFieldsQuery.class);
-
-        if (sqlFieldsQuery != null && sqlFieldsQuery.isEnforceJoinOrder())
-            builder.hints(Collections.singletonList(RelHint.builder(HintDefinition.ORDERED_JOINS.name()).build()));
-
-        return builder;
     }
 
     /** */
