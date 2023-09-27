@@ -25,12 +25,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalAggregate;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
@@ -134,8 +137,39 @@ public final class HintUtils {
                 + hint.listOptions.stream().map(o -> '\'' + o + '\'').collect(Collectors.joining(","))
                 + ' ';
 
+            if (!relNode.getInputs().isEmpty())
+                relNode = new NoInputsRelNodeWrap(relNode);
+
             log.debug(String.format("Skipped hint '%s' %sfor relation operator '%s'. %s", hint.hintName,
                 hintOptions, RelOptUtil.toString(relNode, SqlExplainLevel.EXPPLAN_ATTRIBUTES).trim(), reason));
+        }
+    }
+
+    /** */
+    private static final class NoInputsRelNodeWrap extends AbstractRelNode {
+        /** Original rel. */
+        private final RelNode rel;
+
+        /** Ctor. */
+        private NoInputsRelNodeWrap(RelNode relNode) {
+            super(relNode.getCluster(), relNode.getTraitSet());
+
+            this.rel = relNode;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RelNode> getInputs() {
+            return Collections.emptyList();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected RelDataType deriveRowType() {
+            return rel.getRowType();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void explain(RelWriter pw) {
+            rel.explain(pw);
         }
     }
 }
