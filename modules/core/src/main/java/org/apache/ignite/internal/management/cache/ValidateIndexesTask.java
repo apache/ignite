@@ -20,10 +20,8 @@ package org.apache.ignite.internal.management.cache;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
@@ -52,17 +50,16 @@ public class ValidateIndexesTask extends VisorMultiNodeTask<CacheValidateIndexes
 
     /** {@inheritDoc} */
     @Nullable @Override protected ValidateIndexesTaskResult reduce0(List<ComputeJobResult> list) throws IgniteException {
-        Map<UUID, Exception> exceptions = new HashMap<>();
-        Map<UUID, ValidateIndexesJobResult> jobResults = new HashMap<>();
+        ValidateIndexesTaskResult taskResult = new ValidateIndexesTaskResult();
 
         for (ComputeJobResult res : list) {
             if (res.getException() != null)
-                exceptions.put(res.getNode().id(), res.getException());
+                taskResult.addException(res.getNode(), res.getException());
             else
-                jobResults.put(res.getNode().id(), res.getData());
+                taskResult.addResult(res.getNode(), res.getData());
         }
 
-        return new ValidateIndexesTaskResult(jobResults, exceptions);
+        return taskResult;
     }
 
     /** {@inheritDoc} */
