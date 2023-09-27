@@ -220,18 +220,18 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
             String cacheNamesOutputStr = testOut.toString();
 
-            validateOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED,
-                grid(1).localNode().id().toString(), 1);
+            validateMultiNodeOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED,
+                grid(1).localNode().id().toString());
 
-            validateOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND,
-                grid(LAST_NODE_NUM).localNode().id().toString(), 2);
-            validateOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND,
-                grid(0).localNode().id().toString(), 2);
+            validateMultiNodeOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND,
+                grid(LAST_NODE_NUM).localNode().id().toString());
+            validateMultiNodeOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND,
+                grid(0).localNode().id().toString());
 
-            validateOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED,
-                grid(0).localNode().id().toString(), 1);
-            validateOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED,
-                grid(LAST_NODE_NUM).localNode().id().toString(), 1);
+            validateMultiNodeOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED,
+                grid(0).localNode().id().toString());
+            validateMultiNodeOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED,
+                grid(LAST_NODE_NUM).localNode().id().toString());
 
             waitForIndexesRebuild(grid(1));
         }
@@ -266,10 +266,10 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
         assertFalse(cacheNamesOutputStr.contains(CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED));
         assertFalse(cacheNamesOutputStr.contains(CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED_SINGLE));
 
-        validateOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED,
-            grid(LAST_NODE_NUM).localNode().id().toString(), 1);
-        validateOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED,
-            grid(0).localNode().id().toString(), 1);
+        validateMultiNodeOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED,
+            grid(LAST_NODE_NUM).localNode().id().toString());
+        validateMultiNodeOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED,
+            grid(0).localNode().id().toString());
     }
 
     /**
@@ -400,21 +400,21 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
             String outputStr = testOut.toString();
 
-            validateOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND, CACHE_NAME_NON_EXISTING, 1);
-            validateOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND,
-                grid(LAST_NODE_NUM).localNode().id().toString(), 1);
-            validateOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND,
-                grid(0).localNode().id().toString(), 1);
+            validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND, CACHE_NAME_NON_EXISTING);
+            validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND,
+                grid(LAST_NODE_NUM).localNode().id().toString());
+            validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND,
+                grid(0).localNode().id().toString());
 
-            validateOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILDING, CACHE_NAME_2_1, 1);
-            validateOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILDING,
-                grid(LAST_NODE_NUM).localNode().id().toString(), 1);
+            validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILDING, CACHE_NAME_2_1);
+            validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILDING,
+                grid(LAST_NODE_NUM).localNode().id().toString());
 
-            validateOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED, CACHE_NAME_1_1, 1);
-            validateOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED,
-                grid(LAST_NODE_NUM).localNode().id().toString(), 1);
-            validateOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED,
-                grid(0).localNode().id().toString(), 1);
+            validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED, CACHE_NAME_1_1);
+            validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED,
+                grid(LAST_NODE_NUM).localNode().id().toString());
+            validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED,
+                grid(0).localNode().id().toString());
         }
         finally {
             blockRebuildIdx.remove(CACHE_NAME_2_1);
@@ -436,15 +436,17 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
             for (int i = 0; i < GRIDS_NUM; i++)
                 cacheLsnrs[i] = installRebuildCheckListener(grid(i), CACHE_NAME_1_1);
 
-            assertEquals(EXIT_CODE_OK, execute("--cache", "indexes_force_rebuild", "--all-nodes", "--cache-names",
-                CACHE_NAME_1_1));
+            assertEquals(EXIT_CODE_OK, execute("--cache", "indexes_force_rebuild", "--all-nodes",
+                "--cache-names", CACHE_NAME_1_1));
 
             String outputStr = testOut.toString();
 
-            validateOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED, CACHE_NAME_1_1, 1);
+            validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED, CACHE_NAME_1_1);
 
-            for (int i = 0; i < GRIDS_NUM; i++)
-                validateOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED, grid(i).localNode().id().toString(), 1);
+            for (int i = 0; i < GRIDS_NUM; i++) {
+                validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED,
+                    grid(i).localNode().id().toString());
+            }
 
             for (Ignite ig : G.allGrids())
                 waitForIndexesRebuild((IgniteEx)ig);
@@ -814,44 +816,32 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     }
 
     /**
-     * Validates the command output. Searches for the passed prefix/header and the target strings below it.
+     * Validates the multi-node command output. Searches for the passed prefix/header and the target strings below it.
      *
      * @param outputStr The output.
      * @param prefix    Prefix or header to search.
      * @param targetStr Target string to search after {@code prefix}.
-     * @param maxTargetLines Expected number of lines in {@code outputStr} after {@code prefix}. {@code Null} means
-     *                  single node command, the output is expected as for '--node-id'. Otherwise, the outout is
-     *                  expected as for '--node-ids'.
      */
-    private static void validateOutput(String outputStr, String prefix, String targetStr, @Nullable Integer maxTargetLines) {
-        if (maxTargetLines == null) {
-            assertContains(
-                log,
-                outputStr,
-                prefix + U.nl() + INDENT + targetStr.trim()
-            );
-        }
-        else {
-            String[] lines = outputStr.split(U.nl());
+    private static void validateMultiNodeOutput(String outputStr, String prefix, String targetStr) {
+        String[] lines = outputStr.split(U.nl());
 
-            int foundTargetStrCnt = 0;
+        for (int i = 0, heraderIdx = -1; i < lines.length; ++i) {
+            String line = lines[i];
 
-            for (int i = 0, heraderIdx = -1; i < lines.length; ++i) {
-                String line = lines[i];
+            if (heraderIdx < 0) {
+                if (line.contains(prefix))
+                    heraderIdx = i;
 
-                if (heraderIdx < 0) {
-                    if (line.contains(prefix))
-                        heraderIdx = i;
-
-                    continue;
-                }
-
-                if (i > heraderIdx && i <= heraderIdx + maxTargetLines && line.contains(targetStr))
-                    ++foundTargetStrCnt;
+                continue;
             }
 
-            assertTrue(foundTargetStrCnt > 0);
+            // Search next line after the header.
+            if (i == heraderIdx + 1 && line.contains(targetStr))
+                return;
         }
+
+        throw new IllegalStateException("Target string '" + targetStr + "' not found after header '" + prefix
+            + "' in the command output.");
     }
 
     /**
