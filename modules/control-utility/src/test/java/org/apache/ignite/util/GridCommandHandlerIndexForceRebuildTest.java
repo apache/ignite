@@ -240,6 +240,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
             awaitPartitionMapExchange();
 
+            // TODO Remove after IGNITE-20507.
             // Cleaning cache meta being kept.
             for (Ignite ig : G.allGrids()) {
                 U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + '/' + ig.name()
