@@ -70,6 +70,7 @@ import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -626,29 +627,7 @@ public class ValidationOnNodeJoinUtils {
         if (rmtTxCfg != null) {
             TransactionConfiguration locTxCfg = ctx.config().getTransactionConfiguration();
 
-            checkDeadlockDetectionConfig(rmt, rmtTxCfg, locTxCfg, log);
-
             checkSerializableEnabledConfig(rmt, rmtTxCfg, locTxCfg);
-        }
-    }
-
-    /**
-     *
-     */
-    private static void checkDeadlockDetectionConfig(
-        ClusterNode rmt,
-        TransactionConfiguration rmtTxCfg,
-        TransactionConfiguration locTxCfg,
-        IgniteLogger log
-    ) {
-        boolean locDeadlockDetectionEnabled = locTxCfg.getDeadlockTimeout() > 0;
-        boolean rmtDeadlockDetectionEnabled = rmtTxCfg.getDeadlockTimeout() > 0;
-
-        if (locDeadlockDetectionEnabled != rmtDeadlockDetectionEnabled) {
-            U.warn(log, "Deadlock detection is enabled on one node and disabled on another. " +
-                "Disabled detection on one node can lead to undetected deadlocks. [rmtNodeId=" + rmt.id() +
-                ", locDeadlockTimeout=" + locTxCfg.getDeadlockTimeout() +
-                ", rmtDeadlockTimeout=" + rmtTxCfg.getDeadlockTimeout());
         }
     }
 
