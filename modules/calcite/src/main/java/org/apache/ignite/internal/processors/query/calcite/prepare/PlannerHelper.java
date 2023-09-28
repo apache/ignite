@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
@@ -31,6 +31,7 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
@@ -73,8 +74,12 @@ public class PlannerHelper {
             // Convert to Relational operators graph.
             RelRoot root = planner.rel(sqlNode);
 
-            planner.setDisabledRules(HintUtils.options(root.rel, extractRootHints(root.rel),
-                HintDefinition.DISABLE_RULE));
+            List<RelHint> rootHints = extractRootHints(root.rel);
+
+            if (root.rel instanceof Hintable)
+                root = root.withRel(((Hintable)root.rel).withHints(rootHints));
+
+            planner.setDisabledRules(HintUtils.options(root.rel, rootHints, HintDefinition.DISABLE_RULE));
 
             RelNode rel = root.rel;
 
@@ -129,16 +134,21 @@ public class PlannerHelper {
     /**
      * Extracts planner-level hints like 'DISABLE_RULE' if the root node is a combining node like 'UNION'.
      */
-    private static Collection<RelHint> extractRootHints(RelNode rel) {
-        if (!HintUtils.allRelHints(rel).isEmpty())
-            return HintUtils.allRelHints(rel);
+    private static List<RelHint> extractRootHints(RelNode rel) {
+        List<RelHint> res = Collections.emptyList();
 
-        if (rel instanceof SetOp) {
-            return F.flatCollections(rel.getInputs().stream()
-                .map(PlannerHelper::extractRootHints).collect(Collectors.toList()));
+        if (!HintUtils.allRelHints(rel).isEmpty())
+            res = HintUtils.allRelHints(rel);
+        else if (rel instanceof SetOp) {
+            res = new ArrayList<>(F.flatCollections(rel.getInputs().stream()
+                .map(PlannerHelper::extractRootHints).collect(Collectors.toList())));
         }
 
-        return Collections.emptyList();
+        PlanningContext ctx = rel.getCluster().getPlanner().getContext().unwrap(PlanningContext.class);
+
+        return ctx == null || F.isEmpty(ctx.hints())
+            ? res
+            : Stream.concat(res.stream(), ctx.hints().stream()).collect(Collectors.toList());
     }
 
     /**
