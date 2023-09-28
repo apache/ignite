@@ -31,6 +31,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJ
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.apache.logging.log4j.Level;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.CNL_JOIN;
@@ -51,6 +53,13 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
 
     /** */
     private IgniteSchema schema;
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        ((GridTestLog4jLogger)log).setLevel(Level.INFO);
+    }
 
     /** {@inheritDoc} */
     @Override public void setup() {
@@ -81,37 +90,11 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
         }
     }
 
-    /**
-     * Tests no-nested-loop hint is skipped and a warning is logged.
-     */
-    @Test
-    public void testNoNCLJoinSkippedWarning() throws Exception {
-        LogListener lsnr = LogListener.matches("Skipped hint '" + NO_CNL_JOIN + "'")
-            .andMatches("Correlated nested loop is not supported for join type 'FULL'").build();
-
-        lsnrLog.registerListener(lsnr);
-
-        physicalPlan("SELECT /*+ " + NO_CNL_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 FULL JOIN " +
-            "TBL2 t2 on t1.v3=t2.v3", schema);
-
-        assertTrue(lsnr.check());
-
-        lsnrLog.clearListeners();
-
-        lsnr = LogListener.matches("kipped hint '" + NO_CNL_JOIN + "'")
-            .andMatches("Correlated nested loop is not supported for join type 'RIGHT'").build();
-
-        lsnrLog.registerListener(lsnr);
-
-        physicalPlan("SELECT /*+ " + NO_CNL_JOIN + " */ t1.v1, t2.v2 FROM TBL1 t1 RIGHT JOIN " +
-            "TBL2 t2 on t1.v3=t2.v3", schema);
-
-        assertTrue(lsnr.check());
-    }
-
     /** */
     @Test
     public void testHintsErrors() throws Exception {
+        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
+
         // Leading hint must disable inconsistent follower.
         LogListener lsnr = LogListener.matches("Skipped hint '" + CNL_JOIN.name() + "'")
             .andMatches("This join type is already disabled or forced to use before").build();

@@ -36,7 +36,6 @@ import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.util.Util.last;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.CNL_JOIN;
@@ -88,7 +87,7 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
         if (HintUtils.allRelHints(join).isEmpty())
             return false;
 
-        boolean disabledRes = false;
+        boolean ruleDisabled = false;
 
         Map<String, Collection<HintDefinition>> hintedTables = new HashMap<>();
 
@@ -152,29 +151,17 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
                 });
             }
 
-            String skipDisableReason = skipDisableHintReason(join, hint);
-
             // This join type is directyly disabled or other join type is forced.
-            if ((curHintIsDisable && curHintDef == knownDisableHint)
-                || (!curHintIsDisable && knownForceHint != curHintDef)) {
-                HintUtils.skippedHint(join, hint,
-                    "This join type is already disabled or forced to use before by previous hints");
-
-                disabledRes = true;
-            }
+            if (curHintIsDisable && curHintDef == knownDisableHint || !curHintIsDisable && knownForceHint != curHintDef)
+                ruleDisabled = true;
         }
 
-        return disabledRes;
+        return ruleDisabled;
     }
 
     /** */
     private static String relDescription(Collection<String> tbls) {
         return "Join tables " + tbls.stream().sorted().collect(Collectors.joining(","));
-    }
-
-    /** */
-    protected @Nullable String skipDisableHintReason(LogicalJoin join, RelHint hint) {
-        return null;
     }
 
     /** */

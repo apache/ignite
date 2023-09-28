@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
@@ -31,7 +30,6 @@ import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexBuilder;
@@ -45,7 +43,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
-import org.jetbrains.annotations.Nullable;
 
 /** */
 public class CorrelatedNestedLoopJoinRule extends AbstractIgniteJoinConverterRule {
@@ -148,18 +145,6 @@ public class CorrelatedNestedLoopJoinRule extends AbstractIgniteJoinConverterRul
         LogicalJoin join = call.rel(0);
 
         return supportedJoinType(join.getJoinType());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected @Nullable String skipDisableHintReason(LogicalJoin join, RelHint hint) {
-        if (!supportedJoinType(join.getJoinType())) {
-            Set<String> joinTblNames = joinTblNames(join);
-
-            return "Correlated nested loop is not supported for join type '" + join.getJoinType()
-                + (joinTblNames.isEmpty() ? "'." : "' for tables " + String.join(",", joinTblNames) + '.');
-        }
-
-        return null;
     }
 
     /** */
