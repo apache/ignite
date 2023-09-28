@@ -82,7 +82,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_SERIALIZABLE_ENABLED;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isDefaultDataRegionPersistent;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 
@@ -622,29 +622,18 @@ public class ValidationOnNodeJoinUtils {
         GridKernalContext ctx,
         IgniteLogger log
     ) throws IgniteCheckedException {
-        TransactionConfiguration rmtTxCfg = rmt.attribute(ATTR_TX_CONFIG);
+        Boolean rmtTxSer = rmt.attribute(ATTR_TX_SERIALIZABLE_ENABLED);
 
-        if (rmtTxCfg != null) {
+        if (rmtTxSer != null) {
             TransactionConfiguration locTxCfg = ctx.config().getTransactionConfiguration();
 
-            checkSerializableEnabledConfig(rmt, rmtTxCfg, locTxCfg);
+            if (!rmtTxSer.equals(locTxCfg.isTxSerializableEnabled()))
+                throw new IgniteCheckedException("Serializable transactions enabled mismatch " +
+                    "(fix txSerializableEnabled property or set -D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
+                    "system property) [rmtNodeId=" + rmt.id() +
+                    ", locTxSerializableEnabled=" + locTxCfg.isTxSerializableEnabled() +
+                    ", rmtTxSerializableEnabled=" + rmtTxSer + ']');
         }
-    }
-
-    /**
-     *
-     */
-    private static void checkSerializableEnabledConfig(
-        ClusterNode rmt,
-        TransactionConfiguration rmtTxCfg,
-        TransactionConfiguration locTxCfg
-    ) throws IgniteCheckedException {
-        if (locTxCfg.isTxSerializableEnabled() != rmtTxCfg.isTxSerializableEnabled())
-            throw new IgniteCheckedException("Serializable transactions enabled mismatch " +
-                "(fix txSerializableEnabled property or set -D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
-                "system property) [rmtNodeId=" + rmt.id() +
-                ", locTxSerializableEnabled=" + locTxCfg.isTxSerializableEnabled() +
-                ", rmtTxSerializableEnabled=" + rmtTxCfg.isTxSerializableEnabled() + ']');
     }
 
     /**
