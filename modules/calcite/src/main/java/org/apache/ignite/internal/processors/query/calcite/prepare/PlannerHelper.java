@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -35,6 +36,7 @@ import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.Pair;
@@ -74,12 +76,9 @@ public class PlannerHelper {
             // Convert to Relational operators graph.
             RelRoot root = planner.rel(sqlNode);
 
-            List<RelHint> rootHints = extractRootHints(root.rel);
+            planner.setDisabledRules(HintUtils.options(root.rel, extractRootHints(root.rel), HintDefinition.DISABLE_RULE));
 
-            if (root.rel instanceof Hintable)
-                root = root.withRel(((Hintable)root.rel).withHints(rootHints));
-
-            planner.setDisabledRules(HintUtils.options(root.rel, rootHints, HintDefinition.DISABLE_RULE));
+            root = addExternalHint(root, planner);
 
             RelNode rel = root.rel;
 
@@ -132,23 +131,46 @@ public class PlannerHelper {
     }
 
     /**
-     * Extracts planner-level hints like 'DISABLE_RULE' if the root node is a combining node like 'UNION'.
+     * Add external hints to {@code root.rel}.
+     *
+     * @return New or old root node.
      */
-    private static List<RelHint> extractRootHints(RelNode rel) {
-        List<RelHint> res = Collections.emptyList();
+    private static RelRoot addExternalHint(RelRoot root, IgnitePlanner planner) {
+        if (F.isEmpty(planner.context().hints()))
+            return root;
 
-        if (!HintUtils.allRelHints(rel).isEmpty())
-            res = HintUtils.allRelHints(rel);
-        else if (rel instanceof SetOp) {
-            res = new ArrayList<>(F.flatCollections(rel.getInputs().stream()
-                .map(PlannerHelper::extractRootHints).collect(Collectors.toList())));
+        if (!(root.rel instanceof Hintable)) {
+            Commons.context(root.rel).logger().warning("Unable to propagate external hints "
+                + planner.context().hints().stream().map(h -> '\'' + h.hintName + '\'').collect(Collectors.joining(", "))
+                + " starting with root relation operator [" + RelOptUtil.toString(HintUtils.noInputsRelWrap(root.rel)).trim()
+                + "] because it is not a Hintable.");
+
+            return root;
         }
 
-        PlanningContext ctx = rel.getCluster().getPlanner().getContext().unwrap(PlanningContext.class);
+        List<RelHint> newHints = Stream.concat(HintUtils.allRelHints(root.rel).stream(),
+            planner.context().hints().stream()).collect(Collectors.toList());
 
-        return ctx == null || F.isEmpty(ctx.hints())
-            ? res
-            : Stream.concat(res.stream(), ctx.hints().stream()).collect(Collectors.toList());
+        root = root.withRel(((Hintable)root.rel).withHints(newHints));
+
+        RelOptUtil.propagateRelHints(root.rel, false);
+
+        return root;
+    }
+
+    /**
+     * Extracts planner-level hints like 'DISABLE_RULE' if the root node is a combining node like 'UNION'.
+     */
+    private static Collection<RelHint> extractRootHints(RelNode rel) {
+        if (!HintUtils.allRelHints(rel).isEmpty())
+            return HintUtils.allRelHints(rel);
+
+        if (rel instanceof SetOp) {
+            return F.flatCollections(rel.getInputs().stream()
+                .map(PlannerHelper::extractRootHints).collect(Collectors.toList()));
+        }
+
+        return Collections.emptyList();
     }
 
     /**

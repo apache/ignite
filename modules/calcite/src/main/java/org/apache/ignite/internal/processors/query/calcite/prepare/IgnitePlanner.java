@@ -402,6 +402,11 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     /** */
+    PlanningContext context() {
+        return ctx;
+    }
+
+    /** */
     public String dump() {
         StringWriter w = new StringWriter();
 
