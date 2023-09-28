@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.hamcrest.CoreMatchers;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -334,6 +335,83 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
 
             assertFalse(idx.isInlineScan());
         }
+    }
+
+    /** */
+    @Test
+    public void testNoIndexHint() {
+        executeSql("CREATE TABLE t1(i1 INTEGER) WITH TEMPLATE=PARTITIONED");
+        executeSql("INSERT INTO t1 VALUES (1), (2), (30), (40)");
+        executeSql("CREATE INDEX t1_idx ON t1(i1)");
+
+        executeSql("CREATE TABLE t2(i2 INTEGER, i3 INTEGER) WITH TEMPLATE=PARTITIONED");
+
+        for (int i = 0; i < 100; ++i)
+            executeSql("INSERT INTO t2 VALUES (?, ?)", i, i);
+
+        executeSql("CREATE INDEX t2_idx ON t2(i2)");
+
+        assertQuery("SELECT /*+ NO_INDEX(T2_IDX) */ i3 FROM t2 where i2=2")
+            .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX")))
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT /*+ NO_INDEX(T1_IDX,T2_IDX) */ i1, i3 FROM t1, t2 where i2=i1")
+            .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX")))
+            .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX")))
+            .returns(1, 1)
+            .returns(2, 2)
+            .returns(30, 30)
+            .returns(40, 40)
+            .check();
+
+        assertQuery("SELECT * FROM t1 WHERE i1 = (SELECT /*+ NO_INDEX(T2_IDX) */ i3 from t2 where i2=40)")
+            .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX")))
+            .returns(40)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testForcedIndexHint() {
+        executeSql("CREATE TABLE t1(i1 INTEGER, i2 INTEGER, i3 INTEGER) WITH TEMPLATE=PARTITIONED");
+
+        executeSql("CREATE INDEX t1_idx1 ON t1(i1)");
+        executeSql("CREATE INDEX t1_idx2 ON t1(i2)");
+        executeSql("CREATE INDEX t1_idx3 ON t1(i3)");
+
+        executeSql("INSERT INTO t1 VALUES (1, 2, 3)");
+
+        assertQuery("SELECT /*+ FORCE_INDEX(T1_IDX1) */ i1 FROM t1 where i1=1 and i2=2 and i3=3")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX1"))
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT /*+ FORCE_INDEX(T1_IDX2) */ i1 FROM t1 where i1=1 and i2=2 and i3=3")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX2"))
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT /*+ FORCE_INDEX(T1_IDX3) */ i1 FROM t1 where i1=1 and i2=2 and i3=3")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX3"))
+            .returns(1)
+            .check();
+
+        executeSql("CREATE TABLE t2(i21 INTEGER, i22 INTEGER, i23 INTEGER) WITH TEMPLATE=PARTITIONED");
+
+        for (int i = 99; i < 300; ++i)
+            executeSql("INSERT INTO t2 VALUES (?, ?, ?)", i + 1, i + 1, i + 1);
+
+        executeSql("CREATE INDEX t2_idx1 ON t2(i21)");
+        executeSql("CREATE INDEX t2_idx2 ON t2(i22)");
+        executeSql("CREATE INDEX t2_idx3 ON t2(i23)");
+
+        assertQuery("SELECT /*+ FORCE_INDEX(T1_IDX2), FORCE_INDEX(T2_IDX2) */ i1, i22 FROM t1, t2 where i2=i22 " +
+            "and i3=i23 + 1")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX2"))
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX2"))
+            .resultSize(0)
+            .check();
     }
 
     /** */
