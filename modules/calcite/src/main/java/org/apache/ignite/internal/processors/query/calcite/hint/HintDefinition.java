@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.hint;
 
 import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintPredicates;
+import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 
 /**
  * Holds supported SQL hints and their settings.
@@ -43,7 +44,7 @@ public enum HintDefinition {
         }
     },
 
-    /** Forces join order as appears in the query. Fastens building of joins plan. */
+    /** Forces join order as appears in query. Fastens building of joins plan. */
     ORDERED_JOINS {
         /** {@inheritDoc} */
         @Override public HintPredicate predicate() {
@@ -53,6 +54,19 @@ public enum HintDefinition {
         /** {@inheritDoc} */
         @Override public HintOptionsChecker optionsChecker() {
             return HintsConfig.OPTS_CHECK_EMPTY;
+        }
+    },
+
+    /** Disables indexes. */
+    NO_INDEX {
+        /** {@inheritDoc} */
+        @Override public HintPredicate predicate() {
+            return (hint, rel) -> rel instanceof IgniteLogicalTableScan;
+        }
+
+        /** {@inheritDoc} */
+        @Override public HintOptionsChecker optionsChecker() {
+            return HintsConfig.OPTS_CHECK_NO_KV;
         }
     },
 

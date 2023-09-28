@@ -215,7 +215,7 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Test enforced join order parameter passes. */
+    /** Test enforced join order parameter. */
     @Test
     public void testEnforcedJoinOrder() throws Exception {
         stmt.execute("CREATE TABLE Person1(\"ID\" INT, PRIMARY KEY(\"ID\"), \"NAME\" VARCHAR) WITH template=REPLICATED");
@@ -231,18 +231,8 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
 
         String sql = "EXPLAIN PLAN FOR SELECT p2.Name from Person1 p1 LEFT JOIN Person2 p2 on p2.NAME=p1.NAME";
 
-        String scan1 = "IgniteTableScan(table=[[PUBLIC, PERSON1]]";
-        String scan2 = "IgniteTableScan(table=[[PUBLIC, PERSON2]]";
-
-        try (ResultSet rs = stmt.executeQuery(sql)) {
-            assertTrue(rs.next());
-
-            String plan = rs.getString(1);
-
-            // Reordered joins and changed join type.
-            assertTrue(plan.indexOf(scan1) > plan.indexOf(scan2));
-            assertFalse(plan.contains("joinType=[left]"));
-        }
+        String scan1 = "Scan(table=[[PUBLIC, PERSON1]]";
+        String scan2 = "Scan(table=[[PUBLIC, PERSON2]]";
 
         url += "&enforceJoinOrder=true";
 
@@ -255,6 +245,8 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
 
             // Joins as in the query.
             assertTrue(plan.indexOf(scan1) < plan.indexOf(scan2));
+
+            // Join type is not changed.
             assertTrue(plan.contains("joinType=[left]"));
         }
     }

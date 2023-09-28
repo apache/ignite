@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.util.typedef.X;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -43,7 +44,7 @@ public class CacheKey {
      * Additional query or engine parameters like {@link SqlFieldsQuery#isEnforceJoinOrder()} changing the query plan.
      * Must have correct equals() and hashCode().
      */
-    private final Map<Class<?>, Object> queryParams;
+    private final @Nullable Map<Class<?>, Object> queryParams;
 
     /**
      * @param schemaName Schema name.
@@ -55,7 +56,7 @@ public class CacheKey {
      *               the query plan. Must have correct equals() and hashCode().
      */
     public CacheKey(String schemaName, String query, Object contextKey, Object[] params,
-        Map<Class<?>, Object> queryParams) {
+        @Nullable Map<Class<?>, Object> queryParams) {
         this.schemaName = schemaName;
         this.query = query;
         this.contextKey = contextKey;
