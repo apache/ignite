@@ -171,7 +171,7 @@ public final class HintUtils {
 
         /** {@inheritDoc} */
         @Override public RelNode getInput(int i) {
-            return null;
+            throw new IndexOutOfBoundsException("Has no any input.");
         }
 
         /** {@inheritDoc} */
