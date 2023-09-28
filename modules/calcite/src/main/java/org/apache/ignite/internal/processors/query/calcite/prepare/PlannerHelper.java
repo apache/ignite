@@ -54,7 +54,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescript
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.util.HintUtils;
+import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class PlannerHelper {
@@ -75,9 +75,9 @@ public class PlannerHelper {
             // Convert to Relational operators graph.
             RelRoot root = planner.rel(sqlNode);
 
-            planner.setDisabledRules(HintUtils.options(root.rel, extractRootHints(root.rel), HintDefinition.DISABLE_RULE));
-
             root = addExternalHint(root, planner);
+
+            planner.setDisabledRules(HintUtils.options(root.rel, extractRootHints(root.rel), HintDefinition.DISABLE_RULE));
 
             RelNode rel = root.rel;
 
