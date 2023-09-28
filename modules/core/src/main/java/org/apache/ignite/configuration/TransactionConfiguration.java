@@ -56,9 +56,6 @@ public class TransactionConfiguration implements Serializable {
     /** Transaction timeout on partition map synchronization. */
     public static final long TX_TIMEOUT_ON_PARTITION_MAP_EXCHANGE = 0;
 
-    /** Default timeout before starting deadlock detection. */
-    public static final long DFLT_DEADLOCK_TIMEOUT = 10_000;
-
     /** 
       * Default size of pessimistic transactions log.
       * @deprecated Pessimistic tx log linger property has no effect.
