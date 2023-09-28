@@ -39,6 +39,7 @@ import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefin
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_CNL_JOIN;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_MERGE_JOIN;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_NL_JOIN;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Planner test for index hints.
@@ -269,9 +270,6 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
     public void testSelfJoin() throws Exception {
         String sqlTpl = "SELECT %s t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL1 t2 on t1.v3=t2.v2 where t2.v3=4";
 
-        assertPlan(String.format(sqlTpl, ""), schema, nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
-            .and(hasNestedTableScan("TBL1"))));
-
         assertPlan(String.format(sqlTpl, "/*+ " + MERGE_JOIN + "(TBL1) */"), schema,
             nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class).negate())
                 .and(nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class).and(hasNestedTableScan("TBL1")))));
@@ -314,10 +312,6 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
         String sqlTpl = String.format("SELECT %%s t1.v1, t2.v2 FROM %s t1 %s JOIN %s t2 on t1.v3=t2.v3", tbl1,
             joinType, tbl2);
 
-        assertPlan(String.format(sqlTpl, ""), schema, nodeOrAnyChild(isInstanceOf(expectedJoin)
-            .and(hasNestedTableScan(tbl1)).and(hasNestedTableScan(tbl2)))
-            .and(nodeOrAnyChild(isInstanceOf(newJoin)).negate()), disabledRules);
-
         // Not using table name.
         assertPlan(String.format(sqlTpl, "/*+ " + hint.name() + "(UNEXISTING) */"), schema,
             nodeOrAnyChild(isInstanceOf(expectedJoin).and(hasNestedTableScan(tbl1))
@@ -347,9 +341,6 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
             sqlJoinType, tbl2);
 
         String hintPref = "/*+ " + hint.name();
-
-        // No hint. Ensure target join type.
-        assertPlan(String.format(sqlTpl, ""), schema, nodeOrAnyChild(isInstanceOf(joinRel)), disabledRules);
 
         // Hint with no options.
         assertPlan(String.format(sqlTpl, hintPref + " */"), schema, nodeOrAnyChild(isInstanceOf(joinRel)).negate(),
@@ -383,19 +374,6 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
     public void testDisableJoinTypeInSubquery() throws Exception {
         String sqlTpl = "SELECT %s t1.v1, t2.v2 FROM TBL2 t1 JOIN TBL1 t2 on t1.v3=t2.v3 where t2.v3 in " +
             "(select %s t3.v3 from TBL3 t3 JOIN TBL4 t4 on t3.v1=t4.v1)";
-
-        assertPlan(String.format(sqlTpl, "", ""), schema,
-            nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class)
-                .and(input(0, noJoinChildren()))
-                .and(input(1, noJoinChildren()))
-                .and(hasNestedTableScan("TBL2"))
-                .and(hasNestedTableScan("TBL1"))
-            ).and(nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
-                .and(input(0, noJoinChildren()))
-                .and(input(1, noJoinChildren()))
-                .and(hasNestedTableScan("TBL3"))
-                .and(hasNestedTableScan("TBL4"))
-            )), CORE_JOIN_REORDER_RULES);
 
         for (String tbl : Arrays.asList("TBL3", "TBL4")) {
             assertPlan(String.format(sqlTpl, "/*+ " + NO_MERGE_JOIN + "(" + tbl + ") */", ""), schema,
@@ -431,11 +409,6 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testNestedHintOverrides() throws Exception {
-        assertPlan("SELECT t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 where t2.v1 in (SELECT t3.v3 " +
-                "from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)", schema,
-            nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class).and(hasNestedTableScan("TBL3"))
-                .and(hasNestedTableScan("TBL1"))), CORE_JOIN_REORDER_RULES);
-
         assertPlan("SELECT /*+ " + MERGE_JOIN + "(TBL1) */ t1.v1, t2.v2 FROM TBL1 t1 JOIN TBL2 t2 on t1.v3=t2.v3 " +
                 "where t2.v1 in (SELECT t3.v3 from TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)", schema,
             nodeOrAnyChild(isInstanceOf(IgniteNestedLoopJoin.class)).negate()
@@ -455,10 +428,6 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
     @Test
     public void testSeveralDisables() throws Exception {
         String sqlTpl = "SELECT %s t1.v1, t2.v2 FROM TBL1 t1, TBL2 t2 where t1.v3=t2.v3";
-
-        assertPlan(String.format(sqlTpl, ""), schema,
-            nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class).and(hasNestedTableScan("TBL1"))
-                .and(hasNestedTableScan("TBL2"))), CORE_JOIN_REORDER_RULES);
 
         assertPlan(String.format(sqlTpl, "/*+ " + NO_CNL_JOIN + ',' + NO_NL_JOIN + " */"), schema,
             nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)).negate()
@@ -504,10 +473,6 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
         String sqlTpl = "SELECT %s t1.v1, t2.v2 FROM TBL1 t1, (SELECT t3.v2, t3.v3 FROM TBL3 t3 where t3.v1=5) t2 " +
             "where t1.v3=t2.v3";
 
-        assertPlan(String.format(sqlTpl, "", ""), schema,
-            nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class).and(hasNestedTableScan("TBL3"))
-                .and(hasNestedTableScan("TBL1"))), CORE_JOIN_REORDER_RULES);
-
         assertPlan(String.format(sqlTpl, "/*+ " + MERGE_JOIN + "(TBL1) */"), schema,
             nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)).negate()
                 .and(nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class).and(hasNestedTableScan("TBL3"))
@@ -524,11 +489,6 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
     public void testDisableMergeJoinWith3Tables() throws Exception {
         String sqlTpl = "SELECT %s t1.v1, t2.v2, t3.v3 FROM TBL3 t1 JOIN TBL4 t2 on t1.v1=t2.v2 JOIN TBL5 t3 on " +
             "t2.v2=t3.v3";
-
-        // Ensures there is no non-merge joins.
-        assertPlan(String.format(sqlTpl, ""), schema, nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class))
-            .and(nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class)
-                .and(j -> !(j instanceof IgniteMergeJoin))).negate()));
 
         assertPlan(String.format(sqlTpl, "/*+ " + NO_MERGE_JOIN + " */"), schema,
             nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class))

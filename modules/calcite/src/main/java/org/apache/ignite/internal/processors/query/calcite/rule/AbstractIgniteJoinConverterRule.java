@@ -80,7 +80,7 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
 
     /** {@inheritDoc} */
     @Override public final boolean matches(RelOptRuleCall call) {
-        return super.matches(call) && !disabledByHints(call.rel(0)) && matchesCall(call);
+        return super.matches(call) && matchesCall(call) && !disabledByHints(call.rel(0));
     }
 
     /** */
@@ -155,7 +155,7 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
             String skipDisableReason = skipDisableHintReason(join, hint);
 
             // This join type is directyly disabled or other join type is forced.
-            if ((curHintIsDisable && curHintDef == knownDisableHint && skipDisableReason != null)
+            if ((curHintIsDisable && curHintDef == knownDisableHint)
                 || (!curHintIsDisable && knownForceHint != curHintDef)) {
                 HintUtils.skippedHint(join, hint,
                     "This join type is already disabled or forced to use before by previous hints");
