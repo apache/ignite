@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.hint;
 
 import java.util.Arrays;
+import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.rel.hint.HintStrategy;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.hint.RelHint;
@@ -77,8 +78,11 @@ public final class HintsConfig {
     public static HintStrategyTable buildHintTable() {
         HintStrategyTable.Builder b = HintStrategyTable.builder().errorHandler(Litmus.IGNORE);
 
+        RelOptRule[] disabledRulesTpl = new RelOptRule[0];
+
         Arrays.stream(HintDefinition.values()).forEach(hintDef ->
-            b.hintStrategy(hintDef.name(), HintStrategy.builder(hintDef.predicate()).build()));
+            b.hintStrategy(hintDef.name(), HintStrategy.builder(hintDef.predicate())
+                .excludedRules(hintDef.disabledRules().toArray(disabledRulesTpl)).build()));
 
         return b.build();
     }
