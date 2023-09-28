@@ -686,7 +686,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
                     .defaultSchema(dfltSchema)
                     .build()
             )
-            .logger(log)
+            .logger(lsnrLog)
             .build();
     }
 

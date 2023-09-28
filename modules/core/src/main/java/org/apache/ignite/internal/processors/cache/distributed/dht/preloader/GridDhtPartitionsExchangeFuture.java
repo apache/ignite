@@ -1643,13 +1643,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         boolean skipWaitOnLocalJoin = localJoinExchange()
             && cctx.exchange().latch().canSkipJoiningNodes(initialVersion());
 
-        if (context().exchangeFreeSwitch() && isBaselineNodeFailed()) {
-            // Currently MVCC does not support operations on partially switched cluster.
-            if (cctx.kernalContext().coordinators().mvccEnabled())
-                waitPartitionRelease(EXCHANGE_FREE_LATCH_ID, true, false);
-            else
-                waitPartitionRelease(null, false, false);
-        }
+        if (context().exchangeFreeSwitch() && isBaselineNodeFailed())
+            waitPartitionRelease(null, false, false);
         else if (!skipWaitOnLocalJoin) { // Skip partition release if node has locally joined (it doesn't have any updates to be finished).
             boolean distributed = true;
 

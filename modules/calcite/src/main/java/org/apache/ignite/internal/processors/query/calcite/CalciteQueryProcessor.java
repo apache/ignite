@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.apache.calcite.DataContexts;
@@ -35,19 +34,20 @@ import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDynamicParam;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
@@ -95,7 +95,10 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCach
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCacheImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderImpl;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterUser;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlConformance;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateUser;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlOption;
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable;
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteStdSqlOperatorTable;
 import org.apache.ignite.internal.processors.query.calcite.sql.generated.IgniteSqlParserImpl;
@@ -129,9 +132,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     public static final String IGNITE_CALCITE_PLANNER_TIMEOUT = "IGNITE_CALCITE_PLANNER_TIMEOUT";
 
     /** */
-    private static final AtomicReference<IgniteLogger> HINTS_LOG_SUPPLIER = new AtomicReference<>();
-
-    /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
         .executor(new RexExecutorImpl(DataContexts.EMPTY))
         .sqlToRelConverterConfig(SqlToRelConverter.config()
@@ -142,7 +142,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             .withInSubQueryThreshold(Integer.MAX_VALUE)
             .withDecorrelationEnabled(true)
             .withExpand(false)
-            .withHintStrategyTable(HintsConfig.buildHintTable(HINTS_LOG_SUPPLIER::get))
+            .withHintStrategyTable(HintsConfig.buildHintTable())
         )
         .convertletTable(IgniteConvertletTable.INSTANCE)
         .parserConfig(
@@ -228,8 +228,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
      */
     public CalciteQueryProcessor(GridKernalContext ctx) {
         super(ctx);
-
-        HINTS_LOG_SUPPLIER.compareAndSet(null, log);
 
         failureProcessor = ctx.failure();
         schemaHolder = new SchemaHolderImpl(ctx);
@@ -525,6 +523,22 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 new SqlShuttle() {
                     @Override public SqlNode visit(SqlLiteral literal) {
                         return new SqlDynamicParam(-1, literal.getParserPosition());
+                    }
+
+                    @Override public SqlNode visit(SqlCall call) {
+                        // Handle some special cases.
+                        if (call instanceof IgniteSqlOption)
+                            return call;
+                        else if (call instanceof IgniteSqlCreateUser) {
+                            return new IgniteSqlCreateUser(call.getParserPosition(), ((IgniteSqlCreateUser)call).user(),
+                                SqlLiteral.createCharString("hidden", SqlParserPos.ZERO));
+                        }
+                        else if (call instanceof IgniteSqlAlterUser) {
+                            return new IgniteSqlAlterUser(call.getParserPosition(), ((IgniteSqlAlterUser)call).user(),
+                                SqlLiteral.createCharString("hidden", SqlParserPos.ZERO));
+                        }
+
+                        return super.visit(call);
                     }
                 }
             ).toString();

@@ -1569,7 +1569,7 @@ public class GridSqlQueryParser {
                     res.atomicityMode(CacheAtomicityMode.valueOf(val.toUpperCase()));
                 }
                 catch (IllegalArgumentException e) {
-                    String validVals = Arrays.stream(CacheAtomicityMode.values())
+                    String validVals = Arrays.stream(CacheAtomicityMode._values())
                         .map(Enum::name)
                         .collect(Collectors.joining(", "));
 
@@ -1838,9 +1838,6 @@ public class GridSqlQueryParser {
 
                     //It's not affinity cache. Can't be local.
                     if (cctx == null)
-                        return false;
-
-                    if (cctx.mvccEnabled())
                         return false;
 
                     if (cctx.isPartitioned())

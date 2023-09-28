@@ -801,8 +801,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
                 IgniteCache<Integer, String> cache = ig.cache(cacheName).withAllowAtomicOpsInTx();
 
-                boolean pessimistic = atomicityMode(cache) == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT || r.nextBoolean();
-
+                boolean pessimistic = r.nextBoolean();
                 boolean rollback = r.nextBoolean();
 
                 try {
@@ -881,9 +880,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
                 IgniteCache<Integer, String> cache1 = ig.cache(cacheName1);
                 IgniteCache<Integer, String> cache2 = ig.cache(cacheName2);
 
-                boolean pessimistic = atomicityMode(cache1) == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT ||
-                    atomicityMode(cache2) == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT || r.nextBoolean();
-
+                boolean pessimistic = r.nextBoolean();
                 boolean rollback = r.nextBoolean();
 
                 try {

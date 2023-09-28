@@ -36,7 +36,6 @@ import org.junit.Test;
 import static javax.cache.configuration.FactoryBuilder.factoryOf;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
@@ -50,9 +49,6 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
 
     /** Cache name. */
     public static final String TX_CACHE_NAME = "tx_test_cache";
-
-    /** Cache name. */
-    public static final String MVCC_TX_CACHE_NAME = "mvcc_tx_test_cache";
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -84,14 +80,6 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     @Test
-    public void testMvccTxEvent() throws Exception {
-        testEvent(MVCC_TX_CACHE_NAME, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testAtomicEvent() throws Exception {
         testEvent(CACHE_NAME, false);
     }
@@ -102,14 +90,6 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
     @Test
     public void testTxClientEvent() throws Exception {
         testEvent(TX_CACHE_NAME, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxClientEvent() throws Exception {
-        testEvent(MVCC_TX_CACHE_NAME, true);
     }
 
     /**
@@ -216,7 +196,7 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setCacheConfiguration(cache(TX_CACHE_NAME), cache(CACHE_NAME), cache(MVCC_TX_CACHE_NAME));
+        cfg.setCacheConfiguration(cache(TX_CACHE_NAME), cache(CACHE_NAME));
 
         return cfg;
     }
@@ -234,8 +214,6 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
             cfg.setAtomicityMode(ATOMIC);
         else if (cacheName.equals(TX_CACHE_NAME))
             cfg.setAtomicityMode(TRANSACTIONAL);
-        else
-            cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
         cfg.setRebalanceMode(SYNC);
         cfg.setWriteSynchronizationMode(PRIMARY_SYNC);

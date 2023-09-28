@@ -17,18 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.calcite.hint;
 
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.HintOptionChecker;
 import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintPredicates;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 
 /**
  * Holds supported SQL hints and their settings.
  */
 public enum HintDefinition {
-    /** Sets the query engine like H2 or Calcite. */
+    /** Sets the query engine like H2 or Calcite. Is preprocessed by regexp. */
     QUERY_ENGINE,
 
     /** Disables planner rules. */
@@ -42,7 +40,7 @@ public enum HintDefinition {
         }
 
         /** {@inheritDoc} */
-        @Override public HintOptionChecker optionsChecker() {
+        @Override public HintOptionsChecker optionsChecker() {
             return HintsConfig.OPTS_CHECK_EMPTY;
         }
     },
@@ -51,15 +49,11 @@ public enum HintDefinition {
     NO_INDEX {
         /** {@inheritDoc} */
         @Override public HintPredicate predicate() {
-            return new HintPredicate() {
-                @Override public boolean apply(RelHint hint, RelNode rel) {
-                    return rel instanceof IgniteLogicalTableScan;
-                }
-            };
+            return (hint, rel) -> rel instanceof IgniteLogicalTableScan;
         }
 
         /** {@inheritDoc} */
-        @Override public HintOptionChecker optionsChecker() {
+        @Override public HintOptionsChecker optionsChecker() {
             return HintsConfig.OPTS_CHECK_NO_KV;
         }
     },
@@ -72,7 +66,7 @@ public enum HintDefinition {
         }
 
         /** {@inheritDoc} */
-        @Override public HintOptionChecker optionsChecker() {
+        @Override public HintOptionsChecker optionsChecker() {
             return NO_INDEX.optionsChecker();
         }
     },
@@ -163,9 +157,9 @@ public enum HintDefinition {
     }
 
     /**
-     * @return Hint options validator.
+     * @return {@link HintOptionsChecker}.
      */
-    HintOptionChecker optionsChecker() {
+    HintOptionsChecker optionsChecker() {
         return HintsConfig.OPTS_CHECK_PLAIN;
     }
 }

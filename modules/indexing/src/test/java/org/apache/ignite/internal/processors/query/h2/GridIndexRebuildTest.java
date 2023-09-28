@@ -230,7 +230,7 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         ValidateIndexesTaskResult res = exec.get();
 
-        Map<UUID, ValidateIndexesJobResult> results = res.results();
+        Map<?, ValidateIndexesJobResult> results = res.results();
 
         boolean hasIssue = false;
 
@@ -329,7 +329,7 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         ValidateIndexesTaskResult res = execute.get();
 
-        Map<UUID, ValidateIndexesJobResult> results = res.results();
+        Map<?, ValidateIndexesJobResult> results = res.results();
 
         boolean hasIssue = false;
 

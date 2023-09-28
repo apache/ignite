@@ -34,14 +34,12 @@ import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.ignite.internal.processors.query.calcite.hint.Hint;
-import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
-import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.immutables.value.Value;
 
 import static org.apache.calcite.util.Util.last;
@@ -88,18 +86,15 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
 
         assert !indexes.isEmpty();
 
-        indexes = processHints(scan, indexes);
+        IgniteBiTuple<List<IgniteLogicalIndexScan>, Boolean> hintedIndexes = processHints(scan, indexes);
+
+        indexes = hintedIndexes.get1();
 
         if (indexes.isEmpty())
             return;
 
-        for (IgniteLogicalIndexScan idx : indexes) {
-            if (idx.forced()) {
-                cluster.getPlanner().prune(scan);
-
-                break;
-            }
-        }
+        if (hintedIndexes.get2())
+            cluster.getPlanner().prune(scan);
 
         Map<RelNode, RelNode> equivMap = new HashMap<>(indexes.size());
         for (int i = 1; i < indexes.size(); i++)
@@ -108,15 +103,20 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
         call.transformTo(F.first(indexes), equivMap);
     }
 
-    /** */
-    private List<IgniteLogicalIndexScan> processHints(TableScan scan, List<IgniteLogicalIndexScan> indexes) {
+    /**
+     * @return Actual indixes list and prune-table-scan flag if any index is forced to use.
+     */
+    private IgniteBiTuple<List<IgniteLogicalIndexScan>, Boolean> processHints(
+        TableScan scan,
+        List<IgniteLogicalIndexScan> indexes
+    ) {
         assert !F.isEmpty(indexes);
 
         Set<String> tblIdxNames = indexes.stream().map(AbstractIndexScan::indexName).collect(Collectors.toSet());
         Set<String> idxToSkip = new HashSet<>();
         Set<String> idxToUse = new HashSet<>();
 
-        for (RelHint hint : Hint.hints(scan, HintDefinition.NO_INDEX, HintDefinition.FORCE_INDEX)) {
+        for (RelHint hint : HintUtils.hints(scan, HintDefinition.NO_INDEX, HintDefinition.FORCE_INDEX)) {
             boolean skip = !hint.hintName.equals(HintDefinition.FORCE_INDEX.name());
 
             Collection<String> hintIdxNames = hint.listOptions.isEmpty() ? tblIdxNames : hint.listOptions;
@@ -126,11 +126,9 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
                     continue;
 
                 if (idxToSkip.contains(hintIdxName) || idxToUse.contains(hintIdxName)) {
-                    Commons.planContext(scan).skippedHint(
-                        "Table scan '" + last(scan.getTable().getQualifiedName()) + '\'',
-                        hint, "Index '" + hintIdxName + "' has already been excluded or forced to use by " +
-                            "other options or other hints before."
-                    );
+                    HintUtils.skippedHint(scan, hint, "Index '" + hintIdxName
+                        + "' of table '" + last(scan.getTable().getQualifiedName())
+                        + "' has already been excluded or forced to use by other options or other hints before.");
 
                     continue;
                 }
@@ -142,9 +140,9 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
             }
         }
 
-        return indexes.stream().filter(idx -> !idxToSkip.contains(idx.indexName())
-                && (idxToUse.isEmpty() || idxToUse.contains(idx.indexName())))
-            .map(idx -> idxToUse.contains(idx.indexName()) ? idx.withForced() : idx).collect(Collectors.toList());
+        return new IgniteBiTuple<>(indexes.stream().filter(idx -> !idxToSkip.contains(idx.indexName())
+            && (idxToUse.isEmpty() || idxToUse.contains(idx.indexName()))).collect(Collectors.toList()),
+            !idxToUse.isEmpty());
     }
 
     /** */

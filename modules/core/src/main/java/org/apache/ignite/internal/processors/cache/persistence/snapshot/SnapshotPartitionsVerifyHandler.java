@@ -45,12 +45,15 @@ import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
+import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
@@ -102,12 +105,22 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** {@inheritDoc} */
     @Override public Map<PartitionKeyV2, PartitionHashRecordV2> invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
         if (!opCtx.snapshotDirectory().exists())
-            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + opCtx.snapshotDirectory());;
+            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + opCtx.snapshotDirectory());
 
         SnapshotMetadata meta = opCtx.metadata();
 
-        Set<Integer> grps = F.isEmpty(opCtx.groups()) ? new HashSet<>(meta.partitions().keySet()) :
-            opCtx.groups().stream().map(CU::cacheId).collect(Collectors.toSet());
+        Set<Integer> grps = F.isEmpty(opCtx.groups())
+            ? new HashSet<>(meta.partitions().keySet())
+            : opCtx.groups().stream().map(CU::cacheId).collect(Collectors.toSet());
+
+        if (type() == SnapshotHandlerType.CREATE) {
+            grps = grps.stream().filter(grp -> grp == MetaStorage.METASTORAGE_CACHE_ID ||
+                CU.affinityNode(
+                    cctx.localNode(),
+                    cctx.kernalContext().cache().cacheGroupDescriptor(grp).config().getNodeFilter()
+                )
+            ).collect(Collectors.toSet());
+        }
 
         Set<File> partFiles = new HashSet<>();
 
@@ -261,6 +274,10 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
                         assert hash != null : "OWNING must have hash: " + key;
 
+                        // We should skip size comparison if there are entries to expire exist.
+                        if (hasExpiringEntries(snpCtx, pageStore, pageBuff, io.getPendingTreeRoot(pageAddr)))
+                            hash.hasExpiringEntries(true);
+
                         res.put(key, hash);
                     }
                     catch (IOException e) {
@@ -282,6 +299,40 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         }
 
         return res;
+    }
+
+    /** */
+    private boolean hasExpiringEntries(
+        GridKernalContext ctx,
+        PageStore pageStore,
+        ByteBuffer pageBuff,
+        long pendingTreeMetaId
+    ) throws IgniteCheckedException {
+        if (pendingTreeMetaId == 0)
+            return false;
+
+        long pageAddr = GridUnsafe.bufferAddress(pageBuff);
+
+        pageBuff.clear();
+        pageStore.read(pendingTreeMetaId, pageBuff, true);
+
+        if (PageIO.getCompressionType(pageBuff) != CompressionProcessor.UNCOMPRESSED_PAGE)
+            ctx.compress().decompressPage(pageBuff, pageStore.getPageSize());
+
+        BPlusMetaIO treeIO = BPlusMetaIO.VERSIONS.forPage(pageAddr);
+
+        int rootLvl = treeIO.getRootLevel(pageAddr);
+        long rootId = treeIO.getFirstPageId(pageAddr, rootLvl);
+
+        pageBuff.clear();
+        pageStore.read(rootId, pageBuff, true);
+
+        if (PageIO.getCompressionType(pageBuff) != CompressionProcessor.UNCOMPRESSED_PAGE)
+            ctx.compress().decompressPage(pageBuff, pageStore.getPageSize());
+
+        BPlusIO<?> rootIO = PageIO.getPageIO(pageBuff);
+
+        return rootIO.getCount(pageAddr) != 0;
     }
 
     /** {@inheritDoc} */

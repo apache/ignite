@@ -53,9 +53,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -535,24 +532,7 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
 
             partRes = new ValidateIndexesPartitionResult();
 
-            boolean hasMvcc = grpCtx.caches().stream().anyMatch(GridCacheContext::mvccEnabled);
-
-            if (hasMvcc) {
-                for (GridCacheContext<?, ?> context : grpCtx.caches()) {
-                    IndexQueryContext qryCtx = mvccQueryContext(context);
-
-                    GridIterator<CacheDataRow> iterator = grpCtx.offheap().cachePartitionIterator(
-                        context.cacheId(),
-                        part.id(),
-                        qryCtx.mvccSnapshot(),
-                        null
-                    );
-
-                    processPartIterator(grpCtx, partRes, qryCtx, iterator);
-                }
-            }
-            else
-                processPartIterator(grpCtx, partRes, null, grpCtx.offheap().partitionIterator(part.id()));
+            processPartIterator(grpCtx, partRes, null, grpCtx.offheap().partitionIterator(part.id()));
 
             PartitionUpdateCounter updateCntrAfter = part.dataStore().partUpdateCounter();
 
@@ -703,27 +683,6 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
     }
 
     /**
-     * Get QueryContext for MVCC snapshot.
-     *
-     * @param cctx Cache context.
-     * @return QueryContext for MVCC snapshot.
-     * @throws IgniteCheckedException If failed.
-     */
-    private IndexQueryContext mvccQueryContext(GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
-        boolean mvccEnabled = cctx.mvccEnabled();
-
-        if (mvccEnabled) {
-            MvccQueryTracker tracker = MvccUtils.mvccTracker(cctx, true);
-
-            MvccSnapshot mvccSnapshot = tracker.snapshot();
-
-            return new IndexQueryContext(cacheName -> null, null, mvccSnapshot);
-        }
-
-        return null;
-    }
-
-    /**
      *
      */
     private void printProgressOfIndexValidationIfNeeded() {
@@ -791,7 +750,7 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
         GridCursor<IndexRow> cursor = null;
 
         try {
-            cursor = idx.find(null, null, true, true, mvccQueryContext(cacheCtxWithIdx.get1()));
+            cursor = idx.find(null, null, true, true, null);
 
             if (cursor == null)
                 throw new IgniteCheckedException("Can't iterate through index: " + idx);

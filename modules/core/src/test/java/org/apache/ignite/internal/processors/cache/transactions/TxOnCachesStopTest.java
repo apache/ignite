@@ -52,13 +52,11 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -200,8 +198,6 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOptimisticTxMappedOnPMETopology() throws Exception {
-        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc());
-
         startGridsMultiThreaded(1);
 
         Ignite client = startClientGrid("client");
@@ -264,9 +260,6 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
         Ignite ig,
         boolean runConc
     ) throws Exception {
-        if ((conc == TransactionConcurrency.OPTIMISTIC) && (MvccFeatureChecker.forcedMvcc()))
-            return;
-
         if (log.isInfoEnabled()) {
             log.info("Starting runTxOnCacheStop " +
                 "[concurrency=" + conc + ", isolation=" + iso + ", blockPrepareRequests=" + !runConc + ']');
@@ -343,8 +336,6 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOptimisticTransactionsOnCacheDestroy() throws Exception {
-        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc());
-
         startGridsMultiThreaded(3);
 
         ArrayList<Ignite> clients = new ArrayList<>();
@@ -515,9 +506,6 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void runCacheStopInMidTx(TransactionConcurrency conc, TransactionIsolation iso, Ignite ig) throws Exception {
-        if ((conc == TransactionConcurrency.OPTIMISTIC) && (MvccFeatureChecker.forcedMvcc()))
-            return;
-
         if (log.isInfoEnabled())
             log.info("Starting runCacheStopInMidTx [concurrency=" + conc + ", isolation=" + iso + ']');
 

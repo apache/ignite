@@ -261,7 +261,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     if (this.tx.syncMode() != PRIMARY_SYNC)
                         this.tx.sendFinishReply(finishErr);
 
-                    if (!this.tx.txState().mvccEnabled() && !commit && shouldApplyCountersOnRollbackError(finishErr)) {
+                    if (!commit && shouldApplyCountersOnRollbackError(finishErr)) {
                         TxCounters txCounters = this.tx.txCounters(false);
 
                         if (txCounters != null) {
@@ -319,7 +319,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                  MTC.supportContinual(span = cctx.kernalContext().tracing().create(TX_DHT_FINISH, MTC.span()))) {
             boolean sync;
 
-            assert !tx.txState().mvccEnabled() || tx.mvccSnapshot() != null;
+            assert tx.mvccSnapshot() == null;
 
             if (!F.isEmpty(dhtMap) || !F.isEmpty(nearMap))
                 sync = finish(commit, dhtMap, nearMap);
@@ -434,8 +434,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         Map<UUID, GridDistributedTxMapping> nearMap) {
         if (tx.onePhaseCommit())
             return false;
-
-        assert !commit || !tx.txState().mvccEnabled() || tx.mvccSnapshot() != null || F.isEmpty(tx.writeEntries());
 
         boolean sync = tx.syncMode() == FULL_SYNC;
 

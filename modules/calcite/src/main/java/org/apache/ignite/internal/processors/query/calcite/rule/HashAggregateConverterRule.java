@@ -23,17 +23,14 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.hint.Hint;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-
-import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.EXPAND_DISTINCT_AGG;
 
 /**
  *
@@ -51,12 +48,6 @@ public class HashAggregateConverterRule {
     }
 
     /** */
-    static boolean isExpandedDistinct(LogicalAggregate rel) {
-        return Hint.hasHint(rel, EXPAND_DISTINCT_AGG)
-            && rel.getAggCallList().stream().anyMatch(AggregateCall::isDistinct);
-    }
-
-    /** */
     private static class ColocatedHashAggregateConverterRule extends AbstractIgniteConverterRule<LogicalAggregate> {
         /** */
         ColocatedHashAggregateConverterRule() {
@@ -66,7 +57,7 @@ public class HashAggregateConverterRule {
         /** {@inheritDoc} */
         @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
             LogicalAggregate agg) {
-            if (isExpandedDistinct(agg))
+            if (HintUtils.isExpandDistinctAggregate(agg))
                 return null;
 
             RelOptCluster cluster = agg.getCluster();
@@ -95,7 +86,7 @@ public class HashAggregateConverterRule {
         /** {@inheritDoc} */
         @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
             LogicalAggregate agg) {
-            if (isExpandedDistinct(agg))
+            if (HintUtils.isExpandDistinctAggregate(agg))
                 return null;
 
             RelOptCluster cluster = agg.getCluster();

@@ -32,7 +32,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import javax.cache.configuration.Factory;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -53,7 +52,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -71,7 +69,6 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -240,25 +237,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerResponse handle(ClientListenerRequest req0) {
-        assert req0 != null;
+    @Override public ClientListenerResponse handle(ClientListenerRequest req) {
+        assert req != null;
 
-        assert req0 instanceof JdbcRequest;
+        assert req instanceof JdbcRequest;
 
-        JdbcRequest req = (JdbcRequest)req0;
-
-        if (!MvccUtils.mvccEnabled(connCtx.kernalContext()))
-            return doHandle(req);
-        else {
-            GridFutureAdapter<ClientListenerResponse> fut = worker.process(req);
-
-            try {
-                return fut.get();
-            }
-            catch (IgniteCheckedException e) {
-                return exceptionToResult(e);
-            }
-        }
+        return doHandle((JdbcRequest)req);
     }
 
     /** {@inheritDoc} */

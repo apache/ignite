@@ -26,7 +26,6 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -99,10 +98,8 @@ public class GridDhtPartitionsStateValidator {
                 ignoringNodes.add(id);
         }
 
-        if (!cctx.cache().cacheGroup(top.groupId()).mvccEnabled()) { // TODO: Remove "if" clause in IGNITE-9451.
-            // Validate cache sizes.
-            resSize = validatePartitionsSizes(top, messages, ignoringNodes);
-        }
+        // Validate cache sizes.
+        resSize = validatePartitionsSizes(top, messages, ignoringNodes);
 
         AffinityTopologyVersion topVer = fut.context().events().topologyVersion();
 

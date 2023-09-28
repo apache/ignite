@@ -224,10 +224,10 @@ The detailed procedure looks as follows:
 . Stop the cluster you intend to restore
 . Remove all files from the checkpoint `$IGNITE_HOME/work/cp` directory
 . Do the following on each node:
-    - Remove the files related to the `{nodeId}` from the `$IGNITE_HOME/work/db/binary_meta` directory.
-    - Remove the files related to the `{nodeId}` from the `$IGNITE_HOME/work/db/marshaller` directory.
-    - Remove the files and sub-directories related to the `{nodeId}` under your `$IGNITE_HOME/work/db` directory. Clean the link:persistence/native-persistence#configuring-persistent-storage-directory[`db/{node_id}`] directory separately if it's not located under the Ignite `work` dir.
-    - Copy the files belonging to a node with the `{node_id}` from the snapshot into the `$IGNITE_HOME/work/` directory. If the `db/{node_id}` directory is not located under the Ignite `work` dir then you need to copy data files there.
+    - Remove the files related to the `{consistentId}` from the `$IGNITE_HOME/work/db/binary_meta` directory.
+    - Remove the files related to the `{consistentId}` from the `$IGNITE_HOME/work/db/marshaller` directory.
+    - Remove the files and sub-directories related to the `{consistentId}` under your `$IGNITE_HOME/work/db` directory. Clean the link:persistence/native-persistence#configuring-persistent-storage-directory[`db/{consistentId}`] directory separately if it's not located under the Ignite `work` dir.
+    - Copy the files belonging to a node with the `{consistentId}` from the snapshot into the `$IGNITE_HOME/work/` directory. If the `db/{consistentId}` directory is not located under the Ignite `work` dir then you need to copy data files there.
 . Restart the cluster
 
 === Automatic Snapshot Restore Procedure

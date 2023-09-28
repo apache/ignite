@@ -352,7 +352,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     /**
      * @return New value.
      */
-    CacheObject value() {
+    CacheObject newValue() {
         return newVal;
     }
 

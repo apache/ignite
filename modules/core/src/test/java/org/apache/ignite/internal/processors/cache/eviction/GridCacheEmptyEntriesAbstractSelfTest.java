@@ -32,7 +32,6 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -162,9 +161,6 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
 
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
                 txIsolation = isolation;
-
-                if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
-                    continue;
 
                 Ignite g = startGrids();
 
