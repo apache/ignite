@@ -71,6 +71,14 @@ public final class HintUtils {
     }
 
     /**
+     * @return Hints filtered with {@code hintDefs} and suitable for {@code rel}.
+     * @see HintStrategyTable#apply(List, RelNode)
+     */
+    public static List<RelHint> hints(RelNode rel, Collection<HintDefinition>... hintDefs) {
+        return hints(rel, F.flatCollections(Arrays.asList(hintDefs)).toArray(new HintDefinition[0]));
+    }
+
+    /**
      * @return Hints of {@code rel} if it is a {@code Hintable}. If is not or has no hints, empty collection.
      * @see Hintable#getHints()
      */

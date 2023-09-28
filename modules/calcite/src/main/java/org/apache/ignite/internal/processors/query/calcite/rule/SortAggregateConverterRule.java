@@ -64,7 +64,7 @@ public class SortAggregateConverterRule {
             if (F.isEmpty(agg.getGroupSet()) || agg.getGroupSets().size() > 1)
                 return null;
 
-            if (HashAggregateConverterRule.isExpandedDistinct(agg))
+            if (HintUtils.isExpandDistinctAggregate(agg))
                 return null;
 
             RelOptCluster cluster = agg.getCluster();
@@ -106,7 +106,7 @@ public class SortAggregateConverterRule {
             if (F.isEmpty(agg.getGroupSet()) || agg.getGroupSets().size() > 1)
                 return null;
 
-            if (HashAggregateConverterRule.isExpandedDistinct(agg))
+            if (HintUtils.isExpandDistinctAggregate(agg))
                 return null;
 
             RelOptCluster cluster = agg.getCluster();

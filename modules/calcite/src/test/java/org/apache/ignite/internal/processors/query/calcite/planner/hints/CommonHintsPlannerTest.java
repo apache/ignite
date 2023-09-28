@@ -17,20 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner.hints;
 
-import java.lang.reflect.Field;
-import java.util.concurrent.atomic.AtomicReference;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.TestTable;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.logging.log4j.Level;

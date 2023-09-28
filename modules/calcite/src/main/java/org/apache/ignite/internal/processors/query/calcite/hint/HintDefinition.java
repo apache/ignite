@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.hint;
 
-import org.apache.calcite.rel.hint.HintOptionChecker;
 import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintPredicates;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
@@ -79,7 +78,7 @@ public enum HintDefinition {
         }
 
         /** {@inheritDoc} */
-        @Override public HintOptionChecker optionsChecker() {
+        @Override public HintOptionsChecker optionsChecker() {
             return HintsConfig.OPTS_CHECK_NO_KV;
         }
     },
@@ -92,7 +91,7 @@ public enum HintDefinition {
         }
 
         /** {@inheritDoc} */
-        @Override public HintOptionChecker optionsChecker() {
+        @Override public HintOptionsChecker optionsChecker() {
             return MERGE_JOIN.optionsChecker();
         }
     },
@@ -105,7 +104,7 @@ public enum HintDefinition {
         }
 
         /** {@inheritDoc} */
-        @Override public HintOptionChecker optionsChecker() {
+        @Override public HintOptionsChecker optionsChecker() {
             return MERGE_JOIN.optionsChecker();
         }
     },
@@ -118,7 +117,7 @@ public enum HintDefinition {
         }
 
         /** {@inheritDoc} */
-        @Override public HintOptionChecker optionsChecker() {
+        @Override public HintOptionsChecker optionsChecker() {
             return MERGE_JOIN.optionsChecker();
         }
     },
@@ -131,7 +130,7 @@ public enum HintDefinition {
         }
 
         /** {@inheritDoc} */
-        @Override public HintOptionChecker optionsChecker() {
+        @Override public HintOptionsChecker optionsChecker() {
             return MERGE_JOIN.optionsChecker();
         }
     },
@@ -140,12 +139,12 @@ public enum HintDefinition {
     NO_CNL_JOIN {
         /** {@inheritDoc} */
         @Override public HintPredicate predicate() {
-            return MERGE_JOIN.predicate();
+            return CNL_JOIN.predicate();
         }
 
         /** {@inheritDoc} */
-        @Override public HintOptionChecker optionsChecker() {
-            return MERGE_JOIN.optionsChecker();
+        @Override public HintOptionsChecker optionsChecker() {
+            return CNL_JOIN.optionsChecker();
         }
     };
 

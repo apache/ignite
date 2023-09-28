@@ -314,7 +314,6 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
                     .query(sql)
                     .parameters(params)
                     .plannerTimeout(plannerTimeout)
-                    .log(log)
                     .build();
 
                 try {

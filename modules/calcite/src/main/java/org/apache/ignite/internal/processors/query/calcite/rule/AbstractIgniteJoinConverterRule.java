@@ -34,9 +34,8 @@ import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalJoin;
-import org.apache.ignite.internal.processors.query.calcite.hint.Hint;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.util.Util.last;
@@ -86,7 +85,7 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
 
     /** */
     private boolean disabledByHints(LogicalJoin join) {
-        if (Hint.allRelHints(join).isEmpty())
+        if (HintUtils.allRelHints(join).isEmpty())
             return false;
 
         boolean disabledRes = false;
@@ -97,7 +96,7 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
 
         assert joinTbls.size() < 3;
 
-        for (RelHint hint : Hint.hints(join, HINTS.keySet(), HINTS.values())) {
+        for (RelHint hint : HintUtils.hints(join, HINTS.keySet(), HINTS.values())) {
             Set<String> matchedTbls = hint.listOptions.isEmpty() ? joinTbls : new HashSet<>(hint.listOptions);
 
             if (!hint.listOptions.isEmpty())
@@ -136,11 +135,8 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
             }
 
             if (unableToProcess) {
-                Commons.planContext(join).skippedHint(
-                    relDescription(joinTbls),
-                    hint,
-                    "This join type is already disabled or forced to use before by previous hints"
-                );
+                HintUtils.skippedHint(join, hint,
+                    "This join type is already disabled or forced to use before by previous hints");
 
                 continue;
             }
@@ -161,11 +157,8 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
             // This join type is directyly disabled or other join type is forced.
             if ((curHintIsDisable && curHintDef == knownDisableHint && skipDisableReason != null)
                 || (!curHintIsDisable && knownForceHint != curHintDef)) {
-                Commons.planContext(join).skippedHint(
-                    relDescription(joinTbls),
-                    hint,
-                    "This join type is already disabled or forced to use before by previous hints"
-                );
+                HintUtils.skippedHint(join, hint,
+                    "This join type is already disabled or forced to use before by previous hints");
 
                 disabledRes = true;
             }

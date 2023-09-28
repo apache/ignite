@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
@@ -45,7 +44,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public class CorrelatedNestedLoopJoinRule extends AbstractIgniteJoinConverterRule {
@@ -151,18 +150,15 @@ public class CorrelatedNestedLoopJoinRule extends AbstractIgniteJoinConverterRul
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean activateDisableHint(LogicalJoin join, RelHint hint) {
+    @Override protected @Nullable String skipDisableHintReason(LogicalJoin join, RelHint hint) {
         if (!supportedJoinType(join.getJoinType())) {
             Set<String> joinTblNames = joinTblNames(join);
 
-            Commons.planContext(join).skippedHint(join, hint, "Correlated nested loop is not supported for " +
-                "join type '" + join.getJoinType() + (joinTblNames.isEmpty() ? "'." : "' for tables "
-                + String.join(",", joinTblNames) + '.'));
-
-            return false;
+            return "Correlated nested loop is not supported for join type '" + join.getJoinType()
+                + (joinTblNames.isEmpty() ? "'." : "' for tables " + String.join(",", joinTblNames) + '.');
         }
 
-        return true;
+        return null;
     }
 
     /** */
