@@ -519,8 +519,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     }
 
     /** */
-    private static @Nullable Map<Class<?>, Object> additionalQueryParams(QueryContext ctx) {
-        SqlFieldsQuery sqlFieldsQuery = ctx.unwrap(SqlFieldsQuery.class);
+    private static @Nullable Map<Class<?>, Object> additionalQueryParams(@Nullable QueryContext ctx) {
+        SqlFieldsQuery sqlFieldsQuery = ctx == null ? null : ctx.unwrap(SqlFieldsQuery.class);
 
         if (sqlFieldsQuery == null)
             return null;
