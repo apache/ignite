@@ -270,7 +270,7 @@ public class RunningQueryManager {
             qry,
             qryType,
             schemaName,
-            System.currentTimeMillis(),
+            U.currentTimeMillis(),
             ctx.performanceStatistics().enabled() ? System.nanoTime() : 0,
             cancel,
             loc,
@@ -411,7 +411,7 @@ public class RunningQueryManager {
                     qry.queryType(),
                     qry.schemaName(),
                     qry.startTime(),
-                    System.currentTimeMillis(),
+                    U.currentTimeMillis(),
                     qry.local(),
                     qry.enforceJoinOrder(),
                     qry.lazy(),
@@ -523,7 +523,7 @@ public class RunningQueryManager {
     public Collection<GridRunningQueryInfo> runningQueries(long duration) {
         Collection<GridRunningQueryInfo> res = new ArrayList<>();
 
-        long curTime = System.currentTimeMillis();
+        long curTime = U.currentTimeMillis();
 
         for (GridRunningQueryInfo runningQryInfo : runs.values()) {
             if (curTime - runningQryInfo.startTime() > duration)
