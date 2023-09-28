@@ -64,7 +64,7 @@ public enum HintDefinition {
 
         /** {@inheritDoc} */
         @Override public Collection<RelOptRule> disabledRules() {
-            // CoreRules#JOIN_COMMUTE also disables the same CoreRules.JOIN_COMMUTE_OUTER.
+            // CoreRules#JOIN_COMMUTE also disables CoreRules.JOIN_COMMUTE_OUTER.
             return Arrays.asList(CoreRules.JOIN_COMMUTE, JoinPushThroughJoinRule.LEFT, JoinPushThroughJoinRule.RIGHT);
         }
     },

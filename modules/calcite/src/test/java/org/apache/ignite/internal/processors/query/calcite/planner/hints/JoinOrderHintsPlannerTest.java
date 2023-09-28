@@ -27,6 +27,9 @@ import org.apache.ignite.internal.processors.query.calcite.planner.TestTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.apache.logging.log4j.Level;
 import org.junit.Test;
 
 /**
@@ -35,6 +38,13 @@ import org.junit.Test;
 public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
     /** */
     private IgniteSchema schema;
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        ((GridTestLog4jLogger)log).setLevel(Level.INFO);
+    }
 
     /** {@inheritDoc} */
     @Override public void setup() {
@@ -205,5 +215,34 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
                 .and(input(1, nodeOrAnyChild(isInstanceOf(Join.class)
                     .and(input(0, nodeOrAnyChild(isTableScan("TBL2"))))
                     .and(input(1, nodeOrAnyChild(isTableScan("TBl3")))))))));
+    }
+
+    /** */
+    @Test
+    public void testWrongParams() throws Exception {
+        LogListener lsnr = LogListener.matches("Hint '" + HintDefinition.ORDERED_JOINS
+            + "' can't have any key-value option").build();
+
+        lsnrLog.registerListener(lsnr);
+
+        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
+
+        physicalPlan("select /*+ " + HintDefinition.ORDERED_JOINS.name() + "(a='b') */ t3.* from TBL1 t1, " +
+            "TBL2 t2, TBL3 t3 where t1.v1=t3.v1 and t1.v2=t2.v2", schema);
+
+        assertTrue(lsnr.check());
+
+        lsnrLog.clearListeners();
+
+        lsnr = LogListener.matches("Hint '" + HintDefinition.ORDERED_JOINS + "' can't have any option").build();
+
+        lsnrLog.registerListener(lsnr);
+
+        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
+
+        physicalPlan("select /*+ " + HintDefinition.ORDERED_JOINS.name() + "(OPTION) */ t3.* from TBL1 t1, " +
+            "TBL2 t2, TBL3 t3 where t1.v1=t3.v1 and t1.v2=t2.v2", schema);
+
+        assertTrue(lsnr.check());
     }
 }
