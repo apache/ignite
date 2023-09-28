@@ -171,7 +171,7 @@ public final class HintUtils {
 
         /** {@inheritDoc} */
         @Override public RelNode getInput(int i) {
-            return null;
+            return getInputs().get(i);
         }
 
         /** {@inheritDoc} */
