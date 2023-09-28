@@ -82,6 +82,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isDefaultDataRegionPersistent;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 
@@ -498,6 +499,8 @@ public class ValidationOnNodeJoinUtils {
             if (!changeablePoolSize)
                 checkRebalanceConfiguration(n, ctx);
 
+            checkTransactionConfiguration(n, ctx, log);
+
             checkMemoryConfiguration(n, ctx);
 
             DeploymentMode locDepMode = ctx.config().getDeploymentMode();
@@ -605,6 +608,26 @@ public class ValidationOnNodeJoinUtils {
                 " [rmtNodeId=" + rmt.id() +
                 ", locRebalanceThreadPoolSize = " + ctx.config().getRebalanceThreadPoolSize() +
                 ", rmtRebalanceThreadPoolSize = " + rebalanceThreadPoolSize + "]");
+        }
+    }
+
+    /**
+     * @param rmt Remote node to check.
+     * @param ctx Context.
+     * @param log Logger.
+     * @throws IgniteCheckedException If check failed.
+     */
+    private static void checkTransactionConfiguration(
+        ClusterNode rmt,
+        GridKernalContext ctx,
+        IgniteLogger log
+    ) throws IgniteCheckedException {
+        TransactionConfiguration rmtTxCfg = rmt.attribute(ATTR_TX_CONFIG);
+
+        if (rmtTxCfg != null) {
+            TransactionConfiguration locTxCfg = ctx.config().getTransactionConfiguration();
+
+            checkSerializableEnabledConfig(rmt, rmtTxCfg, locTxCfg);
         }
     }
 

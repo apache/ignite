@@ -34,7 +34,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
-import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
@@ -439,14 +438,8 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
 
         Map<String, Object> attrs = new HashMap<>(attrCnt);
 
-        for (int i = 0; i < attrCnt; i++) {
-            try {
-                attrs.put(reader.readString(), reader.readObjectDetached());
-            }
-            catch (BinaryObjectException ignored) {
-                // Skipping deserialization issues related to the incompatible classes from different versions.
-            }
-        }
+        for (int i = 0; i < attrCnt; i++)
+            attrs.put(reader.readString(), reader.readObjectDetached());
 
         return attrs;
     }
