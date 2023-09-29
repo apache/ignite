@@ -84,6 +84,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.systemview.view.SqlQueryView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.sql.SqlTableView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
@@ -93,6 +95,7 @@ import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
+import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_QRY_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.MB;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertNotEquals;
@@ -666,6 +669,24 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         sql = "SELECT SQL FROM " + systemSchemaName() + ".SQL_QUERIES WHERE QUERY_ID='UNKNOWN'";
 
         assertTrue(cache.query(new SqlFieldsQuery(sql)).getAll().isEmpty());
+    }
+
+    /**
+     * Test running queries duration in system view.
+     */
+    @Test
+    public void testRunningQueriesViewDuration() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        SqlFieldsQuery sql = new SqlFieldsQuery("SELECT * FROM (VALUES (1),(2))").setPageSize(1);
+
+        for (int i = 0; i < 5; i++) {
+            ignite.context().query().querySqlFields(sql, true).iterator().hasNext();
+
+            SystemView<SqlQueryView> view = ignite.context().systemView().view(SQL_QRY_VIEW);
+
+            view.forEach(v -> assertTrue(v.duration() >= 0));
+        }
     }
 
     /**
