@@ -267,17 +267,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public void preProcessCacheConfiguration(CacheConfiguration ccfg) {
-        if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
-            if (!mvccSupported)
-                throw new IgniteException("Cannot start MVCC transactional cache. " +
-                    "MVCC is unsupported by the cluster.");
-
-            mvccEnabled = true;
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void validateCacheConfiguration(CacheConfiguration ccfg) {
         if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
             if (!mvccSupported)

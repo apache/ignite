@@ -195,13 +195,6 @@ public interface MvccProcessor extends GridProcessor {
     void ackTxRollback(MvccVersion updateVer);
 
     /**
-     * Pre-processes cache configuration before start.
-     *
-     * @param ccfg Cache configuration to pre-process.
-     */
-    void preProcessCacheConfiguration(CacheConfiguration ccfg);
-
-    /**
      * Validates cache configuration before start.
      *
      * @param ccfg Cache configuration to validate.
