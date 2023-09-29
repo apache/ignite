@@ -20,7 +20,6 @@ package org.apache.ignite.yardstick.jdbc.mvcc;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 
@@ -31,13 +30,6 @@ import static org.yardstickframework.BenchmarkUtils.println;
  * Designed to be ran in many threads on many hosts.
  */
 public class MvccUpdateContentionBenchmark extends AbstractDistributedMvccBenchmark {
-    /** Expected expception message in mvcc on mode on update fail. */
-    private static final String MVCC_EXC_MSG = "Cannot serialize transaction due to write conflict";
-
-    /** Expected exception message in mvcc off mode on update fail. */
-    private static final String NO_MVCC_EXC_MSG_PREFIX =
-        "Failed to UPDATE some keys because they had been modified concurrently";
-
     /** Counter of failed updates. */
     private final AtomicLong failsCnt = new AtomicLong();
 
@@ -53,10 +45,6 @@ public class MvccUpdateContentionBenchmark extends AbstractDistributedMvccBenchm
             execute(new SqlFieldsQuery(UPDATE_QRY).setArgs(start, end));
         }
         catch (IgniteSQLException exc) {
-            if ((args.atomicMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT && !exc.getMessage().startsWith(MVCC_EXC_MSG)) ||
-                (args.atomicMode() != CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT && !exc.getMessage().startsWith(NO_MVCC_EXC_MSG_PREFIX)))
-                throw new RuntimeException("Exception with unexpected message is thrown.", exc);
-
             failsCnt.incrementAndGet();
         }
         catch (Exception e) {
