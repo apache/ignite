@@ -22,7 +22,6 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
@@ -48,14 +47,12 @@ import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.sql.SqlParseException;
@@ -68,6 +65,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.api.ErrorCode;
 import org.h2.command.Prepared;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.keyColumn;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_PARSER_CACHE_HIT;
@@ -461,7 +459,7 @@ public class QueryParser {
                 GridSqlQuery selectStmt = (GridSqlQuery)parser.parse(prepared);
 
                 List<Integer> cacheIds = parser.cacheIds();
-                Integer mvccCacheId = mvccCacheIdForSelect(parser.objectsMap());
+                Integer mvccCacheId = null;
 
                 // Calculate if query is in fact can be executed locally.
                 boolean loc = qry.isLocal();
@@ -617,48 +615,6 @@ public class QueryParser {
 
         throw new IgniteSQLException("Multiple statements queries are not supported.",
             IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-    }
-
-    /**
-     * Get ID of the first MVCC cache for SELECT.
-     *
-     * @param objMap Object map.
-     * @return ID of the first MVCC cache or {@code null} if no MVCC caches involved.
-     */
-    private Integer mvccCacheIdForSelect(Map<Object, Object> objMap) {
-        Boolean mvccEnabled = null;
-        Integer mvccCacheId = null;
-        GridCacheContextInfo cctx = null;
-
-        for (Object o : objMap.values()) {
-            if (o instanceof GridSqlAlias)
-                o = GridSqlAlias.unwrap((GridSqlAst)o);
-            if (o instanceof GridSqlTable && ((GridSqlTable)o).dataTable() != null) {
-                GridSqlTable tbl = (GridSqlTable)o;
-
-                if (tbl.dataTable() != null) {
-                    GridCacheContextInfo curCctx = tbl.dataTable().cacheInfo();
-
-                    assert curCctx != null;
-
-                    boolean curMvccEnabled =
-                        curCctx.config().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-
-                    if (mvccEnabled == null) {
-                        mvccEnabled = curMvccEnabled;
-
-                        if (mvccEnabled)
-                            mvccCacheId = curCctx.cacheId();
-
-                        cctx = curCctx;
-                    }
-                    else if (mvccEnabled != curMvccEnabled)
-                        MvccUtils.throwAtomicityModesMismatchException(cctx.config(), curCctx.config());
-                }
-            }
-        }
-
-        return mvccCacheId;
     }
 
     /**
