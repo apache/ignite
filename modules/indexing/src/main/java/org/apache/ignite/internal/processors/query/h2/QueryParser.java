@@ -27,12 +27,9 @@ import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
@@ -641,23 +638,6 @@ public class QueryParser {
         for (GridH2Table h2tbl : tbls)
             H2Utils.checkAndStartNotStartedCache(idx.kernalContext(), h2tbl.cacheInfo());
 
-        // Check MVCC mode.
-        GridCacheContextInfo ctx = null;
-        boolean mvccEnabled = false;
-
-        for (GridH2Table h2tbl : tbls) {
-            GridCacheContextInfo curCtx = h2tbl.cacheInfo();
-            boolean curMvccEnabled = curCtx.config().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-
-            if (ctx == null) {
-                ctx = curCtx;
-
-                mvccEnabled = curMvccEnabled;
-            }
-            else if (curMvccEnabled != mvccEnabled)
-                MvccUtils.throwAtomicityModesMismatchException(ctx.config(), curCtx.config());
-        }
-
         // Get streamer info.
         GridH2Table streamTbl = null;
 
@@ -674,7 +654,7 @@ public class QueryParser {
             plan = UpdatePlanBuilder.planForStatement(
                 planKey,
                 stmt,
-                mvccEnabled,
+                false,
                 idx,
                 log,
                 forceFillAbsentPKsWithDefaults
@@ -689,7 +669,7 @@ public class QueryParser {
 
         return new QueryParserResultDml(
             stmt,
-            mvccEnabled,
+            false,
             streamTbl,
             plan
         );
