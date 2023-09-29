@@ -325,15 +325,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** {@inheritDoc} */
     @Override public void afterBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr,
         GridCacheDatabaseSharedManager.RestoreBinaryState restoreState) throws IgniteCheckedException {
-
-        boolean hasMvccCaches = ctx.cache().persistentCaches().stream()
-            .anyMatch(c -> c.cacheConfiguration().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT);
-
-        if (hasMvccCaches) {
-            txLog = new TxLog(ctx, mgr);
-
-            mvccEnabled = true;
-        }
+        // No-op.
     }
 
     /**
