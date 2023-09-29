@@ -27,14 +27,20 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.DumpedPartitionIterator;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
+import static org.apache.ignite.internal.IgniteKernal.NL;
+import static org.apache.ignite.internal.IgniteKernal.SITE;
+import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
+import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 
 /**
  * Dump Reader application.
@@ -58,6 +64,8 @@ public class DumpReader implements Runnable {
 
     /** {@inheritDoc} */
     @Override public void run() {
+        ackAsciiLogo();
+
         try (Dump dump = new Dump(cfg.dumpRoot(), cfg.keepBinary(), log)) {
             DumpConsumer cnsmr = cfg.consumer();
 
@@ -138,6 +146,56 @@ public class DumpReader implements Runnable {
         }
         catch (Exception e) {
             throw new IgniteException(e);
+        }
+    }
+
+    /** */
+    private void ackAsciiLogo() {
+        String ver = "ver. " + ACK_VER_STR;
+
+        if (log.isInfoEnabled()) {
+            log.info(NL + NL +
+                ">>>    __________  ________________  ___  __  ____  ______    ___  _______   ___  _______" + NL +
+                ">>>   /  _/ ___/ |/ /  _/_  __/ __/ / _ \\/ / / /  |/  / _ \\  / _ \\/ __/ _ | / _ \\/ __/ _ \\" + NL +
+                ">>>  _/ // (_ /    // /  / / / _/  / // / /_/ / /|_/ / ___/ / , _/ _// __ |/ // / _// , _/" + NL +
+                ">>> /___/\\___/_/|_/___/ /_/ /___/ /____/\\____/_/  /_/_/    /_/|_/___/_/ |_/____/___/_/|_|" + NL +
+                ">>> " + NL +
+                ">>> " + ver + NL +
+                ">>> " + COPYRIGHT + NL +
+                ">>> " + NL +
+                ">>> Ignite documentation: " + "http://" + SITE + NL +
+                ">>> ConsistentId: " + cfg.dumpRoot() + NL +
+                ">>> Consumer: " + U.toStringSafe(cfg.consumer())
+            );
+        }
+
+        if (log.isQuiet()) {
+            U.quiet(false,
+                "   __________  ________________  ___  __  ____  ______    ___  _______   ___  _______",
+                "  /  _/ ___/ |/ /  _/_  __/ __/ / _ \\/ / / /  |/  / _ \\  / _ \\/ __/ _ | / _ \\/ __/ _ \\",
+                " _/ // (_ /    // /  / / / _/  / // / /_/ / /|_/ / ___/ / , _/ _// __ |/ // / _// , _/",
+                "/___/\\___/_/|_/___/ /_/ /___/ /____/\\____/_/  /_/_/    /_/|_/___/_/ |_/____/___/_/|_|",
+                "",
+                ver,
+                COPYRIGHT,
+                "",
+                "Ignite documentation: " + "http://" + SITE,
+                "Dump: " + cfg.dumpRoot(),
+                "Consumer: " + U.toStringSafe(cfg.consumer()),
+                "",
+                "Quiet mode.");
+
+            String fileName = log.fileName();
+
+            if (fileName != null)
+                U.quiet(false, "  ^-- Logging to file '" + fileName + '\'');
+
+            if (log instanceof GridLoggerProxy)
+                U.quiet(false, "  ^-- Logging by '" + ((GridLoggerProxy)log).getLoggerInfo() + '\'');
+
+            U.quiet(false,
+                "  ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or \"-v\" to ignite-cdc.{sh|bat}",
+                "");
         }
     }
 }
