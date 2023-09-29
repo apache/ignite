@@ -1259,9 +1259,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 counters.accumulateSizeDelta(cctx.cacheId(), partition(), -1);
             }
 
-            if (cctx.group().logDataRecords())
-                logPtr = logMvccUpdate(tx, null, 0, 0L, mvccVer);
-
             update(null, 0, 0, newVer, true);
 
             recordNodeId(affNodeId, topVer);
@@ -3897,7 +3894,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         long expireTime,
         long updCntr
     ) throws IgniteCheckedException {
-        assert cctx.transactional() && !cctx.transactionalSnapshot();
+        assert cctx.transactional();
 
         if (tx.local()) { // For remote tx we log all updates in batch: GridDistributedTxRemoteAdapter.commitIfLocked()
             GridCacheOperation op;
@@ -3917,43 +3914,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 key.partition(),
                 updCntr,
                 DataEntry.flags(CU.txOnPrimary(tx)))));
-        }
-        else
-            return null;
-    }
-
-    /**
-     * @param tx Transaction.
-     * @param val Value.
-     * @param expireTime Expire time (or 0 if not applicable).     *
-     * @param updCntr Update counter.
-     * @param mvccVer Mvcc version.
-     * @throws IgniteCheckedException In case of log failure.
-     */
-    protected WALPointer logMvccUpdate(IgniteInternalTx tx, CacheObject val, long expireTime, long updCntr,
-        MvccSnapshot mvccVer)
-        throws IgniteCheckedException {
-        assert mvccVer != null;
-        assert cctx.transactionalSnapshot();
-
-        if (tx.local()) { // For remote tx we log all updates in batch: GridDistributedTxRemoteAdapter.commitIfLocked()
-            GridCacheOperation op;
-            if (val == null)
-                op = DELETE;
-            else
-                op = this.val == null ? GridCacheOperation.CREATE : UPDATE;
-
-            return cctx.group().wal().log(new MvccDataRecord(new MvccDataEntry(
-                cctx.cacheId(),
-                key,
-                val,
-                op,
-                tx.nearXidVersion(),
-                tx.writeVersion(),
-                expireTime,
-                key.partition(),
-                updCntr,
-                mvccVer)));
         }
         else
             return null;
@@ -4843,9 +4803,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     counters.accumulateSizeDelta(cctx.cacheId(), entry.partition(), -1);
                 }
-
-                if (cctx.group().logDataRecords())
-                    entry.logMvccUpdate(tx, null, 0, 0, mvccVer);
 
                 entry.update(null, 0, 0, newVer, true);
 
