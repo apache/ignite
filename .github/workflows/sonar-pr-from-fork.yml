@@ -19,6 +19,9 @@ name: Sonar Quality Pull Request Analysis
 
 # TODO IGNITE-20466 Investigate and fix the issue with running this workflow on PRs from forks.
 on:
+  push:
+    branches:
+      - test-fix-sonar-pr-run
   workflow_dispatch:
     inputs:
       pull-request-id:
