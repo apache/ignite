@@ -57,6 +57,8 @@ import static java.lang.System.arraycopy;
 import static java.nio.file.Files.walkFileTree;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAll;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAll;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readPosition;
 
@@ -176,8 +178,7 @@ public class IgniteWalIteratorFactory {
         if (iteratorParametersBuilder.sharedCtx == null) {
             GridCacheSharedContext<?, ?> sctx = prepareSharedCtx(iteratorParametersBuilder);
 
-            for (GridComponent comp : sctx.kernalContext())
-                comp.start();
+            startAll(sctx.kernalContext());
 
             return new StandaloneWalRecordsIterator(
                 iteratorParametersBuilder.log == null ? log : iteratorParametersBuilder.log,
@@ -194,8 +195,7 @@ public class IgniteWalIteratorFactory {
                 @Override protected void onClose() throws IgniteCheckedException {
                     super.onClose();
 
-                    for (GridComponent comp : sctx.kernalContext())
-                        comp.stop(true);
+                    closeAll(sctx.kernalContext());
                 }
             };
         }
@@ -690,9 +690,9 @@ public class IgniteWalIteratorFactory {
     /**
      *
      */
-    private static class ConsoleLogger implements IgniteLogger {
+    public static class ConsoleLogger implements IgniteLogger {
         /** */
-        private static final ConsoleLogger INSTANCE = new ConsoleLogger();
+        public static final ConsoleLogger INSTANCE = new ConsoleLogger();
 
         /** */
         private static final PrintStream OUT = System.out;

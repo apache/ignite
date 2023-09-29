@@ -356,11 +356,16 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             }
         };
 
-        new DumpReader(new DumpReaderConfiguration(
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name),
-            cnsmr,
-            DFLT_THREAD_CNT, DFLT_TIMEOUT, true, false
-        ), ign.context()).run();
+        new DumpReader(
+            new DumpReaderConfiguration(
+                new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name),
+                cnsmr,
+                DFLT_THREAD_CNT, DFLT_TIMEOUT,
+                true,
+                false
+            ),
+            log
+        ).run();
 
         cnsmr.check();
     }
@@ -438,9 +443,9 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     /** */
     public static Dump dump(IgniteEx ign, String name) throws IgniteCheckedException {
         return new Dump(
-            ign.context(),
             new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name),
-            true
+            true,
+            log
         );
     }
 

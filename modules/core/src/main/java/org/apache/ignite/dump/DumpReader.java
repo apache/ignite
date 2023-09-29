@@ -27,7 +27,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
@@ -46,22 +45,20 @@ public class DumpReader implements Runnable {
     /** Configuration. */
     private final DumpReaderConfiguration cfg;
 
-    /** */
-    private final GridKernalContext kctx;
+    /** Log. */
+    private final IgniteLogger log;
 
     /**
      * @param cfg Dump reader configuration.
-     * @param kctx Kernal context.
      */
-    public DumpReader(DumpReaderConfiguration cfg, GridKernalContext kctx) {
+    public DumpReader(DumpReaderConfiguration cfg, IgniteLogger log) {
         this.cfg = cfg;
-        this.kctx = kctx;
+        this.log = log.getLogger(DumpReader.class);
     }
 
     /** {@inheritDoc} */
     @Override public void run() {
-        try {
-            Dump dump = new Dump(kctx, cfg.dumpRoot(), cfg.keepBinary());
+        try (Dump dump = new Dump(cfg.dumpRoot(), cfg.keepBinary(), log)) {
             DumpConsumer cnsmr = cfg.consumer();
 
             cnsmr.start();
@@ -72,7 +69,7 @@ public class DumpReader implements Runnable {
                 if (files != null)
                     cnsmr.onMappings(CdcMain.typeMappingIterator(files, tm -> true));
 
-                cnsmr.onTypes(kctx.cacheObjects().metadata().iterator());
+                cnsmr.onTypes(dump.types());
 
                 Map<Integer, List<String>> grpToNodes = new HashMap<>();
 
@@ -87,7 +84,6 @@ public class DumpReader implements Runnable {
 
                 ExecutorService execSvc = Executors.newFixedThreadPool(cfg.threadCount());
 
-                IgniteLogger log = kctx.log(DumpReader.class);
                 AtomicBoolean skip = new AtomicBoolean(false);
 
                 for (Map.Entry<Integer, List<String>> e : grpToNodes.entrySet()) {
@@ -128,7 +124,13 @@ public class DumpReader implements Runnable {
 
                 execSvc.shutdown();
 
-                execSvc.awaitTermination(cfg.timeout().toMillis(), MILLISECONDS);
+                boolean res = execSvc.awaitTermination(cfg.timeout().toMillis(), MILLISECONDS);
+
+                if (!res) {
+                    log.warning("Dump processing tasks not finished after timeout. Cancelling");
+
+                    execSvc.shutdownNow();
+                }
             }
             finally {
                 cnsmr.stop();

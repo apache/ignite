@@ -694,4 +694,22 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     @Override public Executor getAsyncContinuationExecutor() {
         return null;
     }
+
+    /**
+     * @param kctx Kernal context.
+     * @throws IgniteCheckedException In case of any error.
+     */
+    public static void startAll(GridKernalContext kctx) throws IgniteCheckedException {
+        for (GridComponent comp : kctx)
+            comp.start();
+    }
+
+    /**
+     * @param kctx Kernal context.
+     * @throws IgniteCheckedException In case of any error.
+     */
+    public static void closeAll(GridKernalContext kctx) throws IgniteCheckedException {
+        for (GridComponent comp : kctx)
+            comp.stop(true);
+    }
 }

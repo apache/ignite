@@ -137,10 +137,13 @@ public class DumpCacheConfigTest extends GridCommonAbstractTest {
             }
         };
 
-        new DumpReader(new DumpReaderConfiguration(
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), srv.configuration().getSnapshotPath(), false), name),
-            cnsmr
-        ), srv.context()).run();
+        new DumpReader(
+            new DumpReaderConfiguration(
+                new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), srv.configuration().getSnapshotPath(), false), name),
+                cnsmr
+            ),
+            log
+        ).run();
 
         assertEquals(first ? KEYS_CNT : (KEYS_CNT * 2), cnt.get());
 

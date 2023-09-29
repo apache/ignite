@@ -83,6 +83,8 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.segmentIndex;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAll;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAll;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
@@ -329,8 +331,7 @@ public class CdcMain implements Runnable {
                 }
             }
             finally {
-                for (GridComponent comp : kctx)
-                    comp.stop(false);
+                closeAll(kctx);
 
                 if (log.isInfoEnabled())
                     log.info("Ignite Change Data Capture Application stopped.");
@@ -371,8 +372,7 @@ public class CdcMain implements Runnable {
 
         kctx.resource().setSpringContext(ctx);
 
-        for (GridComponent comp : kctx)
-            comp.start();
+        startAll(kctx);
 
         mreg = kctx.metric().registry("cdc");
 
