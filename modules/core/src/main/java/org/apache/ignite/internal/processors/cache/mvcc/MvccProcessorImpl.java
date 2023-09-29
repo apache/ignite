@@ -37,7 +37,6 @@ import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -57,7 +56,6 @@ import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
-import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -108,7 +106,6 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -251,7 +248,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         customLsnr = new CustomEventListener<DynamicCacheChangeBatch>() {
             @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
                 DynamicCacheChangeBatch msg) {
-                checkMvccCacheStarted(msg);
+                // No-op.
             }
         };
     }
@@ -985,24 +982,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** */
     private boolean supportsMvcc(ClusterNode node) {
         return node.version().compareToIgnoreTimestamp(MVCC_SUPPORTED_SINCE) >= 0;
-    }
-
-    /** */
-    private void checkMvccCacheStarted(DynamicCacheChangeBatch cacheMsg) {
-        if (!mvccEnabled) {
-            for (DynamicCacheChangeRequest req : cacheMsg.requests()) {
-                CacheConfiguration ccfg = req.startCacheConfiguration();
-
-                if (ccfg == null)
-                    continue;
-
-                if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
-                    assert mvccSupported;
-
-                    mvccEnabled = true;
-                }
-            }
-        }
     }
 
     /** */
