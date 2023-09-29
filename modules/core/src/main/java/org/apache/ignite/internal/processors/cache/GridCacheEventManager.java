@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.events.EventType.EVT_CACHE_CLEARED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_EVICTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_NODES_LEFT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_EXPIRED;
@@ -278,7 +279,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         @Nullable String taskName,
         boolean keepBinary
     ) {
-        assert key != null || type == EVT_CACHE_STARTED || type == EVT_CACHE_STOPPED;
+        assert key != null || type == EVT_CACHE_STARTED || type == EVT_CACHE_CLEARED || type == EVT_CACHE_STOPPED;
 
         if (!cctx.events().isRecordable(type))
             LT.warn(log, "Added event without checking if event is recordable: " + U.gridEventName(type));

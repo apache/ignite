@@ -635,6 +635,15 @@ public interface EventType {
      * @see CacheRebalancingEvent
      */
     public static final int EVT_CACHE_REBALANCE_PART_MISSED = 88;
+    /**
+     * Built-in event type: cache cleared.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
+     */
+    public static final int EVT_CACHE_CLEARED = 95;
 
     /**
      * Built-in event type: query executed.

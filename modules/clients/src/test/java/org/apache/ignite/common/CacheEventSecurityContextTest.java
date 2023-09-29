@@ -68,6 +68,7 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.events.EventType.EVT_CACHE_CLEARED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
@@ -108,6 +109,7 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
     /** {@inheritDoc} */
     @Override protected int[] eventTypes() {
         return new int[] {
+            EVT_CACHE_CLEARED,
             EVT_CACHE_OBJECT_PUT,
             EVT_CACHE_OBJECT_READ,
             EVT_CACHE_OBJECT_REMOVED,

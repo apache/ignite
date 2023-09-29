@@ -19,6 +19,7 @@ package org.apache.ignite.common;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
@@ -41,7 +42,8 @@ import org.junit.Test;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.events.EventType.EVTS_CACHE_LIFECYCLE;
+import static org.apache.ignite.events.EventType.EVT_CACHE_CLEARED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_NODES_LEFT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_STOPPED;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_SET_STATE;
@@ -59,7 +61,12 @@ public class CacheCreateDestroyEventSecurityContextTest extends AbstractEventSec
 
     /** {@inheritDoc} */
     @Override protected int[] eventTypes() {
-        return EVTS_CACHE_LIFECYCLE.clone();
+        return new int[] {
+            EVT_CACHE_STARTED,
+            EVT_CACHE_STOPPED,
+            EVT_CACHE_NODES_LEFT,
+            EVT_CACHE_CLEARED
+        };
     }
 
     /** {@inheritDoc} */
@@ -84,7 +91,8 @@ public class CacheCreateDestroyEventSecurityContextTest extends AbstractEventSec
         ClientCacheConfiguration ccfg = clientCacheConfiguration();
 
         try (IgniteClient cli = Ignition.startClient(cfg)) {
-            checkCacheEvents(() -> cli.createCache(ccfg), EVT_CACHE_STARTED);
+            checkCacheEvents(() -> cli.createCache(ccfg).put(UUID.randomUUID(), UUID.randomUUID()), EVT_CACHE_STARTED);
+            checkCacheEvents(() -> cli.getOrCreateCache(ccfg.getName()).clear(), EVT_CACHE_CLEARED);
             checkCacheEvents(() -> cli.destroyCache(ccfg.getName()), EVT_CACHE_STOPPED);
 
             checkCacheEvents(() -> cli.createCacheAsync(ccfg).get(), EVT_CACHE_STARTED);

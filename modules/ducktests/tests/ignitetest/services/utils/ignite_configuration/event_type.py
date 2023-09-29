@@ -22,6 +22,7 @@ class EventType(Enum):
     """
 
     EVT_CACHE_STARTED = auto()
+    EVT_CACHE_CLEARED = auto()
     EVT_CACHE_STOPPED = auto()
     EVT_CHECKPOINT_SAVED = auto()
     EVT_CLUSTER_SNAPSHOT_FAILED = auto()

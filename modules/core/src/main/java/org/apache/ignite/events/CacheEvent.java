@@ -63,6 +63,7 @@ import org.jetbrains.annotations.Nullable;
  * event storage SPI if they are disabled in Ignite configuration.
  *
  * @see EventType#EVT_CACHE_STARTED
+ * @see EventType#EVT_CACHE_CLEARED
  * @see EventType#EVT_CACHE_STOPPED
  * @see EventType#EVT_CACHE_NODES_LEFT
  * @see EventType#EVTS_CACHE_LIFECYCLE
