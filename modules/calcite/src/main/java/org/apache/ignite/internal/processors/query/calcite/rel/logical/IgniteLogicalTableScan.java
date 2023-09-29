@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.query.calcite.rel.logical;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
@@ -30,23 +30,25 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 public class IgniteLogicalTableScan extends ProjectableFilterableTableScan {
-    /** Creates a IgniteTableScan. */
+    /** Creates a IgniteLogicalTableScan. */
     public static IgniteLogicalTableScan create(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable tbl,
+        List<RelHint> hints,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        return new IgniteLogicalTableScan(cluster, traits, tbl, proj, cond, requiredColumns);
+        return new IgniteLogicalTableScan(cluster, traits, tbl, hints, proj, cond, requiredColumns);
     }
 
     /**
-     * Creates a TableScan.
-     * @param cluster Cluster that this relational expression belongs to
-     * @param traits Traits of this relational expression
+     * Creates a IgniteLogicalTableScan.
+     * @param cluster Cluster that this relational expression belongs to.
+     * @param traits Traits of this relational expression.
      * @param tbl Table definition.
+     * @param hints Hints.
      * @param proj Projects.
      * @param cond Filters.
      * @param requiredColunms Participating colunms.
@@ -55,10 +57,17 @@ public class IgniteLogicalTableScan extends ProjectableFilterableTableScan {
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable tbl,
+        List<RelHint> hints,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColunms
     ) {
-        super(cluster, traits, ImmutableList.of(), tbl, proj, cond, requiredColunms);
+        super(cluster, traits, hints, tbl, proj, cond, requiredColunms);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogicalTableScan withHints(List<RelHint> hints) {
+        return new IgniteLogicalTableScan(getCluster(), getTraitSet(), getTable(), hints, projects(), condition(),
+            requiredColumns());
     }
 }
