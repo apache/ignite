@@ -1322,8 +1322,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             case REPLICATED: {
                 if (nearEnabled) {
                     switch (cfg.getAtomicityMode()) {
-                        case TRANSACTIONAL:
-                        case TRANSACTIONAL_SNAPSHOT: {
+                        case TRANSACTIONAL: {
                             cache = new GridNearTransactionalCache(cacheCtx);
 
                             break;
@@ -1341,8 +1340,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
                 else {
                     switch (cfg.getAtomicityMode()) {
-                        case TRANSACTIONAL:
-                        case TRANSACTIONAL_SNAPSHOT: {
+                        case TRANSACTIONAL: {
                             cache = cacheCtx.affinityNode() ?
                                 new GridDhtColocatedCache(cacheCtx) :
                                 new GridDhtColocatedCache(cacheCtx, new GridNoStorageCacheMap());
@@ -1435,8 +1433,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridDhtCacheAdapter dht = null;
 
             switch (cfg.getAtomicityMode()) {
-                case TRANSACTIONAL:
-                case TRANSACTIONAL_SNAPSHOT: {
+                case TRANSACTIONAL: {
                     assert cache instanceof GridNearTransactionalCache;
 
                     GridNearTransactionalCache near = (GridNearTransactionalCache)cache;
