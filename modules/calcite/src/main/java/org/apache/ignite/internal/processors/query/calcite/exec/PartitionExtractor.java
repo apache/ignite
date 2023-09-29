@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -83,12 +84,16 @@ public class PartitionExtractor extends IgniteRelShuttle {
     @Override protected IgniteRel processNode(IgniteRel rel) {
         IgniteRel res = super.processNode(rel);
 
-        if (rel.getInputs().size() <= 1)
+        if (rel.getInputs().isEmpty())
             return res;
 
         List<PartitionNode> operands = new ArrayList<>();
-        for (int i = 0; i < rel.getInputs().size(); ++i)
+        for (int i = 0; i < rel.getInputs().size(); ++i) {
+            if (stack.isEmpty())
+                break;
+
             operands.add(stack.pop());
+        }
 
         stack.push(PartitionOperandNode.createOrOperandNode(operands));
 
@@ -139,7 +144,12 @@ public class PartitionExtractor extends IgniteRelShuttle {
             types.add(Primitives.wrap((Class<?>)typeFactory.getJavaClass(field.getType())));
         }
 
-        List<Integer> requiredCols = ((ProjectableFilterableTableScan)rel).requiredColumns().asList();
+        List<Integer> requiredCols;
+        if (((ProjectableFilterableTableScan)rel).requiredColumns() != null)
+            requiredCols = ((ProjectableFilterableTableScan)rel).requiredColumns().asList();
+        else
+            requiredCols = Collections.emptyList();
+
         PartitionNode partNode = processCondition(condition, types, keys, requiredCols, cacheId);
 
         stack.push(partNode);
@@ -166,7 +176,9 @@ public class PartitionExtractor extends IgniteRelShuttle {
                 if (!left.isA(SqlKind.LOCAL_REF))
                     return PartitionAllNode.INSTANCE;
 
-                int idx = requiredCols.get(((RexLocalRef)left).getIndex());
+                int idx = ((RexLocalRef)left).getIndex();
+                if (!requiredCols.isEmpty())
+                    idx = requiredCols.get(idx);
 
                 if (!keys.contains(idx))
                     return PartitionAllNode.INSTANCE;
@@ -193,7 +205,9 @@ public class PartitionExtractor extends IgniteRelShuttle {
                 if (!right.isA(SqlKind.LITERAL) && !right.isA(SqlKind.DYNAMIC_PARAM))
                     return PartitionAllNode.INSTANCE;
 
-                int idx = requiredCols.get(((RexLocalRef)left).getIndex());
+                int idx = ((RexLocalRef)left).getIndex();
+                if (!requiredCols.isEmpty())
+                    idx = requiredCols.get(idx);
 
                 if (!keys.contains(idx))
                     return PartitionAllNode.INSTANCE;
