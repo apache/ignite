@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     {
         /// <summary>
         /// Specifies fully ACID-compliant transactional cache behavior.
+        /// </summary>
         Transactional,
 
         /// <summary>
