@@ -79,7 +79,6 @@ import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -446,9 +445,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     @Override public Lock lockAll(final Collection<? extends K> keys) {
         IgniteInternalCache<K, V> delegate = getDelegateSafe();
         GridCacheContext<K, V> ctx = getContextSafe();
-
-        //TODO: IGNITE-9324: add explicit locks support.
-        MvccUtils.verifyMvccOperationSupport(ctx, "Lock");
 
         return new CacheLockImpl<>(ctx.gate(), delegate, ctx.operationContextPerCall(), keys);
     }

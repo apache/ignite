@@ -94,12 +94,8 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
         mvccEnabled = mvccTx;
 
         // Check if we can enlist new cache to transaction.
-        if (!activeCacheIds.contains(cacheId)) {
+        if (!activeCacheIds.contains(cacheId))
             activeCacheIds.add(cacheId);
-
-            if (cctx.mvccEnabled() && (cctx.hasContinuousQueryListeners(tx) || cctx.isDrEnabled()))
-                mvccCachingCacheIds.add(cacheId);
-        }
     }
 
     /** {@inheritDoc} */
@@ -132,11 +128,6 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     /** {@inheritDoc} */
     @Override public void onTxEnd(GridCacheSharedContext cctx, IgniteInternalTx tx, boolean commit) {
         assert false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean mvccEnabled() {
-        return mvccEnabled;
     }
 
     /** {@inheritDoc} */
