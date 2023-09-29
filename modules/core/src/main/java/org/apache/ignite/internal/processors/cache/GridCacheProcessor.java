@@ -208,7 +208,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTR
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -1240,9 +1239,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         pluginMgr.validate();
 
-        if (!recoveryMode && cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT && grp.affinityNode())
-            sharedCtx.coordinators().ensureStarted();
-
         sharedCtx.jta().registerCache(cfg);
 
         // Skip suggestions for internal caches.
@@ -2076,9 +2072,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             dht.context().finishRecovery(cacheStartVer, updatedDescriptor);
         }
-
-        if (cacheContext.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT && groupContext.affinityNode())
-            sharedCtx.coordinators().ensureStarted();
 
         onKernalStart(cacheContext.cache());
 

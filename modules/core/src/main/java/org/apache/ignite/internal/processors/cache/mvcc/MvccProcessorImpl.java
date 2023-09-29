@@ -301,23 +301,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public void ensureStarted() throws IgniteCheckedException {
-        if (!ctx.clientNode()) {
-            assert mvccEnabled && mvccSupported;
-
-            synchronized (mux) {
-                if (txLog == null)
-                    txLog = new TxLog(ctx, ctx.cache().context().database());
-            }
-
-            startVacuumWorkers();
-
-            if (log.isInfoEnabled())
-                log.info("Mvcc processor started.");
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void onCacheStop(final GridCacheContext cctx) {
         // No-op.
     }

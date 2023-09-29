@@ -210,13 +210,6 @@ public interface MvccProcessor extends GridProcessor {
     void validateCacheConfiguration(CacheConfiguration ccfg) throws IgniteCheckedException;
 
     /**
-     * Starts MVCC processor (i.e. initialises data structures and vacuum) if it has not been started yet.
-     *
-     * @throws IgniteCheckedException If failed to initialize.
-     */
-    void ensureStarted() throws IgniteCheckedException;
-
-    /**
      * Cache stop callback.
      * @param cctx Cache context.
      *
