@@ -206,7 +206,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** */
     private final GridFutureAdapter<Void> initFut = new GridFutureAdapter<>();
 
-    /** Flag whether at least one cache with {@code CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT} mode is registered. */
+    /** Flag whether at least one mvcc cache is registered. */
     private volatile boolean mvccEnabled;
 
     /** Flag whether all nodes in cluster support MVCC. */
