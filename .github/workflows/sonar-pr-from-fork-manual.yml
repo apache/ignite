@@ -21,7 +21,8 @@ name: Sonar Quality Pull Request Analysis (Manually)
 on:
   push:
     branches:
-      - test-fix-sonar-pr-run
+      - temp-fix-sonar-pr-run
+
   workflow_dispatch:
     inputs:
       pull-request-id:
