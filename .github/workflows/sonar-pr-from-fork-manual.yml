@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-name: Sonar Quality Pull Request Analysis
+name: Sonar Quality Pull Request Analysis (Manually)
 
 # TODO IGNITE-20466 Investigate and fix the issue with running this workflow on PRs from forks.
 on:
