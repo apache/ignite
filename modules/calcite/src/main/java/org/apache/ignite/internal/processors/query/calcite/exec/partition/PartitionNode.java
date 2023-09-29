@@ -18,18 +18,25 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.partition;
 
 import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public interface PartitionNode {
-    /** */
-    Collection<Integer> apply(PartitionPruningContext ctx);
+    /**
+     * @param ctx Partition pruning context.
+     * @return Collection of partitions after pruning or {@code null} if all partition required.
+     */
+    @Nullable Collection<Integer> apply(PartitionPruningContext ctx);
 
     /** */
     default int cacheId() {
-        return Integer.MIN_VALUE;
+        return CU.UNDEFINED_CACHE_ID;
     }
 
-    /** */
+    /**
+     * @return Optimized partition calculation tree.
+     */
     default PartitionNode optimize() {
         return this;
     }

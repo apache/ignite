@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.util;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.sql.Date;
@@ -67,9 +65,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.TimestampString;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -77,10 +73,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescript
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -504,47 +497,5 @@ public class TypeUtils {
             dfltVal = toInternal(ctx, dfltVal);
 
         return rexBuilder.makeLiteral(dfltVal, type, true);
-    }
-
-    /**
-     * @return New object of specific type.
-     */
-    public static Object createObject(GridCacheContext<?, ?> cctx, String typeName, Class<?> typeCls) throws IgniteException {
-        if (cctx.binaryMarshaller()) {
-            BinaryObjectBuilder builder = cctx.grid().binary().builder(typeName);
-
-            cctx.prepareAffinityField(builder);
-
-            return builder;
-        }
-
-        Class<?> cls = U.classForName(typeName, typeCls);
-
-        try {
-            Constructor<?> ctor = cls.getDeclaredConstructor();
-            ctor.setAccessible(true);
-
-            return ctor.newInstance();
-        }
-        catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
-            throw instantiationException(typeName, e);
-        }
-        catch (NoSuchMethodException | SecurityException e) {
-            try {
-                return GridUnsafe.allocateInstance(cls);
-            }
-            catch (InstantiationException e0) {
-                e0.addSuppressed(e);
-
-                throw instantiationException(typeName, e0);
-            }
-        }
-    }
-
-    /** */
-    private static IgniteException instantiationException(String typeName, ReflectiveOperationException e) {
-        return S.includeSensitive()
-                ? new IgniteException("Failed to instantiate object [type=" + typeName + ']', e)
-                : new IgniteException("Failed to instantiate object", e);
     }
 }

@@ -59,7 +59,7 @@ public class PartitionOperandNode implements PartitionNode {
                 Collection<Integer> parts = operand.apply(ctx);
 
                 if (parts == null)
-                    break;
+                    return null;
 
                 if (allParts == null)
                     allParts = new HashSet<>(parts);

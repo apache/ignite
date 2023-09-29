@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -65,7 +67,9 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
@@ -364,7 +368,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
             if (fieldVal != null) {
                 if (key == null)
-                    key = TypeUtils.createObject(cacheContext(), typeDesc.keyTypeName(), typeDesc.keyClass());
+                    key = newVal(typeDesc.keyTypeName(), typeDesc.keyClass());
 
                 desc.set(key, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             }
@@ -383,7 +387,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         Object val = handler.get(valField, row);
 
         if (val == null) {
-            val = TypeUtils.createObject(cacheContext(), typeDesc.valueTypeName(), typeDesc.valueClass());
+            val = newVal(typeDesc.valueTypeName(), typeDesc.valueClass());
 
             // skip _key and _val
             for (int i = 2; i < descriptors.length; i++) {
@@ -399,6 +403,47 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             val = TypeUtils.fromInternal(ectx, val, descriptors[QueryUtils.VAL_COL].storageType());
 
         return val;
+    }
+
+    /** */
+    private Object newVal(String typeName, Class<?> typeCls) throws IgniteCheckedException {
+        GridCacheContext<?, ?> cctx = cacheContext();
+
+        if (cctx.binaryMarshaller()) {
+            BinaryObjectBuilder builder = cctx.grid().binary().builder(typeName);
+            cctx.prepareAffinityField(builder);
+
+            return builder;
+        }
+
+        Class<?> cls = U.classForName(typeName, typeCls);
+
+        try {
+            Constructor<?> ctor = cls.getDeclaredConstructor();
+            ctor.setAccessible(true);
+
+            return ctor.newInstance();
+        }
+        catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
+            throw instantiationException(typeName, e);
+        }
+        catch (NoSuchMethodException | SecurityException e) {
+            try {
+                return GridUnsafe.allocateInstance(cls);
+            }
+            catch (InstantiationException e0) {
+                e0.addSuppressed(e);
+
+                throw instantiationException(typeName, e0);
+            }
+        }
+    }
+
+    /** */
+    private IgniteCheckedException instantiationException(String typeName, ReflectiveOperationException e) {
+        return S.includeSensitive()
+            ? new IgniteCheckedException("Failed to instantiate key [type=" + typeName + ']', e)
+            : new IgniteCheckedException("Failed to instantiate key", e);
     }
 
     /** */
