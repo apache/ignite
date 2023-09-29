@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.Optional;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -193,14 +191,6 @@ public interface MvccProcessor extends GridProcessor {
      * @param updateVer Transaction update version.
      */
     void ackTxRollback(MvccVersion updateVer);
-
-    /**
-     * Validates cache configuration before start.
-     *
-     * @param ccfg Cache configuration to validate.
-     * @throws IgniteCheckedException If validation failed.
-     */
-    void validateCacheConfiguration(CacheConfiguration ccfg) throws IgniteCheckedException;
 
     /**
      * Cache stop callback.

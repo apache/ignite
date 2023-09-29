@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -264,17 +263,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         ctx.io().addMessageListener(TOPIC_CACHE_COORDINATOR, msgLsnr);
 
         ctx.discovery().setCustomEventListener(DynamicCacheChangeBatch.class, customLsnr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void validateCacheConfiguration(CacheConfiguration ccfg) {
-        if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
-            if (!mvccSupported)
-                throw new IgniteException("Cannot start MVCC transactional cache. " +
-                    "MVCC is unsupported by the cluster.");
-
-            mvccEnabled = true;
-        }
     }
 
     /** {@inheritDoc} */

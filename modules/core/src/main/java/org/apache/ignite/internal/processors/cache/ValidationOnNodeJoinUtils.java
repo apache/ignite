@@ -346,8 +346,6 @@ public class ValidationOnNodeJoinUtils {
             }
         }
 
-        ctx.coordinators().validateCacheConfiguration(cc);
-
         if (cc.getAtomicityMode() == ATOMIC)
             apply(assertParam, cc.getTransactionManagerLookupClassName() == null,
                 "transaction manager can not be used with ATOMIC cache");

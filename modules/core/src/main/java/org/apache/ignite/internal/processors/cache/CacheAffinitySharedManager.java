@@ -79,6 +79,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -875,9 +876,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         IgniteInternalFuture<?> res = cachesRegistry.update(exchActions);
 
-        for (ExchangeActions.CacheActionData d: exchActions.cacheStartRequests())
-            cctx.coordinators().validateCacheConfiguration(d.descriptor().cacheConfiguration());
-
         // Affinity did not change for existing caches.
         onCustomMessageNoAffinityChange(fut, exchActions);
 
@@ -1364,9 +1362,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         Collection<DynamicCacheDescriptor> descs
     ) throws IgniteCheckedException {
         IgniteInternalFuture<?> res = cachesRegistry.addUnregistered(descs);
-
-        for (DynamicCacheDescriptor d: descs)
-            cctx.coordinators().validateCacheConfiguration(d.cacheConfiguration());
 
         if (fut.context().mergeExchanges())
             return res;
