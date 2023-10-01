@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
@@ -56,6 +57,9 @@ public class ClientConnectorConfiguration {
 
     /** Default value of whether to use Ignite SSL context factory. */
     public static final boolean DFLT_USE_IGNITE_SSL_CTX_FACTORY = true;
+
+    /** Default session outbound queue limit. */
+    public static final int DFLT_SESSIONS_MESSAGE_QUEUE_LIMIT = 0;
 
     /** Host. */
     private String host;
@@ -113,6 +117,9 @@ public class ClientConnectorConfiguration {
 
     /** Thin-client specific configuration. */
     private ThinClientConfiguration thinCliCfg = new ThinClientConfiguration();
+
+    /** Session queeu limit. */
+    private int sesOutboundMsgQueueLimit = DFLT_SESSIONS_MESSAGE_QUEUE_LIMIT;
 
     /**
      * Creates SQL connector configuration with all default values.
@@ -588,6 +595,23 @@ public class ClientConnectorConfiguration {
      */
     public ClientConnectorConfiguration setThinClientConfiguration(ThinClientConfiguration thinCliCfg) {
         this.thinCliCfg = thinCliCfg;
+
+        return this;
+    }
+
+    /** @return Session outbound message queue limit. */
+    public int getSessionOutboundMessageQueueLimit() {
+        return sesOutboundMsgQueueLimit;
+    }
+
+    /**
+     * @param sesOutboundMsgQueueLimit Session outbound queue limit.
+     * @return {@code this} for chaining.
+     */
+    public ClientConnectorConfiguration setSessionOutboundMessageQueueLimit(int sesOutboundMsgQueueLimit) {
+        A.ensure(sesOutboundMsgQueueLimit > 0, "Session outbound queue limit must be greater than zero.");
+
+        this.sesOutboundMsgQueueLimit = sesOutboundMsgQueueLimit;
 
         return this;
     }
