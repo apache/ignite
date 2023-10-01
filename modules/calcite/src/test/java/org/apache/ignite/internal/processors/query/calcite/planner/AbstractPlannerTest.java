@@ -89,6 +89,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
@@ -127,6 +128,9 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
     /** Last error message. */
     protected String lastErrorMsg;
+
+    /** */
+    protected ListeningTestLogger lsnrLog = new ListeningTestLogger(log);
 
     /** */
     @Before
@@ -681,7 +685,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
                     .defaultSchema(dfltSchema)
                     .build()
             )
-            .logger(log)
+            .logger(lsnrLog)
             .build();
     }
 
