@@ -97,7 +97,7 @@ public class TestNodeRestartsAfterDeletionOfNodeFilteredCache extends GridCommon
             cache.put(i, i);
 
         // This fixes the issue!
-        // cache = grid(2).cache(cfg.getName());
+        cache = grid(2).cache(cfg.getName());
 
         grid(0).destroyCache(DYNAMIC_CACHE_NAME);
 
