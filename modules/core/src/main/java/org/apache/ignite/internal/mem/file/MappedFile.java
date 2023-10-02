@@ -19,10 +19,12 @@ package org.apache.ignite.internal.mem.file;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.UnsafeChunk;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -139,6 +141,9 @@ public class MappedFile implements Closeable, DirectMemoryRegion {
     private static Mapper pickMapper() {
         int javaVersion = majorJavaVersion(jdkVersion());
 
+        if (javaVersion >= 19)
+            return new JDK19Mapper();
+
         if (javaVersion >= 14)
             return new JDK14Mapper();
 
@@ -208,6 +213,86 @@ public class MappedFile implements Closeable, DirectMemoryRegion {
             catch (InvocationTargetException e) {
                 Throwable target = e.getTargetException();
                 throw (target instanceof IOException) ? (IOException)target : new IOException(target);
+            }
+        }
+    }
+
+    /** */
+    private static class JDK19Mapper implements Mapper {
+        /**  */
+        private static final Method map;
+
+        /** */
+        private static final Method unmap;
+
+        /** */
+        private static final Object dispatcher;
+
+        static {
+            try {
+                // These methods are still in {@link FileChannelImpl} class in JDK 19.
+                Method map0 = U.findNonPublicMethod(FileChannelImpl.class, "map0", FileDescriptor.class, int.class,
+                        long.class, long.class, boolean.class);
+
+                Method unmap0 = U.findNonPublicMethod(FileChannelImpl.class, "unmap0", long.class, long.class);
+
+                if (map0 != null && unmap0 != null) {
+                    map = map0;
+                    unmap = unmap0;
+                    dispatcher = null;
+                }
+                else {
+                    // That methods are moved to {@link sun.nio.ch.FileDispatcher}.
+                    Class<?> fileDispatcherCls = Class.forName("sun.nio.ch.FileDispatcher");
+
+                    dispatcher = U.staticField(FileChannelImpl.class, "nd");
+
+                    map = U.findNonPublicMethod(fileDispatcherCls, "map", FileDescriptor.class, int.class,
+                            long.class, long.class, boolean.class);
+
+                    unmap = U.findNonPublicMethod(fileDispatcherCls, "unmap", long.class, long.class);
+
+                }
+            }
+            catch (ClassNotFoundException | IgniteCheckedException e) {
+                throw new ExceptionInInitializerError(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public long map(RandomAccessFile f, int mode, long start, long size) throws IOException {
+            try {
+                Object fd = U.field(f.getChannel(), "fd");
+
+                if (dispatcher != null) {
+                    return (Long)map.invoke(dispatcher, fd, mode, start, size, false);
+                }
+                else
+                    return (Long)map.invoke(f.getChannel(), fd, mode, start, size, false);
+
+            }
+            catch (IllegalAccessException e) {
+                throw new IllegalStateException(e);
+            }
+            catch (InvocationTargetException e) {
+                Throwable target = e.getTargetException();
+                throw (target instanceof IOException) ? (IOException)target : new IOException(target);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void unmap(long addr, long size) {
+            try {
+                if (dispatcher != null)
+                    unmap.invoke(dispatcher, addr, size);
+                else
+                    unmap.invoke(null, addr, size);
+            }
+            catch (IllegalAccessException e) {
+                throw new IllegalStateException(e);
+            }
+            catch (InvocationTargetException e) {
+                throw new IllegalStateException(e.getTargetException());
             }
         }
     }
