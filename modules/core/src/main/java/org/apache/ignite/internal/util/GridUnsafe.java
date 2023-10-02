@@ -1687,7 +1687,7 @@ public abstract class GridUnsafe {
         int javaVer = majorJavaVersion(jdkVersion());
 
         if (javaVer < 9)
-            return "sun.misc.SharedSecrets";
+            return "sun.misc";
 
         if (javaVer < 12)
             return "jdk.internal.misc";
