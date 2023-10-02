@@ -2110,7 +2110,7 @@ public class GridCacheUtils {
      * @return {@code True} if cache configuration should be persisted, {@code false} in other case.
      */
     public static boolean storeCacheConfig(GridCacheSharedContext<?, ?> cctx, CacheConfiguration<?, ?> cacheCfg) {
-        if (cctx.kernalContext().clientNode())
+        if (cctx.kernalContext().clientNode() || !CU.affinityNode(cctx.localNode(), cacheCfg.getNodeFilter()))
             return false;
 
         DataRegionConfiguration drCfg =

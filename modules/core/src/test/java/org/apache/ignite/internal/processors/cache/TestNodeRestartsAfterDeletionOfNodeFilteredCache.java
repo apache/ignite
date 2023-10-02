@@ -35,6 +35,7 @@ public class TestNodeRestartsAfterDeletionOfNodeFilteredCache extends GridCommon
     /** */
     private static final String DYNAMIC_CACHE_NAME = "TestDynamicCache";
 
+    /** */
     private static final String TEST_ATTRIBUTE_NAME = "TEST_ATTRIBUTE_NAME";
 
     /** */
@@ -74,6 +75,8 @@ public class TestNodeRestartsAfterDeletionOfNodeFilteredCache extends GridCommon
     /** */
     @Test
     public void testNodeRejoinsClusterAfterDeletedOfNodeFilteredCache() throws Exception {
+        cleanPersistenceDir();
+
         startGrid(0);
         startGrid(1);
 
@@ -97,7 +100,7 @@ public class TestNodeRestartsAfterDeletionOfNodeFilteredCache extends GridCommon
             cache.put(i, i);
 
         // This fixes the issue!
-        cache = grid(2).cache(cfg.getName());
+        assertEquals(100, grid(2).cache(cfg.getName()).size());
 
         grid(0).destroyCache(DYNAMIC_CACHE_NAME);
 
