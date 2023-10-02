@@ -264,12 +264,10 @@ public class MappedFile implements Closeable, DirectMemoryRegion {
             try {
                 Object fd = U.field(f.getChannel(), "fd");
 
-                if (dispatcher != null) {
+                if (dispatcher != null)
                     return (Long)map.invoke(dispatcher, fd, mode, start, size, false);
-                }
                 else
                     return (Long)map.invoke(f.getChannel(), fd, mode, start, size, false);
-
             }
             catch (IllegalAccessException e) {
                 throw new IllegalStateException(e);
@@ -283,10 +281,7 @@ public class MappedFile implements Closeable, DirectMemoryRegion {
         /** {@inheritDoc} */
         @Override public void unmap(long addr, long size) {
             try {
-                if (dispatcher != null)
-                    unmap.invoke(dispatcher, addr, size);
-                else
-                    unmap.invoke(null, addr, size);
+                unmap.invoke(dispatcher, addr, size); // If dispatcher is null, the static method will be called.
             }
             catch (IllegalAccessException e) {
                 throw new IllegalStateException(e);
