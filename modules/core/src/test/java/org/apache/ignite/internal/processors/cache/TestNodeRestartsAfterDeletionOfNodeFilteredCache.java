@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
@@ -25,10 +27,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** */
 public class TestNodeRestartsAfterDeletionOfNodeFilteredCache extends GridCommonAbstractTest {
@@ -74,18 +80,76 @@ public class TestNodeRestartsAfterDeletionOfNodeFilteredCache extends GridCommon
 
     /** */
     @Test
-    public void testNodeRejoinsClusterAfterDeletedOfNodeFilteredCache() throws Exception {
+    public void test0() throws Exception {
         cleanPersistenceDir();
 
-        startGrid(0);
+        startFilteredGrid(0);
         startGrid(1);
-
-        testAttribute = false;
-
         startGrid(2);
 
         grid(0).cluster().state(ClusterState.ACTIVE);
 
+        createAndFillCache();
+
+        stopAllGrids();
+
+        startFilteredGrid(0);
+
+        grid(0).cluster().state(ClusterState.ACTIVE);
+
+        assertThrows(null, () -> {
+            grid(0).createCache(defaultCacheConfiguration().setName(DYNAMIC_CACHE_NAME));
+        }, IgniteException.class, "cache with the same name is already started");
+
+        startGrid(1);
+        startGrid(2);
+    }
+
+    /** */
+    @Test
+    public void testNodeRejoinsClusterAfterDeletedOfNodeFilteredCache() throws Exception {
+        cleanPersistenceDir();
+
+        startGrids(2);
+
+        int filteredGridIdx = G.allGrids().size();
+
+        startFilteredGrid(filteredGridIdx);
+
+        grid(0).cluster().state(ClusterState.ACTIVE);
+
+        grid(0).cluster().setBaselineTopology(grid(0).cluster().topologyVersion());
+
+        int nonBaselineIdx = G.allGrids().size();
+
+        startGrid(nonBaselineIdx);
+
+        createAndFillCache();
+        grid(0).destroyCache(DYNAMIC_CACHE_NAME);
+        awaitPartitionMapExchange();
+
+        // Try just restart grid.
+        stopGrid(filteredGridIdx);
+        stopGrid(nonBaselineIdx);
+        startFilteredGrid(filteredGridIdx);
+        startFilteredGrid(nonBaselineIdx);
+
+        createAndFillCache();
+
+        // Destroy cache after test node stops.
+        stopGrid(filteredGridIdx);
+        stopGrid(nonBaselineIdx);
+
+        grid(0).destroyCache(DYNAMIC_CACHE_NAME);
+        awaitPartitionMapExchange();
+
+        // Ensure nodes join cluster.
+        startFilteredGrid(filteredGridIdx);
+        startFilteredGrid(nonBaselineIdx);
+    }
+
+    /** */
+    private CacheConfiguration createAndFillCache() throws InterruptedException {
         final CacheConfiguration<Object, Object> cfg = defaultCacheConfiguration()
             .setBackups(1)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
@@ -96,19 +160,22 @@ public class TestNodeRestartsAfterDeletionOfNodeFilteredCache extends GridCommon
 
         awaitPartitionMapExchange();
 
-        for (int i = 0; i < 100; ++i)
-            cache.put(i, i);
+        try (IgniteDataStreamer<Integer, Integer> ds = grid(0).dataStreamer(DYNAMIC_CACHE_NAME)) {
+            for (int i = 0; i < 100; ++i)
+                ds.addData(i, i);
+        }
 
-        // This fixes the issue!
-        assertEquals(100, grid(2).cache(cfg.getName()).size());
+        return cfg;
+    }
 
-        grid(0).destroyCache(DYNAMIC_CACHE_NAME);
+    /** */
+    private IgniteEx startFilteredGrid(int idx) throws Exception {
+        testAttribute = false;
 
-        awaitPartitionMapExchange();
+        IgniteEx res = startGrid(idx);
 
-        // Try just restart grid.
-        stopGrid(2);
+        testAttribute = true;
 
-        startGrid(2);
+        return res;
     }
 }

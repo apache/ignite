@@ -345,18 +345,6 @@ public class GridCacheUtils {
         }
     };
 
-    /** Transaction entry to key. */
-    private static final IgniteClosure txCol2key = new C1<Collection<IgniteTxEntry>, Collection<Object>>() {
-        @SuppressWarnings( {"unchecked"})
-        @Override public Collection<Object> apply(Collection<IgniteTxEntry> e) {
-            return F.viewReadOnly(e, tx2key);
-        }
-
-        @Override public String toString() {
-            return "Cache transaction entry collection to key collection converter.";
-        }
-    };
-
     /** Converts transaction to XID version. */
     private static final IgniteClosure tx2xidVer = new C1<IgniteInternalTx, GridCacheVersion>() {
         @Override public GridCacheVersion apply(IgniteInternalTx tx) {
@@ -2110,7 +2098,7 @@ public class GridCacheUtils {
      * @return {@code True} if cache configuration should be persisted, {@code false} in other case.
      */
     public static boolean storeCacheConfig(GridCacheSharedContext<?, ?> cctx, CacheConfiguration<?, ?> cacheCfg) {
-        if (cctx.kernalContext().clientNode() || !CU.affinityNode(cctx.localNode(), cacheCfg.getNodeFilter()))
+        if (cctx.kernalContext().clientNode())
             return false;
 
         DataRegionConfiguration drCfg =

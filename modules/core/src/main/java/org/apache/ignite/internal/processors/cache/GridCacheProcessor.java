@@ -1089,15 +1089,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             U.stopLifecycleAware(log, lifecycleAwares(ctx.group(), cache.configuration(), ctx.store().configuredStore()));
 
-            if (callDestroy && CU.storeCacheConfig(sharedCtx, ctx.config())) {
-                try {
-                    locCfgMgr.removeCacheData(new StoredCacheData(ctx.config()));
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to delete cache configuration data while destroying cache" +
-                        "[cache=" + ctx.name() + "]", e);
-                }
-            }
+            if (callDestroy)
+                removeCacheConfig(ctx.config());
 
             if (log.isInfoEnabled()) {
                 if (ctx.group().sharedGroup())
@@ -1108,6 +1101,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
         finally {
             cleanup(ctx);
+        }
+    }
+
+    /** */
+    private void removeCacheConfig(CacheConfiguration<?, ?> cacheCfg) {
+        if (CU.storeCacheConfig(sharedCtx, cacheCfg)) {
+            try {
+                locCfgMgr.removeCacheData(new StoredCacheData(cacheCfg));
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to delete cache configuration data while destroying cache" +
+                    "[cache=" + cacheCfg.getName() + "]", e);
+            }
         }
     }
 
@@ -2612,9 +2618,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             stopCache(cache, true, callDestroy, clearCache, clearDbObjects);
         }
-        else
+        else {
+            DynamicCacheDescriptor cacheToDelete = callDestroy ? cachesInfo.markedForDeletionCache(cacheName) : null;
+
+            if (cacheToDelete != null)
+                removeCacheConfig(cacheToDelete.cacheConfiguration());
+
             // Try to unregister query structures for not started caches.
             ctx.query().onCacheStop(cacheName);
+        }
     }
 
     /**
