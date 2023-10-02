@@ -118,6 +118,9 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
+        if (val == null)
+            System.out.println("KeyCacheObjectImpl.hashCode");
+
         assert val != null;
 
         return IgniteUtils.hashCode(val);

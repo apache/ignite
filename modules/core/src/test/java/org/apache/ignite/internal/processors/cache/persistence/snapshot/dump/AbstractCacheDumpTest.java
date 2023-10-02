@@ -94,7 +94,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     public static final String DMP_NAME = "dump";
 
     /** */
-    static final IntFunction<User> USER_FACTORY = i ->
+    protected static final IntFunction<User> USER_FACTORY = i ->
         new User(i, ACL.values()[Math.abs(i) % ACL.values().length], new Role("Role" + i, SUPER));
 
     /** */
@@ -243,7 +243,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
-    void checkDump(IgniteEx ign) throws Exception {
+    protected void checkDump(IgniteEx ign) throws Exception {
         checkDump(ign, DMP_NAME);
     }
 
@@ -358,7 +358,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
         new DumpReader(
             new DumpReaderConfiguration(
-                new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name),
+                dumpDirectory(ign, name),
                 cnsmr,
                 DFLT_THREAD_CNT, DFLT_TIMEOUT,
                 true,
@@ -436,17 +436,23 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
-    void createDump(IgniteEx ign) {
+    protected void createDump(IgniteEx ign) {
         createDump(ign, DMP_NAME);
     }
 
     /** */
     public static Dump dump(IgniteEx ign, String name) throws IgniteCheckedException {
         return new Dump(
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name),
+            dumpDirectory(ign, name),
             true,
+            false,
             log
         );
+    }
+
+    /** */
+    public static File dumpDirectory(IgniteEx ign, String name) throws IgniteCheckedException {
+        return new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), ign.configuration().getSnapshotPath(), false), name);
     }
 
     /** */

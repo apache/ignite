@@ -56,6 +56,7 @@ public class DumpReader implements Runnable {
 
     /**
      * @param cfg Dump reader configuration.
+     * @param log Logger.
      */
     public DumpReader(DumpReaderConfiguration cfg, IgniteLogger log) {
         this.cfg = cfg;
@@ -66,7 +67,7 @@ public class DumpReader implements Runnable {
     @Override public void run() {
         ackAsciiLogo();
 
-        try (Dump dump = new Dump(cfg.dumpRoot(), cfg.keepBinary(), log)) {
+        try (Dump dump = new Dump(cfg.dumpRoot(), cfg.keepBinary(), false, log)) {
             DumpConsumer cnsmr = cfg.consumer();
 
             cnsmr.start();
@@ -90,7 +91,7 @@ public class DumpReader implements Runnable {
                     .flatMap(e -> dump.configs(e.getValue().get(0), e.getKey()).stream())
                     .iterator());
 
-                ExecutorService execSvc = Executors.newFixedThreadPool(cfg.threadCount());
+                ExecutorService execSvc = cfg.threadCount() > 1 ? Executors.newFixedThreadPool(cfg.threadCount()) : null;
 
                 AtomicBoolean skip = new AtomicBoolean(false);
 
@@ -99,7 +100,7 @@ public class DumpReader implements Runnable {
 
                     for (String node : e.getValue()) {
                         for (int part : dump.partitions(node, grp)) {
-                            execSvc.submit(() -> {
+                            Runnable consumePart = () -> {
                                 if (skip.get()) {
                                     if (log.isDebugEnabled()) {
                                         log.debug("Skip partition due to previous error [node=" + node + ", grp=" + grp +
@@ -125,19 +126,26 @@ public class DumpReader implements Runnable {
 
                                     throw new IgniteException(ex);
                                 }
-                            });
+                            };
+
+                            if (cfg.threadCount() > 1)
+                                execSvc.submit(consumePart);
+                            else
+                                consumePart.run();
                         }
                     }
                 }
 
-                execSvc.shutdown();
+                if (cfg.threadCount() > 1) {
+                    execSvc.shutdown();
 
-                boolean res = execSvc.awaitTermination(cfg.timeout().toMillis(), MILLISECONDS);
+                    boolean res = execSvc.awaitTermination(cfg.timeout().toMillis(), MILLISECONDS);
 
-                if (!res) {
-                    log.warning("Dump processing tasks not finished after timeout. Cancelling");
+                    if (!res) {
+                        log.warning("Dump processing tasks not finished after timeout. Cancelling");
 
-                    execSvc.shutdownNow();
+                        execSvc.shutdownNow();
+                    }
                 }
             }
             finally {

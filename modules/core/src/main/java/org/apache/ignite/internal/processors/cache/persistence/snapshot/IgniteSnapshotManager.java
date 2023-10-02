@@ -1319,6 +1319,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 out.write(bytes, off, len);
             }
+
+            out.flush();
         }
         catch (IOException | IgniteCheckedException e) {
             throw new IgniteException(e);

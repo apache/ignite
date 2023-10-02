@@ -55,6 +55,8 @@ public interface DumpConsumer {
 
     /**
      * Handles cache configs.
+     * Note, there can be several copies of cache config in the dump.
+     * This can happen if dump contains data from several nodes.
      * @param caches Stored cache data.
      */
     void onCacheConfigs(Iterator<StoredCacheData> caches);

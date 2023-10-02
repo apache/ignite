@@ -39,7 +39,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.dump.DumpEntry;
-import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
@@ -359,11 +358,11 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         SnapshotHandlerContext opCtx,
         Set<File> partFiles
     ) {
-        try (Dump dump = new Dump(opCtx.snapshotDirectory(), true, log)) {
+        try (Dump dump = new Dump(opCtx.snapshotDirectory(), true, true, log)) {
             Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
                 cctx.snapshotMgr().snapshotExecutorService(),
                 partFiles,
-                part -> caclucateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()))
+                part -> calculateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()))
             );
 
             return partitionHashRecordV2s.stream().collect(Collectors.toMap(PartitionHashRecordV2::partitionKey, r -> r));
@@ -376,7 +375,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** */
-    private PartitionHashRecordV2 caclucateDumpedPartitionHash(Dump dump, String grpName, int part) {
+    private PartitionHashRecordV2 calculateDumpedPartitionHash(Dump dump, String grpName, int part) {
         if (skipHash()) {
             return new PartitionHashRecordV2(
                 new PartitionKeyV2(CU.cacheId(grpName), part, grpName),

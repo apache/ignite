@@ -37,11 +37,11 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.dump.DumpEntry;
-import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -86,8 +86,11 @@ public class Dump implements AutoCloseable {
      */
     private final GridKernalContext cctx;
 
-    /** If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}. */
+    /** If {@code true} then return data in form of {@link BinaryObject}. */
     private final boolean keepBinary;
+
+    /** If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}. */
+    private final boolean raw;
 
     /**
      * Map shared across all instances of {@link DumpEntrySerializer}.
@@ -101,7 +104,7 @@ public class Dump implements AutoCloseable {
      * @param dumpDir Dump directory.
      * @param keepBinary If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}.
      */
-    public Dump(File dumpDir, boolean keepBinary, IgniteLogger log) {
+    public Dump(File dumpDir, boolean keepBinary, boolean raw, IgniteLogger log) {
         A.ensure(dumpDir != null, "dump directory is null");
         A.ensure(dumpDir.exists(), "dump directory not exists");
 
@@ -109,8 +112,14 @@ public class Dump implements AutoCloseable {
         this.metadata = metadata(dumpDir);
         this.keepBinary = keepBinary;
         this.cctx = standaloneKernalContext(dumpDir, log);
+        this.raw = raw;
     }
 
+    /**
+     * @param dumpDir Dump directory.
+     * @param log Logger.
+     * @return Standalone kernal context.
+     */
     private GridKernalContext standaloneKernalContext(File dumpDir, IgniteLogger log) {
         File binaryMeta = CacheObjectBinaryProcessorImpl.binaryWorkDir(dumpDir.getAbsolutePath(), metadata.get(0).folderName());
         File marshaller = new File(dumpDir, DFLT_MARSHALLER_PATH);
@@ -130,6 +139,7 @@ public class Dump implements AutoCloseable {
         }
     }
 
+    /** @return Binary types iterator. */
     public Iterator<BinaryType> types() {
         return cctx.cacheObjects().metadata().iterator();
     }
@@ -227,6 +237,7 @@ public class Dump implements AutoCloseable {
 
         serializer.kernalContext(cctx);
         serializer.keepBinary(keepBinary);
+        serializer.raw(raw);
 
         return new DumpedPartitionIterator() {
             DumpEntry next;
