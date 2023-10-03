@@ -2619,14 +2619,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             stopCache(cache, true, callDestroy, clearCache, clearDbObjects);
         }
         else {
+            // Try to unregister query structures for not started caches.
+            ctx.query().onCacheStop(cacheName);
+
             // Cache adapter may not exist due to the node filter.
             DynamicCacheDescriptor cacheToDelete = callDestroy ? cachesInfo.markedForDeletionCache(cacheName) : null;
 
             if (cacheToDelete != null)
                 removeCacheConfig(cacheToDelete.cacheConfiguration());
-
-            // Try to unregister query structures for not started caches.
-            ctx.query().onCacheStop(cacheName);
         }
     }
 

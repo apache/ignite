@@ -74,6 +74,13 @@ public class NodeWithFilterRestartTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -214,6 +221,21 @@ public class NodeWithFilterRestartTest extends GridCommonAbstractTest {
 
         startFilteredGrid(filteredGridIdx);
         startGrid(nonBaselineIdx);
+
+        createAndFillCache();
+
+        assertTrue(cacheMetaPath1.exists() && cacheMetaPath1.isFile());
+
+        // Test again with the local cache proxy.
+        assertEquals(100, grid(filteredGridIdx).cache(DEFAULT_CACHE_NAME).size());
+
+        grid(0).destroyCache(DEFAULT_CACHE_NAME);
+        awaitPartitionMapExchange();
+
+        assertFalse(cacheMetaPath1.exists() && cacheMetaPath1.isFile());
+
+        stopGrid(filteredGridIdx);
+        startFilteredGrid(filteredGridIdx);
     }
 
     /**
