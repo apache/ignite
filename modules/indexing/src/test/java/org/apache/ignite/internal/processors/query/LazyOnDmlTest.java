@@ -75,7 +75,7 @@ public class LazyOnDmlTest extends AbstractIndexingCommonTest {
 
         Object[] paramTemplate = new Object[2];
 
-        for (CacheAtomicityMode atomicityMode : CacheAtomicityMode._values()) {
+        for (CacheAtomicityMode atomicityMode : CacheAtomicityMode.values()) {
             paramTemplate = Arrays.copyOf(paramTemplate, paramTemplate.length);
 
             paramTemplate[0] = atomicityMode;
