@@ -120,9 +120,7 @@ public abstract class GridUnsafe {
     /** Whether {@link jdk.internal.access.JavaNioAccess} has new byte buffer api. */
     private static final boolean HAS_JAVA_NIO_ACCESS_NEW_API = majorJavaVersion(jdkVersion()) >= 14;
 
-    /** Whether {@link jdk.internal.access.JavaNioAccess#newDirectByteBuffer} has param of type
-     * {@link java.lang.foreign.MemorySegment}.
-     */
+    /** Whether {@link jdk.internal.access.JavaNioAccess#newDirectByteBuffer} has param of type {@link java.lang.foreign.MemorySegment}. */
     private static final boolean HAS_JAVA_NIO_ACCESS_MEMORY_SEGMENT_PARAM = majorJavaVersion(jdkVersion()) >= 19;
 
     /** Cleaner code for direct {@code java.nio.ByteBuffer}. */
