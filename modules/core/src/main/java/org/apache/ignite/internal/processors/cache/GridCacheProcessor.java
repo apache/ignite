@@ -2619,6 +2619,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             stopCache(cache, true, callDestroy, clearCache, clearDbObjects);
         }
         else {
+            // Cache adapter may not exist due to the node filter.
             DynamicCacheDescriptor cacheToDelete = callDestroy ? cachesInfo.markedForDeletionCache(cacheName) : null;
 
             if (cacheToDelete != null)

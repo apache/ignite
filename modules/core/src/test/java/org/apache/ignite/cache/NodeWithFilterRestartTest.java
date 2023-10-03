@@ -86,9 +86,7 @@ public class NodeWithFilterRestartTest extends GridCommonAbstractTest {
                 TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 
                 commSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-                    /**
-                     * {@inheritDoc}
-                     */
+                    /** {@inheritDoc} */
                     @Override public boolean apply(ClusterNode node, Message msg) {
                         if (msg instanceof GridDhtPartitionsFullMessage && (node.id().getLeastSignificantBits() & 0xFFFF) == 5) {
                             GridDhtPartitionsFullMessage fullMsg = (GridDhtPartitionsFullMessage)msg;
