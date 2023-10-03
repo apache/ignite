@@ -64,6 +64,7 @@ public class NodeWithFilterRestartTest extends GridCommonAbstractTest {
     /** */
     private boolean blockPme = true;
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
