@@ -154,6 +154,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchang
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.IgniteCollectors;
@@ -1222,7 +1223,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else
             prepare(cfg, cfg.getCacheStoreFactory(), false);
 
-        CacheStore cfgStore = cfg.getCacheStoreFactory() != null ? cfg.getCacheStoreFactory().create() : null;
+        CacheStore cfgStore = null;
+
+        if (cfg.getCacheStoreFactory() != null) {
+            IgniteSandbox sandbox = ctx.security().sandbox();
+
+            cfgStore = sandbox.enabled() ?
+                sandbox.execute(() -> cfg.getCacheStoreFactory().create()) : cfg.getCacheStoreFactory().create();
+        }
 
         ValidationOnNodeJoinUtils.validate(ctx.config(), cfg, desc.cacheType(), cfgStore, ctx, log, (x, y) -> {
             try {
@@ -1281,11 +1289,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (cfgStore == null)
             storeMgr.initialize(cfgStore, sesHolders);
-        else
+        else {
+            final CacheStore cfgStoreRef = cfgStore;
+
             initializationProtector.protect(
                 cfgStore,
-                () -> storeMgr.initialize(cfgStore, sesHolders)
+                () -> storeMgr.initialize(cfgStoreRef, sesHolders)
             );
+        }
 
         GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
             ctx,
