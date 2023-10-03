@@ -83,7 +83,6 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
                 new CacheNoopJtaManager(),
                 null,
                 null,
-                null,
                 new CacheDiagnosticManager(),
                 null
             ),

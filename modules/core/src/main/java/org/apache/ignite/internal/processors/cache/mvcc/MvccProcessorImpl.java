@@ -711,13 +711,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         if (!waiter.hasLocalTransaction() && (waiter = waitMap.remove(key)) != null)
             waiter.run(ctx);
-        else {
-            DeadlockDetectionManager.DelayedDeadlockComputation delayedComputation
-                = ctx.cache().context().deadlockDetectionMgr().initDelayedComputation(waiterVer, blockerVer);
-
-            if (delayedComputation != null)
-                fut.listen(delayedComputation::cancel);
-        }
 
         return fut;
     }
