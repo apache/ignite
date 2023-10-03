@@ -29,7 +29,6 @@ import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.dump.DumpReader;
 import org.apache.ignite.dump.DumpReaderConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.TestDumpConsumer;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -125,12 +124,10 @@ public class DumpCacheConfigTest extends GridCommonAbstractTest {
 
                     assertNotNull(e);
 
-                    int id = ((CacheObject)e.key()).value(null, false);
-
                     BinaryObject val = (BinaryObject)e.value();
 
                     assertNotNull(val);
-                    assertEquals("Name-" + id, val.field("NAME"));
+                    assertEquals("Name-" + e.key(), val.field("NAME"));
 
                     cnt.incrementAndGet();
                 }
