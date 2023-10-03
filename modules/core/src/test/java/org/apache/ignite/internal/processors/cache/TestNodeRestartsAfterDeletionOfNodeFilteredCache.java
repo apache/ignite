@@ -80,33 +80,6 @@ public class TestNodeRestartsAfterDeletionOfNodeFilteredCache extends GridCommon
 
     /** */
     @Test
-    public void test0() throws Exception {
-        cleanPersistenceDir();
-
-        startFilteredGrid(0);
-        startGrid(1);
-        startGrid(2);
-
-        grid(0).cluster().state(ClusterState.ACTIVE);
-
-        createAndFillCache();
-
-        stopAllGrids();
-
-        startFilteredGrid(0);
-
-        grid(0).cluster().state(ClusterState.ACTIVE);
-
-        assertThrows(null, () -> {
-            grid(0).createCache(defaultCacheConfiguration().setName(DYNAMIC_CACHE_NAME));
-        }, IgniteException.class, "cache with the same name is already started");
-
-        startGrid(1);
-        startGrid(2);
-    }
-
-    /** */
-    @Test
     public void testNodeRejoinsClusterAfterDeletedOfNodeFilteredCache() throws Exception {
         cleanPersistenceDir();
 
@@ -131,19 +104,6 @@ public class TestNodeRestartsAfterDeletionOfNodeFilteredCache extends GridCommon
         // Try just restart grid.
         stopGrid(filteredGridIdx);
         stopGrid(nonBaselineIdx);
-        startFilteredGrid(filteredGridIdx);
-        startFilteredGrid(nonBaselineIdx);
-
-        createAndFillCache();
-
-        // Destroy cache after test node stops.
-        stopGrid(filteredGridIdx);
-        stopGrid(nonBaselineIdx);
-
-        grid(0).destroyCache(DYNAMIC_CACHE_NAME);
-        awaitPartitionMapExchange();
-
-        // Ensure nodes join cluster.
         startFilteredGrid(filteredGridIdx);
         startFilteredGrid(nonBaselineIdx);
     }

@@ -539,13 +539,4 @@ public abstract class PageHandler<X, R> {
     public static void copyMemory(long srcAddr, long srcOff, long dstAddr, long dstOff, long cnt) {
         GridUnsafe.copyMemory(null, srcAddr + srcOff, null, dstAddr + dstOff, cnt);
     }
-
-    /**
-     * @param addr Address.
-     * @param off Offset.
-     * @param len Length.
-     */
-    public static void zeroMemory(long addr, int off, int len) {
-        GridUnsafe.zeroMemory(addr + off, len);
-    }
 }
