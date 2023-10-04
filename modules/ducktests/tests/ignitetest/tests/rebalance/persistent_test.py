@@ -52,6 +52,8 @@ class RebalancePersistentTest(IgniteTest):
         data_gen_params = DataGenerationParams(backups=backups, cache_count=cache_count, entry_count=entry_count,
                                                entry_size=entry_size, preloaders=preloaders)
 
+        reb_params, data_gen_params = self.extend_test_params(reb_params, data_gen_params)
+
         ignites = start_ignite(self.test_context, ignite_version, reb_params, data_gen_params)
 
         control_utility = ControlUtility(ignites)
@@ -64,7 +66,7 @@ class RebalancePersistentTest(IgniteTest):
             data_gen_params=data_gen_params)
 
         new_node = IgniteService(self.test_context, ignites.config._replace(discovery_spi=from_ignite_cluster(ignites)),
-                                 num_nodes=1)
+                                 num_nodes=1, modules=reb_params.modules)
         new_node.start()
 
         control_utility.add_to_baseline(new_node.nodes)
@@ -99,6 +101,8 @@ class RebalancePersistentTest(IgniteTest):
 
         data_gen_params = DataGenerationParams(backups=backups, cache_count=cache_count, entry_count=entry_count,
                                                entry_size=entry_size, preloaders=preloaders)
+
+        reb_params, data_gen_params = self.extend_test_params(reb_params, data_gen_params)
 
         ignites = start_ignite(self.test_context, ignite_version, reb_params, data_gen_params)
 
@@ -152,6 +156,8 @@ class RebalancePersistentTest(IgniteTest):
         data_gen_params = DataGenerationParams(backups=backups, cache_count=cache_count, entry_count=entry_count,
                                                entry_size=entry_size, preloaders=preloaders)
 
+        reb_params, data_gen_params = self.extend_test_params(reb_params, data_gen_params)
+
         ignites = start_ignite(self.test_context, ignite_version, reb_params, data_gen_params)
 
         control_utility = ControlUtility(ignites)
@@ -163,7 +169,9 @@ class RebalancePersistentTest(IgniteTest):
             self.test_context,
             preloader_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.DataGenerationApplication",
-            params={"backups": 1, "cacheCount": 1, "entrySize": 1, "from": 0, "to": preload_entries}
+            modules=data_gen_params.modules,
+            params={"backups": 1, "cacheCount": 1, "entrySize": 1, "from": 0, "to": preload_entries,
+                    "dataPatternBase64": data_gen_params.data_pattern_base64}
         )
 
         preloader.run()
@@ -201,6 +209,17 @@ class RebalancePersistentTest(IgniteTest):
         self.logger.debug(f'DB size after rebalance: {get_database_size_mb(ignites.nodes, ignites.database_dir)}')
 
         return result
+
+    def extend_test_params(self, reb_params, data_gen_params):
+        """
+        Redefine in subclasses to extend the test parameters.
+        It may be used say to add some plugins and/or extension modules.
+
+        :param reb_params: Rebalance test parameters.
+        :param data_gen_params: Data generation application parameters.
+        :return: Updated rebalance test parameters.
+        """
+        return reb_params, data_gen_params
 
 
 def await_and_check_rebalance(service: IgniteService, rebalance_nodes: list = None, is_full: bool = True):

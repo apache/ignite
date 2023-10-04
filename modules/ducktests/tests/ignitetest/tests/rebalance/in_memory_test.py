@@ -88,6 +88,8 @@ class RebalanceInMemoryTest(IgniteTest):
         data_gen_params = DataGenerationParams(backups=backups, cache_count=cache_count, entry_count=entry_count,
                                                entry_size=entry_size, preloaders=preloaders)
 
+        reb_params, data_gen_params = self.extend_test_params(reb_params, data_gen_params)
+
         ignites = start_ignite(self.test_context, ignite_version, reb_params, data_gen_params)
 
         preload_time = preload_data(
@@ -100,7 +102,8 @@ class RebalanceInMemoryTest(IgniteTest):
             rebalance_nodes = ignites.nodes[:-1]
         else:
             ignite = IgniteService(self.test_context,
-                                   ignites.config._replace(discovery_spi=from_ignite_cluster(ignites)), num_nodes=1)
+                                   ignites.config._replace(discovery_spi=from_ignite_cluster(ignites)), num_nodes=1,
+                                   modules=reb_params.modules)
             ignite.start()
             rebalance_nodes = ignite.nodes
 
@@ -109,3 +112,14 @@ class RebalanceInMemoryTest(IgniteTest):
             ignite.await_rebalance()
 
         return get_result(rebalance_nodes, preload_time, cache_count, entry_count, entry_size)
+
+    def extend_test_params(self, reb_params, data_gen_params):
+        """
+        Redefine in subclasses to extend the test parameters.
+        It may be used say to add some plugins and/or extension modules.
+
+        :param reb_params: Rebalance test parameters.
+        :param data_gen_params: Data generation application parameters.
+        :return: Updated rebalance test parameters.
+        """
+        return reb_params, data_gen_params

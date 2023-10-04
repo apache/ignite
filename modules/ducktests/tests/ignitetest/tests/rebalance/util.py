@@ -54,6 +54,8 @@ class RebalanceParams(NamedTuple):
     throttle: int = None
     persistent: bool = False
     jvm_opts: list = None
+    modules: list = None
+    plugins: list = None
 
 
 class RebalanceMetrics(NamedTuple):
@@ -102,9 +104,13 @@ def start_ignite(test_context, ignite_version: str, rebalance_params: RebalanceP
         rebalance_batches_prefetch_count=rebalance_params.batches_prefetch_count,
         rebalance_throttle=rebalance_params.throttle)
 
+    if rebalance_params.plugins:
+        node_config = node_config._replace(plugins=[*node_config.plugins, *rebalance_params.plugins])
+
     ignites = IgniteService(test_context, config=node_config,
                             num_nodes=node_count if rebalance_params.trigger_event else node_count - 1,
-                            jvm_opts=rebalance_params.jvm_opts)
+                            jvm_opts=rebalance_params.jvm_opts,
+                            modules=rebalance_params.modules)
     ignites.start()
 
     return ignites
