@@ -28,10 +28,12 @@ public class FeatureChecker {
         "--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED\n" +
         "--add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED\n" +
         "--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED\n" +
+        "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED\n" +
         "--illegal-access=permit";
 
     /** Required Options to Run on Java 15 and higher. */
     public static final String JAVA_15_OPTIONS =
+        "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED\n" +
         "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED\n" +
         "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED\n" +
         "--add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED\n" +
