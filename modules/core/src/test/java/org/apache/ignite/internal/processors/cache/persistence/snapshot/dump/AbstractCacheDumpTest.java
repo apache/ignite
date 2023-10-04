@@ -31,6 +31,7 @@ import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryType;
@@ -114,7 +115,11 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     public CacheAtomicityMode mode;
 
     /** */
-    @Parameterized.Parameters(name = "nodes={0},backups={1},persistence={2},mode={3}")
+    @Parameterized.Parameter(4)
+    public boolean useDataStreamer;
+
+    /** */
+    @Parameterized.Parameters(name = "nodes={0},backups={1},persistence={2},mode={3},useDataStreamer={4}")
     public static List<Object[]> params() {
         List<Object[]> params = new ArrayList<>();
 
@@ -122,10 +127,12 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             for (int backups : new int[]{0, 1})
                 for (boolean persistence : new boolean[]{true, false})
                     for (CacheAtomicityMode mode : CacheAtomicityMode._values()) {
-                        if (nodes == 1 && backups != 0)
-                            continue;
+                        for (boolean useDataStreamer : new boolean[]{true, false}) {
+                            if (nodes == 1 && backups != 0)
+                                continue;
 
-                        params.add(new Object[]{nodes, backups, persistence, mode});
+                            params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer});
+                        }
                     }
 
         return params;
@@ -189,7 +196,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
         ign.cluster().state(ClusterState.ACTIVE);
 
-        putData(ign.cache(DEFAULT_CACHE_NAME), ign.cache(CACHE_0), ign.cache(CACHE_1));
+        putData(cli.cache(DEFAULT_CACHE_NAME), cli.cache(CACHE_0), cli.cache(CACHE_1));
 
         return ign;
     }
@@ -235,11 +242,26 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> grpCache0,
         IgniteCache<Object, Object> grpCache1
     ) {
-        IntStream.range(0, KEYS_CNT).forEach(i -> {
-            cache.put(i, i);
-            grpCache0.put(i, USER_FACTORY.apply(i));
-            grpCache1.put(new Key(i), new Value(String.valueOf(i)));
-        });
+        if (useDataStreamer) {
+            try (
+                IgniteDataStreamer<Integer, Integer> _cache = cli.dataStreamer(cache.getName());
+                IgniteDataStreamer<Integer, User> _grpCache0 = cli.dataStreamer(grpCache0.getName());
+                IgniteDataStreamer<Key, Value> _grpCache1 = cli.dataStreamer(grpCache1.getName())
+            ) {
+                IntStream.range(0, KEYS_CNT).forEach(i -> {
+                    _cache.addData(i, i);
+                    _grpCache0.addData(i, USER_FACTORY.apply(i));
+                    _grpCache1.addData(new Key(i), new Value(String.valueOf(i)));
+                });
+            }
+        }
+        else {
+            IntStream.range(0, KEYS_CNT).forEach(i -> {
+                cache.put(i, i);
+                grpCache0.put(i, USER_FACTORY.apply(i));
+                grpCache1.put(new Key(i), new Value(String.valueOf(i)));
+            });
+        }
     }
 
     /** */

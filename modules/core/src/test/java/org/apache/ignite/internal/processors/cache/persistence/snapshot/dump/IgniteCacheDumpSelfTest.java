@@ -55,6 +55,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_RUNNING_DIR_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.junit.Assume.assumeFalse;
 
 /** */
 public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
@@ -262,6 +263,8 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     /** */
     @Test
     public void testDumpWithImplicitExpireTime() throws Exception {
+        assumeFalse(useDataStreamer);
+
         explicitTtl = false;
 
         doTestDumpWithExpiry();

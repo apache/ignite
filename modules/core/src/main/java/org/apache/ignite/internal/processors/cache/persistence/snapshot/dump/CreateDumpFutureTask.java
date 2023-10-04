@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -218,6 +219,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         long start = System.currentTimeMillis();
 
         AtomicLong entriesCnt = new AtomicLong();
+        AtomicLong writtenEntriesCnt = new AtomicLong();
         AtomicLong changedEntriesCnt = new AtomicLong();
 
         String name = cctx.cache().cacheGroup(grp).cacheOrGroupName();
@@ -229,6 +231,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         List<CompletableFuture<Void>> futs = grpParts.stream().map(part -> runAsync(() -> {
             long entriesCnt0 = 0;
+            long writtenEntriesCnt0 = 0;
 
             try (PartitionDumpContext dumpCtx = dumpContext(grp, part)) {
                 try (GridCloseableIterator<CacheDataRow> rows = gctx.offheap().reservedIterator(part, dumpCtx.topVer)) {
@@ -243,11 +246,14 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                         int cache = row.cacheId() == 0 ? grp : row.cacheId();
 
                         if (dumpCtx.writeForIterator(cache, row.expireTime(), row.key(), row.value(), row.version()))
-                            entriesCnt0++;
+                            writtenEntriesCnt0++;
+
+                        entriesCnt0++;
                     }
                 }
 
                 entriesCnt.addAndGet(entriesCnt0);
+                writtenEntriesCnt.addAndGet(writtenEntriesCnt0);
                 changedEntriesCnt.addAndGet(dumpCtx.changedCnt.intValue());
 
                 if (log.isDebugEnabled()) {
@@ -255,8 +261,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                         ", id=" + grp +
                         ", part=" + part +
                         ", time=" + (System.currentTimeMillis() - start) +
-                        ", iteratorEntriesCount=" + entriesCnt +
-                        ", changedEntriesCount=" + changedEntriesCnt + ']');
+                        ", iterEntriesCnt=" + entriesCnt +
+                        ", writtenIterEntriesCnt=" + entriesCnt +
+                        ", changedEntriesCnt=" + changedEntriesCnt + ']');
 
                 }
             }
@@ -271,8 +278,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 log.info("Finish group dump [name=" + name +
                     ", id=" + grp +
                     ", time=" + (System.currentTimeMillis() - start) +
-                    ", iteratorEntriesCount=" + entriesCnt +
-                    ", changedEntriesCount=" + changedEntriesCnt + ']');
+                    ", iterEntriesCnt=" + entriesCnt.get() +
+                    ", writtenIterEntriesCnt=" + writtenEntriesCnt.get() +
+                    ", changedEntriesCnt=" + changedEntriesCnt.get() + ']');
             }
         });
 
@@ -370,6 +378,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         /** Last version on time of dump start. Can be used only for primary. */
         @Nullable final GridCacheVersion startVer;
 
+        /** Last version on time of dump start. Can be used only for primary. */
+        final GridCacheVersion isolatedStreamerVer;
+
         /** Topology Version. */
         private final AffinityTopologyVersion topVer;
 
@@ -396,6 +407,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 topVer = gctx.topology().lastTopologyChangeVersion();
 
                 startVer = grpPrimaries.get(gctx.groupId()).contains(part) ? gctx.shared().versions().last() : null;
+                isolatedStreamerVer = cctx.versions().isolatedStreamerVersion();
 
                 serdes = new DumpEntrySerializer(thLocBufs);
                 changed = new HashMap<>();
@@ -423,13 +435,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
          * @param val Value before change.
          * @param ver Version before change.
          */
-        public void writeChanged(
-            int cache,
-            long expireTime,
-            KeyCacheObject key,
-            CacheObject val,
-            GridCacheVersion ver
-        ) {
+        public void writeChanged(int cache, long expireTime, KeyCacheObject key, CacheObject val, GridCacheVersion ver) {
             String reasonToSkip = null;
 
             if (closed) // Quick exit. Partition already saved in dump.
@@ -440,7 +446,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 try {
                     if (closed) // Partition already saved in dump.
                         reasonToSkip = "partition already saved";
-                    else if (startVer != null && ver.isGreater(startVer))
+                    else if (isAfterStart(ver))
                         reasonToSkip = "greater version";
                     else if (!changed.get(cache).add(key)) // Entry changed several time during dump.
                         reasonToSkip = "changed several times";
@@ -486,7 +492,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         ) {
             boolean written = true;
 
-            if (startVer != null && ver.isGreater(startVer))
+            if (isAfterStart(ver))
                 written = false;
             else if (changed.get(cache).contains(key))
                 written = false;
@@ -518,6 +524,18 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                     throw new IgniteException(e);
                 }
             }
+        }
+
+        /**
+         * Note, usage of {@link IgniteDataStreamer} may lead to dump inconsistency.
+         * Because, streamer use the same {@link GridCacheVersion} for all entries.
+         * So, we can't efficiently filter out new entries and write them all to dump.
+         *
+         * @param ver Entry version.
+         * @return {@code True} if {@code ver} appeared after dump started.
+         */
+        private boolean isAfterStart(GridCacheVersion ver) {
+            return (startVer != null && ver.isGreater(startVer)) && !isolatedStreamerVer.equals(ver);
         }
 
         /** {@inheritDoc} */
