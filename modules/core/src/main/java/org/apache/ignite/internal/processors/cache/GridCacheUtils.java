@@ -334,17 +334,6 @@ public class GridCacheUtils {
         }
     };
 
-    /** Transaction entry to key. */
-    private static final IgniteClosure tx2key = new C1<IgniteTxEntry, Object>() {
-        @Override public Object apply(IgniteTxEntry e) {
-            return e.key();
-        }
-
-        @Override public String toString() {
-            return "Cache transaction entry to key converter.";
-        }
-    };
-
     /** Converts transaction to XID version. */
     private static final IgniteClosure tx2xidVer = new C1<IgniteInternalTx, GridCacheVersion>() {
         @Override public GridCacheVersion apply(IgniteInternalTx tx) {
