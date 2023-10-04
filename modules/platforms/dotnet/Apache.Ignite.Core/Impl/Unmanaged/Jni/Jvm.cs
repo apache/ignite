@@ -52,6 +52,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             "--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED",
             "--illegal-access=permit",
 
+            "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED",
             "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED",
             "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
             "--add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED",
