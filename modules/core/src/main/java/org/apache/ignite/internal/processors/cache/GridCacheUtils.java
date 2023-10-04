@@ -345,13 +345,6 @@ public class GridCacheUtils {
         }
     };
 
-    /** Converts tx entry to entry. */
-    private static final IgniteClosure tx2entry = new C1<IgniteTxEntry, GridCacheEntryEx>() {
-        @Override public GridCacheEntryEx apply(IgniteTxEntry e) {
-            return e.cached();
-        }
-    };
-
     /** Transaction entry to key. */
     private static final IgniteClosure entry2key = new C1<GridCacheEntryEx, KeyCacheObject>() {
         @Override public KeyCacheObject apply(GridCacheEntryEx e) {
