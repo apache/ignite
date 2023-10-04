@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.security.maintenance.MaintenanceMod
 import org.apache.ignite.internal.processors.security.messaging.MessagingRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.sandbox.AccessToClassesInsideInternalPackageTest;
 import org.apache.ignite.internal.processors.security.sandbox.CacheSandboxTest;
+import org.apache.ignite.internal.processors.security.sandbox.CacheStoreFactorySandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.ComputeSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.ContinuousQuerySandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.ContinuousQueryWithTransformerSandboxTest;
@@ -129,6 +130,7 @@ import org.junit.runners.Suite;
     EventsSandboxTest.class,
     PrivilegedProxyTest.class,
     SchedulerSandboxTest.class,
+    CacheStoreFactorySandboxTest.class,
 
     IgniteSecurityProcessorTest.class,
     MultipleSSLContextsTest.class,
