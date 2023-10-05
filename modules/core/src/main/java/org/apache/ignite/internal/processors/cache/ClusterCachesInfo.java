@@ -1774,6 +1774,21 @@ public class ClusterCachesInfo {
     }
 
     /**
+     * @param cacheName Cache name.
+     */
+    public @Nullable DynamicCacheDescriptor markedForDeletionCache(String cacheName) {
+        // Find the "earliest" available descriptor.
+        for (Map<String, DynamicCacheDescriptor> descriptors : markedForDeletionCaches.values()) {
+            DynamicCacheDescriptor desc = descriptors.get(cacheName);
+
+            if (desc != null)
+                return desc;
+        }
+
+        return null;
+    }
+
+    /**
      * Save dynamic cache descriptor on disk.
      *
      * @param desc Cache to save.
