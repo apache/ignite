@@ -290,9 +290,15 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     /** {@inheritDoc} */
     @Override public void beforeChange(GridCacheContext cctx, KeyCacheObject key, CacheObject val, long expireTime, GridCacheVersion ver) {
         try {
-            assert key.partition() != -1;
+            int part = key.partition();
+            int grp = cctx.groupId();
 
-            dumpContext(cctx.groupId(), key.partition()).writeChanged(cctx.cacheId(), expireTime, key, val, ver);
+            assert part != -1;
+
+            if (!parts.get(grp).contains(part))
+                return;
+
+            dumpContext(grp, part).writeChanged(cctx.cacheId(), expireTime, key, val, ver);
         }
         catch (IgniteException e) {
             acceptException(e);

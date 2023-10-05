@@ -73,6 +73,7 @@ import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_THREAD_CNT;
 import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_TIMEOUT;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_RUNNING_DIR_KEY;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.toLong;
 import static org.apache.ignite.platform.model.AccessLevel.SUPER;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -120,7 +121,11 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     public boolean useDataStreamer;
 
     /** */
-    @Parameterized.Parameters(name = "nodes={0},backups={1},persistence={2},mode={3},useDataStreamer={4}")
+    @Parameterized.Parameter(5)
+    public boolean onlyPrimary;
+
+    /** */
+    @Parameterized.Parameters(name = "nodes={0},backups={1},persistence={2},mode={3},useDataStreamer={4},onlyPrimary={5}")
     public static List<Object[]> params() {
         List<Object[]> params = new ArrayList<>();
 
@@ -132,7 +137,12 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                             if (nodes == 1 && backups != 0)
                                 continue;
 
-                            params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer});
+                            if (backups > 0) {
+                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, false});
+                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, true});
+                            }
+                            else
+                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, false});
                         }
                     }
 
@@ -297,6 +307,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         TestDumpConsumer cnsmr = new TestDumpConsumer() {
             final Set<Integer> keys = new HashSet<>();
 
+            final Set<Long> grpParts = new HashSet<>();
+
             int dfltDumpSz;
 
             int grpDumpSz;
@@ -342,6 +354,9 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             }
 
             @Override public void onPartition(int grp, int part, Iterator<DumpEntry> iter) {
+                if (onlyPrimary)
+                    assertTrue(grpParts.add(toLong(grp, part)));
+
                 if (grp == CU.cacheId(DEFAULT_CACHE_NAME)) {
                     while (iter.hasNext()) {
                         DumpEntry e = iter.next();
@@ -372,8 +387,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             @Override public void check() {
                 super.check();
 
-                assertEquals(KEYS_CNT + KEYS_CNT * backups, dfltDumpSz);
-                assertEquals(2 * (KEYS_CNT + KEYS_CNT * backups), grpDumpSz);
+                assertEquals(KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups), dfltDumpSz);
+                assertEquals(2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)), grpDumpSz);
 
                 IntStream.range(0, KEYS_CNT).forEach(key -> assertTrue(keys.contains(key)));
             }
@@ -505,7 +520,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     void createDump(IgniteEx ign, String name) {
-        ign.snapshot().createDump(name).get();
+        ign.context().cache().context().snapshotMgr().createSnapshot(name, null, false, true, true).get();
     }
 
     /** */
