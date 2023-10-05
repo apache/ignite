@@ -173,7 +173,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PREFER_WAL_REBALANCE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.makeUpdateListener;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.setDefaultValue;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
@@ -699,11 +698,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (dataRegionMap.isEmpty())
             return;
 
-        boolean hasMvccCache = false;
-
         for (CacheGroupDescriptor grpDesc : cctx.cache().cacheGroupDescriptors().values()) {
-            hasMvccCache |= grpDesc.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
-
             String regionName = grpDesc.config().getDataRegionName();
 
             DataRegion region = regionName != null ? dataRegionMap.get(regionName) : dfltDataRegion;
@@ -729,20 +724,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 cctx.kernalContext().encryption().onCacheGroupStop(grpDesc.groupId());
         }
 
-        if (!hasMvccCache && dataRegionMap.containsKey(TxLog.TX_LOG_CACHE_NAME)) {
+        if (dataRegionMap.containsKey(TxLog.TX_LOG_CACHE_NAME)) {
             PageMemory memory = dataRegionMap.get(TxLog.TX_LOG_CACHE_NAME).pageMemory();
 
             if (memory instanceof PageMemoryEx)
                 ((PageMemoryEx)memory).invalidate(TxLog.TX_LOG_CACHE_ID, PageIdAllocator.INDEX_PARTITION);
         }
 
-        final boolean hasMvccCache0 = hasMvccCache;
-
         storeMgr.cleanupPageStoreIfMatch(
             new Predicate<Integer>() {
                 @Override public boolean test(Integer grpId) {
-                    return MetaStorage.METASTORAGE_CACHE_ID != grpId &&
-                        (TxLog.TX_LOG_CACHE_ID != grpId || !hasMvccCache0);
+                    return MetaStorage.METASTORAGE_CACHE_ID != grpId;
                 }
             },
             true);

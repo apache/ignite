@@ -75,7 +75,7 @@ public class IgniteCacheMultiClientsStartTest extends GridCommonAbstractTest {
             CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setCacheMode(PARTITIONED);
-            ccfg.setAtomicityMode(CacheAtomicityMode._values()[i % CacheAtomicityMode._values().length]);
+            ccfg.setAtomicityMode(CacheAtomicityMode.values()[i % CacheAtomicityMode.values().length]);
             ccfg.setWriteSynchronizationMode(PRIMARY_SYNC);
             ccfg.setBackups(1);
 

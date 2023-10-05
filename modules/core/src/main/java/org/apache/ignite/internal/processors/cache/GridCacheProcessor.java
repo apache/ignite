@@ -208,7 +208,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTR
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -655,8 +654,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     void initialize(CacheConfiguration cfg, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         CU.initializeConfigDefaults(log, cfg, cacheObjCtx);
-
-        ctx.coordinators().preProcessCacheConfiguration(cfg);
     }
 
     /**
@@ -1247,9 +1244,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         pluginMgr.validate();
 
-        if (!recoveryMode && cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT && grp.affinityNode())
-            sharedCtx.coordinators().ensureStarted();
-
         sharedCtx.jta().registerCache(cfg);
 
         // Skip suggestions for internal caches.
@@ -1336,8 +1330,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             case REPLICATED: {
                 if (nearEnabled) {
                     switch (cfg.getAtomicityMode()) {
-                        case TRANSACTIONAL:
-                        case TRANSACTIONAL_SNAPSHOT: {
+                        case TRANSACTIONAL: {
                             cache = new GridNearTransactionalCache(cacheCtx);
 
                             break;
@@ -1355,8 +1348,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
                 else {
                     switch (cfg.getAtomicityMode()) {
-                        case TRANSACTIONAL:
-                        case TRANSACTIONAL_SNAPSHOT: {
+                        case TRANSACTIONAL: {
                             cache = cacheCtx.affinityNode() ?
                                 new GridDhtColocatedCache(cacheCtx) :
                                 new GridDhtColocatedCache(cacheCtx, new GridNoStorageCacheMap());
@@ -1449,8 +1441,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridDhtCacheAdapter dht = null;
 
             switch (cfg.getAtomicityMode()) {
-                case TRANSACTIONAL:
-                case TRANSACTIONAL_SNAPSHOT: {
+                case TRANSACTIONAL: {
                     assert cache instanceof GridNearTransactionalCache;
 
                     GridNearTransactionalCache near = (GridNearTransactionalCache)cache;
@@ -1683,9 +1674,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         IgniteInternalFuture<?> res = sharedCtx.affinity().initCachesOnLocalJoin(
             locJoinCtx.cacheGroupDescriptors(), locJoinCtx.cacheDescriptors());
-
-        for (DynamicCacheDescriptor d: locJoinCtx.cacheDescriptors().values())
-            ctx.coordinators().validateCacheConfiguration(d.cacheConfiguration());
 
         List<StartCacheInfo> startCacheInfos = locJoinCtx.caches().stream()
             .map(cacheInfo -> new StartCacheInfo(cacheInfo.get1(), cacheInfo.get2(), exchTopVer, false))
@@ -2086,9 +2074,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             dht.context().finishRecovery(cacheStartVer, updatedDescriptor);
         }
-
-        if (cacheContext.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT && groupContext.affinityNode())
-            sharedCtx.coordinators().ensureStarted();
 
         onKernalStart(cacheContext.cache());
 
