@@ -33,6 +33,7 @@ import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.DumpedPartitionIterator;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -88,7 +89,7 @@ public class DumpReader implements Runnable {
                 }
 
                 cnsmr.onCacheConfigs(grpToNodes.entrySet().stream()
-                    .flatMap(e -> dump.configs(e.getValue().get(0), e.getKey()).stream())
+                    .flatMap(e -> dump.configs(F.first(e.getValue()), e.getKey()).stream())
                     .iterator());
 
                 ExecutorService execSvc = cfg.threadCount() > 1 ? Executors.newFixedThreadPool(cfg.threadCount()) : null;

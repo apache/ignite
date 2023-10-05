@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -218,7 +219,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             });
         }
 
-        IgniteInternalFuture<Object> dumpFut = runAsync(() -> createDump((IgniteEx)ignites.get(0)));
+        IgniteInternalFuture<Object> dumpFut = runAsync(() -> createDump((IgniteEx)F.first(ignites)));
 
         // Waiting while dump will be setup: task planned after change listener set.
         assertTrue(waitForCondition(() -> {
