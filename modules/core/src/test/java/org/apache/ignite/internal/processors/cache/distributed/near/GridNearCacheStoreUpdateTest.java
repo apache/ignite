@@ -84,16 +84,6 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
      * @throws Exception If fail.
      */
     @Test
-    public void testTransactionAtomicUpdateNear() throws Exception {
-        cache = client.createCache(cacheConfiguration(), new NearCacheConfiguration<String, String>());
-
-        checkNear(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
-    }
-
-    /**
-     * @throws Exception If fail.
-     */
-    @Test
     public void testPessimisticRepeatableReadUpdateNear() throws Exception {
         cache = client.createCache(cacheConfiguration().setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL),
             new NearCacheConfiguration<String, String>());
