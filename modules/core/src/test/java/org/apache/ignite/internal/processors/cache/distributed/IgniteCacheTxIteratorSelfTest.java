@@ -139,7 +139,7 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
             nearEnabled,
             useEvicPlc);
 
-        final IgniteCache<String, TestClass> cache = ignite.createCache(ccfg).withAllowAtomicOpsInTx();
+        final IgniteCache<String, TestClass> cache = ignite.createCache(ccfg);
 
         info("Checking cache [mode=" + mode + ", atomMode=" + atomMode + ", near=" + nearEnabled +
             ", evict=" + useEvicPlc + ']');

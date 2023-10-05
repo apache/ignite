@@ -4120,7 +4120,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     private void checkPeekTxRemove(TransactionConcurrency concurrency) throws Exception {
         if (txShouldBeUsed()) {
             Ignite ignite = primaryIgnite("key");
-            IgniteCache<String, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+            IgniteCache<String, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             cache.put("key", 1);
 

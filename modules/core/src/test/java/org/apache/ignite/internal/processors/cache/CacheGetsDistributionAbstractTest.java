@@ -194,8 +194,7 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
         for (Integer key : keys)
             cache.put(key, VAL_PREFIX + key);
 
-        IgniteCache<Integer, String> clientCache = grid(CLIENT_NAME).cache(DEFAULT_CACHE_NAME)
-            .withAllowAtomicOpsInTx();
+        IgniteCache<Integer, String> clientCache = grid(CLIENT_NAME).cache(DEFAULT_CACHE_NAME);
 
         assertTrue(GridTestUtils.waitForCondition(
             new GridAbsPredicate() {
@@ -298,8 +297,7 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
         for (Integer key : keys)
             cache.put(key, VAL_PREFIX + key);
 
-        IgniteCache<Integer, String> clientCache = grid(CLIENT_NAME).cache(DEFAULT_CACHE_NAME)
-            .withAllowAtomicOpsInTx();
+        IgniteCache<Integer, String> clientCache = grid(CLIENT_NAME).cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = grid(CLIENT_NAME).transactions().txStart()) {
             if (batchMode) {

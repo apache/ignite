@@ -975,8 +975,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         final CacheConfiguration<Integer, Organization> cfg = new CacheConfiguration<>("Org" + "11");
         cfg.setAtomicityMode(mode);
-        final IgniteCache<Integer, Organization> cache = ig.getOrCreateCache(cfg).withKeepBinary()
-            .withAllowAtomicOpsInTx();
+        final IgniteCache<Integer, Organization> cache = ig.getOrCreateCache(cfg).withKeepBinary();
 
         try (Transaction tx = ig.transactions().txStart()) {
             for (int i = 0; i < 10; i++) {

@@ -184,12 +184,12 @@ public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
         IgniteCache pers = srv0.createCache(personCacheConfiguration(grp1, "pers")
             .setAffinity(new RendezvousAffinityFunction().setPartitions(10))
             .setCacheMode(cm1)
-            .setAtomicityMode(cam1)).withAllowAtomicOpsInTx();
+            .setAtomicityMode(cam1));
 
         IgniteCache acc = srv0.createCache(accountCacheConfiguration(grp2, "acc")
             .setAffinity(new RendezvousAffinityFunction().setPartitions(10))
             .setCacheMode(cm2)
-            .setAtomicityMode(cam2)).withAllowAtomicOpsInTx();
+            .setAtomicityMode(cam2));
 
         try (Transaction tx = cam1 == TRANSACTIONAL || cam2 == TRANSACTIONAL ? srv0.transactions().txStart() : null) {
             for (int i = 0; i < keys; i++) {

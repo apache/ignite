@@ -335,7 +335,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         assertEquals(0, LOCAL_STORE_1.map.size());
         assertEquals(0, LOCAL_STORE_2.map.size());
 
-        IgniteCache<Integer, Integer> cache = ignite1.cache(name).withAllowAtomicOpsInTx();
+        IgniteCache<Integer, Integer> cache = ignite1.cache(name);
 
         try (Transaction tx = ignite1.transactions().txStart()) {
             cache.put(key1, key1);
@@ -445,7 +445,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
             for (int i = 0; i < KEYS; i++) {
                 Ignite ignite = grid(rn.nextInt(6) + 1);
 
-                IgniteCache<Integer, Integer> cache = ignite.cache(name).withAllowAtomicOpsInTx();
+                IgniteCache<Integer, Integer> cache = ignite.cache(name);
 
                 try (Transaction tx = ignite.transactions().txStart()) {
                     cache.put(i, i);
@@ -571,7 +571,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
                 m.put(kB, kB);
                 m.put(kN, kN);
 
-                IgniteCache<Integer, Integer> cache = grid(i).cache(BACKUP_CACHE_1).withAllowAtomicOpsInTx();
+                IgniteCache<Integer, Integer> cache = grid(i).cache(BACKUP_CACHE_1);
 
                 try (Transaction tx = grid(i).transactions().txStart()) {
                     cache.putAll(m);
@@ -591,8 +591,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
             Random rn = new Random();
 
             for (int i = 1; i <= 3; i++) {
-                IgniteCache<Integer, Integer> cache = grid(i).cache(BACKUP_CACHE_1)
-                    .withSkipStore().withAllowAtomicOpsInTx();
+                IgniteCache<Integer, Integer> cache = grid(i).<Integer, Integer>cache(BACKUP_CACHE_1).withSkipStore();
 
                 try (Transaction tx = grid(i).transactions().txStart()) {
                     Map<Integer, Integer> m = new TreeMap<>();
