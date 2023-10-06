@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -35,16 +36,24 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -60,16 +69,29 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAll;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAll;
 
 /**
  * This class provides ability to work with saved cache dump.
  */
-public class Dump {
+public class Dump implements AutoCloseable {
+    /** Snapshot meta. */
+    private final List<SnapshotMetadata> metadata;
+
     /** Dump directory. */
     private final File dumpDir;
 
-    /** Kernal context. */
+    /**
+     * Kernal context for each node in dump.
+     */
     private final GridKernalContext cctx;
+
+    /** If {@code true} then return data in form of {@link BinaryObject}. */
+    private final boolean keepBinary;
+
+    /** If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}. */
+    private final boolean raw;
 
     /**
      * Map shared across all instances of {@link DumpEntrySerializer}.
@@ -80,36 +102,77 @@ public class Dump {
     private final ConcurrentMap<Long, ByteBuffer> thLocBufs = new ConcurrentHashMap<>();
 
     /**
-     * @param cctx Kernal context.
      * @param dumpDir Dump directory.
+     * @param keepBinary If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}.
      */
-    public Dump(GridKernalContext cctx, File dumpDir) {
-        this.cctx = cctx;
-        this.dumpDir = dumpDir;
-
-        File binaryMeta = new File(dumpDir, DFLT_BINARY_METADATA_PATH);
-        File marshaller = new File(dumpDir, DFLT_MARSHALLER_PATH);
-
+    public Dump(File dumpDir, boolean keepBinary, boolean raw, IgniteLogger log) {
         A.ensure(dumpDir != null, "dump directory is null");
         A.ensure(dumpDir.exists(), "dump directory not exists");
+
+        this.dumpDir = dumpDir;
+        this.metadata = metadata(dumpDir);
+        this.keepBinary = keepBinary;
+        this.cctx = standaloneKernalContext(dumpDir, log);
+        this.raw = raw;
+    }
+
+    /**
+     * @param dumpDir Dump directory.
+     * @param log Logger.
+     * @return Standalone kernal context.
+     */
+    private GridKernalContext standaloneKernalContext(File dumpDir, IgniteLogger log) {
+        File binaryMeta = CacheObjectBinaryProcessorImpl.binaryWorkDir(dumpDir.getAbsolutePath(), F.first(metadata).folderName());
+        File marshaller = new File(dumpDir, DFLT_MARSHALLER_PATH);
+
         A.ensure(binaryMeta.exists(), "binary metadata directory not exists");
         A.ensure(marshaller.exists(), "marshaller directory not exists");
+
+        try {
+            GridKernalContext kctx = new StandaloneGridKernalContext(log, binaryMeta, marshaller);
+
+            startAll(kctx);
+
+            return kctx;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** @return Binary types iterator. */
+    public Iterator<BinaryType> types() {
+        return cctx.cacheObjects().metadata().iterator();
     }
 
     /** @return List of node directories. */
     public List<String> nodesDirectories() {
-        return Arrays.stream(new File(dumpDir, DFLT_STORE_DIR).listFiles(f -> f.isDirectory() &&
-            !(f.getAbsolutePath().endsWith(DFLT_BINARY_METADATA_PATH)
-                || f.getAbsolutePath().endsWith(DFLT_MARSHALLER_PATH)))).map(File::getName).collect(Collectors.toList());
+        File[] dirs = new File(dumpDir, DFLT_STORE_DIR).listFiles(f -> f.isDirectory()
+            && !(f.getAbsolutePath().endsWith(DFLT_BINARY_METADATA_PATH) || f.getAbsolutePath().endsWith(DFLT_MARSHALLER_PATH)));
+
+        if (dirs == null)
+            return Collections.emptyList();
+
+        return Arrays.stream(dirs).map(File::getName).collect(Collectors.toList());
     }
 
     /** @return List of snapshot metadata saved in {@link #dumpDir}. */
     public List<SnapshotMetadata> metadata() throws IOException, IgniteCheckedException {
-        JdkMarshaller marsh = MarshallerUtils.jdkMarshaller(cctx.igniteInstanceName());
+        return metadata;
+    }
 
-        ClassLoader clsLdr = U.resolveClassLoader(cctx.config());
+    /** @return List of snapshot metadata saved in {@link #dumpDir}. */
+    private static List<SnapshotMetadata> metadata(File dumpDir) {
+        JdkMarshaller marsh = MarshallerUtils.jdkMarshaller("fake-node");
 
-        return Arrays.stream(dumpDir.listFiles(f -> f.getName().endsWith(SNAPSHOT_METAFILE_EXT))).map(meta -> {
+        ClassLoader clsLdr = U.resolveClassLoader(new IgniteConfiguration());
+
+        File[] files = dumpDir.listFiles(f -> f.getName().endsWith(SNAPSHOT_METAFILE_EXT));
+
+        if (files == null)
+            return Collections.emptyList();
+
+        return Arrays.stream(files).map(meta -> {
             try (InputStream in = new BufferedInputStream(Files.newInputStream(meta.toPath()))) {
                 return marsh.<SnapshotMetadata>unmarshal(in, clsLdr);
             }
@@ -143,8 +206,13 @@ public class Dump {
      * @return Dump iterator.
      */
     public List<Integer> partitions(String node, int group) {
-        return Arrays.stream(dumpGroupDirectory(node, group)
-            .listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(DUMP_FILE_EXT)))
+        File[] parts = dumpGroupDirectory(node, group)
+            .listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(DUMP_FILE_EXT));
+
+        if (parts == null)
+            return Collections.emptyList();
+
+        return Arrays.stream(parts)
             .map(partFile -> Integer.parseInt(partFile.getName().replace(PART_FILE_PREFIX, "").replace(DUMP_FILE_EXT, "")))
             .collect(Collectors.toList());
     }
@@ -155,16 +223,6 @@ public class Dump {
      * @return Dump iterator.
      */
     public DumpedPartitionIterator iterator(String node, int group, int part) {
-        return iterator(node, group, part, true);
-    }
-
-    /**
-     * @param node Node directory name.
-     * @param group Group id.
-     * @param excludeDuplicates Skip entries that was dumped twice - by iterator and change listener.
-     * @return Dump iterator.
-     */
-    DumpedPartitionIterator iterator(String node, int group, int part, boolean excludeDuplicates) {
         FileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
         FileIO dumpFile;
@@ -179,11 +237,13 @@ public class Dump {
         DumpEntrySerializer serializer = new DumpEntrySerializer(thLocBufs);
 
         serializer.kernalContext(cctx);
+        serializer.keepBinary(keepBinary);
+        serializer.raw(raw);
 
         return new DumpedPartitionIterator() {
             DumpEntry next;
 
-            Set<KeyCacheObject> partKeys = new HashSet<>();
+            Set<Object> partKeys = new HashSet<>();
 
             /** {@inheritDoc} */
             @Override public boolean hasNext() {
@@ -266,6 +326,11 @@ public class Dump {
             throw new IgniteException("Wrong number of group directories: " + grpDirs.length);
 
         return grpDirs[0];
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws Exception {
+        closeAll(cctx);
     }
 
     /**

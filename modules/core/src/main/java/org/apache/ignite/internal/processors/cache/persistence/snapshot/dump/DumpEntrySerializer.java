@@ -22,7 +22,10 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -49,6 +52,12 @@ public class DumpEntrySerializer {
     /** Fake context. */
     private CacheObjectContext fakeCacheObjCtx;
 
+    /** If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}. */
+    private boolean raw = false;
+
+    /** If {@code true} then return data in form of {@link BinaryObject}. */
+    private boolean keepBinary;
+
     /**
      * @param thLocBufs Thread local buffers.
      */
@@ -60,6 +69,16 @@ public class DumpEntrySerializer {
     public void kernalContext(GridKernalContext cctx) {
         co = cctx.cacheObjects();
         fakeCacheObjCtx = new CacheObjectContext(cctx, null, null, false, false, false, false, false);
+    }
+
+    /** @param keepBinary If {@code true} then return data in form of {@link BinaryObject}. */
+    public void keepBinary(boolean keepBinary) {
+        this.keepBinary = keepBinary;
+    }
+
+    /** @param raw If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}. */
+    public void raw(boolean raw) {
+        this.raw = raw;
     }
 
     /**
@@ -202,12 +221,12 @@ public class DumpEntrySerializer {
                 return expireTime;
             }
 
-            @Override public KeyCacheObject key() {
-                return key;
+            @Override public Object key() {
+                return raw ? key : UnwrapDataEntry.unwrapKey(key, keepBinary, fakeCacheObjCtx);
             }
 
-            @Override public CacheObject value() {
-                return val;
+            @Override public Object value() {
+                return raw ? val : UnwrapDataEntry.unwrapValue(val, keepBinary, fakeCacheObjCtx);
             }
         };
     }

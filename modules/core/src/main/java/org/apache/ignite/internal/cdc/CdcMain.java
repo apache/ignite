@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -44,7 +45,6 @@ import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
@@ -82,6 +82,8 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.segmentIndex;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAll;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAll;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
@@ -328,8 +330,7 @@ public class CdcMain implements Runnable {
                 }
             }
             finally {
-                for (GridComponent comp : kctx)
-                    comp.stop(false);
+                closeAll(kctx);
 
                 if (log.isInfoEnabled())
                     log.info("Ignite Change Data Capture Application stopped.");
@@ -370,8 +371,7 @@ public class CdcMain implements Runnable {
 
         kctx.resource().setSpringContext(ctx);
 
-        for (GridComponent comp : kctx)
-            comp.start();
+        startAll(kctx);
 
         mreg = kctx.metric().registry("cdc");
 
@@ -647,27 +647,10 @@ public class CdcMain implements Runnable {
             if (files == null)
                 return;
 
-            Iterator<TypeMapping> changedMappings = Arrays.stream(files)
-                .map(f -> {
-                    String fileName = f.getName();
-
-                    int typeId = BinaryUtils.mappedTypeId(fileName);
-                    byte platformId = BinaryUtils.mappedFilePlatformId(fileName);
-
-                    T2<Integer, Byte> state = new T2<>(typeId, platformId);
-
-                    if (mappingsState.contains(state))
-                        return null;
-
-                    mappingsState.add(state);
-
-                    return (TypeMapping)new TypeMappingImpl(
-                        typeId,
-                        BinaryUtils.readMapping(f),
-                        platformId == 0 ? PlatformType.JAVA : PlatformType.DOTNET);
-                })
-                .filter(Objects::nonNull)
-                .iterator();
+            Iterator<TypeMapping> changedMappings = typeMappingIterator(
+                files,
+                tm -> mappingsState.add(new T2<>(tm.typeId(), (byte)tm.platformType().ordinal()))
+            );
 
             if (!changedMappings.hasNext())
                 return;
@@ -866,5 +849,27 @@ public class CdcMain implements Runnable {
     /** */
     public static String cdcInstanceName(String igniteInstanceName) {
         return "cdc-" + igniteInstanceName;
+    }
+
+    /**
+     * @param files Mapping files.
+     * @return Type mapping iterator.
+     */
+    public static Iterator<TypeMapping> typeMappingIterator(File[] files, Predicate<TypeMapping> filter) {
+        return Arrays.stream(files)
+            .map(f -> {
+                String fileName = f.getName();
+
+                int typeId = BinaryUtils.mappedTypeId(fileName);
+                byte platformId = BinaryUtils.mappedFilePlatformId(fileName);
+
+                return (TypeMapping)new TypeMappingImpl(
+                    typeId,
+                    BinaryUtils.readMapping(f),
+                    platformId == 0 ? PlatformType.JAVA : PlatformType.DOTNET);
+            })
+            .filter(filter)
+            .filter(Objects::nonNull)
+            .iterator();
     }
 }

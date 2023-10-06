@@ -38,7 +38,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.GridComponent;
+import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.management.cache.IdleVerifyResultV2;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
@@ -46,14 +46,15 @@ import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntry;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -82,6 +83,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAll;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAll;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.checkPartitionsPageCrcSum;
 
@@ -197,8 +200,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         EncryptionCacheKeyProvider snpEncrKeyProvider = new SnapshotEncryptionKeyProvider(cctx.kernalContext(), grpDirs);
 
-        for (GridComponent comp : snpCtx)
-            comp.start();
+        startAll(snpCtx);
 
         try {
             U.doInParallel(
@@ -311,8 +313,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             throw t;
         }
         finally {
-            for (GridComponent comp : snpCtx)
-                comp.stop(true);
+            closeAll(snpCtx);
         }
 
         return res;
@@ -356,23 +357,12 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     private Map<PartitionKeyV2, PartitionHashRecordV2> checkDumpFiles(
         SnapshotHandlerContext opCtx,
         Set<File> partFiles
-    ) throws IgniteCheckedException {
-        GridKernalContext snpCtx = cctx.snapshotMgr().createStandaloneKernalContext(
-            cctx.kernalContext().compress(),
-            opCtx.snapshotDirectory(),
-            opCtx.metadata().folderName()
-        );
-
-        for (GridComponent comp : snpCtx)
-            comp.start();
-
-        try {
-            Dump dump = new Dump(snpCtx, opCtx.snapshotDirectory());
-
+    ) {
+        try (Dump dump = new Dump(opCtx.snapshotDirectory(), true, true, log)) {
             Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
                 cctx.snapshotMgr().snapshotExecutorService(),
                 partFiles,
-                part -> caclucateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()))
+                part -> calculateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()))
             );
 
             return partitionHashRecordV2s.stream().collect(Collectors.toMap(PartitionHashRecordV2::partitionKey, r -> r));
@@ -380,16 +370,12 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         catch (Throwable t) {
             log.error("Error executing handler: ", t);
 
-            throw t;
-        }
-        finally {
-            for (GridComponent comp : snpCtx)
-                comp.stop(true);
+            throw new IgniteException(t);
         }
     }
 
     /** */
-    private PartitionHashRecordV2 caclucateDumpedPartitionHash(Dump dump, String grpName, int part) {
+    private PartitionHashRecordV2 calculateDumpedPartitionHash(Dump dump, String grpName, int part) {
         if (skipHash()) {
             return new PartitionHashRecordV2(
                 new PartitionKeyV2(CU.cacheId(grpName), part, grpName),
@@ -413,7 +399,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 while (iter.hasNext()) {
                     DumpEntry e = iter.next();
 
-                    ctx.update(e.key(), e.value(), null);
+                    ctx.update((KeyCacheObject)e.key(), (CacheObject)e.value(), null);
 
                     size++;
                 }

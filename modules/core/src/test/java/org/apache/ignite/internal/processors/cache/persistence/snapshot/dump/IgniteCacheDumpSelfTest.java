@@ -36,9 +36,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -55,6 +55,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_RUNNING_DIR_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.junit.Assume.assumeFalse;
 
 /** */
 public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
@@ -262,6 +263,8 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     /** */
     @Test
     public void testDumpWithImplicitExpireTime() throws Exception {
+        assumeFalse(useDataStreamer);
+
         explicitTtl = false;
 
         doTestDumpWithExpiry();
@@ -452,8 +455,8 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void checkDefaultCacheEntry(DumpEntry e, CacheObjectContext coCtx) {
-        super.checkDefaultCacheEntry(e, coCtx);
+    @Override protected void checkDefaultCacheEntry(DumpEntry e) {
+        super.checkDefaultCacheEntry(e);
 
         if (explicitTtl != null) {
             assertTrue("Expire time must be set", e.expireTime() != 0);
