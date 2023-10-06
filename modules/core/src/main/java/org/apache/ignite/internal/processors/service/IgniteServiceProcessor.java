@@ -1297,6 +1297,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         for (final ServiceContextImpl srvcCtx : toInit) {
             final Service srvc;
 
+            log.error("TEST | init service '" + srvcCtx.name() + "' on " + ctx.cluster().get().localNode().order());
+
             try {
                 srvc = copyAndInject(cfg, srvcCtx);
 

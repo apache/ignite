@@ -187,6 +187,8 @@ public class ClientServiceInvokeRequest extends ClientRequest {
                 if (!BinaryArray.useBinaryArrays())
                     PlatformServices.convertArrayArgs(args, method);
 
+                System.err.println("TEST | invoke service on " + ctx.kernalContext().cluster().get().localNode().order());
+
                 res = proxy.invokeMethod(method, args, callAttrs);
             }
 

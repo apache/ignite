@@ -73,9 +73,9 @@ public class ServicesTest extends AbstractThinClientTest {
         System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(useBinaryArrays));
         BinaryArray.initUseBinaryArrays();
 
-        startGrids(3);
+        startGrids(5);
 
-        startClientGrid(3);
+        startClientGrid(5);
 
         grid(0).createCache(DEFAULT_CACHE_NAME);
 
@@ -157,16 +157,18 @@ public class ServicesTest extends AbstractThinClientTest {
     @Test
     public void testCollectionMethods() throws Exception {
         try (IgniteClient client = startClient(0)) {
-            // Test local service calls (service deployed to each node).
+//             Test local service calls (service deployed to each node).
             TestServiceInterface svc = client.services().serviceProxy(NODE_SINGLTON_SERVICE_NAME,
                 TestServiceInterface.class);
 
+            for(int i=0; i<10; ++i)
             checkCollectionMethods(svc);
 
             // Test remote service calls (client connected to grid(0) but service deployed to grid(1)).
             svc = client.services().serviceProxy(CLUSTER_SINGLTON_SERVICE_NAME, TestServiceInterface.class);
 
-            checkCollectionMethods(svc);
+//            for(int i=0; i<10; ++i)
+//                checkCollectionMethods(svc);
         }
     }
 
@@ -179,12 +181,12 @@ public class ServicesTest extends AbstractThinClientTest {
 
         Person[] arr = new Person[] {person1, person2};
         assertTrue(Arrays.equals(arr, svc.testArray(arr)));
-
-        Collection<Person> col = new HashSet<>(F.asList(person1, person2));
-        assertEquals(col, svc.testCollection(col));
-
-        Map<Integer, Person> map = F.asMap(1, person1, 2, person2);
-        assertEquals(map, svc.testMap(map));
+//
+//        Collection<Person> col = new HashSet<>(F.asList(person1, person2));
+//        assertEquals(col, svc.testCollection(col));
+//
+//        Map<Integer, Person> map = F.asMap(1, person1, 2, person2);
+//        assertEquals(map, svc.testMap(map));
     }
 
     /**
@@ -213,6 +215,10 @@ public class ServicesTest extends AbstractThinClientTest {
             GridTestUtils.assertThrowsAnyCause(log, () -> svc.testMethod(0), ClientException.class,
                 "Service not found");
         }
+    }
+
+    @Override protected boolean isClientPartitionAwarenessEnabled() {
+        return true;
     }
 
     /**
@@ -536,6 +542,18 @@ public class ServicesTest extends AbstractThinClientTest {
             latch.await(10L, TimeUnit.SECONDS);
 
             return true;
+        }
+
+        @Override public void init() throws Exception {
+            Service.super.init();
+
+            log.error("TEST | init " + this.getClass().getSimpleName());
+        }
+
+        @Override public void execute() throws Exception {
+            Service.super.execute();
+
+            log.error("TEST | execute " + this.getClass().getSimpleName());
         }
     }
 

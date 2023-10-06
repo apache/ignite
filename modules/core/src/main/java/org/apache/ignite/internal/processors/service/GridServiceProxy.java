@@ -300,6 +300,8 @@ public class GridServiceProxy<T> implements Serializable {
     ) throws Exception {
         Service svc = svcCtx.service();
 
+        System.err.println("callServiceLocally '" + mtd.getName() + "' on " + ctx.cluster().get().localNode().order());
+
         if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd))
             return ((PlatformService)svc).invokeMethod(methodName(mtd), false, true, args, callAttrs);
         else
@@ -578,6 +580,8 @@ public class GridServiceProxy<T> implements Serializable {
             Method mtd = ctx.method(key);
 
             HistogramMetricImpl hist = ctx.isStatisticsEnabled() ? invocationHistogramm(ctx, mtdName, args) : null;
+
+            System.err.println("TEST | callService '" + mtd.getName() + "' on " + ignite.context().cluster().get().localNode().order());
 
             Object res = hist == null ? callService(ctx, mtd) : measureCall(hist, () -> callService(ctx, mtd));
 
