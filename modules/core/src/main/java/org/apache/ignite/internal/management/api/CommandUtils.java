@@ -502,7 +502,7 @@ public class CommandUtils {
     }
 
     /** */
-    public static @Nullable Collection<GridClientNode> nodeOrAll(@Nullable UUID nodeId, Collection<GridClientNode> nodes) {
+    public static Collection<GridClientNode> nodeOrAll(@Nullable UUID nodeId, Collection<GridClientNode> nodes) {
         return nodeId == null ? nodes : node(nodeId, nodes);
     }
 

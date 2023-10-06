@@ -114,7 +114,7 @@ Arguments: --cache help --yes
       --all-caches                  - applies operation to all user caches.
 
   Schedules rebuild of the indexes for specified caches via the Maintenance Mode. Schedules rebuild of specified caches and cache-groups:
-    control.(sh|bat) --cache schedule_indexes_rebuild [--node-id nodeId] --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1] --group-names groupName1,groupName2,...groupNameN
+    control.(sh|bat) --cache schedule_indexes_rebuild [--node-ids nodeId1,...nodeIdN|--all-nodes] --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1] --group-names groupName1,groupName2,...groupNameN
 
     Parameters:
       --node-id nodeId                                                         - (Optional) Specify node for indexes rebuild. If not specified, schedules rebuild on all nodes.

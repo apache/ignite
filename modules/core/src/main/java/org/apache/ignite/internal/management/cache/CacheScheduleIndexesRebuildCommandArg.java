@@ -36,7 +36,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-@ArgumentGroup(value = {"nodeIds", "allNodes", "nodeId"}, optional = true)
+@ArgumentGroup(value = {"nodeIds", "allNodes", "nodeId"}, onlyOneOf = true, optional = true)
 @ArgumentGroup(value = {"cacheNames", "groupNames"}, optional = false)
 public class CacheScheduleIndexesRebuildCommandArg extends IgniteDataTransferObject {
     /** */

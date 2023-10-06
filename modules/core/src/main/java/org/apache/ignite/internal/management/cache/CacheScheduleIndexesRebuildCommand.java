@@ -28,6 +28,7 @@ import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
+import static org.apache.ignite.internal.management.api.CommandUtils.nodeOrAll;
 
 /** Index rebuild via the maintenance mode. */
 public class CacheScheduleIndexesRebuildCommand
@@ -50,11 +51,12 @@ public class CacheScheduleIndexesRebuildCommand
 
     /** {@inheritDoc} */
     @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, CacheScheduleIndexesRebuildCommandArg arg) {
-        UUID[] nodeIds = F.isEmpty(arg.nodeIds()) && arg.nodeId() == null || arg.allNodes()
-            ? nodes.stream().map(GridClientNode::nodeId).toArray(UUID[]::new)
-            : arg.nodeId() == null ? arg.nodeIds() : new UUID[] {arg.nodeId()};
+        if (arg.allNodes() || F.isEmpty(arg.nodeIds()) && arg.nodeId() == null)
+            return nodes;
 
-        return CommandUtils.nodes(nodeIds, nodes);
+        nodeOrAll(arg.nodeId(), nodes);
+
+        return CommandUtils.nodes(arg.nodeId() == null ? arg.nodeIds() : new UUID[] {arg.nodeId()}, nodes);
     }
 
     /** {@inheritDoc} */
