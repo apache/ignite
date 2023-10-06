@@ -348,11 +348,21 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testSimpleJoin() {
+        execute("SELECT * FROM T1, T2 WHERE T1.ID = T2.AK AND T1.ID = ?",
+            (res) -> {
+                assertPartitions(allPartitions("T1_CACHE"));
+                assertNodes(allNodes("T1_CACHE"));
+                assertEquals(1, res.size());
+                assertEquals(123, res.get(0).get(0));
+            },
+            123
+        );
+
         // Key (not alias).
         execute("SELECT * FROM T1 INNER JOIN T2 ON T1.ID = T2.AK WHERE T1.ID = ?",
             (res) -> {
-//                assertPartitions(partition("T1_CACHE", 123));
-//                assertNodes(node("T1_CACHE", 123));
+                assertPartitions(allPartitions("T1_CACHE"));
+                assertNodes(allNodes("T1_CACHE"));
                 assertEquals(1, res.size());
                 assertEquals(123, res.get(0).get(0));
             },
@@ -362,8 +372,8 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
         // Key (alias).
         execute("SELECT * FROM T1 INNER JOIN T2 ON T1.ID = T2.AK WHERE T1._KEY = ?",
             (res) -> {
-//                assertPartitions(partition("T1_CACHE", 125));
-//                assertNodes(node("T1_CACHE", 125));
+                assertPartitions(allPartitions("T1_CACHE"));
+                assertNodes(allNodes("T1_CACHE"));
 
                 assertEquals(1, res.size());
                 assertEquals(125, res.get(0).get(0));
@@ -374,6 +384,8 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
         // Non-affinity key.
         execute("SELECT * FROM T1 INNER JOIN T2 ON T1.ID = T2.AK WHERE T2.ID = ?",
             (res) -> {
+                assertPartitions(allPartitions("T1_CACHE"));
+                assertNodes(allNodes("T1_CACHE"));
                 assertEquals(1, res.size());
                 assertEquals(125, res.get(0).get(0));
             },
@@ -383,7 +395,8 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
         // Affinity key.
         execute("SELECT * FROM T1 INNER JOIN T2 ON T1.ID = T2.AK WHERE T2.AK = ?",
             (res) -> {
-//                assertPartitions(partition("T2_CACHE", 125));
+                assertPartitions(allPartitions("T1_CACHE"));
+                assertNodes(allNodes("T1_CACHE"));
                 assertEquals(1, res.size());
                 assertEquals(125, res.get(0).get(0));
             },
@@ -528,10 +541,23 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
+    protected int[] allPartitions(String cacheName) {
+        return IntStream.range(0, client.affinity(cacheName).partitions()).toArray();
+    }
+
+    /** */
     protected ClusterNode node(String cacheName, Object key) {
         return G.allGrids().stream()
             .filter(ign -> ign.affinity(cacheName).isPrimary(ign.cluster().localNode(), key))
             .map(ign -> ign.cluster().localNode()).findFirst().orElse(null);
+    }
+
+    /** */
+    protected ClusterNode[] allNodes(String cacheName) {
+        return G.allGrids().stream()
+            .map(ign -> ign.cluster().localNode())
+            .filter(n -> client.affinity(cacheName).allPartitions(n).length != 0)
+            .toArray(ClusterNode[]::new);
     }
 
     /** */

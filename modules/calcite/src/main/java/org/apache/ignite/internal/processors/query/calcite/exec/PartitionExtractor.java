@@ -84,18 +84,15 @@ public class PartitionExtractor extends IgniteRelShuttle {
     @Override protected IgniteRel processNode(IgniteRel rel) {
         IgniteRel res = super.processNode(rel);
 
-        if (rel.getInputs().isEmpty())
-            return res;
+        if (rel.getInputs().size() > 1) {
+            List<PartitionNode> operands = new ArrayList<>();
+            for (int i = 0; i < rel.getInputs().size(); ++i)
+                operands.add(stack.pop());
 
-        List<PartitionNode> operands = new ArrayList<>();
-        for (int i = 0; i < rel.getInputs().size(); ++i) {
-            if (stack.isEmpty())
-                break;
-
-            operands.add(stack.pop());
+            stack.push(PartitionOperandNode.createOrOperandNode(operands));
         }
-
-        stack.push(PartitionOperandNode.createOrOperandNode(operands));
+        else if (rel.getInputs().isEmpty())
+            stack.push(PartitionAllNode.INSTANCE);
 
         return res;
     }
