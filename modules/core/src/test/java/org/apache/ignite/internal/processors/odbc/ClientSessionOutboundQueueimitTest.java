@@ -58,7 +58,7 @@ public class ClientSessionOutboundQueueimitTest extends GridCommonAbstractTest {
      *    message queue.
      * 3. Programmatically, we limit the thin client's ability to receive messages from the server, causing the message
      *    queue to eventually become full.
-     * 4. Cheks that thin client is disconnected from the cluster and all requests in progress are failed.
+     * 4. Checks that thin client is disconnected from the cluster and all requests in progress are failed.
      */
     @Test
     public void testClientSessionOutboundQueueLimit() throws Exception {
