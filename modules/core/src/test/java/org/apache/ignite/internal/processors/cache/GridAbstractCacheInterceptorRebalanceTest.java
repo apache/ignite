@@ -217,7 +217,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
 
                     for (int j = 1; j <= 3; j++) {
                         for (int i = 0; i < CNT; i++) {
-                            if (i % 2 == 0) {
+                            if (i % 2 == 0 && atomicityMode() == CacheAtomicityMode.TRANSACTIONAL) {
                                 try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                     operation.run(cache, i, i + j);
 
