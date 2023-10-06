@@ -205,7 +205,7 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
                     if (idx >= PRIMARY_KEYS_NUMBER)
                         idx = 0;
 
-                    try (Transaction tx = grid(CLIENT_NAME).transactions().txStart()) {
+                    Runnable r = () -> {
                         if (batchMode) {
                             Set<Integer> keys0 = new TreeSet<>();
 
@@ -228,9 +228,16 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
 
                             idx += gridCount();
                         }
+                    };
 
-                        tx.commit();
-                    }
+                    if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL)
+                        try (Transaction tx = grid(CLIENT_NAME).transactions().txStart()) {
+                            r.run();
+
+                            tx.commit();
+                        }
+                    else
+                        r.run();
 
                     for (int i = 0; i < gridCount(); i++) {
                         IgniteEx ignite = grid(i);
@@ -299,7 +306,7 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
 
         IgniteCache<Integer, String> clientCache = grid(CLIENT_NAME).cache(DEFAULT_CACHE_NAME);
 
-        try (Transaction tx = grid(CLIENT_NAME).transactions().txStart()) {
+        Runnable r = () -> {
             if (batchMode) {
                 Map<Integer, String> results = clientCache.getAll(new TreeSet<>(keys));
 
@@ -310,9 +317,16 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
                 for (Integer key : keys)
                     assertEquals(VAL_PREFIX + key, clientCache.get(key));
             }
+        };
 
-            tx.commit();
-        }
+        if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL)
+            try (Transaction tx = grid(CLIENT_NAME).transactions().txStart()) {
+                r.run();
+
+                tx.commit();
+            }
+        else
+            r.run();
 
         for (int i = 0; i < gridCount(); i++) {
             IgniteEx ignite = grid(i);
