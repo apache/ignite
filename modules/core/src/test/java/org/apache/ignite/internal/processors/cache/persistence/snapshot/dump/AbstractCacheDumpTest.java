@@ -132,7 +132,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         for (int nodes : new int[]{1, 3})
             for (int backups : new int[]{0, 1})
                 for (boolean persistence : new boolean[]{true, false})
-                    for (CacheAtomicityMode mode : CacheAtomicityMode._values()) {
+                    for (CacheAtomicityMode mode : CacheAtomicityMode.values()) {
                         for (boolean useDataStreamer : new boolean[]{true, false}) {
                             if (nodes == 1 && backups != 0)
                                 continue;

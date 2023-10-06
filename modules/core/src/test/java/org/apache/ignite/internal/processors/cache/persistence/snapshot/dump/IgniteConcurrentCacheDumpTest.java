@@ -43,7 +43,7 @@ public class IgniteConcurrentCacheDumpTest extends AbstractCacheDumpTest {
         for (int nodes : new int[]{2, 3})
             for (int backups : new int[]{1, 2})
                 for (boolean persistence : new boolean[]{true, false})
-                    for (CacheAtomicityMode mode : CacheAtomicityMode._values())
+                    for (CacheAtomicityMode mode : CacheAtomicityMode.values())
                         params.add(new Object[]{nodes, backups, persistence, mode, false, false});
 
         return params;
