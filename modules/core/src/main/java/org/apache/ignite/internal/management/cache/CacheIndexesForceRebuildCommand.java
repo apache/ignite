@@ -92,7 +92,7 @@ public class CacheIndexesForceRebuildCommand
         }
 
         if (F.isEmpty(res))
-            throw new IllegalArgumentException("Please, specify oat least one server node");
+            throw new IllegalArgumentException("Please, specify at least one server node");
 
         return res;
     }

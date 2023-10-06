@@ -19,6 +19,7 @@ package org.apache.ignite.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -211,29 +212,47 @@ public class GridCommandHandlerScheduleIndexRebuildTest extends GridCommandHandl
      */
     @Test
     public void testRebuild() throws Exception {
-        IgniteEx node = grid(LAST_NODE_NUM);
+        doTestRebuildOnSpecifiedNodes(Collections.singletonList(grid(LAST_NODE_NUM)));
+    }
+
+    /**
+     * Checks that index is rebuilt correctly using --node-ids.
+     */
+    @Test
+    public void testRebuildOnSpecifiedNodes() throws Exception {
+        doTestRebuildOnSpecifiedNodes(Arrays.asList(grid(0), grid(LAST_NODE_NUM)));
+    }
+
+    /** */
+    private void doTestRebuildOnSpecifiedNodes(Collection<IgniteEx> grids) throws Exception {
+        String nids = grids.size() == 1
+            ? grids.iterator().next().localNode().id().toString()
+            : grids.stream().map(g->g.localNode().id().toString()).collect(Collectors.joining(","));
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild",
-            "--node-id", node.localNode().id().toString(),
-            "--cache-names", CACHE_NAME_NO_GRP));
+            grids.size() == 1 ? "--node-id" : "--node-ids", nids, "--cache-names", CACHE_NAME_NO_GRP));
 
-        checkIndexesRebuildScheduled(node, singletonMap(CU.cacheId(CACHE_NAME_NO_GRP), indexes(node, CACHE_NAME_NO_GRP)));
+        for (IgniteEx ig : grids) {
+            checkIndexesRebuildScheduled(ig, singletonMap(CU.cacheId(CACHE_NAME_NO_GRP), indexes(ig, CACHE_NAME_NO_GRP)));
 
-        node.close();
+            int gridNum = (int)ig.context().cluster().get().localNode().order() - 1;
 
-        node = startGrid(LAST_NODE_NUM);
+            ig.close();
 
-        assertTrue(node.context().maintenanceRegistry().isMaintenanceMode());
+            ig = startGrid(gridNum);
 
-        assertTrue(waitForIndexesRebuild(grid(LAST_NODE_NUM)));
+            assertTrue(ig.context().maintenanceRegistry().isMaintenanceMode());
 
-        node.close();
+            assertTrue(waitForIndexesRebuild(ig));
 
-        node = startGrid(LAST_NODE_NUM);
+            ig.close();
 
-        assertFalse(node.context().maintenanceRegistry().isMaintenanceMode());
+            ig = startGrid(gridNum);
 
-        checkIndexes(CACHE_NAME_NO_GRP);
+            assertFalse(ig.context().maintenanceRegistry().isMaintenanceMode());
+
+            checkIndexes(CACHE_NAME_NO_GRP);
+        }
     }
 
     /**

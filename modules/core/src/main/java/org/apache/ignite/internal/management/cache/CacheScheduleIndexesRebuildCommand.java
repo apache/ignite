@@ -20,13 +20,14 @@ package org.apache.ignite.internal.management.cache;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
-import static org.apache.ignite.internal.management.api.CommandUtils.nodeOrAll;
 
 /** Index rebuild via the maintenance mode. */
 public class CacheScheduleIndexesRebuildCommand
@@ -49,7 +50,11 @@ public class CacheScheduleIndexesRebuildCommand
 
     /** {@inheritDoc} */
     @Override public Collection<GridClientNode> nodes(Collection<GridClientNode> nodes, CacheScheduleIndexesRebuildCommandArg arg) {
-        return nodeOrAll(arg.nodeId(), nodes);
+        UUID[] nodeIds = F.isEmpty(arg.nodeIds()) && arg.nodeId() == null || arg.allNodes()
+            ? nodes.stream().map(GridClientNode::nodeId).toArray(UUID[]::new)
+            : arg.nodeId() == null ? arg.nodeIds() : new UUID[] {arg.nodeId()};
+
+        return CommandUtils.nodes(nodeIds, nodes);
     }
 
     /** {@inheritDoc} */
