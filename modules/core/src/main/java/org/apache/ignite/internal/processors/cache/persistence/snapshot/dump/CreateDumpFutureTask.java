@@ -194,7 +194,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
     /** {@inheritDoc} */
     @Override protected List<CompletableFuture<Void>> saveCacheConfigs() {
-        return parts.keySet().stream().map(grp -> runAsync(() -> {
+        return processed.keySet().stream().map(grp -> runAsync(() -> {
             CacheGroupContext gctx = cctx.cache().cacheGroup(grp);
 
             File grpDir = groupDirectory(gctx);
@@ -295,7 +295,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
             assert part != -1;
 
-            if (!parts.get(grp).contains(part))
+            if (!processed.get(grp).contains(part))
                 return;
 
             dumpContext(grp, part).writeChanged(cctx.cacheId(), expireTime, key, val, ver);
