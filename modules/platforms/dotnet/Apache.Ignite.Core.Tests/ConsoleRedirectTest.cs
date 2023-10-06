@@ -105,13 +105,18 @@ namespace Apache.Ignite.Core.Tests
         }
 
         [Test]
-        public void TestConsoleWriteTask()
+        [TestCase("тест")]
+        [TestCase("\ud83e\udd26\ud83c\udffc\u200d\u2642\ufe0f")] // 🤦🏼‍♂️
+        public void TestConsoleWriteTask(string val)
         {
             // TODO: Check complex UTF grapheme clusters.
             // TODO: Check long strings.
+            // TODO: 🤦🏼‍♂️ produces a different string length, this might cause memory corruption, out of bounds access, etc - check.
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
-            ignite.GetCompute().ExecuteJavaTask<string>(ConsoleWriteTask, "тест");
-            ignite.GetCompute().ExecuteJavaTask<string>(ConsoleWriteTask, "\ud83e\udd26\ud83c\udffc\u200d\u2642\ufe0f");
+            ignite.GetCompute().ExecuteJavaTask<string>(ConsoleWriteTask, val);
+
+            Assert.AreEqual(val, MyStringWriter.LastValue);
+            StringAssert.Contains(val, _outSb.ToString());
         }
 
         /// <summary>
@@ -256,6 +261,8 @@ namespace Apache.Ignite.Core.Tests
         {
             public static bool Throw { get; set; }
 
+            public static string LastValue { get; set; }
+
             public MyStringWriter(StringBuilder sb) : base(sb)
             {
                 // No-op.
@@ -269,6 +276,12 @@ namespace Apache.Ignite.Core.Tests
                 }
 
                 base.Write(value);
+
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    // TODO: This might be flaky due to ignite logging; save multiple values and check them all.
+                    LastValue = value;
+                }
             }
         }
     }
