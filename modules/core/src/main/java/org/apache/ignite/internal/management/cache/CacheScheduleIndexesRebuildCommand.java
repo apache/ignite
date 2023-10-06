@@ -18,21 +18,43 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 import static org.apache.ignite.internal.management.api.CommandUtils.nodeOrAll;
+import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND;
+import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.PREF_GROUPS_NOT_FOUND;
+import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED;
+import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.PREF_SCHEDULED;
+import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.nodeIdsString;
+import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.printBlock;
+import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.printEntryNewLine;
+import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.printHeader;
+import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.storeEntryToNodesResults;
 
 /** Index rebuild via the maintenance mode. */
 public class CacheScheduleIndexesRebuildCommand
     implements ComputeCommand<CacheScheduleIndexesRebuildCommandArg, ScheduleIndexRebuildTaskRes> {
+    /** */
+    public static final String PREF_INDEXES_NOT_FOUND = "WARNING: These indexes were not found:";
+
+    /** */
+    public static final String PREF_REBUILD_NOT_SCHEDULED = "WARNING: Indexes rebuild was not scheduled for any cache. " +
+        "Check command input.";
+
     /** {@inheritDoc} */
     @Override public String description() {
         return "Schedules rebuild of the indexes for specified caches via the Maintenance Mode. " +
@@ -62,28 +84,89 @@ public class CacheScheduleIndexesRebuildCommand
     /** {@inheritDoc} */
     @Override public void printResult(
         CacheScheduleIndexesRebuildCommandArg arg,
-        ScheduleIndexRebuildTaskRes res0,
+        ScheduleIndexRebuildTaskRes results,
         Consumer<String> printer
     ) {
-        res0.results().forEach((nodeId, res) -> {
-            printMissed(printer, "WARNING: These caches were not found:", res.notFoundCacheNames());
-            printMissed(printer, "WARNING: These cache groups were not found:", res.notFoundGroupNames());
+        if (F.isEmpty(arg.nodeIds()) && !arg.allNodes()) {
+            printSingleResult(results, printer);
 
-            if (!F.isEmpty(res.notFoundIndexes()) && hasAtLeastOneIndex(res.notFoundIndexes())) {
-                String warning = "WARNING: These indexes were not found:";
+           return;
+        }
 
-                printer.accept(warning);
+        Map<String, Set<UUID>> missedCaches = new HashMap<>();
+        Map<String, Set<UUID>> missedGroups = new HashMap<>();
+        Map<String, Set<UUID>> notFoundIndexes = new HashMap<>();
+        Map<String, Set<UUID>> scheduled = new HashMap<>();
+        Set<UUID> notScheduled = new HashSet<>();
+
+        results.results().forEach((nodeId, res) -> {
+            storeEntryToNodesResults(missedCaches, res.notFoundCacheNames(), nodeId);
+
+            storeEntryToNodesResults(missedGroups, res.notFoundGroupNames(), nodeId);
+
+            storeEntryToNodesResults(notFoundIndexes, extractCacheIndexNames(res.notFoundIndexes()), nodeId);
+
+            if (hasAtLeastOneIndex(res.cacheToIndexes()))
+                storeEntryToNodesResults(scheduled, extractCacheIndexNames(res.cacheToIndexes()), nodeId);
+            else
+                notScheduled.add(nodeId);
+        });
+
+        SB b = new SB();
+
+        if (!F.isEmpty(missedCaches))
+            printBlock(b, PREF_CACHES_NOT_FOUND, missedCaches, GridStringBuilder::a);
+
+        if (!F.isEmpty(missedGroups))
+            printBlock(b, PREF_GROUPS_NOT_FOUND, missedGroups, GridStringBuilder::a);
+
+        if (!F.isEmpty(notFoundIndexes))
+            printBlock(b, PREF_INDEXES_NOT_FOUND, notFoundIndexes, GridStringBuilder::a);
+
+        if (!F.isEmpty(notScheduled)) {
+            printHeader(b, PREF_REBUILD_NOT_STARTED);
+
+            printEntryNewLine(b);
+
+            b.a(nodeIdsString(notScheduled));
+        }
+
+        if (!F.isEmpty(scheduled))
+            printBlock(b, PREF_SCHEDULED, scheduled, GridStringBuilder::a);
+
+        printer.accept(b.toString().trim());
+    }
+
+    /** */
+    private static Collection<String> extractCacheIndexNames(Map<String, Set<String>> cacheIndexes) {
+        return F.flatCollections(cacheIndexes.entrySet().stream().map(cIdxs -> cIdxs.getValue().stream()
+            .map(idx -> indexAndCacheInfo(cIdxs.getKey(), idx)).collect(Collectors.toList())).collect(Collectors.toList()));
+    }
+
+    /** */
+    private static String indexAndCacheInfo(String cache, String index) {
+        return '\'' + index + "' (of cache '" + cache + "')";
+    }
+
+    /** */
+    private static void printSingleResult(ScheduleIndexRebuildTaskRes result, Consumer<String> printer) {
+        result.results().forEach((nodeId, res) -> {
+            printMissed(printer, PREF_CACHES_NOT_FOUND, res.notFoundCacheNames());
+            printMissed(printer, PREF_GROUPS_NOT_FOUND, res.notFoundGroupNames());
+
+            if (hasAtLeastOneIndex(res.notFoundIndexes())) {
+                printer.accept(PREF_INDEXES_NOT_FOUND);
 
                 printCachesAndIndexes(res.notFoundIndexes(), printer);
             }
 
             if (!F.isEmpty(res.cacheToIndexes()) && hasAtLeastOneIndex(res.cacheToIndexes())) {
-                printer.accept("Indexes rebuild was scheduled for these caches:");
+                printer.accept(PREF_SCHEDULED);
 
                 printCachesAndIndexes(res.cacheToIndexes(), printer);
             }
             else
-                printer.accept("WARNING: Indexes rebuild was not scheduled for any cache. Check command input.");
+                printer.accept(PREF_REBUILD_NOT_SCHEDULED);
 
             printer.accept("");
         });
@@ -96,7 +179,7 @@ public class CacheScheduleIndexesRebuildCommand
      * @param message Message.
      * @param missed Missed caches or cache groups' names.
      */
-    private void printMissed(Consumer<String> printer, String message, Set<String> missed) {
+    private static void printMissed(Consumer<String> printer, String message, Set<String> missed) {
         if (F.isEmpty(missed))
             return;
 
@@ -127,8 +210,23 @@ public class CacheScheduleIndexesRebuildCommand
      * @return {@code true} if has at least one index in the map, {@code false} otherwise.
      */
     private static boolean hasAtLeastOneIndex(Map<String, Set<String>> cacheToIndexes) {
-        return cacheToIndexes.values().stream()
+        return !F.isEmpty(cacheToIndexes) && cacheToIndexes.values().stream()
             .anyMatch(indexes -> !indexes.isEmpty());
     }
 
+    /** */
+    static <T> void storeCacheAndIndexResults(Map<IgnitePair<T>, Set<UUID>> to, Map<T, Set<T>> values, UUID nodeId) {
+        if (F.isEmpty(values))
+            return;
+
+        values.forEach((cache, indexes) -> indexes.forEach(idx ->
+            to.compute(new IgnitePair<>(cache, idx), (c0, idxs0) -> {
+                if (idxs0 == null)
+                    idxs0 = new HashSet<>();
+
+                idxs0.add(nodeId);
+
+                return idxs0;
+            })));
+    }
 }

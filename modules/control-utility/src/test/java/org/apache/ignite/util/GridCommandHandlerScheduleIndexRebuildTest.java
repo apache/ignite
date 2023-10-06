@@ -50,6 +50,10 @@ import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.parseMaintenanceTaskParameters;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
+import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND;
+import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.PREF_GROUPS_NOT_FOUND;
+import static org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommand.PREF_INDEXES_NOT_FOUND;
+import static org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommand.PREF_REBUILD_NOT_SCHEDULED;
 import static org.apache.ignite.internal.util.IgniteUtils.max;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.breakSqlIndex;
@@ -173,9 +177,9 @@ public class GridCommandHandlerScheduleIndexRebuildTest extends GridCommandHandl
 
         String notExistingCacheOutputStr = testOut.toString();
 
-        assertTrue(notExistingCacheOutputStr.contains("WARNING: Indexes rebuild was not scheduled for any cache. Check command input."));
+        assertTrue(notExistingCacheOutputStr.contains(PREF_REBUILD_NOT_SCHEDULED));
         assertTrue(notExistingCacheOutputStr.contains(
-            "WARNING: These caches were not found:" + System.lineSeparator()
+            PREF_CACHES_NOT_FOUND + System.lineSeparator()
             + INDENT + CACHE_NAME_NON_EXISTING
         ));
 
@@ -186,9 +190,9 @@ public class GridCommandHandlerScheduleIndexRebuildTest extends GridCommandHandl
 
         String notExistingGroupOutputStr = testOut.toString();
 
-        assertTrue(notExistingGroupOutputStr.contains("WARNING: Indexes rebuild was not scheduled for any cache. Check command input."));
+        assertTrue(notExistingGroupOutputStr.contains(PREF_REBUILD_NOT_SCHEDULED));
         assertTrue(notExistingGroupOutputStr.contains(
-            "WARNING: These cache groups were not found:" + System.lineSeparator()
+            PREF_GROUPS_NOT_FOUND + System.lineSeparator()
             + INDENT + GROUP_NAME_NON_EXISTING
         ));
 
@@ -201,10 +205,10 @@ public class GridCommandHandlerScheduleIndexRebuildTest extends GridCommandHandl
 
         String notExistingIndexOutputStr = testOut.toString();
 
-        assertTrue(notExistingIndexOutputStr.contains("WARNING: Indexes rebuild was not scheduled for any cache. Check command input."));
+        assertTrue(notExistingIndexOutputStr.contains(PREF_REBUILD_NOT_SCHEDULED));
 
         assertTrue(notExistingIndexOutputStr.contains(
-            "WARNING: These indexes were not found:" + System.lineSeparator()
+            PREF_INDEXES_NOT_FOUND + System.lineSeparator()
             + INDENT + CACHE_NAME_1_1 + ":" + System.lineSeparator()
             + INDENT + INDENT + "non-existing-index")
         );

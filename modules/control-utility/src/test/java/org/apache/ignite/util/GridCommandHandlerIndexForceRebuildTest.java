@@ -61,6 +61,8 @@ import static java.lang.String.valueOf;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
+import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND;
+import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.PREF_GROUPS_NOT_FOUND;
 import static org.apache.ignite.internal.util.IgniteUtils.max;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -222,9 +224,9 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
             validateMultiNodeOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED,
                 grid(1).localNode().id().toString());
 
-            validateMultiNodeOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND,
+            validateMultiNodeOutput(cacheNamesOutputStr, PREF_CACHES_NOT_FOUND,
                 grid(LAST_NODE_NUM).localNode().id().toString());
-            validateMultiNodeOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND,
+            validateMultiNodeOutput(cacheNamesOutputStr, PREF_CACHES_NOT_FOUND,
                 grid(0).localNode().id().toString());
 
             validateMultiNodeOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED,
@@ -362,10 +364,10 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
             String outputStr = testOut.toString();
 
-            validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND, CACHE_NAME_NON_EXISTING);
-            validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND,
+            validateMultiNodeOutput(outputStr, PREF_CACHES_NOT_FOUND, CACHE_NAME_NON_EXISTING);
+            validateMultiNodeOutput(outputStr, PREF_CACHES_NOT_FOUND,
                 grid(LAST_NODE_NUM).localNode().id().toString());
-            validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND,
+            validateMultiNodeOutput(outputStr, PREF_CACHES_NOT_FOUND,
                 grid(0).localNode().id().toString());
 
             validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILDING, CACHE_NAME_2_1);
@@ -699,7 +701,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
         assertContains(
             log,
             outputStr,
-            "WARNING: These caches were not found:" + U.nl() + makeStringListWithIndent(cacheNames)
+            PREF_CACHES_NOT_FOUND + U.nl() + makeStringListWithIndent(cacheNames)
         );
     }
 
@@ -713,7 +715,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
         assertContains(
             log,
             outputStr,
-            "WARNING: These cache groups were not found:" + U.nl() + makeStringListWithIndent(cacheGrps)
+            PREF_GROUPS_NOT_FOUND + U.nl() + makeStringListWithIndent(cacheGrps)
         );
     }
 

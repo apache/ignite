@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.client.GridClientNode;
@@ -44,7 +45,7 @@ public class CacheIndexesForceRebuildCommand
     public static final String PREF_CACHES_NOT_FOUND = "WARNING: These caches were not found:";
 
     /** */
-    private static final String PREF_GROUPS_NOT_FOUND = "WARNING: These cache groups were not found:";
+    public static final String PREF_GROUPS_NOT_FOUND = "WARNING: These cache groups were not found:";
 
     /** */
     public static final String PREF_REBUILD_STARTED = "Indexes rebuild was started for these caches:";
@@ -56,6 +57,9 @@ public class CacheIndexesForceRebuildCommand
     /** */
     public static final String PREF_REBUILD_NOT_STARTED = "WARNING: Indexes rebuild was not started for " +
         "any cache on the following nodes. Check the command input:";
+
+    /** */
+    public static final String PREF_SCHEDULED = "Indexes rebuild was scheduled for these caches:";
 
     /** {@inheritDoc} */
     @Override public String description() {
@@ -115,12 +119,12 @@ public class CacheIndexesForceRebuildCommand
         Set<UUID> notStarted = new HashSet<>();
 
         results.forEach((nodeId, res) -> {
-            storeCacheResults(notFound, res.notFoundCacheNames(), nodeId);
+            storeEntryToNodesResults(notFound, res.notFoundCacheNames(), nodeId);
 
-            storeCacheResults(rebuilding, res.cachesWithRebuildInProgress(), nodeId);
+            storeEntryToNodesResults(rebuilding, res.cachesWithRebuildInProgress(), nodeId);
 
             if (!F.isEmpty(res.cachesWithStartedRebuild()))
-                storeCacheResults(started, res.cachesWithStartedRebuild(), nodeId);
+                storeEntryToNodesResults(started, res.cachesWithStartedRebuild(), nodeId);
             else
                 notStarted.add(nodeId);
         });
@@ -188,7 +192,7 @@ public class CacheIndexesForceRebuildCommand
     }
 
     /** */
-    private static <T> void storeCacheResults(Map<T, Set<UUID>> to, Collection<T> keys, UUID nodeId) {
+    static <T> void storeEntryToNodesResults(Map<T, Set<UUID>> to, Collection<T> keys, UUID nodeId) {
         if (F.isEmpty(keys))
             return;
 
@@ -212,30 +216,35 @@ public class CacheIndexesForceRebuildCommand
     }
 
     /** */
-    private static void printBlock(SB b, String header, Map<?, ? extends Collection<UUID>> data) {
+    static void printBlock(SB b, String header, Map<?, ? extends Collection<UUID>> data, BiConsumer<SB, Object> cacheInfoPrinter) {
         printHeader(b, header);
 
         data.forEach((cacheInfo, nodes) -> {
             printEntryNewLine(b);
 
-            printCacheInfo(b, cacheInfo);
+            cacheInfoPrinter.accept(b, cacheInfo);
 
             b.a(" on nodes ").a(nodeIdsString(nodes)).a('.');
         });
     }
 
     /** */
-    private static void printEntryNewLine(SB b) {
+    static void printBlock(SB b, String header, Map<?, ? extends Collection<UUID>> data) {
+        printBlock(b, header, data, CacheIndexesForceRebuildCommand::printCacheInfo);
+    }
+
+    /** */
+    static void printEntryNewLine(SB b) {
         b.a(U.nl()).a(INDENT);
     }
 
     /** */
-    private static String nodeIdsString(Collection<UUID> nodes) {
+    static String nodeIdsString(Collection<UUID> nodes) {
         return nodes.stream().map(uuid -> '\'' + uuid.toString() + '\'').collect(Collectors.joining(", "));
     }
 
     /** */
-    private static void printHeader(SB b, String header) {
+    static void printHeader(SB b, String header) {
         b.a(U.nl()).a(U.nl()).a(header);
     }
 
