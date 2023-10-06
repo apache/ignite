@@ -149,7 +149,7 @@
         <zkclient.version>0.5</zkclient.version>
         <zookeeper.version>3.6.3</zookeeper.version>
         <zstd.version>1.5.5-5</zstd.version>
-        <opencensus.version>0.31.1</opencensus.version>
+        <opencensus.version>0.22.0</opencensus.version>
         <commons.lang3.version>3.9</commons.lang3.version>
         <ignite-kafka-ext.version>1.0.0</ignite-kafka-ext.version>
 
