@@ -153,6 +153,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchang
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.IgniteCollectors;
@@ -207,7 +208,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTR
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -654,8 +654,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     void initialize(CacheConfiguration cfg, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         CU.initializeConfigDefaults(log, cfg, cacheObjCtx);
-
-        ctx.coordinators().preProcessCacheConfiguration(cfg);
     }
 
     /**
@@ -1088,15 +1086,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             U.stopLifecycleAware(log, lifecycleAwares(ctx.group(), cache.configuration(), ctx.store().configuredStore()));
 
-            if (callDestroy && CU.storeCacheConfig(sharedCtx, ctx.config())) {
-                try {
-                    locCfgMgr.removeCacheData(new StoredCacheData(ctx.config()));
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to delete cache configuration data while destroying cache" +
-                        "[cache=" + ctx.name() + "]", e);
-                }
-            }
+            if (callDestroy)
+                removeCacheConfig(ctx.config());
 
             if (log.isInfoEnabled()) {
                 if (ctx.group().sharedGroup())
@@ -1107,6 +1098,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
         finally {
             cleanup(ctx);
+        }
+    }
+
+    /** */
+    private void removeCacheConfig(CacheConfiguration<?, ?> cacheCfg) {
+        if (CU.storeCacheConfig(sharedCtx, cacheCfg)) {
+            try {
+                locCfgMgr.removeCacheData(new StoredCacheData(cacheCfg));
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to delete cache configuration data while destroying cache" +
+                    "[cache=" + cacheCfg.getName() + "]", e);
+            }
         }
     }
 
@@ -1221,7 +1225,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else
             prepare(cfg, cfg.getCacheStoreFactory(), false);
 
-        CacheStore cfgStore = cfg.getCacheStoreFactory() != null ? cfg.getCacheStoreFactory().create() : null;
+        CacheStore cfgStore = null;
+
+        if (cfg.getCacheStoreFactory() != null) {
+            IgniteSandbox sandbox = ctx.security().sandbox();
+
+            cfgStore = sandbox.enabled() ?
+                sandbox.execute(() -> cfg.getCacheStoreFactory().create()) : cfg.getCacheStoreFactory().create();
+        }
 
         ValidationOnNodeJoinUtils.validate(ctx.config(), cfg, desc.cacheType(), cfgStore, ctx, log, (x, y) -> {
             try {
@@ -1238,9 +1249,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             pluginMgr = new CachePluginManager(ctx, cfg);
 
         pluginMgr.validate();
-
-        if (!recoveryMode && cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT && grp.affinityNode())
-            sharedCtx.coordinators().ensureStarted();
 
         sharedCtx.jta().registerCache(cfg);
 
@@ -1280,11 +1288,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (cfgStore == null)
             storeMgr.initialize(cfgStore, sesHolders);
-        else
+        else {
+            final CacheStore cfgStoreRef = cfgStore;
+
             initializationProtector.protect(
                 cfgStore,
-                () -> storeMgr.initialize(cfgStore, sesHolders)
+                () -> storeMgr.initialize(cfgStoreRef, sesHolders)
             );
+        }
 
         GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
             ctx,
@@ -1325,8 +1336,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             case REPLICATED: {
                 if (nearEnabled) {
                     switch (cfg.getAtomicityMode()) {
-                        case TRANSACTIONAL:
-                        case TRANSACTIONAL_SNAPSHOT: {
+                        case TRANSACTIONAL: {
                             cache = new GridNearTransactionalCache(cacheCtx);
 
                             break;
@@ -1344,8 +1354,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
                 else {
                     switch (cfg.getAtomicityMode()) {
-                        case TRANSACTIONAL:
-                        case TRANSACTIONAL_SNAPSHOT: {
+                        case TRANSACTIONAL: {
                             cache = cacheCtx.affinityNode() ?
                                 new GridDhtColocatedCache(cacheCtx) :
                                 new GridDhtColocatedCache(cacheCtx, new GridNoStorageCacheMap());
@@ -1438,8 +1447,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridDhtCacheAdapter dht = null;
 
             switch (cfg.getAtomicityMode()) {
-                case TRANSACTIONAL:
-                case TRANSACTIONAL_SNAPSHOT: {
+                case TRANSACTIONAL: {
                     assert cache instanceof GridNearTransactionalCache;
 
                     GridNearTransactionalCache near = (GridNearTransactionalCache)cache;
@@ -1672,9 +1680,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         IgniteInternalFuture<?> res = sharedCtx.affinity().initCachesOnLocalJoin(
             locJoinCtx.cacheGroupDescriptors(), locJoinCtx.cacheDescriptors());
-
-        for (DynamicCacheDescriptor d: locJoinCtx.cacheDescriptors().values())
-            ctx.coordinators().validateCacheConfiguration(d.cacheConfiguration());
 
         List<StartCacheInfo> startCacheInfos = locJoinCtx.caches().stream()
             .map(cacheInfo -> new StartCacheInfo(cacheInfo.get1(), cacheInfo.get2(), exchTopVer, false))
@@ -2075,9 +2080,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             dht.context().finishRecovery(cacheStartVer, updatedDescriptor);
         }
-
-        if (cacheContext.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT && groupContext.affinityNode())
-            sharedCtx.coordinators().ensureStarted();
 
         onKernalStart(cacheContext.cache());
 
@@ -2611,9 +2613,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             stopCache(cache, true, callDestroy, clearCache, clearDbObjects);
         }
-        else
+        else {
             // Try to unregister query structures for not started caches.
             ctx.query().onCacheStop(cacheName);
+
+            // Cache adapter may not exist due to the node filter.
+            DynamicCacheDescriptor cacheToDelete = callDestroy ? cachesInfo.markedForDeletionCache(cacheName) : null;
+
+            if (cacheToDelete != null)
+                removeCacheConfig(cacheToDelete.cacheConfiguration());
+        }
     }
 
     /**
