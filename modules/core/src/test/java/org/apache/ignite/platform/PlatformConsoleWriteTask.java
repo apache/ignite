@@ -56,7 +56,7 @@ public class PlatformConsoleWriteTask extends ComputeTaskAdapter<String, String>
          *
          * @param arg arg.
          */
-        private StringTestTaskJob(String arg) {
+        private Job(String arg) {
             this.arg = arg;
         }
 
