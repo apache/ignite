@@ -117,14 +117,17 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         CacheConfiguration cacheCfg = cache(igniteInstanceName, DEFAULT_CACHE_NAME, 0);
 
         cacheCfg.setAffinity(new RendezvousAffinityFunction());
+        cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         CacheConfiguration cacheBackup1Cfg = cache(igniteInstanceName, BACKUP_CACHE_1, 1);
 
         cacheBackup1Cfg.setAffinity(new RendezvousAffinityFunction());
+        cacheBackup1Cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         CacheConfiguration cacheBackup2Cfg = cache(igniteInstanceName, BACKUP_CACHE_2, 2);
 
         cacheBackup2Cfg.setAffinity(new RendezvousAffinityFunction());
+        cacheBackup2Cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         cfg.setCacheConfiguration(cacheCfg, cacheBackup1Cfg, cacheBackup2Cfg);
 
