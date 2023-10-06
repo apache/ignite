@@ -795,6 +795,9 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
         AtomicReference<Throwable> loadError,
         ConcurrentMap<Long, Long> threadProgressTracker
     ) {
+        if (cacheConfig(cacheName).getAtomicityMode() == CacheAtomicityMode.ATOMIC)
+            return;
+
         GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 ThreadLocalRandom r = ThreadLocalRandom.current();
