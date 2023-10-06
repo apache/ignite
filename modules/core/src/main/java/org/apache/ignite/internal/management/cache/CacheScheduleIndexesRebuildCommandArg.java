@@ -95,6 +95,7 @@ public class CacheScheduleIndexesRebuildCommandArg extends IgniteDataTransferObj
         cacheNames = U.readString(in);
         groupNames = U.readArray(in, String.class);
         cacheToIndexes = U.readMap(in);
+        nodeIds = U.readArray(in, UUID.class);
         allNodes = in.readBoolean();
     }
 
