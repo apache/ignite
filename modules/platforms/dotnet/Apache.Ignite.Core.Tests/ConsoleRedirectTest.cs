@@ -111,6 +111,7 @@ namespace Apache.Ignite.Core.Tests
             // TODO: Check long strings.
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
             ignite.GetCompute().ExecuteJavaTask<string>(ConsoleWriteTask, "тест");
+            ignite.GetCompute().ExecuteJavaTask<string>(ConsoleWriteTask, "\ud83e\udd26\ud83c\udffc\u200d\u2642\ufe0f");
         }
 
         /// <summary>
