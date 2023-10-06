@@ -30,6 +30,9 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     public class ConsoleRedirectTest
     {
+        /** Thread name task name. */
+        private const string ConsoleWriteTask = "org.apache.ignite.platform.PlatformConsoleWriteTask";
+
         /** */
         private StringBuilder _outSb;
 
@@ -99,6 +102,15 @@ namespace Apache.Ignite.Core.Tests
 
             var ex = Assert.Throws<IgniteException>(() => Ignition.Start(TestUtils.GetTestConfiguration()));
             Assert.AreEqual("foo", ex.Message);
+        }
+
+        [Test]
+        public void TestConsoleWriteTask()
+        {
+            // TODO: Check complex UTF grapheme clusters.
+            // TODO: Check long strings.
+            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+            ignite.GetCompute().ExecuteJavaTask<string>(ConsoleWriteTask, "тест");
         }
 
         /// <summary>
