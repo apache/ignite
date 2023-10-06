@@ -80,9 +80,8 @@ public class ClientSessionOutboundQueueimitTest extends GridCommonAbstractTest {
             Collection<IgniteClientFuture<byte[]>> futs = ConcurrentHashMap.newKeySet();
 
             try {
-                while (cliDisconnectedLatch.getCount() > 0) {
+                while (cliDisconnectedLatch.getCount() > 0)
                     futs.add(cache.getAsync(0));
-                }
 
                 assertTrue(cliDisconnectedLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
             }
