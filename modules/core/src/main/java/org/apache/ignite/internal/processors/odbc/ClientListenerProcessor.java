@@ -171,9 +171,10 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                 metrics = new ClientListenerMetrics(mreg);
 
-                IgniteBiInClosure<GridNioSession, Integer> msgQueueSizeLsnr = cliConnCfg.getSessionOutboundMessageQueueLimit() > 0
-                    ? this::onOutboundMessageOffered
-                    : null;
+                IgniteBiInClosure<GridNioSession, Integer> msgQueueSizeLsnr =
+                    cliConnCfg.getSessionOutboundMessageQueueLimit() > 0
+                        ? this::onOutboundMessageOffered
+                        : null;
 
                 for (int port = cliConnCfg.getPort(); port <= portTo && port <= 65535; port++) {
                     try {

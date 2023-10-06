@@ -118,7 +118,12 @@ public class ClientConnectorConfiguration {
     /** Thin-client specific configuration. */
     private ThinClientConfiguration thinCliCfg = new ThinClientConfiguration();
 
-    /** Session queeu limit. */
+    /**
+     * Thin Client session outbound message queue limit. Limits the number of messages waiting to be sent from the
+     * server side to particular thin client. If the specified limit is exceeded, corresponding thin client connection
+     * will be closed.
+     * The value {@code 0} means that no limit is applied to the thin client outbound message queue.
+     */
     private int sesOutboundMsgQueueLimit = DFLT_SESSIONS_MESSAGE_QUEUE_LIMIT;
 
     /**
@@ -605,6 +610,10 @@ public class ClientConnectorConfiguration {
     }
 
     /**
+     * Sets Client session outbound message queue limit. Limits the number of messages waiting to be sent from the
+     * server side to particular thin client. If the specified limit is exceeded, corresponding thin client connection
+     * will be closed.
+     *
      * @param sesOutboundMsgQueueLimit Session outbound queue limit.
      * @return {@code this} for chaining.
      */
