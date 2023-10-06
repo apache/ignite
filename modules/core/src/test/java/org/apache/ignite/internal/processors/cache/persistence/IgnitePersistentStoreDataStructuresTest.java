@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -87,6 +88,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true")
     public void testQueue() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -214,6 +216,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true")
     public void testSet() throws Exception {
         Ignite ignite = startGrids(4);
 
