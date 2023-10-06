@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -109,6 +110,6 @@ public class ClientSessionOutboundQueueimitTest extends GridCommonAbstractTest {
     private void skipClientWrite(IgniteEx ignite, boolean skip) {
         ClientListenerProcessor cliPrc = ignite.context().clientListener();
 
-        setFieldValue(cliPrc.nioServer(), "skipWrite", skip);
+        setFieldValue(U.field(cliPrc, "srv"), "skipWrite", skip);
     }
 }

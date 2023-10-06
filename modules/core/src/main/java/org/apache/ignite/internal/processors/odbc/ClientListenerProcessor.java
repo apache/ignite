@@ -697,11 +697,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         });
     }
 
-    /** */
-    GridNioServer<ClientMessage> nioServer() {
-        return srv;
-    }
-
     /**
      * ClientProcessorMXBean interface.
      */
