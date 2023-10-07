@@ -54,7 +54,7 @@ public class CacheScheduleIndexesRebuildCommandArg extends IgniteDataTransferObj
 
     /** */
     @Argument(
-        description = "Comma-separated list of nodes ids to run index rebuild on",
+        description = "Comma-separated list of nodes ids to schedule index rebuild on",
         example = "nodeId1,...nodeIdN"
     )
     private UUID[] nodeIds;

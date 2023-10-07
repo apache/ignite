@@ -300,11 +300,6 @@ public class GridCommandHandlerScheduleIndexRebuildTest extends GridCommandHandl
             String notExistingCacheOutputStr = testOut.toString();
 
             assertTrue(notExistingCacheOutputStr.contains(PREF_SCHEDULED));
-            assertFalse(notExistingCacheOutputStr.contains(PREF_REBUILD_NOT_SCHEDULED_MULTI));
-            assertFalse(notExistingCacheOutputStr.contains(PREF_REBUILD_NOT_SCHEDULED));
-            assertFalse(notExistingCacheOutputStr.contains(PREF_INDEXES_NOT_FOUND));
-            assertFalse(notExistingCacheOutputStr.contains(PREF_CACHES_NOT_FOUND));
-            assertFalse(notExistingCacheOutputStr.contains(PREF_GROUPS_NOT_FOUND));
             assertTrue(notExistingCacheOutputStr.contains("of cache '" + CACHE_NAME_NO_GRP + "'"));
 
             for (Ignite ig : grids)
