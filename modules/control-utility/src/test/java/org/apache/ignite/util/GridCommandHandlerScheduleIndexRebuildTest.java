@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -52,10 +53,13 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND;
 import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.PREF_GROUPS_NOT_FOUND;
+import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.PREF_SCHEDULED;
 import static org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommand.PREF_INDEXES_NOT_FOUND;
 import static org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommand.PREF_REBUILD_NOT_SCHEDULED;
+import static org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommand.PREF_REBUILD_NOT_SCHEDULED_MULTI;
 import static org.apache.ignite.internal.util.IgniteUtils.max;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.util.GridCommandHandlerIndexForceRebuildTest.validateMultiNodeOutput;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.breakSqlIndex;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.complexIndexEntity;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFillCache;
@@ -161,57 +165,102 @@ public class GridCommandHandlerScheduleIndexRebuildTest extends GridCommandHandl
     }
 
     /**
-     * Checks error messages when trying to rebuild indexes for non-existent cache, when trying
-     * to rebuild non-existent indexes or when not specifying any indexes inside the square brackets.
+     * Checks error messages on single node.
      */
     @Test
     public void testErrors() {
+        doTestErrors(false);
+    }
+
+    /**
+     * Checks error messages on all nodes.
+     */
+    @Test
+    public void testErrorsAllNodes() {
+        doTestErrors(true);
+    }
+
+    /**
+     * Checks error messages when trying to rebuild indexes for non-existent cache, when trying
+     * to rebuild non-existent indexes or when not specifying any indexes inside the square brackets.
+     *
+     * @param allNodes If {@code True}, runs on all nodes using '--all-nodes'.
+     */
+    private void doTestErrors(boolean allNodes) {
         injectTestSystemOut();
 
-        IgniteEx lastNode = grid(LAST_NODE_NUM);
-
         // Tests non-existing cache name.
-        assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild",
-            "--node-id", lastNode.localNode().id().toString(),
-            "--cache-names", CACHE_NAME_NON_EXISTING));
+        if (allNodes) {
+            assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild",
+                "--all-nodes", "--cache-names", CACHE_NAME_NON_EXISTING));
+        }
+        else {
+            assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild",
+                "--node-id", grid(LAST_NODE_NUM).localNode().id().toString(), "--cache-names", CACHE_NAME_NON_EXISTING));
+        }
 
         String notExistingCacheOutputStr = testOut.toString();
 
-        assertTrue(notExistingCacheOutputStr.contains(PREF_REBUILD_NOT_SCHEDULED));
+        assertTrue(notExistingCacheOutputStr.contains(allNodes ? PREF_REBUILD_NOT_SCHEDULED_MULTI : PREF_REBUILD_NOT_SCHEDULED));
         assertTrue(notExistingCacheOutputStr.contains(
             PREF_CACHES_NOT_FOUND + System.lineSeparator()
-            + INDENT + CACHE_NAME_NON_EXISTING
+                + INDENT + CACHE_NAME_NON_EXISTING
         ));
 
         // Test non-existing cache group name.
-        assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild",
-            "--node-id", lastNode.localNode().id().toString(),
-            "--group-names", GROUP_NAME_NON_EXISTING));
+        if (allNodes) {
+            assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild",
+                "--all-nodes", "--group-names", GROUP_NAME_NON_EXISTING));
+        }
+        else {
+            assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild",
+                "--node-id", grid(LAST_NODE_NUM).localNode().id().toString(),
+                "--group-names", GROUP_NAME_NON_EXISTING));
+        }
 
         String notExistingGroupOutputStr = testOut.toString();
 
-        assertTrue(notExistingGroupOutputStr.contains(PREF_REBUILD_NOT_SCHEDULED));
+        assertTrue(notExistingGroupOutputStr.contains(allNodes ? PREF_REBUILD_NOT_SCHEDULED_MULTI : PREF_REBUILD_NOT_SCHEDULED));
         assertTrue(notExistingGroupOutputStr.contains(
             PREF_GROUPS_NOT_FOUND + System.lineSeparator()
-            + INDENT + GROUP_NAME_NON_EXISTING
+                + INDENT + GROUP_NAME_NON_EXISTING
         ));
 
         testOut.reset();
 
         // Tests non-existing index name.
-        assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild",
-            "--node-id", grid(LAST_NODE_NUM).localNode().id().toString(),
-            "--cache-names", CACHE_NAME_1_1 + "[non-existing-index]"));
+        if (allNodes) {
+            assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild",
+                "--all-nodes", "--cache-names", CACHE_NAME_1_1 + "[non-existing-index]"));
+        }
+        else {
+            assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild",
+                "--node-id", grid(LAST_NODE_NUM).localNode().id().toString(),
+                "--cache-names", CACHE_NAME_1_1 + "[non-existing-index]"));
+        }
 
         String notExistingIndexOutputStr = testOut.toString();
 
-        assertTrue(notExistingIndexOutputStr.contains(PREF_REBUILD_NOT_SCHEDULED));
+        if (allNodes) {
+            for (Ignite ig : G.allGrids()) {
+                validateMultiNodeOutput(notExistingIndexOutputStr, PREF_REBUILD_NOT_SCHEDULED_MULTI,
+                    ig.cluster().localNode().id().toString());
 
-        assertTrue(notExistingIndexOutputStr.contains(
-            PREF_INDEXES_NOT_FOUND + System.lineSeparator()
-            + INDENT + CACHE_NAME_1_1 + ":" + System.lineSeparator()
-            + INDENT + INDENT + "non-existing-index")
-        );
+                validateMultiNodeOutput(notExistingIndexOutputStr, PREF_INDEXES_NOT_FOUND,
+                    ig.cluster().localNode().id().toString());
+            }
+
+            validateMultiNodeOutput(notExistingIndexOutputStr, PREF_INDEXES_NOT_FOUND, "non-existing-index");
+        }
+        else {
+            assertTrue(notExistingIndexOutputStr.contains(PREF_REBUILD_NOT_SCHEDULED));
+
+            assertTrue(notExistingIndexOutputStr.contains(
+                PREF_INDEXES_NOT_FOUND + System.lineSeparator()
+                    + INDENT + CACHE_NAME_1_1 + ":" + System.lineSeparator()
+                    + INDENT + INDENT + "non-existing-index")
+            );
+        }
     }
 
     /**
@@ -243,8 +292,23 @@ public class GridCommandHandlerScheduleIndexRebuildTest extends GridCommandHandl
         Collection<IgniteEx> grids = gridIdxs.stream().map(this::grid).collect(Collectors.toList());
 
         if (gridIdxs.isEmpty()) {
+            injectTestSystemOut();
+
             assertEquals(EXIT_CODE_OK, execute("--cache", "schedule_indexes_rebuild", "--all-nodes",
                 "--cache-names", CACHE_NAME_NO_GRP));
+
+            String notExistingCacheOutputStr = testOut.toString();
+
+            assertTrue(notExistingCacheOutputStr.contains(PREF_SCHEDULED));
+            assertFalse(notExistingCacheOutputStr.contains(PREF_REBUILD_NOT_SCHEDULED_MULTI));
+            assertFalse(notExistingCacheOutputStr.contains(PREF_REBUILD_NOT_SCHEDULED));
+            assertFalse(notExistingCacheOutputStr.contains(PREF_INDEXES_NOT_FOUND));
+            assertFalse(notExistingCacheOutputStr.contains(PREF_CACHES_NOT_FOUND));
+            assertFalse(notExistingCacheOutputStr.contains(PREF_GROUPS_NOT_FOUND));
+            assertTrue(notExistingCacheOutputStr.contains("of cache '" + CACHE_NAME_NO_GRP + "'"));
+
+            for (Ignite ig : grids)
+                assertTrue(notExistingCacheOutputStr.contains(ig.cluster().localNode().id().toString()));
 
             gridIdxs = IntStream.range(0, GRIDS_NUM).boxed().collect(Collectors.toList());
         }

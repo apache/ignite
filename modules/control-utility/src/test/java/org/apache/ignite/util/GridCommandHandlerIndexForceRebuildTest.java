@@ -786,7 +786,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      * @param prefix    Prefix or header to search.
      * @param targetStr Target string to search after {@code prefix}.
      */
-    private static void validateMultiNodeOutput(String outputStr, String prefix, String targetStr) {
+    static void validateMultiNodeOutput(String outputStr, String prefix, String targetStr) {
         String[] lines = outputStr.split(U.nl());
 
         for (int i = 0, heraderIdx = -1; i < lines.length; ++i) {

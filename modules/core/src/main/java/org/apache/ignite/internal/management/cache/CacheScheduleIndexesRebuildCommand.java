@@ -37,7 +37,6 @@ import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 import static org.apache.ignite.internal.management.api.CommandUtils.nodeOrAll;
 import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND;
 import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.PREF_GROUPS_NOT_FOUND;
-import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED;
 import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.PREF_SCHEDULED;
 import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.nodeIdsString;
 import static org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand.printBlock;
@@ -54,6 +53,10 @@ public class CacheScheduleIndexesRebuildCommand
     /** */
     public static final String PREF_REBUILD_NOT_SCHEDULED = "WARNING: Indexes rebuild was not scheduled for any cache. " +
         "Check command input.";
+
+    /** */
+    public static final String PREF_REBUILD_NOT_SCHEDULED_MULTI = "WARNING: Indexes rebuild was not scheduled for " +
+        "any cache on the following nodes. Check command input:";
 
     /** {@inheritDoc} */
     @Override public String description() {
@@ -87,10 +90,10 @@ public class CacheScheduleIndexesRebuildCommand
         ScheduleIndexRebuildTaskRes results,
         Consumer<String> printer
     ) {
-        if (F.isEmpty(arg.nodeIds()) && !arg.allNodes()) {
+        if (arg.nodeId() != null) {
             printSingleResult(results, printer);
 
-           return;
+            return;
         }
 
         Map<String, Set<UUID>> missedCaches = new HashMap<>();
@@ -124,7 +127,7 @@ public class CacheScheduleIndexesRebuildCommand
             printBlock(b, PREF_INDEXES_NOT_FOUND, notFoundIndexes, GridStringBuilder::a);
 
         if (!F.isEmpty(notScheduled)) {
-            printHeader(b, PREF_REBUILD_NOT_STARTED);
+            printHeader(b, PREF_REBUILD_NOT_SCHEDULED_MULTI);
 
             printEntryNewLine(b);
 
