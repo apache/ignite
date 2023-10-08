@@ -115,6 +115,7 @@ import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.util.AttributeNodeFilter;
+
 import static java.util.Optional.ofNullable;
 
 /**
@@ -885,7 +886,6 @@ public class PlatformConfigurationUtils {
             tx.setDefaultTxTimeout(in.readLong());
             tx.setPessimisticTxLogLinger(in.readInt());
             tx.setTxTimeoutOnPartitionMapExchange(in.readLong());
-            tx.setDeadlockTimeout(in.readLong());
 
             cfg.setTransactionConfiguration(tx);
         }
@@ -1503,7 +1503,6 @@ public class PlatformConfigurationUtils {
             w.writeLong(tx.getDefaultTxTimeout());
             w.writeInt(tx.getPessimisticTxLogLinger());
             w.writeLong(tx.getTxTimeoutOnPartitionMapExchange());
-            w.writeLong(tx.getDeadlockTimeout());
         }
         else
             w.writeBoolean(false);

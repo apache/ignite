@@ -14,20 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.snippets;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.configuration.CacheConfiguration;
+package org.apache.ignite.internal.management.api;
 
-public class SqlTransactions {
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-    void enableMVCC() {
-        //tag::enable[]
-        CacheConfiguration cacheCfg = new CacheConfiguration<>();
-        cacheCfg.setName("myCache");
-
-        cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
-
-        //end::enable[]
-    }
+/**
+ * {@link Repeatable} container for {@link ArgumentGroup}.
+ */
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE})
+public @interface ArgumentGroupsHolder {
+    /** Array of {@link ArgumentGroup} annotations. */
+    ArgumentGroup[] value();
 }

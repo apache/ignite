@@ -48,7 +48,7 @@ public class DynamicEnableIndexingBasicSelfTest extends DynamicEnableIndexingAbs
 
         CacheMode[] cacheModes = new CacheMode[] {CacheMode.PARTITIONED, CacheMode.REPLICATED};
 
-        CacheAtomicityMode[] atomicityModes = CacheAtomicityMode._values();
+        CacheAtomicityMode[] atomicityModes = CacheAtomicityMode.values();
 
         List<Object[]> res = new ArrayList<>();
 

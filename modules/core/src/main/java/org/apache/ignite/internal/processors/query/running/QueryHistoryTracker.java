@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.configuration.SqlConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jsr166.ConcurrentLinkedDeque8;
 import org.jsr166.ConcurrentLinkedDeque8.Node;
 
@@ -58,7 +59,7 @@ class QueryHistoryTracker {
         String schema = runningQryInfo.schemaName();
         boolean loc = runningQryInfo.local();
         long startTime = runningQryInfo.startTime();
-        long duration = System.currentTimeMillis() - startTime;
+        long duration = U.currentTimeMillis() - startTime;
 
         QueryHistory hist = new QueryHistory(qry, schema, loc, startTime, duration, failed);
 
