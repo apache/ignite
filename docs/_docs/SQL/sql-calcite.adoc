@@ -310,13 +310,13 @@ The optimizer tries to apply every hint and hint parameter if able. But skips hi
 
 === Supportted hints
 
-==== FORCE_INDEX
-Forces an index scan instead of a table scan.
+==== FORCE_INDEX / NO_INDEX
+Forces or disables index scan.
 
 ===== Parameters:
-* Empty. To force index scan for every undelying table. Optimizer will choose any available index.
-* Certain index name to use exactly this index.
-* Several index names. Might relate to different tables. Optimizer will choose ones to scan.
+* Empty. To force a index scan for every undelying table. Optimizer will choose any available index. Or to disable all indexes.
+* Single index name to use or skip exactly this index.
+* Several index names. Might relate to different tables. Optimizer will choose ones to scan or skip all of them.
 
 ===== Example:
 [source, SQL]
@@ -324,19 +324,7 @@ Forces an index scan instead of a table scan.
 SELECT /*+ FORCE_INDEX */ T1.* FROM TBL1 T1 WHERE T1.V1 = T2.V1 AND T1.V2 > ?;
 
 SELECT /*+ FORCE_INDEX(TBL1_IDX2, TBL2_IDX1) */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 WHERE T1.V1 = T2.V1 AND T1.V2 > ? AND T2.V2 > ?;
-----
 
-==== NO_INDEX
-Disables index scan, forces table scan.
-
-===== Parameters:
-* Empty. To force table scan for every undelying table.
-* Certain index name to skip scan of exactly this index.
-* Several index names. Might relate to different tables. Optimizer will not use these indexes to scan.
-
-===== Example:
-[source, SQL]
-----
 SELECT /*+ NO_INDEX */ T1.* FROM TBL1 T1 WHERE T1.V1 = T2.V1 AND T1.V2 > ?;
 
 SELECT /*+ NO_INDEX(TBL1_IDX2, TBL2_IDX1) */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 WHERE T1.V1 = T2.V1 AND T1.V2 > ? AND T2.V2 > ?;
@@ -368,7 +356,7 @@ SELECT /*+ QUERY_ENGINE('calcite') */ V1 FROM TBL1
 ----
 
 ==== DISABLE_RULE [[hint_disable_rule]]
-Disbles certain optimizer rules. This is a optimizer level hint.
+Disables certain optimizer rules. This is a optimizer level hint.
 
 ===== Parameters:
 * One or several optimizer rules to skip.
