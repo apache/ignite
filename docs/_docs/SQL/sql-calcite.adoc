@@ -334,9 +334,6 @@ SELECT /*+ NO_INDEX(TBL1_IDX2, TBL2_IDX1) */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 
 ==== ORDERED_JOINS
 Forces join order as appears in query. Fastens building of joins plan.
 
-===== Parameters:
-No parameters.
-
 ===== Example:
 [source, SQL]
 ----
@@ -348,9 +345,6 @@ SELECT t1.v1, t3.v2 from TBL1 t1 JOIN TBL3 t3 on t1.v3=t3.v3 where t1.v2 in (SEL
 ==== EXPAND_DISTINCT_AGG
 If the optimizer wraps aggregation operations with a join, forces expanding of only distinct aggregates to the join.
 Removes duplicates before the joining and speeds up it.
-
-===== Parameters:
-No parameters.
 
 ===== Example:
 [source, SQL]
