@@ -33,7 +33,7 @@ public enum HintDefinition {
 
     /**
      * If optimizer wraps aggregation operations with a join, forces expanding of only distinct aggregates to the
-     * join (removes duplicates before joining and speeds up it).
+     * join. Removes duplicates before joining and speeds up it.
      */
     EXPAND_DISTINCT_AGG {
         /** {@inheritDoc} */
