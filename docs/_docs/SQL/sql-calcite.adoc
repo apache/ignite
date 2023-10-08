@@ -123,19 +123,6 @@ QUERY_ENGINE=CALCITE
 ----
 --
 
-=== QUERY_ENGINE Hint
-
-To select a particular engine to run individual queries, use the `QUERY_ENGINE` hint:
-
-[tabs]
---
-tab:Query with QUERY_ENGINE hint[]
-[source,sql]
-----
-SELECT /*+ QUERY_ENGINE('calcite') */ fld FROM table;
-----
---
-
 == SQL Reference
 
 === DDL
@@ -241,3 +228,155 @@ Below are the data types supported by the Calcite-based SQL engine:
 |`java.lang.Object`
 
 |===
+
+== Optimizer hints [[hints]]
+
+SQL optimizer does its best to build the fastest excution plan. But it is a far way to create an optimizer which is the
+most effective for each case. You may have better knowledge of your data design, application design or data
+distribution in the cluster.
+
+The SQL hints can help the optimizer to choose its optimization rules more rationally or to build execution plan faster.
+
+[NOTE]
+====
+SQL hints are not mandatory to applying and might be skipped by the optimizer. Especially in case of
+long, complex query or/and a hint deep inside a query.
+====
+
+=== Hints format
+Sql hints are included in the special comment +++/*+ HINT */+++ reffered as _hint block_. Spaces before and after hint are required.
+Hint block is placed right after a relation operator. Usually after _SELECT_. Several hint blocks for one relation
+operator *are not allowed*.
+
+Example:
+[source, SQL]
+----
+SELECT /*+ NO_INDEX */ T1.* FROM TBL1 where T1.V1=? and T1.V2=?
+----
+Hint can have parameters. The parameters are placed within brackets after the hint name and are separated with commas.
+
+Hint parameter can be placed in quotes. Quoted parameter value is case sensitive. Quoted and unquoted *cannot be*
+defined for the same hint.
+
+Examples:
+[source, SQL]
+----
+SELECT /*+ FORCE_INDEX(TBL1_IDX2,TBL2_IDX1) */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 where T1.V1 = T2.V1 and T1.V2 > ? and T2.V2 > ?;
+----
+[source, SQL]
+----
+SELECT /*+ FORCE_INDEX('TBL2_idx1') */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 where T1.V1 = T2.V1 and T1.V2 > ? and T2.V2 > ?;
+----
+It is possible to define several hints for the same relation operator. For that, hints are separated with commas
+(spaces are optional).
+
+Example:
+[source, SQL]
+----
+SELECT /*+ FORCE_INDEX(TBL1_IDX2), FORCE_INDEX(TBL2_IDX1) */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 where T1.V1 = T2.V1 and T1.V2 > ? and T2.V2 > ?;
+----
+
+=== Hints scope
+Most of the hints might be defined for first relation operator, inside query, for a sub-query or for a nested relation operator.
+
+Example:
+[source, SQL]
+----
+SELECT /*+ NO_INDEX(TBL1_IDX2), FORCE_INDEX(TBL2_IDX2) */ T1.V1 FROM TBL1 T1 WHERE T1.V2 IN (SELECT T2.V2 from TBL2 T2 where T2.V1=? and T2.V2=?);
+
+SELECT T1.V1 FROM TBL1 T1 where T1.V2 IN (SELECT /*+ FORCE_INDEX(TBL2_IDX2) */ T2.V2 from TBL2 T2 WHERE T2.V1=? and T2.V2=?);
+----
+
+Since hints reside certain query, only the first query has a hint in the cases like:
+[source, SQL]
+----
+SELECT /*+ NO_INDEX */ V1 FROM TBL1 WHERE V1=? and V2=?
+UNION ALL
+SELECT V1 FROM TBL1 WHERE V3>?
+----
+
+But *there are exceptions* - hints of engine or optimizer level like link:#hint_disable_rule[_DISABLE_RULE_]  or
+link:#hint_query_engine[_QUERY_ENGINE_].
+
+=== Hints errors
+The optimizer tries to apply every hint and hint parameter if able. But skips hint or hint parameter if:
+
+* There is no such supported hint.
+* Required hint parameters are not passed.
+* Hint parameters passed but hint doesn't support any parameter.
+* Hint parameter is mistaken or relates to an unexisting entity like unexisting index or table.
+* Current hints or current parameters are incompatible with the previous ones.
+
+
+=== Supportted hints
+
+==== FORCE_INDEX
+Forces index scan instead of table scan.
+
+===== Parameters:
+* Empty to force index scan for every undelying table. Optimizer will choose any available index.
+* Certain index name to use exactly this index.
+* Several index names. Might relate to different tables. Optimizer will choose ones to scan.
+
+===== Examples:
+[source, SQL]
+----
+SELECT /*+ FORCE_INDEX */ T1.* FROM TBL1 T1 where T1.V1 = T2.V1 and T1.V2 > ?
+----
+----
+SELECT /*+ FORCE_INDEX(TBL1_IDX2,TBL2_IDX1) */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 where T1.V1 = T2.V1 and T1.V2 > ? and T2.V2 > ?
+----
+
+==== NO_INDEX
+Disbles index scan, forces table scan.
+
+===== Parameters:
+* Empty to force table scan for every undelying table.
+* Certain index name to skip scan of exactly this index.
+* Several index names. Might relate to different tables. Optimizer will not use these indexes to scan.
+
+===== Examples:
+[source, SQL]
+----
+SELECT /*+ NO_INDEX */ T1.* FROM TBL1 T1 where T1.V1 = T2.V1 and T1.V2 > ?
+----
+----
+SELECT /*+ NO_INDEX(TBL1_IDX2,TBL2_IDX1) */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 where T1.V1 = T2.V1 and T1.V2 > ? and T2.V2 > ?
+----
+
+==== EXPAND_DISTINCT_AGG
+If optimizer wraps aggregation operations with a join, forces expanding of only distinct aggregates to the join
+(removes duplicates before joining and speeds up it).
+
+===== Parameters:
+No parameters.
+
+===== Example:
+[source, SQL]
+----
+SELECT /*+ EXPAND_DISTINCT_AGG */ SUM(DISTINCT V1), AVG(DISTINCT V2) FROM TBL1 GROUP BY V3
+----
+
+==== QUERY_ENGINE [[hint_query_engine]]
+Selects a particular engine to run individual queries.
+
+===== Parameters:
+Single parameter required - The engine name.
+
+===== Example:
+[source, SQL]
+----
+SELECT /*+ QUERY_ENGINE('calcite') */ V1 FROM TBL1
+----
+
+==== DISABLE_RULE [[hint_disable_rule]]
+Disbles certain optimizer rules.
+
+===== Parameters:
+* One or several optimizer rule names to skip.
+
+===== Example:
+[source, SQL]
+----
+SELECT /*+ DISABLE_RULE('MergeJoinConverter') */ T1.* FROM TBL1 T1 JOIN TBL2 T2 ON T1.V1=T2.V1 WHERE T2.V2=?
+----
