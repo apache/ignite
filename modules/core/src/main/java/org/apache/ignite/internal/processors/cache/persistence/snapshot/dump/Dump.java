@@ -59,6 +59,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
@@ -82,6 +83,9 @@ public class Dump implements AutoCloseable {
     /** Dump directory. */
     private final File dumpDir;
 
+    /** Specific consistent id. */
+    private final @Nullable String consistentId;
+
     /**
      * Kernal context for each node in dump.
      */
@@ -103,14 +107,28 @@ public class Dump implements AutoCloseable {
 
     /**
      * @param dumpDir Dump directory.
-     * @param keepBinary If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}.
+     * @param keepBinary If {@code true} then keep read entries in binary form.
+     * @param raw If {@code true} then keep read entries in form of {@link KeyCacheObject} and {@link CacheObject}.
+     * @param log Logger.
      */
     public Dump(File dumpDir, boolean keepBinary, boolean raw, IgniteLogger log) {
+        this(dumpDir, null, keepBinary, raw, log);
+    }
+
+    /**
+     * @param dumpDir Dump directory.
+     * @param consistentId If specified, read dump data only for specific node.
+     * @param keepBinary If {@code true} then keep read entries in binary form.
+     * @param raw If {@code true} then keep read entries in form of {@link KeyCacheObject} and {@link CacheObject}.
+     * @param log Logger.
+     */
+    public Dump(File dumpDir, @Nullable String consistentId, boolean keepBinary, boolean raw, IgniteLogger log) {
         A.ensure(dumpDir != null, "dump directory is null");
         A.ensure(dumpDir.exists(), "dump directory not exists");
 
         this.dumpDir = dumpDir;
-        this.metadata = metadata(dumpDir);
+        this.consistentId = consistentId == null ? null : U.maskForFileName(consistentId);
+        this.metadata = metadata(dumpDir, this.consistentId);
         this.keepBinary = keepBinary;
         this.cctx = standaloneKernalContext(dumpDir, log);
         this.raw = raw;
@@ -148,7 +166,8 @@ public class Dump implements AutoCloseable {
     /** @return List of node directories. */
     public List<String> nodesDirectories() {
         File[] dirs = new File(dumpDir, DFLT_STORE_DIR).listFiles(f -> f.isDirectory()
-            && !(f.getAbsolutePath().endsWith(DFLT_BINARY_METADATA_PATH) || f.getAbsolutePath().endsWith(DFLT_MARSHALLER_PATH)));
+            && !(f.getAbsolutePath().endsWith(DFLT_BINARY_METADATA_PATH) || f.getAbsolutePath().endsWith(DFLT_MARSHALLER_PATH))
+            && (consistentId == null || U.maskForFileName(f.getName()).contains(consistentId)));
 
         if (dirs == null)
             return Collections.emptyList();
@@ -162,12 +181,14 @@ public class Dump implements AutoCloseable {
     }
 
     /** @return List of snapshot metadata saved in {@link #dumpDir}. */
-    private static List<SnapshotMetadata> metadata(File dumpDir) {
+    private static List<SnapshotMetadata> metadata(File dumpDir, @Nullable String consistentId) {
         JdkMarshaller marsh = MarshallerUtils.jdkMarshaller("fake-node");
 
         ClassLoader clsLdr = U.resolveClassLoader(new IgniteConfiguration());
 
-        File[] files = dumpDir.listFiles(f -> f.getName().endsWith(SNAPSHOT_METAFILE_EXT));
+        File[] files = dumpDir.listFiles(f ->
+            f.getName().endsWith(SNAPSHOT_METAFILE_EXT) && (consistentId == null || f.getName().startsWith(consistentId))
+        );
 
         if (files == null)
             return Collections.emptyList();

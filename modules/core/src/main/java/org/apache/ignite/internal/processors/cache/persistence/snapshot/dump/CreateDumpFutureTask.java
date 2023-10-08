@@ -306,7 +306,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     }
 
     /** {@inheritDoc} */
-    @Override protected CompletableFuture<Void> closeAsync() {
+    @Override protected synchronized CompletableFuture<Void> closeAsync() {
         if (closeFut == null) {
             dumpCtxs.values().forEach(PartitionDumpContext::close);
 
