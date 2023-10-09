@@ -334,8 +334,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
             try
             {
-                var len = str.Length * 2; // UTF16.
-                return NewStringUtf16(ptr, len);
+                return NewStringUtf16(ptr, str.Length);
             }
             finally
             {
