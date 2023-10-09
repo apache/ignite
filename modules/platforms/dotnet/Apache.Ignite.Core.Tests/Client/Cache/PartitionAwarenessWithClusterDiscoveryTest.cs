@@ -26,16 +26,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     /// </summary>
     public class PartitionAwarenessWithClusterDiscoveryTest : PartitionAwarenessTest
     {
-        /// <summary>
-        /// Allowing mixed cache groups.
-        /// </summary>
-        public override void FixtureSetUp()
-        {
-            base.FixtureSetUp();
-
-            EnvVar.Set("IGNITE_ALLOW_MIXED_CACHE_GROUPS", "true");
-        }
-
 #if NETCOREAPP // TODO: IGNITE-15710
         [Test]
         public void CacheGet_NewNodeEnteredTopology_RequestIsRoutedToNewNode()
