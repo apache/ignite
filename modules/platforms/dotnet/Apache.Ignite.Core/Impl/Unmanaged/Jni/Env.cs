@@ -351,8 +351,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             Debug.Assert(jstring != IntPtr.Zero);
 
             byte isCopy;
-            IntPtr stringChars = _getStringCritical(_envPtr, jstring, &isCopy);
-            return stringChars;
+            return _getStringCritical(_envPtr, jstring, &isCopy);
         }
 
         /// <summary>
@@ -414,6 +413,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 return null;
             }
 
+            // 1. Use UTF16 to avoid Java-specific "modified UTF-8" issues.
+            //    https://stackoverflow.com/questions/32205446/getting-true-utf-8-characters-in-java-jni
+            // 2. Use GetStringCritical to avoid copying (when possible).
+            //    NOTE: The code block between GetStringCritical and ReleaseStringCritical
+            //    must not perform JNI calls or block the thread.
             var chars = GetStringCritical(jstring);
             if (chars == IntPtr.Zero)
             {
@@ -424,6 +428,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             {
                 var charCount = GetStringLength(jstring);
                 var byteCount = charCount * 2; // UTF16 => x2 bytes.
+
                 return Encoding.Unicode.GetString((byte*)chars, byteCount);
             }
             finally
