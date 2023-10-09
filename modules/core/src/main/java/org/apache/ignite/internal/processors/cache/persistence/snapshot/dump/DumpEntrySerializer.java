@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
@@ -39,6 +40,9 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 public class DumpEntrySerializer {
     /** sizeOf(CRC) + sizeOf(Data size)  */
     public static final int HEADER_SZ = Integer.BYTES + Integer.BYTES;
+
+    /** Default buffer allocator. */
+    private static final Function<Long, ByteBuffer> DFLT_BUF_ALLOC = k -> ByteBuffer.allocate(100);
 
     /** */
     private final ConcurrentMap<Long, ByteBuffer> thLocBufs;
@@ -233,7 +237,7 @@ public class DumpEntrySerializer {
 
     /** @return Thread local buffer. */
     private ByteBuffer threadLocalBuffer() {
-        return thLocBufs.computeIfAbsent(Thread.currentThread().getId(), id -> ByteBuffer.allocate(100));
+        return thLocBufs.computeIfAbsent(Thread.currentThread().getId(), DFLT_BUF_ALLOC);
     }
 
     /** @return Thread local buffer. */
