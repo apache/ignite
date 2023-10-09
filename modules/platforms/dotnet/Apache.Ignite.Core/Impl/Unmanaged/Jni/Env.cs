@@ -330,15 +330,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 return null;
             }
 
-            var ptr = Marshal.StringToHGlobalUni(str);
-
-            try
+            // .NET uses UTF-16 to represent strings internally - no conversion required, just take a pointer.
+            fixed (char* strPtr = str)
             {
-                return NewStringUtf16(ptr, str.Length);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(ptr);
+                return NewStringUtf16(new IntPtr(strPtr), str.Length);
             }
         }
 
