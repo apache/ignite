@@ -3499,11 +3499,11 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         Ignite client = startClientGrid(srvs);
 
         client.createCache(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1, false));
-        client.createCache(cacheConfiguration(GROUP1, "c2", PARTITIONED, TRANSACTIONAL, 1, false));
+        client.createCache(cacheConfiguration(GROUP2, "c2", PARTITIONED, TRANSACTIONAL, 1, false));
         client.createCache(cacheConfiguration(GROUP1, "c3", PARTITIONED, ATOMIC, 1, false));
 
         client.createCache(cacheConfiguration(GROUP2, "c4", PARTITIONED, TRANSACTIONAL, 1, false));
-        client.createCache(cacheConfiguration(GROUP2, "c5", PARTITIONED, ATOMIC, 1, false));
+        client.createCache(cacheConfiguration(GROUP1, "c5", PARTITIONED, ATOMIC, 1, false));
         client.createCache(cacheConfiguration(GROUP2, "c6", PARTITIONED, TRANSACTIONAL, 1, false));
 
         client.createCache(cacheConfiguration(null, "c7", PARTITIONED, ATOMIC, 1, false));
