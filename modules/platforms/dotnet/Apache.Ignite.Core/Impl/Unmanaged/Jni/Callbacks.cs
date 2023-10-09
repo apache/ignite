@@ -281,7 +281,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                     if (writer != null)
                     {
                         var env = _jvm.AttachCurrentThread(envPtr);
-                        var msg = env.JStringToString(message);
+                        var msg = env.JStringToString2(message);
 
                         writer.Write(msg, isError);
                     }

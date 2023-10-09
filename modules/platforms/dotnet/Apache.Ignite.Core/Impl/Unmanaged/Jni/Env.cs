@@ -83,6 +83,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private readonly EnvDelegates.GetStringUtfLength _getStringUtfLength;
 
         /** */
+        private readonly EnvDelegates.GetStringLength _getStringLength;
+
+        /** */
         private readonly EnvDelegates.ReleaseStringUtfChars _releaseStringUtfChars;
 
         /** */
@@ -151,6 +154,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             GetDelegate(func.ReleaseStringUTFChars, out _releaseStringUtfChars);
 
             GetDelegate(func.GetStringUTFLength, out _getStringUtfLength);
+            GetDelegate(func.GetStringLength, out _getStringLength);
 
             GetDelegate(func.RegisterNatives, out _registerNatives);
             GetDelegate(func.DeleteLocalRef, out _deleteLocalRef);
@@ -385,6 +389,35 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         }
 
         /// <summary>
+        /// Gets UTF16 chars from jstring.
+        /// </summary>
+        private IntPtr GetStringChars(IntPtr jstring)
+        {
+            Debug.Assert(jstring != IntPtr.Zero);
+
+            byte isCopy;
+            return _getStringChars(_envPtr, jstring, &isCopy);
+        }
+
+        /// <summary>
+        /// Releases the chars allocated by <see cref="GetStringChars"/>.
+        /// </summary>
+        private void ReleaseStringChars(IntPtr jstring, IntPtr chars)
+        {
+            _releaseStringChars(_envPtr, jstring, chars);
+        }
+
+        /// <summary>
+        /// Gets the length of the jstring.
+        /// </summary>
+        private int GetStringLength(IntPtr jstring)
+        {
+            Debug.Assert(jstring != IntPtr.Zero);
+
+            return _getStringUtfLength(_envPtr, jstring);
+        }
+
+        /// <summary>
         /// Registers the native callbacks.
         /// </summary>
         public void RegisterNatives(GlobalRef clazz, NativeMethod[] methods)
@@ -430,7 +463,30 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
             try
             {
-                return IgniteUtils.Utf8UnmanagedToString((sbyte*) chars, len);
+                return IgniteUtils.Utf8UnmanagedToString((byte*) chars, len);
+            }
+            finally
+            {
+                ReleaseStringUtfChars(jstring, chars);
+            }
+        }
+
+        /// <summary>
+        /// Converts jstring to string.
+        /// </summary>
+        public string JStringToString2(IntPtr jstring)
+        {
+            if (jstring == IntPtr.Zero)
+            {
+                return null;
+            }
+
+            var chars = GetStringChars(jstring);
+            var len = GetStringLength(jstring);
+
+            try
+            {
+                return IgniteUtils.Utf16UnmanagedToString((byte*) chars, len);
             }
             finally
             {

@@ -104,6 +104,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         internal delegate int GetStringUtfLength(IntPtr env, IntPtr jstring);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        internal delegate int GetStringLength(IntPtr env, IntPtr jstring);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         internal delegate JniResult RegisterNatives(IntPtr env, IntPtr clazz,
             NativeMethod* methods, int nMethods);
 

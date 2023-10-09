@@ -134,18 +134,30 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="chars">Char array.</param>
         /// <param name="charsLen">Char array length.</param>
         /// <returns></returns>
-        public static unsafe string Utf8UnmanagedToString(sbyte* chars, int charsLen)
+        public static unsafe string Utf8UnmanagedToString(byte* chars, int charsLen)
         {
             IntPtr ptr = new IntPtr(chars);
 
             if (ptr == IntPtr.Zero)
                 return null;
 
-            byte[] arr = new byte[charsLen];
+            return Encoding.UTF8.GetString(chars, charsLen);
+        }
 
-            Marshal.Copy(ptr, arr, 0, arr.Length);
+        /// <summary>
+        /// Convert unmanaged char array to string.
+        /// </summary>
+        /// <param name="chars">Char array.</param>
+        /// <param name="charsLen">Char array length.</param>
+        /// <returns></returns>
+        public static unsafe string Utf16UnmanagedToString(byte* chars, int charsLen)
+        {
+            IntPtr ptr = new IntPtr(chars);
 
-            return Encoding.UTF8.GetString(arr);
+            if (ptr == IntPtr.Zero)
+                return null;
+
+            return Encoding.Unicode.GetString(chars, charsLen);
         }
 
         /// <summary>
