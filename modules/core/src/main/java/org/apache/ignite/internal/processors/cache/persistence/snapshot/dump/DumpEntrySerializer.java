@@ -53,7 +53,7 @@ public class DumpEntrySerializer {
     private CacheObjectContext fakeCacheObjCtx;
 
     /** If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}. */
-    private boolean raw = false;
+    private boolean raw;
 
     /** If {@code true} then return data in form of {@link BinaryObject}. */
     private boolean keepBinary;
