@@ -3606,20 +3606,25 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     public void testDataCleanup() throws Exception {
         Ignite node = startGrid(0);
 
-        IgniteCache cache0 = node.createCache(cacheConfiguration(GROUP1, "c0", PARTITIONED, ATOMIC, 1, false));
+        IgniteCache cache0a = node.createCache(cacheConfiguration(GROUP1, "ca", PARTITIONED, ATOMIC, 1, false));
+        IgniteCache cache0t = node.createCache(cacheConfiguration(GROUP2, "ct", PARTITIONED, TRANSACTIONAL, 1, false));
 
-        for (int i = 0; i < 100; i++)
-            assertNull(cache0.get(i));
+        for (int i = 0; i < 100; i++) {
+            assertNull(cache0a.get(i));
+            assertNull(cache0t.get(i));
+        }
 
-        for (int i = 0; i < 100; i++)
-            cache0.put(i, i);
+        for (int i = 0; i < 100; i++) {
+            cache0a.put(i, i);
+            cache0t.put(i, i);
+        }
 
         List<CacheConfiguration> ccfgs = new ArrayList<>();
 
         ccfgs.add(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1, false));
         ccfgs.add(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1, true));
-        ccfgs.add(cacheConfiguration(GROUP1, "c1", PARTITIONED, TRANSACTIONAL, 1, false));
-        ccfgs.add(cacheConfiguration(GROUP1, "c1", PARTITIONED, TRANSACTIONAL, 1, true));
+        ccfgs.add(cacheConfiguration(GROUP2, "c1", PARTITIONED, TRANSACTIONAL, 1, false));
+        ccfgs.add(cacheConfiguration(GROUP2, "c1", PARTITIONED, TRANSACTIONAL, 1, true));
 
         for (CacheConfiguration ccfg : ccfgs) {
             IgniteCache cache = node.createCache(ccfg);
@@ -3643,21 +3648,31 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             node.destroyCache(ccfg.getName());
         }
 
-        for (int i = 0; i < 100; i++)
-            assertEquals(i, cache0.get(i));
+        for (int i = 0; i < 100; i++) {
+            assertEquals(i, cache0a.get(i));
+            assertEquals(i, cache0t.get(i));
+        }
 
-        node.destroyCache(cache0.getName());
+        node.destroyCache(cache0a.getName());
+        node.destroyCache(cache0t.getName());
 
-        cache0 = node.createCache(cacheConfiguration(GROUP1, "c0", PARTITIONED, ATOMIC, 1, false));
+        cache0a = node.createCache(cacheConfiguration(GROUP1, "ca", PARTITIONED, ATOMIC, 1, false));
+        cache0t = node.createCache(cacheConfiguration(GROUP2, "ct", PARTITIONED, TRANSACTIONAL, 1, false));
 
-        for (int i = 0; i < 100; i++)
-            assertNull(cache0.get(i));
+        for (int i = 0; i < 100; i++) {
+            assertNull(cache0a.get(i));
+            assertNull(cache0t.get(i));
+        }
 
-        for (int i = 0; i < 100; i++)
-            cache0.put(i, i);
+        for (int i = 0; i < 100; i++) {
+            cache0a.put(i, i);
+            cache0t.put(i, i);
+        }
 
-        for (int i = 0; i < 100; i++)
-            assertEquals(i, cache0.get(i));
+        for (int i = 0; i < 100; i++) {
+            assertEquals(i, cache0a.get(i));
+            assertEquals(i, cache0t.get(i));
+        }
     }
 
     /**
