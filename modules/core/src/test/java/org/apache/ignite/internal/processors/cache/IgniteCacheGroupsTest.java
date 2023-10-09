@@ -1204,15 +1204,15 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
     /**
      * @param cnt Caches number.
-     * @param grp Cache groups.
      * @param baseName Caches name prefix.
      * @return Cache configurations.
      */
-    private CacheConfiguration[] cacheConfigurations(int cnt, String grp, String baseName) {
+    private CacheConfiguration[] cacheConfigurations(int cnt, String baseName) {
         CacheConfiguration[] ccfgs = new CacheConfiguration[cnt];
 
         for (int i = 0; i < cnt; i++) {
-            ccfgs[i] = cacheConfiguration(grp,
+            ccfgs[i] = cacheConfiguration(
+                i % 2 == 0 ? GROUP1 : GROUP2,
                 baseName + i, PARTITIONED,
                 i % 2 == 0 ? TRANSACTIONAL : ATOMIC,
                 2,
@@ -1232,7 +1232,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         final int NODES = 4;
 
         for (int i = 0; i < NODES; i++) {
-            ccfgs = cacheConfigurations(CACHES, GROUP1, "testCache1-");
+            ccfgs = cacheConfigurations(CACHES, "testCache1-");
 
             boolean client = i == NODES - 1;
 
@@ -1245,7 +1245,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite client = ignite(NODES - 1);
 
-        client.createCaches(Arrays.asList(cacheConfigurations(CACHES, GROUP2, "testCache2-")));
+        client.createCaches(Arrays.asList(cacheConfigurations(CACHES, "testCache2-")));
 
         checkCacheDiscoveryDataConsistent();
 
