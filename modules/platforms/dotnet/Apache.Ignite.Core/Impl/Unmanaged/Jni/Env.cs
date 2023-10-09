@@ -417,9 +417,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             //    https://stackoverflow.com/questions/32205446/getting-true-utf-8-characters-in-java-jni
             // 2. Use GetStringCritical to avoid copying (when possible).
             //    NOTE: The code block between GetStringCritical and ReleaseStringCritical
-            //    must not perform JNI calls or block the thread.
-            var chars = GetStringCritical(jstring);
-            if (chars == IntPtr.Zero)
+            //    must not perform JNI calls (except GetStringLength) or block the thread.
+            var charsPtr = GetStringCritical(jstring);
+            if (charsPtr == IntPtr.Zero)
             {
                 return null;
             }
@@ -429,11 +429,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 var charCount = GetStringLength(jstring);
                 var byteCount = charCount * 2; // UTF16 => x2 bytes.
 
-                return Encoding.Unicode.GetString((byte*)chars, byteCount);
+                return Encoding.Unicode.GetString((byte*)charsPtr, byteCount);
             }
             finally
             {
-                ReleaseStringCritical(jstring, chars);
+                ReleaseStringCritical(jstring, charsPtr);
             }
         }
 
