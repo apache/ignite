@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private readonly EnvDelegates.GetStaticMethodId _getStaticMethodId;
 
         /** */
-        private readonly EnvDelegates.NewStringUtf _newStringUtf;
+        private readonly EnvDelegates.NewString _newString;
 
         /** */
         private readonly EnvDelegates.ExceptionOccurred _exceptionOccurred;
@@ -125,7 +125,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             GetDelegate(func.FindClass, out _findClass);
             GetDelegate(func.GetMethodID, out _getMethodId);
             GetDelegate(func.GetStaticMethodID, out _getStaticMethodId);
-            GetDelegate(func.NewStringUTF, out _newStringUtf);
+            GetDelegate(func.NewString, out _newString);
             GetDelegate(func.ExceptionOccurred, out _exceptionOccurred);
             GetDelegate(func.ExceptionClear, out _exceptionClear);
             GetDelegate(func.ExceptionCheck, out _exceptionCheck);
@@ -304,17 +304,16 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         }
 
         /// <summary>
-        /// Creates new jstring from UTF chars.
+        /// Creates new jstring from UTF16 chars.
         /// </summary>
-        private GlobalRef NewStringUtf(sbyte* utf)
+        private GlobalRef NewStringUtf16(IntPtr utf16, int len)
         {
-            if (utf == null)
+            if (utf16 == IntPtr.Zero)
             {
                 return null;
             }
 
-            // TODO: Convert to NewString to avoid Java-specific modified UTF-8 issues
-            var res = _newStringUtf(_envPtr, new IntPtr(utf));
+            var res = _newString(_envPtr, utf16, len);
 
             ExceptionCheck();
 
@@ -324,22 +323,23 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Creates new jstring from string.
         /// </summary>
-        public GlobalRef NewStringUtf(string str)
+        public GlobalRef NewString(string str)
         {
             if (str == null)
             {
                 return null;
             }
 
-            var chars = IgniteUtils.StringToUtf8Unmanaged(str);
+            var ptr = Marshal.StringToHGlobalUni(str);
 
             try
             {
-                return NewStringUtf(chars);
+                var len = str.Length * 2; // UTF16.
+                return NewStringUtf16(ptr, len);
             }
             finally
             {
-                Marshal.FreeHGlobal(new IntPtr(chars));
+                Marshal.FreeHGlobal(ptr);
             }
         }
 

@@ -61,6 +61,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         internal delegate IntPtr NewStringUtf(IntPtr env, IntPtr utf);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        internal delegate IntPtr NewString(IntPtr env, IntPtr utf, int len);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         internal delegate IntPtr ExceptionOccurred(IntPtr env);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
