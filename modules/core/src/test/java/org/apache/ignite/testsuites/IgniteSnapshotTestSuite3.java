@@ -26,13 +26,16 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCl
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotWalRecordTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotConsistencyTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.PlainSnapshotTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.IgniteCacheDumpSelf2Test;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.IgniteCacheDumpSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.IgniteConcurrentCacheDumpTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
 
 /** */
 @RunWith(DynamicSuite.class)
-public class IgniteSnapshotTestSuite2 {
+public class IgniteSnapshotTestSuite3 {
     /** */
     public static List<Class<?>> suite() {
         List<Class<?>> suite = new ArrayList<>();
@@ -44,12 +47,8 @@ public class IgniteSnapshotTestSuite2 {
 
     /** */
     public static void addSnapshotTests(List<Class<?>> suite, Collection<Class> ignoredTests) {
-        GridTestUtils.addTestIfNeeded(suite, PlainSnapshotTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, EncryptedSnapshotTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotWalRecordTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotStreamerTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteSnapshotConsistencyTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotDeltaTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IncrementalSnapshotsTestSuite.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheDumpSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheDumpSelf2Test.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteConcurrentCacheDumpTest.class, ignoredTests);
     }
 }
