@@ -95,6 +95,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         internal delegate void ReleaseStringChars(IntPtr env, IntPtr jstring, IntPtr chars);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        internal delegate IntPtr GetStringCritical(IntPtr env, IntPtr jstring, byte* isCopy);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        internal delegate void ReleaseStringCritical(IntPtr env, IntPtr jstring, IntPtr chars);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         internal delegate IntPtr GetStringUtfChars(IntPtr env, IntPtr jstring, byte* isCopy);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]

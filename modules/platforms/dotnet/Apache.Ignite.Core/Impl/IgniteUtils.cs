@@ -145,22 +145,6 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Convert unmanaged char array to string.
-        /// </summary>
-        /// <param name="chars">Char array.</param>
-        /// <param name="charsLen">Char array length.</param>
-        /// <returns></returns>
-        public static unsafe string Utf16UnmanagedToString(byte* chars, int charsLen)
-        {
-            IntPtr ptr = new IntPtr(chars);
-
-            if (ptr == IntPtr.Zero)
-                return null;
-
-            return Encoding.Unicode.GetString(chars, charsLen);
-        }
-
-        /// <summary>
         /// Convert string to unmanaged byte array.
         /// </summary>
         /// <param name="str">String.</param>
