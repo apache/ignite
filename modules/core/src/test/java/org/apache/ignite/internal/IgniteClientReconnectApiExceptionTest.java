@@ -54,6 +54,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -85,6 +86,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true")
     public void testErrorOnDisconnect() throws Exception {
         // Check cache operations.
         cacheOperationsTest();
