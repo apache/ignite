@@ -313,6 +313,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 return null;
             }
 
+            // TODO: Convert to NewString to avoid Java-specific modified UTF-8 issues
             var res = _newStringUtf(_envPtr, new IntPtr(utf));
 
             ExceptionCheck();
