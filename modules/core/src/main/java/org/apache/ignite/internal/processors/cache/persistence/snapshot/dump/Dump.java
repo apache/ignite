@@ -59,6 +59,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
@@ -69,8 +70,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAll;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAll;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 
 /**
  * This class provides ability to work with saved cache dump.
@@ -82,9 +83,10 @@ public class Dump implements AutoCloseable {
     /** Dump directory. */
     private final File dumpDir;
 
-    /**
-     * Kernal context for each node in dump.
-     */
+    /** Specific consistent id. */
+    private final @Nullable String consistentId;
+
+    /** Kernal context for each node in dump. */
     private final GridKernalContext cctx;
 
     /** If {@code true} then return data in form of {@link BinaryObject}. */
@@ -103,14 +105,28 @@ public class Dump implements AutoCloseable {
 
     /**
      * @param dumpDir Dump directory.
-     * @param keepBinary If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}.
+     * @param keepBinary If {@code true} then keep read entries in binary form.
+     * @param raw If {@code true} then keep read entries in form of {@link KeyCacheObject} and {@link CacheObject}.
+     * @param log Logger.
      */
     public Dump(File dumpDir, boolean keepBinary, boolean raw, IgniteLogger log) {
+        this(dumpDir, null, keepBinary, raw, log);
+    }
+
+    /**
+     * @param dumpDir Dump directory.
+     * @param consistentId If specified, read dump data only for specific node.
+     * @param keepBinary If {@code true} then keep read entries in binary form.
+     * @param raw If {@code true} then keep read entries in form of {@link KeyCacheObject} and {@link CacheObject}.
+     * @param log Logger.
+     */
+    public Dump(File dumpDir, @Nullable String consistentId, boolean keepBinary, boolean raw, IgniteLogger log) {
         A.ensure(dumpDir != null, "dump directory is null");
         A.ensure(dumpDir.exists(), "dump directory not exists");
 
         this.dumpDir = dumpDir;
-        this.metadata = metadata(dumpDir);
+        this.consistentId = consistentId == null ? null : U.maskForFileName(consistentId);
+        this.metadata = metadata(dumpDir, this.consistentId);
         this.keepBinary = keepBinary;
         this.cctx = standaloneKernalContext(dumpDir, log);
         this.raw = raw;
@@ -131,7 +147,7 @@ public class Dump implements AutoCloseable {
         try {
             GridKernalContext kctx = new StandaloneGridKernalContext(log, binaryMeta, marshaller);
 
-            startAll(kctx);
+            startAllComponents(kctx);
 
             return kctx;
         }
@@ -148,7 +164,8 @@ public class Dump implements AutoCloseable {
     /** @return List of node directories. */
     public List<String> nodesDirectories() {
         File[] dirs = new File(dumpDir, DFLT_STORE_DIR).listFiles(f -> f.isDirectory()
-            && !(f.getAbsolutePath().endsWith(DFLT_BINARY_METADATA_PATH) || f.getAbsolutePath().endsWith(DFLT_MARSHALLER_PATH)));
+            && !(f.getAbsolutePath().endsWith(DFLT_BINARY_METADATA_PATH) || f.getAbsolutePath().endsWith(DFLT_MARSHALLER_PATH))
+            && (consistentId == null || U.maskForFileName(f.getName()).contains(consistentId)));
 
         if (dirs == null)
             return Collections.emptyList();
@@ -162,12 +179,14 @@ public class Dump implements AutoCloseable {
     }
 
     /** @return List of snapshot metadata saved in {@link #dumpDir}. */
-    private static List<SnapshotMetadata> metadata(File dumpDir) {
+    private static List<SnapshotMetadata> metadata(File dumpDir, @Nullable String consistentId) {
         JdkMarshaller marsh = MarshallerUtils.jdkMarshaller("fake-node");
 
         ClassLoader clsLdr = U.resolveClassLoader(new IgniteConfiguration());
 
-        File[] files = dumpDir.listFiles(f -> f.getName().endsWith(SNAPSHOT_METAFILE_EXT));
+        File[] files = dumpDir.listFiles(f ->
+            f.getName().endsWith(SNAPSHOT_METAFILE_EXT) && (consistentId == null || f.getName().startsWith(consistentId))
+        );
 
         if (files == null)
             return Collections.emptyList();
@@ -316,8 +335,8 @@ public class Dump implements AutoCloseable {
                 return false;
 
             String grpName = f.getName().startsWith(CACHE_DIR_PREFIX)
-                ? f.getName().replace(CACHE_DIR_PREFIX, "")
-                : f.getName().replace(CACHE_GRP_DIR_PREFIX, "");
+                ? f.getName().replaceFirst(CACHE_DIR_PREFIX, "")
+                : f.getName().replaceFirst(CACHE_GRP_DIR_PREFIX, "");
 
             return groupId == CU.cacheId(grpName);
         });
@@ -330,7 +349,7 @@ public class Dump implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
-        closeAll(cctx);
+        closeAllComponents(cctx);
     }
 
     /**

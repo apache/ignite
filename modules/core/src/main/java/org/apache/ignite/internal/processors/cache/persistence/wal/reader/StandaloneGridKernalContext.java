@@ -699,7 +699,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
      * @param kctx Kernal context.
      * @throws IgniteCheckedException In case of any error.
      */
-    public static void startAll(GridKernalContext kctx) throws IgniteCheckedException {
+    public static void startAllComponents(GridKernalContext kctx) throws IgniteCheckedException {
         for (GridComponent comp : kctx)
             comp.start();
     }
@@ -708,7 +708,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
      * @param kctx Kernal context.
      * @throws IgniteCheckedException In case of any error.
      */
-    public static void closeAll(GridKernalContext kctx) throws IgniteCheckedException {
+    public static void closeAllComponents(GridKernalContext kctx) throws IgniteCheckedException {
         for (GridComponent comp : kctx)
             comp.stop(true);
     }

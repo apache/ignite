@@ -83,8 +83,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAll;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAll;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.checkPartitionsPageCrcSum;
 
@@ -200,7 +200,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         EncryptionCacheKeyProvider snpEncrKeyProvider = new SnapshotEncryptionKeyProvider(cctx.kernalContext(), grpDirs);
 
-        startAll(snpCtx);
+        startAllComponents(snpCtx);
 
         try {
             U.doInParallel(
@@ -313,7 +313,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             throw t;
         }
         finally {
-            closeAll(snpCtx);
+            closeAllComponents(snpCtx);
         }
 
         return res;
@@ -358,19 +358,26 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         SnapshotHandlerContext opCtx,
         Set<File> partFiles
     ) {
-        try (Dump dump = new Dump(opCtx.snapshotDirectory(), true, true, log)) {
-            Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
-                cctx.snapshotMgr().snapshotExecutorService(),
-                partFiles,
-                part -> calculateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()))
-            );
+        try {
+            String consistentId = cctx.kernalContext().pdsFolderResolver().resolveFolders().consistentId().toString();
 
-            return partitionHashRecordV2s.stream().collect(Collectors.toMap(PartitionHashRecordV2::partitionKey, r -> r));
+            try (Dump dump = new Dump(opCtx.snapshotDirectory(), consistentId, true, true, log)) {
+                Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
+                    cctx.snapshotMgr().snapshotExecutorService(),
+                    partFiles,
+                    part -> calculateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()))
+                );
+
+                return partitionHashRecordV2s.stream().collect(Collectors.toMap(PartitionHashRecordV2::partitionKey, r -> r));
+            }
+            catch (Throwable t) {
+                log.error("Error executing handler: ", t);
+
+                throw new IgniteException(t);
+            }
         }
-        catch (Throwable t) {
-            log.error("Error executing handler: ", t);
-
-            throw new IgniteException(t);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 

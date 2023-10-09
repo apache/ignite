@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dum
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.DumpedPartitionIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteExperimental;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
@@ -48,6 +49,7 @@ import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
  * The application runs independently of Ignite node process and provides the ability to the {@link DumpConsumer} to consume
  * all data stored in cache dump ({@link Dump})
  */
+@IgniteExperimental
 public class DumpReader implements Runnable {
     /** Configuration. */
     private final DumpReaderConfiguration cfg;
