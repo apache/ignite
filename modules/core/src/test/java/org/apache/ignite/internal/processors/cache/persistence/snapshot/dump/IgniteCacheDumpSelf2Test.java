@@ -299,7 +299,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         IgniteEx ign = startGrid(getConfiguration(id).setConsistentId(id));
 
         IgniteCache<Integer, Integer> cache = ign.createCache(new CacheConfiguration<Integer, Integer>()
-            .setName(DEFAULT_CACHE_NAME)
+            .setName("test-cache-0")
             .setBackups(1)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC));
 

@@ -335,8 +335,8 @@ public class Dump implements AutoCloseable {
                 return false;
 
             String grpName = f.getName().startsWith(CACHE_DIR_PREFIX)
-                ? f.getName().replace(CACHE_DIR_PREFIX, "")
-                : f.getName().replace(CACHE_GRP_DIR_PREFIX, "");
+                ? f.getName().replaceFirst(CACHE_DIR_PREFIX, "")
+                : f.getName().replaceFirst(CACHE_GRP_DIR_PREFIX, "");
 
             return groupId == CU.cacheId(grpName);
         });
