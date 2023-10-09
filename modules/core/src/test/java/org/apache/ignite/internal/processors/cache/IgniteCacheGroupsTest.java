@@ -3679,7 +3679,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             CacheAtomicityMode atomicityMode = i % 2 == 0 ? ATOMIC : TRANSACTIONAL;
 
             caches.set(i,
-                clientNode.createCache(cacheConfiguration(GROUP1, "c" + i, PARTITIONED, atomicityMode, 0, false)));
+                clientNode.createCache(cacheConfiguration(atomicityMode == ATOMIC ? GROUP1 : GROUP2,
+                    "c" + i, PARTITIONED, atomicityMode, 0, false)));
         }
 
         final AtomicBoolean stop = new AtomicBoolean();
@@ -3751,7 +3752,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                                     String name = "newName-" + cacheCntr.incrementAndGet();
 
                                     cache = clientNode.createCache(
-                                        cacheConfiguration(GROUP1, name, PARTITIONED, atomicityMode, 0, false));
+                                        cacheConfiguration(atomicityMode == ATOMIC ? GROUP1 : GROUP2,
+                                            name, PARTITIONED, atomicityMode, 0, false));
 
                                     caches.set(idx, cache);
                                 }
