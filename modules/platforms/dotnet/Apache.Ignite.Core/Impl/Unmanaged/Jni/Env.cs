@@ -72,8 +72,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private readonly EnvDelegates.CallVoidMethod _callVoidMethod;
 
         /** */
-        // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
-        // ReSharper disable once NotAccessedField.Local
         private readonly EnvDelegates.GetStringChars _getStringChars;
 
         /** */
@@ -396,7 +394,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             Debug.Assert(jstring != IntPtr.Zero);
 
             byte isCopy;
-            return _getStringChars(_envPtr, jstring, &isCopy);
+            IntPtr stringChars = _getStringChars(_envPtr, jstring, &isCopy);
+            return stringChars;
         }
 
         /// <summary>
@@ -481,7 +480,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 return null;
             }
 
+            // TODO: Use GetStringCritical to avoid copy
             var chars = GetStringChars(jstring);
+
+            // TODO: This is a count of Unicode characters - multiply by 2?
             var len = GetStringLength(jstring);
 
             try
