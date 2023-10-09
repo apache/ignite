@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Tests
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
 
             // Send to Java as UTF-16 to avoid dealing with IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2
-            var bytes = Encoding.Unicode.GetBytes(val);
+            var bytes = Encoding.Unicode.GetBytes(MyStringWriter.Prefix + val);
             ignite.GetCompute().ExecuteJavaTask<string>(ConsoleWriteTask, bytes);
 
             Assert.AreEqual(val, MyStringWriter.LastValue);
@@ -259,6 +259,8 @@ namespace Apache.Ignite.Core.Tests
 
         private class MyStringWriter : StringWriter
         {
+            public const string Prefix = "[MyStringWriter]";
+
             public static bool Throw { get; set; }
 
             public static string LastValue { get; set; }
@@ -277,10 +279,9 @@ namespace Apache.Ignite.Core.Tests
 
                 base.Write(value);
 
-                if (!string.IsNullOrWhiteSpace(value))
+                if (!string.IsNullOrWhiteSpace(value) && value.StartsWith(Prefix))
                 {
-                    // TODO: This might be flaky due to ignite logging; save multiple values and check them all.
-                    LastValue = value;
+                    LastValue = value.Substring(Prefix.Length);
                 }
             }
         }
