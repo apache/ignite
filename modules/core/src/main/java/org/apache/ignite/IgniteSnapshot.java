@@ -18,6 +18,7 @@
 package org.apache.ignite;
 
 import java.util.Collection;
+import java.util.Set;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
@@ -69,9 +70,10 @@ public interface IgniteSnapshot {
      * In-memory cache groups also supported.
      *
      * @param name Dump name.
+     * @param cacheGroupNames Cache groups to be restored or {@code null} to dump all cache groups from the snapshot.
      * @return Future which will be completed when dump ends.
      */
-    public IgniteFuture<Void> createDump(String name);
+    public IgniteFuture<Void> createDump(String name, @Nullable Set<String> cacheGroupNames);
 
     /**
      * Restore cache group(s) from the snapshot.

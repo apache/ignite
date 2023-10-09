@@ -65,6 +65,7 @@ import org.apache.ignite.platform.model.User;
 import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.Nullable;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -475,7 +476,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     protected void createDump(IgniteEx ign) {
-        createDump(ign, DMP_NAME);
+        createDump(ign, DMP_NAME, null);
     }
 
     /** */
@@ -519,8 +520,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
-    void createDump(IgniteEx ign, String name) {
-        ign.context().cache().context().snapshotMgr().createSnapshot(name, null, false, onlyPrimary, true).get();
+    void createDump(IgniteEx ign, String name, @Nullable Set<String> cacheGroupNames) {
+        ign.context().cache().context().snapshotMgr().createSnapshot(name, null, cacheGroupNames, false, onlyPrimary, true).get();
     }
 
     /** */
