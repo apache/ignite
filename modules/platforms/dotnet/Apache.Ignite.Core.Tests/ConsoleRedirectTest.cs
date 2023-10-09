@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Tests
 
         [Test]
         [TestCaseSource(typeof(BinarySelfTest), nameof(BinarySelfTest.SpecialStrings))]
-        public void TestConsoleWriteTask(string val)
+        public void TestConsoleWriteSpecialStrings(string val)
         {
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
 
@@ -115,8 +115,16 @@ namespace Apache.Ignite.Core.Tests
             var bytes = Encoding.Unicode.GetBytes(MyStringWriter.Prefix + val);
             ignite.GetCompute().ExecuteJavaTask<string>(ConsoleWriteTask, bytes);
 
-            Assert.AreEqual(val, MyStringWriter.LastValue);
-            StringAssert.Contains(val, _outSb.ToString());
+            var expectedStr = val;
+            if (expectedStr == BinarySelfTest.SpecialStrings[0])
+            {
+                // Some special strings are not equal to themselves after UTF16 roundtrip,
+                // even though they contain exactly the same bytes.
+                expectedStr = Encoding.Unicode.GetString(bytes).Substring(MyStringWriter.Prefix.Length);
+            }
+
+            Assert.AreEqual(expectedStr, MyStringWriter.LastValue);
+            StringAssert.Contains(expectedStr, _outSb.ToString());
         }
 
         /// <summary>
