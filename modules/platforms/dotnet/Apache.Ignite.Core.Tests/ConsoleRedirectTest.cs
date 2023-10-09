@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Text.RegularExpressions;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
+    using Apache.Ignite.Core.Tests.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -105,12 +106,12 @@ namespace Apache.Ignite.Core.Tests
         }
 
         [Test]
-        [TestCase("abc")]
-        [TestCase("тест")]
-        [TestCase("A_\ud83e\udd26\ud83c\udffc\u200d\u2642\ufe0f_B")] // 🤦🏼‍♂️ // TODO: This returns "🤦🏼‍♂️Test" because of broken conversion from C# to Java
+        [TestCaseSource(typeof(BinarySelfTest), nameof(BinarySelfTest.SpecialStrings))]
         public void TestConsoleWriteTask(string val)
         {
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+
+            // Send to Java as UTF-16 to avoid dealing with IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2
             var bytes = Encoding.Unicode.GetBytes(val);
             ignite.GetCompute().ExecuteJavaTask<string>(ConsoleWriteTask, bytes);
 
