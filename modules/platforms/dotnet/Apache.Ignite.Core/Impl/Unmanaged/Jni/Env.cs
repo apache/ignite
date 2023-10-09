@@ -76,16 +76,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private readonly EnvDelegates.GetStringCritical _getStringCritical;
 
         /** */
-        private readonly EnvDelegates.GetStringUtfChars _getStringUtfChars;
-
-        /** */
-        private readonly EnvDelegates.GetStringUtfLength _getStringUtfLength;
-
-        /** */
         private readonly EnvDelegates.GetStringLength _getStringLength;
-
-        /** */
-        private readonly EnvDelegates.ReleaseStringUtfChars _releaseStringUtfChars;
 
         /** */
         private readonly EnvDelegates.ReleaseStringCritical _releaseStringCritical;
@@ -144,12 +135,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             GetDelegate(func.CallLongMethod, out _callLongMethod);
             GetDelegate(func.CallVoidMethod, out _callVoidMethod);
 
-            GetDelegate(func.GetStringUTFChars, out _getStringUtfChars);
-            GetDelegate(func.ReleaseStringUTFChars, out _releaseStringUtfChars);
-
-            GetDelegate(func.GetStringUTFLength, out _getStringUtfLength);
             GetDelegate(func.GetStringLength, out _getStringLength);
-
             GetDelegate(func.GetStringCritical, out _getStringCritical);
             GetDelegate(func.ReleaseStringCritical, out _releaseStringCritical);
 
@@ -357,35 +343,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         }
 
         /// <summary>
-        /// Gets the utf chars from jstring.
-        /// </summary>
-        private IntPtr GetStringUtfChars(IntPtr jstring)
-        {
-            Debug.Assert(jstring != IntPtr.Zero);
-
-            byte isCopy;
-            return _getStringUtfChars(_envPtr, jstring, &isCopy);
-        }
-
-        /// <summary>
-        /// Releases the string utf chars allocated by <see cref="GetStringUtfChars"/>.
-        /// </summary>
-        private void ReleaseStringUtfChars(IntPtr jstring, IntPtr chars)
-        {
-            _releaseStringUtfChars(_envPtr, jstring, chars);
-        }
-
-        /// <summary>
-        /// Gets the length of the jstring.
-        /// </summary>
-        private int GetStringUtfLength(IntPtr jstring)
-        {
-            Debug.Assert(jstring != IntPtr.Zero);
-
-            return _getStringUtfLength(_envPtr, jstring);
-        }
-
-        /// <summary>
         /// Gets UTF16 chars from jstring.
         /// </summary>
         private IntPtr GetStringCritical(IntPtr jstring)
@@ -450,29 +407,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// Converts jstring to string.
         /// </summary>
         public string JStringToString(IntPtr jstring)
-        {
-            if (jstring == IntPtr.Zero)
-            {
-                return null;
-            }
-
-            var chars = GetStringUtfChars(jstring);
-            var len = GetStringUtfLength(jstring);
-
-            try
-            {
-                return IgniteUtils.Utf8UnmanagedToString((byte*) chars, len);
-            }
-            finally
-            {
-                ReleaseStringUtfChars(jstring, chars);
-            }
-        }
-
-        /// <summary>
-        /// Converts jstring to string using *critical JNI methods, avoiding copy when possible.
-        /// </summary>
-        public string JStringToStringCritical(IntPtr jstring)
         {
             if (jstring == IntPtr.Zero)
             {
