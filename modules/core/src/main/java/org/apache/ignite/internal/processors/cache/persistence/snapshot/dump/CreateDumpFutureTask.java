@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -59,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSn
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFutureTaskResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotSender;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -372,7 +374,10 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         /** Partition id. */
         final int part;
 
-        /** Hashes of cache keys of entries changed by the user during partition dump. */
+        /**
+         * Key is cache id, values is set of keys dumped via
+         * {@link #writeChanged(int, long, KeyCacheObject, CacheObject, GridCacheVersion)}.
+         */
         final Map<Integer, Set<KeyCacheObject>> changed;
 
         /** Count of entries changed during dump creation. */
@@ -381,23 +386,41 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         /** Partition dump file. Lazily initialized to prevent creation files for empty partitions. */
         final FileIO file;
 
-        /** Last version on time of dump start. Can be used only for primary. */
+        /**
+         * Regular updates with {@link IgniteCache#put(Object, Object)} and similar calls
+         * will use version generated with {@link GridCacheVersionManager#next(GridCacheVersion)}.
+         * Version is monotonically increase.
+         * Version generated on <b>primary</b> node and propagated to backups.
+         * So on primary we can distinguish updates that happens before and after dump start comparing versions
+         * with the version we read with {@link GridCacheVersionManager#last()}.
+         */
         @Nullable final GridCacheVersion startVer;
 
-        /** Last version on time of dump start. Can be used only for primary. */
+        /**
+         * Unlike regular update, {@link IgniteDataStreamer} updates receive the same version for all entries.
+         * See {@code IsolatedUpdater.receive}.
+         * Note, using {@link IgniteDataStreamer} during cache dump creation can lead to dump inconsistency.
+         *
+         * @see GridCacheVersionManager#isolatedStreamerVersion()
+         */
         final GridCacheVersion isolatedStreamerVer;
 
         /** Topology Version. */
         private final AffinityTopologyVersion topVer;
 
         /** Partition serializer. */
-        private final DumpEntrySerializer serdes;
+        private final DumpEntrySerializer serializer;
 
         /** If {@code true} context is closed. */
         volatile boolean closed;
 
-        /** Count of writers. When count becomes {@code 0} context must be closed. */
-        private final AtomicInteger writers = new AtomicInteger(1); // Iterator writing entries to this context, by default.
+        /**
+         * Count of writers. When count becomes {@code 0} context must be closed.
+         * By deafult, one writer exists - partition iterator.
+         * Each call of {@link #writeChanged(int, long, KeyCacheObject, CacheObject, GridCacheVersion)} increment writers count.
+         * When count of writers becomes zero we good to relase all resources associated with partition dump.
+         */
+        private final AtomicInteger writers = new AtomicInteger(1);
 
         /**
          * @param gctx Group context.
@@ -415,7 +438,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 startVer = grpPrimaries.get(gctx.groupId()).contains(part) ? gctx.shared().versions().last() : null;
                 isolatedStreamerVer = cctx.versions().isolatedStreamerVersion();
 
-                serdes = new DumpEntrySerializer(thLocBufs);
+                serializer = new DumpEntrySerializer(thLocBufs);
                 changed = new HashMap<>();
 
                 for (int cache : gctx.cacheIds())
@@ -486,7 +509,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
          * @param key Key.
          * @param val Value.
          * @param ver Version.
-         * @return {@code True} if entry was written in dump,
+         * @return {@code True} if entry was written in dump.
          * {@code false} if it was already written by {@link #writeChanged(int, long, KeyCacheObject, CacheObject, GridCacheVersion)}.
          */
         public boolean writeForIterator(
@@ -519,9 +542,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         /** */
         private void write(int cache, long expireTime, KeyCacheObject key, CacheObject val) {
-            synchronized (serdes) { // Prevent concurrent access to the dump file.
+            synchronized (serializer) { // Prevent concurrent access to the dump file.
                 try {
-                    ByteBuffer buf = serdes.writeToBuffer(cache, expireTime, key, val, cctx.cacheObjectContext(cache));
+                    ByteBuffer buf = serializer.writeToBuffer(cache, expireTime, key, val, cctx.cacheObjectContext(cache));
 
                     if (file.writeFully(buf) != buf.limit())
                         throw new IgniteException("Can't write row");

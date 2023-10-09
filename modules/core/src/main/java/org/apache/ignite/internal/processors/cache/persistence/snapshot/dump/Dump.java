@@ -70,8 +70,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAll;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAll;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 
 /**
  * This class provides ability to work with saved cache dump.
@@ -86,9 +86,7 @@ public class Dump implements AutoCloseable {
     /** Specific consistent id. */
     private final @Nullable String consistentId;
 
-    /**
-     * Kernal context for each node in dump.
-     */
+    /** Kernal context for each node in dump. */
     private final GridKernalContext cctx;
 
     /** If {@code true} then return data in form of {@link BinaryObject}. */
@@ -149,7 +147,7 @@ public class Dump implements AutoCloseable {
         try {
             GridKernalContext kctx = new StandaloneGridKernalContext(log, binaryMeta, marshaller);
 
-            startAll(kctx);
+            startAllComponents(kctx);
 
             return kctx;
         }
@@ -351,7 +349,7 @@ public class Dump implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
-        closeAll(cctx);
+        closeAllComponents(cctx);
     }
 
     /**

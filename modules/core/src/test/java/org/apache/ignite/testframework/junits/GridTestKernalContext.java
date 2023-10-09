@@ -40,7 +40,7 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
-import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAll;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 
 /**
  * Test context.
@@ -96,7 +96,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      * @throws IgniteCheckedException If failed
      */
     public void start() throws IgniteCheckedException {
-        startAll(this);
+        startAllComponents(this);
     }
 
     /**

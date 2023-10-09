@@ -82,8 +82,8 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.segmentIndex;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAll;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAll;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
@@ -330,7 +330,7 @@ public class CdcMain implements Runnable {
                 }
             }
             finally {
-                closeAll(kctx);
+                closeAllComponents(kctx);
 
                 if (log.isInfoEnabled())
                     log.info("Ignite Change Data Capture Application stopped.");
@@ -371,7 +371,7 @@ public class CdcMain implements Runnable {
 
         kctx.resource().setSpringContext(ctx);
 
-        startAll(kctx);
+        startAllComponents(kctx);
 
         mreg = kctx.metric().registry("cdc");
 
@@ -853,6 +853,7 @@ public class CdcMain implements Runnable {
 
     /**
      * @param files Mapping files.
+     * @param filter Filter.
      * @return Type mapping iterator.
      */
     public static Iterator<TypeMapping> typeMappingIterator(File[] files, Predicate<TypeMapping> filter) {
