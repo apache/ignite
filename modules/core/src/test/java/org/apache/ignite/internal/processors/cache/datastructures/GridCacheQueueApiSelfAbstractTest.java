@@ -44,6 +44,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -55,6 +56,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Queue basic tests.
  */
+@WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true")
 public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollectionAbstractTest {
     /** To be used as a boolean system property. If true then run binary tests. */
     public static final String BINARY_QUEUE = "BINARY_QUEUE";
