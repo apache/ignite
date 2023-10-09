@@ -220,6 +220,16 @@ class ControlUtility:
         raise TimeoutError(f'Failed to wait for the snapshot operation to complete: '
                            f'snapshot_name={snapshot_name} in {timeout_sec} seconds.')
 
+    def snapshot_check(self, snapshot_name: str, timeout_sec: int = 60):
+        """
+        Check snapshot.
+        :param snapshot_name: Name of Snapshot.
+        :param timeout_sec: Timeout to await snapshot to complete.
+        """
+        res = self.__run(f"--snapshot check {snapshot_name}")
+
+        assert "The check procedure has finished, no conflicts have been found." in res
+
     def start_performance_statistics(self):
         """
         Start performance statistics collecting in the cluster.
