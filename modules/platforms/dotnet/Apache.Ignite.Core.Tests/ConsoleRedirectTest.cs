@@ -105,6 +105,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         [Test]
+        [TestCase("abc")]
         [TestCase("тест")]
         [TestCase("\ud83e\udd26\ud83c\udffc\u200d\u2642\ufe0f")] // 🤦🏼‍♂️
         public void TestConsoleWriteTask(string val)

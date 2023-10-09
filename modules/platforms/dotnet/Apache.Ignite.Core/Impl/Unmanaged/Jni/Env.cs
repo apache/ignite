@@ -414,7 +414,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         {
             Debug.Assert(jstring != IntPtr.Zero);
 
-            return _getStringUtfLength(_envPtr, jstring);
+            return _getStringLength(_envPtr, jstring);
         }
 
         /// <summary>
@@ -490,7 +490,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
             finally
             {
-                ReleaseStringUtfChars(jstring, chars);
+                ReleaseStringChars(jstring, chars);
             }
         }
 
