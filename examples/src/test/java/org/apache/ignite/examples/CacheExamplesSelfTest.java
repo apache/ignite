@@ -33,6 +33,7 @@ import org.apache.ignite.examples.datastructures.IgniteAtomicStampedExample;
 import org.apache.ignite.examples.datastructures.IgniteCountDownLatchExample;
 import org.apache.ignite.examples.datastructures.IgniteQueueExample;
 import org.apache.ignite.examples.datastructures.IgniteSetExample;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 import org.junit.Test;
 
@@ -100,6 +101,7 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true")
     public void testCacheQueueExample() throws Exception {
         IgniteQueueExample.main(EMPTY_ARGS);
     }
