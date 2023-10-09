@@ -231,9 +231,10 @@ Below are the data types supported by the Calcite-based SQL engine:
 
 == Optimizer hints [[hints]]
 
-The query optimizer does its best to build the fastest excution plan. But it is a far way to create an optimizer which is the
-most effective for each case. You may have better knowledge of your data design, application design or data
-distribution in the cluster. The SQL hints can help the optimizer to make optimizations more rationally or build execution plan faster.
+The query optimizer does its best to build the fastest excution plan. But it is a far way to create an optimizer which
+is the most effective for each case. You may have better knowledge of your data design, application design or data
+distribution in the cluster. The SQL hints can help the optimizer to make optimizations more rationally or build
+execution plan faster.
 
 [NOTE]
 ====
@@ -243,8 +244,8 @@ a hint is defined deep inside a query.
 
 === Hints format
 Sql hints are defined with the special comment +++/*+ HINT */+++ reffered as _hint block_. Spaces before and after hint
-are required. Hint block is placed right after a relation operator. Usually after _SELECT_. Several hint blocks for one
-relation operator *are not allowed*.
+name are required. Hint block is placed right after a relation operator. Usually, after _SELECT_. Several hint blocks
+for one relation operator *are not allowed*.
 
 Example:
 [source, SQL]
@@ -252,7 +253,7 @@ Example:
 SELECT /*+ NO_INDEX */ T1.* FROM TBL1 where T1.V1=? and T1.V2=?
 ----
 
-It is allowed to define several hints for the same relation operator. For that, hints are separated with commas
+It is allowed to define several hints for the same relation operator. For that, hints are separated with comma
 (spaces are optional).
 
 Example:
@@ -276,9 +277,9 @@ SELECT /*+ FORCE_INDEX('TBL2_idx1') */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 WHERE 
 ----
 
 === Hint scope
-Hints are difined for a relation operator. Usually for _SELECT_. Most of the hints are 'visible' for their relation operators,
-for following operators, queries and and sub-queries. Hint defined in a sub-query are 'visible' only for this sub-subery
-and its sub-queries. Hint is not 'visible' for a preceding relation operator if is defined after it.
+Hints are difined for a relation operator. Usually for _SELECT_. Most of the hints are 'visible' for their relation
+operators, for following operators, queries and sub-queries. Hint defined in a sub-query are 'visible' only for
+this sub-subery and its sub-queries. Hint is not 'visible' for a preceding relation operator if defined after it.
 
 Example:
 [source, SQL]
@@ -288,7 +289,7 @@ SELECT /*+ NO_INDEX(TBL1_IDX2), FORCE_INDEX(TBL2_IDX2) */ T1.V1 FROM TBL1 T1 WHE
 SELECT T1.V1 FROM TBL1 T1 WHERE T1.V2 IN (SELECT /*+ FORCE_INDEX(TBL2_IDX2) */ T2.V2 FROM TBL2 T2 WHERE T2.V1=? AND T2.V2=?);
 ----
 
-Since hints reside certain query, only the first query has a hint:
+Note, only the first query has a hint in a case like:
 [source, SQL]
 ----
 SELECT /*+ FORCE_INDEX */ V1 FROM TBL1 WHERE V1=? AND V2=?
@@ -297,7 +298,7 @@ SELECT V1 FROM TBL1 WHERE V3>?
 ----
 
 But *there are exceptions*: hints of engine or optimizer level like link:#hint_disable_rule[_DISABLE_RULE_]  or
-link:#hint_query_engine[_QUERY_ENGINE_]. Such hints should be defined at the beginning of query and is related for the
+link:#hint_query_engine[_QUERY_ENGINE_]. Such hints should be defined at the beginning of query and relates to the
 whole query.
 
 === Hints errors
@@ -315,7 +316,7 @@ The optimizer tries to apply every hint and hint parameter if able. But skips hi
 Forces or disables index scan.
 
 ===== Parameters:
-* Empty. To force a index scan for every undelying table. Optimizer will choose any available index. Or to disable all indexes.
+* Empty. To force an index scan for every undelying table. Optimizer will choose any available index. Or to disable all indexes.
 * Single index name to use or skip exactly this index.
 * Several index names. Might relate to different tables. Optimizer will choose ones to scan or skip all of them.
 
@@ -332,14 +333,14 @@ SELECT /*+ NO_INDEX(TBL1_IDX2, TBL2_IDX1) */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 
 ----
 
 ==== ORDERED_JOINS
-Forces join order as appears in query. Fastens building of joins plan.
+Forces join order as appears in a query. Fastens building of joins plan.
 
 ===== Example:
 [source, SQL]
 ----
 SELECT /*+ ORDERED_JOINS */ T1.V1, T2.V1, T2.V2, T3.V1, T3.V2, T3.V3 FROM TBL1 T1 JOIN TBL2 T2 ON T1.V3=T2.V1 JOIN TBL3 T3 ON T2.V3=T3.V1 AND T2.V2=T3.V2
 
-SELECT t1.v1, t3.v2 from TBL1 t1 JOIN TBL3 t3 on t1.v3=t3.v3 where t1.v2 in (SELECT /*+ ORDERED_JOINS */ t2.v2 from TBL2 t2 JOIN TBL3 t3 on t2.v1=t3.v1)
+SELECT t1.v1, t3.v2 FROM TBL1 t1 JOIN TBL3 t3 on t1.v3=t3.v3 WHERE t1.v2 in (SELECT /*+ ORDERED_JOINS */ t2.v2 FROM TBL2 t2 JOIN TBL3 t3 ON t2.v1=t3.v1)
 ----
 
 ==== EXPAND_DISTINCT_AGG
@@ -353,10 +354,10 @@ SELECT /*+ EXPAND_DISTINCT_AGG */ SUM(DISTINCT V1), AVG(DISTINCT V2) FROM TBL1 G
 ----
 
 ==== QUERY_ENGINE [[hint_query_engine]]
-Selects a particular engine to run individual queries. This is a engine level hint.
+Selects a particular engine to run individual queries. This is an engine level hint.
 
 ===== Parameters:
-Single parameter required - the engine name.
+Single parameter required: the engine name.
 
 ===== Example:
 [source, SQL]
@@ -365,7 +366,7 @@ SELECT /*+ QUERY_ENGINE('calcite') */ V1 FROM TBL1
 ----
 
 ==== DISABLE_RULE [[hint_disable_rule]]
-Disables certain optimizer rules. This is a optimizer level hint.
+Disables certain optimizer rules. This is an optimizer level hint.
 
 ===== Parameters:
 * One or several optimizer rules to skip.
