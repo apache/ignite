@@ -243,9 +243,9 @@ a hint is defined deep inside a query.
 ====
 
 === Hints format
-Sql hints are defined with the special comment +++/*+ HINT */+++ reffered as _hint block_. Spaces before and after hint
-name are required. Hint block is placed right after a relation operator. Usually, after _SELECT_. Several hint blocks
-for one relation operator *are not allowed*.
+Sql hints are defined with the special comment +++/*+ HINT */+++ reffered as _hint block_. Spaces before and after the
+hint name are required. Hint block is placed right after a relation operator. Usually, after _SELECT_. Several hint
+blocks for one relation operator *are not allowed*.
 
 Example:
 [source, SQL]
@@ -263,7 +263,8 @@ SELECT /*+ NO_INDEX, EXPAND_DISTINCT_AGG */ SUM(DISTINCT V1), AVG(DISTINCT V2) F
 ----
 
 ==== Hint parameters
-Hint parameters, if required, are placed within brackets after the hint name and are separated with commas.
+Currently, only simple, plain hint parameters are supported (no key-value). Hint parameters, if required, are placed
+within brackets after the hint name and are separated with commas.
 
 Hint parameter can be quoted. Quoted parameter is case sensitive. Quoted and unquoted parameters *cannot be*
 defined for the same hint.
