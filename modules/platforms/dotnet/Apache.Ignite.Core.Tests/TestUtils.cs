@@ -79,7 +79,8 @@ namespace Apache.Ignite.Core.Tests
             "-ea",
             "-DIGNITE_QUIET=true",
             "-Duser.timezone=UTC",
-            "-DIGNITE_UPDATE_NOTIFIER=false"
+            "-DIGNITE_UPDATE_NOTIFIER=false",
+            "-DIGNITE_ALLOW_MIXED_CACHE_GROUPS=true"
         };
 
         /** */
@@ -134,6 +135,7 @@ namespace Apache.Ignite.Core.Tests
             
             ops.Add("-Dlog4j.configurationFile=" + IgniteHome.Resolve() + "/modules/core/src/test/config/log4j2-test.xml");
 
+            
             return ops;
         }
 
