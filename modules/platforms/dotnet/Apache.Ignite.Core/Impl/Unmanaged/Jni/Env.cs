@@ -484,7 +484,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             var chars = GetStringChars(jstring);
 
             // TODO: This is a count of Unicode characters - multiply by 2?
-            var len = GetStringLength(jstring);
+            var len = GetStringLength(jstring) * 2;
 
             try
             {

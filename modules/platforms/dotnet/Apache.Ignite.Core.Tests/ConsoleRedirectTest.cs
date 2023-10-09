@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         [TestCase("abc")]
         [TestCase("тест")]
-        [TestCase("\ud83e\udd26\ud83c\udffc\u200d\u2642\ufe0f")] // 🤦🏼‍♂️
+        [TestCase("\ud83e\udd26\ud83c\udffc\u200d\u2642\ufe0f")] // 🤦🏼‍♂️ // TODO: This returns "🤦🏼‍♂️Test" because of broken conversion from C# to Java
         public void TestConsoleWriteTask(string val)
         {
             // TODO: Check complex UTF grapheme clusters.
