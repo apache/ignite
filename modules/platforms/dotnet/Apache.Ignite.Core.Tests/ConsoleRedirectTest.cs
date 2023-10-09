@@ -107,12 +107,9 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         [TestCase("abc")]
         [TestCase("тест")]
-        [TestCase("\ud83e\udd26\ud83c\udffc\u200d\u2642\ufe0f")] // 🤦🏼‍♂️ // TODO: This returns "🤦🏼‍♂️Test" because of broken conversion from C# to Java
+        [TestCase("A_\ud83e\udd26\ud83c\udffc\u200d\u2642\ufe0f_B")] // 🤦🏼‍♂️ // TODO: This returns "🤦🏼‍♂️Test" because of broken conversion from C# to Java
         public void TestConsoleWriteTask(string val)
         {
-            // TODO: Check complex UTF grapheme clusters.
-            // TODO: Check long strings.
-            // TODO: 🤦🏼‍♂️ produces a different string length, this might cause memory corruption, out of bounds access, etc - check.
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
             ignite.GetCompute().ExecuteJavaTask<string>(ConsoleWriteTask, val);
 
