@@ -112,20 +112,25 @@ namespace Apache.Ignite.Core.Tests
 
             foreach (var val in BinarySelfTest.SpecialStrings)
             {
+                MyStringWriter.LastValue = null;
+
                 // Send to Java as UTF-16 to avoid dealing with IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2
                 var bytes = Encoding.Unicode.GetBytes(MyStringWriter.Prefix + val);
                 ignite.GetCompute().ExecuteJavaTask<string>(ConsoleWriteTask, bytes);
 
-                var expectedStr = val;
-                if (expectedStr == BinarySelfTest.SpecialStrings[0])
-                {
-                    // Some special strings are not equal to themselves after UTF16 roundtrip,
-                    // even though they contain exactly the same bytes.
-                    expectedStr = Encoding.Unicode.GetString(bytes).Substring(MyStringWriter.Prefix.Length);
-                }
-
+                var expectedStr = GetExpectedStr(val);
                 Assert.AreEqual(expectedStr, MyStringWriter.LastValue, message: val);
                 StringAssert.Contains(expectedStr, _outSb.ToString(), message: val);
+
+                // Test Env.NewString
+                MyStringWriter.LastValue = null;
+                TestUtilsJni.Println(MyStringWriter.Prefix + val);
+
+                Assert.AreEqual(expectedStr.Length, MyStringWriter.LastValue?.Length, message: val);
+                if (val != BinarySelfTest.SpecialStrings[0])
+                {
+                    Assert.AreEqual(expectedStr, MyStringWriter.LastValue, message: val);
+                }
             }
         }
 
@@ -266,6 +271,18 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 #endif
+
+        private static string GetExpectedStr(string val)
+        {
+            if (val != BinarySelfTest.SpecialStrings[0])
+            {
+                return val;
+            }
+
+            // Some special strings are not equal to themselves after UTF16 roundtrip,
+            // even though they contain exactly the same bytes.
+            return Encoding.Unicode.GetString(Encoding.Unicode.GetBytes(val));
+        }
 
         private class MyStringWriter : StringWriter
         {

@@ -128,6 +128,11 @@ namespace Apache.Ignite.Core.Tests
             return CallIntMethod(ClassPlatformTestUtils, "majorJavaVersion", "()I");
         }
 
+        public static void Println(string str)
+        {
+            CallStringMethod(ClassPlatformTestUtils, "println", "(Ljava/lang/String;)V", str);
+        }
+
         /** */
         private static unsafe void CallStringMethod(string className, string methodName, string methodSig, string arg)
         {
