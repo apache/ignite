@@ -111,7 +111,8 @@ namespace Apache.Ignite.Core.Tests
         public void TestConsoleWriteTask(string val)
         {
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
-            ignite.GetCompute().ExecuteJavaTask<string>(ConsoleWriteTask, val);
+            var bytes = Encoding.Unicode.GetBytes(val);
+            ignite.GetCompute().ExecuteJavaTask<string>(ConsoleWriteTask, bytes);
 
             Assert.AreEqual(val, MyStringWriter.LastValue);
             StringAssert.Contains(val, _outSb.ToString());

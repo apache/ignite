@@ -17,6 +17,7 @@
 
 package org.apache.ignite.platform;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -32,10 +33,10 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Task to test Java console output.
  */
-public class PlatformConsoleWriteTask extends ComputeTaskAdapter<String, String> {
+public class PlatformConsoleWriteTask extends ComputeTaskAdapter<byte[], Object> {
     /** {@inheritDoc} */
     @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable String arg) {
+        @Nullable byte[] arg) {
         return Collections.singletonMap(new Job(arg), F.first(subgrid));
     }
 
@@ -49,22 +50,23 @@ public class PlatformConsoleWriteTask extends ComputeTaskAdapter<String, String>
      */
     private static class Job extends ComputeJobAdapter {
         /** */
-        private final String arg;
+        private final byte[] arg;
 
         /**
          * Ctor.
          *
          * @param arg arg.
          */
-        private Job(String arg) {
+        private Job(byte[] arg) {
             this.arg = arg;
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public String execute() {
-            System.out.println(arg);
+            String str = new String(arg, StandardCharsets.UTF_16LE);
+            System.out.println(str);
 
-            return arg;
+            return null;
         }
     }
 }
