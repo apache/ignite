@@ -2788,8 +2788,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
             srv0.createCache(
                 cacheConfiguration(GROUP2, GROUP2 + "-" + i, PARTITIONED, TRANSACTIONAL, grp2Backups, i % 2 == 0));
-
-            // TODO IGNITE-7164: add Mvcc cache to test.
         }
 
         F.view(G.allGrids(), ignite -> ignite.cluster().localNode().isClient())
@@ -2853,7 +2851,9 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                         String grp;
                         int backups;
 
-                        if (rnd.nextBoolean()) {
+                        boolean option = rnd.nextBoolean();
+
+                        if (option) {
                             grp = GROUP1;
                             backups = grp1Backups;
                         }
@@ -2868,7 +2868,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
                         IgniteCache cache = node.createCache(cacheConfiguration(grp, "tmpCache-" + cntr++,
                             PARTITIONED,
-                            rnd.nextBoolean() ? ATOMIC : TRANSACTIONAL,
+                            option ? ATOMIC : TRANSACTIONAL,
                             backups,
                             rnd.nextBoolean()));
 
