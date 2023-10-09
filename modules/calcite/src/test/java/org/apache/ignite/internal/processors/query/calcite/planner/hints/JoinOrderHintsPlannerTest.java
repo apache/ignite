@@ -50,8 +50,8 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
     @Override public void setup() {
         super.setup();
 
-        int tblNum = 3;
-        int fldNum = 3;
+        int tblNum = 4;
+        int fldNum = 4;
 
         TestTable[] tables = new TestTable[tblNum];
         Object[] fields = new Object[tblNum * 2];
@@ -100,9 +100,8 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testDisabledJoinPushThroughJoinLeft() throws Exception {
-        String disabledRules =
-            String.format("DISABLE_RULE('MergeJoinConverter', 'CorrelatedNestedLoopJoin', '%s', '%s')",
-                CoreRules.JOIN_COMMUTE.toString(), JoinPushThroughJoinRule.RIGHT.toString());
+        String disabledRules = "DISABLE_RULE('MergeJoinConverter', 'CorrelatedNestedLoopJoin', 'JoinCommuteRule')";//, " +
+//            "'JoinPushThroughJoinRule:right', 'JoinPushThroughJoinRule:left')";
 
         // Tests swapping of joins is disabled and the order appears in the query, 'TBL3 -> TBL2 -> TBL1':
         // Join
@@ -110,8 +109,8 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
         //     TableScan(TBL3)
         //     TableScan(TBL2)
         //   TableScan(TBL1)
-        String sql = String.format("select /*+ %s, %s */ t3.* from TBL3 t3, TBL2 t2, TBL1 t1 where t1.v1=t3.v1 and " +
-            "t1.v2=t2.v2", HintDefinition.ORDERED_JOINS.name(), disabledRules);
+        String sql = String.format("select /*+ %s */ t3.*, t1.v1, t3.v3, t4.v4 from TBL3 t3, TBL2 t2, TBL1 t1, TBL4 t4 where " +
+            "t2.v1=t3.v3 and t1.v1=t2.v2 and t4.v4=t1.v3", disabledRules);
 
         assertPlan(sql, schema, hasChildThat(isInstanceOf(Join.class)
             .and(input(0, isInstanceOf(Join.class)

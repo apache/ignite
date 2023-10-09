@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.query.calcite.rule.FilterSpoolMerge
 import org.apache.ignite.internal.processors.query.calcite.rule.HashAggregateConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.IndexCountRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.IndexMinMaxRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.JoinOrderConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.LogicalScanConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.MergeJoinConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.NestedLoopJoinConverterRule;
@@ -148,11 +149,14 @@ public enum PlannerPhase {
                     FilterMergeRule.Config.DEFAULT
                         .withOperandFor(LogicalFilter.class).toRule(),
 
-                    JoinPushThroughJoinRule.Config.LEFT
-                        .withOperandFor(LogicalJoin.class).toRule(),
+//                    JoinPushThroughJoinRule.Config.LEFT
+//                        .withOperandFor(LogicalJoin.class).toRule(),
+//
+//                    JoinPushThroughJoinRule.Config.RIGHT
+//                        .withOperandFor(LogicalJoin.class).toRule(),
 
-                    JoinPushThroughJoinRule.Config.RIGHT
-                        .withOperandFor(LogicalJoin.class).toRule(),
+                    JoinOrderConverterRule.LEFT,
+                    JoinOrderConverterRule.RIGHT,
 
                     JoinPushExpressionsRule.Config.DEFAULT
                         .withOperandFor(LogicalJoin.class).toRule(),
@@ -207,9 +211,10 @@ public enum PlannerPhase {
                     CoreRules.MINUS_MERGE,
                     CoreRules.INTERSECT_MERGE,
                     CoreRules.UNION_REMOVE,
+//                    CoreRules.JOIN_COMMUTE,
                     CoreRules.AGGREGATE_REMOVE,
                     // Works also as CoreRules#JOIN_COMMUTE_OUTER and overrides it if defined after.
-                    CoreRules.JOIN_COMMUTE_OUTER,
+//                    CoreRules.JOIN_COMMUTE_OUTER,
 
                     // Useful of this rule is not clear now.
                     // CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
