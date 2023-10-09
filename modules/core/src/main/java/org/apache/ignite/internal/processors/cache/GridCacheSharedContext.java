@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
-import org.apache.ignite.internal.processors.cache.mvcc.DeadlockDetectionManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
@@ -141,9 +140,6 @@ public class GridCacheSharedContext<K, V> {
     /** Mvcc caching manager. */
     private MvccCachingManager mvccCachingMgr;
 
-    /** Deadlock detection manager. */
-    private DeadlockDetectionManager deadlockDetectionMgr;
-
     /** Cache objects transformation manager. */
     private CacheObjectTransformerManager transMgr;
 
@@ -213,7 +209,6 @@ public class GridCacheSharedContext<K, V> {
      * @param jtaMgr JTA manager.
      * @param storeSesLsnrs Store session listeners.
      * @param mvccCachingMgr Mvcc caching manager.
-     * @param deadlockDetectionMgr Deadlock detection manager.
      */
     public GridCacheSharedContext(
         GridKernalContext kernalCtx,
@@ -234,7 +229,6 @@ public class GridCacheSharedContext<K, V> {
         CacheJtaManagerAdapter jtaMgr,
         Collection<CacheStoreSessionListener> storeSesLsnrs,
         MvccCachingManager mvccCachingMgr,
-        DeadlockDetectionManager deadlockDetectionMgr,
         CacheDiagnosticManager diagnosticMgr,
         CacheObjectTransformerManager transMgr
     ) {
@@ -259,7 +253,6 @@ public class GridCacheSharedContext<K, V> {
             ttlMgr,
             evictMgr,
             mvccCachingMgr,
-            deadlockDetectionMgr,
             diagnosticMgr,
             transMgr
         );
@@ -439,7 +432,6 @@ public class GridCacheSharedContext<K, V> {
             ttlMgr,
             evictMgr,
             mvccCachingMgr,
-            deadlockDetectionMgr,
             diagnosticMgr,
             transMgr
         );
@@ -490,7 +482,6 @@ public class GridCacheSharedContext<K, V> {
         GridCacheSharedTtlCleanupManager ttlMgr,
         PartitionsEvictManager evictMgr,
         MvccCachingManager mvccCachingMgr,
-        DeadlockDetectionManager deadlockDetectionMgr,
         CacheDiagnosticManager diagnosticMgr,
         CacheObjectTransformerManager transMgr
     ) {
@@ -515,7 +506,6 @@ public class GridCacheSharedContext<K, V> {
         this.ttlMgr = add(mgrs, ttlMgr);
         this.evictMgr = add(mgrs, evictMgr);
         this.mvccCachingMgr = add(mgrs, mvccCachingMgr);
-        this.deadlockDetectionMgr = add(mgrs, deadlockDetectionMgr);
         this.transMgr = add(mgrs, transMgr);
     }
 
@@ -884,13 +874,6 @@ public class GridCacheSharedContext<K, V> {
      */
     public CacheDiagnosticManager diagnostic() {
         return diagnosticMgr;
-    }
-
-    /**
-     * @return Deadlock detection manager.
-     */
-    public DeadlockDetectionManager deadlockDetectionMgr() {
-        return deadlockDetectionMgr;
     }
 
     /**

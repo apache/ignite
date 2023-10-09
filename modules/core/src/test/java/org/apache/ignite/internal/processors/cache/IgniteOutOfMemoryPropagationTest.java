@@ -83,7 +83,7 @@ public class IgniteOutOfMemoryPropagationTest extends GridCommonAbstractTest {
 
     /** */
     private void testOOMPropagation(boolean useStreamer) throws Exception {
-        for (CacheAtomicityMode atomicityMode : CacheAtomicityMode._values()) {
+        for (CacheAtomicityMode atomicityMode : CacheAtomicityMode.values()) {
             for (CacheMode cacheMode : CacheMode.values()) {
                 for (CacheWriteSynchronizationMode writeSyncMode : CacheWriteSynchronizationMode.values()) {
                     for (int backupsCnt = 0; backupsCnt <= 1; backupsCnt++) {

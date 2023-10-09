@@ -380,7 +380,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             cctx.database().checkpointReadLock();
 
             try {
-                if ((txEntry.op() == CREATE || txEntry.op() == UPDATE) &&
+                if ((txEntry.op() == CREATE || txEntry.op() == UPDATE || txEntry.op() == TRANSFORM) &&
                     txEntry.conflictExpireTime() == CU.EXPIRE_TIME_CALCULATE) {
                     if (expiry != null) {
                         cached.unswap(true);
