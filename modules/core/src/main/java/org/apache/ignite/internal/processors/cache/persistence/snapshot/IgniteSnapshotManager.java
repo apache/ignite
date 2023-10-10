@@ -912,7 +912,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         try {
             locSnpDir = resolveSnapshotWorkDirectory(cctx.kernalContext().config(), create);
 
-            U.ensureDirectory(locSnpDir, "snapshot work directory", log);
+            if (create)
+                U.ensureDirectory(locSnpDir, "snapshot work directory", log);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
