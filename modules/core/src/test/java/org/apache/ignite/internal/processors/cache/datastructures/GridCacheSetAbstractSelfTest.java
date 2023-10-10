@@ -52,6 +52,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
@@ -1053,6 +1054,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * Test that non collocated sets are stored in a separated cache.
      */
     @Test
+    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true") // IgniteSet with a group
     public void testCacheReuse() {
         testCacheReuse(false);
     }
@@ -1061,6 +1063,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * Test that collocated sets within the same group and compatible configurations are stored in the same cache.
      */
     @Test
+    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true") // IgniteSet with a group
     public void testCacheReuseCollocated() {
         testCacheReuse(true);
     }
@@ -1204,6 +1207,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * Tests multiple sets with the same name but different cache options.
      */
     @Test
+    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true") // IgniteSet with a group
     public void testSameNameDifferentOptions() {
         Ignite ignite = grid(0);
 
