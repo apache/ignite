@@ -730,6 +730,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true") // IgniteQueue with a group
     public void testAffinityRun() throws Exception {
         final CollectionConfiguration colCfg = collectionConfiguration();
 
@@ -779,6 +780,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true") // IgniteQueue with a group
     public void testAffinityCall() throws Exception {
         final CollectionConfiguration colCfg = collectionConfiguration();
 
@@ -923,6 +925,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true") // IgniteQueue with a group
     public void testMultipleStructuresInDifferentGroups() throws Exception {
         CollectionConfiguration cfg1 = collectionConfiguration();
         CollectionConfiguration cfg2 = collectionConfiguration().setGroupName("grp2");
