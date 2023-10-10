@@ -69,7 +69,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
 import static java.lang.Boolean.TRUE;
@@ -79,7 +78,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  * Failover tests for cache data structures.
  */
-@WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true")
 public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends IgniteCollectionAbstractTest {
     /** */
     private static final long TEST_TIMEOUT = 3 * 60 * 1000;

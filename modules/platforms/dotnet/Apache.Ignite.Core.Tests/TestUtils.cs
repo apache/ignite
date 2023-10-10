@@ -79,8 +79,7 @@ namespace Apache.Ignite.Core.Tests
             "-ea",
             "-DIGNITE_QUIET=true",
             "-Duser.timezone=UTC",
-            "-DIGNITE_UPDATE_NOTIFIER=false",
-            "-DIGNITE_ALLOW_MIXED_CACHE_GROUPS=true"
+            "-DIGNITE_UPDATE_NOTIFIER=false"
         };
 
         /** */
