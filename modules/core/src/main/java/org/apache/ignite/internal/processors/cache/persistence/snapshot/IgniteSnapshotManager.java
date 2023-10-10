@@ -2198,7 +2198,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      *
      * @param name Snapshot unique name which satisfies the following name pattern [a-zA-Z0-9_].
      * @param snpPath Snapshot directory path.
-     * @param cacheGroupNames Cache groups to be restored or {@code null} to dump all cache groups from the snapshot.
+     * @param cacheGroupNames Cache groups to include in snapshot or {@code null} to include all.
      * @param incremental Incremental snapshot flag.
      * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
      * @param dump If {@code true} cache dump must be created.

@@ -70,7 +70,7 @@ public interface IgniteSnapshot {
      * In-memory cache groups also supported.
      *
      * @param name Dump name.
-     * @param cacheGroupNames Cache groups to be restored or {@code null} to dump all cache groups from the snapshot.
+     * @param cacheGroupNames Cache groups to include in snapshot or {@code null} to include all.
      * @return Future which will be completed when dump ends.
      */
     public IgniteFuture<Void> createDump(String name, @Nullable Set<String> cacheGroupNames);
