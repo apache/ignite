@@ -135,7 +135,6 @@ namespace Apache.Ignite.Core.Tests
             
             ops.Add("-Dlog4j.configurationFile=" + IgniteHome.Resolve() + "/modules/core/src/test/config/log4j2-test.xml");
 
-            
             return ops;
         }
 
