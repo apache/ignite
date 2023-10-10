@@ -912,7 +912,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** */
     private void initLocalSnapshotDirectory() {
         try {
-            locSnpDir = resolveSnapshotWorkDirectory(cctx.kernalContext().config(), true);
+            locSnpDir = resolveSnapshotWorkDirectory(cctx.kernalContext().config());
 
             U.ensureDirectory(locSnpDir, "snapshot work directory", log);
         }
@@ -2994,6 +2994,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param cfg Ignite configuration.
+     * @return Snapshot directory resolved through given configuration.
+     */
+    public static File resolveSnapshotWorkDirectory(IgniteConfiguration cfg) {
+        return resolveSnapshotWorkDirectory(cfg, true);
+    }
+
+    /**
+     * @param cfg Ignite configuration.
+     * @param create If {@code true} then create resolved directory if not exists.
      * @return Snapshot directory resolved through given configuration.
      */
     public static File resolveSnapshotWorkDirectory(IgniteConfiguration cfg, boolean create) {
