@@ -220,6 +220,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.toDetailString;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.baselineNode;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.resolveBinaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
@@ -415,7 +416,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * Working directory for loaded snapshots from the remote nodes and storing
      * temporary partition delta-files of locally started snapshot process.
      */
-    private File tmpWorkDir;
+    private @Nullable File tmpWorkDir;
 
     /** Factory to working with delta as file storage. */
     private volatile FileIOFactory ioFactory = new RandomAccessFileIOFactory();
@@ -535,11 +536,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         pdsSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
 
-        locSnpDir = resolveSnapshotWorkDirectory(ctx.config());
-        tmpWorkDir = U.resolveWorkDirectory(pdsSettings.persistentStoreNodePath().getAbsolutePath(), DFLT_SNAPSHOT_TMP_DIR, true);
+        boolean persistenceEnabled = isPersistenceEnabled(cctx.gridConfig());
 
-        U.ensureDirectory(locSnpDir, "snapshot work directory", log);
-        U.ensureDirectory(tmpWorkDir, "temp directory for snapshot creation", log);
+        if (persistenceEnabled) {
+            tmpWorkDir = U.resolveWorkDirectory(pdsSettings.persistentStoreNodePath().getAbsolutePath(), DFLT_SNAPSHOT_TMP_DIR, true);
+
+            U.ensureDirectory(tmpWorkDir, "temp directory for snapshot creation", log);
+        }
+
+        initLocalSnapshotDirectory(persistenceEnabled);
 
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(
             new DistributedConfigurationLifecycleListener() {
@@ -691,19 +696,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             })),
             Function.identity());
 
-        Arrays.stream(locSnpDir.listFiles())
-            .filter(File::isDirectory)
-            .map(dumpDir ->
-                Paths.get(dumpDir.getAbsolutePath(), DB_DEFAULT_FOLDER, pdsSettings.folderName(), DUMP_LOCK).toFile())
-            .filter(File::exists)
-            .map(File::getParentFile)
-            .forEach(lockedDumpDir -> {
-                log.warning("Found locked dump dir. " +
-                    "This means, dump creation not finished prior to node fail. " +
-                    "Directory will be deleted: " + lockedDumpDir);
+        File[] files = locSnpDir.listFiles();
 
-                U.delete(lockedDumpDir);
-            });
+        if (files != null) {
+            Arrays.stream(files)
+                .filter(File::isDirectory)
+                .map(dumpDir ->
+                    Paths.get(dumpDir.getAbsolutePath(), DB_DEFAULT_FOLDER, pdsSettings.folderName(), DUMP_LOCK).toFile())
+                .filter(File::exists)
+                .map(File::getParentFile)
+                .forEach(lockedDumpDir -> {
+                    log.warning("Found locked dump dir. " +
+                        "This means, dump creation not finished prior to node fail. " +
+                        "Directory will be deleted: " + lockedDumpDir);
+
+                    U.delete(lockedDumpDir);
+                });
+        }
     }
 
     /** {@inheritDoc} */
@@ -896,6 +905,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         assert tmpWorkDir != null;
 
         return tmpWorkDir;
+    }
+
+    /** */
+    private void initLocalSnapshotDirectory(boolean create) {
+        try {
+            locSnpDir = resolveSnapshotWorkDirectory(cctx.kernalContext().config(), create);
+
+            if (create)
+                U.ensureDirectory(locSnpDir, "snapshot work directory", log);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
@@ -1127,6 +1149,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         Collection<Integer> comprGrpIds,
         boolean withMetaStorage
     ) {
+        if (!isPersistenceEnabled(cctx.gridConfig()))
+            initLocalSnapshotDirectory(true);
+
         Map<Integer, Set<Integer>> parts = new HashMap<>();
 
         // Prepare collection of pairs group and appropriate cache partition to be snapshot.
@@ -2975,9 +3000,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Snapshot directory resolved through given configuration.
      */
     public static File resolveSnapshotWorkDirectory(IgniteConfiguration cfg) {
+        return resolveSnapshotWorkDirectory(cfg, true);
+    }
+
+    /**
+     * @param cfg Ignite configuration.
+     * @param create If {@code true} then create resolved directory if not exists.
+     * @return Snapshot directory resolved through given configuration.
+     */
+    public static File resolveSnapshotWorkDirectory(IgniteConfiguration cfg, boolean create) {
         try {
             return U.resolveWorkDirectory(cfg.getWorkDirectory() == null ? U.defaultWorkDirectory() : cfg.getWorkDirectory(),
-                cfg.getSnapshotPath(), false);
+                cfg.getSnapshotPath(), false, create);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
