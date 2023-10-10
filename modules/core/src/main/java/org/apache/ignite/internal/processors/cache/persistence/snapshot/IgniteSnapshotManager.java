@@ -544,7 +544,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             U.ensureDirectory(tmpWorkDir, "temp directory for snapshot creation", log);
         }
         else
-            locSnpDir = resolveSnapshotWorkDirectoryNoCreate(ctx.config());
+            locSnpDir = resolveSnapshotWorkDirectory(ctx.config(), false);
 
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(
             new DistributedConfigurationLifecycleListener() {
@@ -912,7 +912,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** */
     private void initLocalSnapshotDirectory() {
         try {
-            locSnpDir = resolveSnapshotWorkDirectory(cctx.kernalContext().config());
+            locSnpDir = resolveSnapshotWorkDirectory(cctx.kernalContext().config(), true);
 
             U.ensureDirectory(locSnpDir, "snapshot work directory", log);
         }
@@ -2996,27 +2996,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param cfg Ignite configuration.
      * @return Snapshot directory resolved through given configuration.
      */
-    public static File resolveSnapshotWorkDirectory(IgniteConfiguration cfg) {
+    public static File resolveSnapshotWorkDirectory(IgniteConfiguration cfg, boolean create) {
         try {
+            if (!create) {
+                File snpPath = new File(cfg.getSnapshotPath());
+
+                return snpPath.isAbsolute()
+                    ? snpPath
+                    : new File(cfg.getWorkDirectory() == null ? U.defaultWorkDirectory() : cfg.getWorkDirectory(), cfg.getSnapshotPath());
+            }
+
             return U.resolveWorkDirectory(cfg.getWorkDirectory() == null ? U.defaultWorkDirectory() : cfg.getWorkDirectory(),
                 cfg.getSnapshotPath(), false);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /**
-     * @return Snapshot work directory without trying to create it.
-     */
-    public static File resolveSnapshotWorkDirectoryNoCreate(IgniteConfiguration cfg) {
-        try {
-            File snpPath = new File(cfg.getSnapshotPath());
-
-            if (snpPath.isAbsolute())
-                return snpPath;
-            else
-                return new File(cfg.getWorkDirectory() == null ? U.defaultWorkDirectory() : cfg.getWorkDirectory(), cfg.getSnapshotPath());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
