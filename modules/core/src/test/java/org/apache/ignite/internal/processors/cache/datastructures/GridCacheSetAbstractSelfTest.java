@@ -64,6 +64,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Cache set tests.
  */
+@WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true") // IgniteSet with a group
 public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstractTest {
     /** */
     protected static final String SET_NAME = "testSet";
@@ -1054,7 +1055,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * Test that non collocated sets are stored in a separated cache.
      */
     @Test
-    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true") // IgniteSet with a group
     public void testCacheReuse() {
         testCacheReuse(false);
     }
@@ -1063,7 +1063,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * Test that collocated sets within the same group and compatible configurations are stored in the same cache.
      */
     @Test
-    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true") // IgniteSet with a group
     public void testCacheReuseCollocated() {
         testCacheReuse(true);
     }
@@ -1207,7 +1206,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * Tests multiple sets with the same name but different cache options.
      */
     @Test
-    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true") // IgniteSet with a group
     public void testSameNameDifferentOptions() {
         Ignite ignite = grid(0);
 
