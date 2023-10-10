@@ -21,11 +21,13 @@ import java.util.Collection;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
 /**
  * Tests specific methods of {@link IgniteQueue} behaviour if cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
  */
+@WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true")
 public class IgniteQueueClusterReadOnlyTest extends IgniteCollectionsClusterReadOnlyAbstractTest {
     /** */
     @Test
