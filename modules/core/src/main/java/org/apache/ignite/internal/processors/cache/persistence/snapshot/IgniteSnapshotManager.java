@@ -536,15 +536,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         pdsSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
 
-        if (isPersistenceEnabled(cctx.gridConfig())) {
-            initLocalSnapshotDirectory();
+        boolean persistenceEnabled = isPersistenceEnabled(cctx.gridConfig());
 
+        if (persistenceEnabled) {
             tmpWorkDir = U.resolveWorkDirectory(pdsSettings.persistentStoreNodePath().getAbsolutePath(), DFLT_SNAPSHOT_TMP_DIR, true);
 
             U.ensureDirectory(tmpWorkDir, "temp directory for snapshot creation", log);
         }
-        else
-            locSnpDir = resolveSnapshotWorkDirectory(ctx.config(), false);
+
+        initLocalSnapshotDirectory(persistenceEnabled);
 
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(
             new DistributedConfigurationLifecycleListener() {
@@ -696,24 +696,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             })),
             Function.identity());
 
-        if (locSnpDir.exists()) {
-            File[] files = locSnpDir.listFiles();
+        File[] files = locSnpDir.listFiles();
 
-            if (files != null) {
-                Arrays.stream(files)
-                    .filter(File::isDirectory)
-                    .map(dumpDir ->
-                        Paths.get(dumpDir.getAbsolutePath(), DB_DEFAULT_FOLDER, pdsSettings.folderName(), DUMP_LOCK).toFile())
-                    .filter(File::exists)
-                    .map(File::getParentFile)
-                    .forEach(lockedDumpDir -> {
-                        log.warning("Found locked dump dir. " +
-                            "This means, dump creation not finished prior to node fail. " +
-                            "Directory will be deleted: " + lockedDumpDir);
+        if (files != null) {
+            Arrays.stream(files)
+                .filter(File::isDirectory)
+                .map(dumpDir ->
+                    Paths.get(dumpDir.getAbsolutePath(), DB_DEFAULT_FOLDER, pdsSettings.folderName(), DUMP_LOCK).toFile())
+                .filter(File::exists)
+                .map(File::getParentFile)
+                .forEach(lockedDumpDir -> {
+                    log.warning("Found locked dump dir. " +
+                        "This means, dump creation not finished prior to node fail. " +
+                        "Directory will be deleted: " + lockedDumpDir);
 
-                        U.delete(lockedDumpDir);
-                    });
-            }
+                    U.delete(lockedDumpDir);
+                });
         }
     }
 
@@ -910,9 +908,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** */
-    private void initLocalSnapshotDirectory() {
+    private void initLocalSnapshotDirectory(boolean create) {
         try {
-            locSnpDir = resolveSnapshotWorkDirectory(cctx.kernalContext().config());
+            locSnpDir = resolveSnapshotWorkDirectory(cctx.kernalContext().config(), create);
 
             U.ensureDirectory(locSnpDir, "snapshot work directory", log);
         }
@@ -1151,7 +1149,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean withMetaStorage
     ) {
         if (!isPersistenceEnabled(cctx.gridConfig()))
-            initLocalSnapshotDirectory();
+            initLocalSnapshotDirectory(true);
 
         Map<Integer, Set<Integer>> parts = new HashMap<>();
 
@@ -3007,16 +3005,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public static File resolveSnapshotWorkDirectory(IgniteConfiguration cfg, boolean create) {
         try {
-            if (!create) {
-                File snpPath = new File(cfg.getSnapshotPath());
-
-                return snpPath.isAbsolute()
-                    ? snpPath
-                    : new File(cfg.getWorkDirectory() == null ? U.defaultWorkDirectory() : cfg.getWorkDirectory(), cfg.getSnapshotPath());
-            }
-
             return U.resolveWorkDirectory(cfg.getWorkDirectory() == null ? U.defaultWorkDirectory() : cfg.getWorkDirectory(),
-                cfg.getSnapshotPath(), false);
+                cfg.getSnapshotPath(), false, create);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
