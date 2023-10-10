@@ -23,7 +23,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientException;
@@ -35,6 +38,7 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.service.ServiceCallContextImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.platform.PlatformServiceMethod;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.services.ServiceCallContext;
@@ -187,6 +191,9 @@ class ClientServicesImpl implements ClientServices {
         /** Service call context attributes. */
         private final Map<String, Object> callAttrs;
 
+        /** Service's known topology with the version. */
+        private volatile IgniteBiTuple<Set<UUID>, Long> top = new IgniteBiTuple<>(Collections.emptySet(), 0L);
+
         /**
          * @param name Service name.
          * @param timeout Timeout.
@@ -208,10 +215,14 @@ class ClientServicesImpl implements ClientServices {
         /** {@inheritDoc} */
         @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             try {
-                Collection<UUID> nodeIds = grp.nodeIds();
+                IgniteBiTuple<Set<UUID>, Long> top = this.top;
 
-                if (nodeIds != null && nodeIds.isEmpty())
-                    throw new ClientException("Cluster group is empty.");
+                Collection<UUID> nodeIds = top.get2() > 0 ? top.get1() : grp.nodeIds();
+
+                if (F.isEmpty(nodeIds)) {
+                    throw new ClientException("Cluster group is empty or service '" + name + "' is not found on the " +
+                        "underlying nodes: " + nodeIds);
+                }
 
                 return ch.service(ClientOperation.SERVICE_INVOKE,
                     req -> writeServiceInvokeRequest(req, nodeIds, method, args),

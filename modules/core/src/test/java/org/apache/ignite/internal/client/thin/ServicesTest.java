@@ -573,6 +573,13 @@ public class ServicesTest extends AbstractThinClientTest {
             Service.super.execute();
 
             log.error("TEST | execute " + this.getClass().getSimpleName());
+
+            while (true){
+                Thread.yield();
+                Thread.sleep(5);
+                Thread.yield();
+            }
+
         }
     }
 

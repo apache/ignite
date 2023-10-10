@@ -165,7 +165,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
 
         waitForServicesReadyTopology(grid, grid.context().discovery().topologyVersionEx());
 
-        Map<UUID, Integer> srvcTop = grid.context().service().serviceTopology(SERVICE_NAME, SERVICE_TOP_WAIT_TIMEOUT);
+        Map<UUID, Integer> srvcTop = grid.context().service().serviceTopology(SERVICE_NAME, SERVICE_TOP_WAIT_TIMEOUT).get1();
 
         Collection<UUID> nodes = F.viewReadOnly(grid.context().discovery().aliveServerNodes(), F.node2id());
 
