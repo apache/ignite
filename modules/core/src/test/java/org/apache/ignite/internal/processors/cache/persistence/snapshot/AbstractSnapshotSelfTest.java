@@ -824,7 +824,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         SnapshotSender snpSndr
     ) throws IgniteCheckedException {
         AbstractSnapshotFutureTask<?> task = cctx.snapshotMgr().registerSnapshotTask(snpName, cctx.localNodeId(), null,
-            parts, withMetaStorage, snpSndr);
+            parts, withMetaStorage, false, snpSndr);
 
         if (!(task instanceof SnapshotFutureTask))
             throw new IgniteCheckedException("Snapshot task hasn't been registered: " + task);
