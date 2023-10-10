@@ -135,6 +135,7 @@ import org.apache.ignite.spi.systemview.view.datastructures.ReentrantLockView;
 import org.apache.ignite.spi.systemview.view.datastructures.SemaphoreView;
 import org.apache.ignite.spi.systemview.view.datastructures.SetView;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
@@ -1615,6 +1616,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true") // IgniteQueue with a group.
     public void testQueue() throws Exception {
         try (IgniteEx g0 = startGrid(0);
              IgniteEx g1 = startGrid(1)) {
@@ -1694,6 +1696,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true") // IgniteSet with a group.
     public void testSet() throws Exception {
         try (IgniteEx g0 = startGrid(0);
              IgniteEx g1 = startGrid(1)) {
