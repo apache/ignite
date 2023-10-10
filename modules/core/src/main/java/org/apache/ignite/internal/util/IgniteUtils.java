@@ -10035,6 +10035,7 @@ public abstract class IgniteUtils {
      * @param workDir Work directory.
      * @param path Path to resolve.
      * @param delIfExist Flag indicating whether to delete the specify directory or not.
+     * @param create If {@code true} then directory must be created if not exists.
      * @return Resolved work directory.
      * @throws IgniteCheckedException If failed.
      */
@@ -10049,13 +10050,13 @@ public abstract class IgniteUtils {
             dir = new File(workDir, dir.getPath());
         }
 
-        if (!create)
-            return dir;
-
         if (delIfExist && dir.exists()) {
             if (!U.delete(dir))
                 throw new IgniteCheckedException("Failed to delete directory: " + dir);
         }
+
+        if (!create)
+            return dir;
 
         if (!mkdirs(dir))
             throw new IgniteCheckedException("Directory does not exist and cannot be created: " + dir);
