@@ -19,28 +19,28 @@ package org.apache.ignite.internal.processors.odbc;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.client.events.ConnectionClosedEvent;
 import org.apache.ignite.client.events.ConnectionEventListener;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 
 /** */
-public class ClientSessionOutboundQueueimitTest extends GridCommonAbstractTest {
+public class ClientSessionOutboundQueueLimitTest extends GridCommonAbstractTest {
     /** */
     public static final int MSG_QUEUE_LIMIT = 100;
 
@@ -64,14 +64,14 @@ public class ClientSessionOutboundQueueimitTest extends GridCommonAbstractTest {
     public void testClientSessionOutboundQueueLimit() throws Exception {
         startGrid(0);
 
-        CountDownLatch cliDisconnectedLatch = new CountDownLatch(1);
+        AtomicBoolean isCliDisconnected = new AtomicBoolean(false);
 
         try (
             IgniteClient cli = Ignition.startClient(new ClientConfiguration()
                 .setAddresses("127.0.0.1:10800")
                 .setEventListeners(new ConnectionEventListener() {
                     @Override public void onConnectionClosed(ConnectionClosedEvent event) {
-                        cliDisconnectedLatch.countDown();
+                        isCliDisconnected.set(true);
                     }
                 }))
         ) {
@@ -85,13 +85,11 @@ public class ClientSessionOutboundQueueimitTest extends GridCommonAbstractTest {
 
             skipClientWrite(grid(0), true);
 
-            Collection<IgniteClientFuture<byte[]>> futs = ConcurrentHashMap.newKeySet();
+            Collection<IgniteInternalFuture<byte[]>> futs = ConcurrentHashMap.newKeySet();
 
             try {
-                while (cliDisconnectedLatch.getCount() > 0)
-                    futs.add(cache.getAsync(0));
-
-                assertTrue(cliDisconnectedLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+                while (!isCliDisconnected.get())
+                    futs.add(GridTestUtils.runAsync(() -> cache.get(0)));
             }
             finally {
                 skipClientWrite(grid(0), false);
@@ -104,8 +102,9 @@ public class ClientSessionOutboundQueueimitTest extends GridCommonAbstractTest {
                     fut.get();
                 }
                 catch (Exception e) {
-                    if (e.getMessage().contains("Channel is closed"))
-                        failedReqsCntr.incrementAndGet();
+                    assertTrue(e.getMessage().contains("Channel is closed"));
+
+                    failedReqsCntr.incrementAndGet();
                 }
             });
 
