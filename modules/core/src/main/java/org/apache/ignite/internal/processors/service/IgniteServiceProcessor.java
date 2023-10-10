@@ -1136,6 +1136,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         @Nullable TreeMap<UUID, Integer> oldTop) throws IgniteCheckedException {
         Object nodeFilter = cfg.getNodeFilter();
 
+        log.error("TEST | reassign '" + cfg.getName() + "' on " + ctx.cluster().get().localNode().order());
+
         if (nodeFilter != null)
             ctx.resource().injectGeneric(nodeFilter);
 
@@ -1267,6 +1269,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         Collection<ServiceContextImpl> ctxs = locServices.computeIfAbsent(srvcId, c -> new ArrayList<>());
 
         Collection<ServiceContextImpl> toInit = new ArrayList<>();
+
+        log.error("TEST | redeploy: '" + cfg.getName() + "' on " + ctx.cluster().get().localNode().order());
 
         synchronized (ctxs) {
             if (ctxs.size() > assignCnt) {
@@ -1731,6 +1735,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @param msg Message.
      */
     private void processServicesChangeRequest(ClusterNode snd, ServiceChangeBatchRequest msg) {
+        System.err.println("TEST | processServicesChangeRequest on " + ctx.cluster().get().localNode().order());
+
         DiscoveryDataClusterState state = ctx.state().clusterState();
 
         if (!state.active() || state.transition()) {

@@ -32,8 +32,14 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientServiceDescriptor;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.Person;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.metric.SystemViewSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteAbstractDynamicCacheStartFailTest;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.ServiceContextResource;
@@ -66,6 +72,15 @@ public class ServicesTest extends AbstractThinClientTest {
     /** */
     protected boolean useBinaryArrays;
 
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+//        if(igniteInstanceName.endsWith("1") || igniteInstanceName.endsWith("2") || igniteInstanceName.endsWith("3") || igniteInstanceName.endsWith("4"))
+//            cfg.setClientMode(true);
+
+        return cfg;
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -73,29 +88,33 @@ public class ServicesTest extends AbstractThinClientTest {
         System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(useBinaryArrays));
         BinaryArray.initUseBinaryArrays();
 
-        startGrids(5);
+        int grids = 7;
 
-        startClientGrid(5);
+        startGrids(grids);
+
+//        startClientGrid(grids);
 
         grid(0).createCache(DEFAULT_CACHE_NAME);
 
         awaitPartitionMapExchange();
 
-        grid(0).services().deployNodeSingleton(NODE_ID_SERVICE_NAME, new TestNodeIdService());
+//        grid(0).services().deployNodeSingleton(NODE_ID_SERVICE_NAME, new TestNodeIdService());
 
         ServiceConfiguration svcCfg = new ServiceConfiguration()
             .setName(NODE_SINGLTON_SERVICE_NAME)
             .setService(new TestService())
-            .setMaxPerNodeCount(1)
+            .setTotalCount(4)
+            .setNodeFilter(new TestNodeFilter())
+            .setMaxPerNodeCount(2)
             .setInterceptors(new TestServiceInterceptor());
 
-        grid(0).services().deploy(svcCfg);
+        grid(4).services().deploy(svcCfg);
 
         // Deploy CLUSTER_SINGLTON_SERVICE_NAME to grid(1).
-        int keyGrid1 = primaryKey(grid(1).cache(DEFAULT_CACHE_NAME));
+//        int keyGrid1 = primaryKey(grid(1).cache(DEFAULT_CACHE_NAME));
 
-        grid(0).services().deployKeyAffinitySingleton(CLUSTER_SINGLTON_SERVICE_NAME, new TestService(),
-            DEFAULT_CACHE_NAME, keyGrid1);
+//        grid(0).services().deployKeyAffinitySingleton(CLUSTER_SINGLTON_SERVICE_NAME, new TestService(),
+//            DEFAULT_CACHE_NAME, keyGrid1);
     }
 
     /** {@inheritDoc} */
@@ -161,8 +180,8 @@ public class ServicesTest extends AbstractThinClientTest {
             TestServiceInterface svc = client.services().serviceProxy(NODE_SINGLTON_SERVICE_NAME,
                 TestServiceInterface.class);
 
-            for(int i=0; i<10; ++i)
-            checkCollectionMethods(svc);
+            for (int i = 0; i < 10; ++i)
+                checkCollectionMethods(svc);
 
             // Test remote service calls (client connected to grid(0) but service deployed to grid(1)).
             svc = client.services().serviceProxy(CLUSTER_SINGLTON_SERVICE_NAME, TestServiceInterface.class);
@@ -596,6 +615,13 @@ public class ServicesTest extends AbstractThinClientTest {
         /** {@inheritDoc} */
         @Override public UUID nodeId() {
             return ignite.cluster().localNode().id();
+        }
+    }
+
+    private static final class TestNodeFilter implements IgnitePredicate<ClusterNode> {
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode node) {
+            return node.order() != 2;
         }
     }
 }
