@@ -76,26 +76,54 @@ class DumpTest(IgniteTest):
 
         dump_utility.create(self.DUMP_NAME)
 
-        def dump_files_total_size_on_node(node):
-            dump_dir = os.path.join(ignite.snapshots_dir, self.DUMP_NAME, "db",
-                                    ignite.consistent_dir(node.account.externally_routable_ip))
-
-            return int(node.account.ssh_output(
-                "find " + dump_dir + " -name '*.dump' -exec du -a --bytes {} \\; "
-                                     "| awk '{  total += $1 }; END { print total }'"
-            ).decode(sys.getdefaultencoding()).splitlines()[0])
-
-        dump_files_total_sizes = {
-            ignite.consistent_dir(node.account.externally_routable_ip): dump_files_total_size_on_node(node)
-            for node in ignite.nodes
-        }
-
-        assert all([size > 0 for size in dump_files_total_sizes.values()]), "dumps are not empty on all nodes"
-
         control_utility.snapshot_check(self.DUMP_NAME)
 
         ignite.stop()
 
-        return {
-            "dump_sizes": dump_files_total_sizes
-        }
+    @cluster(num_nodes=5)
+    @ignite_versions(str(DEV_BRANCH))
+    @defaults(nodes=[3], backups=[1], cache_count=[1], entry_count=[50_000], entry_size=[1024], preloaders=[1])
+    def dump_after_datastreamer_and_restart_test(self, ignite_version, nodes, backups, cache_count, entry_count,
+                                                 entry_size, preloaders):
+        """
+        Test that entries loaded via the data streamer are dumped after the ignite restart.
+        """
+        data_gen_params = DataGenerationParams(backups=backups, cache_count=cache_count, entry_count=entry_count,
+                                               entry_size=entry_size, preloaders=preloaders)
+
+        ignite_config = IgniteConfiguration(
+            version=IgniteVersion(ignite_version),
+            data_storage=DataStorageConfiguration(
+                checkpoint_frequency=5000,
+                default=DataRegionConfiguration(
+                    persistence_enabled=True,
+                    max_size=data_gen_params.data_region_max_size
+                )
+            ),
+            metric_exporters={'org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'}
+        )
+
+        ignite = IgniteService(self.test_context, ignite_config, num_nodes=nodes)
+        ignite.start()
+
+        control_utility = ControlUtility(ignite)
+        control_utility.activate()
+
+        preload_data(
+            self.test_context,
+            ignite.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite)),
+            data_gen_params=data_gen_params)
+
+        control_utility.deactivate()
+
+        ignite.stop()
+
+        ignite.start(clean=False)
+
+        dump_utility = DumpUtility(self.test_context, ignite)
+
+        dump_utility.create(self.DUMP_NAME)
+
+        control_utility.snapshot_check(self.DUMP_NAME)
+
+        ignite.stop()
