@@ -122,7 +122,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
             assertThrows(
                 null,
-                () -> ign.snapshot().createDump("dump").get(),
+                () -> ign.snapshot().createDump("dump", null).get(),
                 IgniteException.class,
                 "Dump operation has been rejected. No cache group defined in cluster"
             );
@@ -140,7 +140,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
 
-        ign.snapshot().createDump(DMP_NAME).get(getTestTimeout());
+        ign.snapshot().createDump(DMP_NAME, null).get(getTestTimeout());
 
         stopAllGrids();
 
@@ -176,7 +176,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             for (int key : partitionKeys(cache, 0, KEYS_CNT, 0))
                 cache.put(key, key);
 
-            ign.snapshot().createDump(DMP_NAME).get();
+            ign.snapshot().createDump(DMP_NAME, null).get();
 
             Dump dump = dump(ign, DMP_NAME);
 
@@ -298,7 +298,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             null,
             false);
 
-        ign.snapshot().createDump(DMP_NAME).get();
+        ign.snapshot().createDump(DMP_NAME, null).get();
 
         assertContains(
             null,
@@ -331,7 +331,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             cache2.put(i, USER_FACTORY.apply(i));
         });
 
-        ign.snapshot().createDump(DMP_NAME).get();
+        ign.snapshot().createDump(DMP_NAME, null).get();
 
         assertEquals("The check procedure has finished, no conflicts have been found.\n\n", invokeCheckCommand(ign, DMP_NAME));
 
@@ -339,8 +339,20 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         cleanPersistenceDir(true);
 
-        ign = startGrid(getConfiguration(id).setConsistentId(id));
+        ListeningTestLogger testLog = new ListeningTestLogger(log);
+
+        LogListener lsnr = LogListener.matches("Unknown cache groups will not be included in snapshot").build();
+
+        testLog.registerListener(lsnr);
+
+        ign = startGrid(getConfiguration(id).setConsistentId(id).setGridLogger(testLog));
 
         assertEquals("The check procedure has finished, no conflicts have been found.\n\n", invokeCheckCommand(ign, DMP_NAME));
+
+        ign.createCache(DEFAULT_CACHE_NAME).put(1, 1);
+
+        ign.snapshot().createDump(DMP_NAME + "2", Arrays.asList(DEFAULT_CACHE_NAME, "non-existing-group")).get();
+
+        assertTrue(lsnr.check());
     }
 }
