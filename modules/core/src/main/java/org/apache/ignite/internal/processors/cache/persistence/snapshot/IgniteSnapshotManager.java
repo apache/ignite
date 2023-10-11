@@ -1802,7 +1802,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createDump(String name, @Nullable Collection<String> cacheGroupNames) {
-        return createSnapshot(name, null, null, false, false, true);
+        return createSnapshot(name, null, cacheGroupNames, false, false, true);
     }
 
     /**
@@ -2301,11 +2301,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     lastSeenSnpFut = snpFut0;
             }
 
+            Set<String> cacheGroupNames0 = cacheGroupNames == null ? null : new HashSet<>(cacheGroupNames);
+
             List<String> grps = (dump ? cctx.cache().cacheGroupDescriptors().values() : cctx.cache().persistentGroups()).stream()
-                .filter(g -> cacheGroupNames == null || cacheGroupNames.contains(g.cacheOrGroupName()))
-                .filter(g -> cctx.cache().cacheType(g.cacheOrGroupName()) == CacheType.USER)
                 .map(CacheGroupDescriptor::cacheOrGroupName)
+                .filter(n -> cacheGroupNames0 == null || cacheGroupNames0.remove(n))
+                .filter(cacheName -> cctx.cache().cacheType(cacheName) == CacheType.USER)
                 .collect(Collectors.toList());
+
+            if (!F.isEmpty(cacheGroupNames0))
+                log.warning("Unknown cache groups will not be included in snapshot [grps=" + cacheGroupNames0 + ']');
 
             if (!dump)
                 grps.add(METASTORAGE_CACHE_NAME);

@@ -205,8 +205,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
         }
     }
 
-
-            /** */
+    /** */
     @Test
     public void testConcurrentDumpCreationThrows() throws Exception {
         doTestConcurrentOperations(ignite -> {

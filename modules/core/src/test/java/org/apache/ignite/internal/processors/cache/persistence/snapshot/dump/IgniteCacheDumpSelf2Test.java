@@ -339,8 +339,20 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         cleanPersistenceDir(true);
 
-        ign = startGrid(getConfiguration(id).setConsistentId(id));
+        ListeningTestLogger testLog = new ListeningTestLogger(log);
+
+        LogListener lsnr = LogListener.matches("Unknown cache groups will not be included in snapshot").build();
+
+        testLog.registerListener(lsnr);
+
+        ign = startGrid(getConfiguration(id).setConsistentId(id).setGridLogger(testLog));
 
         assertEquals("The check procedure has finished, no conflicts have been found.\n\n", invokeCheckCommand(ign, DMP_NAME));
+
+        ign.createCache(DEFAULT_CACHE_NAME).put(1, 1);
+
+        ign.snapshot().createDump(DMP_NAME + "2", Arrays.asList(DEFAULT_CACHE_NAME, "non-existing-group")).get();
+
+        assertTrue(lsnr.check());
     }
 }
