@@ -6001,7 +6001,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             grid(0).events().localListen(lsnr, EVT_CACHE_OBJECT_LOCKED, EVT_CACHE_OBJECT_UNLOCKED);
 
-            try (Transaction tx = transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction ignored =
+                     cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ?
+                         transactions().txStart(PESSIMISTIC, REPEATABLE_READ) : null) {
                 Integer val0;
 
                 if (async)
