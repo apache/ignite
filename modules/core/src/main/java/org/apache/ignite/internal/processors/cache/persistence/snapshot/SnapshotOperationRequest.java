@@ -91,6 +91,9 @@ public class SnapshotOperationRequest implements Serializable {
     /** If {@code true} snapshot only primary copies of partitions. */
     private final boolean onlyPrimary;
 
+    /** If {@code true} then create dump. */
+    private final boolean dump;
+
     /**
      * @param reqId Request ID.
      * @param opNodeId Operational node ID.
@@ -101,6 +104,7 @@ public class SnapshotOperationRequest implements Serializable {
      * @param incremental {@code True} if incremental snapshot requested.
      * @param incIdx Incremental snapshot index.
      * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
+     * @param dump If {@code true} then create dump.
      */
     public SnapshotOperationRequest(
         UUID reqId,
@@ -111,7 +115,8 @@ public class SnapshotOperationRequest implements Serializable {
         Set<UUID> nodes,
         boolean incremental,
         int incIdx,
-        boolean onlyPrimary
+        boolean onlyPrimary,
+        boolean dump
     ) {
         this.reqId = reqId;
         this.opNodeId = opNodeId;
@@ -122,6 +127,7 @@ public class SnapshotOperationRequest implements Serializable {
         this.incremental = incremental;
         this.incIdx = incIdx;
         this.onlyPrimary = onlyPrimary;
+        this.dump = dump;
         startTime = U.currentTimeMillis();
     }
 
@@ -194,6 +200,11 @@ public class SnapshotOperationRequest implements Serializable {
     /** @return If {@code true} snapshot only primary copies of partitions. */
     public boolean onlyPrimary() {
         return onlyPrimary;
+    }
+
+    /** @return If {@code true} then create dump. */
+    public boolean dump() {
+        return dump;
     }
 
     /** @return Start time. */

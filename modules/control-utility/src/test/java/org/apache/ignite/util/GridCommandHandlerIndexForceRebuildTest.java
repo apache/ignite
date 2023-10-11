@@ -61,7 +61,6 @@ import static java.lang.String.valueOf;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.util.IgniteUtils.max;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -239,13 +238,6 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
             grid(LAST_NODE_NUM).destroyCache("cacheWithNodeFilter");
 
             awaitPartitionMapExchange();
-
-            // TODO Remove after IGNITE-20507.
-            // Cleaning cache meta being kept.
-            for (Ignite ig : G.allGrids()) {
-                U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + '/' + ig.name()
-                    + "/cache-cacheWithNodeFilter", false));
-            }
         }
     }
 
