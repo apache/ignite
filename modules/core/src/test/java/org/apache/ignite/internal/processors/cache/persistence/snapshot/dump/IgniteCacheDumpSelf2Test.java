@@ -324,7 +324,14 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
             assertTrue(U.delete(snpDir));
 
-            ign.context().cache().context().snapshotMgr().createSnapshot(DMP_NAME, snpDir.getAbsolutePath(), false, false, true).get();
+            ign.context().cache().context().snapshotMgr().createSnapshot(
+                DMP_NAME,
+                snpDir.getAbsolutePath(),
+                null,
+                false,
+                false,
+                true
+            ).get();
 
             assertFalse(
                 "Standard snapshot directory must created lazily for in-memory node",
