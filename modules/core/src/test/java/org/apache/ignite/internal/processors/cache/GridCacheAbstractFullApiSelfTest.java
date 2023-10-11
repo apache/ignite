@@ -296,7 +296,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         IgniteCache<String, Integer> cache = jcache(0);
 
-        try (final Transaction transaction = grid(0).transactions().txStart()) {
+        try (Transaction tx =
+                 cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ?
+                     grid(0).transactions().txStart() : null) {
             // retrieve market type from the grid
             Integer old = cache.withSkipStore().get(key);
 
@@ -306,7 +308,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             cache.put(key, 2);
 
             // finally commit the transaction
-            transaction.commit();
+            if (tx != null)
+                tx.commit();
         }
 
         assertEquals(2, storeStgy.getFromStore(key));
@@ -327,7 +330,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         storeStgy.putToStore(key, 2);
 
-        try (final Transaction transaction = grid(0).transactions().txStart()) {
+        try (Transaction tx =
+                 cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ?
+                     grid(0).transactions().txStart() : null) {
             Integer old = cache.get(key);
 
             assertEquals((Integer)1, old);
@@ -336,7 +341,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             cache.put(key, 2);
 
             // finally commit the transaction
-            transaction.commit();
+            if (tx != null)
+                tx.commit();
         }
 
         assertEquals(0, storeStgy.getReads());
