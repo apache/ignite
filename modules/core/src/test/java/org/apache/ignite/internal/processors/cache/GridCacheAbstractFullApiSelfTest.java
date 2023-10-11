@@ -492,12 +492,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (int i = 0; i < 10; i++) {
             String key = String.valueOf(i);
 
-            try (Transaction tx = txs.txStart()) {
+            try (Transaction tx =
+                     cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ?
+                         txs.txStart() : null) {
                 assertNull(key, cache.get(key));
 
                 assertFalse(cache.containsKey(key));
 
-                tx.commit();
+                if (tx != null)
+                    tx.commit();
             }
 
             try (Transaction tx = txs.txStart()) {
