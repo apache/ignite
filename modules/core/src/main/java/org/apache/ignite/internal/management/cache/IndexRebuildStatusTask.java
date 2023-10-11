@@ -26,11 +26,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -99,15 +98,15 @@ public class IndexRebuildStatusTask extends VisorMultiNodeTask<
         @Override protected Set<IndexRebuildStatusInfoContainer> run(
             @Nullable CacheIndexesRebuildStatusCommandArg arg
         ) throws IgniteException {
-            Set<IgniteCache> rebuildIdxCaches =
+            Set<IgniteCacheProxy<?, ?>> rebuildIdxCaches =
                 ignite.context().cache().publicCaches().stream()
                     .filter(c -> !c.indexReadyFuture().isDone())
                     .collect(Collectors.toSet());
 
             Set<IndexRebuildStatusInfoContainer> res = new HashSet<>();
 
-            for (IgniteCache<?, ?> cache : rebuildIdxCaches)
-                res.add(new IndexRebuildStatusInfoContainer(cache.getConfiguration(CacheConfiguration.class)));
+            for (IgniteCacheProxy<?, ?> cache : rebuildIdxCaches)
+                res.add(new IndexRebuildStatusInfoContainer(cache.context()));
 
             return res;
         }
