@@ -532,16 +532,19 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             keys.add(key);
         }
 
-        try (Transaction tx = txs.txStart()) {
+        try (Transaction tx =
+                 cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ? txs.txStart() : null) {
             for (String key : keys)
                 assertNull(key, cache.get(key));
 
             assertFalse(cache.containsKeys(keys));
 
-            tx.commit();
+            if (tx != null)
+                tx.commit();
         }
 
-        try (Transaction tx = txs.txStart()) {
+        try (Transaction tx =
+                 cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ? txs.txStart() : null) {
             for (String key : keys)
                 assertNull(key, cache.get(key));
 
@@ -550,7 +553,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             assertTrue(cache.containsKeys(keys));
 
-            tx.commit();
+            if (tx != null)
+                tx.commit();
         }
     }
 
@@ -6156,10 +6160,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
                 IgniteTransactions txs = ignite.transactions();
 
-                try (Transaction tx = txs.txStart(concurrency, isolation)) {
+                try (Transaction tx =
+                         cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ?
+                             txs.txStart(concurrency, isolation) : null) {
                     doTransformResourceInjection(ignite, cache, async, oldAsync);
 
-                    tx.commit();
+                    if (tx != null)
+                        tx.commit();
                 }
             }
         }
