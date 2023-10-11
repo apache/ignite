@@ -512,9 +512,14 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     public static String invokeCheckCommand(IgniteEx ign, String name) throws IgniteCheckedException {
+        return invokeCheckCommand(ign, name, null);
+    }
+
+    /** */
+    public static String invokeCheckCommand(IgniteEx ign, String name, String snpPath) throws IgniteCheckedException {
         StringBuffer buf = new StringBuffer();
 
-        ign.context().cache().context().snapshotMgr().checkSnapshot(name, null).get(60_000)
+        ign.context().cache().context().snapshotMgr().checkSnapshot(name, snpPath).get(60_000)
             .print(line -> buf.append(line).append(System.lineSeparator()));
 
         return buf.toString();

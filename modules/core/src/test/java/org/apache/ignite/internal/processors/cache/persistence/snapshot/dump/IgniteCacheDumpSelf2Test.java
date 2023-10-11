@@ -311,6 +311,52 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testCustomLocation() throws Exception {
+        try (IgniteEx ign = startGrid()) {
+            IgniteCache<Integer, Integer> cache = ign.createCache(new CacheConfiguration<Integer, Integer>()
+                .setName("test-cache-0")
+                .setBackups(1)
+                .setAtomicityMode(CacheAtomicityMode.ATOMIC));
+
+            IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
+
+            File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
+
+            assertTrue(U.delete(snpDir));
+
+            ign.context().cache().context().snapshotMgr().createSnapshot(
+                DMP_NAME,
+                snpDir.getAbsolutePath(),
+                null,
+                false,
+                false,
+                true
+            ).get();
+
+            assertFalse(
+                "Standard snapshot directory must created lazily for in-memory node",
+                new File(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY).exists()
+            );
+
+            assertFalse(
+                "Temporary snapshot directory must created lazily for in-memory node",
+                new File(
+                    ign.context().pdsFolderResolver().resolveFolders().persistentStoreNodePath().getAbsolutePath(),
+                    DFLT_SNAPSHOT_TMP_DIR
+                ).exists()
+            );
+
+            assertTrue(snpDir.exists());
+
+            assertEquals(
+                "The check procedure has finished, no conflicts have been found.\n\n",
+                invokeCheckCommand(ign, DMP_NAME, snpDir.getAbsolutePath())
+            );
+        }
+    }
+
+    /** */
+    @Test
     public void testCheckOnEmptyNode() throws Exception {
         String id = "test";
 

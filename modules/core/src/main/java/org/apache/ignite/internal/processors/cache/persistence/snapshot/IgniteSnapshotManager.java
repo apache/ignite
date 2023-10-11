@@ -1149,7 +1149,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         Collection<Integer> comprGrpIds,
         boolean withMetaStorage
     ) {
-        if (!isPersistenceEnabled(cctx.gridConfig()))
+        if (!isPersistenceEnabled(cctx.gridConfig()) && req.snapshotPath() == null)
             initLocalSnapshotDirectory(true);
 
         Map<Integer, Set<Integer>> parts = new HashMap<>();
@@ -1185,6 +1185,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             task0 = new GridFinishedFuture<>(Collections.emptySet());
         else {
             task0 = registerSnapshotTask(req.snapshotName(),
+                req.snapshotPath(),
                 req.operationalNodeId(),
                 req.requestId(),
                 parts,
@@ -2719,6 +2720,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param snpName Unique snapshot name.
+     * @param snpPath Snapshot path.
      * @param srcNodeId Node id which cause snapshot operation.
      * @param requestId Snapshot operation request ID.
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
@@ -2729,6 +2731,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     AbstractSnapshotFutureTask<?> registerSnapshotTask(
         String snpName,
+        @Nullable String snpPath,
         UUID srcNodeId,
         UUID requestId,
         Map<Integer, Set<Integer>> parts,
@@ -2737,7 +2740,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotSender snpSndr
     ) {
         AbstractSnapshotFutureTask<?> task = registerTask(snpName, dump
-            ? new CreateDumpFutureTask(cctx, srcNodeId, requestId, snpName, snapshotLocalDir(snpName, null), ioFactory, snpSndr, parts)
+            ? new CreateDumpFutureTask(cctx, srcNodeId, requestId, snpName, snapshotLocalDir(snpName, snpPath), ioFactory, snpSndr, parts)
             : new SnapshotFutureTask(cctx, srcNodeId, requestId, snpName, tmpWorkDir, ioFactory, snpSndr, parts, withMetaStorage, locBuff));
 
         if (!withMetaStorage) {
