@@ -98,12 +98,14 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_MIXED_CACHE_GROUPS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -3541,6 +3543,19 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             },
             IgniteCheckedException.class,
             "Atomicity mode mismatch");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_ALLOW_MIXED_CACHE_GROUPS, value = "true")
+    public void mixedCacheGroupsAllowedTest() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.createCache(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1, false));
+        ignite.createCache(cacheConfiguration(GROUP1, "c2", PARTITIONED, ATOMIC, 1, false));
+        ignite.createCache(cacheConfiguration(GROUP1, "c3", PARTITIONED, TRANSACTIONAL, 1, false));
     }
 
     /**

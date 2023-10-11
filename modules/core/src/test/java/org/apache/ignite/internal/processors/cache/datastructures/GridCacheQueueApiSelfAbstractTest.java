@@ -44,7 +44,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -730,7 +729,6 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true") // IgniteQueue with a group
     public void testAffinityRun() throws Exception {
         final CollectionConfiguration colCfg = collectionConfiguration();
 
@@ -780,7 +778,6 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true") // IgniteQueue with a group
     public void testAffinityCall() throws Exception {
         final CollectionConfiguration colCfg = collectionConfiguration();
 
@@ -889,7 +886,6 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true") // IgniteQueue with a group
     public void testCacheReuse() throws Exception {
         CollectionConfiguration colCfg = collectionConfiguration();
 
@@ -925,7 +921,6 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true") // IgniteQueue with a group
     public void testMultipleStructuresInDifferentGroups() throws Exception {
         CollectionConfiguration cfg1 = collectionConfiguration();
         CollectionConfiguration cfg2 = collectionConfiguration().setGroupName("grp2");

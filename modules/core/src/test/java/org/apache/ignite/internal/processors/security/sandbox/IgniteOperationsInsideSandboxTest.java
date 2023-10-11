@@ -54,7 +54,6 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -239,7 +238,6 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
 
     /** */
     @Test
-    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true") // Datastructures with a group
     public void testDataStructures() {
         compute().broadcast(
             new TestRunnable() {

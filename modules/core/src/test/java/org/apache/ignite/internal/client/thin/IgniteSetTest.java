@@ -34,7 +34,6 @@ import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
 /**
@@ -318,7 +317,6 @@ public class IgniteSetTest extends AbstractThinClientTest {
      * Tests different cache groups.
      */
     @Test
-    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true") // IgniteSet with a group
     public void testSameNameInDifferentGroups() {
         String name = "testSameNameInDifferentGroups";
         ClientCollectionConfiguration cfg1 = new ClientCollectionConfiguration();
@@ -351,7 +349,6 @@ public class IgniteSetTest extends AbstractThinClientTest {
      * Tests same set name with different options.
      */
     @Test
-    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true") // IgniteSet with a group
     public void testSameNameDifferentOptions() {
         String name = "testSameNameDifferentOptions";
         ClientCollectionConfiguration cfg1 = new ClientCollectionConfiguration()

@@ -43,7 +43,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
@@ -230,7 +229,6 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
      * Other client set tests are in {@link IgniteSetTest}.
      */
     @Test
-    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true") // IgniteSet with a group
     public void testIgniteSet() {
         testIgniteSet("testIgniteSet", null, CacheAtomicityMode.ATOMIC);
         testIgniteSet("testIgniteSet2", null, CacheAtomicityMode.TRANSACTIONAL);
@@ -300,7 +298,6 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
      * Tests {@link ClientIgniteSet} partition awareness in colocated mode.
      */
     @Test
-    @WithSystemProperty(key = "IGNITE_ALLOW_MIXED_CACHE_GROUPS", value = "true") // IgniteSet with a group
     public void testIgniteSetCollocated() {
         testIgniteSetCollocated("testIgniteSetCollocated", null, CacheAtomicityMode.ATOMIC);
         testIgniteSetCollocated("testIgniteSetCollocated2", null, CacheAtomicityMode.TRANSACTIONAL);
