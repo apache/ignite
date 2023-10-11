@@ -6107,7 +6107,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     }
                 },
                 CacheException.class,
-                "Explicit lock can't be acquired within a transaction."
+                atomicityMode() == TRANSACTIONAL ?
+                    "Explicit lock can't be acquired within a transaction." :
+                    "Locks are not supported for CacheAtomicityMode.ATOMIC mode"
             );
 
             GridTestUtils.assertThrows(
@@ -6116,7 +6118,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     @Override public Object call() throws Exception {
                         IgniteCache<String, Integer> cache = jcache(0);
 
-                        try (Transaction tx = ignite(0).transactions().txStart()) {
+                        try (Transaction tx =
+                                 cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ?
+                                     ignite(0).transactions().txStart() : null) {
                             cache.lockAll(Arrays.asList("key1", "key2")).lock();
                         }
 
@@ -6124,7 +6128,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     }
                 },
                 CacheException.class,
-                "Explicit lock can't be acquired within a transaction."
+                atomicityMode() == TRANSACTIONAL ?
+                    "Explicit lock can't be acquired within a transaction." :
+                    "Locks are not supported for CacheAtomicityMode.ATOMIC mode"
             );
         }
     }
