@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotSender;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
+import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -92,6 +93,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
     /** */
     private final FileIOFactory ioFactory;
+
+    /** */
+    private final BasicRateLimiter transferRateLimiter;
 
     /**
      * Dump contextes.
@@ -128,6 +132,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         String dumpName,
         File dumpDir,
         FileIOFactory ioFactory,
+        BasicRateLimiter transferRateLimiter,
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts
     ) {
@@ -142,6 +147,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         this.dumpDir = dumpDir;
         this.ioFactory = ioFactory;
+        this.transferRateLimiter = transferRateLimiter;
     }
 
     /** {@inheritDoc} */
@@ -360,7 +366,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     private PartitionDumpContext dumpContext(int grp, int part) {
         return dumpCtxs.computeIfAbsent(
             toLong(grp, part),
-            key -> new PartitionDumpContext(cctx.kernalContext().cache().cacheGroup(grp), part, thLocBufs)
+            key -> new PartitionDumpContext(cctx.kernalContext().cache().cacheGroup(grp), part)
         );
     }
 
@@ -425,9 +431,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         /**
          * @param gctx Group context.
          * @param part Partition id.
-         * @param thLocBufs Thread local buffers.
          */
-        public PartitionDumpContext(CacheGroupContext gctx, int part, ConcurrentMap<Long, ByteBuffer> thLocBufs) {
+        public PartitionDumpContext(CacheGroupContext gctx, int part) {
             assert gctx != null;
 
             try {
@@ -545,6 +550,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             synchronized (serializer) { // Prevent concurrent access to the dump file.
                 try {
                     ByteBuffer buf = serializer.writeToBuffer(cache, expireTime, key, val, cctx.cacheObjectContext(cache));
+
+                    transferRateLimiter.acquire(buf.limit());
 
                     if (file.writeFully(buf) != buf.limit())
                         throw new IgniteException("Can't write row");

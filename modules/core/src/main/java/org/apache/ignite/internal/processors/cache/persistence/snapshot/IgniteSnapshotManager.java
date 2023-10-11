@@ -2728,7 +2728,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotSender snpSndr
     ) {
         AbstractSnapshotFutureTask<?> task = registerTask(snpName, dump
-            ? new CreateDumpFutureTask(cctx, srcNodeId, requestId, snpName, snapshotLocalDir(snpName, null), ioFactory, snpSndr, parts)
+            ? new CreateDumpFutureTask(
+                cctx,
+                srcNodeId,
+                requestId,
+                snpName,
+                snapshotLocalDir(snpName, null),
+                ioFactory,
+                transferRateLimiter,
+                snpSndr,
+                parts
+            )
             : new SnapshotFutureTask(cctx, srcNodeId, requestId, snpName, tmpWorkDir, ioFactory, snpSndr, parts, withMetaStorage, locBuff));
 
         if (!withMetaStorage) {
