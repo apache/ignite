@@ -1801,7 +1801,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> createDump(String name, @Nullable Set<String> cacheGroupNames) {
+    @Override public IgniteFuture<Void> createDump(String name, @Nullable Collection<String> cacheGroupNames) {
         return createSnapshot(name, null, null, false, false, true);
     }
 
@@ -2207,7 +2207,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public IgniteFutureImpl<Void> createSnapshot(
         String name,
         @Nullable String snpPath,
-        @Nullable Set<String> cacheGroupNames,
+        @Nullable Collection<String> cacheGroupNames,
         boolean incremental,
         boolean onlyPrimary,
         boolean dump
@@ -4641,7 +4641,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private final String snpName;
 
         /** Cache group names to include in snapshot. */
-        private final @Nullable Set<String> cacheGroupNames;
+        private final @Nullable Collection<String> cacheGroupNames;
 
         /** Incremental flag. */
         private final boolean incremental;
@@ -4665,7 +4665,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          */
         public CreateSnapshotCallable(
             String snpName,
-            @Nullable Set<String> cacheGroupNames,
+            @Nullable Collection<String> cacheGroupNames,
             boolean incremental,
             boolean onlyPrimary,
             boolean dump
