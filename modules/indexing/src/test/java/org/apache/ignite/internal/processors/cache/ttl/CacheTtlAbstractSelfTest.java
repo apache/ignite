@@ -144,7 +144,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
 
         checkSizeBeforeLive(SIZE);
 
-        Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
+        Thread.sleep(DEFAULT_TIME_TO_LIVE + 1000);
 
         checkSizeAfterLive();
     }
@@ -179,7 +179,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
 
         checkSizeBeforeLive(SIZE);
 
-        Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
+        Thread.sleep(DEFAULT_TIME_TO_LIVE + 1000);
 
         checkSizeAfterLive();
     }
@@ -196,7 +196,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
 
         checkSizeBeforeLive(SIZE);
 
-        Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
+        Thread.sleep(DEFAULT_TIME_TO_LIVE + 1000);
 
         checkSizeAfterLive();
 
@@ -209,7 +209,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
 
         checkSizeBeforeLive(SIZE);
 
-        Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
+        Thread.sleep(DEFAULT_TIME_TO_LIVE + 1000);
 
         checkSizeAfterLive();
     }
@@ -227,7 +227,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
 
         checkSizeBeforeLive(1);
 
-        Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
+        Thread.sleep(DEFAULT_TIME_TO_LIVE + 1000);
 
         checkSizeAfterLive();
     }
@@ -248,7 +248,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
 
         checkSizeBeforeLive(SIZE);
 
-        Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
+        Thread.sleep(DEFAULT_TIME_TO_LIVE + 1000);
 
         checkSizeAfterLive();
     }
@@ -271,7 +271,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
 
         checkSizeBeforeLive(SIZE, gridCount() + 1);
 
-        Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
+        Thread.sleep(DEFAULT_TIME_TO_LIVE + 1000);
 
         checkSizeAfterLive(gridCount() + 1);
     }
@@ -291,11 +291,11 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
 
         checkSizeBeforeLive(SIZE);
 
-        Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
+        Thread.sleep(DEFAULT_TIME_TO_LIVE + 1000);
 
         checkSizeBeforeLive(SIZE);
 
-        Thread.sleep(time - DEFAULT_TIME_TO_LIVE + 500);
+        Thread.sleep(time - DEFAULT_TIME_TO_LIVE + 1000);
 
         checkSizeAfterLive();
     }
