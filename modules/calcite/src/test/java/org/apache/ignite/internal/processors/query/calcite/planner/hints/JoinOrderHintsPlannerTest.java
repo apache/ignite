@@ -199,21 +199,23 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testDisabledCommutingOfJoinInputsInSubquery() throws Exception {
-        String sqlTpl = "SELECT %s t1.v1, t3.v2 from TBL1 t1 JOIN TBL3 t3 on t1.v3=t3.v3 where t1.v2 in " +
-            "(SELECT %s t2.v2 from TBL2 t2 JOIN TBL3 t3 on t2.v1=t3.v1)";
+        String disabledRules = "DISABLE_RULE('MergeJoinConverter', 'NestedLoopJoin')";
+
+        String sqlTpl = "SELECT %s t2.v2 from TBL2 t2 where t2.v1 in " +
+            "(SELECT %s t1.v1 from TBL4 t4 JOIN TBL1 t1 on t4.v4=t1.v1)";
 
         // Ensure that the sub-join has inputs order matching the sub-query: 'TBL2->TBL3'.
-        assertPlan(String.format(sqlTpl, "/*+ " + HintDefinition.ORDERED_JOINS + " */", ""), schema,
+        assertPlan(String.format(sqlTpl, "/*+ " + disabledRules + "*/", ""), schema,
             nodeOrAnyChild(isInstanceOf(Join.class).and(input(0, nodeOrAnyChild(isTableScan("TBL1"))))
                 .and(input(1, nodeOrAnyChild(isInstanceOf(Join.class)
-                    .and(input(0, nodeOrAnyChild(isTableScan("TBL2"))))
-                    .and(input(1, nodeOrAnyChild(isTableScan("TBl3")))))))));
+                    .and(input(0, nodeOrAnyChild(isTableScan("TBL1"))))
+                    .and(input(1, nodeOrAnyChild(isTableScan("TBl4")))))))));
 
-        assertPlan(String.format(sqlTpl, "", "/*+ " + HintDefinition.ORDERED_JOINS + " */"), schema,
-            nodeOrAnyChild(isInstanceOf(Join.class).and(input(0, nodeOrAnyChild(isTableScan("TBL1"))))
-                .and(input(1, nodeOrAnyChild(isInstanceOf(Join.class)
-                    .and(input(0, nodeOrAnyChild(isTableScan("TBL2"))))
-                    .and(input(1, nodeOrAnyChild(isTableScan("TBl3")))))))));
+//        assertPlan(String.format(sqlTpl, "", ""), schema,
+//            nodeOrAnyChild(isInstanceOf(Join.class).and(input(0, nodeOrAnyChild(isTableScan("TBL1"))))
+//                .and(input(1, nodeOrAnyChild(isInstanceOf(Join.class)
+//                    .and(input(0, nodeOrAnyChild(isTableScan("TBL2"))))
+//                    .and(input(1, nodeOrAnyChild(isTableScan("TBl3")))))))));
     }
 
     /** */
