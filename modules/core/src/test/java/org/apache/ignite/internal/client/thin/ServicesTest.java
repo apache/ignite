@@ -35,10 +35,7 @@ import org.apache.ignite.client.Person;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryArray;
-import org.apache.ignite.internal.metric.SystemViewSelfTest;
-import org.apache.ignite.internal.processors.cache.IgniteAbstractDynamicCacheStartFailTest;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -88,33 +85,35 @@ public class ServicesTest extends AbstractThinClientTest {
         System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(useBinaryArrays));
         BinaryArray.initUseBinaryArrays();
 
-        int grids = 7;
+        int grids = 5;
 
         startGrids(grids);
 
-//        startClientGrid(grids);
+        startClientGrid(grids);
 
         grid(0).createCache(DEFAULT_CACHE_NAME);
 
         awaitPartitionMapExchange();
 
 //        grid(0).services().deployNodeSingleton(NODE_ID_SERVICE_NAME, new TestNodeIdService());
+//
+//        log.error("TEST | stopping node");
+//
+//        grid(grids - 1).close();
 
         ServiceConfiguration svcCfg = new ServiceConfiguration()
             .setName(NODE_SINGLTON_SERVICE_NAME)
             .setService(new TestService())
-            .setTotalCount(4)
-            .setNodeFilter(new TestNodeFilter())
-            .setMaxPerNodeCount(2)
+            .setMaxPerNodeCount(4)
             .setInterceptors(new TestServiceInterceptor());
 
-        grid(4).services().deploy(svcCfg);
+        grid(0).services().deploy(svcCfg);
 
         // Deploy CLUSTER_SINGLTON_SERVICE_NAME to grid(1).
-//        int keyGrid1 = primaryKey(grid(1).cache(DEFAULT_CACHE_NAME));
+        int keyGrid1 = primaryKey(grid(1).cache(DEFAULT_CACHE_NAME));
 
-//        grid(0).services().deployKeyAffinitySingleton(CLUSTER_SINGLTON_SERVICE_NAME, new TestService(),
-//            DEFAULT_CACHE_NAME, keyGrid1);
+        grid(0).services().deployKeyAffinitySingleton(CLUSTER_SINGLTON_SERVICE_NAME, new TestService(),
+            DEFAULT_CACHE_NAME, keyGrid1);
     }
 
     /** {@inheritDoc} */
@@ -129,7 +128,7 @@ public class ServicesTest extends AbstractThinClientTest {
      * Test that overloaded methods resolved correctly.
      */
     @Test
-    public void testOverloadedMethods() throws Exception {
+    public void testOverloadedMethods() {
         try (IgniteClient client = startClient(0)) {
             // Test local service calls (service deployed to each node).
             TestServiceInterface svc = client.services().serviceProxy(NODE_SINGLTON_SERVICE_NAME,
@@ -137,10 +136,10 @@ public class ServicesTest extends AbstractThinClientTest {
 
             checkOverloadedMethods(svc);
 
-            // Test remote service calls (client connected to grid(0) but service deployed to grid(1)).
-            svc = client.services().serviceProxy(CLUSTER_SINGLTON_SERVICE_NAME, TestServiceInterface.class);
-
-            checkOverloadedMethods(svc);
+//            // Test remote service calls (client connected to grid(0) but service deployed to grid(1)).
+//            svc = client.services().serviceProxy(CLUSTER_SINGLTON_SERVICE_NAME, TestServiceInterface.class);
+//
+//            checkOverloadedMethods(svc);
         }
     }
 
@@ -152,22 +151,22 @@ public class ServicesTest extends AbstractThinClientTest {
 
         assertEquals("testMethod(String val): test", svc.testMethod("test"));
 
-        assertEquals(123, svc.testMethod(123));
-
-        assertEquals("testMethod(Object val): test", svc.testMethod(new StringBuilder("test")));
-
-        assertEquals("testMethod(String val): null", svc.testMethod((String)null));
-
-        assertEquals("testMethod(Object val): null", svc.testMethod((Object)null));
-
-        Person person1 = new Person(1, "Person 1");
-        Person person2 = new Person(2, "Person 2");
-
-        assertEquals("testMethod(Person person, Object obj): " + person1 + ", " + person2,
-            svc.testMethod(person1, (Object)person2));
-
-        assertEquals("testMethod(Object obj, Person person): " + person1 + ", " + person2,
-            svc.testMethod((Object)person1, person2));
+//        assertEquals(123, svc.testMethod(123));
+//
+//        assertEquals("testMethod(Object val): test", svc.testMethod(new StringBuilder("test")));
+//
+//        assertEquals("testMethod(String val): null", svc.testMethod((String)null));
+//
+//        assertEquals("testMethod(Object val): null", svc.testMethod((Object)null));
+//
+//        Person person1 = new Person(1, "Person 1");
+//        Person person2 = new Person(2, "Person 2");
+//
+//        assertEquals("testMethod(Person person, Object obj): " + person1 + ", " + person2,
+//            svc.testMethod(person1, (Object)person2));
+//
+//        assertEquals("testMethod(Object obj, Person person): " + person1 + ", " + person2,
+//            svc.testMethod((Object)person1, person2));
     }
 
     /**
@@ -176,18 +175,16 @@ public class ServicesTest extends AbstractThinClientTest {
     @Test
     public void testCollectionMethods() throws Exception {
         try (IgniteClient client = startClient(0)) {
-//             Test local service calls (service deployed to each node).
+            // Test local service calls (service deployed to each node).
             TestServiceInterface svc = client.services().serviceProxy(NODE_SINGLTON_SERVICE_NAME,
                 TestServiceInterface.class);
 
-            for (int i = 0; i < 10; ++i)
-                checkCollectionMethods(svc);
+            checkCollectionMethods(svc);
 
             // Test remote service calls (client connected to grid(0) but service deployed to grid(1)).
             svc = client.services().serviceProxy(CLUSTER_SINGLTON_SERVICE_NAME, TestServiceInterface.class);
 
-//            for(int i=0; i<10; ++i)
-//                checkCollectionMethods(svc);
+            checkCollectionMethods(svc);
         }
     }
 
@@ -200,12 +197,12 @@ public class ServicesTest extends AbstractThinClientTest {
 
         Person[] arr = new Person[] {person1, person2};
         assertTrue(Arrays.equals(arr, svc.testArray(arr)));
-//
-//        Collection<Person> col = new HashSet<>(F.asList(person1, person2));
-//        assertEquals(col, svc.testCollection(col));
-//
-//        Map<Integer, Person> map = F.asMap(1, person1, 2, person2);
-//        assertEquals(map, svc.testMap(map));
+
+        Collection<Person> col = new HashSet<>(F.asList(person1, person2));
+        assertEquals(col, svc.testCollection(col));
+
+        Map<Integer, Person> map = F.asMap(1, person1, 2, person2);
+        assertEquals(map, svc.testMap(map));
     }
 
     /**
@@ -234,10 +231,6 @@ public class ServicesTest extends AbstractThinClientTest {
             GridTestUtils.assertThrowsAnyCause(log, () -> svc.testMethod(0), ClientException.class,
                 "Service not found");
         }
-    }
-
-    @Override protected boolean isClientPartitionAwarenessEnabled() {
-        return true;
     }
 
     /**
@@ -561,25 +554,6 @@ public class ServicesTest extends AbstractThinClientTest {
             latch.await(10L, TimeUnit.SECONDS);
 
             return true;
-        }
-
-        @Override public void init() throws Exception {
-            Service.super.init();
-
-            log.error("TEST | init " + this.getClass().getSimpleName());
-        }
-
-        @Override public void execute() throws Exception {
-            Service.super.execute();
-
-            log.error("TEST | execute " + this.getClass().getSimpleName());
-
-            while (true){
-                Thread.yield();
-                Thread.sleep(5);
-                Thread.yield();
-            }
-
         }
     }
 

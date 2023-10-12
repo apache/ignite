@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -74,7 +75,7 @@ final class ReliableChannel implements AutoCloseable {
     private volatile int curChIdx = -1;
 
     /** Partition awareness enabled. */
-    private final boolean partitionAwarenessEnabled;
+    final boolean partitionAwarenessEnabled;
 
     /** Cache partition awareness context. */
     private final ClientCacheAffinityContext affinityCtx;
@@ -182,7 +183,27 @@ final class ReliableChannel implements AutoCloseable {
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
-        return applyOnDefaultChannel(channel -> channel.service(op, payloadWriter, payloadReader), op);
+       return service(op, payloadWriter, payloadReader, null);
+    }
+
+    /**
+     * Send request to one of the passed nodes and handle response.
+     *
+     * @throws ClientException Thrown by {@code payloadWriter} or {@code payloadReader}.
+     * @throws ClientAuthenticationException When user name or password is invalid.
+     * @throws ClientAuthorizationException When user has no permission to perform operation.
+     * @throws ClientProtocolError When failed to handshake with server.
+     * @throws ClientServerError When failed to process request on server.
+     */
+    public <T> T service(
+        ClientOperation op,
+        Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader,
+        @Nullable List<UUID> targetNodes
+    ) throws ClientException, ClientError {
+        return F.isEmpty(targetNodes)
+            ? applyOnDefaultChannel(channel -> channel.service(op, payloadWriter, payloadReader), op)
+            : applyOnRandomNodeChannel(targetNodes, channel -> channel.service(op, payloadWriter, payloadReader), null);
     }
 
     /**
@@ -364,8 +385,8 @@ final class ReliableChannel implements AutoCloseable {
                 CompletableFuture<T> fut = new CompletableFuture<>();
                 List<ClientConnectionException> failures = new ArrayList<>();
 
-                Object result = applyOnNodeChannel(
-                    affNodeId,
+                Object result = applyOnRandomNodeChannel(
+                    Collections.singletonList(affNodeId),
                     channel -> applyOnClientChannelAsync(fut, channel, op, payloadWriter, payloadReader, failures),
                     failures
                 );
@@ -419,7 +440,7 @@ final class ReliableChannel implements AutoCloseable {
                         if (lastTop != affinityCtx.lastTopology())
                             return false;
 
-                        Boolean result = applyOnNodeChannel(nodeId, channel ->
+                        Boolean result = applyOnRandomNodeChannel(Collections.singletonList(nodeId), channel ->
                             channel.service(ClientOperation.CACHE_PARTITIONS,
                                 affinityCtx::writePartitionsUpdateRequest,
                                 affinityCtx::readPartitionsUpdateResponse),
@@ -729,8 +750,8 @@ final class ReliableChannel implements AutoCloseable {
     /**
      * Apply specified {@code function} on a channel corresponding to specified {@code nodeId}.
      */
-    private <T> T applyOnNodeChannel(
-        UUID nodeId,
+    private <T> T applyOnRandomNodeChannel(
+        List<UUID> nodeIds,
         Function<ClientChannel, T> function,
         @Nullable List<ClientConnectionException> failures
     ) {
@@ -738,7 +759,8 @@ final class ReliableChannel implements AutoCloseable {
         ClientChannel channel = null;
 
         try {
-            hld = nodeChannels.get(nodeId);
+            hld = nodeChannels.get(nodeIds.size()==1 ? nodeIds.get(0)
+                : nodeIds.get(ThreadLocalRandom.current().nextInt(nodeIds.size())));
 
             channel = hld != null ? hld.getOrCreateChannel() : null;
 

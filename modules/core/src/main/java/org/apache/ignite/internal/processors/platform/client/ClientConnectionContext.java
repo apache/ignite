@@ -78,7 +78,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Default version. */
     public static final ClientListenerProtocolVersion DEFAULT_VER = VER_1_7_0;
 
-    /** Default protocol context. */
+    /** TODO : remove Default protocol context. */
     public static final ClientProtocolContext DEFAULT_PROTOCOL_CONTEXT =
         new ClientProtocolContext(DEFAULT_VER, ClientBitmaskFeature.allFeaturesAsEnumSet());
 

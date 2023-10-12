@@ -581,7 +581,7 @@ public class GridServiceProxy<T> implements Serializable {
 
             HistogramMetricImpl hist = ctx.isStatisticsEnabled() ? invocationHistogramm(ctx, mtdName, args) : null;
 
-            System.err.println("TEST | callService '" + mtd.getName() + "' on " + ignite.context().cluster().get().localNode().order());
+            System.err.println("TEST | callService '" + ctx.name() + "' on " + ignite.context().cluster().get().localNode().order());
 
             Object res = hist == null ? callService(ctx, mtd) : measureCall(hist, () -> callService(ctx, mtd));
 

@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
@@ -33,6 +34,7 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
+import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
@@ -43,6 +45,7 @@ import org.apache.ignite.internal.processors.platform.services.PlatformServices;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceDescriptor;
 
@@ -69,6 +72,9 @@ public class ClientServiceInvokeRequest extends ClientRequest {
 
     /** Timeout. */
     private final long timeout;
+
+    /** Client's service topology version. If negative, ignored. 0 - not initialized. */
+    private final long clientSrvTopV;
 
     /** Nodes. */
     private final Collection<UUID> nodeIds;
@@ -102,6 +108,10 @@ public class ClientServiceInvokeRequest extends ClientRequest {
         flags = reader.readByte();
 
         timeout = reader.readLong();
+
+        clientSrvTopV = protocolCtx.isFeatureSupported(ClientBitmaskFeature.SERVICE_MAPPINGS)
+            ? reader.readLong()
+            : -1L;
 
         int cnt = reader.readInt();
 
@@ -161,6 +171,10 @@ public class ClientServiceInvokeRequest extends ClientRequest {
         try {
             Object res;
 
+            IgniteBiTuple<Map<UUID, Integer>, Long> srvTop = clientSrvTopV >= 0
+                ? ctx.kernalContext().service().serviceTopology(name, 0)
+                : null;
+
             if (PlatformService.class.isAssignableFrom(svcCls)) {
                 // Never deserialize platform service arguments and result: may contain platform-only types.
                 PlatformService proxy =
@@ -187,9 +201,24 @@ public class ClientServiceInvokeRequest extends ClientRequest {
                 if (!BinaryArray.useBinaryArrays())
                     PlatformServices.convertArrayArgs(args, method);
 
-                System.err.println("TEST | invoke service on " + ctx.kernalContext().cluster().get().localNode().order());
-
                 res = proxy.invokeMethod(method, args, callAttrs);
+            }
+
+            // Try to update service topology if requested.
+            if (clientSrvTopV >= 0) {
+                // Empty topology means is not initialized or not updated yet. Might be wrong laster.
+                // If equal to current version, ignored (<0).
+                long newSrvTopVer = srvTop == null
+                    ? 0
+                    : srvTop.get2() != clientSrvTopV ? srvTop.get2() : -1L;
+
+                Collection<UUID> srvMapping = newSrvTopVer > 0
+                    ? srvTop.get1().entrySet().stream().filter(e -> e.getValue() != null && e.getValue() > 0)
+                        .map(Map.Entry::getKey).collect(Collectors.toList())
+                    : null;
+
+                return new ClientServiceCallResponse(requestId(), res, newSrvTopVer,
+                    srvMapping == null ? null : srvMapping.toArray(new UUID[srvMapping.size()]));
             }
 
             return new ClientObjectResponse(requestId(), res);

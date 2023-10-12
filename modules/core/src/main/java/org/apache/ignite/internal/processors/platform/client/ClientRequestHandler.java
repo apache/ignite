@@ -98,8 +98,6 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
                 }
             }
 
-            log.error("TEST | process client request [" + req.getClass().getSimpleName() + "] on " + ctx.kernalContext().cluster().get().localNode().order());
-
             return ((ClientRequest)req).process(ctx);
         }
         catch (SecurityException ex) {

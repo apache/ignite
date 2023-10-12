@@ -54,9 +54,9 @@ public class ServiceInfo implements ServiceDescriptor {
     /** Statically configured flag. */
     private final boolean staticCfg;
 
-    /** Topology snapshot: version, nodeId->deployed instances number. */
+    /** Topology snapshot: version, nodeId -> number of service instances. */
     @GridToStringInclude
-    private volatile IgniteBiTuple<Map<UUID, Integer>, Long> top = new IgniteBiTuple<>(Collections.emptyMap(), 0L);
+    private volatile IgniteBiTuple<Map<UUID, Integer>, Long> top;
 
     /** Service class. */
     private transient volatile Class<? extends Service> srvcCls;
@@ -93,12 +93,16 @@ public class ServiceInfo implements ServiceDescriptor {
     }
 
     /**
-     * Sets service's new topology snapshot. Increments its version.
+     * Sets service's new topology snapshot. Increments its version if service migrates nodes.
      *
-     * @param top Topology snapshot.
+     * @param newTop Topology snapshot.
      */
-    public void topologySnapshot(Map<UUID, Integer> top) {
-        this.top = new IgniteBiTuple<>(Collections.unmodifiableMap(top), this.top.get2() + 1);
+    public void topologySnapshot(Map<UUID, Integer> newTop) {
+        long topVer = top == null
+            ? 1
+            : newTop.keySet().equals(top.get1().keySet()) ? top.get2() : top.get2() + 1L;
+
+        top = new IgniteBiTuple<>(Collections.unmodifiableMap(newTop), topVer);
     }
 
     /**
@@ -190,13 +194,15 @@ public class ServiceInfo implements ServiceDescriptor {
 
     /** {@inheritDoc} */
     @Override public Map<UUID, Integer> topologySnapshot() {
-        return topologyVersion().get1();
+        IgniteBiTuple<Map<UUID, Integer>, Long> top = this.top;
+
+        return top == null ? Collections.emptyMap() : top.get1();
     }
 
     /**
      * @return Service topology and its version.
      */
-    public IgniteBiTuple<Map<UUID, Integer>, Long> topologyVersion() {
+    public @Nullable IgniteBiTuple<Map<UUID, Integer>, Long> topologyVersion() {
         return top;
     }
 
@@ -206,7 +212,7 @@ public class ServiceInfo implements ServiceDescriptor {
      * @return {@code True} if service topology was initialized. {@code False} otherwise.
      */
     public boolean topologyInitialized() {
-        return topologyVersion().get2() > 0;
+        return top != null;
     }
 
     /** {@inheritDoc} */

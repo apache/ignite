@@ -22,11 +22,11 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientException;
@@ -192,7 +192,7 @@ class ClientServicesImpl implements ClientServices {
         private final Map<String, Object> callAttrs;
 
         /** Service's known topology with the version. */
-        private volatile IgniteBiTuple<Set<UUID>, Long> top = new IgniteBiTuple<>(Collections.emptySet(), 0L);
+        private volatile IgniteBiTuple<List<UUID>, Long> srvTop = new IgniteBiTuple<>(Collections.emptyList(), 0L);
 
         /**
          * @param name Service name.
@@ -215,22 +215,63 @@ class ClientServicesImpl implements ClientServices {
         /** {@inheritDoc} */
         @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             try {
-                IgniteBiTuple<Set<UUID>, Long> top = this.top;
+                IgniteBiTuple<List<UUID>, Long> top = grp.ch.partitionAwarenessEnabled ? srvTop : null;
 
-                Collection<UUID> nodeIds = top.get2() > 0 ? top.get1() : grp.nodeIds();
+                Collection<UUID> nodeIds = grp.nodeIds();
 
-                if (F.isEmpty(nodeIds)) {
-                    throw new ClientException("Cluster group is empty or service '" + name + "' is not found on the " +
-                        "underlying nodes: " + nodeIds);
-                }
+                if (nodeIds != null && nodeIds.isEmpty())
+                    throw new ClientException("Cluster group is empty.");
 
                 return ch.service(ClientOperation.SERVICE_INVOKE,
-                    req -> writeServiceInvokeRequest(req, nodeIds, method, args),
-                    res -> utils.readObject(res.in(), false, method.getReturnType())
+                    req -> writeServiceInvokeRequest(req, nodeIds, method, args, top == null ? null : top.get2()),
+                    res -> {
+                        Object val;
+                        long srvTopVersion;
+                        UUID[] uuids = null;
+
+                        try (BinaryReaderExImpl reader = utils.createBinaryReader(res.in())) {
+                            val = reader.readObject();
+
+                            srvTopVersion = reader.readLong();
+
+                            int uuidsLen = reader.readInt();
+
+                            if (uuidsLen > 0) {
+                                uuids = new UUID[uuidsLen];
+
+                                for (int i = 0; i < uuidsLen; ++i)
+                                    uuids[i] = new UUID(reader.readLong(), reader.readLong());
+                            }
+                        }
+                        catch (IOException e) {
+                            throw new ClientException(e);
+                        }
+
+                        if (srvTopVersion >= 0)
+                            updateServiceTopology(srvTopVersion, uuids);
+
+                        return val;
+                    },
+                    top == null || top.get1().isEmpty() ? null : top.get1()
                 );
             }
             catch (ClientError e) {
                 throw new ClientException(e);
+            }
+        }
+
+        /** */
+        private void updateServiceTopology(long topVer, UUID[] nodes) {
+            assert nodes != null || topVer > 0;
+
+            // 0 means not initialized or not reassigned yet. Should be reset.
+            if (topVer == 0)
+                srvTop = new IgniteBiTuple<>(Collections.emptyList(), 0L);
+            else if (topVer > srvTop.get2()) {
+                synchronized (grp) {
+                    if (topVer > srvTop.get2())
+                        srvTop = new IgniteBiTuple<>(Arrays.asList(nodes), topVer);
+                }
             }
         }
 
@@ -239,12 +280,14 @@ class ClientServicesImpl implements ClientServices {
          * @param nodeIds Node IDs.
          * @param method Method to call.
          * @param args Method args.
+         * @param srvTopVer Service topology version.
          */
         private void writeServiceInvokeRequest(
             PayloadOutputChannel ch,
             Collection<UUID> nodeIds,
             Method method,
-            Object[] args
+            Object[] args,
+            @Nullable Long srvTopVer
         ) {
             ch.clientChannel().protocolCtx().checkFeatureSupported(callAttrs != null ?
                 ProtocolBitmaskFeature.SERVICE_INVOKE_CALLCTX : ProtocolBitmaskFeature.SERVICE_INVOKE);
@@ -253,6 +296,9 @@ class ClientServicesImpl implements ClientServices {
                 writer.writeString(name);
                 writer.writeByte(FLAG_PARAMETER_TYPES_MASK); // Flags.
                 writer.writeLong(timeout);
+
+                if (ch.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.SERVICE_MAPPINGS))
+                    writer.writeLong(srvTopVer == null ? -1L : srvTopVer);
 
                 if (nodeIds == null)
                     writer.writeInt(0);

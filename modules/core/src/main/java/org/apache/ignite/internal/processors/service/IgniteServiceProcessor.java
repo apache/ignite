@@ -1137,8 +1137,6 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         @Nullable TreeMap<UUID, Integer> oldTop) throws IgniteCheckedException {
         Object nodeFilter = cfg.getNodeFilter();
 
-        log.error("TEST | reassign '" + cfg.getName() + "' on " + ctx.cluster().get().localNode().order());
-
         if (nodeFilter != null)
             ctx.resource().injectGeneric(nodeFilter);
 
@@ -1301,8 +1299,6 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
         for (final ServiceContextImpl srvcCtx : toInit) {
             final Service srvc;
-
-            log.error("TEST | init service '" + srvcCtx.name() + "' on " + ctx.cluster().get().localNode().order());
 
             try {
                 srvc = copyAndInject(cfg, srvcCtx);
@@ -1736,8 +1732,6 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @param msg Message.
      */
     private void processServicesChangeRequest(ClusterNode snd, ServiceChangeBatchRequest msg) {
-        System.err.println("TEST | processServicesChangeRequest on " + ctx.cluster().get().localNode().order());
-
         DiscoveryDataClusterState state = ctx.state().clusterState();
 
         if (!state.active() || state.transition()) {
@@ -1910,6 +1904,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @param msg Message.
      */
     private void processServicesFullDeployments(ServiceClusterDeploymentResultBatch msg) {
+        log.error("TEST | processServicesFullDeployments on " + ctx.cluster().get().localNode().order());
+
         final Map<IgniteUuid, Map<UUID, Integer>> fullTops = new HashMap<>();
         final Map<IgniteUuid, Collection<byte[]>> fullErrors = new HashMap<>();
 
@@ -1964,11 +1960,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @param services Services info to update.
      * @param tops Deployment topologies.
      */
-    private void updateServicesMap(Map<IgniteUuid, ServiceInfo> services,
-        Map<IgniteUuid, Map<UUID, Integer>> tops) {
-
-        log.error("TEst | update services map");
-
+    private void updateServicesMap(Map<IgniteUuid, ServiceInfo> services, Map<IgniteUuid, Map<UUID, Integer>> tops) {
         tops.forEach((srvcId, top) -> {
             ServiceInfo desc = services.get(srvcId);
 
