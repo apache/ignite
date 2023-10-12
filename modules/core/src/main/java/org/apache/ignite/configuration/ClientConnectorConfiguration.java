@@ -119,10 +119,10 @@ public class ClientConnectorConfiguration {
     private ThinClientConfiguration thinCliCfg = new ThinClientConfiguration();
 
     /**
-     * Thin Client session outbound message queue limit. Limits the number of messages waiting to be sent from the
-     * server side to particular thin client. If the specified limit is exceeded, corresponding thin client connection
+     * Client session outbound message queue limit. Limits the number of messages waiting to be sent from the
+     * server side to particular Client. If the specified limit is exceeded, corresponding Client connection
      * will be closed.
-     * The value {@code 0} means that no limit is applied to the thin client outbound message queue.
+     * The value {@code 0} means that no limit is applied to the Client outbound message queue.
      */
     private int sesOutboundMsgQueueLimit = DFLT_SESSIONS_MESSAGE_QUEUE_LIMIT;
 
@@ -159,6 +159,7 @@ public class ClientConnectorConfiguration {
         useIgniteSslCtxFactory = cfg.isUseIgniteSslContextFactory();
         sslCtxFactory = cfg.getSslContextFactory();
         thinCliCfg = new ThinClientConfiguration(cfg.getThinClientConfiguration());
+        sesOutboundMsgQueueLimit = cfg.getSessionOutboundMessageQueueLimit();
     }
 
     /**
@@ -611,14 +612,15 @@ public class ClientConnectorConfiguration {
 
     /**
      * Sets Client session outbound message queue limit. Limits the number of messages waiting to be sent from the
-     * server side to particular thin client. If the specified limit is exceeded, corresponding thin client connection
+     * server side to particular client. If the specified limit is exceeded, corresponding Client connection
      * will be closed.
+     * The value {@code 0} means that no limit is applied to the Client outbound message queue.
      *
      * @param sesOutboundMsgQueueLimit Session outbound queue limit.
      * @return {@code this} for chaining.
      */
     public ClientConnectorConfiguration setSessionOutboundMessageQueueLimit(int sesOutboundMsgQueueLimit) {
-        A.ensure(sesOutboundMsgQueueLimit > 0, "Session outbound queue limit must be greater than zero.");
+        A.ensure(sesOutboundMsgQueueLimit >= 0, "Session outbound queue limit must be greater than or equal to zero.");
 
         this.sesOutboundMsgQueueLimit = sesOutboundMsgQueueLimit;
 

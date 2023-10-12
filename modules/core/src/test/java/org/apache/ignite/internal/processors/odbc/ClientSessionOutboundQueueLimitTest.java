@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -53,8 +53,8 @@ public class ClientSessionOutboundQueueLimitTest extends GridCommonAbstractTest 
 
     /**
      * Test scenario:
-     * 1. Thin client performs huge amount of async cache get requests. It does not matter if they belong tounique keys.
-     * 2. Server accepts all of them and prepares responces that are accumulated in the thin client session outbound
+     * 1. Thin client performs huge amount of async cache get requests. It does not matter if they belong to unique keys.
+     * 2. Server accepts all of them and prepares responses that are accumulated in the thin client session outbound
      *    message queue.
      * 3. Programmatically, we limit the thin client's ability to receive messages from the server, causing the message
      *    queue to eventually become full.
@@ -85,7 +85,7 @@ public class ClientSessionOutboundQueueLimitTest extends GridCommonAbstractTest 
 
             skipClientWrite(grid(0), true);
 
-            Collection<IgniteInternalFuture<byte[]>> futs = ConcurrentHashMap.newKeySet();
+            Collection<IgniteInternalFuture<byte[]>> futs = new ArrayList<>();
 
             try {
                 while (!isCliDisconnected.get())

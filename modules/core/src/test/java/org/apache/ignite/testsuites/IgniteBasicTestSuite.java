@@ -140,7 +140,7 @@ import org.junit.runners.Suite;
     OdbcEscapeSequenceSelfTest.class,
     SqlListenerUtilsTest.class,
     JavaVersionCommandParserTest.class,
-    ClientSessionOutboundQueueLimitTest.class
+    ClientSessionOutboundQueueLimitTest.class,
 })
 public class IgniteBasicTestSuite {
 }
