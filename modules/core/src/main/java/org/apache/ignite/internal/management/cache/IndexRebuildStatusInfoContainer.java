@@ -92,10 +92,7 @@ public class IndexRebuildStatusInfoContainer extends IgniteDataTransferObject {
 
         IndexRebuildStatusInfoContainer other = (IndexRebuildStatusInfoContainer)o;
 
-        return cacheName.equals(other.cacheName)
-            && groupName.equals(other.groupName)
-            && totaLocalNodePartitionsCount == other.totaLocalNodePartitionsCount
-            && remainToIndexLocalNodePartitionsCount == other.remainToIndexLocalNodePartitionsCount;
+        return cacheName.equals(other.cacheName) && groupName.equals(other.groupName);
     }
 
     /** {@inheritDoc} */

@@ -222,7 +222,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
 
         statusRequestingFinished.set(true);
 
-        checkResult(handler, 1);
+        checkResult(handler, 2);
     }
 
     /**
@@ -254,7 +254,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         assertNotNull(cmdResult);
         assertEquals("Unexpected number of nodes in result", nodeIdxs.length, cmdResult.size());
 
-        for (int nodeIdx: nodeIdxs) {
+        for (int nodeIdx : nodeIdxs) {
             Set<IndexRebuildStatusInfoContainer> cacheInfos = cmdResult.get(grid(nodeIdx).localNode().id());
 
             assertNotNull(cacheInfos);
