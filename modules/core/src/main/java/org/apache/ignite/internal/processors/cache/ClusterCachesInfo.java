@@ -2569,8 +2569,8 @@ public class ClusterCachesInfo {
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "cacheMode", "Cache mode",
             cfg.getCacheMode(), startCfg.getCacheMode(), true);
 
-        if (!IgniteSystemProperties.getBoolean(IGNITE_ALLOW_MIXED_CACHE_GROUPS) && // https://issues.apache.org/jira/browse/IGNITE-12622
-            !DataStructuresProcessor.isDataStructureCache(cfg.getName())) // https://issues.apache.org/jira/browse/IGNITE-20623
+        if (!IgniteSystemProperties.getBoolean(IGNITE_ALLOW_MIXED_CACHE_GROUPS) && // TODO https://issues.apache.org/jira/browse/IGNITE-12622
+            !DataStructuresProcessor.isDataStructureCache(cfg.getName())) // TODO https://issues.apache.org/jira/browse/IGNITE-20623
             CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "atomicityMode", "Atomicity mode",
                 attr1.atomicityMode(), attr2.atomicityMode(), true);
 
