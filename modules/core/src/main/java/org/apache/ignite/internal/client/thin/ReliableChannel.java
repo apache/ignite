@@ -20,7 +20,6 @@ package org.apache.ignite.internal.client.thin;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -201,9 +200,14 @@ final class ReliableChannel implements AutoCloseable {
         Function<PayloadInputChannel, T> payloadReader,
         @Nullable List<UUID> targetNodes
     ) throws ClientException, ClientError {
-        return F.isEmpty(targetNodes)
-            ? applyOnDefaultChannel(channel -> channel.service(op, payloadWriter, payloadReader), op)
-            : applyOnRandomNodeChannel(targetNodes, channel -> channel.service(op, payloadWriter, payloadReader), null);
+        if(F.isEmpty(targetNodes))
+            return applyOnRandomChannel(channel -> channel.service(op, payloadWriter, payloadReader), op);
+
+        return applyOnNodeChannelWithFallback(
+            targetNodes.get(ThreadLocalRandom.current().nextInt(targetNodes.size())),
+            channel -> channel.service(op, payloadWriter, payloadReader),
+            op
+        );
     }
 
     /**
@@ -233,7 +237,7 @@ final class ReliableChannel implements AutoCloseable {
         List<ClientConnectionException> failures
     ) {
         try {
-            applyOnDefaultChannel(
+            applyOnRandomChannel(
                 channel -> applyOnClientChannelAsync(fut, channel, op, payloadWriter, payloadReader, failures),
                 null,
                 failures
@@ -385,8 +389,8 @@ final class ReliableChannel implements AutoCloseable {
                 CompletableFuture<T> fut = new CompletableFuture<>();
                 List<ClientConnectionException> failures = new ArrayList<>();
 
-                Object result = applyOnRandomNodeChannel(
-                    Collections.singletonList(affNodeId),
+                Object result = applyOnNodeChannel(
+                    affNodeId,
                     channel -> applyOnClientChannelAsync(fut, channel, op, payloadWriter, payloadReader, failures),
                     failures
                 );
@@ -440,7 +444,7 @@ final class ReliableChannel implements AutoCloseable {
                         if (lastTop != affinityCtx.lastTopology())
                             return false;
 
-                        Boolean result = applyOnRandomNodeChannel(Collections.singletonList(nodeId), channel ->
+                        Boolean result = applyOnNodeChannel(nodeId, channel ->
                             channel.service(ClientOperation.CACHE_PARTITIONS,
                                 affinityCtx::writePartitionsUpdateRequest,
                                 affinityCtx::readPartitionsUpdateResponse),
@@ -564,6 +568,8 @@ final class ReliableChannel implements AutoCloseable {
                             e.getMessage() + ']', e);
                     }
                 }
+
+                log.error("TEST | initAllChannelsAsync() finished. Node channels size: " + nodeChannels.size());
             }
         );
     }
@@ -704,6 +710,9 @@ final class ReliableChannel implements AutoCloseable {
         try {
             channels = reinitHolders;
 
+//            for(ClientChannelHolder ch : reinitHolders)
+//                ch.getOrCreateChannel();
+
             attemptsLimit = getRetryLimit();
 
             curChIdx = dfltChannelIdx;
@@ -736,11 +745,11 @@ final class ReliableChannel implements AutoCloseable {
         if (failures == null || failures.size() < attemptsLimit) {
             if (channelsCnt.get() == 0) {
                 // Establish default channel connection and retrive nodes endpoints if applicable.
-                if (applyOnDefaultChannel(discoveryCtx::refresh, null, failures))
+                if (applyOnRandomChannel(discoveryCtx::refresh, null, failures))
                     initChannelHolders();
             }
             else // Apply no-op function. Establish default channel connection.
-                applyOnDefaultChannel(channel -> null, null, failures);
+                applyOnRandomChannel(channel -> null, null, failures);
         }
 
         if (partitionAwarenessEnabled)
@@ -750,8 +759,8 @@ final class ReliableChannel implements AutoCloseable {
     /**
      * Apply specified {@code function} on a channel corresponding to specified {@code nodeId}.
      */
-    private <T> T applyOnRandomNodeChannel(
-        List<UUID> nodeIds,
+    private <T> T applyOnNodeChannel(
+        UUID nodeId,
         Function<ClientChannel, T> function,
         @Nullable List<ClientConnectionException> failures
     ) {
@@ -759,8 +768,7 @@ final class ReliableChannel implements AutoCloseable {
         ClientChannel channel = null;
 
         try {
-            hld = nodeChannels.get(nodeIds.size()==1 ? nodeIds.get(0)
-                : nodeIds.get(ThreadLocalRandom.current().nextInt(nodeIds.size())));
+            hld = nodeChannels.get(nodeId);
 
             channel = hld != null ? hld.getOrCreateChannel() : null;
 
@@ -780,17 +788,29 @@ final class ReliableChannel implements AutoCloseable {
     }
 
     /** */
-    <T> T applyOnDefaultChannel(Function<ClientChannel, T> function, ClientOperation op) {
-        return applyOnDefaultChannel(function, op, null);
+    <T> T applyOnRandomChannel(Function<ClientChannel, T> function, ClientOperation op) {
+        return applyOnRandomChannel(function, op, null);
     }
 
     /**
      * Apply specified {@code function} on any of available channel.
      */
-    private <T> T applyOnDefaultChannel(
+    private <T> T applyOnRandomChannel(
         Function<ClientChannel, T> function,
         ClientOperation op,
         @Nullable List<ClientConnectionException> failures
+    ) {
+        return applyOnRandomChannel(function, op, failures, null);
+    }
+
+    /**
+     * Apply specified {@code function} on any of available channel.
+     */
+    private <T> T applyOnRandomChannel(
+        Function<ClientChannel, T> function,
+        ClientOperation op,
+        @Nullable List<ClientConnectionException> failures,
+        @Nullable  Collection<UUID> nodeIds
     ) {
         while (attemptsLimit > (failures == null ? 0 : failures.size())) {
             ClientChannelHolder hld = null;
@@ -826,6 +846,8 @@ final class ReliableChannel implements AutoCloseable {
                 ClientChannel c0 = hld.ch;
 
                 c = hld.getOrCreateChannel();
+
+                log.error("TEST | nodeChannels size: " + nodeChannels.size());
 
                 try {
                     return function.apply(c);
@@ -900,7 +922,7 @@ final class ReliableChannel implements AutoCloseable {
             }
         }
 
-        return applyOnDefaultChannel(function, op, failures);
+        return applyOnRandomChannel(function, op, failures);
     }
 
     /** Get retry limit. */

@@ -33,7 +33,6 @@ import org.apache.ignite.client.ClientServiceDescriptor;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -69,15 +68,6 @@ public class ServicesTest extends AbstractThinClientTest {
     /** */
     protected boolean useBinaryArrays;
 
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-//        if(igniteInstanceName.endsWith("1") || igniteInstanceName.endsWith("2") || igniteInstanceName.endsWith("3") || igniteInstanceName.endsWith("4"))
-//            cfg.setClientMode(true);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -85,26 +75,20 @@ public class ServicesTest extends AbstractThinClientTest {
         System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(useBinaryArrays));
         BinaryArray.initUseBinaryArrays();
 
-        int grids = 5;
+        startGrids(3);
 
-        startGrids(grids);
-
-        startClientGrid(grids);
+        startClientGrid(3);
 
         grid(0).createCache(DEFAULT_CACHE_NAME);
 
         awaitPartitionMapExchange();
 
-//        grid(0).services().deployNodeSingleton(NODE_ID_SERVICE_NAME, new TestNodeIdService());
-//
-//        log.error("TEST | stopping node");
-//
-//        grid(grids - 1).close();
+        grid(0).services().deployNodeSingleton(NODE_ID_SERVICE_NAME, new TestNodeIdService());
 
         ServiceConfiguration svcCfg = new ServiceConfiguration()
             .setName(NODE_SINGLTON_SERVICE_NAME)
             .setService(new TestService())
-            .setMaxPerNodeCount(4)
+            .setMaxPerNodeCount(1)
             .setInterceptors(new TestServiceInterceptor());
 
         grid(0).services().deploy(svcCfg);
@@ -128,7 +112,7 @@ public class ServicesTest extends AbstractThinClientTest {
      * Test that overloaded methods resolved correctly.
      */
     @Test
-    public void testOverloadedMethods() {
+    public void testOverloadedMethods() throws InterruptedException {
         try (IgniteClient client = startClient(0)) {
             // Test local service calls (service deployed to each node).
             TestServiceInterface svc = client.services().serviceProxy(NODE_SINGLTON_SERVICE_NAME,
@@ -136,10 +120,10 @@ public class ServicesTest extends AbstractThinClientTest {
 
             checkOverloadedMethods(svc);
 
-//            // Test remote service calls (client connected to grid(0) but service deployed to grid(1)).
-//            svc = client.services().serviceProxy(CLUSTER_SINGLTON_SERVICE_NAME, TestServiceInterface.class);
-//
-//            checkOverloadedMethods(svc);
+            // Test remote service calls (client connected to grid(0) but service deployed to grid(1)).
+            svc = client.services().serviceProxy(CLUSTER_SINGLTON_SERVICE_NAME, TestServiceInterface.class);
+
+            checkOverloadedMethods(svc);
         }
     }
 
@@ -148,7 +132,30 @@ public class ServicesTest extends AbstractThinClientTest {
      */
     private void checkOverloadedMethods(TestServiceInterface svc) {
         assertEquals("testMethod()", svc.testMethod());
+        assertEquals("testMethod()", svc.testMethod());
+        assertEquals("testMethod()", svc.testMethod());
+        assertEquals("testMethod()", svc.testMethod());
+        assertEquals("testMethod()", svc.testMethod());
+        assertEquals("testMethod()", svc.testMethod());
+        assertEquals("testMethod()", svc.testMethod());
+        assertEquals("testMethod()", svc.testMethod());
+        assertEquals("testMethod()", svc.testMethod());
+        assertEquals("testMethod()", svc.testMethod());
+        assertEquals("testMethod()", svc.testMethod());
+        assertEquals("testMethod()", svc.testMethod());
 
+        assertEquals("testMethod(String val): test", svc.testMethod("test"));
+        assertEquals("testMethod(String val): test", svc.testMethod("test"));
+        assertEquals("testMethod(String val): test", svc.testMethod("test"));
+        assertEquals("testMethod(String val): test", svc.testMethod("test"));
+        assertEquals("testMethod(String val): test", svc.testMethod("test"));
+        assertEquals("testMethod(String val): test", svc.testMethod("test"));
+        assertEquals("testMethod(String val): test", svc.testMethod("test"));
+        assertEquals("testMethod(String val): test", svc.testMethod("test"));
+        assertEquals("testMethod(String val): test", svc.testMethod("test"));
+        assertEquals("testMethod(String val): test", svc.testMethod("test"));
+        assertEquals("testMethod(String val): test", svc.testMethod("test"));
+        assertEquals("testMethod(String val): test", svc.testMethod("test"));
         assertEquals("testMethod(String val): test", svc.testMethod("test"));
 
 //        assertEquals(123, svc.testMethod(123));

@@ -215,7 +215,7 @@ class ClientServicesImpl implements ClientServices {
         /** {@inheritDoc} */
         @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             try {
-                IgniteBiTuple<List<UUID>, Long> top = grp.ch.partitionAwarenessEnabled ? srvTop : null;
+                IgniteBiTuple<List<UUID>, Long> srvTop = grp.ch.partitionAwarenessEnabled ? this.srvTop : null;
 
                 Collection<UUID> nodeIds = grp.nodeIds();
 
@@ -223,24 +223,26 @@ class ClientServicesImpl implements ClientServices {
                     throw new ClientException("Cluster group is empty.");
 
                 return ch.service(ClientOperation.SERVICE_INVOKE,
-                    req -> writeServiceInvokeRequest(req, nodeIds, method, args, top == null ? null : top.get2()),
+                    req -> writeServiceInvokeRequest(req, nodeIds, method, args, srvTop == null ? null : srvTop.get2()),
                     res -> {
                         Object val;
-                        long srvTopVersion;
+                        long srvTopVersion = -1L;
                         UUID[] uuids = null;
 
                         try (BinaryReaderExImpl reader = utils.createBinaryReader(res.in())) {
                             val = reader.readObject();
 
-                            srvTopVersion = reader.readLong();
+                            if (srvTop != null) {
+                                srvTopVersion = reader.readLong();
 
-                            int uuidsLen = reader.readInt();
+                                int uuidsLen = reader.readInt();
 
-                            if (uuidsLen > 0) {
-                                uuids = new UUID[uuidsLen];
+                                if (uuidsLen > 0) {
+                                    uuids = new UUID[uuidsLen];
 
-                                for (int i = 0; i < uuidsLen; ++i)
-                                    uuids[i] = new UUID(reader.readLong(), reader.readLong());
+                                    for (int i = 0; i < uuidsLen; ++i)
+                                        uuids[i] = new UUID(reader.readLong(), reader.readLong());
+                                }
                             }
                         }
                         catch (IOException e) {
@@ -252,11 +254,16 @@ class ClientServicesImpl implements ClientServices {
 
                         return val;
                     },
-                    top == null || top.get1().isEmpty() ? null : top.get1()
+                    srvTop == null || srvTop.get2() == 0L ? null : srvTop.get1()
                 );
             }
             catch (ClientError e) {
                 throw new ClientException(e);
+            }
+            catch (Throwable e){
+                System.err.println("fg");
+
+                throw e;
             }
         }
 
@@ -289,6 +296,8 @@ class ClientServicesImpl implements ClientServices {
             Object[] args,
             @Nullable Long srvTopVer
         ) {
+            assert srvTopVer == null || ch.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.SERVICE_MAPPINGS);
+
             ch.clientChannel().protocolCtx().checkFeatureSupported(callAttrs != null ?
                 ProtocolBitmaskFeature.SERVICE_INVOKE_CALLCTX : ProtocolBitmaskFeature.SERVICE_INVOKE);
 
@@ -297,8 +306,7 @@ class ClientServicesImpl implements ClientServices {
                 writer.writeByte(FLAG_PARAMETER_TYPES_MASK); // Flags.
                 writer.writeLong(timeout);
 
-                if (ch.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.SERVICE_MAPPINGS))
-                    writer.writeLong(srvTopVer == null ? -1L : srvTopVer);
+                writer.writeLong(srvTopVer == null ? -1L : srvTopVer);
 
                 if (nodeIds == null)
                     writer.writeInt(0);

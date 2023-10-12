@@ -466,7 +466,7 @@ public class TcpIgniteClient implements IgniteClient {
         if (!cfg.isAutoBinaryConfigurationEnabled())
             return;
 
-        ClientInternalBinaryConfiguration clusterCfg = ch.applyOnDefaultChannel(
+        ClientInternalBinaryConfiguration clusterCfg = ch.applyOnRandomChannel(
                 c -> c.protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.BINARY_CONFIGURATION)
                 ? c.service(ClientOperation.GET_BINARY_CONFIGURATION, null, r -> new ClientInternalBinaryConfiguration(r.in()))
                 : null,

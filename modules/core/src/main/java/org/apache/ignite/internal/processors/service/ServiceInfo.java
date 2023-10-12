@@ -56,7 +56,7 @@ public class ServiceInfo implements ServiceDescriptor {
 
     /** Topology snapshot: version, nodeId -> number of service instances. */
     @GridToStringInclude
-    private volatile IgniteBiTuple<Map<UUID, Integer>, Long> top;
+    private volatile IgniteBiTuple<Map<UUID, Integer>, Long> top = new IgniteBiTuple<>(Collections.emptyMap(), 0L);
 
     /** Service class. */
     private transient volatile Class<? extends Service> srvcCls;
@@ -98,11 +98,9 @@ public class ServiceInfo implements ServiceDescriptor {
      * @param newTop Topology snapshot.
      */
     public void topologySnapshot(Map<UUID, Integer> newTop) {
-        long topVer = top == null
-            ? 1
-            : newTop.keySet().equals(top.get1().keySet()) ? top.get2() : top.get2() + 1L;
+        IgniteBiTuple<Map<UUID, Integer>, Long> top = this.top;
 
-        top = new IgniteBiTuple<>(Collections.unmodifiableMap(newTop), topVer);
+        this.top = new IgniteBiTuple<>(newTop, newTop.keySet().equals(top.get1().keySet()) ? top.get2() : top.get2() + 1L);
     }
 
     /**
@@ -194,15 +192,13 @@ public class ServiceInfo implements ServiceDescriptor {
 
     /** {@inheritDoc} */
     @Override public Map<UUID, Integer> topologySnapshot() {
-        IgniteBiTuple<Map<UUID, Integer>, Long> top = this.top;
-
-        return top == null ? Collections.emptyMap() : top.get1();
+        return Collections.unmodifiableMap(top.get1());
     }
 
     /**
      * @return Service topology and its version.
      */
-    public @Nullable IgniteBiTuple<Map<UUID, Integer>, Long> topologyVersion() {
+    public IgniteBiTuple<Map<UUID, Integer>, Long> topologyVersion() {
         return top;
     }
 
@@ -212,7 +208,7 @@ public class ServiceInfo implements ServiceDescriptor {
      * @return {@code True} if service topology was initialized. {@code False} otherwise.
      */
     public boolean topologyInitialized() {
-        return top != null;
+        return top.get2() > 0;
     }
 
     /** {@inheritDoc} */
