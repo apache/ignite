@@ -230,6 +230,8 @@ class ControlUtility:
 
         assert "The check procedure has finished, no conflicts have been found." in res
 
+        return res
+
     def start_performance_statistics(self):
         """
         Start performance statistics collecting in the cluster.
