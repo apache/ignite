@@ -107,7 +107,7 @@ public class GridCacheGateway<K, V> {
      * @return {@code True} if enter successful, {@code false} if the cache or the node was stopped.
      */
     public boolean enterIfNotStopped() {
-        onEnter();
+        onEnter(false);
 
         // Must unlock in case of unexpected errors to avoid deadlocks during kernal stop.
         rwLock.readLock().lock();
@@ -121,7 +121,7 @@ public class GridCacheGateway<K, V> {
      * @return {@code True} if enter successful, {@code false} if the cache or the node was stopped.
      */
     public boolean enterIfNotStoppedNoLock() {
-        onEnter();
+        onEnter(false);
 
         return checkState(false, false);
     }
@@ -174,7 +174,7 @@ public class GridCacheGateway<K, V> {
 
         ctx.tm().enterNearTxSystemSection();
 
-        onEnter();
+        onEnter(true);
 
         Lock lock = rwLock.readLock();
 
@@ -199,7 +199,7 @@ public class GridCacheGateway<K, V> {
      * @return Previous operation context set on this thread.
      */
     @Nullable public CacheOperationContext enterNoLock(@Nullable CacheOperationContext opCtx) {
-        onEnter();
+        onEnter(true);
 
         checkState(false, false);
 
@@ -252,13 +252,14 @@ public class GridCacheGateway<K, V> {
     /**
      *
      */
-    private void onEnter() {
+    private void onEnter(boolean checkAtomicOpsInTx) {
         ctx.itHolder().checkWeakQueue();
 
         if (ctx.deploymentEnabled())
             ctx.deploy().onEnter();
 
-        checkAtomicOpsInTx();
+        if (checkAtomicOpsInTx)
+            checkAtomicOpsInTx();
     }
 
     /**
