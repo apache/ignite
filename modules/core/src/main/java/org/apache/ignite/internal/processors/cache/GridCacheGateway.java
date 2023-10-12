@@ -250,7 +250,7 @@ public class GridCacheGateway<K, V> {
     }
 
     /**
-     *
+     * @param checkAtomicOpsInTx Atomicity check is required.
      */
     private void onEnter(boolean checkAtomicOpsInTx) {
         ctx.itHolder().checkWeakQueue();
