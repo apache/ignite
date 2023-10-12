@@ -21,11 +21,22 @@ import java.util.Collection;
 /** */
 public class PartitionAllNode implements PartitionNode {
     /** */
-    public static final PartitionAllNode INSTANCE = new PartitionAllNode();
+    public static final PartitionAllNode INSTANCE_REPLICATED = new PartitionAllNode(true);
 
     /** */
-    private PartitionAllNode() {
-        // No-op.
+    public static final PartitionAllNode INSTANCE = new PartitionAllNode(false);
+
+    /** */
+    private final boolean replicated;
+
+    /** */
+    private PartitionAllNode(boolean replicated) {
+        this.replicated = replicated;
+    }
+
+    /** */
+    public boolean isReplicated() {
+        return replicated;
     }
 
     /** {@inheritDoc} */

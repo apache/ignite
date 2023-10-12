@@ -43,6 +43,9 @@ public class PartitionOperandNode implements PartitionNode {
 
         if (op == Operand.AND) {
             for (PartitionNode operand : operands) {
+                if (operand == PartitionAllNode.INSTANCE_REPLICATED)
+                    continue;
+
                 Collection<Integer> parts = operand.apply(ctx);
 
                 if (parts == null)
@@ -56,6 +59,9 @@ public class PartitionOperandNode implements PartitionNode {
         }
         else {
             for (PartitionNode operand: operands) {
+                if (operand == PartitionAllNode.INSTANCE_REPLICATED)
+                    continue;
+
                 Collection<Integer> parts = operand.apply(ctx);
 
                 if (parts == null)
@@ -71,29 +77,19 @@ public class PartitionOperandNode implements PartitionNode {
         return allParts != null ? Collections.unmodifiableCollection(allParts) : null;
     }
 
-    /** {@inheritDoc} */
-    @Override public PartitionNode optimize() {
-        switch (op) {
-            case OR:
-                if (operands.stream().anyMatch(n -> n == PartitionAllNode.INSTANCE))
-                    return PartitionAllNode.INSTANCE;
-
-                break;
-            case AND:
-                if (operands.stream().anyMatch(n -> n == PartitionNoneNode.INSTANCE))
-                    return PartitionNoneNode.INSTANCE;
-        }
-
-        return this;
-    }
-
     /** */
-    public static PartitionOperandNode createAndOperandNode(List<PartitionNode> operands) {
+    public static PartitionNode createAndOperandNode(List<PartitionNode> operands) {
+        if (operands.stream().anyMatch(n -> n == PartitionNoneNode.INSTANCE))
+            return PartitionNoneNode.INSTANCE;
+
         return new PartitionOperandNode(Operand.AND, operands);
     }
 
     /** */
-    public static PartitionOperandNode createOrOperandNode(List<PartitionNode> operands) {
+    public static PartitionNode createOrOperandNode(List<PartitionNode> operands) {
+        if (operands.stream().anyMatch(n -> n == PartitionAllNode.INSTANCE))
+            return PartitionAllNode.INSTANCE;
+
         return new PartitionOperandNode(Operand.OR, operands);
     }
 

@@ -110,9 +110,7 @@ public class PartitionExtractor extends IgniteRelShuttle {
         if (stack.isEmpty())
             return PartitionAllNode.INSTANCE;
 
-        PartitionNode res = stack.pop();
-
-        return res.optimize();
+        return stack.pop();
     }
 
     /** */
@@ -123,7 +121,13 @@ public class PartitionExtractor extends IgniteRelShuttle {
 
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
 
-        if (!tbl.distribution().function().affinity() || tbl.distribution().getKeys().size() != 1) {
+        if (!tbl.distribution().function().affinity()) {
+            stack.push(PartitionAllNode.INSTANCE_REPLICATED);
+
+            return;
+        }
+
+        if (tbl.distribution().getKeys().size() != 1) {
             stack.push(PartitionAllNode.INSTANCE);
 
             return;

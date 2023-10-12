@@ -123,6 +123,11 @@ public class FragmentMapping implements MarshalableMessage {
     }
 
     /** */
+    public List<ColocationGroup> colocationGroups() {
+        return Collections.unmodifiableList(colocationGroups);
+    }
+
+    /** */
     public FragmentMapping finalizeMapping(Supplier<List<UUID>> nodesSource) {
         if (colocationGroups.isEmpty())
             return this;

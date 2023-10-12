@@ -25,19 +25,12 @@ import org.jetbrains.annotations.Nullable;
 public interface PartitionNode {
     /**
      * @param ctx Partition pruning context.
-     * @return Collection of partitions after pruning or {@code null} if all partition required.
+     * @return Collection of partitions after pruning or {@code null} if all partitions required.
      */
     @Nullable Collection<Integer> apply(PartitionPruningContext ctx);
 
     /** */
     default int cacheId() {
         return CU.UNDEFINED_CACHE_ID;
-    }
-
-    /**
-     * @return Optimized partition calculation tree.
-     */
-    default PartitionNode optimize() {
-        return this;
     }
 }

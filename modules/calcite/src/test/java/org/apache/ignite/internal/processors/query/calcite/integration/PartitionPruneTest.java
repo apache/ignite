@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import com.google.common.collect.ImmutableList;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
@@ -43,7 +44,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGr
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -53,6 +53,9 @@ import org.junit.Test;
 public class PartitionPruneTest extends AbstractBasicIntegrationTest {
     /** */
     private static final int ENTRIES_COUNT = 10000;
+
+    /** */
+    private static final int LONG_QUERY_WARNING_TIMEOUT = 20000;
 
     /** */
     private static final LongAdder INTERCEPTED_START_REQUEST_COUNT = new LongAdder();
@@ -69,6 +72,7 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration());
+        cfg.getSqlConfiguration().setLongQueryWarningTimeout(LONG_QUERY_WARNING_TIMEOUT);
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi() {
             /** {@inheritDoc} */
@@ -90,15 +94,15 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
 
                         assertNotNull(mapping);
 
-                        List<ColocationGroup> groups = U.field(mapping, "colocationGroups");
+                        List<ColocationGroup> groups = mapping.colocationGroups();
 
-                        assertEquals(1, F.size(groups));
+                        for (ColocationGroup group: groups) {
+                            int[] parts = group.partitions(node.id());
 
-                        int[] parts = F.first(groups).partitions(node.id());
-
-                        if (!F.isEmpty(parts)) {
-                            for (int part: parts)
-                                INTERCEPTED_PARTS.add(part);
+                            if (!F.isEmpty(parts)) {
+                                for (int part : parts)
+                                    INTERCEPTED_PARTS.add(part);
+                            }
                         }
                     }
                 }
@@ -115,19 +119,18 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
         super.beforeTestsStarted();
 
         sql("CREATE TABLE T1(ID INT, IDX_VAL VARCHAR, VAL VARCHAR, PRIMARY KEY(ID)) WITH cache_name=t1_cache,backups=1");
-        sql("CREATE TABLE T2(ID INT, AK INT, IDX_VAL VARCHAR, VAL VARCHAR, PRIMARY KEY(ID, AK)) WITH " +
-                "cache_name=t2_cache,backups=1,affinity_key=AK");
+        sql("CREATE TABLE T2(ID INT, IDX_VAL VARCHAR, VAL VARCHAR, PRIMARY KEY(ID)) WITH cache_name=t2_cache,backups=1");
         sql("CREATE TABLE DICT(ID INT PRIMARY KEY, IDX_VAL VARCHAR, VAL VARCHAR) WITH template=replicated,cache_name=dict_cache");
 
         sql("CREATE INDEX T1_IDX ON T1(IDX_VAL)");
         sql("CREATE INDEX T2_IDX ON T2(IDX_VAL)");
         sql("CREATE INDEX DICT_IDX ON DICT(IDX_VAL)");
 
-        Stream.of("T1", "DICT").forEach(tableName -> {
+        Stream.of("T1", "T2", "DICT").forEach(tableName -> {
             StringBuilder sb = new StringBuilder("INSERT INTO ").append(tableName)
                     .append("(ID, IDX_VAL, VAL) VALUES ");
 
-            for (int i = 0; i < 10000; ++i) {
+            for (int i = 0; i < ENTRIES_COUNT; ++i) {
                 sb.append("(").append(i).append(", ")
                         .append("'name_").append(i).append("', ")
                         .append("'name_").append(i).append("')");
@@ -141,26 +144,8 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
             assertEquals(ENTRIES_COUNT, client.getOrCreateCache(tableName + "_CACHE").size(CachePeekMode.PRIMARY));
         });
 
-        Stream.of("T2").forEach(tableName -> {
-            StringBuilder sb = new StringBuilder("INSERT INTO ").append(tableName)
-                    .append("(ID, AK, IDX_VAL, VAL) VALUES ");
-
-            for (int i = 0; i < 10000; ++i) {
-                sb.append("(").append(i).append(", ")
-                        .append(i).append(",")
-                        .append("'name_").append(i).append("', ")
-                        .append("'name_").append(i).append("')");
-
-                if (i < ENTRIES_COUNT - 1)
-                    sb.append(",");
-            }
-
-            sql(sb.toString());
-
-            assertEquals(ENTRIES_COUNT, client.getOrCreateCache(tableName + "_CACHE").size(CachePeekMode.PRIMARY));
-        });
-
-        sql("ANALYZE PUBLIC.T1(ID), PUBLIC.T2(ID,AK), PUBLIC.DICT(ID) WITH \"NULLS=0,DISTINCT=10000,TOTAL=10000\"");
+        sql("ANALYZE PUBLIC.T1(ID), PUBLIC.T2(ID), PUBLIC.DICT(ID) WITH \"NULLS=0,DISTINCT=" + ENTRIES_COUNT +
+                ",TOTAL=" + ENTRIES_COUNT + "\"");
 
         clearIntercepted();
     }
@@ -347,60 +332,67 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testSimpleJoin() {
-        execute("SELECT * FROM T1, T2 WHERE T1.ID = T2.AK AND T1.ID = ?",
+    public void testSetOperations() {
+        execute("SELECT ID, VAL FROM T1 WHERE T1.ID = ? UNION SELECT ID, VAL FROM T1 WHERE T1.ID = ?",
             (res) -> {
-                assertPartitions(allPartitions("T1_CACHE"));
-                assertNodes(allNodes("T1_CACHE"));
-                assertEquals(1, res.size());
-                assertEquals(123, res.get(0).get(0));
+                assertPartitions(partition("T1_CACHE", 123), partition("T1_CACHE", 125));
+                assertNodes(node("T1_CACHE", 123), node("T1_CACHE", 125));
+                assertEquals(2, res.size());
+                assertEquals(ImmutableList.of(123, 125), res.stream().map(row -> (Integer)row.get(0)).sorted()
+                    .collect(Collectors.toList()));
             },
-            123
+            123, 125
         );
 
-        // Key (not alias).
-        execute("SELECT * FROM T1 INNER JOIN T2 ON T1.ID = T2.AK WHERE T1.ID = ?",
+        execute("SELECT ID, VAL FROM T1 WHERE T1.ID = ? INTERSECT SELECT ID, VAL FROM T1 WHERE T1.ID = ?",
             (res) -> {
-                assertPartitions(allPartitions("T1_CACHE"));
-                assertNodes(allNodes("T1_CACHE"));
-                assertEquals(1, res.size());
-                assertEquals(123, res.get(0).get(0));
+                assertPartitions(partition("T1_CACHE", 123), partition("T1_CACHE", 125));
+                assertNodes(node("T1_CACHE", 123), node("T1_CACHE", 125));
+                assertEquals(0, res.size());
             },
-            123
+            123, 125
         );
 
-        // Key (alias).
-        execute("SELECT * FROM T1 INNER JOIN T2 ON T1.ID = T2.AK WHERE T1._KEY = ?",
+        execute("SELECT ID, VAL FROM T1 WHERE T1.ID = ? UNION SELECT ID, VAL FROM T2 WHERE T2.ID = ?",
             (res) -> {
-                assertPartitions(allPartitions("T1_CACHE"));
-                assertNodes(allNodes("T1_CACHE"));
-
-                assertEquals(1, res.size());
-                assertEquals(125, res.get(0).get(0));
+                assertPartitions(partition("T1_CACHE", 123), partition("T2_CACHE", 125));
+                assertNodes(node("T1_CACHE", 123), node("T2_CACHE", 125));
+                assertEquals(2, res.size());
+                assertEquals(ImmutableList.of(123, 125), res.stream().map(row -> (Integer)row.get(0)).sorted()
+                        .collect(Collectors.toList()));
             },
-            125
+            123, 125
         );
 
-        // Non-affinity key.
-        execute("SELECT * FROM T1 INNER JOIN T2 ON T1.ID = T2.AK WHERE T2.ID = ?",
+        execute("SELECT ID, VAL FROM T1 WHERE T1.ID = ? INTERSECT SELECT ID, VAL FROM T2 WHERE T2.ID = ?",
             (res) -> {
-                assertPartitions(allPartitions("T1_CACHE"));
-                assertNodes(allNodes("T1_CACHE"));
-                assertEquals(1, res.size());
-                assertEquals(125, res.get(0).get(0));
+                assertPartitions(partition("T1_CACHE", 123), partition("T2_CACHE", 125));
+                assertNodes(node("T1_CACHE", 123), node("T2_CACHE", 125));
+                assertEquals(0, res.size());
             },
-            125
+            123, 125
         );
 
-        // Affinity key.
-        execute("SELECT * FROM T1 INNER JOIN T2 ON T1.ID = T2.AK WHERE T2.AK = ?",
+        execute("SELECT ID, VAL FROM T1 WHERE T1.ID = ? UNION SELECT ID, VAL FROM DICT WHERE DICT.ID = ?",
             (res) -> {
-                assertPartitions(allPartitions("T1_CACHE"));
-                assertNodes(allNodes("T1_CACHE"));
-                assertEquals(1, res.size());
-                assertEquals(125, res.get(0).get(0));
+                assertPartitions(partition("T1_CACHE", 123));
+                assertContainsNodes(node("T1_CACHE", 123));
+
+                assertEquals(2, res.size());
+                assertEquals(ImmutableList.of(123, 125), res.stream().map(row -> (Integer)row.get(0)).sorted()
+                        .collect(Collectors.toList()));
             },
-            125
+            123, 125
+        );
+
+        execute("SELECT ID, VAL FROM T1 WHERE T1.ID = ? INTERSECT SELECT ID, VAL FROM DICT WHERE DICT.ID = ?",
+            (res) -> {
+                assertPartitions(partition("T1_CACHE", 123));
+                assertContainsNodes(node("T1_CACHE", 123));
+
+                assertEquals(0, res.size());
+            },
+            123, 125
         );
     }
 
@@ -531,7 +523,7 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
 
         TreeSet<Integer> actualParts = new TreeSet<>(INTERCEPTED_PARTS);
 
-        assertEquals("Unexpected partitions [exp=" + Arrays.toString(expParts) + ", actual=" + actualParts + ']',
+        assertEquals("Unexpected partitions [exp=" + expParts0 + ", actual=" + actualParts + ']',
                 expParts0, actualParts);
     }
 
@@ -561,12 +553,22 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
+    protected static void assertContainsNodes(ClusterNode... expNodes) {
+        TreeSet<ClusterNode> actualNodes = new TreeSet<>(INTERCEPTED_NODES);
+
+        if (!F.isEmpty(expNodes)) {
+            for (ClusterNode node: expNodes)
+                assertTrue("Actual nodes doesn't contain node [actual=" + actualNodes + ", node= " + node,
+                    actualNodes.contains(node));
+        }
+    }
+
+    /** */
     protected static void assertNodes(ClusterNode... expNodes) {
         Collection<ClusterNode> expNodes0 = new TreeSet<>(Comparator.comparing(ClusterNode::id));
 
-        if (!F.isEmpty(expNodes)) {
+        if (!F.isEmpty(expNodes))
             expNodes0.addAll(Arrays.asList(expNodes));
-        }
 
         TreeSet<ClusterNode> actualNodes = new TreeSet<>(INTERCEPTED_NODES);
 
