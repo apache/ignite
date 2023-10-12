@@ -597,6 +597,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED = "IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED";
 
     /**
+     * Flag indicating whether atomic and transactional caches are allowed inside the same cache group.
+     * Since 2.16.0 mixed cache groups are not allowed by default.
+     */
+    @SystemProperty(value = "Allows mixed cache groups", defaults = "false")
+    public static final String IGNITE_ALLOW_MIXED_CACHE_GROUPS = "IGNITE_ALLOW_MIXED_CACHE_GROUPS";
+
+    /**
      * Atomic cache deferred update response buffer size.
      */
     @SystemProperty(value = "Atomic cache deferred update response buffer size", type = Integer.class,

@@ -70,7 +70,7 @@ public class DumpCacheConfigTest extends GridCommonAbstractTest {
 
     /** */
     private void checkDump(IgniteEx srv, String name, boolean first) throws Exception {
-        srv.snapshot().createDump(name).get(10_000L);
+        srv.snapshot().createDump(name, null).get(10_000L);
 
         AtomicInteger cnt = new AtomicInteger();
 

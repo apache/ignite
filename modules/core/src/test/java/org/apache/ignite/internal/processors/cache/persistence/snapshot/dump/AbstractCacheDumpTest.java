@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -65,6 +66,7 @@ import org.apache.ignite.platform.model.User;
 import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.Nullable;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -475,7 +477,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     protected void createDump(IgniteEx ign) {
-        createDump(ign, DMP_NAME);
+        createDump(ign, DMP_NAME, null);
     }
 
     /** */
@@ -510,17 +512,22 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     public static String invokeCheckCommand(IgniteEx ign, String name) throws IgniteCheckedException {
+        return invokeCheckCommand(ign, name, null);
+    }
+
+    /** */
+    public static String invokeCheckCommand(IgniteEx ign, String name, String snpPath) throws IgniteCheckedException {
         StringBuffer buf = new StringBuffer();
 
-        ign.context().cache().context().snapshotMgr().checkSnapshot(name, null).get(60_000)
+        ign.context().cache().context().snapshotMgr().checkSnapshot(name, snpPath).get(60_000)
             .print(line -> buf.append(line).append(System.lineSeparator()));
 
         return buf.toString();
     }
 
     /** */
-    void createDump(IgniteEx ign, String name) {
-        ign.context().cache().context().snapshotMgr().createSnapshot(name, null, false, onlyPrimary, true).get();
+    void createDump(IgniteEx ign, String name, @Nullable Collection<String> cacheGroupNames) {
+        ign.context().cache().context().snapshotMgr().createSnapshot(name, null, cacheGroupNames, false, onlyPrimary, true).get();
     }
 
     /** */
