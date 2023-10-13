@@ -252,7 +252,7 @@ Example:
 SELECT /*+ NO_INDEX */ T1.* FROM TBL1 where T1.V1=? and T1.V2=?
 ----
 
-It is allowed to define several hints for the same relation operator. For that, hints are separated with comma
+It is allowed to define several hints for the same relation operator. To use several hints, separate them by comma
 (spaces are optional).
 
 Example:
@@ -262,9 +262,9 @@ SELECT /*+ NO_INDEX, EXPAND_DISTINCT_AGG */ SUM(DISTINCT V1), AVG(DISTINCT V2) F
 ----
 
 ==== Hint parameters
-Hint parameters, if required, are placed within brackets after the hint name and are separated with commas.
+Hint parameters, if required, are placed in brackets after the hint name and separated by commas.
 
-Hint parameter can be quoted. Quoted parameter is case sensitive. Quoted and unquoted parameters *cannot be*
+The hint parameter can be quoted. Quoted parameter is case-sensitive. The quoted and unquoted parameters cannot be
 defined for the same hint.
 
 Example:
