@@ -238,7 +238,7 @@ execution plan faster.
 
 [NOTE]
 ====
-SQL hints are not mandatory to apply and might be skipped in some cases.
+SQL hints are optional to apply and might be skipped in some cases.
 ====
 
 === Hints format
