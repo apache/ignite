@@ -242,8 +242,8 @@ SQL hints are optional to apply and might be skipped in some cases.
 ====
 
 === Hints format
-Sql hints are defined with the special comment +++/*+ HINT */+++ reffered as _hint block_. Spaces before and after the
-hint name are required. Hint block is placed right after a relation operator. Usually, after _SELECT_. Several hint
+SQL hints are defined by a special comment +++/*+ HINT */+++ reffered as a _hint block_. Spaces before and after the
+hint name are required. The hint block is placed right after a relation operator, often after _SELECT_. Several hint
 blocks for one relation operator *are not allowed*.
 
 Example:
