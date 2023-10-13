@@ -24,6 +24,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.google.common.primitives.Primitives;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexCall;
@@ -121,7 +122,7 @@ public class PartitionExtractor extends IgniteRelShuttle {
 
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
 
-        if (!tbl.distribution().function().affinity()) {
+        if (tbl.distribution().function().type() == RelDistribution.Type.BROADCAST_DISTRIBUTED) {
             stack.push(PartitionAllNode.INSTANCE_REPLICATED);
 
             return;
