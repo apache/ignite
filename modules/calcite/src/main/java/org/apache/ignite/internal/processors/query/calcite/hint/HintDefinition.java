@@ -37,7 +37,10 @@ public enum HintDefinition {
     /** Disables planner rules. */
     DISABLE_RULE,
 
-    /** Forces expanding of distinct aggregates to join. */
+    /**
+     * If optimizer wraps aggregation operations with a join, forces expanding of only distinct aggregates to the
+     * join. Removes duplicates before joining and speeds up it.
+     */
     EXPAND_DISTINCT_AGG {
         /** {@inheritDoc} */
         @Override public HintPredicate predicate() {
