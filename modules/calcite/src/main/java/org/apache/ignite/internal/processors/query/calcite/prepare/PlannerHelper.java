@@ -75,7 +75,7 @@ public class PlannerHelper {
             // Convert to Relational operators graph.
             RelRoot root = planner.rel(sqlNode);
 
-            root = addExternalHint(root, planner);
+            root = addExternalOptions(root);
 
             planner.setDisabledRules(HintUtils.options(root.rel, extractRootHints(root.rel), HintDefinition.DISABLE_RULE));
 
@@ -134,7 +134,7 @@ public class PlannerHelper {
      *
      * @return New or old root node.
      */
-    private static RelRoot addExternalHint(RelRoot root, IgnitePlanner planner) {
+    private static RelRoot addExternalOptions(RelRoot root) {
         if (!Commons.context(root.rel).isForcedJoinOrder())
             return root;
 
