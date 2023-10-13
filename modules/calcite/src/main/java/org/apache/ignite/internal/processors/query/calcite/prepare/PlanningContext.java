@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.prepare.CalciteCatalogReader;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlOperatorTable;
@@ -36,7 +33,6 @@ import org.apache.calcite.util.CancelFlag;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Planning context.
@@ -50,9 +46,6 @@ public final class PlanningContext implements Context {
 
     /** */
     private final Object[] parameters;
-
-    /** */
-    private final Collection<RelHint> hints;
 
     /** */
     private final CancelFlag cancelFlag = new CancelFlag(new AtomicBoolean());
@@ -76,8 +69,7 @@ public final class PlanningContext implements Context {
         Context parentCtx,
         String qry,
         Object[] parameters,
-        long plannerTimeout,
-        @Nullable Collection<RelHint> hints
+        long plannerTimeout
     ) {
         this.qry = qry;
         this.parameters = parameters;
@@ -85,8 +77,6 @@ public final class PlanningContext implements Context {
         this.parentCtx = parentCtx;
         startTs = U.currentTimeMillis();
         this.plannerTimeout = plannerTimeout;
-
-        this.hints = hints == null ? Collections.emptyList() : hints;
     }
 
     /**
@@ -117,13 +107,6 @@ public final class PlanningContext implements Context {
      */
     public String schemaName() {
         return schema().getName();
-    }
-
-    /**
-     * @return Additional hints of the query.
-     */
-    public Collection<RelHint> hints() {
-        return hints;
     }
 
     /**
@@ -244,9 +227,6 @@ public final class PlanningContext implements Context {
         /** */
         private long plannerTimeout;
 
-        /** */
-        private Collection<RelHint> hints = Collections.emptyList();
-
         /**
          * @param parentCtx Parent context.
          * @return Builder for chaining.
@@ -262,15 +242,6 @@ public final class PlanningContext implements Context {
          */
         public Builder query(@NotNull String qry) {
             this.qry = qry;
-            return this;
-        }
-
-        /**
-         * @param hints Additional query hints.
-         * @return Builder for chaining.
-         */
-        public Builder hints(Collection<RelHint> hints) {
-            this.hints = hints;
             return this;
         }
 
@@ -300,7 +271,7 @@ public final class PlanningContext implements Context {
          * @return Planner context.
          */
         public PlanningContext build() {
-            return new PlanningContext(parentCtx, qry, parameters, plannerTimeout, hints);
+            return new PlanningContext(parentCtx, qry, parameters, plannerTimeout);
         }
     }
 }

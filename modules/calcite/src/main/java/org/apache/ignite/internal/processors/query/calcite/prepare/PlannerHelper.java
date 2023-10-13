@@ -119,8 +119,6 @@ public class PlannerHelper {
             if (sqlNode.isA(ImmutableSet.of(SqlKind.INSERT, SqlKind.UPDATE, SqlKind.MERGE)))
                 igniteRel = new FixDependentModifyNodeShuttle().visit(igniteRel);
 
-            log.error("TEST | plan:\n" + RelOptUtil.toString(igniteRel));
-
             return igniteRel;
         }
         catch (Throwable ex) {
@@ -135,23 +133,22 @@ public class PlannerHelper {
      * Add external hints to {@code root.rel}.
      *
      * @return New or old root node.
-     * @see PlanningContext#hints()
      */
     private static RelRoot addExternalHint(RelRoot root, IgnitePlanner planner) {
-        if (F.isEmpty(planner.context().hints()))
+        if (!Commons.context(root.rel).isForcedJoinOrder())
             return root;
 
         if (!(root.rel instanceof Hintable)) {
-            Commons.context(root.rel).logger().warning("Unable to propagate external hints "
-                + planner.context().hints().stream().map(h -> '\'' + h.hintName + '\'').collect(Collectors.joining(", "))
-                + " starting with root relation operator [" + RelOptUtil.toString(HintUtils.noInputsRelWrap(root.rel)).trim()
+            Commons.context(root.rel).logger().warning("Unable to set hint " + HintDefinition.ORDERED_JOINS
+                + " passed as an external parameter to the root relation operator ["
+                + RelOptUtil.toString(HintUtils.noInputsRelWrap(root.rel)).trim()
                 + "] because it is not a Hintable.");
 
             return root;
         }
 
         List<RelHint> newHints = Stream.concat(HintUtils.allRelHints(root.rel).stream(),
-            planner.context().hints().stream()).collect(Collectors.toList());
+            Stream.of(RelHint.builder(HintDefinition.ORDERED_JOINS.name()).build())).collect(Collectors.toList());
 
         root = root.withRel(((Hintable)root.rel).withHints(newHints));
 
