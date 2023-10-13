@@ -35,7 +35,6 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -75,8 +74,6 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
         SnapshotMetadata meta,
         @Nullable String snpPath,
         int incIdx,
-        File tmpWorkDir,
-        FileIOFactory ioFactory,
         WALPointer lowPtr,
         IgniteInternalFuture<WALPointer> highPtrFut
     ) {
@@ -85,8 +82,6 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> imp
             srcNodeId,
             reqNodeId,
             meta.snapshotName(),
-            tmpWorkDir,
-            ioFactory,
             new SnapshotSender(
                 cctx.logger(IncrementalSnapshotFutureTask.class),
                 cctx.kernalContext().pools().getSnapshotExecutorService()

@@ -916,6 +916,15 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @return List of cache partitions in given directory.
      */
     public static List<File> cachePartitionFiles(File cacheDir) {
+        return cachePartitionFiles(cacheDir, FILE_SUFFIX);
+    }
+
+    /**
+     * @param cacheDir Cache directory to check.
+     * @param ext File extension.
+     * @return List of cache partitions in given directory.
+     */
+    public static List<File> cachePartitionFiles(File cacheDir, String ext) {
         File[] files = cacheDir.listFiles();
 
         if (files == null)
@@ -923,7 +932,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         return Arrays.stream(files)
             .filter(File::isFile)
-            .filter(f -> f.getName().endsWith(FILE_SUFFIX))
+            .filter(f -> f.getName().endsWith(ext))
             .collect(Collectors.toList());
     }
 
