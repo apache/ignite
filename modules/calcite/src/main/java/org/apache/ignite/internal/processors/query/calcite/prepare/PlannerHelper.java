@@ -130,7 +130,7 @@ public class PlannerHelper {
     }
 
     /**
-     * Add external hints to {@code root.rel}.
+     * Add external options as hints to {@code root.rel}.
      *
      * @return New or old root node.
      */

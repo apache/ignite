@@ -323,10 +323,10 @@ public final class BaseQueryContext extends AbstractQueryContext {
         private IgniteLogger log = new NullLogger();
 
         /** */
-        private boolean isLocal = false;
+        private boolean isLocal;
 
         /** */
-        private boolean forcedJoinOrder = false;
+        private boolean forcedJoinOrder;
 
         /** */
         private int[] parts = null;
