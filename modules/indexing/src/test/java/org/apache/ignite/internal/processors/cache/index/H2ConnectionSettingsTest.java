@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.IgniteReflectionFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -54,18 +55,7 @@ public class H2ConnectionSettingsTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        boolean started = false;
-
-        try {
-            startGrid(cfg);
-
-            started = true;
-        }
-        catch (Exception err) {
-            // Ignore.
-        }
-
-        assert !started : "Ignite start should fail";
+        GridTestUtils.assertThrowsWithCause(() -> startGrid(cfg), org.h2.jdbc.JdbcSQLException.class);
 
         assertFalse(checkFile.exists());
     }
