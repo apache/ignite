@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.closure.GridClosureSerializationTes
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridMessageListenSelfTest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMetricsTest;
+import org.apache.ignite.internal.processors.odbc.ClientSessionOutboundQueueLimitTest;
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtilsTest;
@@ -138,7 +139,8 @@ import org.junit.runners.Suite;
     OdbcConfigurationValidationSelfTest.class,
     OdbcEscapeSequenceSelfTest.class,
     SqlListenerUtilsTest.class,
-    JavaVersionCommandParserTest.class
+    JavaVersionCommandParserTest.class,
+    ClientSessionOutboundQueueLimitTest.class,
 })
 public class IgniteBasicTestSuite {
 }
