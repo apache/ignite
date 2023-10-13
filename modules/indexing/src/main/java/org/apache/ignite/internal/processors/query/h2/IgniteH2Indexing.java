@@ -194,6 +194,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private final boolean updateInTxAllowed =
         Boolean.getBoolean(IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION);
 
+    /** Skip H2 checks for DB settings. See {@link ConnectionManager#forbidH2DbSettings(String...)}. */
+    static {
+        System.setProperty("h2.check", "false");
+    }
+
     /** Logger. */
     @LoggerResource
     private IgniteLogger log;
