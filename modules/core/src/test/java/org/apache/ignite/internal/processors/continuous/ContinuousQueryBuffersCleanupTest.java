@@ -19,13 +19,10 @@ package org.apache.ignite.internal.processors.continuous;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Deque;
 import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
@@ -47,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEventBuffer;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
 import org.apache.ignite.internal.util.GridAtomicLong;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -56,6 +54,9 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler.DFLT_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD;
+import static org.apache.ignite.internal.processors.cache.query.continuous.TestCacheConrinuousQueryUtils.backupQueueSize;
+import static org.apache.ignite.internal.processors.cache.query.continuous.TestCacheConrinuousQueryUtils.bufferedEntries;
+import static org.apache.ignite.internal.processors.cache.query.continuous.TestCacheConrinuousQueryUtils.partitionContinuesQueryEntryBuffers;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
@@ -119,7 +120,7 @@ public class ContinuousQueryBuffersCleanupTest extends GridCommonAbstractTest {
 
         spi(grid(0)).stopBlock();
 
-        assertTrue(waitForCondition(() -> G.allGrids().stream().allMatch(this::isContinuesQueryBufferEmtpy), getTestTimeout()));
+        assertTrue(waitForCondition(() -> G.allGrids().stream().allMatch(this::isContinuesQueryBufferEmpty), getTestTimeout()));
     }
 
     /** */
@@ -177,12 +178,12 @@ public class ContinuousQueryBuffersCleanupTest extends GridCommonAbstractTest {
 
             assertTrue(cqListenerNotifiedLatch.await(getTestTimeout(), MILLISECONDS));
 
-            assertTrue(waitForCondition(() -> G.allGrids().stream().allMatch(this::isContinuesQueryBufferEmtpy), getTestTimeout()));
+            assertTrue(waitForCondition(() -> G.allGrids().stream().allMatch(this::isContinuesQueryBufferEmpty), getTestTimeout()));
         }
     }
 
     /** */
-    private boolean isContinuesQueryBufferEmtpy(Ignite ignite) {
+    private boolean isContinuesQueryBufferEmpty(Ignite ignite) {
         GridContinuousProcessor contProc = ((IgniteEx)ignite).context().continuous();
 
         Collection<CacheContinuousQueryHandler<?, ?>> cqHandlers = new ArrayList<>();
@@ -198,19 +199,13 @@ public class ContinuousQueryBuffersCleanupTest extends GridCommonAbstractTest {
                 cqHandlers.add((CacheContinuousQueryHandler<?, ?>)locRoutineInfo.handler())));
 
         for (CacheContinuousQueryHandler<?, ?> cqHnd : cqHandlers) {
-            ConcurrentMap<Integer, CacheContinuousQueryEventBuffer> entryBufs = U.field(cqHnd, "entryBufs");
-
-            for (CacheContinuousQueryEventBuffer evtBuf : entryBufs.values()) {
-                Deque<CacheContinuousQueryEntry> backupQueue = U.field(evtBuf, "backupQ");
-
-                if (!backupQueue.isEmpty())
+            for (CacheContinuousQueryEventBuffer evtBuf : partitionContinuesQueryEntryBuffers(cqHnd).values()) {
+                if (backupQueueSize(evtBuf) != 0)
                     return false;
 
-                AtomicReference<Object> curBatch = U.field(evtBuf, "curBatch");
+                CacheContinuousQueryEntry[] entries = bufferedEntries(evtBuf);
 
-                if (curBatch.get() != null) {
-                    CacheContinuousQueryEntry[] entries = U.field(curBatch.get(), "entries");
-
+                if (!F.isEmpty(entries)) {
                     for (CacheContinuousQueryEntry entry : entries) {
                         if (entry != null)
                             return false;
@@ -226,9 +221,9 @@ public class ContinuousQueryBuffersCleanupTest extends GridCommonAbstractTest {
     private Map<Integer, CacheContinuousQueryEventBuffer> continuosQueryEntryBuffers(IgniteEx ignite) {
         GridContinuousProcessor contProc = ignite.context().continuous();
 
-        GridContinuousHandler hnd = contProc.remoteRoutineInfos().values().iterator().next().handler();
-
-        return U.field(hnd, "entryBufs");
+        return partitionContinuesQueryEntryBuffers(
+            (CacheContinuousQueryHandler<?, ?>)contProc.remoteRoutineInfos().values().iterator().next().handler()
+        );
     }
 
     /** */

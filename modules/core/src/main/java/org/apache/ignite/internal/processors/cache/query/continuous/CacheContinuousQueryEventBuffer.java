@@ -354,6 +354,13 @@ public class CacheContinuousQueryEventBuffer {
     }
 
     /** */
+    CacheContinuousQueryEntry[] bufferedEntries() {
+        Batch curBatch = this.curBatch.get();
+
+        return curBatch == null ? null : curBatch.entries;
+    }
+
+    /** */
     private void addToBackupQueue(CacheContinuousQueryEntry entry) {
         backupQueueGuard.readLock().lock();
 
