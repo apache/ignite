@@ -37,7 +37,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCancelledException;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -112,6 +111,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
         Object[] params,
         QueryContext qryCtx,
         boolean isLocal,
+        boolean forcedJoinOrder,
         int[] parts,
         ExchangeService exch,
         BiConsumer<Query<RowT>, Throwable> unregister,
@@ -150,6 +150,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
                     .build()
             )
             .local(isLocal)
+            .forcedJoinOrder(forcedJoinOrder)
             .partitions(parts)
             .logger(log)
             .build();
@@ -164,8 +165,8 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
      * @param schema new schema.
      */
     public RootQuery<RowT> childQuery(SchemaPlus schema) {
-        return new RootQuery<>(sql, schema, params, QueryContext.of(cancel), ctx.isLocal(), ctx.partitions(), exch, unregister, log,
-            plannerTimeout, totalTimeout);
+        return new RootQuery<>(sql, schema, params, QueryContext.of(cancel), ctx.isLocal(), ctx.isForcedJoinOrder(),
+            ctx.partitions(), exch, unregister, log, plannerTimeout, totalTimeout);
     }
 
     /** */
@@ -313,12 +314,16 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
             if (pctx == null) {
                 state = QueryState.PLANNING;
 
-                pctx = addQueryParams(PlanningContext.builder())
+                PlanningContext.Builder b = PlanningContext.builder()
                     .parentContext(ctx)
                     .query(sql)
                     .parameters(params)
-                    .plannerTimeout(plannerTimeout)
-                    .build();
+                    .plannerTimeout(plannerTimeout);
+
+                if(ctx.isForcedJoinOrder())
+                    b.hints(Collections.singletonList(RelHint.builder(HintDefinition.ORDERED_JOINS.name()).build()));
+
+                pctx = b.build();
 
                 try {
                     cancel.add(() -> pctx.unwrap(CancelFlag.class).requestCancel());
@@ -459,16 +464,6 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
         long curTimeout = totalTimeout - (U.currentTimeMillis() - startTs);
 
         return curTimeout <= 0 ? 0 : curTimeout;
-    }
-
-    /** */
-    private PlanningContext.Builder addQueryParams(PlanningContext.Builder builder) {
-        SqlFieldsQuery sqlFieldsQuery = ctx.unwrap(SqlFieldsQuery.class);
-
-        if (sqlFieldsQuery != null && sqlFieldsQuery.isEnforceJoinOrder())
-            builder.hints(Collections.singletonList(RelHint.builder(HintDefinition.ORDERED_JOINS.name()).build()));
-
-        return builder;
     }
 
     /** */

@@ -161,6 +161,9 @@ public final class BaseQueryContext extends AbstractQueryContext {
     private final boolean isLocal;
 
     /** */
+    private final boolean forcedJoinOrder;
+
+    /** */
     private final int[] parts;
 
     /**
@@ -171,6 +174,7 @@ public final class BaseQueryContext extends AbstractQueryContext {
         Context parentCtx,
         IgniteLogger log,
         boolean isLocal,
+        boolean forcedJoinOrder,
         int[] parts
     ) {
         super(Contexts.chain(parentCtx, cfg.getContext()));
@@ -181,6 +185,8 @@ public final class BaseQueryContext extends AbstractQueryContext {
         this.log = log;
 
         this.isLocal = isLocal;
+
+        this.forcedJoinOrder = forcedJoinOrder;
 
         this.parts = parts;
 
@@ -284,6 +290,11 @@ public final class BaseQueryContext extends AbstractQueryContext {
     }
 
     /** */
+    public boolean isForcedJoinOrder() {
+        return forcedJoinOrder;
+    }
+
+    /** */
     public int[] partitions() {
         if (parts != null)
             return Arrays.copyOf(parts, parts.length);
@@ -313,6 +324,9 @@ public final class BaseQueryContext extends AbstractQueryContext {
 
         /** */
         private boolean isLocal = false;
+
+        /** */
+        private boolean forcedJoinOrder = false;
 
         /** */
         private int[] parts = null;
@@ -354,6 +368,15 @@ public final class BaseQueryContext extends AbstractQueryContext {
         }
 
         /**
+         * @param forcedJoinOrder Forced join orders flag.
+         * @return Builder for chaining.
+         */
+        public Builder forcedJoinOrder(boolean forcedJoinOrder) {
+            this.forcedJoinOrder = forcedJoinOrder;
+            return this;
+        }
+
+        /**
          * @param parts Array of partitions' numbers.
          * @return Builder for chaining.
          */
@@ -370,7 +393,7 @@ public final class BaseQueryContext extends AbstractQueryContext {
          * @return Planner context.
          */
         public BaseQueryContext build() {
-            return new BaseQueryContext(frameworkCfg, parentCtx, log, isLocal, parts);
+            return new BaseQueryContext(frameworkCfg, parentCtx, log, isLocal, forcedJoinOrder, parts);
         }
     }
 }

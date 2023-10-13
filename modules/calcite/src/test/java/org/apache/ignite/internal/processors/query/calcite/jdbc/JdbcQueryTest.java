@@ -56,7 +56,7 @@ import org.junit.Test;
 @WithSystemProperty(key = "calcite.debug", value = "true")
 public class JdbcQueryTest extends GridCommonAbstractTest {
     /** URL. */
-    private String url = "jdbc:ignite:thin://127.0.0.1?queryEngine=" + CalciteQueryEngineConfiguration.ENGINE_NAME;
+    private final String url = "jdbc:ignite:thin://127.0.0.1?queryEngine=" + CalciteQueryEngineConfiguration.ENGINE_NAME;
 
     /** Nodes count. */
     private final int nodesCnt = 3;
@@ -77,14 +77,14 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         startGrids(nodesCnt);
 
-        connect();
+        connect(url);
 
         assert stmt != null;
         assert !stmt.isClosed();
     }
 
     /** */
-    private void connect() throws Exception {
+    private void connect(String url) throws Exception {
         if (stmt != null)
             stmt.close();
 
@@ -229,16 +229,13 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
 
         stmt.executeBatch();
 
-        String sql = "EXPLAIN PLAN FOR SELECT p2.Name from Person1 p1 LEFT JOIN Person2 p2 on p2.NAME=p1.NAME";
-
         String scan1 = "Scan(table=[[PUBLIC, PERSON1]]";
         String scan2 = "Scan(table=[[PUBLIC, PERSON2]]";
 
-        url += "&enforceJoinOrder=true";
+        connect(url + "&enforceJoinOrder=true");
 
-        connect();
-
-        try (ResultSet rs = stmt.executeQuery(sql)) {
+        try (ResultSet rs = stmt.executeQuery("EXPLAIN PLAN FOR SELECT p2.Name from Person1 p1 LEFT JOIN Person2 " +
+            "p2 on p2.NAME=p1.NAME")) {
             assertTrue(rs.next());
 
             String plan = rs.getString(1);
@@ -248,6 +245,19 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
 
             // Join type is not changed.
             assertTrue(plan.contains("joinType=[left]"));
+        }
+
+        try (ResultSet rs = stmt.executeQuery("EXPLAIN PLAN FOR SELECT /*+ DISABLE_RULE('NestedLoopJoinConverter') */ " +
+            "p2.Name from Person2 p2 RIGHT JOIN Person1 p1 on p2.NAME=p1.NAME")) {
+            assertTrue(rs.next());
+
+            String plan = rs.getString(1);
+
+            // Joins as in the query.
+            assertTrue(plan.indexOf(scan1) > plan.indexOf(scan2));
+
+            // Join type is not changed.
+            assertTrue(plan.contains("joinType=[right]"));
         }
     }
 

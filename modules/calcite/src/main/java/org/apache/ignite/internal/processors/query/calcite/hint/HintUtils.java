@@ -171,7 +171,7 @@ public final class HintUtils {
 
         /** {@inheritDoc} */
         @Override public RelNode getInput(int i) {
-            return getInputs().get(i);
+            throw new UnsupportedOperationException("Failed to pass any node input. This a no-inputs node.");
         }
 
         /** {@inheritDoc} */

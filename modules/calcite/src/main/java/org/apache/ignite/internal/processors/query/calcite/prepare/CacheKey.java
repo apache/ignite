@@ -41,28 +41,18 @@ public class CacheKey {
     private final Class<?>[] paramTypes;
 
     /**
-     * Additional query or engine parameters like {@link SqlFieldsQuery#isEnforceJoinOrder()} changing the query plan.
-     * Must have correct equals() and hashCode().
-     */
-    private final @Nullable Map<Class<?>, Object> queryParams;
-
-    /**
      * @param schemaName Schema name.
      * @param query Query string.
      * @param contextKey Optional context key to differ queries with and without/different flags, having an impact
      *                   on result plan (like LOCAL flag)
      * @param params Dynamic parameters.
-     * @param params Additional query or engine parameters like {@link SqlFieldsQuery#isEnforceJoinOrder()} changing
-     *               the query plan. Must have correct equals() and hashCode().
      */
-    public CacheKey(String schemaName, String query, Object contextKey, Object[] params,
-        @Nullable Map<Class<?>, Object> queryParams) {
+    public CacheKey(String schemaName, String query, Object contextKey, Object[] params) {
         this.schemaName = schemaName;
         this.query = query;
         this.contextKey = contextKey;
         paramTypes = params.length == 0 ? null :
             Arrays.stream(params).map(p -> (p != null) ? p.getClass() : Void.class).toArray(Class[]::new);
-        this.queryParams = queryParams;
     }
 
     /**
@@ -70,7 +60,7 @@ public class CacheKey {
      * @param query Query string.
      */
     public CacheKey(String schemaName, String query) {
-        this(schemaName, query, null, X.EMPTY_OBJECT_ARRAY, null);
+        this(schemaName, query, null, X.EMPTY_OBJECT_ARRAY);
     }
 
     /** {@inheritDoc} */
@@ -91,9 +81,6 @@ public class CacheKey {
         if (!Objects.equals(contextKey, cacheKey.contextKey))
             return false;
 
-        if (!Objects.equals(queryParams, cacheKey.queryParams))
-            return false;
-
         return Arrays.deepEquals(paramTypes, cacheKey.paramTypes);
     }
 
@@ -102,7 +89,6 @@ public class CacheKey {
         int result = schemaName.hashCode();
         result = 31 * result + query.hashCode();
         result = 31 * result + (contextKey != null ? contextKey.hashCode() : 0);
-        result = 31 * result + Objects.hashCode(queryParams);
         result = 31 * result + Arrays.deepHashCode(paramTypes);
         return result;
     }
