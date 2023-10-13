@@ -231,9 +231,9 @@ Below are the data types supported by the Calcite-based SQL engine:
 
 == Optimizer hints [[hints]]
 
-The query optimizer does its best to build the fastest excution plan. But it is a far way to create an optimizer which
-is the most effective for each case. You may have better knowledge of your data design, application design or data
-distribution in the cluster. The SQL hints can help the optimizer to make optimizations more rationally or build
+The query optimizer does its best to build the fastest excution plan. However, this is a far way to create an optimizer
+which is the most effective for each case. You can better know about the data design, application design or data
+distribution in the cluster. SQL hints can help the optimizer to make optimizations more rationally or build
 execution plan faster.
 
 [NOTE]
