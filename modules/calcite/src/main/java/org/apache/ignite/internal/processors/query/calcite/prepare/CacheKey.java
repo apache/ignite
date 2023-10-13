@@ -18,11 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Objects;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.util.typedef.X;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *

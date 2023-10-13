@@ -320,7 +320,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
                     .parameters(params)
                     .plannerTimeout(plannerTimeout);
 
-                if(ctx.isForcedJoinOrder())
+                if (ctx.isForcedJoinOrder())
                     b.hints(Collections.singletonList(RelHint.builder(HintDefinition.ORDERED_JOINS.name()).build()));
 
                 pctx = b.build();
