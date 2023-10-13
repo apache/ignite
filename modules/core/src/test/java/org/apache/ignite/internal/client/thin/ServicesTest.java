@@ -59,6 +59,9 @@ public class ServicesTest extends AbstractThinClientTest {
     /** Node-id service name. */
     private static final String NODE_ID_SERVICE_NAME = "node_id_svc";
 
+    /** Node-filter service name. */
+    private static final String NODE_FILTERED_SERVICE_NAME = "node_filtered_svc";
+
     /** Node-singleton service name. */
     private static final String NODE_SINGLTON_SERVICE_NAME = "node_svc";
 
