@@ -43,10 +43,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDh
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEventBuffer;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
-import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -56,6 +54,7 @@ import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler.DFLT_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.query.continuous.TestCacheConrinuousQueryUtils.backupQueueSize;
 import static org.apache.ignite.internal.processors.cache.query.continuous.TestCacheConrinuousQueryUtils.bufferedEntries;
+import static org.apache.ignite.internal.processors.cache.query.continuous.TestCacheConrinuousQueryUtils.maxReceivedBackupAcknowledgeUpdateCounter;
 import static org.apache.ignite.internal.processors.cache.query.continuous.TestCacheConrinuousQueryUtils.partitionContinuesQueryEntryBuffers;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -112,11 +111,9 @@ public class ContinuousQueryBuffersCleanupTest extends GridCommonAbstractTest {
 
         assertTrue(cqListenerNotifiedLatch.await(getTestTimeout(), MILLISECONDS));
 
-        CacheContinuousQueryEventBuffer buff = continuosQueryEntryBuffers(grid(1)).get(part);
+        CacheContinuousQueryEventBuffer buf = continuosQueryEntryBuffers(grid(1)).get(part);
 
-        GridAtomicLong maxReceivedBackupAckUpdCntr = U.field(buff, "maxReceivedBackupAckUpdCntr");
-
-        assertTrue(waitForCondition(() -> maxReceivedBackupAckUpdCntr.get() == 2, getTestTimeout()));
+        assertTrue(waitForCondition(() -> maxReceivedBackupAcknowledgeUpdateCounter(buf).get() == 2, getTestTimeout()));
 
         spi(grid(0)).stopBlock();
 

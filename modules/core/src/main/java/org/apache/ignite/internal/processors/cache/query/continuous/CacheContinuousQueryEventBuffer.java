@@ -97,7 +97,7 @@ public class CacheContinuousQueryEventBuffer {
     private final AtomicInteger pendingCurrSize = new AtomicInteger();
 
     /** Last seen ack partition counter tracked by the CQ handler partition recovery queue. */
-    private final GridAtomicLong maxReceivedBackupAckUpdCntr = new GridAtomicLong(0);
+    final GridAtomicLong maxReceivedBackupAckUpdCntr = new GridAtomicLong(0);
 
     /**
      * @param currPartCntr Current partition counter.

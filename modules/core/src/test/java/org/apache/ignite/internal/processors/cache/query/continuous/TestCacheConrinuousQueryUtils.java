@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import java.util.Map;
+import org.apache.ignite.internal.util.GridAtomicLong;
 
 /** */
 public class TestCacheConrinuousQueryUtils {
@@ -36,5 +37,10 @@ public class TestCacheConrinuousQueryUtils {
     /** */
     public static int backupQueueSize(CacheContinuousQueryEventBuffer buf) {
         return buf.backupQueueSize();
+    }
+
+    /** */
+    public static GridAtomicLong maxReceivedBackupAcknowledgeUpdateCounter(CacheContinuousQueryEventBuffer buf) {
+        return buf.maxReceivedBackupAckUpdCntr;
     }
 }
