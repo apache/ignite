@@ -446,6 +446,7 @@ class ControlUtility:
         """
         return {
             'EXCLUDE_TEST_CLASSES': 'true',
+            'USER_LIBS': ":".join(self._cluster.spec.libs()),
             'CONTROL_JVM_OPTS': '-Dlog4j.configurationFile=file:' + self._cluster.log_config_file
         }
 
