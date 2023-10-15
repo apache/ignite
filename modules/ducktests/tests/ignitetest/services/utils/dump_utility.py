@@ -29,14 +29,16 @@ class DumpUtility:
             java_class_name="org.apache.ignite.internal.ducktest.tests.dump.DumpUtility"
         )
 
-    def create(self, dump_name):
+    def create(self, dump_name, only_primary=False):
         """
         Create cache dump.
         :param dump_name: Name of the dump.
+        :param only_primary: Dump only primary copies of partitions.
         """
         self.app.params = {
             "cmd": "create",
-            "dumpName": dump_name
+            "dumpName": dump_name,
+            "onlyPrimary": only_primary
         }
 
         self.app.start(clean=False)
