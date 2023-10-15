@@ -28,13 +28,12 @@ public class DumpUtility extends IgniteAwareApplication {
     @Override public void run(JsonNode jsonNode) {
         String cmd = jsonNode.get("cmd").asText();
         String dumpName = jsonNode.get("dumpName").asText();
-        boolean onlyPrimary = jsonNode.get("onlyPrimary").asBoolean();
 
         markInitialized();
 
         switch (cmd) {
             case "create":
-                ignite.snapshot().createDump(dumpName, null).get();
+                ignite.snapshot().createDump(dumpName).get();
                 break;
             default:
                 throw new RuntimeException("Wrong cmd parameter for the dump control utility: '" + cmd + "'");
