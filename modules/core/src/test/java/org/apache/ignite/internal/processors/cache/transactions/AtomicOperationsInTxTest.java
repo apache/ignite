@@ -68,7 +68,7 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
      * Tests that atomic cache operations are not allowed within transactions.
      */
     @Test
-    public void testSetOfAtomicOperationsWithinTransactionsCheckFalseSystemPropertyFalse() {
+    public void testSetOfAtomicOperationsWithinTransactions() {
         HashMap<Integer, Integer> map = new HashMap<>();
 
         map.put(1, 1);
