@@ -33,7 +33,7 @@ public class DumpUtility extends IgniteAwareApplication {
 
         switch (cmd) {
             case "create":
-                ignite.snapshot().createDump(dumpName).get();
+                ignite.snapshot().createDump(dumpName, null).get();
                 break;
             default:
                 throw new RuntimeException("Wrong cmd parameter for the dump control utility: '" + cmd + "'");
