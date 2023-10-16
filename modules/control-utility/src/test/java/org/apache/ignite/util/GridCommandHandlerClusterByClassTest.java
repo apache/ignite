@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongSupplier;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
@@ -100,6 +101,7 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionState;
+import org.apache.maven.surefire.shared.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assume;
 import org.junit.Test;
@@ -1652,6 +1654,31 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "testCache", "--limit", "10"));
 
         assertNotContains(log, testOut.toString(), "Result limited");
+    }
+
+    /** */
+    @Test
+    public void testCacheScanLimit() {
+        injectTestSystemOut();
+
+        IgniteCache<Integer, Object> c = crd.createCache(new CacheConfiguration<Integer, Object>("testCache")
+            .setStatisticsEnabled(true));
+
+        for (int i = 0; i < 1000; i++)
+            c.put(i, false);
+
+        LongSupplier reads = () -> G.allGrids().stream().mapToLong(srv -> srv.cache(c.getName())
+            .metrics(srv.cluster().forLocal()).getCacheGets()).sum();
+
+        long before = reads.getAsLong();
+
+        int limit = 5;
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "testCache", "--limit", String.valueOf(limit)));
+
+        assertTrue(reads.getAsLong() - before < limit * 3);
+        assertEquals(limit, StringUtils.countMatches(testOut.toString(), Integer.class.getName()));
+        assertContains(log, testOut.toString(), "Result limited");
     }
 
     /** */

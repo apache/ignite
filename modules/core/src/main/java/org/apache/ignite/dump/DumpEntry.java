@@ -14,20 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.snippets;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.configuration.CacheConfiguration;
+package org.apache.ignite.dump;
 
-public class SqlTransactions {
+import java.util.Iterator;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
+import org.apache.ignite.lang.IgniteExperimental;
 
-    void enableMVCC() {
-        //tag::enable[]
-        CacheConfiguration cacheCfg = new CacheConfiguration<>();
-        cacheCfg.setName("myCache");
+/**
+ * Single cache entry from dump.
+ *
+ * @see Dump#iterator(String, int, int)
+ * @see DumpConsumer#onPartition(int, int, Iterator)
+ * @see org.apache.ignite.IgniteSnapshot#createDump(String)
+ */
+@IgniteExperimental
+public interface DumpEntry {
+    /** @return Cache id. */
+    public int cacheId();
 
-        cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+    /** @return Expiration time. */
+    public long expireTime();
 
-        //end::enable[]
-    }
+    /** @return Key. */
+    public Object key();
+
+    /** @return Value. */
+    public Object value();
 }

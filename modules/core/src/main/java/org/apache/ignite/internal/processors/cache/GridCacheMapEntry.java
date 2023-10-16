@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntryChangeListener;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -1259,9 +1260,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 counters.accumulateSizeDelta(cctx.cacheId(), partition(), -1);
             }
 
-            if (cctx.group().logDataRecords())
-                logPtr = logMvccUpdate(tx, null, 0, 0L, mvccVer);
-
             update(null, 0, 0, newVer, true);
 
             recordNodeId(affNodeId, topVer);
@@ -1466,6 +1464,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             assert ttl >= 0 : ttl;
             assert expireTime >= 0 : expireTime;
 
+            DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
+
+            if (dumpLsnr != null)
+                dumpLsnr.beforeChange(cctx, key, old, extras == null ? CU.EXPIRE_TIME_ETERNAL : extras.expireTime(), ver);
+
             // Detach value before index update.
             val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
@@ -1658,6 +1661,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     return new GridCacheUpdateTxResult(false, logPtr);
                 }
             }
+
+            DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
+
+            if (dumpLsnr != null)
+                dumpLsnr.beforeChange(cctx, key, old, extras == null ? CU.EXPIRE_TIME_ETERNAL : extras.expireTime(), ver);
 
             removeValue();
 
@@ -3602,6 +3610,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (mvccExtras() != null)
             return false;
 
+        DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
+
+        if (dumpLsnr != null)
+            dumpLsnr.beforeChange(cctx, key, expiredVal, extras == null ? CU.TTL_MINIMUM : extras.expireTime(), ver);
+
         if (cctx.deferredDelete() && !detached() && !isInternal()) {
             if (!deletedUnlocked() && !isStartVersion()) {
                 update(null, 0L, 0L, ver, true);
@@ -3897,7 +3910,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         long expireTime,
         long updCntr
     ) throws IgniteCheckedException {
-        assert cctx.transactional() && !cctx.transactionalSnapshot();
+        assert cctx.transactional();
 
         if (tx.local()) { // For remote tx we log all updates in batch: GridDistributedTxRemoteAdapter.commitIfLocked()
             GridCacheOperation op;
@@ -3917,43 +3930,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 key.partition(),
                 updCntr,
                 DataEntry.flags(CU.txOnPrimary(tx)))));
-        }
-        else
-            return null;
-    }
-
-    /**
-     * @param tx Transaction.
-     * @param val Value.
-     * @param expireTime Expire time (or 0 if not applicable).     *
-     * @param updCntr Update counter.
-     * @param mvccVer Mvcc version.
-     * @throws IgniteCheckedException In case of log failure.
-     */
-    protected WALPointer logMvccUpdate(IgniteInternalTx tx, CacheObject val, long expireTime, long updCntr,
-        MvccSnapshot mvccVer)
-        throws IgniteCheckedException {
-        assert mvccVer != null;
-        assert cctx.transactionalSnapshot();
-
-        if (tx.local()) { // For remote tx we log all updates in batch: GridDistributedTxRemoteAdapter.commitIfLocked()
-            GridCacheOperation op;
-            if (val == null)
-                op = DELETE;
-            else
-                op = this.val == null ? GridCacheOperation.CREATE : UPDATE;
-
-            return cctx.group().wal().log(new MvccDataRecord(new MvccDataEntry(
-                cctx.cacheId(),
-                key,
-                val,
-                op,
-                tx.nearXidVersion(),
-                tx.writeVersion(),
-                expireTime,
-                key.partition(),
-                updCntr,
-                mvccVer)));
         }
         else
             return null;
@@ -4843,9 +4819,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     counters.accumulateSizeDelta(cctx.cacheId(), entry.partition(), -1);
                 }
-
-                if (cctx.group().logDataRecords())
-                    entry.logMvccUpdate(tx, null, 0, 0, mvccVer);
 
                 entry.update(null, 0, 0, newVer, true);
 
@@ -6008,6 +5981,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
             }
 
+            DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
+
+            if (dumpLsnr != null) {
+                dumpLsnr.beforeChange(
+                    cctx,
+                    entry.key,
+                    oldVal,
+                    entry.extras == null ? CU.EXPIRE_TIME_ETERNAL : entry.extras.expireTime(),
+                    entry.ver
+                );
+            }
+
             updated = cctx.kernalContext().cacheObjects().prepareForCache(updated, cctx);
 
             if (writeThrough)
@@ -6109,6 +6094,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     return;
                 }
+            }
+
+            DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
+
+            if (dumpLsnr != null) {
+                dumpLsnr.beforeChange(
+                    cctx,
+                    entry.key,
+                    oldVal,
+                    entry.extras == null ? CU.EXPIRE_TIME_ETERNAL : entry.extras.expireTime(),
+                    entry.ver
+                );
             }
 
             if (writeThrough)

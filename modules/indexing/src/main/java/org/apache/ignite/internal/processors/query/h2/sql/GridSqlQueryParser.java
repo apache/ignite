@@ -1569,7 +1569,7 @@ public class GridSqlQueryParser {
                     res.atomicityMode(CacheAtomicityMode.valueOf(val.toUpperCase()));
                 }
                 catch (IllegalArgumentException e) {
-                    String validVals = Arrays.stream(CacheAtomicityMode._values())
+                    String validVals = Arrays.stream(CacheAtomicityMode.values())
                         .map(Enum::name)
                         .collect(Collectors.joining(", "));
 

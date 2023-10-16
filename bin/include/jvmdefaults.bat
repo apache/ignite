@@ -43,7 +43,7 @@ if %java_version% GEQ 9 if %java_version% LSS 11 (
     %current_value%
 )
 
-if %java_version% GEQ 11 if %java_version% LSS 15 (
+if %java_version% GEQ 11 if %java_version% LSS 14 (
     set value= ^
     --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED ^
     --add-exports=java.base/sun.nio.ch=ALL-UNNAMED ^
@@ -55,8 +55,22 @@ if %java_version% GEQ 11 if %java_version% LSS 15 (
     %current_value%
 )
 
+if %java_version% GEQ 14 if %java_version% LSS 15 (
+    set value= ^
+    --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED ^
+    --add-exports=java.base/sun.nio.ch=ALL-UNNAMED ^
+    --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED ^
+    --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED ^
+    --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED ^
+    --add-opens=java.base/jdk.internal.access=ALL-UNNAMED ^
+    --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED ^
+    --illegal-access=permit ^
+    %current_value%
+)
+
 if %java_version% GEQ 15 (
     set value= ^
+    --add-opens=java.base/jdk.internal.access=ALL-UNNAMED ^
     --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED ^
     --add-opens=java.base/sun.nio.ch=ALL-UNNAMED ^
     --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED ^
