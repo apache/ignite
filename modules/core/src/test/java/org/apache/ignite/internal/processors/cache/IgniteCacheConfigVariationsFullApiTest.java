@@ -91,6 +91,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -6047,7 +6048,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         };
 
         try {
-            IgniteCache<String, Integer> cache = grid(0).cache(cacheName()).withAllowAtomicOpsInTx();
+            IgniteCache<String, Integer> cache = grid(0).cache(cacheName());
 
             List<String> keys = primaryKeysForCache(0, 2, 1);
 

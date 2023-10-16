@@ -2040,11 +2040,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         throw new UnsupportedOperationException();
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteCache<K, V> withAllowAtomicOpsInTx() {
-        throw new UnsupportedOperationException();
-    }
-
     /**
      * Method converts exception to IgniteCacheRestartingException in case of cache restarting
      * or to CacheException in other cases.
