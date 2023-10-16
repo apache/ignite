@@ -20,10 +20,12 @@ package org.apache.ignite.internal.processors.cache.index;
 import java.io.File;
 import java.nio.file.Paths;
 import javax.sql.DataSource;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.IgniteReflectionFactory;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -32,31 +34,54 @@ import org.junit.Test;
 
 /** */
 public class H2ConnectionSettingsTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void afterTest() {
+        stopAllGrids();
+    }
+
     /** */
     @Test
-    public void testForbidInitSetting() throws Exception {
-        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName());
+    public void testInitForbidden() throws Exception {
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName())
+            .setCacheConfiguration(cacheConfiguration());
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+        GridTestUtils.assertThrowsWithCause(() -> startGrid(cfg), org.h2.jdbc.JdbcSQLException.class);
 
+        assertFalse(checkFile().exists());
+    }
+
+    /** */
+    @Test
+    public void testInitForbiddenInDynamic() throws Exception {
+        IgniteEx ign = startGrid();
+
+        IgniteEx cln = startClientGrid(1);
+
+        GridTestUtils.assertThrowsWithCause(() -> cln.createCache(cacheConfiguration()), org.h2.jdbc.JdbcSQLException.class);
+
+        assertFalse(checkFile().exists());
+
+        assertNotNull(ign.createCache(DEFAULT_CACHE_NAME));
+    }
+
+    /** */
+    private CacheConfiguration<Integer, Integer> cacheConfiguration() throws Exception {
         CacheJdbcPojoStoreFactory<Integer, Integer> factory = new CacheJdbcPojoStoreFactory<>();
 
-        File checkFile = Paths.get(U.defaultWorkDirectory(), "init_check").toFile();
+        checkFile().delete();
 
-        checkFile.delete();
-
-        String init = "//javascript\njava.lang.Runtime.getRuntime().exec(\"touch " + checkFile.getAbsolutePath() + " \")";
+        String init = "//javascript\njava.lang.Runtime.getRuntime().exec(\"touch " + checkFile().getAbsolutePath() + " \")";
         String url = "jdbc:h2:mem:test;init=CREATE TRIGGER h BEFORE SELECT ON INFORMATION_SCHEMA.CATALOGS AS '" + init + "'";
 
         IgniteReflectionFactory<DataSource> reflectionFactory = new IgniteReflectionFactory<>(org.h2.jdbcx.JdbcDataSource.class);
         reflectionFactory.setProperties(F.asMap("url", url));
 
-        ccfg.setCacheStoreFactory(factory.setDataSourceFactory(reflectionFactory));
+        return new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
+            .setCacheStoreFactory(factory.setDataSourceFactory(reflectionFactory));
+    }
 
-        cfg.setCacheConfiguration(ccfg);
-
-        GridTestUtils.assertThrowsWithCause(() -> startGrid(cfg), org.h2.jdbc.JdbcSQLException.class);
-
-        assertFalse(checkFile.exists());
+    /** */
+    private File checkFile() throws IgniteCheckedException {
+        return Paths.get(U.defaultWorkDirectory(), "init_check").toFile();
     }
 }
