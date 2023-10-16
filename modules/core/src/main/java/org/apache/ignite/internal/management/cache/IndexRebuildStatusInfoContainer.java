@@ -44,10 +44,10 @@ public class IndexRebuildStatusInfoContainer extends IgniteDataTransferObject {
     private String cacheName;
 
     /** */
-    private long remainToIndexLocalNodePartitionsCount;
+    private int remainToIndexPartitionsCount;
 
     /** Local partitions count. */
-    private int totaLocalNodePartitionsCount;
+    private int totalPartitionsCount;
 
     /**
      * Empty constructor required for Serializable.
@@ -64,25 +64,24 @@ public class IndexRebuildStatusInfoContainer extends IgniteDataTransferObject {
 
         groupName = cfg.getGroupName() == null ? EMPTY_GROUP_NAME : cfg.getGroupName();
         cacheName = cfg.getName();
-        remainToIndexLocalNodePartitionsCount = cctx.group().metrics().getIndexBuildCountPartitionsLeft();
-        totaLocalNodePartitionsCount = cctx.topology().localPartitions().size();
+        remainToIndexPartitionsCount = cctx.cache().metrics0().getIndexBuildPartitionsLeftCount();
+        totalPartitionsCount = cctx.topology().localPartitions().size();
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, groupName);
         U.writeString(out, cacheName);
-        out.writeLong(remainToIndexLocalNodePartitionsCount);
-        out.writeInt(totaLocalNodePartitionsCount);
-
+        out.writeInt(remainToIndexPartitionsCount);
+        out.writeInt(totalPartitionsCount);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         groupName = U.readString(in);
         cacheName = U.readString(in);
-        remainToIndexLocalNodePartitionsCount = in.readLong();
-        totaLocalNodePartitionsCount = in.readInt();
+        remainToIndexPartitionsCount = in.readInt();
+        totalPartitionsCount = in.readInt();
     }
 
     /** {@inheritDoc} */
@@ -115,24 +114,24 @@ public class IndexRebuildStatusInfoContainer extends IgniteDataTransferObject {
     }
 
     /**
-     * @return Total local node partitoins count.
+     * @return Total local node partitions count.
      */
-    public int totalLocalNodePartitionsCount() {
-        return totaLocalNodePartitionsCount;
+    public int totalPartitionsCount() {
+        return totalPartitionsCount;
     }
 
     /**
      * @return The number of local node partitions that remain to be processed to complete indexing.
      */
-    public long remainToIndexLocalNodePartitionsCount() {
-        return remainToIndexLocalNodePartitionsCount;
+    public int remainToIndexPartitionsCount() {
+        return remainToIndexPartitionsCount;
     }
 
     /**
      * @return default string object representation without {@code IndexRebuildStatusInfoContainer} and brackets.
      */
     @Override public String toString() {
-        float progress = (float)(totaLocalNodePartitionsCount - remainToIndexLocalNodePartitionsCount) / totaLocalNodePartitionsCount;
+        float progress = (float)(totalPartitionsCount - remainToIndexPartitionsCount) / totalPartitionsCount;
 
         String dfltImpl = S.toString(
             IndexRebuildStatusInfoContainer.class,

@@ -278,15 +278,15 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
             "node_id=" + ignite.localNode().id() +
                 ", groupName=" + grpName +
                 ", cacheName=" + cacheName +
-                ", remainToIndexLocalNodePartitionsCount=" + locPartsCount +
-                ", totaLocalNodePartitionsCount=" + locPartsCount +
+                ", remainToIndexPartitionsCount=" + locPartsCount +
+                ", totalPartitionsCount=" + locPartsCount +
                 ", progress=0%");
     }
 
     /** */
     private void checkRebuildInProgressOutput() {
         Matcher matcher = Pattern.compile(
-            "remainToIndexLocalNodePartitionsCount=(\\d+), totaLocalNodePartitionsCount=(\\d+), progress=(\\d+)%"
+            "remainToIndexPartitionsCount=(\\d+), totalPartitionsCount=(\\d+), progress=(\\d+)%"
         ).matcher(testOut.toString());
 
         List<Integer> rebuildProgressStatuses = new ArrayList<>();

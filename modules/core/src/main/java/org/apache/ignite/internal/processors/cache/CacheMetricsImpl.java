@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
@@ -245,6 +246,9 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Number of keys processed during index rebuilding. */
     private final LongAdderMetric idxRebuildKeyProcessed;
 
+    /** The number of local node partitions that remain to be processed to complete indexing. */
+    private final IntMetricImpl idxBuildPartitionsLeftCount;
+
     /**
      * Creates cache metrics.
      *
@@ -431,6 +435,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         idxRebuildKeyProcessed = mreg.longAdderMetric("IndexRebuildKeyProcessed",
             "Number of keys processed during the index rebuilding.");
+
+        idxBuildPartitionsLeftCount = mreg.intMetric("RemainToIndexPartitionsCount",
+            "The number of local node partitions that remain to be processed to complete indexing.");
     }
 
     /**
@@ -1656,6 +1663,21 @@ public class CacheMetricsImpl implements CacheMetrics {
      */
     public void addIndexRebuildKeyProcessed(long val) {
         idxRebuildKeyProcessed.add(val);
+    }
+
+    /** */
+    public void decrementIndexBuildPartitionsLeftCount() {
+        idxBuildPartitionsLeftCount.decrement();
+    }
+
+    /** */
+    public void addIndexBuildPartitionsLeftCount(int val) {
+        idxBuildPartitionsLeftCount.add(val);
+    }
+
+    /** */
+    public int getIndexBuildPartitionsLeftCount() {
+        return idxBuildPartitionsLeftCount.value();
     }
 
     /** {@inheritDoc} */
