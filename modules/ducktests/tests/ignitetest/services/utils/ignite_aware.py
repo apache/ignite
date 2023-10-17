@@ -589,6 +589,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
 
         return int(data[0])
 
+
 def node_failed_event_pattern(failed_node_id=None):
     """Failed node pattern in log."""
     return "Node FAILED: .\\{1,\\}Node \\[id=" + (failed_node_id if failed_node_id else "") + \

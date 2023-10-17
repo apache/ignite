@@ -18,9 +18,7 @@ Module contains cache dump tests.
 """
 import os
 import re
-import sys
 from ducktape.mark import defaults
-from statistics import mean
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.control_utility import ControlUtility
