@@ -17,12 +17,15 @@
 Module contains cache dump tests.
 """
 import os
+import re
 import sys
 from ducktape.mark import defaults
+from statistics import mean
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.dump_utility import DumpUtility
+from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
@@ -31,13 +34,14 @@ from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
 
+DUMP_NAME = "test_dump"
+CACHE_NAME = "test-cache"
+
 
 class DumpTest(IgniteTest):
     """
     Test cache dump.
     """
-    DUMP_NAME = "test_dump"
-    CACHE_NAME = "test-cache"
 
     @cluster(num_nodes=5)
     @ignite_versions(str(DEV_BRANCH))
@@ -72,58 +76,50 @@ class DumpTest(IgniteTest):
             ignite.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite)),
             data_gen_params=data_gen_params)
 
+        result = self.get_avg_data_region_size(ignite)
+
+        result.update(self.create_dump(ignite))
+
+        result.update(self.check_dump(ignite))
+
+        return result
+
+    def create_dump(self, ignite):
         dump_utility = DumpUtility(self.test_context, ignite)
 
-        dump_utility.create(self.DUMP_NAME)
+        dump_create_time_ms = dump_utility.create(DUMP_NAME)
 
-        control_utility.snapshot_check(self.DUMP_NAME)
+        dump_size = {}
+        for node in ignite.nodes:
+            dump_size[node.consistent_id] = IgniteAwareService.get_file_size(
+                node, os.path.join(ignite.snapshots_dir,DUMP_NAME))
 
-        ignite.stop()
+        return {
+            "dump_create_time_ms": dump_create_time_ms,
+            "dump_size": dump_size
+        }
 
-    @cluster(num_nodes=5)
-    @ignite_versions(str(DEV_BRANCH))
-    @defaults(nodes=[3], backups=[1], cache_count=[1], entry_count=[50_000], entry_size=[1024], preloaders=[1])
-    def dump_after_datastreamer_and_restart_test(self, ignite_version, nodes, backups, cache_count, entry_count,
-                                                 entry_size, preloaders):
-        """
-        Test that entries loaded via the data streamer are dumped after the ignite restart.
-        """
-        data_gen_params = DataGenerationParams(backups=backups, cache_count=cache_count, entry_count=entry_count,
-                                               entry_size=entry_size, preloaders=preloaders)
-
-        ignite_config = IgniteConfiguration(
-            version=IgniteVersion(ignite_version),
-            data_storage=DataStorageConfiguration(
-                checkpoint_frequency=5000,
-                default=DataRegionConfiguration(
-                    persistence_enabled=True,
-                    max_size=data_gen_params.data_region_max_size
-                )
-            ),
-            metric_exporters={'org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'}
-        )
-
-        ignite = IgniteService(self.test_context, ignite_config, num_nodes=nodes)
-        ignite.start()
-
+    @staticmethod
+    def check_dump(ignite):
         control_utility = ControlUtility(ignite)
-        control_utility.activate()
 
-        preload_data(
-            self.test_context,
-            ignite.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite)),
-            data_gen_params=data_gen_params)
+        output = control_utility.snapshot_check(DUMP_NAME)
 
-        control_utility.deactivate()
+        pattern = re.compile("Execution time: (?P<time_ms>\\d+) ms")
+        match = pattern.search(output)
 
-        ignite.stop()
+        return {
+            "dump_check_time_ms": int(match.group("time_ms")) if match else None
+        }
 
-        ignite.start(clean=False)
+    @staticmethod
+    def get_avg_data_region_size(ignite):
+        data_region_size = {}
 
-        dump_utility = DumpUtility(self.test_context, ignite)
+        for node in ignite.nodes:
+            mbean = node.jmx_client().find_mbean('.*group=io.*name="dataregion.default"')
+            data_region_size[node.consistent_id] = int(next(mbean.TotalUsedSize))
 
-        dump_utility.create(self.DUMP_NAME)
-
-        control_utility.snapshot_check(self.DUMP_NAME)
-
-        ignite.stop()
+        return {
+            "data_region_size": data_region_size
+        }

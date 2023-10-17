@@ -42,3 +42,7 @@ class DumpUtility:
         self.app.start(clean=False)
 
         self.app.wait()
+
+        dump_create_time_ms = self.app.extract_result("DUMP_CREATE_TIME_MS")
+
+        return int(dump_create_time_ms) if dump_create_time_ms != "" else None

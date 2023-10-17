@@ -581,6 +581,13 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
         """
         return [node for node in self.nodes if self.alive(node)]
 
+    @staticmethod
+    def get_file_size(node, file):
+        out = IgniteAwareService.exec_command(node, f'du -s --block-size=1 {file}')
+
+        data = out.split("\t")
+
+        return int(data[0])
 
 def node_failed_event_pattern(failed_node_id=None):
     """Failed node pattern in log."""
