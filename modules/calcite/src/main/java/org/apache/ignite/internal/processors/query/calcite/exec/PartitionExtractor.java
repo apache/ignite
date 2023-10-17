@@ -24,7 +24,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.google.common.primitives.Primitives;
-import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexCall;
@@ -45,9 +44,11 @@ import org.apache.ignite.internal.processors.query.calcite.exec.partition.Partit
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteRelShuttle;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -82,6 +83,20 @@ public class PartitionExtractor extends IgniteRelShuttle {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteTrimExchange rel) {
+        stack.push(PartitionAllNode.IGNORE);
+
+        return rel;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteReceiver rel) {
+        stack.push(PartitionAllNode.IGNORE);
+
+        return rel;
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteRel processNode(IgniteRel rel) {
         IgniteRel res = super.processNode(rel);
 
@@ -106,7 +121,7 @@ public class PartitionExtractor extends IgniteRelShuttle {
         if (fragment.mapping() == null || !fragment.mapping().colocated())
             return PartitionAllNode.INSTANCE;
 
-        visit(fragment.root());
+        processNode(fragment.root());
 
         if (stack.isEmpty())
             return PartitionAllNode.INSTANCE;
@@ -122,13 +137,7 @@ public class PartitionExtractor extends IgniteRelShuttle {
 
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
 
-        if (tbl.distribution().function().type() == RelDistribution.Type.BROADCAST_DISTRIBUTED) {
-            stack.push(PartitionAllNode.INSTANCE_REPLICATED);
-
-            return;
-        }
-
-        if (tbl.distribution().getKeys().size() != 1) {
+        if (!tbl.distribution().function().affinity() || tbl.distribution().getKeys().size() != 1) {
             stack.push(PartitionAllNode.INSTANCE);
 
             return;

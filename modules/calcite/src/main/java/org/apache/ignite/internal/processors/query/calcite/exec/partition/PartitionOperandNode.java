@@ -43,7 +43,7 @@ public class PartitionOperandNode implements PartitionNode {
 
         if (op == Operand.AND) {
             for (PartitionNode operand : operands) {
-                if (operand == PartitionAllNode.INSTANCE_REPLICATED)
+                if (operand == PartitionAllNode.IGNORE)
                     continue;
 
                 Collection<Integer> parts = operand.apply(ctx);
@@ -59,7 +59,7 @@ public class PartitionOperandNode implements PartitionNode {
         }
         else {
             for (PartitionNode operand: operands) {
-                if (operand == PartitionAllNode.INSTANCE_REPLICATED)
+                if (operand == PartitionAllNode.IGNORE)
                     continue;
 
                 Collection<Integer> parts = operand.apply(ctx);

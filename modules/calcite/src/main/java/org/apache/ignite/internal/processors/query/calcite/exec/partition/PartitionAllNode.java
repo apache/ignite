@@ -20,8 +20,8 @@ import java.util.Collection;
 
 /** */
 public class PartitionAllNode implements PartitionNode {
-    /** */
-    public static final PartitionAllNode INSTANCE_REPLICATED = new PartitionAllNode(true);
+    /** Exclude this node from partition calculation if other nodes present in {@link PartitionParameterNode }. */
+    public static final PartitionAllNode IGNORE = new PartitionAllNode(true);
 
     /** */
     public static final PartitionAllNode INSTANCE = new PartitionAllNode(false);
