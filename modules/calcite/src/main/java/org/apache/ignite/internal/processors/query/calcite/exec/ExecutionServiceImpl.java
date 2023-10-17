@@ -560,9 +560,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     ) {
         qry.mapping();
 
-        MappingQueryContext mapCtx = Commons.mapContext(locNodeId, topologyVersion(), qry.context());
+        Map<String, Object> qryParams = Commons.parametersMap(qry.parameters());
 
-        ExecutionPlan execPlan = plan.init(mappingSvc, mapCtx);
+        MappingQueryContext mapCtx = Commons.mapContext(locNodeId, topologyVersion(), qry.context(), qryParams);
+
+        ExecutionPlan execPlan = plan.init(mappingSvc, partSvc, mapCtx);
 
         List<Fragment> fragments = execPlan.fragments();
 
@@ -607,7 +609,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
             createIoTracker(locNodeId, qry.localQueryId()),
             timeout,
-            Commons.parametersMap(qry.parameters()));
+            qryParams);
 
         Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
             exchangeService(), failureProcessor()).go(fragment.root());

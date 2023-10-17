@@ -15,34 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.internal.processors.query.calcite.exec.partition;
 
-import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
-import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
+import java.util.Collection;
+import com.google.common.collect.ImmutableList;
 
-/**
- * Regular query or DML
- */
-public interface MultiStepPlan extends QueryPlan {
-    /**
-     * @return Fields metadata.
-     */
-    FieldsMetadata fieldsMetadata();
+/** */
+abstract class PartitionSingleNode implements PartitionNode {
+    /** */
+    private final int cacheId;
 
-    /**
-     * @return Parameters metadata;
-     */
-    FieldsMetadata paramsMetadata();
+    /** */
+    protected PartitionSingleNode(int cacheId) {
+        this.cacheId = cacheId;
+    }
 
-    /**
-     * Inits query fragments.
-     *
-     * @param ctx Planner context.
-     */
-    ExecutionPlan init(MappingService mappingService, AffinityService affSvc, MappingQueryContext ctx);
+    /** {@inheritDoc} */
+    @Override public Collection<Integer> apply(PartitionPruningContext ctx) {
+        Integer part = applySingle(ctx);
 
-    /**
-     * @return Text representation of query plan
-     */
-    String textPlan();
+        return part == null ? ImmutableList.of() : ImmutableList.of(part);
+    }
+
+    /** */
+    abstract Integer applySingle(PartitionPruningContext ctx);
+
+    /** {@inheritDoc} */
+    @Override public int cacheId() {
+        return cacheId;
+    }
 }

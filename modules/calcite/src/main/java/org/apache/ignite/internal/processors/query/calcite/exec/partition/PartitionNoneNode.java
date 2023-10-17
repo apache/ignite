@@ -15,34 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.internal.processors.query.calcite.exec.partition;
 
-import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
-import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
+import java.util.Collection;
+import java.util.Collections;
 
-/**
- * Regular query or DML
- */
-public interface MultiStepPlan extends QueryPlan {
-    /**
-     * @return Fields metadata.
-     */
-    FieldsMetadata fieldsMetadata();
+/** */
+public class PartitionNoneNode implements PartitionNode {
+    /** */
+    public static final PartitionNoneNode INSTANCE = new PartitionNoneNode();
 
     /**
-     * @return Parameters metadata;
+     * Constructor.
      */
-    FieldsMetadata paramsMetadata();
+    private PartitionNoneNode() {
+        // No-op.
+    }
 
-    /**
-     * Inits query fragments.
-     *
-     * @param ctx Planner context.
-     */
-    ExecutionPlan init(MappingService mappingService, AffinityService affSvc, MappingQueryContext ctx);
-
-    /**
-     * @return Text representation of query plan
-     */
-    String textPlan();
+    /** {@inheritDoc} */
+    @Override public Collection<Integer> apply(PartitionPruningContext ctx) {
+        return Collections.emptyList();
+    }
 }

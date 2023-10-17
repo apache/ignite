@@ -15,34 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.internal.processors.query.calcite.exec.partition;
 
-import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
-import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
+import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.jetbrains.annotations.Nullable;
 
-/**
- * Regular query or DML
- */
-public interface MultiStepPlan extends QueryPlan {
+/** */
+public interface PartitionNode {
     /**
-     * @return Fields metadata.
+     * @param ctx Partition pruning context.
+     * @return Collection of partitions after pruning or {@code null} if all partitions required.
      */
-    FieldsMetadata fieldsMetadata();
+    @Nullable Collection<Integer> apply(PartitionPruningContext ctx);
 
-    /**
-     * @return Parameters metadata;
-     */
-    FieldsMetadata paramsMetadata();
-
-    /**
-     * Inits query fragments.
-     *
-     * @param ctx Planner context.
-     */
-    ExecutionPlan init(MappingService mappingService, AffinityService affSvc, MappingQueryContext ctx);
-
-    /**
-     * @return Text representation of query plan
-     */
-    String textPlan();
+    /** */
+    default int cacheId() {
+        return CU.UNDEFINED_CACHE_ID;
+    }
 }
