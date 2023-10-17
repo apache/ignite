@@ -220,11 +220,10 @@ class ControlUtility:
         raise TimeoutError(f'Failed to wait for the snapshot operation to complete: '
                            f'snapshot_name={snapshot_name} in {timeout_sec} seconds.')
 
-    def snapshot_check(self, snapshot_name: str, timeout_sec: int = 60):
+    def snapshot_check(self, snapshot_name: str):
         """
         Check snapshot.
-        :param snapshot_name: Name of Snapshot.
-        :param timeout_sec: Timeout to await snapshot to complete.
+        :param snapshot_name: Name of snapshot.
         """
         res = self.__run(f"--snapshot check {snapshot_name}")
 
