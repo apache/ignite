@@ -3326,6 +3326,9 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         if (cls.equals(IgniteRestProcessor.class))
             return (T)new GridRestProcessor(ctx);
 
+        if (cls.equals(CacheObjectTransformerProcessor.class))
+            return null;
+
         Class<T> implCls = null;
 
         try {

@@ -189,15 +189,16 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     ) throws IgniteCheckedException {
         this.log = log;
 
+        marshallerCtx = new MarshallerContextImpl(null, null);
+        cfg = prepareIgniteConfiguration();
+
         try {
-            pluginProc = new StandaloneIgnitePluginProcessor(this, config());
+            pluginProc = new StandaloneIgnitePluginProcessor(this, cfg);
         }
         catch (IgniteCheckedException e) {
             throw new IllegalStateException("Must not fail on empty providers list.", e);
         }
 
-        marshallerCtx = new MarshallerContextImpl(null, null);
-        cfg = prepareIgniteConfiguration();
         rsrcProc = new GridResourceProcessor(this);
         metricMgr = new GridMetricManager(this);
         sysViewMgr = new GridSystemViewManager(this);
