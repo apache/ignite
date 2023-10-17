@@ -758,6 +758,8 @@ public class CacheMetricsImpl implements CacheMetrics {
         txKeyCollisionInfo = null;
 
         idxRebuildKeyProcessed.reset();
+
+        resetIndexBuildPartitionsLeftCount();
     }
 
     /** {@inheritDoc} */
@@ -1676,7 +1678,12 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** */
-    public int getIndexBuildPartitionsLeftCount() {
+    public void resetIndexBuildPartitionsLeftCount() {
+        idxBuildPartitionsLeftCount.reset();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getIndexBuildPartitionsLeftCount() {
         return idxBuildPartitionsLeftCount.value();
     }
 
