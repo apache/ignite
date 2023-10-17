@@ -436,16 +436,15 @@ class ControlUtility:
             auth = f" --user {self.username} --password {self.password} "
 
         return "%s %s" % \
-               (envs_to_exports(self.__envs()),
+               (envs_to_exports(self.envs()),
                 self._cluster.script(f"{self.BASE_COMMAND} --host {node_ip} {cmd} {ssl} {auth}"))
 
-    def __envs(self):
+    def envs(self):
         """
         :return: environment set.
         """
         return {
             'EXCLUDE_TEST_CLASSES': 'true',
-            'USER_LIBS': ":".join(self._cluster.spec.libs()),
             'CONTROL_JVM_OPTS': '-Dlog4j.configurationFile=file:' + self._cluster.log_config_file
         }
 
