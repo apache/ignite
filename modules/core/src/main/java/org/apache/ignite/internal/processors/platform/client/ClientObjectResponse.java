@@ -24,7 +24,7 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
  */
 public class ClientObjectResponse extends ClientResponse {
     /** */
-    protected final Object val;
+    private final Object val;
 
     /**
      * Constructor.

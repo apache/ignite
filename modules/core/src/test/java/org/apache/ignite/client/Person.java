@@ -34,12 +34,6 @@ public class Person {
     private String name;
 
     /** Constructor. */
-    public Person() {
-
-    }
-
-
-    /** Constructor. */
     public Person(Integer id, String name) {
         this.id = id;
         this.name = name;

@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
@@ -61,13 +62,18 @@ class ClientServicesImpl implements ClientServices {
     /** Cluster group. */
     private final ClientClusterGroupImpl grp;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /** Constructor. */
-    ClientServicesImpl(ReliableChannel ch, ClientBinaryMarshaller marsh, ClientClusterGroupImpl grp) {
+    ClientServicesImpl(ReliableChannel ch, ClientBinaryMarshaller marsh, ClientClusterGroupImpl grp, IgniteLogger log) {
         this.ch = ch;
         this.marsh = marsh;
         this.grp = grp;
 
         utils = new ClientUtils(marsh);
+
+        this.log = log;
     }
 
     /** {@inheritDoc} */
@@ -169,7 +175,7 @@ class ClientServicesImpl implements ClientServices {
     ClientServices withClusterGroup(ClientClusterGroupImpl grp) {
         A.notNull(grp, "grp");
 
-        return new ClientServicesImpl(ch, marsh, grp);
+        return new ClientServicesImpl(ch, marsh, grp, log);
     }
 
     /**
@@ -191,8 +197,11 @@ class ClientServicesImpl implements ClientServices {
         /** Service call context attributes. */
         private final Map<String, Object> callAttrs;
 
-        /** Service's known topology with the version. */
-        private volatile IgniteBiTuple<List<UUID>, Long> srvTop = new IgniteBiTuple<>(Collections.emptyList(), 0L);
+        /**
+         * Service's known topology with the version. If version is 0, the topology is not initialized yet.
+         * If the topology is {@code null}, service awareness is not enabled.
+         */
+        private volatile @Nullable IgniteBiTuple<List<UUID>, Long> srvTop;
 
         /**
          * @param name Service name.
@@ -210,20 +219,22 @@ class ClientServicesImpl implements ClientServices {
             this.timeout = timeout;
             this.grp = grp;
             this.callAttrs = callAttrs;
+
+            srvTop = grp.ch.partitionAwarenessEnabled ? new IgniteBiTuple<>(Collections.emptyList(), 0L) : null;
         }
 
         /** {@inheritDoc} */
         @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            try {
-                IgniteBiTuple<List<UUID>, Long> srvTop = grp.ch.partitionAwarenessEnabled ? this.srvTop : null;
+            boolean srvAwareness = srvTop != null;
 
+            try {
                 Collection<UUID> nodeIds = grp.nodeIds();
 
                 if (nodeIds != null && nodeIds.isEmpty())
                     throw new ClientException("Cluster group is empty.");
 
                 return ch.service(ClientOperation.SERVICE_INVOKE,
-                    req -> writeServiceInvokeRequest(req, nodeIds, method, args, srvTop == null ? null : srvTop.get2()),
+                    req -> writeServiceInvokeRequest(req, nodeIds, method, args, srvAwareness ? srvTop.get2() : -1L),
                     res -> {
                         Object val;
                         long srvTopVersion = -1L;
@@ -232,7 +243,7 @@ class ClientServicesImpl implements ClientServices {
                         try (BinaryReaderExImpl reader = utils.createBinaryReader(res.in())) {
                             val = reader.readObject();
 
-                            if (srvTop != null) {
+                            if (srvAwareness) {
                                 srvTopVersion = reader.readLong();
 
                                 int uuidsLen = reader.readInt();
@@ -254,16 +265,11 @@ class ClientServicesImpl implements ClientServices {
 
                         return val;
                     },
-                    srvTop == null || srvTop.get2() == 0L ? null : srvTop.get1()
+                    !srvAwareness || srvTop.get2() == 0L ? null : srvTop.get1()
                 );
             }
             catch (ClientError e) {
                 throw new ClientException(e);
-            }
-            catch (Throwable e){
-                System.err.println("fg");
-
-                throw e;
             }
         }
 
@@ -275,9 +281,19 @@ class ClientServicesImpl implements ClientServices {
             if (topVer == 0)
                 srvTop = new IgniteBiTuple<>(Collections.emptyList(), 0L);
             else if (topVer > srvTop.get2()) {
+                IgniteBiTuple<List<UUID>, Long> newTop = null;
+
                 synchronized (grp) {
-                    if (topVer > srvTop.get2())
-                        srvTop = new IgniteBiTuple<>(Arrays.asList(nodes), topVer);
+                    if (topVer > srvTop.get2()) {
+                        srvTop = newTop = new IgniteBiTuple<>(Arrays.asList(nodes), topVer);
+                    }
+                }
+
+                if (newTop != null && log.isDebugEnabled()) {
+                    log.error("TEST | updateServiceTopology");
+
+                    log.debug("Topology of service '" + name + "' has been updated to version " + newTop.get2()
+                        + ": " + Arrays.toString(nodes));
                 }
             }
         }
@@ -287,16 +303,17 @@ class ClientServicesImpl implements ClientServices {
          * @param nodeIds Node IDs.
          * @param method Method to call.
          * @param args Method args.
-         * @param srvTopVer Service topology version.
+         * @param srvTopVer Service topology version. A negative value, if the service awareness is not enabled. 0,
+         *                  if the topology is not initialized yet. Otherwiese, the last known service topology version.
          */
         private void writeServiceInvokeRequest(
             PayloadOutputChannel ch,
             Collection<UUID> nodeIds,
             Method method,
             Object[] args,
-            @Nullable Long srvTopVer
+            long srvTopVer
         ) {
-            assert srvTopVer == null || ch.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.SERVICE_MAPPINGS);
+            assert srvTopVer < 0 || ch.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.SERVICE_MAPPINGS);
 
             ch.clientChannel().protocolCtx().checkFeatureSupported(callAttrs != null ?
                 ProtocolBitmaskFeature.SERVICE_INVOKE_CALLCTX : ProtocolBitmaskFeature.SERVICE_INVOKE);
@@ -306,7 +323,7 @@ class ClientServicesImpl implements ClientServices {
                 writer.writeByte(FLAG_PARAMETER_TYPES_MASK); // Flags.
                 writer.writeLong(timeout);
 
-                writer.writeLong(srvTopVer == null ? -1L : srvTopVer);
+                writer.writeLong(srvTopVer);
 
                 if (nodeIds == null)
                     writer.writeInt(0);

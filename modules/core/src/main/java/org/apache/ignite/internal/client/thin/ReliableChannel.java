@@ -201,7 +201,7 @@ final class ReliableChannel implements AutoCloseable {
         @Nullable List<UUID> targetNodes
     ) throws ClientException, ClientError {
         if(F.isEmpty(targetNodes))
-            return applyOnRandomChannel(channel -> channel.service(op, payloadWriter, payloadReader), op);
+            return applyOnDefaultChannel(channel -> channel.service(op, payloadWriter, payloadReader), op);
 
         return applyOnNodeChannelWithFallback(
             targetNodes.get(ThreadLocalRandom.current().nextInt(targetNodes.size())),
@@ -237,7 +237,7 @@ final class ReliableChannel implements AutoCloseable {
         List<ClientConnectionException> failures
     ) {
         try {
-            applyOnRandomChannel(
+            applyOnDefaultChannel(
                 channel -> applyOnClientChannelAsync(fut, channel, op, payloadWriter, payloadReader, failures),
                 null,
                 failures
@@ -568,8 +568,6 @@ final class ReliableChannel implements AutoCloseable {
                             e.getMessage() + ']', e);
                     }
                 }
-
-                log.error("TEST | initAllChannelsAsync() finished. Node channels size: " + nodeChannels.size());
             }
         );
     }
@@ -710,9 +708,6 @@ final class ReliableChannel implements AutoCloseable {
         try {
             channels = reinitHolders;
 
-//            for(ClientChannelHolder ch : reinitHolders)
-//                ch.getOrCreateChannel();
-
             attemptsLimit = getRetryLimit();
 
             curChIdx = dfltChannelIdx;
@@ -745,11 +740,11 @@ final class ReliableChannel implements AutoCloseable {
         if (failures == null || failures.size() < attemptsLimit) {
             if (channelsCnt.get() == 0) {
                 // Establish default channel connection and retrive nodes endpoints if applicable.
-                if (applyOnRandomChannel(discoveryCtx::refresh, null, failures))
+                if (applyOnDefaultChannel(discoveryCtx::refresh, null, failures))
                     initChannelHolders();
             }
             else // Apply no-op function. Establish default channel connection.
-                applyOnRandomChannel(channel -> null, null, failures);
+                applyOnDefaultChannel(channel -> null, null, failures);
         }
 
         if (partitionAwarenessEnabled)
@@ -788,29 +783,17 @@ final class ReliableChannel implements AutoCloseable {
     }
 
     /** */
-    <T> T applyOnRandomChannel(Function<ClientChannel, T> function, ClientOperation op) {
-        return applyOnRandomChannel(function, op, null);
+    <T> T applyOnDefaultChannel(Function<ClientChannel, T> function, ClientOperation op) {
+        return applyOnDefaultChannel(function, op, null);
     }
 
     /**
      * Apply specified {@code function} on any of available channel.
      */
-    private <T> T applyOnRandomChannel(
+    private <T> T applyOnDefaultChannel(
         Function<ClientChannel, T> function,
         ClientOperation op,
         @Nullable List<ClientConnectionException> failures
-    ) {
-        return applyOnRandomChannel(function, op, failures, null);
-    }
-
-    /**
-     * Apply specified {@code function} on any of available channel.
-     */
-    private <T> T applyOnRandomChannel(
-        Function<ClientChannel, T> function,
-        ClientOperation op,
-        @Nullable List<ClientConnectionException> failures,
-        @Nullable  Collection<UUID> nodeIds
     ) {
         while (attemptsLimit > (failures == null ? 0 : failures.size())) {
             ClientChannelHolder hld = null;
@@ -846,8 +829,6 @@ final class ReliableChannel implements AutoCloseable {
                 ClientChannel c0 = hld.ch;
 
                 c = hld.getOrCreateChannel();
-
-                log.error("TEST | nodeChannels size: " + nodeChannels.size());
 
                 try {
                     return function.apply(c);
@@ -922,7 +903,7 @@ final class ReliableChannel implements AutoCloseable {
             }
         }
 
-        return applyOnRandomChannel(function, op, failures);
+        return applyOnDefaultChannel(function, op, failures);
     }
 
     /** Get retry limit. */

@@ -159,7 +159,7 @@ public class TcpIgniteClient implements IgniteClient {
 
             compute = new ClientComputeImpl(ch, marsh, cluster.defaultClusterGroup());
 
-            services = new ClientServicesImpl(ch, marsh, cluster.defaultClusterGroup());
+            services = new ClientServicesImpl(ch, marsh, cluster.defaultClusterGroup(), cfg.getLogger());
 
             lsnrsRegistry = new ClientCacheEntryListenersRegistry();
         }
@@ -466,7 +466,7 @@ public class TcpIgniteClient implements IgniteClient {
         if (!cfg.isAutoBinaryConfigurationEnabled())
             return;
 
-        ClientInternalBinaryConfiguration clusterCfg = ch.applyOnRandomChannel(
+        ClientInternalBinaryConfiguration clusterCfg = ch.applyOnDefaultChannel(
                 c -> c.protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.BINARY_CONFIGURATION)
                 ? c.service(ClientOperation.GET_BINARY_CONFIGURATION, null, r -> new ClientInternalBinaryConfiguration(r.in()))
                 : null,

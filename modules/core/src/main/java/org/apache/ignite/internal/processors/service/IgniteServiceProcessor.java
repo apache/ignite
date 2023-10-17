@@ -1269,8 +1269,6 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
         Collection<ServiceContextImpl> toInit = new ArrayList<>();
 
-        log.error("TEST | redeploy: '" + cfg.getName() + "' on " + ctx.cluster().get().localNode().order());
-
         synchronized (ctxs) {
             if (ctxs.size() > assignCnt) {
                 int cancelCnt = ctxs.size() - assignCnt;
@@ -1904,8 +1902,6 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @param msg Message.
      */
     private void processServicesFullDeployments(ServiceClusterDeploymentResultBatch msg) {
-        log.error("TEST | processServicesFullDeployments on " + ctx.cluster().get().localNode().order());
-
         final Map<IgniteUuid, Map<UUID, Integer>> fullTops = new HashMap<>();
         final Map<IgniteUuid, Collection<byte[]>> fullErrors = new HashMap<>();
 
