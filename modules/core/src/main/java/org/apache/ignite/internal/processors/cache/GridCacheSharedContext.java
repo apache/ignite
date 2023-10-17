@@ -36,7 +36,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cache.transform.CacheObjectTransformerManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -140,9 +139,6 @@ public class GridCacheSharedContext<K, V> {
     /** Mvcc caching manager. */
     private MvccCachingManager mvccCachingMgr;
 
-    /** Cache objects transformation manager. */
-    private CacheObjectTransformerManager transMgr;
-
     /** Cache contexts map. */
     private final ConcurrentHashMap<Integer, GridCacheContext<K, V>> ctxMap;
 
@@ -229,8 +225,7 @@ public class GridCacheSharedContext<K, V> {
         CacheJtaManagerAdapter jtaMgr,
         Collection<CacheStoreSessionListener> storeSesLsnrs,
         MvccCachingManager mvccCachingMgr,
-        CacheDiagnosticManager diagnosticMgr,
-        CacheObjectTransformerManager transMgr
+        CacheDiagnosticManager diagnosticMgr
     ) {
         this.kernalCtx = kernalCtx;
 
@@ -253,8 +248,7 @@ public class GridCacheSharedContext<K, V> {
             ttlMgr,
             evictMgr,
             mvccCachingMgr,
-            diagnosticMgr,
-            transMgr
+            diagnosticMgr
         );
 
         this.storeSesLsnrs = storeSesLsnrs;
@@ -432,8 +426,7 @@ public class GridCacheSharedContext<K, V> {
             ttlMgr,
             evictMgr,
             mvccCachingMgr,
-            diagnosticMgr,
-            transMgr
+            diagnosticMgr
         );
 
         this.mgrs = mgrs;
@@ -482,8 +475,7 @@ public class GridCacheSharedContext<K, V> {
         GridCacheSharedTtlCleanupManager ttlMgr,
         PartitionsEvictManager evictMgr,
         MvccCachingManager mvccCachingMgr,
-        CacheDiagnosticManager diagnosticMgr,
-        CacheObjectTransformerManager transMgr
+        CacheDiagnosticManager diagnosticMgr
     ) {
         this.diagnosticMgr = add(mgrs, diagnosticMgr);
         this.mvccMgr = add(mgrs, mvccMgr);
@@ -506,7 +498,6 @@ public class GridCacheSharedContext<K, V> {
         this.ttlMgr = add(mgrs, ttlMgr);
         this.evictMgr = add(mgrs, evictMgr);
         this.mvccCachingMgr = add(mgrs, mvccCachingMgr);
-        this.transMgr = add(mgrs, transMgr);
     }
 
     /**
@@ -874,13 +865,6 @@ public class GridCacheSharedContext<K, V> {
      */
     public CacheDiagnosticManager diagnostic() {
         return diagnosticMgr;
-    }
-
-    /**
-     * @return Cache objects transformation manager.
-     */
-    public CacheObjectTransformerManager transformer() {
-        return transMgr;
     }
 
     /**

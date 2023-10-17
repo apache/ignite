@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
-import org.apache.ignite.internal.cache.transform.CacheObjectTransformerManager;
+import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_TRANSFORMED;
@@ -28,12 +28,12 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED
 /** */
 public class CacheObjectTransformerUtils {
     /** */
-    private static CacheObjectTransformerManager transformer(CacheObjectValueContext ctx) {
-        return ctx.kernalContext().cache().context().transformer();
+    private static CacheObjectTransformerProcessor transformer(CacheObjectValueContext ctx) {
+        return ctx.kernalContext().transformer();
     }
 
     /**
-     * Transforms bytes according to {@link CacheObjectTransformerManager} when specified.
+     * Transforms bytes according to {@link CacheObjectTransformerProcessor} when specified.
      * @param bytes Given bytes.
      * @param ctx Context.
      * @return Transformed bytes.
@@ -43,7 +43,7 @@ public class CacheObjectTransformerUtils {
     }
 
     /**
-     * Transforms bytes according to {@link CacheObjectTransformerManager} when specified.
+     * Transforms bytes according to {@link CacheObjectTransformerProcessor} when specified.
      * @param bytes Given bytes.
      * @param ctx Context.
      * @return Transformed bytes.
@@ -51,7 +51,7 @@ public class CacheObjectTransformerUtils {
     public static byte[] transformIfNecessary(byte[] bytes, int offset, int length, CacheObjectValueContext ctx) {
         assert bytes[offset] != TRANSFORMED;
 
-        CacheObjectTransformerManager transformer = transformer(ctx);
+        CacheObjectTransformerProcessor transformer = transformer(ctx);
 
         if (transformer == null)
             return bytes;
@@ -117,7 +117,7 @@ public class CacheObjectTransformerUtils {
         if (bytes[0] != TRANSFORMED)
             return bytes;
 
-        CacheObjectTransformerManager transformer = transformer(ctx);
+        CacheObjectTransformerProcessor transformer = transformer(ctx);
 
         ByteBuffer src = ByteBuffer.wrap(bytes, 1, bytes.length - 1); // Skipping TRANSFORMED.
         ByteBuffer restored = transformer.restore(src);
