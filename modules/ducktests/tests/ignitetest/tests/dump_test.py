@@ -74,7 +74,7 @@ class DumpTest(IgniteTest):
             ignite.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite)),
             data_gen_params=data_gen_params)
 
-        result = self.get_avg_data_region_size(ignite)
+        result = self.get_data_region_size(ignite)
 
         result.update(self.create_dump(ignite))
 
@@ -111,7 +111,7 @@ class DumpTest(IgniteTest):
         }
 
     @staticmethod
-    def get_avg_data_region_size(ignite):
+    def get_data_region_size(ignite):
         data_region_size = {}
 
         for node in ignite.nodes:
