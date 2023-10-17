@@ -22,33 +22,18 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientServiceDescriptor;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.Person;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.internal.GridJobExecuteRequest;
-import org.apache.ignite.internal.GridTopic;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryArray;
-import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.processors.service.GridServiceProxy;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.ServiceContextResource;
@@ -59,10 +44,6 @@ import org.apache.ignite.services.ServiceCallInterceptor;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
-import org.apache.logging.log4j.Level;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
@@ -76,9 +57,6 @@ public class ServicesTest extends AbstractThinClientTest {
     /** Node-id service name. */
     private static final String NODE_ID_SERVICE_NAME = "node_id_svc";
 
-    /** Node-filter service name. */
-    private static final String NODE_FILTERED_SERVICE_NAME = "node_filtered_svc";
-
     /** Node-singleton service name. */
     private static final String NODE_SINGLTON_SERVICE_NAME = "node_svc";
 
@@ -88,32 +66,16 @@ public class ServicesTest extends AbstractThinClientTest {
     /** */
     protected boolean useBinaryArrays;
 
-    /** */
-    protected boolean partitionAwareness = true;
-
-    /** */
-    private static ListeningTestLogger clientLogLsnr;
-
-    @Override protected ClientConfiguration getClientConfiguration() {
-        ClientConfiguration ccfg = super.getClientConfiguration();
-
-        ccfg.setLogger(clientLogLsnr);
-
-        return ccfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        clientLogLsnr = new ListeningTestLogger(log);
-
         System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(useBinaryArrays));
         BinaryArray.initUseBinaryArrays();
 
-        startGrids(4);
+        startGrids(3);
 
-        startClientGrid(4);
+        startClientGrid(3);
 
         grid(0).createCache(DEFAULT_CACHE_NAME);
 
@@ -134,19 +96,6 @@ public class ServicesTest extends AbstractThinClientTest {
 
         grid(0).services().deployKeyAffinitySingleton(CLUSTER_SINGLTON_SERVICE_NAME, new TestService(),
             DEFAULT_CACHE_NAME, keyGrid1);
-
-        svcCfg = new ServiceConfiguration()
-            .setName(NODE_FILTERED_SERVICE_NAME)
-            .setService(new TestService())
-            .setMaxPerNodeCount(2)
-            .setNodeFilter(new TestNodeFilter(Arrays.asList(getTestIgniteInstanceName(2), getTestIgniteInstanceName(3))));
-
-        grid(1).services().deploy(svcCfg);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean isClientPartitionAwarenessEnabled() {
-        return partitionAwareness;
     }
 
     /** {@inheritDoc} */
@@ -157,22 +106,11 @@ public class ServicesTest extends AbstractThinClientTest {
         BinaryArray.initUseBinaryArrays();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        ((GridTestLog4jLogger)log).setLevel(Level.INFO);
-
-        partitionAwareness = true;
-
-        clientLogLsnr.clearListeners();
-    }
-
     /**
      * Test that overloaded methods resolved correctly.
      */
     @Test
-    public void testOverloadedMethods() {
+    public void testOverloadedMethods() throws Exception {
         try (IgniteClient client = startClient(0)) {
             // Test local service calls (service deployed to each node).
             TestServiceInterface svc = client.services().serviceProxy(NODE_SINGLTON_SERVICE_NAME,
@@ -214,83 +152,10 @@ public class ServicesTest extends AbstractThinClientTest {
     }
 
     /**
-     *
-     */
-    @Test
-    public void testServiceAwareness() {
-        AtomicInteger redirectCnt = new AtomicInteger();
-
-        G.allGrids().forEach(g->((IgniteEx)g).context().io().addMessageListener(GridTopic.TOPIC_JOB, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                if(msg instanceof GridJobExecuteRequest &&
-                    ((GridJobExecuteRequest)msg).getTaskClassName().contains(GridServiceProxy.class.getName())) {
-                    redirectCnt.incrementAndGet();
-
-                    log.error("TEST | redirect");
-                }
-            }
-        }));
-
-        partitionAwareness = false;
-
-        callServiceNTimesFromClient(NODE_FILTERED_SERVICE_NAME, null, () -> redirectCnt.get() >= 100);
-
-        // Check no service awareness, continous redirections.
-        assertEquals(100, redirectCnt.get());
-
-        partitionAwareness = true;
-
-        // Received service topology.
-        AtomicReference<Collection<UUID>> top = new AtomicReference<>();
-
-        AtomicInteger callCounter = new AtomicInteger();
-
-        clientLogLsnr.registerListener(s -> {
-            if (s.contains("Topology of service '" + NODE_FILTERED_SERVICE_NAME + "' has been updated to version 1")) {
-                String nodes = s.substring(s.indexOf(": [") + 3);
-
-                nodes = nodes.substring(0, nodes.length() - 1);
-
-                top.set(Stream.of(nodes.split(", ")).map(UUID::fromString).collect(Collectors.toSet()));
-
-                redirectCnt.set(0);
-
-                callCounter.set(0);
-            }
-        });
-
-        callServiceNTimesFromClient(NODE_FILTERED_SERVICE_NAME, callCounter, () -> top.get() != null && callCounter.get() >= 1000);
-
-        assertTrue(top.get().size() == 2 && top.get().contains(grid(2).localNode().id())
-            && top.get().contains(grid(3).localNode().id()));
-
-        assertTrue(redirectCnt.get() < 100);
-    }
-
-    /** */
-    private void callServiceNTimesFromClient(String srvcName, @Nullable AtomicInteger callCounter, Supplier<Boolean> stop) {
-        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
-
-        try (IgniteClient client = startClient(0)) {
-            TestServiceInterface svc = client.services().serviceProxy(srvcName, TestServiceInterface.class);
-
-            while (!stop.get()) {
-                svc.testMethod();
-
-                if (callCounter != null)
-                    callCounter.incrementAndGet();
-            }
-        }
-        finally {
-            ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
-        }
-    }
-
-    /**
      * Test that methods which get and return collections work correctly.
      */
     @Test
-    public void testCollectionMethods() {
+    public void testCollectionMethods() throws Exception {
         try (IgniteClient client = startClient(0)) {
             // Test local service calls (service deployed to each node).
             TestServiceInterface svc = client.services().serviceProxy(NODE_SINGLTON_SERVICE_NAME,
@@ -326,7 +191,7 @@ public class ServicesTest extends AbstractThinClientTest {
      * Test that exception is thrown when invoking service with wrong interface.
      */
     @Test
-    public void testWrongMethodInvocation() {
+    public void testWrongMethodInvocation() throws Exception {
         try (IgniteClient client = startClient(0)) {
             TestServiceInterface svc = client.services().serviceProxy(NODE_ID_SERVICE_NAME,
                 TestServiceInterface.class);
@@ -340,7 +205,7 @@ public class ServicesTest extends AbstractThinClientTest {
      * Test that exception is thrown when trying to invoke non-existing service.
      */
     @Test
-    public void testWrongServiceName() {
+    public void testWrongServiceName() throws Exception {
         try (IgniteClient client = startClient(0)) {
             TestServiceInterface svc = client.services().serviceProxy("no_such_service",
                 TestServiceInterface.class);
@@ -354,7 +219,7 @@ public class ServicesTest extends AbstractThinClientTest {
      * Test that service exception message is propagated to client.
      */
     @Test
-    public void testServiceException() {
+    public void testServiceException() throws Exception {
         try (IgniteClient client = startClient(0)) {
             // Test local service calls (service deployed to each node).
             TestServiceInterface svc = client.services().serviceProxy(NODE_SINGLTON_SERVICE_NAME,
@@ -425,7 +290,7 @@ public class ServicesTest extends AbstractThinClientTest {
      * Test that services executed on cluster group.
      */
     @Test
-    public void testServicesOnClusterGroup() {
+    public void testServicesOnClusterGroup() throws Exception {
         try (IgniteClient client = startClient(0)) {
             // Local node.
             ClientClusterGroup grp = client.cluster().forNodeId(nodeId(0), nodeId(3));
@@ -467,7 +332,7 @@ public class ServicesTest extends AbstractThinClientTest {
      * Test services timeout.
      */
     @Test
-    public void testServiceTimeout() {
+    public void testServiceTimeout() throws Exception {
         long timeout = 100L;
 
         try (IgniteClient client = startClient(0)) {
@@ -488,7 +353,7 @@ public class ServicesTest extends AbstractThinClientTest {
 
     /** Test service descriptors returned correctly. */
     @Test
-    public void testServiceDescriptors() {
+    public void testServiceDescriptors() throws Exception {
         try (IgniteClient client = startClient(0)) {
             Collection<ClientServiceDescriptor> svcs = client.services().serviceDescriptors();
 
@@ -713,25 +578,6 @@ public class ServicesTest extends AbstractThinClientTest {
         /** {@inheritDoc} */
         @Override public UUID nodeId() {
             return ignite.cluster().localNode().id();
-        }
-    }
-
-    /** */
-    private static final class TestNodeFilter implements IgnitePredicate<ClusterNode> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final Set<String> nodeNameSubStr;
-
-        private TestNodeFilter(Collection<String> nodeNameSubStr) {
-            this.nodeNameSubStr = new HashSet<>(nodeNameSubStr);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(ClusterNode node) {
-            return node.attribute("org.apache.ignite.ignite.name") != null &&
-                nodeNameSubStr.stream().anyMatch(s -> node.attribute("org.apache.ignite.ignite.name").toString().contains(s));
         }
     }
 }

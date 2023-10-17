@@ -21,12 +21,13 @@ import java.util.UUID;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Response on service call request containing the result object and the service topology if required.
+ */
 public class ClientServiceCallResponse extends ClientObjectResponse {
-    /** Current topology version of the service. */
-    private final long topVer;
-
     /** Service node ids. */
     private final @Nullable UUID[] nodeIds;
 
@@ -35,13 +36,11 @@ public class ClientServiceCallResponse extends ClientObjectResponse {
      *
      * @param reqId Request id.
      * @param res Service call result.
-     * @param topVer Current topology version of the service.
      * @param nodeIds Service node ids.
      */
-    public ClientServiceCallResponse(long reqId, @Nullable Object res, long topVer, @Nullable UUID[] nodeIds) {
+    public ClientServiceCallResponse(long reqId, @Nullable Object res, @Nullable UUID[] nodeIds) {
         super(reqId, res);
 
-        this.topVer = topVer;
         this.nodeIds = nodeIds;
     }
 
@@ -51,9 +50,7 @@ public class ClientServiceCallResponse extends ClientObjectResponse {
     @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
         super.encode(ctx, writer);
 
-        writer.writeLong(topVer);
-
-        if (nodeIds == null)
+        if (F.isEmpty(nodeIds))
             writer.writeInt(0);
         else {
             writer.writeInt(nodeIds.length);

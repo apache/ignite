@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
@@ -45,7 +44,6 @@ import org.apache.ignite.internal.processors.platform.services.PlatformServices;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceDescriptor;
 
@@ -73,9 +71,6 @@ public class ClientServiceInvokeRequest extends ClientRequest {
     /** Timeout. */
     private final long timeout;
 
-    /** Client's service topology version. If negative, ignored. 0 - not initialized. */
-    private final long clientSrvTopV;
-
     /** Nodes. */
     private final Collection<UUID> nodeIds;
 
@@ -94,6 +89,9 @@ public class ClientServiceInvokeRequest extends ClientRequest {
     /** Service call context attributes. */
     private final Map<String, Object> callAttrs;
 
+    /** Service topology flag. */
+    private final boolean sendSrvTop;
+
     /**
      * Constructor.
      *
@@ -109,9 +107,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
 
         timeout = reader.readLong();
 
-        clientSrvTopV = protocolCtx.isFeatureSupported(ClientBitmaskFeature.SERVICE_MAPPINGS)
-            ? reader.readLong()
-            : -1L;
+        sendSrvTop = protocolCtx.isFeatureSupported(ClientBitmaskFeature.SERVICE_MAPPINGS) && reader.readBoolean();
 
         int cnt = reader.readInt();
 
@@ -171,7 +167,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
         try {
             Object res;
 
-            IgniteBiTuple<Map<UUID, Integer>, Long> srvTop = clientSrvTopV >= 0
+            Map<UUID, Integer> srvTop = sendSrvTop
                 ? ctx.kernalContext().service().serviceTopology(name, 0)
                 : null;
 
@@ -204,21 +200,12 @@ public class ClientServiceInvokeRequest extends ClientRequest {
                 res = proxy.invokeMethod(method, args, callAttrs);
             }
 
-            // Try to update service topology if requested.
-            if (clientSrvTopV >= 0) {
-                // Empty topology means is not initialized or not updated yet. Might be wrong laster.
-                // If equal to current version, ignored (<0).
-                long newSrvTopVer = srvTop == null
-                    ? 0
-                    : srvTop.get2() != clientSrvTopV ? srvTop.get2() : -1L;
+            if (ctx.currentProtocolContext().isFeatureSupported(ClientBitmaskFeature.SERVICE_MAPPINGS)) {
+                UUID[] instanceNodes = !sendSrvTop || srvTop == null
+                    ? null
+                    : srvTop.keySet().toArray(new UUID[0]);
 
-                Collection<UUID> srvMapping = newSrvTopVer > 0
-                    ? srvTop.get1().entrySet().stream().filter(e -> e.getValue() != null && e.getValue() > 0)
-                        .map(Map.Entry::getKey).collect(Collectors.toList())
-                    : null;
-
-                return new ClientServiceCallResponse(requestId(), res, newSrvTopVer,
-                    srvMapping == null ? null : srvMapping.toArray(new UUID[srvMapping.size()]));
+                return new ClientServiceCallResponse(requestId(), res, instanceNodes);
             }
 
             return new ClientObjectResponse(requestId(), res);

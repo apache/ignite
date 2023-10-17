@@ -25,11 +25,11 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -54,9 +54,9 @@ public class ServiceInfo implements ServiceDescriptor {
     /** Statically configured flag. */
     private final boolean staticCfg;
 
-    /** Topology snapshot: version, nodeId -> number of service instances. */
+    /** Topology snapshot. */
     @GridToStringInclude
-    private volatile IgniteBiTuple<Map<UUID, Integer>, Long> top = new IgniteBiTuple<>(Collections.emptyMap(), 0L);
+    private volatile Map<UUID, Integer> top;
 
     /** Service class. */
     private transient volatile Class<? extends Service> srvcCls;
@@ -66,7 +66,7 @@ public class ServiceInfo implements ServiceDescriptor {
      * @param srvcId Service id.
      * @param cfg Service configuration.
      */
-    public ServiceInfo(UUID originNodeId, IgniteUuid srvcId, ServiceConfiguration cfg) {
+    public ServiceInfo(@NotNull UUID originNodeId, @NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg) {
         this(originNodeId, srvcId, cfg, false);
     }
 
@@ -76,7 +76,8 @@ public class ServiceInfo implements ServiceDescriptor {
      * @param cfg Service configuration.
      * @param staticCfg Statically configured flag.
      */
-    public ServiceInfo(UUID originNodeId, IgniteUuid srvcId, ServiceConfiguration cfg, boolean staticCfg) {
+    public ServiceInfo(@NotNull UUID originNodeId, @NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg,
+        boolean staticCfg) {
         this.originNodeId = originNodeId;
         this.srvcId = srvcId;
         this.cfg = cfg;
@@ -93,14 +94,12 @@ public class ServiceInfo implements ServiceDescriptor {
     }
 
     /**
-     * Sets service's new topology snapshot. Increments its version if service migrates nodes.
+     * Sets service's new topology snapshot.
      *
-     * @param newTop Topology snapshot.
+     * @param top Topology snapshot.
      */
-    public void topologySnapshot(Map<UUID, Integer> newTop) {
-        IgniteBiTuple<Map<UUID, Integer>, Long> top = this.top;
-
-        this.top = new IgniteBiTuple<>(newTop, newTop.keySet().equals(top.get1().keySet()) ? top.get2() : top.get2() + 1L);
+    public void topologySnapshot(@NotNull Map<UUID, Integer> top) {
+        this.top = top;
     }
 
     /**
@@ -192,23 +191,16 @@ public class ServiceInfo implements ServiceDescriptor {
 
     /** {@inheritDoc} */
     @Override public Map<UUID, Integer> topologySnapshot() {
-        return Collections.unmodifiableMap(top.get1());
-    }
-
-    /**
-     * @return Service topology and its version.
-     */
-    public IgniteBiTuple<Map<UUID, Integer>, Long> topologyVersion() {
-        return top;
+        return top == null ? Collections.emptyMap() : Collections.unmodifiableMap(top);
     }
 
     /**
      * Whether service topology was initialized.
      *
-     * @return {@code True} if service topology was initialized. {@code False} otherwise.
+     * @return {@code True} if service topology was initialized.
      */
     public boolean topologyInitialized() {
-        return top.get2() > 0;
+        return top != null;
     }
 
     /** {@inheritDoc} */

@@ -182,7 +182,7 @@ final class ReliableChannel implements AutoCloseable {
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
-       return service(op, payloadWriter, payloadReader, null);
+        return service(op, payloadWriter, payloadReader, null);
     }
 
     /**
@@ -200,7 +200,7 @@ final class ReliableChannel implements AutoCloseable {
         Function<PayloadInputChannel, T> payloadReader,
         @Nullable List<UUID> targetNodes
     ) throws ClientException, ClientError {
-        if(F.isEmpty(targetNodes))
+        if (F.isEmpty(targetNodes))
             return applyOnDefaultChannel(channel -> channel.service(op, payloadWriter, payloadReader), op);
 
         return applyOnNodeChannelWithFallback(

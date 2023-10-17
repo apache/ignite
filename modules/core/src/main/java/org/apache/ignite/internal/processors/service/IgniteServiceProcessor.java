@@ -79,7 +79,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
@@ -934,10 +933,10 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
     /**
      * @param name Service name.
      * @param timeout If greater than 0 limits task execution time. Cannot be negative.
-     * @return Service topology. {@code Null} if service is not ound or is not initialized yet.
+     * @return Service topology.
      * @throws IgniteCheckedException On error.
      */
-    public @Nullable IgniteBiTuple<Map<UUID, Integer>, Long> serviceTopology(String name, long timeout) throws IgniteCheckedException {
+    public @Nullable Map<UUID, Integer> serviceTopology(String name, long timeout) throws IgniteCheckedException {
         assert timeout >= 0;
 
         long startTime = U.currentTimeMillis();
@@ -952,7 +951,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                     return null;
 
                 if (desc != null && desc.topologyInitialized())
-                    return desc.topologyVersion();
+                    return desc.topologySnapshot();
 
                 long wait = 0;
 
@@ -960,7 +959,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                     wait = timeout - (U.currentTimeMillis() - startTime);
 
                     if (wait <= 0)
-                        return desc == null ? null : desc.topologyVersion();
+                        return desc == null ? null : desc.topologySnapshot();
                 }
 
                 try {
@@ -1956,7 +1955,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @param services Services info to update.
      * @param tops Deployment topologies.
      */
-    private void updateServicesMap(Map<IgniteUuid, ServiceInfo> services, Map<IgniteUuid, Map<UUID, Integer>> tops) {
+    private void updateServicesMap(Map<IgniteUuid, ServiceInfo> services,
+        Map<IgniteUuid, Map<UUID, Integer>> tops) {
+
         tops.forEach((srvcId, top) -> {
             ServiceInfo desc = services.get(srvcId);
 
