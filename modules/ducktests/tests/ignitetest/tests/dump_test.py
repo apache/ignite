@@ -92,7 +92,7 @@ class DumpTest(IgniteTest):
         dump_size = {}
         for node in ignite.nodes:
             dump_size[node.consistent_id] = IgniteAwareService.get_file_size(
-                node, os.path.join(ignite.snapshots_dir,DUMP_NAME))
+                node, os.path.join(ignite.snapshots_dir, DUMP_NAME))
 
         return {
             "dump_create_time_ms": dump_create_time_ms,
