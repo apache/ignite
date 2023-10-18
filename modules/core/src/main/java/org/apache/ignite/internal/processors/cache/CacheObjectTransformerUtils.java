@@ -64,7 +64,7 @@ public class CacheObjectTransformerUtils {
 
             byte[] res = toArray(transformed);
 
-            if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
+            if (recordable(ctx, EVT_CACHE_OBJECT_TRANSFORMED)) {
                 ctx.kernalContext().event().record(
                     new CacheObjectTransformedEvent(ctx.kernalContext().discovery().localNode(),
                         "Object transformed",
@@ -79,7 +79,7 @@ public class CacheObjectTransformerUtils {
         else {
             byte[] res = detachIfNecessary(bytes, offset, length);
 
-            if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
+            if (recordable(ctx, EVT_CACHE_OBJECT_TRANSFORMED)) {
                 ctx.kernalContext().event().record(
                     new CacheObjectTransformedEvent(ctx.kernalContext().discovery().localNode(),
                         "Object transformation was cancelled.",
@@ -124,7 +124,7 @@ public class CacheObjectTransformerUtils {
 
         byte[] res = toArray(restored);
 
-        if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
+        if (recordable(ctx, EVT_CACHE_OBJECT_TRANSFORMED)) {
             ctx.kernalContext().event().record(
                 new CacheObjectTransformedEvent(ctx.kernalContext().discovery().localNode(),
                     "Object restored",
@@ -157,5 +157,14 @@ public class CacheObjectTransformerUtils {
 
             return buf.array();
         }
+    }
+
+    /**
+     * @param ctx Context.
+     * @param type Type.
+     */
+    private static boolean recordable(CacheObjectValueContext ctx, int type) {
+        return ctx.kernalContext().event() != null // Can be null at external usage (via StandaloneGridKernalContext)
+            && ctx.kernalContext().event().isRecordable(type);
     }
 }
