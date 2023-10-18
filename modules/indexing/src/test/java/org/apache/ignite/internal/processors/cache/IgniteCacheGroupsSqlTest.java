@@ -138,7 +138,7 @@ public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
      */
     @Test
     public void testJoinQuery3() throws Exception {
-        joinQuery(GROUP1, GROUP1, PARTITIONED, PARTITIONED, TRANSACTIONAL, ATOMIC);
+        joinQuery(GROUP1, GROUP1, PARTITIONED, PARTITIONED, TRANSACTIONAL, TRANSACTIONAL);
     }
 
     /**
@@ -146,7 +146,7 @@ public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
      */
     @Test
     public void testJoinQuery4() throws Exception {
-        joinQuery(GROUP1, GROUP1, REPLICATED, REPLICATED, ATOMIC, TRANSACTIONAL);
+        joinQuery(GROUP1, GROUP1, REPLICATED, REPLICATED, TRANSACTIONAL, TRANSACTIONAL);
     }
 
     /**

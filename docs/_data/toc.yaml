@@ -250,6 +250,8 @@
       url: sql-reference/system-functions
     - title: Data Types
       url: sql-reference/data-types
+    - title: Optimizer Hints
+      url: sql-reference/hints
 - title: Distributed Computing
   items:
     - title: Distributed Computing API

@@ -36,7 +36,7 @@ public class IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest
 
             int parts = aff != null ? aff.partitions() : RendezvousAffinityFunction.DFLT_PARTITION_COUNT;
 
-            ccfg.setGroupName("testGroup-parts" + parts);
+            ccfg.setGroupName("testGroup-parts" + ccfg.getAtomicityMode() + parts);
         }
     }
 }
