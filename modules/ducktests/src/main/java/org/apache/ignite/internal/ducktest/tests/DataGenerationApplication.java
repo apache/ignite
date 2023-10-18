@@ -134,7 +134,6 @@ public class DataGenerationApplication extends IgniteAwareApplication {
             ThreadLocalRandom.current().nextBytes(data);
         }
 
-
         try (IgniteDataStreamer<Integer, BinaryObject> stmr = ignite.dataStreamer(cacheName)) {
             for (int i = from; i < to; i++) {
                 builder.setField("key", i);
