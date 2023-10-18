@@ -252,6 +252,9 @@ public class ServiceDeploymentManager {
 
         task.onEvent(evt, topVer, depActions);
 
+        if(ctx.cluster().get().localNode().order()>4)
+            log.error("TEST | addTask on " + ctx.cluster().get().localNode().order());
+
         depWorker.tasksQueue.add(task);
     }
 

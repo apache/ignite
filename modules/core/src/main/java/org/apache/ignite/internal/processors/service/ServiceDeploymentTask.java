@@ -132,7 +132,7 @@ class ServiceDeploymentTask {
         this.depId = depId;
         this.ctx = ctx;
 
-        srvcProc = (IgniteServiceProcessor)ctx.service();
+        srvcProc = ctx.service();
         log = ctx.log(getClass());
     }
 
@@ -240,6 +240,8 @@ class ServiceDeploymentTask {
                     return;
                 }
 
+                log.error("TEST | deploy actions on " + ctx.cluster().get().localNode().order());
+
                 depActions = new ServiceDeploymentActions(ctx);
 
                 depActions.servicesToDeploy(toDeploy);
@@ -282,6 +284,8 @@ class ServiceDeploymentTask {
      * @param depActions Services deployment actions.
      */
     private void processDeploymentActions(@NotNull ServiceDeploymentActions depActions) {
+        log.error("TEST | processDeploymentActions on " + ctx.cluster().get().localNode().order());
+
         srvcProc.updateDeployedServices(depActions);
 
         depActions.servicesToUndeploy().forEach((srvcId, desc) -> {

@@ -89,7 +89,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
         return new ServiceConfiguration()
             .setName(SRV_NAME)
             .setService(new ServicesTest.TestService())
-            .setMaxPerNodeCount(3)
+            .setMaxPerNodeCount(1)
             .setNodeFilter(new TestNodeFilter());
     }
 
@@ -118,6 +118,16 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
         startGrids(GRIDS);
 
         grid(1).services().deploy(serviceCfg());
+    }
+
+    /** */
+    @Test
+    public void testDelayedServiceRedeploy() throws Exception {
+        System.err.println("TEST | new node");
+
+        startGrid(GRIDS);
+
+        Thread.sleep(10_000);
     }
 
     /**
@@ -261,11 +271,15 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
                         svc.testMethod();
                     }
                     catch (ClientException e) {
-                        // Until the service topology is not updated yet, service invoke request can be redirected to node
-                        // which has just left the cluster. This case raises a node-left exception in the service call
-                        // response. This exception is not processed by the client service proxy as a resend attempts.
-                        if (newNodesCnt > 0 || !e.getMessage().contains("Node has left grid")
-                            || !nodesToStop.stream().anyMatch(nid -> e.getMessage().contains(nid.toString())))
+                        String m = e.getMessage();
+
+                        // Until the service topology is not updated yet, service invoke request can be redirected to
+                        // node which has just left the cluster. This case raises a node-left exception in the service
+                        // call response. Unfortunately, this exception is not processed by the client service proxy as
+                        // a resend attempts.
+                        if (newNodesCnt > 0
+                            || (!m.contains("Node has left grid") && !m.contains("Failed to send job due to node failure"))
+                            || nodesToStop.stream().noneMatch(nid -> m.contains(nid.toString())))
                             throw e;
                     }
 
