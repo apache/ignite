@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.schema;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -57,8 +58,11 @@ public abstract class IndexWithSameNameTestBase extends GridCommonAbstractTest {
     /** Test index. */
     public static final String TEST_INDEX = "TEST_IDX";
 
-    /** Servers count. */
-    public static final int SERVERS_COUNT = 3;
+    /** Baseline size. */
+    public static final int BASELINE_SIZE = 3;
+
+    /** All nodes count, including non-baseline nodes. */
+    public static final int NODES_COUNT = BASELINE_SIZE + 2;
 
     /** Schema finish latch. */
     public static CountDownLatch schemaFinishLatch;
@@ -107,8 +111,15 @@ public abstract class IndexWithSameNameTestBase extends GridCommonAbstractTest {
      *
      */
     @Test
-    public void testRestart() throws Exception {
-        startGrids(SERVERS_COUNT).cluster().state(ClusterState.ACTIVE);
+    @SuppressWarnings("deprecation")
+    public void testWithRestart() throws Exception {
+        startGrids(BASELINE_SIZE)
+            .cluster()
+            .state(ClusterState.ACTIVE);
+
+        // Non-baseline nodes.
+        startGrid(BASELINE_SIZE);
+        startClientGrid(NODES_COUNT - 1);
 
         GridQueryProcessor qryProc = grid(0).context().query();
 
@@ -124,15 +135,15 @@ public abstract class IndexWithSameNameTestBase extends GridCommonAbstractTest {
         // This index must not be created. Query must be no-op.
         checkIndexCreate(qryProc, "T2", duplicateFields, true);
 
-        assertSingleIndex(SERVERS_COUNT, TEST_INDEX, correctFields);
+        assertSingleIndex(correctFields);
 
         grid(0).cluster().state(ClusterState.INACTIVE);
         awaitPartitionMapExchange();
         stopAllGrids();
 
-        startGrids(SERVERS_COUNT);
+        startGrids(BASELINE_SIZE);
 
-        assertSingleIndex(SERVERS_COUNT, TEST_INDEX, correctFields);
+        assertSingleIndex(correctFields);
     }
 
     /**
@@ -144,7 +155,7 @@ public abstract class IndexWithSameNameTestBase extends GridCommonAbstractTest {
     private void checkIndexCreate(GridQueryProcessor qryProc, String tblName, Set<String> idxFields, boolean expNop)
         throws InterruptedException {
         // SchemaFinishDiscoveryMessage is processed twice on coordinator.
-        schemaFinishLatch = new CountDownLatch(SERVERS_COUNT + 1);
+        schemaFinishLatch = new CountDownLatch(NODES_COUNT + 1);
 
         String createIdxSql = String.format("CREATE INDEX IF NOT EXISTS %s ON %s (%s)", TEST_INDEX, tblName,
             String.join(",", idxFields));
@@ -153,15 +164,14 @@ public abstract class IndexWithSameNameTestBase extends GridCommonAbstractTest {
 
         schemaFinishLatch.await();
 
-        checkNoOpMessages(SERVERS_COUNT, expNop);
+        checkNoOpMessages(expNop);
     }
 
     /**
-     * @param srvCnt Servers count.
      * @param expNop Expected no-op flag.
      */
-    private void checkNoOpMessages(int srvCnt, boolean expNop) {
-        for (int i = 0; i < srvCnt; i++) {
+    private void checkNoOpMessages(boolean expNop) {
+        for (int i = 0; i < NODES_COUNT; i++) {
             assertTrue(spi(grid(i)).recordedMessages(false)
                 .stream()
                 .allMatch(msg -> ((SchemaOperationStatusMessage)msg).nop() == expNop));
@@ -173,19 +183,17 @@ public abstract class IndexWithSameNameTestBase extends GridCommonAbstractTest {
     }
 
     /**
-     * @param srvCnt Servers count.
-     * @param idxName Index name.
      * @param expIdxFields Expected index fields.
      */
-    private void assertSingleIndex(int srvCnt, String idxName, Collection<String> expIdxFields) {
-        for (int i = 0; i < srvCnt; i++) {
+    private void assertSingleIndex(Collection<String> expIdxFields) {
+        for (int i = 0; i < BASELINE_SIZE; i++) {
             Collection<IndexDescriptor> indexes = grid(i).context()
                 .query()
                 .schemaManager()
                 .allIndexes();
 
             List<IndexDescriptor> filteredIdxs = indexes.stream()
-                .filter(idx -> idxName.equalsIgnoreCase(idx.name()))
+                .filter(idx -> TEST_INDEX.equalsIgnoreCase(idx.name()))
                 .collect(Collectors.toList());
 
             assertEquals("There should be only one index", 1, filteredIdxs.size());
