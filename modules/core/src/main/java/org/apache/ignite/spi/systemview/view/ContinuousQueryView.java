@@ -147,10 +147,10 @@ public class ContinuousQueryView {
     public String localListener() {
         CacheContinuousQueryHandler hnd0 = cacheHandler();
 
-        if (hnd0 == null || hnd0.localListener() == null)
+        if (hnd0 == null)
             return null;
 
-        return toStringSafe(hnd0.localListener());
+        return hnd0.localListenerClassName();
     }
 
     /**
@@ -202,10 +202,10 @@ public class ContinuousQueryView {
     public String localTransformedListener() {
         CacheContinuousQueryHandler hnd0 = cacheHandler();
 
-        if (hnd0 == null || hnd0.localTransformedEventListener() == null)
+        if (hnd0 == null)
             return null;
 
-        return toStringSafe(hnd0.localTransformedEventListener());
+        return hnd0.localTransformedEventListenerClassName();
     }
 
     /** */

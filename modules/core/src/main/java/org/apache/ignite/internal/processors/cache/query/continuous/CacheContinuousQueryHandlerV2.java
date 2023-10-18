@@ -73,23 +73,24 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
      * @param types Event types.
      */
     public CacheContinuousQueryHandlerV2(
-        String cacheName,
-        Object topic,
-        @Nullable CacheEntryUpdatedListener<K, V> locLsnr,
-        @Nullable Factory<? extends CacheEntryEventFilter<K, V>> rmtFilterFactory,
-        boolean oldValRequired,
-        boolean sync,
-        boolean ignoreExpired,
-        boolean ignoreClsNotFound,
-        @Nullable Byte types) {
+            String cacheName,
+            Object topic,
+            @Nullable CacheEntryUpdatedListener<K, V> locLsnr,
+            @Nullable Factory<? extends CacheEntryEventFilter<K, V>> rmtFilterFactory,
+            boolean oldValRequired,
+            boolean sync,
+            boolean ignoreExpired,
+            boolean ignoreClsNotFound,
+            @Nullable Byte types) {
         super(cacheName,
-            topic,
-            locLsnr,
-            null,
-            oldValRequired,
-            sync,
-            ignoreExpired,
-            ignoreClsNotFound);
+                topic,
+                locLsnr,
+                null,
+                oldValRequired,
+                sync,
+                ignoreExpired,
+                ignoreClsNotFound);
+
         this.rmtFilterFactory = rmtFilterFactory;
 
         if (types != null) {
