@@ -497,7 +497,7 @@ public class CommandUtils {
     }
 
     /** */
-    public static Collection<GridClientNode> nodeOrNull(@Nullable UUID nodeId, Collection<GridClientNode> nodes) {
+    public static @Nullable Collection<GridClientNode> nodeOrNull(@Nullable UUID nodeId, Collection<GridClientNode> nodes) {
         return nodeId == null ? null : node(nodeId, nodes);
     }
 
