@@ -127,6 +127,8 @@ public class DataGenerationApplication extends IgniteAwareApplication {
                 curPos += len;
             }
 
+            assert buf.size() == entrySize;
+
             data = buf.toByteArray();
         }
         else {
