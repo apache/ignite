@@ -35,6 +35,8 @@ class DataGenerationParams(NamedTuple):
     entry_size: int = 50_000
     preloaders: int = 1
     index_count: int = 0
+    # TODO: fill cluster with data in main snapshot.
+    transactional: bool = False
 
     @property
     def data_region_max_size(self):
@@ -54,7 +56,7 @@ class DataGenerationParams(NamedTuple):
 
 def preload_data(context, config, data_gen_params: DataGenerationParams, timeout=3600):
     """
-    Puts entry_count of key-value pairs of entry_size bytes to cache_count caches.
+    Puts entry_count of key-value pairs of entry_size bytes to cache_count caches and awaits the load finished.
     :param context: Test context.
     :param config: Ignite configuration.
     :param data_gen_params: Data generation parameters.
@@ -79,7 +81,8 @@ def preload_data(context, config, data_gen_params: DataGenerationParams, timeout
                 "entrySize": data_gen_params.entry_size,
                 "from": _from,
                 "to": _to,
-                "indexCount": data_gen_params.index_count
+                "indexCount": data_gen_params.index_count,
+                "transactional": data_gen_params.transactional
             },
             shutdown_timeout_sec=timeout)
         app.start_async()
@@ -96,11 +99,18 @@ def preload_data(context, config, data_gen_params: DataGenerationParams, timeout
 
     start_app(end, data_gen_params.entry_count)
 
+    finish_time = None
+    init_time = None
+
     for app in apps:
         app.await_stopped()
 
-    return (max(map(lambda app: app.get_finish_time(), apps)) -
-            min(map(lambda app: app.get_init_time(), apps))).total_seconds()
+        finish_time = app.get_finish_time() if finish_time is None else max(finish_time, app.get_finish_time())
+        init_time = app.get_init_time() if init_time is None else min(init_time, app.get_init_time())
+
+        app.free()
+
+    return (finish_time - init_time).total_seconds()
 
 
 def current_millis():

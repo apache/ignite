@@ -190,35 +190,110 @@ class ControlUtility:
         assert ('Command [CONSISTENCY] finished with code: 0' in data), data
         return data
 
-    def snapshot_create(self, snapshot_name: str, timeout_sec: int = 60):
+    def snapshot_create(self, snapshot_name: str, incremental: bool = False, timeout_sec: int = 60):
         """
         Create snapshot.
         :param snapshot_name: Name of Snapshot.
+        :param incremental: If False then create full snapshot, otherwise create incremental snapshot.
         :param timeout_sec: Timeout to await snapshot to complete.
         """
-        res = self.__run(f"--snapshot create {snapshot_name}")
+        node = self._cluster.nodes[0]
+
+        if incremental:
+            res = self.__run(f"--snapshot create {snapshot_name} --incremental", node)
+        else:
+            res = self.__run(f"--snapshot create {snapshot_name}", node)
 
         assert "Command [SNAPSHOT] finished with code: 0" in res
 
         delta_time = datetime.now() + timedelta(seconds=timeout_sec)
 
         while datetime.now() < delta_time:
-            for node in self._cluster.nodes:
-                mbean = JmxClient(node).find_mbean('.*name=snapshot.*', negative_pattern='group=views')
+            res = self.__run("--snapshot status")
 
-                if snapshot_name != next(mbean.LastSnapshotName, ""):
-                    continue
+            if "Create snapshot operation is in progress" in res:
+                continue
 
-                start_time = int(next(mbean.LastSnapshotStartTime))
-                end_time = int(next(mbean.LastSnapshotEndTime))
-                err_msg = next(mbean.LastSnapshotErrorMessage)
+            if "There is no create or restore snapshot operation in progress" in res:
+                return
 
-                if (start_time < end_time) and (err_msg == ''):
-                    assert snapshot_name == next(mbean.LastSnapshotName)
-                    return
+            raise Exception("Unexpected status for \"snapshot status\" command: " + res)
 
         raise TimeoutError(f'Failed to wait for the snapshot operation to complete: '
-                           f'snapshot_name={snapshot_name} in {timeout_sec} seconds.')
+                           f'snapshot_name={snapshot_name}, incremental={incremental} in {timeout_sec} seconds.')
+
+    def destroy_caches(self, destroy_all: bool = False):
+        """
+        Destroy all caches.
+        :param destroy_all: Destroy all existing caches.
+        """
+        if destroy_all:
+            res = self.__run("--cache destroy --destroy-all-caches --yes")
+        else:
+            assert False
+
+        assert "Command [CACHE] finished with code: 0" in res
+
+    def snapshot_check(self, snapshot_name: str, increment: int) -> int:
+        """
+        Check snapshot.
+        :param snapshot_name: Name of Snapshot.
+        :param increment: Increment index.
+        :return: Seconds spent on the check.
+        """
+        start_check = datetime.now()
+
+        res = self.__run(f"--snapshot check {snapshot_name} --increment {increment}")
+
+        assert "The check procedure has finished, no conflicts have been found." in res
+
+        return (datetime.now() - start_check).seconds
+
+    def snapshot_restore(self, snapshot_name: str, increment: int, timeout_sec: int = 3600):
+        """
+        Create snapshot.
+        :param snapshot_name: Name of Snapshot.
+        :param increment: Increment index.
+        :param timeout_sec: Timeout to await snapshot to complete.
+        :return: Time for restoring incremental snapshot, and amount of restored entries.
+        """
+        node = self._cluster.nodes[0]
+
+        res = self.__run(f"--snapshot restore {snapshot_name} --increment {increment} --yes", node)
+
+        assert "Command [SNAPSHOT] finished with code: 0" in res
+
+        delta_time = datetime.now() + timedelta(seconds=timeout_sec)
+
+        while datetime.now() < delta_time:
+            res = self.__run("--snapshot status")
+
+            if "Restore snapshot operation is in progress" in res:
+                continue
+
+            if "There is no create or restore snapshot operation in progress" in res:
+                metric_bean = JmxClient(node).find_mbean('.*name=\"snapshot-restore\"')
+
+                if increment != int(next(metric_bean.incrementIndex, "")):
+                    continue
+
+                assert next(metric_bean.error) == ''
+
+                start_time = int(next(metric_bean.startTime))
+                end_time = int(next(metric_bean.endTime))
+                entries = next(metric_bean.processedWalEntries)
+                segments = next(metric_bean.processedWalSegments)
+
+                return {
+                    "restoreTimeSec": (end_time - start_time) / 1000,
+                    "restoreEntries": entries,
+                    "segments": segments
+                }
+
+            raise Exception("Unexpected status for \"snapshot status\" command: " + res)
+
+        raise TimeoutError(f'Failed to wait for the snapshot operation to complete: '
+                           f'snapshot_name={snapshot_name}, incIdx={increment} in {timeout_sec} seconds.')
 
     def snapshot_check(self, snapshot_name: str):
         """

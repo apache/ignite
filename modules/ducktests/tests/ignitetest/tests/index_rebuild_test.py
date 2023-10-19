@@ -33,12 +33,13 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
 
-def get_file_sizes(nodes: list, file: str) -> dict:
+def get_file_sizes(nodes: list, file: str, megabyte: bool = False) -> dict:
     """
     Return file size in bytes.
 
     :param nodes: List of nodes.
     :param file: File to get size for.
+    :param megabyte: if True return size in megabytes, otherwise in bytes.
     :return Dictionary with key as hostname value is files sizes on the node.
     """
     res = {}
@@ -47,7 +48,9 @@ def get_file_sizes(nodes: list, file: str) -> dict:
 
         data = out.split("\t")
 
-        res[node.account.hostname] = int(data[0])
+        byte_size = int(data[0])
+
+        res[node.account.hostname] = byte_size if not megabyte else int(byte_size / 1024 ** 2)
 
     return res
 
