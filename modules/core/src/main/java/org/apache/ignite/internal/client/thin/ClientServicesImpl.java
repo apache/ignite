@@ -55,7 +55,7 @@ import org.jetbrains.annotations.Nullable;
  */
 class ClientServicesImpl implements ClientServices {
     /** Max duration in mills before asking service topology update. */
-    private static final int SRV_TOP_UPDATE_PERIOD = 10_000;
+    static final int SRV_TOP_UPDATE_PERIOD = 10_000;
 
     /** Max requests number before asking service topology update. */
     private static final int SRV_TOP_UPDATE_MAX_REQUESTS = 1_000;

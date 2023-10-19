@@ -40,6 +40,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -59,7 +60,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
-import static org.apache.ignite.testframework.GridTestUtils.runMultiThreaded;
+import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -73,7 +74,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     private static final int GRIDS = 4;
 
     /** Number of node instances with the initial service deployment. */
-    private static final int FILTERED_NODES_CNT = 2;
+    private static final int INIT_SRVC_NODES_CNT = 2;
 
     /** */
     protected boolean partitionAwareness = true;
@@ -108,7 +109,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 30_000L;
+        return 45_000L;
     }
 
     /** */
@@ -168,7 +169,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
                     svc.testMethod();
             });
 
-            waitForCondition(() -> srvcTopOnClient.size() == FILTERED_NODES_CNT
+            waitForCondition(() -> srvcTopOnClient.size() == INIT_SRVC_NODES_CNT
                 && srvcTopOnClient.contains(grid(1).localNode().id())
                 && srvcTopOnClient.contains(grid(2).localNode().id()),
                 getTestTimeout());
@@ -186,11 +187,11 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
                 // Ensure there are still SRVC_FILTERED_NOIDES_CNT nodes with the service instance.
                 assertEquals(((IgniteEx)ig).context().service().serviceTopology(SRV_NAME, 0).size(),
-                    FILTERED_NODES_CNT);
+                    INIT_SRVC_NODES_CNT);
             }
 
             // Ensure the client's topology is not updated.
-            assertTrue(srvcTopOnClient.size() == FILTERED_NODES_CNT
+            assertTrue(srvcTopOnClient.size() == INIT_SRVC_NODES_CNT
                 && !srvcTopOnClient.contains(grid(GRIDS).localNode().id()));
 
             testDisco.release();
@@ -224,7 +225,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      */
     @Test
     public void testNodesComeOneThread() throws Exception {
-        doTestClusterTopChangesWhileServiceCalling(3, true, false);
+        doTestClusterTopChangesWhileServiceCalling(3, true, false, 0);
     }
 
     /**
@@ -232,7 +233,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      */
     @Test
     public void testNodesComeMultiThreads() throws Exception {
-        doTestClusterTopChangesWhileServiceCalling(3, true, true);
+        doTestClusterTopChangesWhileServiceCalling(3, true, true, 0);
     }
 
     /**
@@ -240,7 +241,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      */
     @Test
     public void testNodesLeaveOneThread() throws Exception {
-        doTestClusterTopChangesWhileServiceCalling(3, false, false);
+        doTestClusterTopChangesWhileServiceCalling(3, false, false, 0);
     }
 
     /**
@@ -248,11 +249,29 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      */
     @Test
     public void testNodesLeaveMultiThreads() throws Exception {
-        doTestClusterTopChangesWhileServiceCalling(3, false, true);
+        doTestClusterTopChangesWhileServiceCalling(3, false, true, 0);
     }
 
     /**
-     * Tests service topology is updated when there is a gap of service invocation between forced service redeployment.
+     * Tests one node comes while one thread is used to call the service with a large invokation interval.
+     */
+    @Test
+    public void testOneNodeComesOneThreadLazyServiceInvokation() throws Exception {
+        doTestClusterTopChangesWhileServiceCalling(1, true, false,
+            ClientServicesImpl.SRV_TOP_UPDATE_PERIOD / 2);
+    }
+
+    /**
+     * Tests one node leaves while one thread is used to call the service with a large invokation interval.
+     */
+    @Test
+    public void testOneNodeLeavesOneThreadLazyServiceInvokation() throws Exception {
+        doTestClusterTopChangesWhileServiceCalling(1, false, false,
+            ClientServicesImpl.SRV_TOP_UPDATE_PERIOD / 2);
+    }
+
+    /**
+     * Tests the service topology update with a gap of service invocation during forced service redeployment.
      */
     @Test
     public void testForcedServiceRedeployWhileClientIsIdle() {
@@ -270,7 +289,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
             ((GridTestLog4jLogger)log).setLevel(Level.INFO);
 
-            assertTrue(srvcTopOnClient.size() == FILTERED_NODES_CNT
+            assertTrue(srvcTopOnClient.size() == INIT_SRVC_NODES_CNT
                 && srvcTopOnClient.contains(grid(1).localNode().id())
                 && srvcTopOnClient.contains(grid(2).localNode().id()));
 
@@ -293,7 +312,15 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     }
 
     /** */
-    private void doTestClusterTopChangesWhileServiceCalling(int nodesCnt, boolean addNodes, boolean multiThreaded) throws Exception {
+    private void doTestClusterTopChangesWhileServiceCalling(
+        int nodesCnt,
+        boolean addNodes,
+        boolean multiThreaded,
+        int srvcCallInterval)
+        throws Exception {
+        assert nodesCnt > 0;
+        assert srvcCallInterval >= 0;
+
         Set<UUID> newNodesUUIDs = new GridConcurrentHashSet<>();
 
         // Start additional nodes to stop them.
@@ -317,10 +344,19 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
             ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
-            runMultiThreaded(() -> {
+            IgniteInternalFuture<?> runFut = runMultiThreadedAsync(() -> {
                 do {
                     try {
                         svc.testMethod();
+
+                        try {
+                            Thread.sleep(srvcCallInterval);
+                        }
+                        catch (InterruptedException e) {
+                            log.error("Interrupted", e);
+
+                            stopFlag.set(true);
+                        }
                     }
                     catch (ClientException e) {
                         String m = e.getMessage();
@@ -333,37 +369,43 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
                             || newNodesUUIDs.stream().noneMatch(nid -> m.contains(nid.toString())))
                             throw e;
                     }
-
-                    // Wait until the initial topology is received.
-                    if (srvcTopOnClient.size() == (addNodes ? FILTERED_NODES_CNT : FILTERED_NODES_CNT + nodesCnt)
-                        && changeClusterTop.compareAndSet(false, true)) {
-                        srvcTopOnClient.clear();
-
-                        for (int i = 0; i < nodesCnt; ++i) {
-                            int nodeIdx = GRIDS + i;
-
-                            runAsync(() -> {
-                                try {
-                                    if (addNodes)
-                                        newNodesUUIDs.add(startGrid(nodeIdx).localNode().id());
-                                    else
-                                        stopGrid(nodeIdx);
-                                }
-                                catch (Exception e) {
-                                    log.error("Unable to start or stop test grid.", e);
-
-                                    stopFlag.set(true);
-                                }
-                            });
-                        }
-                    }
-
-                    // Stop if new excepted service topology received.
-                    if (srvcTopOnClient.size() == (addNodes ? FILTERED_NODES_CNT + nodesCnt : FILTERED_NODES_CNT))
-                        stopFlag.set(true);
                 }
                 while (!stopFlag.get());
             }, multiThreaded ? 4 : 1, "ServiceTestLoader");
+
+            while (!stopFlag.get()) {
+                // Wait until the initial topology is received.
+                if (srvcTopOnClient.size() == (addNodes ? INIT_SRVC_NODES_CNT : INIT_SRVC_NODES_CNT + nodesCnt)
+                    && changeClusterTop.compareAndSet(false, true)) {
+                    srvcTopOnClient.clear();
+
+                    for (int i = 0; i < nodesCnt; ++i) {
+                        int nodeIdx = GRIDS + i;
+
+                        runAsync(() -> {
+                            try {
+                                if (addNodes)
+                                    newNodesUUIDs.add(startGrid(nodeIdx).localNode().id());
+                                else
+                                    stopGrid(nodeIdx);
+                            }
+                            catch (Exception e) {
+                                log.error("Unable to start or stop test grid.", e);
+
+                                stopFlag.set(true);
+                            }
+                        });
+                    }
+                }
+
+                // Stop if new excepted service topology received.
+                if (srvcTopOnClient.size() == (addNodes ? INIT_SRVC_NODES_CNT + nodesCnt : INIT_SRVC_NODES_CNT))
+                    stopFlag.set(true);
+
+                Thread.sleep(10);
+            }
+
+            runFut.get();
         }
 
         // The initial nodes must always persist it the service topology.
@@ -414,7 +456,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
         callServiceNTimesFromClient(SRV_NAME, callCounter, () -> top.get() != null && callCounter.get() >= 1000);
 
-        assertTrue(top.get().size() == FILTERED_NODES_CNT && top.get().contains(grid(1).localNode().id())
+        assertTrue(top.get().size() == INIT_SRVC_NODES_CNT && top.get().contains(grid(1).localNode().id())
             && top.get().contains(grid(2).localNode().id()));
 
         assertTrue(redirectCnt.get() < 50);
