@@ -220,7 +220,7 @@ class ClientServicesImpl implements ClientServices {
         private final @Nullable AtomicInteger curTopRequestsCnt;
 
         /** Topology update-in-progress flag. Holds {@code true}, if topology update is already in progress. */
-        private final @Nullable AtomicBoolean topUpdateProcess;
+        private final @Nullable AtomicBoolean svcTopUpdateInProgress;
 
         /**
          * @param name Service name.
@@ -239,7 +239,7 @@ class ClientServicesImpl implements ClientServices {
             this.grp = grp;
             this.callAttrs = callAttrs;
             this.curTopRequestsCnt = grp.ch.partitionAwarenessEnabled ? new AtomicInteger() : null;
-            this.topUpdateProcess = grp.ch.partitionAwarenessEnabled ? new AtomicBoolean() : null;
+            this.svcTopUpdateInProgress = grp.ch.partitionAwarenessEnabled ? new AtomicBoolean() : null;
         }
 
         /** {@inheritDoc} */
@@ -294,7 +294,7 @@ class ClientServicesImpl implements ClientServices {
             }
             finally {
                 if (requestTopUpdate)
-                    topUpdateProcess.set(false);
+                    svcTopUpdateInProgress.set(false);
             }
         }
 
@@ -302,14 +302,14 @@ class ClientServicesImpl implements ClientServices {
          * @return {@code True} if service topology update is required.
          */
         private boolean requestSrvTop(AffinityTopologyVersion curTop) {
-            if (!ch.partitionAwarenessEnabled || topUpdateProcess.get())
+            if (!ch.partitionAwarenessEnabled || svcTopUpdateInProgress.get())
                 return false;
 
             return (lastTopVersion == null
                 || curTop.compareTo(lastTopVersion) > 0
                 || System.nanoTime() - lastTopUpdateTime > U.millisToNanos(SRV_TOP_UPDATE_PERIOD)
                 || curTopRequestsCnt.getAndIncrement() >= SRV_TOP_UPDATE_MAX_REQUESTS)
-                && topUpdateProcess.compareAndSet(false, true);
+                && svcTopUpdateInProgress.compareAndSet(false, true);
         }
 
         /**
@@ -324,7 +324,7 @@ class ClientServicesImpl implements ClientServices {
 
             lastTopUpdateTime = System.nanoTime();
 
-            topUpdateProcess.set(false);
+            svcTopUpdateInProgress.set(false);
 
             if (log.isDebugEnabled())
                 log.debug("Topology of service '" + name + "' has been updated: " + Arrays.toString(serviceNodes));

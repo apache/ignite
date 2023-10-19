@@ -17,23 +17,21 @@
 
 package org.apache.ignite.internal.client.thin;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Socket;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import com.mchange.v2.c3p0.util.TestUtils;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
@@ -43,33 +41,39 @@ import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
+import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResultBatch;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.logging.log4j.Level;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.util.IgniteUtils.TEST_FLAG;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreaded;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
- * Checks service invocation for thin client if service awareness is disabled or enabled.
+ * Checks the service awareness feature of the thin client.
  */
 public class ServiceAwarenessTest extends AbstractThinClientTest {
     /** Node-filter service name. */
     private static final String SRV_NAME = "node_filtered_svc";
 
-    /** */
+    /** Number of grids at the test start. */
     private static final int GRIDS = 4;
+
+    /** Number of node instances with the initial service deployment. */
+    private static final int FILTERED_NODES_CNT = 2;
 
     /** */
     protected boolean partitionAwareness = true;
@@ -102,6 +106,11 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
         clientLogLsnr = new ListeningTestLogger(log);
     }
 
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 30_000L;
+    }
+
     /** */
     private static ServiceConfiguration serviceCfg() {
         // Service is deployed on nodes with the name index equal to 1, 2 or >= GRIDS.
@@ -121,9 +130,9 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        stopAllGrids();
-
         ((GridTestLog4jLogger)log).setLevel(Level.INFO);
+
+        stopAllGrids();
 
         partitionAwareness = true;
 
@@ -142,143 +151,163 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     /** */
     @Test
     public void testDelayedServiceRedeploy() throws Exception {
-        TestBlockingDiscoverySpi testDisco =((TestBlockingDiscoverySpi)grid(0).configuration().getDiscoverySpi());
+        TestBlockingDiscoverySpi testDisco = ((TestBlockingDiscoverySpi)grid(0).configuration().getDiscoverySpi());
 
-        TEST_FLAG = true;
+        // Service topology on the client.
+        Set<UUID> srvcTopOnClient = new GridConcurrentHashSet<>();
 
-        startGrid(GRIDS);
+        addClientLogLsnr(srvcTopOnClient::addAll);
 
-        //grid(0).context().
+        AtomicBoolean svcRunFlag = new AtomicBoolean(true);
 
-        Thread.sleep(5_000);
-    }
+        try (IgniteClient client = startClient(0)) {
+            ServicesTest.TestServiceInterface svc = client.services().serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
 
-    /**
-     * Tests one node comes while one thread is used to call the service.
-     */
-    @Test
-    public void testOneNodeComesOneThread() throws Exception {
-        testClusterTopChanges(1, false);
+            runAsync(() -> {
+                while (svcRunFlag.get())
+                    svc.testMethod();
+            });
+
+            waitForCondition(() -> srvcTopOnClient.size() == FILTERED_NODES_CNT
+                && srvcTopOnClient.contains(grid(1).localNode().id())
+                && srvcTopOnClient.contains(grid(2).localNode().id()),
+                getTestTimeout());
+
+            // Delays service redeployment and the service topology update on the server side.
+            testDisco.toBlock.add(ServiceClusterDeploymentResultBatch.class);
+
+            startGrid(GRIDS);
+
+            waitForCondition(() -> testDisco.blocked.size() == 1, getTestTimeout());
+
+            // Ensure all the nodes have started but the service topology hasn't updated yet.
+            for (Ignite ig : G.allGrids()) {
+                assertEquals(ig.cluster().nodes().size(), GRIDS + 1);
+
+                // Ensure there are still SRVC_FILTERED_NOIDES_CNT nodes with the service instance.
+                assertEquals(((IgniteEx)ig).context().service().serviceTopology(SRV_NAME, 0).size(),
+                    FILTERED_NODES_CNT);
+            }
+
+            // Ensure the client's topology is not updated.
+            assertTrue(srvcTopOnClient.size() == FILTERED_NODES_CNT
+                && !srvcTopOnClient.contains(grid(GRIDS).localNode().id()));
+
+            testDisco.release();
+
+            // Ensure the service topology has been updated to 3 instances per cluster.
+            for (Ignite ig : G.allGrids()) {
+                waitForCondition(
+                    () -> {
+                        try {
+                            return ((IgniteEx)ig).context().service().serviceTopology(SRV_NAME, 0).size() == 3;
+                        }
+                        catch (Exception e) {
+                            return false;
+                        }
+                    },
+                    getTestTimeout()
+                );
+            }
+
+            waitForCondition(() -> srvcTopOnClient.size() == 3 && srvcTopOnClient.contains(grid(1).localNode().id())
+                && srvcTopOnClient.contains(grid(2).localNode().id())
+                && srvcTopOnClient.contains(grid(GRIDS).localNode().id()), getTestTimeout());
+        }
+        finally {
+            svcRunFlag.set(false);
+        }
     }
 
     /**
      * Tests several nodes come while one thread is used to call the service.
      */
     @Test
-    public void testSeveralNodesComeOneThread() throws Exception {
-        testClusterTopChanges(3, false);
+    public void testNodesComeOneThread() throws Exception {
+        doTestClusterTopChangesWhileServiceCalling(3, true, false);
     }
-
-    /**
-     * Tests one node comes while several threads are used to call the service.
-     */
-    @Test
-    public void testOneNodeComesMultiThreads() throws Exception {
-        testClusterTopChanges(1, true);
-    }
-
 
     /**
      * Tests several nodes come while several threads are used to call the service.
      */
     @Test
-    public void testSeveralNodesComeMultiThreads() throws Exception {
-        testClusterTopChanges(3, true);
-    }
-
-    /**
-     * Tests one node leaves while one thread is used to call the service.
-     */
-    @Test
-    public void testOneNodeLeavesOneThread() throws Exception {
-        testClusterTopChanges(-1, false);
+    public void testNodesComeMultiThreads() throws Exception {
+        doTestClusterTopChangesWhileServiceCalling(3, true, true);
     }
 
     /**
      * Tests several nodes leaves while one thread is used to call the service.
      */
     @Test
-    public void testSeveralNodesLeaveOneThread() throws Exception {
-        testClusterTopChanges(-3, false);
-    }
-
-    /**
-     * Tests one node leaves while several threads are used to call the service.
-     */
-    @Test
-    public void testOneNodeLeavesMultiThreads() throws Exception {
-        testClusterTopChanges(-1, true);
+    public void testNodesLeaveOneThread() throws Exception {
+        doTestClusterTopChangesWhileServiceCalling(3, false, false);
     }
 
     /**
      * Tests several nodes leave while several threads are used to call the service.
      */
     @Test
-    public void testSeveralNodesLeaveMultiThreads() throws Exception {
-        testClusterTopChanges(-3, true);
+    public void testNodesLeaveMultiThreads() throws Exception {
+        doTestClusterTopChangesWhileServiceCalling(3, false, true);
     }
 
     /**
      * Tests service topology is updated when there is a gap of service invocation between forced service redeployment.
      */
     @Test
-    public void testForcedRedeploy() throws InterruptedException {
+    public void testForcedServiceRedeployWhileClientIsIdle() {
         try (IgniteClient client = startClient(0)) {
             ServicesTest.TestServiceInterface svc = client.services().serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
 
-            AtomicReference<Set<UUID>> receivedSrvTop = new AtomicReference<>();
+            Set<UUID> srvcTopOnClient = new GridConcurrentHashSet<>();
 
-            addClientLogLsnr(receivedSrvTop::set);
+            addClientLogLsnr(srvcTopOnClient::addAll);
 
             ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
-            do {
+            while (srvcTopOnClient.isEmpty())
                 svc.testMethod();
-            }
-            while (receivedSrvTop.get() == null);
 
             ((GridTestLog4jLogger)log).setLevel(Level.INFO);
 
-            assertTrue(receivedSrvTop.get().contains(grid(1).localNode().id())
-                && receivedSrvTop.get().contains(grid(2).localNode().id()));
+            assertTrue(srvcTopOnClient.size() == FILTERED_NODES_CNT
+                && srvcTopOnClient.contains(grid(1).localNode().id())
+                && srvcTopOnClient.contains(grid(2).localNode().id()));
 
             grid(1).services().cancel(SRV_NAME);
 
-            receivedSrvTop.set(null);
-
-            Thread.sleep(3000);
+            srvcTopOnClient.clear();
 
             grid(1).services().deploy(serviceCfg().setNodeFilter(null));
 
-            Thread.sleep(3000);
-
             ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
-            do {
+            while (srvcTopOnClient.isEmpty())
                 svc.testMethod();
-            }
-            while (receivedSrvTop.get() == null);
 
-            assertEquals(GRIDS, receivedSrvTop.get().size());
+            assertEquals(GRIDS, srvcTopOnClient.size());
 
             for (Ignite ig : G.allGrids())
-                assertTrue(receivedSrvTop.get().contains(ig.cluster().localNode().id()));
+                assertTrue(srvcTopOnClient.contains(ig.cluster().localNode().id()));
         }
     }
 
     /** */
-    private void testClusterTopChanges(int newNodesCnt, boolean multiThreaded) throws Exception {
-        assert newNodesCnt != 0;
+    private void doTestClusterTopChangesWhileServiceCalling(int nodesCnt, boolean addNodes, boolean multiThreaded) throws Exception {
+        Set<UUID> newNodesUUIDs = new GridConcurrentHashSet<>();
 
-        Set<UUID> nodesToStop = new HashSet<>();
+        // Start additional nodes to stop them.
+        if (!addNodes) {
+            startGridsMultiThreaded(GRIDS, nodesCnt);
 
-        for (int i = 0; i < -newNodesCnt; ++i)
-            nodesToStop.add(startGrid(GRIDS + i).localNode().id());
+            for (int i = GRIDS; i < GRIDS + nodesCnt; ++i)
+                newNodesUUIDs.add(grid(i).localNode().id());
+        }
 
         // Service topology on the clients.
-        AtomicReference<Collection<UUID>> receivedSrvTop = new AtomicReference<>();
+        Set<UUID> srvcTopOnClient = new GridConcurrentHashSet<>();
 
-        addClientLogLsnr(receivedSrvTop::set);
+        addClientLogLsnr(srvcTopOnClient::addAll);
 
         AtomicBoolean changeClusterTop = new AtomicBoolean();
         AtomicBoolean stopFlag = new AtomicBoolean();
@@ -300,25 +329,25 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
                         // node which has just left the cluster. This case raises a node-left exception in the service
                         // call response. Unfortunately, this exception is not processed by the client service proxy as
                         // a resend attempts.
-                        if (newNodesCnt > 0
-                            || (!m.contains("Node has left grid") && !m.contains("Failed to send job due to node failure"))
-                            || nodesToStop.stream().noneMatch(nid -> m.contains(nid.toString())))
+                        if (addNodes || (!m.contains("Node has left grid") && !m.contains("Failed to send job due to node failure"))
+                            || newNodesUUIDs.stream().noneMatch(nid -> m.contains(nid.toString())))
                             throw e;
                     }
 
                     // Wait until the initial topology is received.
-                    if (receivedSrvTop.get() != null && receivedSrvTop.get().size() == (newNodesCnt > 0 ? 2 : 2 + Math.abs(newNodesCnt))
+                    if (srvcTopOnClient.size() == (addNodes ? FILTERED_NODES_CNT : FILTERED_NODES_CNT + nodesCnt)
                         && changeClusterTop.compareAndSet(false, true)) {
+                        srvcTopOnClient.clear();
 
-                        for (int i = 0; i < Math.abs(newNodesCnt); ++i) {
+                        for (int i = 0; i < nodesCnt; ++i) {
                             int nodeIdx = GRIDS + i;
 
                             runAsync(() -> {
                                 try {
-                                    if (newNodesCnt < 0)
-                                        stopGrid(nodeIdx);
+                                    if (addNodes)
+                                        newNodesUUIDs.add(startGrid(nodeIdx).localNode().id());
                                     else
-                                        startGrid(nodeIdx);
+                                        stopGrid(nodeIdx);
                                 }
                                 catch (Exception e) {
                                     log.error("Unable to start or stop test grid.", e);
@@ -329,23 +358,19 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
                         }
                     }
 
-                    // Stoip if new excepted service topology received.
-                    if (receivedSrvTop.get() != null && receivedSrvTop.get().size() == (newNodesCnt < 0 ? 2 : 2 + Math.abs(newNodesCnt)))
+                    // Stop if new excepted service topology received.
+                    if (srvcTopOnClient.size() == (addNodes ? FILTERED_NODES_CNT + nodesCnt : FILTERED_NODES_CNT))
                         stopFlag.set(true);
                 }
                 while (!stopFlag.get());
-            }, multiThreaded ? 4 : 1, "CallSrvLoader");
-        }
-        finally {
-            ((GridTestLog4jLogger)log).setLevel(Level.INFO);
+            }, multiThreaded ? 4 : 1, "ServiceTestLoader");
         }
 
         // The initial nodes must always persist it the service topology.
-        assertTrue(receivedSrvTop.get().contains(grid(1).localNode().id())
-            && receivedSrvTop.get().contains(grid(2).localNode().id()));
+        assertTrue(srvcTopOnClient.contains(grid(1).localNode().id())
+            && srvcTopOnClient.contains(grid(2).localNode().id()));
 
-        for (int i = 0; i < newNodesCnt; ++i)
-            assertTrue(receivedSrvTop.get().contains(grid(GRIDS + i).localNode().id()));
+        assertEquals(addNodes ? nodesCnt : 0, newNodesUUIDs.stream().filter(srvcTopOnClient::contains).count());
     }
 
     /**
@@ -389,7 +414,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
         callServiceNTimesFromClient(SRV_NAME, callCounter, () -> top.get() != null && callCounter.get() >= 1000);
 
-        assertTrue(top.get().size() == 2 && top.get().contains(grid(1).localNode().id())
+        assertTrue(top.get().size() == FILTERED_NODES_CNT && top.get().contains(grid(1).localNode().id())
             && top.get().contains(grid(2).localNode().id()));
 
         assertTrue(redirectCnt.get() < 50);
@@ -456,12 +481,29 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
     /** */
     private static final class TestBlockingDiscoverySpi extends TcpDiscoverySpi {
-        private final Set<Class<? extends DiscoveryCustomMessage>> blockMessages = new HashSet<>();
+        /** */
+        private final Set<Class<? extends DiscoveryCustomMessage>> toBlock = new HashSet<>();
+
+        /** */
+        private final List<CustomMessageWrapper> blocked = new CopyOnWriteArrayList<>();
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
-            long timeout) throws IOException, IgniteCheckedException {
-            super.writeToSocket(sock, out, msg, timeout);
+        @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+            if (msg instanceof CustomMessageWrapper
+                && toBlock.stream().anyMatch(mt -> mt.isAssignableFrom(((CustomMessageWrapper)msg).delegate().getClass()))) {
+                blocked.add((CustomMessageWrapper)msg);
+
+                return;
+            }
+
+            super.sendCustomEvent(msg);
+        }
+
+        /** */
+        public void release() {
+            toBlock.clear();
+
+            blocked.forEach(this::sendCustomEvent);
         }
     }
 }
