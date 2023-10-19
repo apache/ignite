@@ -148,6 +148,7 @@ import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvent
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.remoteSecurityContext;
+import static org.apache.ignite.internal.util.IgniteUtils.TEST_FLAG;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterruptibly;
 
@@ -3308,6 +3309,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             Map<Integer, Map<Integer, List<UUID>>> assignmentChange = fut.get();
 
             GridDhtPartitionsFullMessage m = createPartitionsMessage(false, false);
+
+            if(TEST_FLAG)
+                log.error("TETS | onAffinityInitialized on " + cctx.kernalContext().cluster().get().localNode().order());
 
             CacheAffinityChangeMessage msg = new CacheAffinityChangeMessage(exchId, m, assignmentChange);
 

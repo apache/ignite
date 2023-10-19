@@ -86,6 +86,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.tracing.SpanType.AFFINITY_CALCULATION;
+import static org.apache.ignite.internal.util.IgniteUtils.TEST_FLAG;
 
 /**
  *
@@ -395,6 +396,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     @Nullable private CacheAffinityChangeMessage affinityChangeMessage(WaitRebalanceInfo waitInfo) {
         if (waitInfo.assignments.isEmpty()) // Possible if all awaited caches were destroyed.
             return null;
+
+        if(TEST_FLAG)
+            log.error("TEST | affinityChangeMessage on " + cctx.kernalContext().cluster().get().localNode().order());
 
         return new CacheAffinityChangeMessage(waitInfo.topVer, waitInfo.deploymentIds);
     }

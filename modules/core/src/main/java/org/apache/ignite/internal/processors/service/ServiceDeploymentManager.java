@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
@@ -60,6 +61,7 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.GridTopic.TOPIC_SERVICES;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
+import static org.apache.ignite.internal.util.IgniteUtils.TEST_FLAG;
 
 /**
  * Service deployment manager.
@@ -174,6 +176,9 @@ public class ServiceDeploymentManager {
      * @param depActions Service deployment actions.
      */
     void onLocalJoin(DiscoveryEvent evt, DiscoCache discoCache, ServiceDeploymentActions depActions) {
+        if(TEST_FLAG)
+            log.error("TEST | checkClusterStateAndAddTask() by onLocalJoin() on " + ctx.cluster().get().localNode().order());
+
         checkClusterStateAndAddTask(evt, discoCache, depActions);
     }
 
@@ -216,9 +221,12 @@ public class ServiceDeploymentManager {
         @Nullable ServiceDeploymentActions depActions) {
         if (discoCache.state().transition())
             pendingEvts.add(new PendingEventHolder(evt, discoCache.version(), depActions));
-        else if (discoCache.state().active())
+        else if (discoCache.state().active()) {
+            if(TEST_FLAG)
+                log.error("TEST | addTask() by checkClusterStateAndAddTask() on " + ctx.cluster().get().localNode().order());
+
             addTask(evt, discoCache.version(), depActions);
-        else if (log.isDebugEnabled())
+        } else if (log.isDebugEnabled())
             log.debug("Ignore event, cluster is inactive, evt=" + evt);
     }
 
@@ -251,9 +259,6 @@ public class ServiceDeploymentManager {
         assert task.event() == null && task.topologyVersion() == null;
 
         task.onEvent(evt, topVer, depActions);
-
-        if(ctx.cluster().get().localNode().order()>4)
-            log.error("TEST | addTask on " + ctx.cluster().get().localNode().order());
 
         depWorker.tasksQueue.add(task);
     }
@@ -323,6 +328,9 @@ public class ServiceDeploymentManager {
                     if (msg instanceof ChangeGlobalStateFinishMessage) {
                         ChangeGlobalStateFinishMessage msg0 = (ChangeGlobalStateFinishMessage)msg;
 
+                        if(TEST_FLAG)
+                            log.error("TEST | addTask() by ChangeGlobalStateFinishMessage on " + ctx.cluster().get().localNode().order());
+
                         if (msg0.clusterActive())
                             pendingEvts.forEach(t -> addTask(t.evt, t.topVer, t.depActions));
                         else if (log.isDebugEnabled())
@@ -348,9 +356,12 @@ public class ServiceDeploymentManager {
                             if (task != null) // May be null in case of double delivering
                                 task.onReceiveFullDeploymentsMessage(msg0);
                         }
-                        else if (msg instanceof CacheAffinityChangeMessage)
+                        else if (msg instanceof CacheAffinityChangeMessage) {
+                            if(TEST_FLAG)
+                                log.error("TEST | addTask() by CacheAffinityChangeMessage on " + ctx.cluster().get().localNode().order());
+
                             addTask(copyIfNeeded((DiscoveryCustomEvent)evt), discoCache.version(), null);
-                        else {
+                        } else {
                             ServiceDeploymentActions depActions = null;
 
                             if (msg instanceof ChangeGlobalStateMessage)
@@ -362,14 +373,21 @@ public class ServiceDeploymentManager {
                             else if (msg instanceof DynamicCacheChangeBatch)
                                 depActions = ((DynamicCacheChangeBatch)msg).servicesDeploymentActions();
 
-                            if (depActions != null)
+                            if (depActions != null) {
+                                if(TEST_FLAG)
+                                    log.error("TEST | addTask() by DynamicCacheChangeBatch on " + ctx.cluster().get().localNode().order());
+
                                 addTask(copyIfNeeded((DiscoveryCustomEvent)evt), discoCache.version(), depActions);
+                            }
                         }
                     }
                 }
                 else {
                     if (evtType == EVT_NODE_LEFT || evtType == EVT_NODE_FAILED)
                         tasks.values().forEach(t -> t.onNodeLeft(snd));
+
+                    if(TEST_FLAG)
+                        log.error("TEST | checkClusterStateAndAddTask() by disco event ["+evt+"] on " + ctx.cluster().get().localNode().order());
 
                     checkClusterStateAndAddTask(evt, discoCache, null);
                 }
@@ -428,6 +446,9 @@ public class ServiceDeploymentManager {
                         log.debug("Received services single deployments message : " +
                             "[locId=" + ctx.localNodeId() + ", snd=" + nodeId + ", msg=" + msg0 + ']');
                     }
+
+                    if(TEST_FLAG)
+                        log.error("TEST | received ServiceSingleNodeDeploymentResultBatch on " + ctx.cluster().get().localNode().order());
 
                     tasks.computeIfAbsent(msg0.deploymentId(),
                         t -> new ServiceDeploymentTask(ctx, msg0.deploymentId()))

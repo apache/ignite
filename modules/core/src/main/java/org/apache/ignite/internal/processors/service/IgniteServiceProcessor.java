@@ -111,6 +111,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
+import static org.apache.ignite.internal.util.IgniteUtils.TEST_FLAG;
 import static org.apache.ignite.internal.util.IgniteUtils.allInterfaces;
 import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_DEPLOY;
 
@@ -285,6 +286,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             new CustomEventListener<ServiceClusterDeploymentResultBatch>() {
                 @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
                     ServiceClusterDeploymentResultBatch msg) {
+                    if(TEST_FLAG)
+                        log.error("TEST | processServicesFullDeployments by ServiceClusterDeploymentResultBatch on " + ctx.cluster().get().localNode().order());
+
                     processServicesFullDeployments(msg);
                 }
             });
@@ -1264,6 +1268,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
         int assignCnt = top.getOrDefault(ctx.localNodeId(), 0);
 
+        if (TEST_FLAG && assignCnt > 0)
+            log.error("TEST | redeploy on " + ctx.cluster().get().localNode().order());
+
         Collection<ServiceContextImpl> ctxs = locServices.computeIfAbsent(srvcId, c -> new ArrayList<>());
 
         Collection<ServiceContextImpl> toInit = new ArrayList<>();
@@ -1928,6 +1935,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         }
 
         synchronized (servicesTopsUpdateMux) {
+            if(TEST_FLAG)
+                log.error("TEST | updateServicesMap() [" + fullTops.values().iterator().next().size() + "] by processServicesFullDeployments() on " + ctx.cluster().get().localNode().order());
+
             updateServicesMap(registeredServices, fullTops);
 
             servicesTopsUpdateMux.notifyAll();

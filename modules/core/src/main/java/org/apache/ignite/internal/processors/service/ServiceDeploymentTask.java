@@ -54,6 +54,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_SERVICES;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SERVICE_POOL;
+import static org.apache.ignite.internal.util.IgniteUtils.TEST_FLAG;
 
 /**
  * Services deployment task.
@@ -239,8 +240,8 @@ class ServiceDeploymentTask {
 
                     return;
                 }
-
-                log.error("TEST | deploy actions on " + ctx.cluster().get().localNode().order());
+                if(TEST_FLAG)
+                    log.error("TEST | deploy actions on " + ctx.cluster().get().localNode().order());
 
                 depActions = new ServiceDeploymentActions(ctx);
 
@@ -284,7 +285,8 @@ class ServiceDeploymentTask {
      * @param depActions Services deployment actions.
      */
     private void processDeploymentActions(@NotNull ServiceDeploymentActions depActions) {
-        log.error("TEST | processDeploymentActions on " + ctx.cluster().get().localNode().order());
+        if(TEST_FLAG)
+            log.error("TEST | processDeploymentActions on " + ctx.cluster().get().localNode().order());
 
         srvcProc.updateDeployedServices(depActions);
 
@@ -411,8 +413,12 @@ class ServiceDeploymentTask {
 
             if (ctx.localNodeId().equals(crdId))
                 onReceiveSingleDeploymentsMessage(ctx.localNodeId(), msg);
-            else
+            else {
+                if (TEST_FLAG)
+                    log.error("TEST | sending ServiceSingleNodeDeploymentResultBatch from " + ctx.cluster().get().localNode().order());
+
                 ctx.io().sendToGridTopic(crdId, TOPIC_SERVICES, msg, SERVICE_POOL);
+            }
 
             if (log.isDebugEnabled())
                 log.debug("Send services single deployments message, msg=" + msg);
@@ -454,6 +460,9 @@ class ServiceDeploymentTask {
      * @param msg Full services map message.
      */
     protected void onReceiveFullDeploymentsMessage(ServiceClusterDeploymentResultBatch msg) {
+        if(TEST_FLAG)
+            log.error("TEST | onReceiveFullDeploymentsMessage on " + ctx.cluster().get().localNode().order());
+
         assert depId.equals(msg.deploymentId()) : "Wrong message's deployment process id, msg=" + msg;
 
         initTaskFut.listen(() -> {
@@ -471,6 +480,9 @@ class ServiceDeploymentTask {
 
                     depActions.deploymentTopologies(fullTops);
                     depActions.deploymentErrors(fullErrors);
+
+                    if(TEST_FLAG)
+                        log.error("TEST | updateServicesMap() [" + fullTops.values().iterator().next().size() + "] by onReceiveFullDeploymentsMessage() on " + ctx.cluster().get().localNode().order());
 
                     srvcProc.updateServicesTopologies(fullTops);
 
@@ -559,6 +571,9 @@ class ServiceDeploymentTask {
      */
     private void onAllReceived() {
         assert !isCompleted();
+
+        if(TEST_FLAG)
+            log.error("TEST | onAllReceived(), sending ServiceClusterDeploymentResultBatch on/from " + ctx.cluster().get().localNode().order());
 
         Collection<ServiceClusterDeploymentResult> fullResults = buildFullDeploymentsResults(singleDepsMsgs);
 

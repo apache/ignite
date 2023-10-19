@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.Socket;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -28,26 +31,33 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import com.mchange.v2.c3p0.util.TestUtils;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.logging.log4j.Level;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.util.IgniteUtils.TEST_FLAG;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreaded;
 
@@ -66,6 +76,15 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
     /** */
     private static ListeningTestLogger clientLogLsnr;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setDiscoverySpi(new TestBlockingDiscoverySpi());
+
+        return cfg;
+    }
 
     /** {@inheritDoc} */
     @Override protected ClientConfiguration getClientConfiguration() {
@@ -123,11 +142,15 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     /** */
     @Test
     public void testDelayedServiceRedeploy() throws Exception {
-        System.err.println("TEST | new node");
+        TestBlockingDiscoverySpi testDisco =((TestBlockingDiscoverySpi)grid(0).configuration().getDiscoverySpi());
+
+        TEST_FLAG = true;
 
         startGrid(GRIDS);
 
-        Thread.sleep(10_000);
+        //grid(0).context().
+
+        Thread.sleep(5_000);
     }
 
     /**
@@ -428,6 +451,17 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
             }
 
             return nodeIdx == 1 || nodeIdx == 2 || nodeIdx >= GRIDS;
+        }
+    }
+
+    /** */
+    private static final class TestBlockingDiscoverySpi extends TcpDiscoverySpi {
+        private final Set<Class<? extends DiscoveryCustomMessage>> blockMessages = new HashSet<>();
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
+            long timeout) throws IOException, IgniteCheckedException {
+            super.writeToSocket(sock, out, msg, timeout);
         }
     }
 }
