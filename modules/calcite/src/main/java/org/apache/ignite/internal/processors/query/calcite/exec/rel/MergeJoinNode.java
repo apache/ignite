@@ -214,6 +214,14 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     protected abstract void join() throws Exception;
 
     /** */
+    protected void checkJoinFinished() throws Exception {
+        if (!distributed || (waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING)) {
+            requested = 0;
+            downstream().end();
+        }
+    }
+
+    /** */
     @NotNull public static <Row> MergeJoinNode<Row> create(ExecutionContext<Row> ctx, RelDataType outputRowType, RelDataType leftRowType,
         RelDataType rightRowType, JoinRelType joinType, Comparator<Row> comp, boolean distributed) {
         switch (joinType) {
@@ -392,12 +400,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
             if (requested > 0 && ((waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty())
                 || (waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty() && rightMaterialization == null))
-            ) {
-                if (!distributed || (waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING)) {
-                    requested = 0;
-                    downstream().end();
-                }
-            }
+            )
+                checkJoinFinished();
         }
     }
 
@@ -579,12 +583,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
             if (waitingLeft == 0)
                 leftSource().request(waitingLeft = IN_BUFFER_SIZE);
 
-            if (requested > 0 && waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
-                if (!distributed || (waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING)) {
-                    requested = 0;
-                    downstream().end();
-                }
-            }
+            if (requested > 0 && waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty())
+                checkJoinFinished();
         }
     }
 
@@ -775,12 +775,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
             if (waitingLeft == 0)
                 leftSource().request(waitingLeft = IN_BUFFER_SIZE);
 
-            if (requested > 0 && waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty() && rightMaterialization == null) {
-                if (!distributed || (waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING)) {
-                    requested = 0;
-                    downstream().end();
-                }
-            }
+            if (requested > 0 && waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty() && rightMaterialization == null)
+                checkJoinFinished();
         }
     }
 
@@ -1012,10 +1008,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
             if (requested > 0 && waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty()
                 && waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty() && rightMaterialization == null
-            ) {
-                requested = 0;
-                downstream().end();
-            }
+            )
+                checkJoinFinished();
         }
     }
 
@@ -1089,12 +1083,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
             if (requested > 0 && ((waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty()
                 || (waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty())))
-            ) {
-                if (!distributed || (waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING)) {
-                    requested = 0;
-                    downstream().end();
-                }
-            }
+            )
+                checkJoinFinished();
         }
     }
 
@@ -1169,12 +1159,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
             if (waitingLeft == 0)
                 leftSource().request(waitingLeft = IN_BUFFER_SIZE);
 
-            if (requested > 0 && waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
-                if (!distributed || (waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING)) {
-                    requested = 0;
-                    downstream().end();
-                }
-            }
+            if (requested > 0 && waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty())
+                checkJoinFinished();
         }
     }
 }
