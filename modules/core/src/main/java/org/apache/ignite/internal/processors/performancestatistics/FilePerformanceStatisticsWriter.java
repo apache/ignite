@@ -96,6 +96,12 @@ public class FilePerformanceStatisticsWriter {
     /** Default maximum cached strings threshold. String caching will stop on threshold excess. */
     public static final int DFLT_CACHED_STRINGS_THRESHOLD = 10 * 1024;
 
+    /**
+     * File format version. This version should be incremented each time when format of existing events are
+     * changed (fields added/removed) to avoid unexpected non-informative errors on deserialization.
+     */
+    public static final short FILE_FORMAT_VERSION = 1;
+
     /** File writer thread name. */
     static final String WRITER_THREAD_NAME = "performance-statistics-writer";
 
@@ -159,6 +165,8 @@ public class FilePerformanceStatisticsWriter {
         ringByteBuf = new SegmentedRingByteBuffer(bufSize, fileMaxSize, SegmentedRingByteBuffer.BufferMode.DIRECT);
 
         fileWriter = new FileWriter(ctx, log);
+
+        doWrite(OperationType.VERSION, Short.BYTES, buf -> buf.putShort(FILE_FORMAT_VERSION));
     }
 
     /** Starts collecting performance statistics. */
@@ -377,6 +385,7 @@ public class FilePerformanceStatisticsWriter {
      * @param walCpRecordFsyncDuration Wal cp record fsync duration.
      * @param writeCpEntryDuration Write checkpoint entry duration.
      * @param splitAndSortCpPagesDuration Split and sort cp pages duration.
+     * @param recoveryDataWriteDuration Recovery data write duration in milliseconds.
      * @param totalDuration Total duration in milliseconds.
      * @param cpStartTime Checkpoint start time in milliseconds.
      * @param pagesSize Pages size.
@@ -394,6 +403,7 @@ public class FilePerformanceStatisticsWriter {
         long walCpRecordFsyncDuration,
         long writeCpEntryDuration,
         long splitAndSortCpPagesDuration,
+        long recoveryDataWriteDuration,
         long totalDuration,
         long cpStartTime,
         int pagesSize,
@@ -411,6 +421,7 @@ public class FilePerformanceStatisticsWriter {
             buf.putLong(walCpRecordFsyncDuration);
             buf.putLong(writeCpEntryDuration);
             buf.putLong(splitAndSortCpPagesDuration);
+            buf.putLong(recoveryDataWriteDuration);
             buf.putLong(totalDuration);
             buf.putLong(cpStartTime);
             buf.putInt(pagesSize);

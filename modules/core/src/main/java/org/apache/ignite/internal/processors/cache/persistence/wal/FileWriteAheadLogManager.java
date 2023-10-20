@@ -161,8 +161,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readPosition;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readSegmentHeader;
-import static org.apache.ignite.internal.processors.compress.CompressionProcessor.checkCompressionLevelBounds;
-import static org.apache.ignite.internal.processors.compress.CompressionProcessor.getDefaultCompressionLevel;
+import static org.apache.ignite.internal.processors.compress.CompressionProcessor.getCompressionLevel;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty.detachedBooleanProperty;
 import static org.apache.ignite.internal.util.io.GridFileUtils.ensureHardLinkAvailable;
 
@@ -603,9 +602,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 cctx.kernalContext().compress().checkPageCompressionSupported();
 
-                pageCompressionLevel = dsCfg.getWalPageCompressionLevel() != null ?
-                    checkCompressionLevelBounds(dsCfg.getWalPageCompressionLevel(), pageCompression) :
-                    getDefaultCompressionLevel(pageCompression);
+                pageCompressionLevel = getCompressionLevel(dsCfg.getWalPageCompressionLevel(), pageCompression);
             }
         }
     }
@@ -1262,8 +1259,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public boolean disabled(int grpId, long pageId) {
-        return cctx.walState().isDisabled(grpId, pageId);
+    @Override public boolean pageRecordsDisabled(int grpId, long pageId) {
+        return cctx.walState().isPageRecordsDisabled(grpId, pageId);
     }
 
     /**

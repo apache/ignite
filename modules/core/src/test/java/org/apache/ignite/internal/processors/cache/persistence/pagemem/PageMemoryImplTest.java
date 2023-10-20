@@ -342,7 +342,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
 
             ByteBuffer buf = ByteBuffer.wrap(data);
 
-            memory.checkpointWritePage(cpPage, buf, pageStoreWriter, null);
+            memory.checkpointWritePage(cpPage, buf, pageStoreWriter, null, false);
 
             while (memory.isCpBufferOverflowThresholdExceeded()) {
                 FullPageId cpPageId = memory.pullPageFromCpBuffer();
@@ -356,7 +356,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
 
                 tmpWriteBuf.rewind();
 
-                memory.checkpointWritePage(cpPageId, tmpWriteBuf, pageStoreWriter, null);
+                memory.checkpointWritePage(cpPageId, tmpWriteBuf, pageStoreWriter, null, false);
             }
         }
 
@@ -416,7 +416,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
                 assertTrue("Should oom before check replaced page.", oom);
 
                 assertTrue("Missing page: " + fullPageId, memory.hasLoadedPage(fullPageId));
-            }, null);
+            }, null, false);
     }
 
     /**
@@ -474,7 +474,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             memory.checkpointWritePage(checkpointPage, ByteBuffer.allocate(PAGE_SIZE),
                 (fullPageId, buffer, tag) -> {
                     // No-op.
-                }, mockTracker);
+                }, mockTracker, false);
 
         memory.finishCheckpoint();
 

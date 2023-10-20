@@ -91,7 +91,10 @@ public enum OperationType {
     QUERY_ROWS(20),
 
     /** Custom query property. */
-    QUERY_PROPERTY(21);
+    QUERY_PROPERTY(21),
+
+    /** Version */
+    VERSION(255);
 
     /** Cache operations. */
     public static final EnumSet<OperationType> CACHE_OPS = EnumSet.of(CACHE_GET, CACHE_PUT, CACHE_REMOVE,
@@ -217,7 +220,7 @@ public enum OperationType {
 
     /** @return Checkpoint record size. */
     public static int checkpointRecordSize() {
-        return 8 * 12 + 4 * 3;
+        return 9 * 12 + 4 * 3;
     }
 
     /** @return Pages write throttle record size. */

@@ -603,7 +603,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                     buf.rewind();
 
                     mem.checkpointWritePage(fullId, buf, (fullPageId, buffer, tag) -> {
-                    }, null);
+                    }, null, false);
 
                     buf.position(PageIO.COMMON_HEADER_END);
 
@@ -940,7 +940,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                     };
 
                     while (true) {
-                        mem.checkpointWritePage(fullId, tmpBuf, pageStoreWriter, null);
+                        mem.checkpointWritePage(fullId, tmpBuf, pageStoreWriter, null, false);
 
                         tag = tag0.get();
 

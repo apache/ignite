@@ -136,13 +136,15 @@ public interface PageMemoryEx extends PageMemory {
      * @param buf Temporary buffer to write changes into.
      * @param pageWriter Checkpoint page write context.
      * @param tracker Checkpoint metrics tracker.
+     * @param keepDirty Don't reset dirty flag on page.
      * @throws IgniteCheckedException If failed to obtain page data.
      */
     public void checkpointWritePage(
         FullPageId pageId,
         ByteBuffer buf,
         PageStoreWriter pageWriter,
-        CheckpointMetricsTracker tracker
+        CheckpointMetricsTracker tracker,
+        boolean keepDirty
     ) throws IgniteCheckedException;
 
     /** */

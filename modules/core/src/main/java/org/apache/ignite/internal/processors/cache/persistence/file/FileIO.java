@@ -66,7 +66,7 @@ public interface FileIO extends AutoCloseable {
      *
      * @param destBuf Destination byte buffer.
      *
-     * @return Number of written bytes.
+     * @return Number of read bytes.
      *
      * @throws IOException If some I/O error occurs.
      */

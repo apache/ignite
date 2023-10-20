@@ -384,7 +384,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
                 if (pageIds.contains(fullId)) {
                     long cpStart = System.nanoTime();
 
-                    mem.checkpointWritePage(fullId, tmpBuf, pageStoreWriter, null);
+                    mem.checkpointWritePage(fullId, tmpBuf, pageStoreWriter, null, false);
 
                     long cpEnd = System.nanoTime();
 

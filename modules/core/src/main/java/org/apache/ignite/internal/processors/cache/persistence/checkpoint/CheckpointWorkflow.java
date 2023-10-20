@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
@@ -315,35 +316,36 @@ public class CheckpointWorkflow {
 
             tracker.onWalCpRecordFsyncEnd();
 
-            CheckpointEntry checkpointEntry = null;
-
-            if (checkpointMarkersStorage != null)
-                checkpointEntry = checkpointMarkersStorage.writeCheckpointEntry(
-                    cpTs,
-                    cpRec.checkpointId(),
-                    cpPtr,
-                    cpRec,
-                    CheckpointEntryType.START,
-                    skipSync
-                );
-
-            curr.transitTo(MARKER_STORED_TO_DISK);
-
-            tracker.onSplitAndSortCpPagesStart();
-
             GridConcurrentMultiPairQueue<PageMemoryEx, FullPageId> cpPages =
                 splitAndSortCpPagesIfNeeded(cpPagesHolder);
 
             tracker.onSplitAndSortCpPagesEnd();
 
-            return new Checkpoint(checkpointEntry, cpPages, curr);
+            CheckpointEntry cpEntry = new CheckpointEntry(cpTs, cpPtr, cpRec.checkpointId(), cpRec.cacheGroupStates());
+
+            return new Checkpoint(cpEntry, cpPages, curr, cpRec);
         }
         else {
             if (ctx0.walFlush() && wal != null)
                 wal.flush(null, true);
 
-            return new Checkpoint(null, GridConcurrentMultiPairQueue.EMPTY, curr);
+            return new Checkpoint(null, GridConcurrentMultiPairQueue.EMPTY, curr, cpRec);
         }
+    }
+
+    /** Stores begin checkpoint marker to disk. */
+    public void storeBeginMarker(Checkpoint cp) throws StorageException {
+        if (checkpointMarkersStorage != null && cp.cpEntry != null) {
+            checkpointMarkersStorage.writeCheckpointEntry(
+                cp.cpEntry,
+                cp.cpRecord,
+                CheckpointEntryType.START,
+                skipSync
+            );
+
+            cp.progress.transitTo(MARKER_STORED_TO_DISK);
+        }
+
     }
 
     /**
@@ -627,7 +629,7 @@ public class CheckpointWorkflow {
         for (int stripeIdx = 0; stripeIdx < exec.stripesCount(); stripeIdx++)
             exec.execute(
                 stripeIdx,
-                checkpointPagesWriterFactory.buildRecovery(pages, updStores, writePagesError, cpPagesCnt)
+                checkpointPagesWriterFactory.buildRecoveryFinalizer(pages, updStores, writePagesError, cpPagesCnt)
             );
 
         // Await completion all write tasks.
