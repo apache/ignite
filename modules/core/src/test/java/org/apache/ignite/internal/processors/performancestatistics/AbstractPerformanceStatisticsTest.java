@@ -223,6 +223,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
             long walCpRecordFsyncDuration,
             long writeCpEntryDuration,
             long splitAndSortCpPagesDuration,
+            long recoveryDataWriteDuration,
             long totalDuration,
             long cpStartTime,
             int pagesSize,
