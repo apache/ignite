@@ -24,14 +24,13 @@ from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.tests.rebalance.util import NUM_NODES, start_ignite, TriggerEvent, \
-    get_result, check_type_of_rebalancing, await_rebalance_start, RebalanceParams
-from ignitetest.tests.util import preload_data, DataGenerationParams
+    get_result, check_type_of_rebalancing, await_rebalance_start, BaseRebalanceTest
+from ignitetest.tests.util import preload_data
 from ignitetest.utils import cluster, ignite_versions
-from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST
 
 
-class RebalancePersistentTest(IgniteTest):
+class RebalancePersistentTest(BaseRebalanceTest):
     """
     Tests rebalance scenarios in persistent mode.
     """
@@ -45,14 +44,12 @@ class RebalancePersistentTest(IgniteTest):
         Tests rebalance on node join.
         """
 
-        reb_params = RebalanceParams(trigger_event=TriggerEvent.NODE_JOIN, thread_pool_size=thread_pool_size,
-                                     batch_size=batch_size, batches_prefetch_count=batches_prefetch_count,
-                                     throttle=throttle, persistent=True)
+        reb_params = self.get_reb_params(trigger_event=TriggerEvent.NODE_JOIN, thread_pool_size=thread_pool_size,
+                                         batch_size=batch_size, batches_prefetch_count=batches_prefetch_count,
+                                         throttle=throttle)
 
-        data_gen_params = DataGenerationParams(backups=backups, cache_count=cache_count, entry_count=entry_count,
-                                               entry_size=entry_size, preloaders=preloaders)
-
-        reb_params, data_gen_params = self.extend_test_params(reb_params, data_gen_params)
+        data_gen_params = self.get_data_gen_params(backups=backups, cache_count=cache_count, entry_count=entry_count,
+                                                   entry_size=entry_size, preloaders=preloaders)
 
         ignites = start_ignite(self.test_context, ignite_version, reb_params, data_gen_params)
 
@@ -95,14 +92,12 @@ class RebalancePersistentTest(IgniteTest):
         Tests rebalance on node left.
         """
 
-        reb_params = RebalanceParams(trigger_event=TriggerEvent.NODE_LEFT, thread_pool_size=thread_pool_size,
-                                     batch_size=batch_size, batches_prefetch_count=batches_prefetch_count,
-                                     throttle=throttle, persistent=True)
+        reb_params = self.get_reb_params(trigger_event=TriggerEvent.NODE_LEFT, thread_pool_size=thread_pool_size,
+                                         batch_size=batch_size, batches_prefetch_count=batches_prefetch_count,
+                                         throttle=throttle)
 
-        data_gen_params = DataGenerationParams(backups=backups, cache_count=cache_count, entry_count=entry_count,
-                                               entry_size=entry_size, preloaders=preloaders)
-
-        reb_params, data_gen_params = self.extend_test_params(reb_params, data_gen_params)
+        data_gen_params = self.get_data_gen_params(backups=backups, cache_count=cache_count, entry_count=entry_count,
+                                                   entry_size=entry_size, preloaders=preloaders)
 
         ignites = start_ignite(self.test_context, ignite_version, reb_params, data_gen_params)
 
@@ -146,17 +141,15 @@ class RebalancePersistentTest(IgniteTest):
 
         preload_entries = 10_000
 
-        reb_params = RebalanceParams(trigger_event=TriggerEvent.NODE_JOIN, thread_pool_size=thread_pool_size,
-                                     batch_size=batch_size, batches_prefetch_count=batches_prefetch_count,
-                                     throttle=throttle, persistent=True,
-                                     jvm_opts=['-DIGNITE_PDS_WAL_REBALANCE_THRESHOLD=0',
-                                               '-DIGNITE_PREFER_WAL_REBALANCE=true']
-                                     )
+        reb_params = self.get_reb_params(trigger_event=TriggerEvent.NODE_JOIN, thread_pool_size=thread_pool_size,
+                                         batch_size=batch_size, batches_prefetch_count=batches_prefetch_count,
+                                         throttle=throttle,
+                                         jvm_opts=['-DIGNITE_PDS_WAL_REBALANCE_THRESHOLD=0',
+                                                   '-DIGNITE_PREFER_WAL_REBALANCE=true']
+                                         )
 
-        data_gen_params = DataGenerationParams(backups=backups, cache_count=cache_count, entry_count=entry_count,
-                                               entry_size=entry_size, preloaders=preloaders)
-
-        reb_params, data_gen_params = self.extend_test_params(reb_params, data_gen_params)
+        data_gen_params = self.get_data_gen_params(backups=backups, cache_count=cache_count, entry_count=entry_count,
+                                                   entry_size=entry_size, preloaders=preloaders)
 
         ignites = start_ignite(self.test_context, ignite_version, reb_params, data_gen_params)
 
@@ -210,16 +203,10 @@ class RebalancePersistentTest(IgniteTest):
 
         return result
 
-    def extend_test_params(self, reb_params, data_gen_params):
-        """
-        Redefine in subclasses to extend the test parameters.
-        It may be used say to add some plugins and/or extension modules.
-
-        :param reb_params: Rebalance test parameters.
-        :param data_gen_params: Data generation application parameters.
-        :return: Updated rebalance test parameters.
-        """
-        return reb_params, data_gen_params
+    def get_reb_params(self, **kwargs):
+        return super().get_reb_params(**kwargs)._replace(
+            persistent=True
+        )
 
 
 def await_and_check_rebalance(service: IgniteService, rebalance_nodes: list = None, is_full: bool = True):

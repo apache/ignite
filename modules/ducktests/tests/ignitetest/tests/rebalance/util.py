@@ -29,6 +29,7 @@ from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, 
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.tests.util import DataGenerationParams
 from ignitetest.utils.enum import constructible
+from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion
 
 NUM_NODES = 4
@@ -54,8 +55,8 @@ class RebalanceParams(NamedTuple):
     throttle: int = None
     persistent: bool = False
     jvm_opts: list = None
-    modules: list = None
-    plugins: list = None
+    modules: list = []
+    plugins: list = []
 
 
 class RebalanceMetrics(NamedTuple):
@@ -253,3 +254,24 @@ def check_type_of_rebalancing(rebalance_nodes: list, is_full: bool = True):
             assert msg in i, i
 
         return output
+
+
+class BaseRebalanceTest(IgniteTest):
+    """
+    Base class for rebalance tests.
+    """
+    def get_reb_params(self, **kwargs):
+        """
+        Create rebalance parameters.
+        :param kwargs: RebalanceParams cstor parameters.
+        :return: instance of RebalanceParams.
+        """
+        return RebalanceParams(**kwargs)
+
+    def get_data_gen_params(self, **kwargs):
+        """
+        Create parameters for data generation application.
+        :param kwargs: DataGenerationParams cstor parameters.
+        :return: instance of DataGenerationParams.
+        """
+        return DataGenerationParams(**kwargs)
