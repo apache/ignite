@@ -62,6 +62,9 @@ public class CheckpointProgressImpl implements CheckpointProgress {
     /** Counter for evicted checkpoint pages. Not null only if checkpoint is running. */
     private volatile AtomicInteger evictedPagesCntr;
 
+    /** Counter for written recovery pages. Not null only if checkpoint is running. */
+    private volatile AtomicInteger writtenRecoveryPagesCntr;
+
     /** Number of pages in current checkpoint at the beginning of checkpoint. */
     private volatile int currCheckpointPagesCnt;
 
@@ -185,10 +188,10 @@ public class CheckpointProgressImpl implements CheckpointProgress {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateWrittenPages(int deltha) {
-        A.ensure(deltha > 0, "param must be positive");
+    @Override public void updateWrittenPages(int delta) {
+        A.ensure(delta > 0, "param must be positive");
 
-        writtenPagesCntr.addAndGet(deltha);
+        writtenPagesCntr.addAndGet(delta);
     }
 
     /** {@inheritDoc} */
@@ -197,10 +200,10 @@ public class CheckpointProgressImpl implements CheckpointProgress {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateSyncedPages(int deltha) {
-        A.ensure(deltha > 0, "param must be positive");
+    @Override public void updateSyncedPages(int delta) {
+        A.ensure(delta > 0, "param must be positive");
 
-        syncedPagesCntr.addAndGet(deltha);
+        syncedPagesCntr.addAndGet(delta);
     }
 
     /** {@inheritDoc} */
@@ -212,8 +215,25 @@ public class CheckpointProgressImpl implements CheckpointProgress {
     @Override public void updateEvictedPages(int delta) {
         A.ensure(delta > 0, "param must be positive");
 
-        if (evictedPagesCounter() != null)
-            evictedPagesCounter().addAndGet(delta);
+        AtomicInteger cntr = evictedPagesCounter();
+
+        if (cntr != null)
+            cntr.addAndGet(delta);
+    }
+
+    /** {@inheritDoc} */
+    @Override public AtomicInteger writtenRecoveryPagesCounter() {
+        return writtenRecoveryPagesCntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updateWrittenRecoveryPages(int delta) {
+        A.ensure(delta > 0, "param must be positive");
+
+        AtomicInteger cntr = writtenRecoveryPagesCounter();
+
+        if (cntr != null)
+            cntr.addAndGet(delta);
     }
 
     /** {@inheritDoc} */
@@ -233,6 +253,7 @@ public class CheckpointProgressImpl implements CheckpointProgress {
         writtenPagesCntr = new AtomicInteger();
         syncedPagesCntr = new AtomicInteger();
         evictedPagesCntr = new AtomicInteger();
+        writtenRecoveryPagesCntr = new AtomicInteger();
     }
 
     /** {@inheritDoc} */
@@ -242,6 +263,7 @@ public class CheckpointProgressImpl implements CheckpointProgress {
         writtenPagesCntr = null;
         syncedPagesCntr = null;
         evictedPagesCntr = null;
+        writtenRecoveryPagesCntr = null;
     }
 
     /** {@inheritDoc} */
