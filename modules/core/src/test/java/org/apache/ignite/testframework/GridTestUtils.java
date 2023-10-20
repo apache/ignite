@@ -104,6 +104,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -1799,12 +1800,17 @@ public final class GridTestUtils {
             if (isFinal && isStatic)
                 throw new IgniteException("Modification of static final field through reflection.");
 
-            if (isFinal) {
+            if (isFinal && U.majorJavaVersion(U.jdkVersion()) < 12) {
                 Field modifiersField = Field.class.getDeclaredField("modifiers");
 
                 modifiersField.setAccessible(true);
 
                 modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+            }
+            else {
+                long fieldOffset = GridUnsafe.objectFieldOffset(field);
+
+                GridUnsafe.putObjectField(obj, fieldOffset, val);
             }
 
             field.set(obj, val);
