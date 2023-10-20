@@ -19,12 +19,15 @@ package org.apache.ignite.dump;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridLoggerProxy;
@@ -34,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.DumpedPartitionIterator;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
 
@@ -85,9 +89,14 @@ public class DumpReader implements Runnable {
 
                 Map<Integer, List<String>> grpToNodes = new HashMap<>();
 
+                Set<Integer> cacheGroupIds = cfg.cacheGroupNames() == null ? null :
+                    Arrays.stream(cfg.cacheGroupNames()).map(CU::cacheId).collect(Collectors.toSet());
+
                 for (SnapshotMetadata meta : dump.metadata()) {
-                    for (Integer grp : meta.cacheGroupIds())
-                        grpToNodes.computeIfAbsent(grp, key -> new ArrayList<>()).add(meta.folderName());
+                    for (Integer grp : meta.cacheGroupIds()) {
+                        if (cacheGroupIds == null || cacheGroupIds.contains(grp))
+                            grpToNodes.computeIfAbsent(grp, key -> new ArrayList<>()).add(meta.folderName());
+                    }
                 }
 
                 cnsmr.onCacheConfigs(grpToNodes.entrySet().stream()

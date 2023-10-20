@@ -284,6 +284,15 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     void checkDump(IgniteEx ign, String name) throws Exception {
+        checkDump(ign, name, null, new boolean[]{true, true, true},
+            KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
+            2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)), KEYS_CNT);
+    }
+
+    /** */
+    void checkDump(IgniteEx ign, String name, String[] cacheGroupNames, boolean[] expectedFoundCaches,
+        int expectedDfltDumpSz, final int expectedGrpDumpSz, final int expectedCount
+    ) throws Exception {
         checkDumpWithCommand(ign, name, backups);
 
         if (persistence)
@@ -351,8 +360,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                         throw new IgniteException("Unknown cache");
                 });
 
-                for (boolean found : cachesFound)
-                    assertTrue(found);
+                for (int i = 0; i < cachesFound.length; i++)
+                    assertEquals(expectedFoundCaches[i], cachesFound[i]);
             }
 
             @Override public void onPartition(int grp, int part, Iterator<DumpEntry> iter) {
@@ -389,10 +398,10 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             @Override public void check() {
                 super.check();
 
-                assertEquals(KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups), dfltDumpSz);
-                assertEquals(2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)), grpDumpSz);
+                assertEquals(expectedDfltDumpSz, dfltDumpSz);
+                assertEquals(expectedGrpDumpSz, grpDumpSz);
 
-                IntStream.range(0, KEYS_CNT).forEach(key -> assertTrue(keys.contains(key)));
+                IntStream.range(0, expectedCount).forEach(key -> assertTrue(keys.contains(key)));
             }
         };
 
@@ -402,7 +411,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 cnsmr,
                 DFLT_THREAD_CNT, DFLT_TIMEOUT,
                 true,
-                false
+                false,
+                cacheGroupNames
             ),
             log
         ).run();

@@ -148,6 +148,31 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
     /** */
     @Test
+    public void testCacheDumpWithReadGroupFilter() throws Exception {
+        snpPoolSz = 4;
+
+        try {
+            IgniteEx ign = startGridAndFillCaches();
+
+            createDump(ign);
+
+            checkDump(ign, DMP_NAME, new String[]{GRP}, new boolean[]{false, true, true},
+                0, 2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)), 0);
+
+            checkDump(ign, DMP_NAME, new String[]{DEFAULT_CACHE_NAME}, new boolean[]{true, false, false},
+                KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups), 0, KEYS_CNT);
+
+            checkDump(ign, DMP_NAME, new String[]{DEFAULT_CACHE_NAME, GRP}, new boolean[]{true, true, true},
+                KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups), 2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
+                KEYS_CNT);
+        }
+        finally {
+            snpPoolSz = 1;
+        }
+    }
+
+    /** */
+    @Test
     public void testCacheDumpWithGroupFilter() throws Exception {
         snpPoolSz = 4;
 

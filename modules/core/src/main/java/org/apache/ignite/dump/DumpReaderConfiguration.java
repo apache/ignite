@@ -55,12 +55,15 @@ public class DumpReaderConfiguration {
     /** If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}. */
     private final boolean keepBinary;
 
+    /** Cache group names. */
+    private String[] cacheGroupNames;
+
     /**
      * @param dir Root dump directory.
      * @param cnsmr Dump consumer.
      */
     public DumpReaderConfiguration(File dir, DumpConsumer cnsmr) {
-        this(dir, cnsmr, DFLT_THREAD_CNT, DFLT_TIMEOUT, true, true);
+        this(dir, cnsmr, DFLT_THREAD_CNT, DFLT_TIMEOUT, true, true, null);
     }
 
     /**
@@ -70,14 +73,18 @@ public class DumpReaderConfiguration {
      * @param timeout Timeout of dump reader invocation.
      * @param failFast Stop processing partitions if consumer fail to process one.
      * @param keepBinary If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}.
+     * @param cacheGroupNames Cache group names.
      */
-    public DumpReaderConfiguration(File dir, DumpConsumer cnsmr, int thCnt, Duration timeout, boolean failFast, boolean keepBinary) {
+    public DumpReaderConfiguration(File dir, DumpConsumer cnsmr, int thCnt, Duration timeout, boolean failFast, boolean keepBinary,
+        String[] cacheGroupNames
+    ) {
         this.dir = dir;
         this.cnsmr = cnsmr;
         this.thCnt = thCnt;
         this.timeout = timeout;
         this.failFast = failFast;
         this.keepBinary = keepBinary;
+        this.cacheGroupNames = cacheGroupNames;
     }
 
     /** @return Root dump directiory. */
@@ -108,5 +115,10 @@ public class DumpReaderConfiguration {
     /** @return If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}. */
     public boolean keepBinary() {
         return keepBinary;
+    }
+
+    /** @return Cache group names. */
+    public String[] cacheGroupNames() {
+        return cacheGroupNames;
     }
 }
