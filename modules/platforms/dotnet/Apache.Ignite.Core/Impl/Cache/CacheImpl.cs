@@ -253,19 +253,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public ICache<TK, TV> WithAllowAtomicOpsInTx()
-        {
-            var target = DoOutOpObject((int)CacheOp.WithSkipStore);
-
-            return new CacheImpl<TK, TV>(
-                target,
-                flagSkipStore: true,
-                flagKeepBinary: _flagKeepBinary,
-                flagNoRetries: _flagNoRetries,
-                flagPartitionRecover: _flagPartitionRecover);
-        }
-
-        /** <inheritDoc /> */
         public ICache<TK, TV> WithExpiryPolicy(IExpiryPolicy plc)
         {
             IgniteArgumentCheck.NotNull(plc, "plc");
@@ -284,12 +271,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         public bool IsKeepBinary
         {
             get { return _flagKeepBinary; }
-        }
-
-        /** <inheritDoc /> */
-        public bool IsAllowAtomicOpsInTx
-        {
-            get { return false; }
         }
 
         /** <inheritDoc /> */

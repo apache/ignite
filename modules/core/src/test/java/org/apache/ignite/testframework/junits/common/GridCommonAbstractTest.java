@@ -191,7 +191,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache(int idx) {
-        return grid(idx).cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        return grid(idx).cache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -322,7 +322,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache() {
-        return grid().cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        return grid().cache(DEFAULT_CACHE_NAME);
     }
 
     /**

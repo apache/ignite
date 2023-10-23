@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.exec.PartitionExtractor;
+import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
@@ -66,7 +68,11 @@ public class QueryTemplate {
 
         for (int i = 0; i < 3; i++) {
             try {
-                ExecutionPlan executionPlan0 = new ExecutionPlan(ctx.topologyVersion(), map(mappingService, fragments, ctx, mq));
+                fragments = map(mappingService, fragments, ctx, mq);
+
+                List<PartitionNode> partNodes = Commons.transform(fragments, f -> new PartitionExtractor(ctx.typeFactory()).go(f));
+
+                ExecutionPlan executionPlan0 = new ExecutionPlan(ctx.topologyVersion(), fragments, partNodes);
 
                 if (executionPlan == null || executionPlan.topologyVersion().before(executionPlan0.topologyVersion()))
                     this.executionPlan.compareAndSet(executionPlan, executionPlan0);
