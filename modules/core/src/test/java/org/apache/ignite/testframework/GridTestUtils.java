@@ -1800,7 +1800,7 @@ public final class GridTestUtils {
             if (isFinal && isStatic)
                 throw new IgniteException("Modification of static final field through reflection.");
 
-            if (isFinal && U.majorJavaVersion(U.jdkVersion()) >= 12){
+            if (isFinal && U.majorJavaVersion(U.jdkVersion()) >= 12) {
                 long fieldOffset = GridUnsafe.objectFieldOffset(field);
 
                 GridUnsafe.putObjectField(obj, fieldOffset, val);
