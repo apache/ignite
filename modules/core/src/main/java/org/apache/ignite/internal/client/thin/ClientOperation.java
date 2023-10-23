@@ -283,7 +283,7 @@ public enum ClientOperation {
     OP_SET_ITERATOR_GET_PAGE(9023),
 
     /** Get service mappings. */
-    SERVICE_GET_MAPPINGS(9024);
+    OP_SERVICE_GET_MAPPINGS(9024);
 
     /** Code. */
     private final int code;

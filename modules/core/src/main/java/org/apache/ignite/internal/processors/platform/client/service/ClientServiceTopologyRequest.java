@@ -26,9 +26,9 @@ import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Request to get service mappings.
+ * Request to get service topology.
  */
-public class ClientServiceMapingsRequest extends ClientRequest {
+public class ClientServiceTopologyRequest extends ClientRequest {
     /** Service name. */
     private final String name;
 
@@ -37,7 +37,7 @@ public class ClientServiceMapingsRequest extends ClientRequest {
      *
      * @param reader Reader.
      */
-    public ClientServiceMapingsRequest(BinaryRawReader reader) {
+    public ClientServiceTopologyRequest(BinaryRawReader reader) {
         super(reader);
 
         name = reader.readString();

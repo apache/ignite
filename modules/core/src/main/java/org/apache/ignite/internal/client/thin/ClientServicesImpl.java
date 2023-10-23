@@ -97,8 +97,6 @@ class ClientServicesImpl implements ClientServices, Runnable {
             servicesTopologies = Collections.emptyMap();
     }
 
-
-
     /** {@inheritDoc} */
     @Override public ClientClusterGroup clusterGroup() {
         return grp;
@@ -286,7 +284,8 @@ class ClientServicesImpl implements ClientServices, Runnable {
         }
 
         /**
-         * If the partition awarenessenabled, notifies the service topology update and provides last knows service nodes.
+         * If the partition awareness is enabled, notifies the service topology update and provides last knows service
+         * nodes.
          *
          * @return Last known topology nodes.
          * @see #tryUpdateServiceTopology(ServiceTopology, String)
@@ -404,7 +403,7 @@ class ClientServicesImpl implements ClientServices, Runnable {
                     log.debug("Requesting service topology update for the service '" + name + "' ...");
 
                 List<UUID> nodes = ch.service(
-                    ClientOperation.SERVICE_GET_MAPPINGS,
+                    ClientOperation.OP_SERVICE_GET_MAPPINGS,
                     req -> utils.writeObject(req.out(), name),
                     resp -> {
                         int cnt = resp.in().readInt();

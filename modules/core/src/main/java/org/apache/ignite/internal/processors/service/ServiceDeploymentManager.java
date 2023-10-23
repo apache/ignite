@@ -359,9 +359,8 @@ public class ServiceDeploymentManager {
                             else if (msg instanceof DynamicCacheChangeBatch)
                                 depActions = ((DynamicCacheChangeBatch)msg).servicesDeploymentActions();
 
-                            if (depActions != null) {
+                            if (depActions != null)
                                 addTask(copyIfNeeded((DiscoveryCustomEvent)evt), discoCache.version(), depActions);
-                            }
                         }
                     }
                 }

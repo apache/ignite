@@ -25,9 +25,9 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.jetbrains.annotations.Nullable;
 
-/** Service mappings response. */
+/** Service topology response. */
 public class ClientServiceMappingsResponse extends ClientResponse {
-    /** Services mappings. */
+    /** Services topology. */
     private final @Nullable Collection<UUID> svcsNodes;
 
     /**
