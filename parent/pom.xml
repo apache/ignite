@@ -75,7 +75,7 @@
         <bouncycastle.version>1.69</bouncycastle.version>
         <commons.beanutils.bundle.version>1.9.2_1</commons.beanutils.bundle.version>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
-        <commons.codec.version>1.15</commons.codec.version>
+        <commons.codec.version>1.16.0</commons.codec.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <commons.lang.version>2.6</commons.lang.version>
         <commons.io.version>2.11.0</commons.io.version>
