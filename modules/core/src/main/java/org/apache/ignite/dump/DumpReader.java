@@ -89,8 +89,9 @@ public class DumpReader implements Runnable {
 
                 Map<Integer, List<String>> grpToNodes = new HashMap<>();
 
-                Set<Integer> cacheGroupIds = cfg.cacheGroupNames() == null ? null :
-                    Arrays.stream(cfg.cacheGroupNames()).map(CU::cacheId).collect(Collectors.toSet());
+                Set<Integer> cacheGroupIds = cfg.cacheGroupNames() != null 
+                    ? Arrays.stream(cfg.cacheGroupNames()).map(CU::cacheId).collect(Collectors.toSet())
+                    : null;
 
                 for (SnapshotMetadata meta : dump.metadata()) {
                     for (Integer grp : meta.cacheGroupIds()) {

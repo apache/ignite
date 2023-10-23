@@ -295,7 +295,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
-    void checkDump(IgniteEx ign,
+    void checkDump(
+        IgniteEx ign,
         String name,
         String[] cacheGroupNames,
         Set<String> expectedFoundCaches,

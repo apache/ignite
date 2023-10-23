@@ -156,7 +156,8 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
             createDump(ign);
 
-            checkDump(ign,
+            checkDump(
+                ign,
                 DMP_NAME,
                 new String[]{GRP},
                 new HashSet<>(Arrays.asList(CACHE_0, CACHE_1)),
@@ -164,21 +165,25 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
                 2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
                 0);
 
-            checkDump(ign,
+            checkDump(
+                ign,
                 DMP_NAME,
                 new String[]{DEFAULT_CACHE_NAME},
                 new HashSet<>(Arrays.asList(DEFAULT_CACHE_NAME)),
                 KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
                 0,
-                KEYS_CNT);
+                KEYS_CNT
+            );
 
-            checkDump(ign,
+            checkDump(
+                ign,
                 DMP_NAME,
                 new String[]{DEFAULT_CACHE_NAME, GRP},
                 new HashSet<>(Arrays.asList(DEFAULT_CACHE_NAME, CACHE_0, CACHE_1)),
                 KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
                 2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
-                KEYS_CNT);
+                KEYS_CNT
+            );
         }
         finally {
             snpPoolSz = 1;
