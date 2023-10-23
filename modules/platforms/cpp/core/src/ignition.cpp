@@ -155,7 +155,7 @@ namespace ignite
                 // so just putting it here in case we are running on 15+. It is OK to have them on Java 9-14 too.
                 // See https://docs.oracle.com/en/java/javase/17/docs/specs/jni/functions.html#getversion
                 opts.push_back(CopyChars("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED"));
-                opts.push_back(CopyChars("--add-opens=java.base/jdk.internal.loader=ALL-UNNAMED");
+                opts.push_back(CopyChars("--add-opens=java.base/jdk.internal.loader=ALL-UNNAMED"));
                 opts.push_back(CopyChars("--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED"));
                 opts.push_back(CopyChars("--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"));
                 opts.push_back(CopyChars("--add-opens=java.base/sun.util.calendar=ALL-UNNAMED"));
