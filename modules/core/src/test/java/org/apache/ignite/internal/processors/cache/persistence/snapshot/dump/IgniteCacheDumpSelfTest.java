@@ -156,14 +156,28 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
             createDump(ign);
 
-            checkDump(ign, DMP_NAME, new String[]{GRP}, new boolean[]{false, true, true},
-                0, 2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)), 0);
+            checkDump(ign,
+                DMP_NAME,
+                new String[]{GRP},
+                new HashSet<>(Arrays.asList(CACHE_0, CACHE_1)),
+                0,
+                2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
+                0);
 
-            checkDump(ign, DMP_NAME, new String[]{DEFAULT_CACHE_NAME}, new boolean[]{true, false, false},
-                KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups), 0, KEYS_CNT);
+            checkDump(ign,
+                DMP_NAME,
+                new String[]{DEFAULT_CACHE_NAME},
+                new HashSet<>(Arrays.asList(DEFAULT_CACHE_NAME)),
+                KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
+                0,
+                KEYS_CNT);
 
-            checkDump(ign, DMP_NAME, new String[]{DEFAULT_CACHE_NAME, GRP}, new boolean[]{true, true, true},
-                KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups), 2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
+            checkDump(ign,
+                DMP_NAME,
+                new String[]{DEFAULT_CACHE_NAME, GRP},
+                new HashSet<>(Arrays.asList(DEFAULT_CACHE_NAME, CACHE_0, CACHE_1)),
+                KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
+                2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
                 KEYS_CNT);
         }
         finally {

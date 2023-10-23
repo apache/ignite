@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -284,14 +285,23 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     void checkDump(IgniteEx ign, String name) throws Exception {
-        checkDump(ign, name, null, new boolean[]{true, true, true},
+        checkDump(ign,
+            name,
+            null,
+            new HashSet<>(Arrays.asList(DEFAULT_CACHE_NAME, CACHE_0, CACHE_1)),
             KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
-            2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)), KEYS_CNT);
+            2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
+            KEYS_CNT);
     }
 
     /** */
-    void checkDump(IgniteEx ign, String name, String[] cacheGroupNames, boolean[] expectedFoundCaches,
-        int expectedDfltDumpSz, final int expectedGrpDumpSz, final int expectedCount
+    void checkDump(IgniteEx ign,
+        String name,
+        String[] cacheGroupNames,
+        Set<String> expectedFoundCaches,
+        int expectedDfltDumpSz,
+        int expectedGrpDumpSz,
+        int expectedCount
     ) throws Exception {
         checkDumpWithCommand(ign, name, backups);
 
@@ -327,41 +337,26 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
                 super.onCacheConfigs(caches);
 
-                boolean[] cachesFound = new boolean[3];
+                Set<String> cachesFound = new HashSet<>();
 
                 caches.forEachRemaining(data -> {
-                    if (data.config().getName().equals(DEFAULT_CACHE_NAME)) {
-                        assertFalse(cachesFound[0]);
-                        cachesFound[0] = true;
+                    String cacheName = data.config().getName();
 
-                        assertEquals(DEFAULT_CACHE_NAME, data.config().getName());
-                        assertFalse(data.sql());
-                        assertTrue(data.queryEntities().isEmpty());
-                    }
-                    else if (data.config().getName().equals(CACHE_0)) {
-                        assertFalse(cachesFound[1]);
-                        cachesFound[1] = true;
+                    assertTrue(cachesFound.add(cacheName));
 
+                    assertEquals(cacheName, data.configuration().getName());
+
+                    assertFalse(data.sql());
+
+                    assertTrue(data.queryEntities().isEmpty());
+
+                    if (cacheName.startsWith("cache-"))
                         assertEquals(GRP, data.configuration().getGroupName());
-                        assertEquals(CACHE_0, data.configuration().getName());
-                        assertFalse(data.sql());
-                        assertTrue(data.queryEntities().isEmpty());
-                    }
-                    else if (data.config().getName().equals(CACHE_1)) {
-                        assertFalse(cachesFound[2]);
-                        cachesFound[2] = true;
-
-                        assertEquals(GRP, data.configuration().getGroupName());
-                        assertEquals(CACHE_1, data.configuration().getName());
-                        assertFalse(data.sql());
-                        assertTrue(data.queryEntities().isEmpty());
-                    }
-                    else
+                    else if (!cacheName.equals(DEFAULT_CACHE_NAME))
                         throw new IgniteException("Unknown cache");
                 });
 
-                for (int i = 0; i < cachesFound.length; i++)
-                    assertEquals(expectedFoundCaches[i], cachesFound[i]);
+                assertEquals(expectedFoundCaches, cachesFound);
             }
 
             @Override public void onPartition(int grp, int part, Iterator<DumpEntry> iter) {
