@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -182,7 +183,7 @@ final class ReliableChannel implements AutoCloseable {
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
-        return service(op, payloadWriter, payloadReader, null);
+        return service(op, payloadWriter, payloadReader, Collections.emptyList());
     }
 
     /**
@@ -198,7 +199,7 @@ final class ReliableChannel implements AutoCloseable {
         ClientOperation op,
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader,
-        @Nullable List<UUID> targetNodes
+        List<UUID> targetNodes
     ) throws ClientException, ClientError {
         if (F.isEmpty(targetNodes))
             return applyOnDefaultChannel(channel -> channel.service(op, payloadWriter, payloadReader), op);
@@ -968,7 +969,7 @@ final class ReliableChannel implements AutoCloseable {
         /** Channel. */
         private volatile ClientChannel ch;
 
-        /** ID of the last server node that {@link ch} is or was connected to. */
+        /** ID of the last server node that {@link #ch} is or was connected to. */
         private volatile UUID serverNodeId;
 
         /** Address that holder is bind to (chCfg.addr) is not in use now. So close the holder. */

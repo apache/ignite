@@ -33,7 +33,6 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
-import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
@@ -89,9 +88,6 @@ public class ClientServiceInvokeRequest extends ClientRequest {
     /** Service call context attributes. */
     private final Map<String, Object> callAttrs;
 
-    /** Service topology flag. */
-    private final boolean sendSrvTop;
-
     /**
      * Constructor.
      *
@@ -106,8 +102,6 @@ public class ClientServiceInvokeRequest extends ClientRequest {
         flags = reader.readByte();
 
         timeout = reader.readLong();
-
-        sendSrvTop = protocolCtx.isFeatureSupported(ClientBitmaskFeature.SERVICE_MAPPINGS) && reader.readBoolean();
 
         int cnt = reader.readInt();
 
@@ -167,10 +161,6 @@ public class ClientServiceInvokeRequest extends ClientRequest {
         try {
             Object res;
 
-            Map<UUID, Integer> srvTop = sendSrvTop
-                ? ctx.kernalContext().service().serviceTopology(name, 0)
-                : null;
-
             if (PlatformService.class.isAssignableFrom(svcCls)) {
                 // Never deserialize platform service arguments and result: may contain platform-only types.
                 PlatformService proxy =
@@ -198,14 +188,6 @@ public class ClientServiceInvokeRequest extends ClientRequest {
                     PlatformServices.convertArrayArgs(args, method);
 
                 res = proxy.invokeMethod(method, args, callAttrs);
-            }
-
-            if (ctx.currentProtocolContext().isFeatureSupported(ClientBitmaskFeature.SERVICE_MAPPINGS)) {
-                UUID[] instanceNodes = !sendSrvTop || srvTop == null
-                    ? null
-                    : srvTop.keySet().toArray(new UUID[0]);
-
-                return new ClientServiceCallResponse(requestId(), res, instanceNodes);
             }
 
             return new ClientObjectResponse(requestId(), res);

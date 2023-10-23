@@ -465,7 +465,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     /** */
     private void addClientLogLsnr(Consumer<Set<UUID>> srvTopConsumer) {
         clientLogLsnr.registerListener(s -> {
-            if (s.contains("Topology of service '" + SRV_NAME + "' has been updated: ")) {
+            if (s.contains("Topology of service '" + SRV_NAME + "' has been updated. The service instance nodes: ")) {
                 String nodes = s.substring(s.indexOf(": [") + 3);
 
                 nodes = nodes.substring(0, nodes.length() - 1);

@@ -22,15 +22,15 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientException;
@@ -53,7 +53,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Implementation of {@link ClientServices}.
  */
-class ClientServicesImpl implements ClientServices {
+class ClientServicesImpl implements ClientServices, Runnable {
     /** Max duration in mills before asking service topology update. */
     static final int SRV_TOP_UPDATE_PERIOD = 10_000;
 
@@ -75,6 +75,9 @@ class ClientServicesImpl implements ClientServices {
     /** Logger. */
     private final IgniteLogger log;
 
+    /** Services topology. {@code Null} if partition awareness is not enabled. */
+    private final Map<String, ServiceTopology> servicesTopologies;
+
     /** Constructor. */
     ClientServicesImpl(ReliableChannel ch, ClientBinaryMarshaller marsh, ClientClusterGroupImpl grp, IgniteLogger log) {
         this.ch = ch;
@@ -84,7 +87,17 @@ class ClientServicesImpl implements ClientServices {
         utils = new ClientUtils(marsh);
 
         this.log = log;
+
+        if (grp.ch.partitionAwarenessEnabled) {
+            servicesTopologies = new ConcurrentHashMap<>();
+
+            ch.addChannelFailListener(this);
+        }
+        else
+            servicesTopologies = Collections.emptyMap();
     }
+
+
 
     /** {@inheritDoc} */
     @Override public ClientClusterGroup clusterGroup() {
@@ -188,6 +201,34 @@ class ClientServicesImpl implements ClientServices {
         return new ClientServicesImpl(ch, marsh, grp, log);
     }
 
+    /** */
+    private static final class ServiceTopology {
+        /** */
+        private final AtomicBoolean updateInProgress = new AtomicBoolean();
+
+        /** */
+        private final AtomicInteger callCnt = new AtomicInteger();
+
+        /** */
+        private volatile long lastUpdateRequestTime;
+
+        /** */
+        private volatile List<UUID> nodes;
+
+        /** */
+        private volatile AffinityTopologyVersion lastAffTop;
+
+        /** */
+        private void setTopology(List<UUID> nodes, AffinityTopologyVersion lastAffTop){
+            this.nodes = nodes;
+            this.lastAffTop = lastAffTop;
+
+            callCnt.set(0);
+
+            lastUpdateRequestTime = System.nanoTime();
+        }
+    }
+
     /**
      * Service invocation handler.
      */
@@ -207,21 +248,6 @@ class ClientServicesImpl implements ClientServices {
         /** Service call context attributes. */
         private final Map<String, Object> callAttrs;
 
-        /** Last known topology version. {@code Null} if partition awareness is not enabled. */
-        private volatile @Nullable AffinityTopologyVersion lastTopVersion;
-
-        /** Service's instance nodes. {@code Null} if partition awareness is not enabled. */
-        private volatile @Nullable List<UUID> instanceNodes;
-
-        /** Time of the last topology update. */
-        private volatile long lastTopUpdateTime;
-
-        /** Number of requests without asking for service topology change. */
-        private final @Nullable AtomicInteger curTopRequestsCnt;
-
-        /** Topology update-in-progress flag. Holds {@code true}, if topology update is already in progress. */
-        private final @Nullable AtomicBoolean svcTopUpdateInProgress;
-
         /**
          * @param name Service name.
          * @param timeout Timeout.
@@ -238,96 +264,45 @@ class ClientServicesImpl implements ClientServices {
             this.timeout = timeout;
             this.grp = grp;
             this.callAttrs = callAttrs;
-            this.curTopRequestsCnt = grp.ch.partitionAwarenessEnabled ? new AtomicInteger() : null;
-            this.svcTopUpdateInProgress = grp.ch.partitionAwarenessEnabled ? new AtomicBoolean() : null;
         }
 
         /** {@inheritDoc} */
         @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            AffinityTopologyVersion curTop = ch.affinityContext().lastTopology().version();
-
-            boolean requestTopUpdate = requestSrvTop(curTop);
-
             try {
                 Collection<UUID> nodeIds = grp.nodeIds();
 
                 if (nodeIds != null && nodeIds.isEmpty())
                     throw new ClientException("Cluster group is empty.");
 
-                if (requestTopUpdate && log.isDebugEnabled())
-                    log.debug("Requesting service topology update for the service '" + name + "' ...");
-
                 return ch.service(ClientOperation.SERVICE_INVOKE,
-                    req -> writeServiceInvokeRequest(req, nodeIds, method, args, requestTopUpdate),
-                    res -> {
-                        Object val;
-                        UUID[] uuids = null;
-
-                        try (BinaryReaderExImpl reader = utils.createBinaryReader(res.in())) {
-                            val = reader.readObject();
-
-                            if (requestTopUpdate) {
-                                int uuidsLen = reader.readInt();
-
-                                if (uuidsLen > 0) {
-                                    uuids = new UUID[uuidsLen];
-
-                                    for (int i = 0; i < uuidsLen; ++i)
-                                        uuids[i] = new UUID(reader.readLong(), reader.readLong());
-                                }
-                            }
-                        }
-                        catch (IOException e) {
-                            throw new ClientException(e);
-                        }
-
-                        if (!F.isEmpty(uuids))
-                            updateSrvTop(uuids, curTop);
-
-                        return val;
-                    },
-                    instanceNodes
+                    req -> writeServiceInvokeRequest(req, nodeIds, method, args),
+                    res -> utils.readObject(res.in(), false, method.getReturnType()),
+                    serviceTopology()
                 );
             }
             catch (ClientError e) {
                 throw new ClientException(e);
             }
-            finally {
-                if (requestTopUpdate)
-                    svcTopUpdateInProgress.set(false);
+        }
+
+        /**
+         * If the partition awarenessenabled, notifies the service topology update and provides last knows service nodes.
+         *
+         * @return Last known topology nodes.
+         * @see #tryUpdateServiceTopology(ServiceTopology, String)
+         */
+        private List<UUID> serviceTopology() {
+            if (ch.partitionAwarenessEnabled) {
+                ServiceTopology srvcTop = servicesTopologies.get(name);
+
+                List<UUID> srvcNodes = srvcTop == null ? Collections.emptyList() : srvcTop.nodes;
+
+                tryUpdateServiceTopology(srvcTop, name);
+
+                return srvcNodes;
             }
-        }
 
-        /**
-         * @return {@code True} if service topology update is required.
-         */
-        private boolean requestSrvTop(AffinityTopologyVersion curTop) {
-            if (!ch.partitionAwarenessEnabled || svcTopUpdateInProgress.get())
-                return false;
-
-            return (lastTopVersion == null
-                || curTop.compareTo(lastTopVersion) > 0
-                || System.nanoTime() - lastTopUpdateTime > U.millisToNanos(SRV_TOP_UPDATE_PERIOD)
-                || curTopRequestsCnt.getAndIncrement() >= SRV_TOP_UPDATE_MAX_REQUESTS)
-                && svcTopUpdateInProgress.compareAndSet(false, true);
-        }
-
-        /**
-         * Updates service topology, the known nodes with the deployed service.
-         */
-        private void updateSrvTop(UUID[] serviceNodes, AffinityTopologyVersion srvTopVersion) {
-            instanceNodes = Stream.of(serviceNodes).collect(Collectors.toList());
-
-            lastTopVersion = srvTopVersion;
-
-            curTopRequestsCnt.set(0);
-
-            lastTopUpdateTime = System.nanoTime();
-
-            svcTopUpdateInProgress.set(false);
-
-            if (log.isDebugEnabled())
-                log.debug("Topology of service '" + name + "' has been updated: " + Arrays.toString(serviceNodes));
+            return Collections.emptyList();
         }
 
         /**
@@ -335,17 +310,13 @@ class ClientServicesImpl implements ClientServices {
          * @param nodeIds Node IDs.
          * @param method Method to call.
          * @param args Method args.
-         * @param updateSrvTop Update service topology flag.
          */
         private void writeServiceInvokeRequest(
             PayloadOutputChannel ch,
             Collection<UUID> nodeIds,
             Method method,
-            Object[] args,
-            boolean updateSrvTop
+            Object[] args
         ) {
-            assert !updateSrvTop || ch.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.SERVICE_MAPPINGS);
-
             ch.clientChannel().protocolCtx().checkFeatureSupported(callAttrs != null ?
                 ProtocolBitmaskFeature.SERVICE_INVOKE_CALLCTX : ProtocolBitmaskFeature.SERVICE_INVOKE);
 
@@ -353,8 +324,6 @@ class ClientServicesImpl implements ClientServices {
                 writer.writeString(name);
                 writer.writeByte(FLAG_PARAMETER_TYPES_MASK); // Flags.
                 writer.writeLong(timeout);
-
-                writer.writeBoolean(updateSrvTop);
 
                 if (nodeIds == null)
                     writer.writeInt(0);
@@ -392,6 +361,91 @@ class ClientServicesImpl implements ClientServices {
                     writer.writeMap(null);
             }
         }
+    }
+
+    /** Channel failure action. */
+    @Override public void run() {
+        if (!ch.partitionAwarenessEnabled)
+            servicesTopologies.clear();
+    }
+
+    /**
+     * Asynchronously updates the service topology if the partition awareness is enabled and if the update is requred.
+     *
+     * @param srvcTop If not {@code null}, uses this service topology record and ignores {@code name}.
+     * @param name   If {@code srvTop} is {@code null}, gets service topology record by this name.
+     * @see #needUpdateSrvcTop(ServiceTopology, AffinityTopologyVersion)
+     */
+    private void tryUpdateServiceTopology(@Nullable ServiceTopology srvcTop, String name) {
+        if (!ch.partitionAwarenessEnabled)
+            return;
+
+        if (srvcTop == null) {
+            srvcTop = servicesTopologies.compute(name, (nm, t) -> {
+                if (t == null)
+                    t = new ServiceTopology();
+
+                return t;
+            });
+        }
+
+        ServiceTopology srvcTop0 = srvcTop;
+
+        AffinityTopologyVersion curAffTop = ch.affinityContext().lastTopology().version();
+
+        if (!needUpdateSrvcTop(srvcTop0, curAffTop))
+            return;
+
+        ForkJoinPool.commonPool().execute(() -> {
+            Throwable t = null;
+
+            try {
+                if (log.isDebugEnabled())
+                    log.debug("Requesting service topology update for the service '" + name + "' ...");
+
+                List<UUID> nodes = ch.service(
+                    ClientOperation.SERVICE_GET_MAPPINGS,
+                    req -> utils.writeObject(req.out(), name),
+                    resp -> {
+                        int cnt = resp.in().readInt();
+
+                        List<UUID> res = new ArrayList<>(cnt);
+
+                        for (int i = 0; i < cnt; ++i)
+                            res.add(new UUID(resp.in().readLong(), resp.in().readLong()));
+
+                        return res;
+                    }
+                );
+
+                srvcTop0.setTopology(nodes, curAffTop);
+
+                if (log.isDebugEnabled()) {
+                    log.debug("Topology of service '" + name + "' has been updated. The service instance nodes: "
+                        + srvcTop0.nodes);
+                }
+            }
+            catch (Throwable t0) {
+                t = t0;
+            }
+
+            srvcTop0.updateInProgress.set(false);
+
+            if (t != null)
+                log.error("Failed to update services mapping for service '" + name + "'.", t);
+        });
+    }
+
+    /**
+     * @return {code True} if update of the service topology is required.
+     */
+    private static boolean needUpdateSrvcTop(ServiceTopology srvcTop, AffinityTopologyVersion curAffTop) {
+        AffinityTopologyVersion lastAfftop = srvcTop.lastAffTop;
+
+        return (lastAfftop == null || curAffTop.compareTo(lastAfftop) > 0
+            || srvcTop.callCnt.getAndIncrement() >= SRV_TOP_UPDATE_MAX_REQUESTS
+            || U.nanosToMillis(System.nanoTime() - srvcTop.lastUpdateRequestTime) >= SRV_TOP_UPDATE_PERIOD)
+            && srvcTop.updateInProgress.compareAndSet(false, true);
     }
 
     /**

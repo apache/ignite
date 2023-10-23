@@ -17,48 +17,39 @@
 
 package org.apache.ignite.internal.processors.platform.client.service;
 
+import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.client.thin.ClientUtils;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Response on service call request containing the result object and the service topology if required.
- */
-public class ClientServiceCallResponse extends ClientObjectResponse {
-    /** Service node ids. */
-    private final @Nullable UUID[] nodeIds;
+/** Service mappings response. */
+public class ClientServiceMappingsResponse extends ClientResponse {
+    /** Services mappings. */
+    private final @Nullable Collection<UUID> svcsNodes;
 
     /**
-     * Constructor.
-     *
      * @param reqId Request id.
-     * @param res Service call result.
-     * @param nodeIds Service node ids.
+     * @param svcsNodes Services instance nodes.
      */
-    public ClientServiceCallResponse(long reqId, @Nullable Object res, @Nullable UUID[] nodeIds) {
-        super(reqId, res);
+    public ClientServiceMappingsResponse(long reqId, @Nullable Collection<UUID> svcsNodes) {
+        super(reqId);
 
-        this.nodeIds = nodeIds;
+        this.svcsNodes = svcsNodes;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
         super.encode(ctx, writer);
 
-        if (F.isEmpty(nodeIds))
-            writer.writeInt(0);
-        else {
-            writer.writeInt(nodeIds.length);
-
-            for (UUID node : nodeIds) {
-                writer.writeLong(node.getMostSignificantBits());
-                writer.writeLong(node.getLeastSignificantBits());
-            }
-        }
+        ClientUtils.collection(
+            svcsNodes,
+            writer.out(),
+            (out, uuid) -> {
+                out.writeLong(uuid.getMostSignificantBits());
+                out.writeLong(uuid.getLeastSignificantBits());
+            });
     }
 }
