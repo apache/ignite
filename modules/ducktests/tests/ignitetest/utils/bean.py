@@ -23,9 +23,10 @@ class Bean:
 
     Hashable to be stored in a set.
     """
-    def __init__(self, class_name, constructor_args=None, **kwargs):
+    def __init__(self, class_name, bean_id="", constructor_args=None, **kwargs):
         """
         :param class_name: bean class name
+        :param bean_id: optional bean id
         :param constructor_args: optional list of constructor parameters
         :param kwargs: properties name / value pairs
         """
@@ -34,11 +35,12 @@ class Bean:
         else:
             self.constructor_args = constructor_args
 
+        self.id = bean_id
         self.class_name = class_name
         self.properties = kwargs
 
     def __eq__(self, other):
-        return self.class_name == other.class_name
+        return other is not None and self.class_name == other.class_name
 
     def __hash__(self):
         return hash(self.class_name)
