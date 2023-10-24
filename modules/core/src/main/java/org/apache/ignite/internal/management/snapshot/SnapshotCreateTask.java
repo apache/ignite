@@ -56,7 +56,7 @@ public class SnapshotCreateTask extends SnapshotOneNodeTask<SnapshotCreateComman
                 arg.snapshotName(),
                 arg.dest(),
                 arg.incremental(),
-                arg.onlyPrimary()
+                false
             );
 
             IgniteSnapshotManager.ClusterSnapshotFuture snpFut =
