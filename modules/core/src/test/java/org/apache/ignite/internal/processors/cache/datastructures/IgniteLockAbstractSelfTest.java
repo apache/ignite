@@ -116,7 +116,11 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
         checkFailover(false, true);
     }
 
-    /** Test that {@link IgniteLock} can be acquired after release, especially while running on JDK 17. */
+    /**
+     * Tests that {@link IgniteLock} can be acquired after release, especially while running on JDK 17.
+     *
+     * @throws Exception If failed.
+     */
     @Test
     public void testFairLockIsAbleToBeAcquiredAfterRelease() throws Exception {
         List<IgniteLock> locks = IntStream.range(0, NODES_CNT)
@@ -133,7 +137,6 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
         }
 
         assertTrue(lockEnterLatch.await(GridTestUtils.DFLT_TEST_TIMEOUT, TimeUnit.SECONDS));
-
 
         // Try to acquire the first lock in separate thread.
         lockEnterLatch = new CountDownLatch(1);
@@ -152,7 +155,8 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                 lock.lock();
                 try {
                     lockEnterLatch.countDown();
-                } finally {
+                }
+                finally {
                     lock.unlock();
                 }
             });
