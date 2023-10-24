@@ -776,7 +776,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
                 sb.a(INDENT)
                     .a("groupName=").a(cacheGrp)
                     .a(", cacheName=").a(cacheName)
-                    .a(", remainToIndexPartitionsCount=(\\d+), totalPartitionsCount=(\\d+), progress=(\\d+)%\\n");
+                    .a(", leftToIndexPartitionsCount=(\\d+), totalPartitionsCount=(\\d+), progress=(\\d+)%\\n");
         }
 
         return Pattern.compile(sb.toString());

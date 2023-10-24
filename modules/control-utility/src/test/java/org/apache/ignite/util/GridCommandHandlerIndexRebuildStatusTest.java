@@ -281,7 +281,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
             "node_id=" + ignite.localNode().id() +
                 ", groupName=" + grpName +
                 ", cacheName=" + cacheName +
-                ", remainToIndexPartitionsCount=" + locPartsCount +
+                ", leftToIndexPartitionsCount=" + locPartsCount +
                 ", totalPartitionsCount=" + locPartsCount +
                 ", progress=0%");
     }
@@ -289,21 +289,21 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
     /** */
     private void checkRebuildInProgressOutputFor(String cacheName) throws Exception {
         Matcher matcher = Pattern.compile(
-            "cacheName=" + cacheName + ", remainToIndexPartitionsCount=(\\d+), totalPartitionsCount=(\\d+), progress=(\\d+)%"
+            "cacheName=" + cacheName + ", leftToIndexPartitionsCount=(\\d+), totalPartitionsCount=(\\d+), progress=(\\d+)%"
         ).matcher(testOut.toString());
 
         List<Integer> rebuildProgressStatuses = new ArrayList<>();
-        List<Integer> remainToIndexPartitionsCounts = new ArrayList<>();
+        List<Integer> leftToIndexPartitionsCounts = new ArrayList<>();
 
         while (matcher.find()) {
-            remainToIndexPartitionsCounts.add(Integer.parseInt(matcher.group(1)));
+            leftToIndexPartitionsCounts.add(Integer.parseInt(matcher.group(1)));
 
             rebuildProgressStatuses.add(Integer.parseInt(matcher.group(3)));
         }
 
         assertTrue(rebuildProgressStatuses.stream().anyMatch(progress -> progress > 0));
 
-        int cacheTotalRebuildingPartsCnt = remainToIndexPartitionsCounts.stream().mapToInt(Integer::intValue).sum();
+        int cacheTotalRebuildingPartsCnt = leftToIndexPartitionsCounts.stream().mapToInt(Integer::intValue).sum();
 
         assertTrue(waitForCondition(
             () -> grid(0).cache(cacheName).metrics().getIndexBuildPartitionsLeftCount() == cacheTotalRebuildingPartsCnt,
