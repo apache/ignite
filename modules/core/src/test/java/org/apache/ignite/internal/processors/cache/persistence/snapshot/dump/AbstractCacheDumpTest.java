@@ -291,7 +291,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             new HashSet<>(Arrays.asList(DEFAULT_CACHE_NAME, CACHE_0, CACHE_1)),
             KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
             2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
-            KEYS_CNT);
+            KEYS_CNT,
+            false);
     }
 
     /** */
@@ -302,7 +303,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         Set<String> expectedFoundCaches,
         int expectedDfltDumpSz,
         int expectedGrpDumpSz,
-        int expectedCount
+        int expectedCount,
+        boolean skipCopies
     ) throws Exception {
         checkDumpWithCommand(ign, name, backups);
 
@@ -409,7 +411,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 true,
                 false,
                 cacheGroupNames,
-                false),
+                skipCopies),
             log
         ).run();
 

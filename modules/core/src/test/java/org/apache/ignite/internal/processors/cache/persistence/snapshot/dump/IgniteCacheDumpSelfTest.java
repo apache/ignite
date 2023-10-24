@@ -163,7 +163,9 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
                 new HashSet<>(Arrays.asList(CACHE_0, CACHE_1)),
                 0,
                 2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
-                0);
+                0,
+                false
+            );
 
             checkDump(
                 ign,
@@ -172,7 +174,8 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
                 new HashSet<>(Arrays.asList(DEFAULT_CACHE_NAME)),
                 KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
                 0,
-                KEYS_CNT
+                KEYS_CNT,
+                false
             );
 
             checkDump(
@@ -182,7 +185,45 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
                 new HashSet<>(Arrays.asList(DEFAULT_CACHE_NAME, CACHE_0, CACHE_1)),
                 KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
                 2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
-                KEYS_CNT
+                KEYS_CNT,
+                false
+            );
+        }
+        finally {
+            snpPoolSz = 1;
+        }
+    }
+
+    /** */
+    @Test
+    public void testSkipCopies() throws Exception {
+        snpPoolSz = 4;
+
+        try {
+            IgniteEx ign = startGridAndFillCaches();
+
+            createDump(ign);
+
+            checkDump(
+                ign,
+                DMP_NAME,
+                null,
+                new HashSet<>(Arrays.asList(DEFAULT_CACHE_NAME, CACHE_0, CACHE_1)),
+                KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
+                2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
+                KEYS_CNT,
+                false
+            );
+
+            checkDump(
+                ign,
+                DMP_NAME,
+                null,
+                new HashSet<>(Arrays.asList(DEFAULT_CACHE_NAME, CACHE_0, CACHE_1)),
+                KEYS_CNT,
+                2 * KEYS_CNT,
+                KEYS_CNT,
+                true
             );
         }
         finally {
