@@ -157,7 +157,14 @@ class IgniteSpec(metaclass=ABCMeta):
 
             if (is_opencensus_metrics_enabled(self.service) or
                     is_jmx_metrics_enabled(self.service)):
-                config = config._replace(ignite_instance_name=self._test_id)
+
+                ignite_instance_name = self._test_id
+
+                if config.ignite_instance_name:
+                    ignite_instance_name = ignite_instance_name[:250 - 2 - len(config.ignite_instance_name)] +\
+                                           "--" + config.ignite_instance_name
+
+                config = config._replace(ignite_instance_name=ignite_instance_name)
 
         config = config.prepare_ssl(self.service.globals, self.service.shared_root)
 
@@ -165,7 +172,7 @@ class IgniteSpec(metaclass=ABCMeta):
 
     @property
     def _test_id(self):
-        return re.sub("^[0-9A-Fa-f]+@ignitetest\\.tests\\.", "", self.service.context.test_name).replace("=", ".")[:255]
+        return re.sub("^[0-9A-Fa-f]+@ignitetest\\.tests\\.", "", self.service.context.test_name).replace("=", ".")[:250]
 
     def __home(self, product=None):
         """
