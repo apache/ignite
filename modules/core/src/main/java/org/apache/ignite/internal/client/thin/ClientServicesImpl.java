@@ -30,7 +30,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientException;
@@ -56,9 +55,6 @@ import org.jetbrains.annotations.Nullable;
 class ClientServicesImpl implements ClientServices, Runnable {
     /** Max duration in mills before asking service topology update. */
     static final int SRV_TOP_UPDATE_PERIOD = 10_000;
-
-    /** Max requests number before asking service topology update. */
-    private static final int SRV_TOP_UPDATE_MAX_REQUESTS = 1_000;
 
     /** Channel. */
     private final ReliableChannel ch;
@@ -205,9 +201,6 @@ class ClientServicesImpl implements ClientServices, Runnable {
         private final AtomicBoolean updateInProgress = new AtomicBoolean();
 
         /** */
-        private final AtomicInteger callCnt = new AtomicInteger();
-
-        /** */
         private volatile long lastUpdateRequestTime;
 
         /** */
@@ -217,12 +210,9 @@ class ClientServicesImpl implements ClientServices, Runnable {
         private volatile AffinityTopologyVersion lastAffTop;
 
         /** */
-        private void setTopology(List<UUID> nodes, AffinityTopologyVersion lastAffTop){
+        private void updateTopology(List<UUID> nodes, AffinityTopologyVersion lastAffTop) {
             this.nodes = nodes;
             this.lastAffTop = lastAffTop;
-
-            callCnt.set(0);
-
             lastUpdateRequestTime = System.nanoTime();
         }
     }
@@ -417,7 +407,7 @@ class ClientServicesImpl implements ClientServices, Runnable {
                     }
                 );
 
-                srvcTop0.setTopology(nodes, curAffTop);
+                srvcTop0.updateTopology(nodes, curAffTop);
 
                 if (log.isDebugEnabled()) {
                     log.debug("Topology of service '" + name + "' has been updated. The service instance nodes: "
@@ -441,8 +431,7 @@ class ClientServicesImpl implements ClientServices, Runnable {
     private static boolean needUpdateSrvcTop(ServiceTopology srvcTop, AffinityTopologyVersion curAffTop) {
         AffinityTopologyVersion lastAfftop = srvcTop.lastAffTop;
 
-        return (lastAfftop == null || curAffTop.compareTo(lastAfftop) > 0
-            || srvcTop.callCnt.getAndIncrement() >= SRV_TOP_UPDATE_MAX_REQUESTS
+        return (lastAfftop == null || curAffTop.topologyVersion() > lastAfftop.topologyVersion()
             || U.nanosToMillis(System.nanoTime() - srvcTop.lastUpdateRequestTime) >= SRV_TOP_UPDATE_PERIOD)
             && srvcTop.updateInProgress.compareAndSet(false, true);
     }

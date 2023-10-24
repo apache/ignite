@@ -159,7 +159,7 @@ public class TcpIgniteClient implements IgniteClient {
 
             compute = new ClientComputeImpl(ch, marsh, cluster.defaultClusterGroup());
 
-            services = new ClientServicesImpl(ch, marsh, cluster.defaultClusterGroup(), cfg.getLogger());
+            services = new ClientServicesImpl(ch, marsh, cluster.defaultClusterGroup(), NullLogger.whenNull(cfg.getLogger()));
 
             lsnrsRegistry = new ClientCacheEntryListenersRegistry();
         }

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -26,7 +25,6 @@ import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -44,11 +42,13 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResultBatch;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -157,7 +157,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
         // Service topology on the client.
         Set<UUID> srvcTopOnClient = new GridConcurrentHashSet<>();
 
-        addClientLogLsnr(srvcTopOnClient::addAll);
+        addSrvcTopUpdateClientLogLsnr(srvcTopOnClient::addAll);
 
         AtomicBoolean svcRunFlag = new AtomicBoolean(true);
 
@@ -225,7 +225,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      */
     @Test
     public void testNodesComeOneThread() throws Exception {
-        doTestClusterTopChangesWhileServiceCalling(3, true, false, 0);
+        doTestClusterTopChangesWhileServiceCalling(3, true, false);
     }
 
     /**
@@ -233,7 +233,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      */
     @Test
     public void testNodesComeMultiThreads() throws Exception {
-        doTestClusterTopChangesWhileServiceCalling(3, true, true, 0);
+        doTestClusterTopChangesWhileServiceCalling(3, true, true);
     }
 
     /**
@@ -241,7 +241,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      */
     @Test
     public void testNodesLeaveOneThread() throws Exception {
-        doTestClusterTopChangesWhileServiceCalling(3, false, false, 0);
+        doTestClusterTopChangesWhileServiceCalling(3, false, false);
     }
 
     /**
@@ -249,25 +249,48 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      */
     @Test
     public void testNodesLeaveMultiThreads() throws Exception {
-        doTestClusterTopChangesWhileServiceCalling(3, false, true, 0);
+        doTestClusterTopChangesWhileServiceCalling(3, false, true);
     }
 
     /**
-     * Tests one node comes while one thread is used to call the service with a large invokation interval.
+     * Tests change of the minor cluster topology version doesn't trigger the service topology update.
      */
     @Test
-    public void testOneNodeComesOneThreadLazyServiceInvokation() throws Exception {
-        doTestClusterTopChangesWhileServiceCalling(1, true, false,
-            ClientServicesImpl.SRV_TOP_UPDATE_PERIOD / 2);
-    }
+    public void testMinorTopologyVersionDoesntAffect() throws Exception {
+        try (IgniteClient client = startClient(0)) {
+            ServicesTest.TestServiceInterface svc = client.services().serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
 
-    /**
-     * Tests one node leaves while one thread is used to call the service with a large invokation interval.
-     */
-    @Test
-    public void testOneNodeLeavesOneThreadLazyServiceInvokation() throws Exception {
-        doTestClusterTopChangesWhileServiceCalling(1, false, false,
-            ClientServicesImpl.SRV_TOP_UPDATE_PERIOD / 2);
+            Set<UUID> srvcTopOnClient = new GridConcurrentHashSet<>();
+
+            addSrvcTopUpdateClientLogLsnr(srvcTopOnClient::addAll);
+
+            ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
+
+            while (srvcTopOnClient.isEmpty())
+                svc.testMethod();
+
+            // Last time ot the topology update.
+            long time = System.nanoTime();
+
+            srvcTopOnClient.clear();
+
+            AffinityTopologyVersion prevTopVersion = grid(0).context().discovery().topologyVersionEx();
+
+            grid(0).createCache("testCache");
+
+            awaitPartitionMapExchange();
+
+            AffinityTopologyVersion newTopVersion = grid(0).context().discovery().topologyVersionEx();
+
+            assertTrue(newTopVersion.topologyVersion() == prevTopVersion.topologyVersion()
+                && newTopVersion.minorTopologyVersion() > prevTopVersion.minorTopologyVersion());
+
+            while (srvcTopOnClient.isEmpty())
+                svc.testMethod();
+
+            // Update only by the timeout.
+            assertTrue(U.nanosToMillis(System.nanoTime() - time) > ClientServicesImpl.SRV_TOP_UPDATE_PERIOD / 2);
+        }
     }
 
     /**
@@ -280,7 +303,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
             Set<UUID> srvcTopOnClient = new GridConcurrentHashSet<>();
 
-            addClientLogLsnr(srvcTopOnClient::addAll);
+            addSrvcTopUpdateClientLogLsnr(srvcTopOnClient::addAll);
 
             ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
@@ -293,11 +316,15 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
                 && srvcTopOnClient.contains(grid(1).localNode().id())
                 && srvcTopOnClient.contains(grid(2).localNode().id()));
 
+            long prevTopVersion = grid(0).context().discovery().topologyVersion();
+
             grid(1).services().cancel(SRV_NAME);
 
             srvcTopOnClient.clear();
 
             grid(1).services().deploy(serviceCfg().setNodeFilter(null));
+
+            assertEquals(prevTopVersion, grid(0).context().discovery().topologyVersion());
 
             ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
@@ -315,11 +342,9 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     private void doTestClusterTopChangesWhileServiceCalling(
         int nodesCnt,
         boolean addNodes,
-        boolean multiThreaded,
-        int srvcCallInterval)
+        boolean multiThreaded)
         throws Exception {
         assert nodesCnt > 0;
-        assert srvcCallInterval >= 0;
 
         Set<UUID> newNodesUUIDs = new GridConcurrentHashSet<>();
 
@@ -334,7 +359,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
         // Service topology on the clients.
         Set<UUID> srvcTopOnClient = new GridConcurrentHashSet<>();
 
-        addClientLogLsnr(srvcTopOnClient::addAll);
+        addSrvcTopUpdateClientLogLsnr(srvcTopOnClient::addAll);
 
         AtomicBoolean changeClusterTop = new AtomicBoolean();
         AtomicBoolean stopFlag = new AtomicBoolean();
@@ -348,15 +373,6 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
                 do {
                     try {
                         svc.testMethod();
-
-                        try {
-                            Thread.sleep(srvcCallInterval);
-                        }
-                        catch (InterruptedException e) {
-                            log.error("Interrupted", e);
-
-                            stopFlag.set(true);
-                        }
                     }
                     catch (ClientException e) {
                         String m = e.getMessage();
@@ -420,8 +436,25 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      */
     @Test
     public void testServiceAwarenessEnabled() {
+        // Counters of the invocation redirects.
         AtomicInteger redirectCnt = new AtomicInteger();
+        // Total service call counter.
+        AtomicInteger callCounter = new AtomicInteger();
 
+        // Service topology received by the client.
+        Set<UUID> top = new GridConcurrentHashSet<>();
+
+        addSrvcTopUpdateClientLogLsnr(uuids -> {
+            // Reset counters on the first topology update.
+            if (top.isEmpty()) {
+                redirectCnt.set(0);
+                callCounter.set(0);
+            }
+
+            top.addAll(uuids);
+        });
+
+        // Listener of the service remote call (the redirection).
         G.allGrids().forEach(g -> ((IgniteEx)g).context().io().addMessageListener(GridTopic.TOPIC_JOB, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 if (msg instanceof GridJobExecuteRequest
@@ -437,33 +470,21 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
         // Check no service awareness: continous redirections.
         assertEquals(100, redirectCnt.get());
 
+        // Ensure that client received no service topology update.
+        assertTrue(top.isEmpty());
+
         partitionAwareness = true;
 
-        // Received service topology.
-        AtomicReference<Collection<UUID>> top = new AtomicReference<>();
+        callServiceNTimesFromClient(SRV_NAME, callCounter, () -> !top.isEmpty() && callCounter.get() >= 1000);
 
-        AtomicInteger callCounter = new AtomicInteger();
-
-        addClientLogLsnr(nodes -> {
-            // First top update.
-            if (top.get() == null) {
-                redirectCnt.set(0);
-                callCounter.set(0);
-            }
-
-            top.set(nodes);
-        });
-
-        callServiceNTimesFromClient(SRV_NAME, callCounter, () -> top.get() != null && callCounter.get() >= 1000);
-
-        assertTrue(top.get().size() == INIT_SRVC_NODES_CNT && top.get().contains(grid(1).localNode().id())
-            && top.get().contains(grid(2).localNode().id()));
+        assertTrue(top.size() == INIT_SRVC_NODES_CNT && top.contains(grid(1).localNode().id())
+            && top.contains(grid(2).localNode().id()));
 
         assertTrue(redirectCnt.get() < 50);
     }
 
     /** */
-    private void addClientLogLsnr(Consumer<Set<UUID>> srvTopConsumer) {
+    private static void addSrvcTopUpdateClientLogLsnr(Consumer<Set<UUID>> srvTopConsumer) {
         clientLogLsnr.registerListener(s -> {
             if (s.contains("Topology of service '" + SRV_NAME + "' has been updated. The service instance nodes: ")) {
                 String nodes = s.substring(s.indexOf(": [") + 3);
