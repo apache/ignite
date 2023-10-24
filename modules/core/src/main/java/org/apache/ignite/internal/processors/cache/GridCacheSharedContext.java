@@ -206,7 +206,7 @@ public class GridCacheSharedContext<K, V> {
      * @param storeSesLsnrs Store session listeners.
      * @param mvccCachingMgr Mvcc caching manager.
      */
-    public GridCacheSharedContext(
+    GridCacheSharedContext(
         GridKernalContext kernalCtx,
         IgniteTxManager txMgr,
         GridCacheVersionManager verMgr,

@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEvictionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheIoManager;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContextBuilder;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedTtlCleanupManager;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
 import org.apache.ignite.internal.processors.cache.WalStateManager;
@@ -64,27 +64,21 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
     public GridCacheTestContext(GridTestKernalContext ctx) throws Exception {
         super(
             ctx,
-            new GridCacheSharedContext<>(
-                ctx,
-                new IgniteTxManager(),
-                new GridCacheVersionManager(),
-                new GridCacheMvccManager(),
-                null,
-                null,
-                new WalStateManager(null),
-                new IgniteCacheDatabaseSharedManager(ctx),
-                null,
-                new GridCacheDeploymentManager<K, V>(),
-                new GridCachePartitionExchangeManager<K, V>(),
-                new CacheAffinitySharedManager<K, V>(),
-                new GridCacheIoManager(),
-                new GridCacheSharedTtlCleanupManager(),
-                new PartitionsEvictManager(),
-                new CacheNoopJtaManager(),
-                null,
-                null,
-                new CacheDiagnosticManager()
-            ),
+            new GridCacheSharedContextBuilder()
+                .setTxManager(new IgniteTxManager())
+                .setVersionManager(new GridCacheVersionManager())
+                .setMvccManager(new GridCacheMvccManager())
+                .setWalStateManager(new WalStateManager(null))
+                .setDatabaseManager(new IgniteCacheDatabaseSharedManager(ctx))
+                .setDeploymentManager(new GridCacheDeploymentManager<K, V>())
+                .setPartitionExchangeManager(new GridCachePartitionExchangeManager<K, V>())
+                .setAffinityManager(new CacheAffinitySharedManager<K, V>())
+                .setIoManager(new GridCacheIoManager())
+                .setTtlCleanupManager(new GridCacheSharedTtlCleanupManager())
+                .setPartitionsEvictManager(new PartitionsEvictManager())
+                .setJtaManager(new CacheNoopJtaManager())
+                .setDiagnosticManager(new CacheDiagnosticManager())
+                .build(ctx, null),
             defaultCacheConfiguration(),
             null,
             CacheType.USER,

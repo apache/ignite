@@ -37,6 +37,7 @@ import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheIoManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContextBuilder;
 import org.apache.ignite.internal.processors.cache.WalStateManager;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -159,30 +160,13 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
         };
 
         RecordSerializer serializer = new RecordSerializerFactoryImpl(
-            new GridCacheSharedContext<>(
-                kctx,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                new IgniteCacheDatabaseSharedManager(kctx) {
+            new GridCacheSharedContextBuilder()
+                .setDatabaseManager(new IgniteCacheDatabaseSharedManager(kctx) {
                     @Override public int pageSize() {
                         return DataStorageConfiguration.DFLT_PAGE_SIZE;
                     }
-                },
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null)
+                })
+                .build(kctx, null)
         ).createSerializer(serVer);
 
         SwitchSegmentRecord switchSegmentRecord = new SwitchSegmentRecord();
@@ -457,27 +441,12 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
 
         GridTestUtils.setFieldValue(walMgr, "serializerVer", serVer);
 
-        GridCacheSharedContext<?, ?> ctx = new GridCacheSharedContext<>(
-            kctx,
-            null,
-            null,
-            null,
-            null,
-            walMgr,
-            new WalStateManager(kctx),
-            new GridCacheDatabaseSharedManager(kctx),
-            null,
-            null,
-            null,
-            null,
-            new GridCacheIoManager(),
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-        );
+        GridCacheSharedContext<?, ?> ctx = new GridCacheSharedContextBuilder()
+            .setWalManager(walMgr)
+            .setWalStateManager(new WalStateManager(kctx))
+            .setDatabaseManager(new GridCacheDatabaseSharedManager(kctx))
+            .setIoManager(new GridCacheIoManager())
+            .build(kctx, null);
 
         walMgr.start(ctx);
 
