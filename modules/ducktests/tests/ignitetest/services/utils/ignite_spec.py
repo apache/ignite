@@ -150,7 +150,7 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         if config.service_type == IgniteServiceType.NODE:
             if is_opencensus_metrics_enabled(self.service):
-                config = configure_opencensus_metrics(config, self.service.context.globals)
+                config = configure_opencensus_metrics(config, self.service.context.globals, self)
 
             if is_jmx_metrics_enabled(self.service):
                 config = configure_jmx_metrics(config)
