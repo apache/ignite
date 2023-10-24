@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Iterator;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.GridLongList;
@@ -286,13 +285,5 @@ public class PartitionUpdateCounterDebugWrapper implements PartitionUpdateCounte
     /** {@inheritDoc} */
     @Override public String toString() {
         return delegate.toString();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        PartitionUpdateCounterDebugWrapper longs = (PartitionUpdateCounterDebugWrapper)o;
-        return partId == longs.partId && log.equals(longs.log) && grp.equals(longs.grp) && delegate.equals(longs.delegate);
     }
 }
