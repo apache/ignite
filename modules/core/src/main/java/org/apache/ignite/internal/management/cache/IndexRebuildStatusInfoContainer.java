@@ -44,7 +44,7 @@ public class IndexRebuildStatusInfoContainer extends IgniteDataTransferObject {
     private String cacheName;
 
     /** */
-    private int leftToIndexPartitionsCount;
+    private int indexBuildPartitionsLeftCount;
 
     /** Local partitions count. */
     private int totalPartitionsCount;
@@ -64,7 +64,7 @@ public class IndexRebuildStatusInfoContainer extends IgniteDataTransferObject {
 
         groupName = cfg.getGroupName() == null ? EMPTY_GROUP_NAME : cfg.getGroupName();
         cacheName = cfg.getName();
-        leftToIndexPartitionsCount = cctx.cache().metrics0().getIndexBuildPartitionsLeftCount();
+        indexBuildPartitionsLeftCount = cctx.cache().metrics0().getIndexBuildPartitionsLeftCount();
         totalPartitionsCount = cctx.topology().localPartitions().size();
     }
 
@@ -72,7 +72,7 @@ public class IndexRebuildStatusInfoContainer extends IgniteDataTransferObject {
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, groupName);
         U.writeString(out, cacheName);
-        out.writeInt(leftToIndexPartitionsCount);
+        out.writeInt(indexBuildPartitionsLeftCount);
         out.writeInt(totalPartitionsCount);
     }
 
@@ -80,7 +80,7 @@ public class IndexRebuildStatusInfoContainer extends IgniteDataTransferObject {
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         groupName = U.readString(in);
         cacheName = U.readString(in);
-        leftToIndexPartitionsCount = in.readInt();
+        indexBuildPartitionsLeftCount = in.readInt();
         totalPartitionsCount = in.readInt();
     }
 
@@ -123,15 +123,15 @@ public class IndexRebuildStatusInfoContainer extends IgniteDataTransferObject {
     /**
      * @return The number of local node partitions that remain to be processed to complete indexing.
      */
-    public int leftToIndexPartitionsCount() {
-        return leftToIndexPartitionsCount;
+    public int indexBuildPartitionsLeftCount() {
+        return indexBuildPartitionsLeftCount;
     }
 
     /**
      * @return default string object representation without {@code IndexRebuildStatusInfoContainer} and brackets.
      */
     @Override public String toString() {
-        float progress = (float)(totalPartitionsCount - leftToIndexPartitionsCount) / totalPartitionsCount;
+        float progress = (float)(totalPartitionsCount - indexBuildPartitionsLeftCount) / totalPartitionsCount;
 
         String dfltImpl = S.toString(
             IndexRebuildStatusInfoContainer.class,

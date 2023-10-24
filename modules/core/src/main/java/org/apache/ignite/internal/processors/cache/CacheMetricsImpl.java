@@ -436,7 +436,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         idxRebuildKeyProcessed = mreg.longAdderMetric("IndexRebuildKeyProcessed",
             "Number of keys processed during the index rebuilding.");
 
-        idxBuildPartitionsLeftCnt = mreg.intMetric("IndexBuildCountPartitionsLeft",
+        idxBuildPartitionsLeftCnt = mreg.intMetric("IndexBuildPartitionsLeftCount",
             "The number of local node partitions that remain to be processed to complete indexing.");
     }
 
