@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -89,7 +90,7 @@ public class DumpReader implements Runnable {
 
                 Map<Integer, List<String>> grpToNodes = new HashMap<>();
 
-                Set<Integer> cacheGroupIds = cfg.cacheGroupNames() != null 
+                Set<Integer> cacheGroupIds = cfg.cacheGroupNames() != null
                     ? Arrays.stream(cfg.cacheGroupNames()).map(CU::cacheId).collect(Collectors.toSet())
                     : null;
 
@@ -108,11 +109,25 @@ public class DumpReader implements Runnable {
 
                 AtomicBoolean skip = new AtomicBoolean(false);
 
+                Map<Integer, Set<Integer>> groups = cfg.skipCopies() ? new HashMap<>() : null;
+
                 for (Map.Entry<Integer, List<String>> e : grpToNodes.entrySet()) {
                     int grp = e.getKey();
 
                     for (String node : e.getValue()) {
                         for (int part : dump.partitions(node, grp)) {
+                            if (groups != null
+                                &&
+                                !groups.computeIfAbsent(grp, key -> new HashSet<>()).add(part)
+                            ) {
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Skip copy partition [node=" + node + ", grp=" + grp +
+                                        ", part=" + part + ']');
+                                }
+
+                                continue;
+                            }
+
                             Runnable consumePart = () -> {
                                 if (skip.get()) {
                                     if (log.isDebugEnabled()) {

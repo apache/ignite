@@ -408,8 +408,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 DFLT_THREAD_CNT, DFLT_TIMEOUT,
                 true,
                 false,
-                cacheGroupNames
-            ),
+                cacheGroupNames,
+                false),
             log
         ).run();
 
