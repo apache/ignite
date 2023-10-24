@@ -31,9 +31,11 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
@@ -393,8 +395,18 @@ public class IgniteWalIteratorFactory {
     ) throws IgniteCheckedException {
         GridKernalContext kernalCtx = new StandaloneGridKernalContext(log,
             iteratorParametersBuilder.binaryMetadataFileStoreDir,
-            iteratorParametersBuilder.marshallerMappingFileStoreDir
-        );
+            iteratorParametersBuilder.marshallerMappingFileStoreDir) {
+            @Override protected IgniteConfiguration prepareIgniteConfiguration() {
+                IgniteConfiguration cfg = super.prepareIgniteConfiguration();
+
+                Consumer<IgniteConfiguration> modifier = iteratorParametersBuilder.ignCfgMod;
+
+                if (modifier != null)
+                    modifier.accept(cfg);
+
+                return cfg;
+            }
+        };
 
         StandaloneIgniteCacheDatabaseSharedManager dbMgr = new StandaloneIgniteCacheDatabaseSharedManager(kernalCtx);
 
@@ -404,7 +416,7 @@ public class IgniteWalIteratorFactory {
             kernalCtx, null, null, null,
             null, null, null, dbMgr, null,
             null, null, null, null, null,
-            null, null, null, null, null, null
+            null, null, null, null, null
         );
     }
 
@@ -456,6 +468,11 @@ public class IgniteWalIteratorFactory {
          * {@link #marshallerMappingFileStoreDir} fields.
          * */
         @Nullable private GridCacheSharedContext sharedCtx;
+
+        /**
+         * Ignite configuration modifier.
+         */
+        @Nullable private Consumer<IgniteConfiguration> ignCfgMod;
 
         /** */
         @Nullable private IgniteBiPredicate<RecordType, WALPointer> filter;
@@ -580,6 +597,16 @@ public class IgniteWalIteratorFactory {
          */
         public IteratorParametersBuilder sharedContext(GridCacheSharedContext sharedCtx) {
             this.sharedCtx = sharedCtx;
+
+            return this;
+        }
+
+        /**
+         * @param ignCfgMod Ignite configuration modifier.
+         * @return IteratorParametersBuilder Self reference.
+         */
+        public IteratorParametersBuilder igniteConfigurationModifier(Consumer<IgniteConfiguration> ignCfgMod) {
+            this.ignCfgMod = ignCfgMod;
 
             return this;
         }
