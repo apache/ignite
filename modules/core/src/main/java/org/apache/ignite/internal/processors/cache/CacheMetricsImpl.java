@@ -247,7 +247,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     private final LongAdderMetric idxRebuildKeyProcessed;
 
     /** The number of local node partitions that remain to be processed to complete indexing. */
-    private final IntMetricImpl idxBuildPartitionsLeftCount;
+    private final IntMetricImpl idxBuildPartitionsLeftCnt;
 
     /**
      * Creates cache metrics.
@@ -436,7 +436,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         idxRebuildKeyProcessed = mreg.longAdderMetric("IndexRebuildKeyProcessed",
             "Number of keys processed during the index rebuilding.");
 
-        idxBuildPartitionsLeftCount = mreg.intMetric("IndexBuildCountPartitionsLeft",
+        idxBuildPartitionsLeftCnt = mreg.intMetric("IndexBuildCountPartitionsLeft",
             "The number of local node partitions that remain to be processed to complete indexing.");
     }
 
@@ -1667,22 +1667,22 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** */
     public void decrementIndexBuildPartitionsLeftCount() {
-        idxBuildPartitionsLeftCount.decrement();
+        idxBuildPartitionsLeftCnt.decrement();
     }
 
     /** */
     public void addIndexBuildPartitionsLeftCount(int val) {
-        idxBuildPartitionsLeftCount.add(val);
+        idxBuildPartitionsLeftCnt.add(val);
     }
 
     /** */
     public void resetIndexBuildPartitionsLeftCount() {
-        idxBuildPartitionsLeftCount.reset();
+        idxBuildPartitionsLeftCnt.reset();
     }
 
     /** {@inheritDoc} */
     @Override public int getIndexBuildPartitionsLeftCount() {
-        return idxBuildPartitionsLeftCount.value();
+        return idxBuildPartitionsLeftCnt.value();
     }
 
     /** {@inheritDoc} */
