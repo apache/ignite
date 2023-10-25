@@ -139,7 +139,7 @@ public class PlannerHelper {
             return root;
 
         if (!(root.rel instanceof Hintable)) {
-            Commons.context(root.rel).logger().warning("Unable to set hint " + HintDefinition.ORDERED_JOINS
+            Commons.context(root.rel).logger().warning("Unable to set hint " + HintDefinition.ENFORCE_JOIN_ORDER
                 + " passed as an external parameter to the root relation operator ["
                 + RelOptUtil.toString(HintUtils.noInputsRelWrap(root.rel)).trim()
                 + "] because it is not a Hintable.");
@@ -148,7 +148,7 @@ public class PlannerHelper {
         }
 
         List<RelHint> newHints = Stream.concat(HintUtils.allRelHints(root.rel).stream(),
-            Stream.of(RelHint.builder(HintDefinition.ORDERED_JOINS.name()).build())).collect(Collectors.toList());
+            Stream.of(RelHint.builder(HintDefinition.ENFORCE_JOIN_ORDER.name()).build())).collect(Collectors.toList());
 
         root = root.withRel(((Hintable)root.rel).withHints(newHints));
 
