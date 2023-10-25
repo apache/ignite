@@ -393,7 +393,7 @@ class ClientServicesImpl implements ClientServices, Runnable {
                     log.debug("Requesting service topology update for the service '" + name + "' ...");
 
                 List<UUID> nodes = ch.service(
-                    ClientOperation.OP_SERVICE_GET_MAPPINGS,
+                    ClientOperation.SERVICE_GET_MAPPINGS,
                     req -> utils.writeObject(req.out(), name),
                     resp -> {
                         int cnt = resp.in().readInt();

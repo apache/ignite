@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 
 /** Service topology response. */
 public class ClientServiceMappingsResponse extends ClientResponse {
-    /** Services topology. */
+    /** Service instance nodes. */
     private final @Nullable Collection<UUID> svcsNodes;
 
     /**

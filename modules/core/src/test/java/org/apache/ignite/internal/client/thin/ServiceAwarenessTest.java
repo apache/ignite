@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -26,10 +27,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.client.ClientAuthenticationException;
+import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
@@ -39,6 +42,7 @@ import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -161,7 +165,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
         AtomicBoolean svcRunFlag = new AtomicBoolean(true);
 
-        try (IgniteClient client = startClient(0)) {
+        try (IgniteClient client = startClient()) {
             ServicesTest.TestServiceInterface svc = client.services().serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
 
             runAsync(() -> {
@@ -257,7 +261,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      */
     @Test
     public void testMinorTopologyVersionDoesntAffect() throws Exception {
-        try (IgniteClient client = startClient(0)) {
+        try (IgniteClient client = startClient()) {
             ServicesTest.TestServiceInterface svc = client.services().serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
 
             Set<UUID> srvcTopOnClient = new GridConcurrentHashSet<>();
@@ -298,7 +302,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      */
     @Test
     public void testForcedServiceRedeployWhileClientIsIdle() {
-        try (IgniteClient client = startClient(0)) {
+        try (IgniteClient client = startClient()) {
             ServicesTest.TestServiceInterface svc = client.services().serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
 
             Set<UUID> srvcTopOnClient = new GridConcurrentHashSet<>();
@@ -364,7 +368,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
         AtomicBoolean changeClusterTop = new AtomicBoolean();
         AtomicBoolean stopFlag = new AtomicBoolean();
 
-        try (IgniteClient client = startClient(0)) {
+        try (IgniteClient client = startClient()) {
             ServicesTest.TestServiceInterface svc = client.services().serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
 
             ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
@@ -444,6 +448,9 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
         // Service topology received by the client.
         Set<UUID> top = new GridConcurrentHashSet<>();
 
+        // Requested server nodes with a service invocation.
+        Collection<UUID> requestedServers = new GridConcurrentHashSet<>();
+
         addSrvcTopUpdateClientLogLsnr(uuids -> {
             // Reset counters on the first topology update.
             if (top.isEmpty()) {
@@ -465,22 +472,47 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
         partitionAwareness = false;
 
-        callServiceNTimesFromClient(SRV_NAME, null, () -> redirectCnt.get() >= 100);
+        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
+
+        try (IgniteClient client = startClient(requestedServers)) {
+            ServicesTest.TestServiceInterface svc = client.services().serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
+
+            for (int i = 0; i < 100; ++i)
+                svc.testMethod();
+        }
 
         // Check no service awareness: continous redirections.
         assertEquals(100, redirectCnt.get());
 
         // Ensure that client received no service topology update.
         assertTrue(top.isEmpty());
+        assertTrue(requestedServers.size() == 1 && requestedServers.contains(grid(0).localNode().id()));
 
         partitionAwareness = true;
 
-        callServiceNTimesFromClient(SRV_NAME, callCounter, () -> !top.isEmpty() && callCounter.get() >= 1000);
+        try (IgniteClient client = startClient(requestedServers)) {
+            ServicesTest.TestServiceInterface svc = client.services().serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
 
+            // We assume that the topology will be received and used for the further requests.
+            for (int i = 0; i < 1000; ++i)
+                svc.testMethod();
+
+            redirectCnt.set(0);
+            requestedServers.clear();
+
+            for (int i = 0; i < 1000; ++i)
+                svc.testMethod();
+        }
+
+        // Check the received topology.
         assertTrue(top.size() == INIT_SRVC_NODES_CNT && top.contains(grid(1).localNode().id())
             && top.contains(grid(2).localNode().id()));
 
-        assertTrue(redirectCnt.get() < 50);
+        // Ensure that only the target nodes were requeted after the topology getting.
+        assertEquals(top, requestedServers);
+
+        // Ensure there were no redirected sertvic calls any more.
+        assertEquals(0, redirectCnt.get());
     }
 
     /** */
@@ -497,22 +529,15 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     }
 
     /** */
-    private void callServiceNTimesFromClient(String srvcName, @Nullable AtomicInteger callCounter, Supplier<Boolean> stop) {
-        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
+    private IgniteClient startClient() {
+        return new TcpIgniteClient((cfg, hnd) -> new TestTcpChannel(cfg, hnd, null),
+            getClientConfiguration(grid(0)));
+    }
 
-        try (IgniteClient client = startClient(0)) {
-            ServicesTest.TestServiceInterface svc = client.services().serviceProxy(srvcName, ServicesTest.TestServiceInterface.class);
-
-            while (!stop.get()) {
-                svc.testMethod();
-
-                if (callCounter != null)
-                    callCounter.incrementAndGet();
-            }
-        }
-        finally {
-            ((GridTestLog4jLogger)log).setLevel(Level.INFO);
-        }
+    /** */
+    private IgniteClient startClient(@Nullable Collection<UUID> requestedServerNodes) {
+        return new TcpIgniteClient((cfg, hnd) -> new TestTcpChannel(cfg, hnd, requestedServerNodes),
+            getClientConfiguration(grid(0)));
     }
 
     /**
@@ -567,6 +592,35 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
             toBlock.clear();
 
             blocked.forEach(this::sendCustomEvent);
+        }
+    }
+
+    /**
+     * A client connection channel abble to register the server nodes requested to call a service.
+     */
+    private static final class TestTcpChannel extends TcpClientChannel {
+        /** */
+        private final @Nullable Collection<UUID> requestedServerNodes;
+
+        /** Ctor. */
+        private TestTcpChannel(
+            ClientChannelConfiguration cfg,
+            ClientConnectionMultiplexer connMgr,
+            @Nullable Collection<UUID> requestedServerNodes)
+            throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
+            super(cfg, connMgr);
+
+            this.requestedServerNodes = requestedServerNodes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> T service(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter,
+            Function<PayloadInputChannel, T> payloadReader) throws ClientException {
+
+            if (op == ClientOperation.SERVICE_INVOKE && serverNodeId() != null && requestedServerNodes != null)
+                requestedServerNodes.add(serverNodeId());
+
+            return super.service(op, payloadWriter, payloadReader);
         }
     }
 }
