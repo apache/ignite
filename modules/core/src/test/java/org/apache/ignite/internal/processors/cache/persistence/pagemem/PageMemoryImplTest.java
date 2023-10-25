@@ -611,7 +611,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
 
         kernalCtx.add(failureProc);
 
-        GridCacheSharedContext<Object, Object> sharedCtx = new GridCacheSharedContext.Builder()
+        GridCacheSharedContext<Object, Object> sharedCtx = GridCacheSharedContext.builder()
             .setPageStoreManager(mgr)
             .setWalManager(new NoOpWALManager())
             .setDatabaseManager(new IgniteCacheDatabaseSharedManager(kernalCtx))

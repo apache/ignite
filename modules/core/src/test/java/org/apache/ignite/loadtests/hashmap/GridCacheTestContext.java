@@ -64,7 +64,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
     public GridCacheTestContext(GridTestKernalContext ctx) throws Exception {
         super(
             ctx,
-            new GridCacheSharedContext.Builder()
+            GridCacheSharedContext.builder()
                 .setTxManager(new IgniteTxManager())
                 .setVersionManager(new GridCacheVersionManager())
                 .setMvccManager(new GridCacheMvccManager())

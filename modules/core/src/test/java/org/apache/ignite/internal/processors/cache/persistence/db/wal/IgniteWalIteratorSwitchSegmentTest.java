@@ -159,7 +159,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
         };
 
         RecordSerializer serializer = new RecordSerializerFactoryImpl(
-            new GridCacheSharedContext.Builder()
+            GridCacheSharedContext.builder()
                 .setDatabaseManager(new IgniteCacheDatabaseSharedManager(kctx) {
                     @Override public int pageSize() {
                         return DataStorageConfiguration.DFLT_PAGE_SIZE;
@@ -440,7 +440,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
 
         GridTestUtils.setFieldValue(walMgr, "serializerVer", serVer);
 
-        GridCacheSharedContext<?, ?> ctx = new GridCacheSharedContext.Builder()
+        GridCacheSharedContext<?, ?> ctx = GridCacheSharedContext.builder()
             .setWalManager(walMgr)
             .setWalStateManager(new WalStateManager(kctx))
             .setDatabaseManager(new GridCacheDatabaseSharedManager(kctx))

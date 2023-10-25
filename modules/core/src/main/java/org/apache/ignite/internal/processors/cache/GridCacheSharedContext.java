@@ -187,6 +187,11 @@ public class GridCacheSharedContext<K, V> {
     /** Cluster is in read-only mode. */
     private volatile boolean readOnlyMode;
 
+    /** @return GridCacheSharedContext builder instance. */
+    public static Builder builder() {
+        return new Builder();
+    }
+
     /**
      * @param kernalCtx  Context.
      * @param txMgr Transaction manager.
@@ -1260,6 +1265,11 @@ public class GridCacheSharedContext<K, V> {
 
         /** */
         private CacheDiagnosticManager diagnosticMgr;
+
+        /** */
+        private Builder() {
+            // No-op.
+        }
 
         /** */
         public <K, V> GridCacheSharedContext<K, V> build(

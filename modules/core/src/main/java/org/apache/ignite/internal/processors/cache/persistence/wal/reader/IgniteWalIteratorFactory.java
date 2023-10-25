@@ -412,7 +412,7 @@ public class IgniteWalIteratorFactory {
 
         dbMgr.setPageSize(iteratorParametersBuilder.pageSize);
 
-        return new GridCacheSharedContext.Builder()
+        return GridCacheSharedContext.builder()
             .setDatabaseManager(dbMgr)
             .build(kernalCtx, null);
     }

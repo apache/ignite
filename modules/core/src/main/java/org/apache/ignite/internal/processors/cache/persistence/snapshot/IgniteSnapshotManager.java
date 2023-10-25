@@ -2642,7 +2642,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         CacheObjectContext coctx = new CacheObjectContext(ctx, grpName, null, false,
             false, false, false, false);
 
-        GridCacheSharedContext<?, ?> sctx = new GridCacheSharedContext.Builder().build(ctx, null);
+        GridCacheSharedContext<?, ?> sctx = GridCacheSharedContext.builder().build(ctx, null);
 
         return new DataPageIterator(sctx, coctx, pageStore, partId);
     }

@@ -91,7 +91,7 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
         cctx.add(new GridMetricManager(cctx));
         cctx.add(new GridSystemViewManager(cctx));
 
-        GridCacheSharedContext<Object, Object> sharedCtx = new GridCacheSharedContext.Builder()
+        GridCacheSharedContext<Object, Object> sharedCtx = GridCacheSharedContext.builder()
             .setPageStoreManager(new NoOpPageStoreManager())
             .setWalManager(new NoOpWALManager())
             .setDatabaseManager(new IgniteCacheDatabaseSharedManager(cctx))
