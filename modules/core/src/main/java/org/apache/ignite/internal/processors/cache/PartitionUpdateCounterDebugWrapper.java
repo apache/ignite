@@ -290,9 +290,8 @@ public class PartitionUpdateCounterDebugWrapper implements PartitionUpdateCounte
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        PartitionUpdateCounterDebugWrapper longs = (PartitionUpdateCounterDebugWrapper)o;
-        return partId == longs.partId && log.equals(longs.log) && grp.equals(longs.grp) && delegate.equals(longs.delegate);
+        if (o instanceof PartitionUpdateCounterDebugWrapper)
+            return delegate.equals(((PartitionUpdateCounterDebugWrapper)o).delegate);
+        return false;
     }
 }
