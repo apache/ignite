@@ -76,7 +76,7 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
     @Test
     public void testDisabledJoinPushThroughJoinLeft() throws Exception {
         // Disabling some join rules simplifies exposing of commuted and/or re-ordered joins.
-        String disabledRules = "DISABLE_RULE('MergeJoinConverter', 'CorrelatedNestedLoopJoin', 'JoinCommuteRule')";
+        String disabledRules = "DISABLE_RULE('MergeJoinConverter', 'CorrelatedNestedLoopJoin')";
 
         // Tests swapping of joins is disabled and the order appears in the query, 'TBL3 -> TBL2 -> TBL1':
         // Join
@@ -133,7 +133,7 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
     @Test
     public void testDisabledJoinPushThroughJoinRight() throws Exception {
         // Disabling some join rules simplifies exposing of commuted and/or re-ordered joins.
-        String disabledRules = "DISABLE_RULE('MergeJoinConverter', 'CorrelatedNestedLoopJoin', 'JoinCommuteRule')";
+        String disabledRules = "DISABLE_RULE('MergeJoinConverter', 'CorrelatedNestedLoopJoin')";
 
         // Tests the swapping of joins is disabled and the order appears as in the query, 'TBL1->TBL2->TBL3':
         // Join
@@ -157,8 +157,7 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
     @Test
     public void testDisabledCommutingOfJoinInputs() throws Exception {
         // Disabling some join rules simplifies exposing of commuted and/or re-ordered joins.
-        String disabledRules = "DISABLE_RULE('MergeJoinConverter', 'CorrelatedNestedLoopJoin', " +
-            "'JoinPushThroughJoinRule:left', 'JoinPushThroughJoinRule:right')";
+        String disabledRules = "DISABLE_RULE('MergeJoinConverter', 'CorrelatedNestedLoopJoin')";
 
         String sql = String.format("select /*+ %s, %s */ t3.* from TBL1 t1 JOIN TBL3 t3 on t1.v1=t3.v3 JOIN TBL2 t2 on " +
             "t2.v2=t1.v1", HintDefinition.ENFORCE_JOIN_ORDER.name(), disabledRules);
