@@ -290,8 +290,6 @@ public class PartitionUpdateCounterDebugWrapper implements PartitionUpdateCounte
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        if (o instanceof PartitionUpdateCounterDebugWrapper)
-            return delegate.equals(((PartitionUpdateCounterDebugWrapper)o).delegate);
-        return false;
+        return o instanceof PartitionUpdateCounterDebugWrapper && delegate.equals(((PartitionUpdateCounterDebugWrapper)o).delegate);
     }
 }
