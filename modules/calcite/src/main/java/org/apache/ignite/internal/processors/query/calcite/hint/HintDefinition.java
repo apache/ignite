@@ -54,7 +54,7 @@ public enum HintDefinition {
     },
 
     /** Forces join order as appears in query. Fastens building of joins plan. */
-    ORDERED_JOINS {
+    ENFORCE_JOIN_ORDER {
         /** {@inheritDoc} */
         @Override public HintPredicate predicate() {
             return HintPredicates.JOIN;

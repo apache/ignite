@@ -71,36 +71,12 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
     }
 
     /**
-     * Tests {@link JoinPushThroughJoinRule#RIGHT} is disabled by {@link HintDefinition#ORDERED_JOINS}.
-     */
-    @Test
-    public void testDisabledJoinPushThroughJoinRight() throws Exception {
-        // Disabling some join rules simplifies exposing of commuted and/or re-ordered joins.
-        String disabledRules = "DISABLE_RULE('MergeJoinConverter', 'CorrelatedNestedLoopJoin')";
-
-        // Tests the swapping of joins is disabled and the order appears as in the query, 'TBL1->TBL2->TBL3':
-        // Join
-        //   Join
-        //     TableScan(TBL1)
-        //     TableScan(TBL2)
-        //   TableScan(TBL3)
-        String sql = String.format("select /*+ %s, %s */ t3.* from TBL1 t1, TBL2 t2, TBL3 t3 where t1.v1=t3.v1 and " +
-            "t1.v2=t2.v2", HintDefinition.ORDERED_JOINS.name(), disabledRules);
-
-        assertPlan(sql, schema, hasChildThat(isInstanceOf(Join.class)
-            .and(input(0, isInstanceOf(Join.class)
-                .and(input(0, isTableScan("TBL1")))
-                .and(input(1, isTableScan("TBL2")))))
-            .and(input(1, isTableScan("TBL3")))));
-    }
-
-    /**
-     * Tests {@link JoinPushThroughJoinRule#LEFT} is disabled by {@link HintDefinition#ORDERED_JOINS}.
+     * Tests {@link JoinPushThroughJoinRule#LEFT} is disabled by {@link HintDefinition#ENFORCE_JOIN_ORDER}.
      */
     @Test
     public void testDisabledJoinPushThroughJoinLeft() throws Exception {
         // Disabling some join rules simplifies exposing of commuted and/or re-ordered joins.
-        String disabledRules = "DISABLE_RULE('MergeJoinConverter', 'CorrelatedNestedLoopJoin')";
+        String disabledRules = "DISABLE_RULE('MergeJoinConverter', 'CorrelatedNestedLoopJoin', 'JoinCommuteRule')";
 
         // Tests swapping of joins is disabled and the order appears in the query, 'TBL3 -> TBL2 -> TBL1':
         // Join
@@ -109,7 +85,7 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
         //     TableScan(TBL2)
         //   TableScan(TBL1)
         String sql = String.format("select /*+ %s, %s */ t3.* from TBL3 t3, TBL2 t2, TBL1 t1 where t1.v1=t3.v1 and " +
-            "t1.v2=t2.v2", HintDefinition.ORDERED_JOINS.name(), disabledRules);
+            "t1.v2=t2.v2", HintDefinition.ENFORCE_JOIN_ORDER.name(), disabledRules);
 
         assertPlan(sql, schema, hasChildThat(isInstanceOf(Join.class)
             .and(input(0, isInstanceOf(Join.class)
@@ -119,7 +95,7 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
     }
 
     /**
-     * Tests commuting of LEFT-to-RIGHT JOIN is disabled by {@link HintDefinition#ORDERED_JOINS}.
+     * Tests commuting of LEFT-to-RIGHT JOIN is disabled by {@link HintDefinition#ENFORCE_JOIN_ORDER}.
      */
     @Test
     public void testDisabledLeftJoinTypeCommuting() throws Exception {
@@ -127,7 +103,7 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
     }
 
     /**
-     * Tests commuting of RIGHT-to-LEFT JOIN is disabled by {@link HintDefinition#ORDERED_JOINS}.
+     * Tests commuting of RIGHT-to-LEFT JOIN is disabled by {@link HintDefinition#ENFORCE_JOIN_ORDER}.
      */
     @Test
     public void testDisabledRightJoinTypeCommuting() throws Exception {
@@ -145,27 +121,79 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
 
         // Tests commuting of the join type is disabled.
         String sql = String.format("select /*+ %s, %s */ t3.* from TBL2 t2 %s JOIN TBL1 t1 on t2.v2=t1.v1 %s JOIN " +
-            "TBL3 t3 on t2.v1=t3.v3", HintDefinition.ORDERED_JOINS.name(), disabledRules, joinType, joinType);
+            "TBL3 t3 on t2.v1=t3.v3", HintDefinition.ENFORCE_JOIN_ORDER.name(), disabledRules, joinType, joinType);
 
         assertPlan(sql, schema, hasChildThat(isInstanceOf(Join.class)
             .and(j -> j.getJoinType() != JoinRelType.valueOf(joinType))).negate());
     }
 
     /**
-     * Tests the commuting of join inputs is disabled by  by {@link HintDefinition#ORDERED_JOINS}.
+     * Tests {@link JoinPushThroughJoinRule#RIGHT} is disabled by {@link HintDefinition#ENFORCE_JOIN_ORDER}.
+     */
+    @Test
+    public void testDisabledJoinPushThroughJoinRight() throws Exception {
+        // Disabling some join rules simplifies exposing of commuted and/or re-ordered joins.
+        String disabledRules = "DISABLE_RULE('MergeJoinConverter', 'CorrelatedNestedLoopJoin', 'JoinCommuteRule')";
+
+        // Tests the swapping of joins is disabled and the order appears as in the query, 'TBL1->TBL2->TBL3':
+        // Join
+        //   Join
+        //     TableScan(TBL1)
+        //     TableScan(TBL2)
+        //   TableScan(TBL3)
+        String sql = String.format("select /*+ %s, %s */ t3.* from TBL1 t1, TBL2 t2, TBL3 t3 where t1.v1=t3.v1 and " +
+            "t1.v2=t2.v2", HintDefinition.ENFORCE_JOIN_ORDER.name(), disabledRules);
+
+        assertPlan(sql, schema, hasChildThat(isInstanceOf(Join.class)
+            .and(input(0, isInstanceOf(Join.class)
+                .and(input(0, isTableScan("TBL1")))
+                .and(input(1, isTableScan("TBL2")))))
+            .and(input(1, isTableScan("TBL3")))));
+    }
+
+    /**
+     * Tests the commuting of join inputs is disabled by {@link HintDefinition#ENFORCE_JOIN_ORDER}.
      */
     @Test
     public void testDisabledCommutingOfJoinInputs() throws Exception {
         // Disabling some join rules simplifies exposing of commuted and/or re-ordered joins.
-        String disabledRules = "DISABLE_RULE('MergeJoinConverter', 'CorrelatedNestedLoopJoin')";
+        String disabledRules = "DISABLE_RULE('MergeJoinConverter', 'CorrelatedNestedLoopJoin', " +
+            "'JoinPushThroughJoinRule:left', 'JoinPushThroughJoinRule:right')";
 
         String sql = String.format("select /*+ %s, %s */ t3.* from TBL1 t1 JOIN TBL3 t3 on t1.v1=t3.v3 JOIN TBL2 t2 on " +
-            "t2.v2=t1.v1", HintDefinition.ORDERED_JOINS.name(), disabledRules);
+            "t2.v2=t1.v1", HintDefinition.ENFORCE_JOIN_ORDER.name(), disabledRules);
 
         // Tests the plan has no commuted join inputs.
         assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(Join.class)
-            .and(input(0, isTableScan("TBL3")))
-            .and(input(1, isTableScan("TBL1")))).negate());
+            .and(input(0, isTableScan("TBL1")))
+            .and(input(1, isTableScan("TBL3")))));
+    }
+
+    /**
+     * Tests that the sub-join has inputs order matching the sub-query.
+     */
+    @Test
+    public void testDisabledCommutingOfJoinInputsInSubquery() throws Exception {
+        String sqlTpl = "SELECT %s t2.v1, t3.v2 from TBL2 t2 JOIN TBL3 t3 on t2.v1=t3.v1 where t2.v2 in " +
+            "(SELECT %s t2.v2 from TBL2 t2 JOIN TBL3 t3 on t2.v2=t3.v3)";
+
+        // Tests the hint is applied for the whole query.
+        assertPlan(String.format(sqlTpl, "/*+ " + HintDefinition.ENFORCE_JOIN_ORDER + " */", ""), schema,
+            nodeOrAnyChild(isInstanceOf(Join.class)
+                .and(input(0, nodeOrAnyChild(isInstanceOf(Join.class)
+                    .and(input(0, nodeOrAnyChild(isTableScan("TBL2"))))
+                    .and(input(1, nodeOrAnyChild(isTableScan("TBL3")))))))
+                .and(input(1, nodeOrAnyChild(isInstanceOf(Join.class)
+                    .and(input(0, nodeOrAnyChild(isTableScan("TBL2"))))
+                    .and(input(1, nodeOrAnyChild(isTableScan("TBL3")))))))));
+
+        // Tests the hint is applied for the sub-query.
+        assertPlan(String.format(sqlTpl, "", "/*+ " + HintDefinition.ENFORCE_JOIN_ORDER + " */"), schema,
+            nodeOrAnyChild(isInstanceOf(Join.class)
+                .and(input(0, nodeOrAnyChild(isTableScan("TBL2").or(isTableScan("TBL3")))))
+                .and(input(1, nodeOrAnyChild(isInstanceOf(Join.class)
+                    .and(input(0, nodeOrAnyChild(isTableScan("TBL2"))))
+                    .and(input(1, nodeOrAnyChild(isTableScan("TBL3")))))))));
     }
 
     /**
@@ -174,7 +202,7 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
     @Test
     public void testJoinPlanBuildingDuration() throws Exception {
         // Just a 3-tables join.
-        String sql = "SELECT /*+ " + HintDefinition.ORDERED_JOINS + " */ T1.V1, T2.V1, T2.V2, T3.V1, T3.V2, T3.V3 " +
+        String sql = "SELECT /*+ " + HintDefinition.ENFORCE_JOIN_ORDER + " */ T1.V1, T2.V1, T2.V2, T3.V1, T3.V2, T3.V3 " +
             "FROM TBL1 T1 JOIN TBL2 T2 ON T1.V3=T2.V1 JOIN TBL3 T3 ON T2.V3=T3.V1 AND T2.V2=T3.V2";
 
         long time = 0;
@@ -193,53 +221,28 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
         assertTrue("Plan building took too long: " + time + "ms.", time < 3000L);
     }
 
-    /**
-     * Tests that the sub-join has inputs order matching the sub-query.
-     */
-    @Test
-    public void testDisabledCommutingOfJoinInputsInSubquery() throws Exception {
-        String sqlTpl = "SELECT %s t2.v1, t3.v2 from TBL2 t2 JOIN TBL3 t3 on t2.v1=t3.v1 where t2.v2 in " +
-            "(SELECT %s t2.v2 from TBL2 t2 JOIN TBL3 t3 on t2.v2=t3.v3)";
-
-        // Tests the hint is applied for the whole query.
-        assertPlan(String.format(sqlTpl, "/*+ " + HintDefinition.ORDERED_JOINS + " */", ""), schema,
-            nodeOrAnyChild(isInstanceOf(Join.class)
-                .and(input(0, nodeOrAnyChild(isInstanceOf(Join.class)
-                    .and(input(0, nodeOrAnyChild(isTableScan("TBL2"))))
-                    .and(input(1, nodeOrAnyChild(isTableScan("TBL3")))))))
-                .and(input(1, nodeOrAnyChild(isInstanceOf(Join.class)
-                    .and(input(0, nodeOrAnyChild(isTableScan("TBL2"))))
-                    .and(input(1, nodeOrAnyChild(isTableScan("TBL3")))))))));
-
-        // Tests the hint is applied for the sub-query.
-        assertPlan(String.format(sqlTpl, "", "/*+ " + HintDefinition.ORDERED_JOINS + " */"), schema,
-            nodeOrAnyChild(isInstanceOf(Join.class)
-                .and(input(0, nodeOrAnyChild(isTableScan("TBL2").or(isTableScan("TBL3")))))
-                .and(input(1, nodeOrAnyChild(isInstanceOf(Join.class)
-                    .and(input(0, nodeOrAnyChild(isTableScan("TBL2"))))
-                    .and(input(1, nodeOrAnyChild(isTableScan("TBL3")))))))));
-    }
-
     /** */
     @Test
     public void testUnions() throws Exception {
         String sqlTpl = "SELECT %s t2.v1, t3.v2 from TBL2 t2 JOIN TBL3 t3 on t2.v1=t3.v1 UNION ALL " +
             "SELECT %s t1.v1, t2.v2 from TBL1 t1 JOIN TBL2 t2 on t1.v1=t2.v2";
 
-        assertPlan(String.format(sqlTpl, "/*+ " + HintDefinition.ORDERED_JOINS + " */", ""), schema,
+        String hint = HintDefinition.ENFORCE_JOIN_ORDER.toString();
+
+        assertPlan(String.format(sqlTpl, "/*+ " + hint + " */", ""), schema,
             nodeOrAnyChild(isInstanceOf(SetOp.class)
                 .and(input(0, nodeOrAnyChild(isInstanceOf(Join.class)
                     .and(input(0, nodeOrAnyChild(isTableScan("TBL2"))))
                     .and(input(1, nodeOrAnyChild(isTableScan("TBL3")))))))));
 
-        assertPlan(String.format(sqlTpl, "", "/*+ " + HintDefinition.ORDERED_JOINS + " */"), schema,
+        assertPlan(String.format(sqlTpl, "", "/*+ " + hint + " */"), schema,
             nodeOrAnyChild(isInstanceOf(SetOp.class)
                 .and(input(1, nodeOrAnyChild(isInstanceOf(Join.class)
                     .and(input(0, nodeOrAnyChild(isTableScan("TBL1"))))
                     .and(input(1, nodeOrAnyChild(isTableScan("TBL2")))))))));
 
-        assertPlan(String.format(sqlTpl, "/*+ " + HintDefinition.ORDERED_JOINS + " */", "/*+ " + HintDefinition.ORDERED_JOINS + " */"),
-            schema, nodeOrAnyChild(isInstanceOf(SetOp.class)
+        assertPlan(String.format(sqlTpl, "/*+ " + hint + " */", "/*+ " + hint + " */"), schema,
+            nodeOrAnyChild(isInstanceOf(SetOp.class)
                 .and(input(1, nodeOrAnyChild(isInstanceOf(Join.class)
                     .and(input(0, nodeOrAnyChild(isTableScan("TBL1"))))
                     .and(input(1, nodeOrAnyChild(isTableScan("TBL2")))))))
@@ -251,25 +254,25 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testWrongParams() throws Exception {
-        LogListener lsnr = LogListener.matches("Hint '" + HintDefinition.ORDERED_JOINS
+        LogListener lsnr = LogListener.matches("Hint '" + HintDefinition.ENFORCE_JOIN_ORDER
             + "' can't have any key-value option").build();
 
         lsnrLog.registerListener(lsnr);
 
         ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
-        physicalPlan("select /*+ " + HintDefinition.ORDERED_JOINS.name() + "(a='b') */ t3.* from TBL1 t1, " +
+        physicalPlan("select /*+ " + HintDefinition.ENFORCE_JOIN_ORDER.name() + "(a='b') */ t3.* from TBL1 t1, " +
             "TBL2 t2, TBL3 t3 where t1.v1=t3.v1 and t1.v2=t2.v2", schema);
 
         assertTrue(lsnr.check());
 
         lsnrLog.clearListeners();
 
-        lsnr = LogListener.matches("Hint '" + HintDefinition.ORDERED_JOINS + "' can't have any option").build();
+        lsnr = LogListener.matches("Hint '" + HintDefinition.ENFORCE_JOIN_ORDER + "' can't have any option").build();
 
         lsnrLog.registerListener(lsnr);
 
-        physicalPlan("select /*+ " + HintDefinition.ORDERED_JOINS.name() + "(OPTION) */ t3.* from TBL1 t1, " +
+        physicalPlan("select /*+ " + HintDefinition.ENFORCE_JOIN_ORDER.name() + "(OPTION) */ t3.* from TBL1 t1, " +
             "TBL2 t2, TBL3 t3 where t1.v1=t3.v1 and t1.v2=t2.v2", schema);
 
         assertTrue(lsnr.check());
