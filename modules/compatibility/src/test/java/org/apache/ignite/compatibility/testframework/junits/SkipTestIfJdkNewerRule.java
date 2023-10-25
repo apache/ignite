@@ -33,9 +33,8 @@ public class SkipTestIfJdkNewerRule implements TestRule {
 
         SkipTestIfIsJdkNewer ann = desc.getAnnotation(SkipTestIfIsJdkNewer.class);
 
-        if (ann == null) {
+        if (ann == null)
             ann = desc.getTestClass().getAnnotation(SkipTestIfIsJdkNewer.class);
-        }
 
         Assume.assumeTrue("Skipping test", ann == null || U.majorJavaVersion(jdkVersion) <= ann.value());
 

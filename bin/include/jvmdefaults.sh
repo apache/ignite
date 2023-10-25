@@ -34,7 +34,6 @@ getJavaSpecificOpts() {
           -XX:+AggressiveOpts \
           --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
           --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
-          --add-exports=java.base/jdk.internal.loader=ALL-UNNAMED \
           --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
           --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
           --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
@@ -46,7 +45,6 @@ getJavaSpecificOpts() {
       value="\
           --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
           --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
-          --add-exports=java.base/jdk.internal.loader=ALL-UNNAMED \
           --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
           --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
           --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
@@ -57,7 +55,6 @@ getJavaSpecificOpts() {
   elif [ "${version}" -ge 14 ] && [ "${version}" -lt 15 ]; then
         value="\
             --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
-            --add-exports=java.base/jdk.internal.loader=ALL-UNNAMED \
             --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
             --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
             --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
@@ -70,7 +67,6 @@ getJavaSpecificOpts() {
   elif [ "${version}" -ge 15 ] ; then
       value="\
           --add-opens=java.base/jdk.internal.access=ALL-UNNAMED \
-          --add-opens=java.base/jdk.internal.loader=ALL-UNNAMED \
           --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED \
           --add-opens=java.base/sun.nio.ch=ALL-UNNAMED \
           --add-opens=java.base/sun.util.calendar=ALL-UNNAME \

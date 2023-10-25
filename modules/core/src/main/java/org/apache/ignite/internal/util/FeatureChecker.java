@@ -24,7 +24,6 @@ public class FeatureChecker {
     /** Required Options to Run on Java 9, 10, 11. */
     public static final String JAVA_9_10_11_OPTIONS = "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED\n" +
         "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED\n" +
-        "--add-exports=java.base/jdk.internal.loader=ALL-UNNAMED\n" +
         "--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED\n" +
         "--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED\n" +
         "--add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED\n" +
@@ -36,7 +35,6 @@ public class FeatureChecker {
     /** Required Options to Run on Java 15 and higher. */
     public static final String JAVA_15_OPTIONS =
         "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED\n" +
-        "--add-opens=java.base/jdk.internal.loader=ALL-UNNAMED\n" +
         "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED\n" +
         "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED\n" +
         "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED\n" +
