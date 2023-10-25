@@ -47,26 +47,19 @@ EXT=$(pwd)
 
 
 cd ..
-SYSTEM_EXT_DIR="`pwd`/ext"
+SYSTEM_EXT_DIR="`pwd`/exts"
+IGNITE_HOME=`pwd`
+echo IGNITE_HOME=$IGNITE_HOME
 
 JAVA_OPTIONS=${JAVA_OPTIONS:-}
-
-if [ ! -z "${JAVA_OPTIONS}" ]; then
-  USER_EXT_DIR=$(grep -o '\-Dtinkerpop.ext=\(\([^"][^ ]*\)\|\("[^"]*"\)\)' <<< "${JAVA_OPTIONS}" | cut -f2 -d '=' | xargs -0 echo)
-  if [ ! -z "${USER_EXT_DIR}" -a ! -d "${USER_EXT_DIR}" ]; then
-    mkdir -p "${USER_EXT_DIR}"
-    cp -R ${SYSTEM_EXT_DIR}/* ${USER_EXT_DIR}/
-  fi
-fi
 
 #
 # Set IGNITE_LIBS.
 #
-. "${BIN}"/include/setenv.sh
+. "${IGNITE_HOME}"/bin/include/setenv.sh
 
 
-
-CP=${SYSTEM_EXT_DIR}/*:${LIB}/*:${LIB}/ignite-gremlin-server/*:${LIB}/ignite-log4j/*:libs/netty/*
+CP=${SYSTEM_EXT_DIR}/*:${LIB}/*:${IGNITE_LIBS}
 
 export CLASSPATH="${CLASSPATH:-}:$CP"
 
@@ -107,7 +100,7 @@ if [ -z "${HADOOP_GREMLIN_LIBS:-}" ]; then
     export HADOOP_GREMLIN_LIBS="$LIB"
 fi
 
-JAVA_OPTIONS="${JAVA_OPTIONS} -Duser.working_dir=${USER_DIR} -Dtinkerpop.ext=${USER_EXT_DIR:-${SYSTEM_EXT_DIR}} -Dlog4j.configurationFile=file:conf/log4j2-console.xml 
+JAVA_OPTIONS="${JAVA_OPTIONS} -Duser.working_dir=${USER_DIR} -Dtinkerpop.ext=${USER_EXT_DIR:-${SYSTEM_EXT_DIR}} -Dlog4j.configurationFile=file:config/log4j2-console.xml -cp $CP "
 JAVA_OPTIONS=$(awk -v RS=' ' '!/^$/ {if (!x[$0]++) print}' <<< "${JAVA_OPTIONS}" | grep -v '^$' | paste -sd ' ' -)
 
 if [ -n "$SCRIPT_DEBUG" ]; then
@@ -119,3 +112,4 @@ fi
 
 # Start the JVM, execute the application, and return its exit code
 exec $JAVA $JAVA_OPTIONS $MAIN_CLASS $CFG "$@"
+

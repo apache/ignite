@@ -32,7 +32,7 @@ import org.apache.ignite.console.repositories.AnnouncementRepository;
 import org.apache.ignite.console.web.socket.AgentsService;
 import org.apache.ignite.console.web.socket.TransitionService;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
-import org.apache.ignite.lang.IgniteAsyncSupport;
+
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestNode;
@@ -252,23 +252,6 @@ public class MockConfiguration {
         @Override public @Nullable String label() {
             throw new UnsupportedOperationException();
         }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("deprecation")
-        @Override public IgniteAsyncSupport withAsync() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("deprecation")
-        @Override public boolean isAsync() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("deprecation")
-        @Override public <R> IgniteFuture<R> future() {
-            throw new UnsupportedOperationException();
-        }
+       
     }
 }

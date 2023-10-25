@@ -161,6 +161,12 @@
         </dependency>
         
         <dependency>
+        	<groupId>com.h2database</groupId>
+		    <artifactId>h2</artifactId>
+		    <version>1.4.197</version>
+        </dependency>
+        
+        <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-log4j2</artifactId>
             <version>${web-console.ignite.version}</version>

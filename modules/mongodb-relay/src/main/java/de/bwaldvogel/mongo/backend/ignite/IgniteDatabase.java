@@ -98,8 +98,8 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
         } else {
         	return super.resolveCollection(collectionName, throwIfNotFound);
         }
-    }
-
+    }    
+    
     @Override
     protected Index<Object> openOrCreateUniqueIndex(String collectionName,String indexName, List<IndexKey> keys, boolean sparse) { 
     	
@@ -178,6 +178,8 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
     		.map(n->databaseName+'.'+n)
     		.collect(Collectors.toList());
     }
+    
+    
 
     @Override
     protected MongoCollection<Object> openOrCreateCollection(String collectionName, CollectionOptions options) {    	

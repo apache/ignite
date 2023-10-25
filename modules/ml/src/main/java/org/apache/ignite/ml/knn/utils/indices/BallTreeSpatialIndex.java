@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.knn.utils.indices;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -27,7 +26,6 @@ import java.util.Queue;
 import org.apache.ignite.ml.knn.utils.PointWithDistance;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
 
 import static org.apache.ignite.ml.knn.utils.PointWithDistanceUtil.transformToListOrdered;
@@ -40,356 +38,159 @@ import static org.apache.ignite.ml.knn.utils.PointWithDistanceUtil.tryToAddIntoH
  * @param <L> Label type.
  */
 public class BallTreeSpatialIndex<L> implements SpatialIndex<L> {
-    /** Number of points in a leaf. */
-    private static final int MAX_LEAF_SIZE = 42;
-
-    /** Margin used to identify center of Balls during data points split. */
-    private static final double SPLIT_BALL_MARGIN = 0.2;
-
     /** Distance measure. */
     private final DistanceMeasure distanceMeasure;
 
-    /** Root node of Ball tree. */
-    private final TreeNode root;
+    /** Root node of the KD tree. */
+    private TreeNode root;
 
     /**
-     * Constructs a new instance of Ball tree spatial index.
+     * Constructs a new instance of KD tree spatial index. To construct KD tree a "randomized" approach is uses, all
+     * nodes are inserted into the tree sequentially without any additional computations and re-balancing.
      *
-     * @param data Data.
+     * @param data Data points.
      * @param distanceMeasure Distance measure.
      */
     public BallTreeSpatialIndex(List<LabeledVector<L>> data, DistanceMeasure distanceMeasure) {
         this.distanceMeasure = distanceMeasure;
-        root = buildTree(data);
+
+        data.forEach(dataPnt -> root = add(root, dataPnt));
     }
 
     /** {@inheritDoc} */
     @Override public Collection<PointWithDistance<L>> findKClosest(int k, Vector pnt) {
-    	Queue<PointWithDistance<L>> heap = new PriorityQueue<>(k,Comparator.reverseOrder());
+        if (k <= 0)
+            throw new IllegalArgumentException("Number of neighbours should be positive.");
 
-        root.findKClosest(pnt, heap, k);
+        Queue<PointWithDistance<L>> heap = new PriorityQueue<>(k,Comparator.reverseOrder());
+
+        findKClosest(pnt, root, 0, heap, k);
 
         return heap;
     }
 
     /**
-     * Builds Ball tree.
+     * Updates collection of closest points processing specified KD tree node.
      *
-     * @param data Data points.
-     * @return Ball tree root node.
+     * @param pnt Point to calculate distance to.
+     * @param node KD tree node.
+     * @param splitDim Split dimension that corresponds to current KD tree level.
+     * @param heap Heap with closest points.
+     * @param k Number of closest points to be collected.
      */
-    private TreeNode buildTree(List<LabeledVector<L>> data) {
-        Vector center = calculateCenter(data);
+    private void findKClosest(Vector pnt, TreeNode node, int splitDim, Queue<PointWithDistance<L>> heap, int k) {
+        if (node == null)
+            return;
 
-        return buildTree(data, center, calculateRadius(data, center));
-    }
+        tryToAddIntoHeap(heap, k, node.val, distanceMeasure.compute(pnt, node.val.features()));
 
-    /**
-     * Builds Ball tree using specified {@code center} and {@code radius} as parameters of current tree node.
-     *
-     * @param data Data points.
-     * @param center Center of the current tree node.
-     * @param radius Radius of the current tree node.
-     * @return Ball tree node.
-     */
-    private TreeNode buildTree(List<LabeledVector<L>> data, Vector center, double radius) {
-        if (data.size() <= MAX_LEAF_SIZE)
-            return new TreeLeafNode(center, radius, data);
+        double pntPrj = pnt.get(splitDim);
+        double splitPrj = node.val.get(splitDim);
 
-        Vector leftCenter = calculateCenter(data);
-        Vector rightCenter = leftCenter.copy();
+        TreeNode primaryBranch = pntPrj > splitPrj ? node.right : node.left;
+        TreeNode secondaryBranch = primaryBranch == node.right ? node.left : node.right;
 
-        int bestDimForSplit = calculateBestDimForSplit(data);
-        double min = calculateMin(data, bestDimForSplit);
-        double max = calculateMax(data, bestDimForSplit);
-
-        leftCenter.set(bestDimForSplit, min + (max - min) * SPLIT_BALL_MARGIN);
-        rightCenter.set(bestDimForSplit, min + (max - min) * (1 - SPLIT_BALL_MARGIN));
-
-        List<LabeledVector<L>> leftBallPnts = new ArrayList<>();
-        List<LabeledVector<L>> rightBallPnts = new ArrayList<>();
-
-        splitPoints(data, leftCenter, rightCenter, leftBallPnts, rightBallPnts);
-
-        data.clear(); // Help GC to collect unused list.
-
-        return new TreeInnerNode(
-            center,
-            radius,
-            buildTree(leftBallPnts, leftCenter, calculateRadius(leftBallPnts, leftCenter)),
-            buildTree(rightBallPnts, rightCenter, calculateRadius(rightBallPnts, rightCenter))
+        findKClosestInSplittedSpace(
+            pnt,
+            primaryBranch,
+            secondaryBranch,
+            (splitDim + 1) % pnt.size(),
+            Math.abs(pntPrj - splitPrj),
+            heap,
+            k
         );
     }
 
     /**
-     * Splits list of data points on two parts: {@code leftBallPnts} and {@code rightBallPnts} so that all points in
-     * {@code leftBallPnts} are closer to left center than to right center and all points in {@code rightBallPnts} are
-     * closer to right center than to left center.
+     * Updates collection of closest points looking into primary branch and if distance to plane is less then distance
+     * to the most distant point within closest point looks into secondary branch as well.
      *
-     * @param dataPnts Data points.
-     * @param leftCenter Left center.
-     * @param rightCenter Right center.
-     * @param leftBallPnts Left ball points (out parameter).
-     * @param rightBallPnts Right ball points (out parameter).
+     * @param pnt Point to calculate distance to.
+     * @param primaryBrach Primary branch ({@code pnt} belongs to this subtree).
+     * @param secondaryBranch Secondary branch ({@code pnt} doesn't belong to this subtree).
+     * @param splitDim Split dimension that corresponds to current KD tree level.
+     * @param distToPlane Distance to split plane.
+     * @param heap Heap with closest points.
+     * @param k Number of closest points to be collected.
      */
-    private void splitPoints(List<LabeledVector<L>> dataPnts, Vector leftCenter, Vector rightCenter,
-        List<LabeledVector<L>> leftBallPnts, List<LabeledVector<L>> rightBallPnts) {
-        for (LabeledVector<L> dataPnt : dataPnts) {
-            double distToLeftCenter = distanceMeasure.compute(leftCenter, dataPnt.features());
-            double distToRightCenter = distanceMeasure.compute(rightCenter, dataPnt.features());
+    private void findKClosestInSplittedSpace(Vector pnt, TreeNode primaryBrach, TreeNode secondaryBranch, int splitDim,
+        double distToPlane, Queue<PointWithDistance<L>> heap, int k) {
 
-            List<LabeledVector<L>> targetBallPnts = distToLeftCenter < distToRightCenter ? leftBallPnts : rightBallPnts;
-            targetBallPnts.add(dataPnt);
-        }
+        findKClosest(pnt, primaryBrach, splitDim, heap, k);
+
+        // If the distance to the most distant element in the heap is less than distance to the plane we need to process
+        // the secondary branch as well.
+        if (heap.size() < k || distToPlane < heap.peek().getDistance())
+            findKClosest(pnt, secondaryBranch, splitDim, heap, k);
     }
 
     /**
-     * Calculates radius of a ball (max distance from center to data point).
+     * Adds element into an existing or not existing KDTree.
      *
-     * @param data Data points.
-     * @param center Center of a ball.
-     * @return Radius of a ball.
+     * @param root Root node of KDTree or {@code null}.
+     * @param val Value to be added.
+     * @return Root node of KDTree.
      */
-    private double calculateRadius(List<LabeledVector<L>> data, Vector center) {
-        double radius = 0;
+    private TreeNode add(TreeNode root, LabeledVector<L> val) {
+        if (root == null)
+            return new TreeNode(val);
 
-        for (LabeledVector<L> dataPnt : data) {
-            double distance = distanceMeasure.compute(center, dataPnt.features());
-            radius = Math.max(radius, distance);
-        }
+        addIntoExistingTree(root, val);
 
-        return radius;
+        return root;
     }
 
     /**
-     * Calculates center of the group of data points using mean values across all dimensions.
+     * Adds element into an existing KD tree.
      *
-     * @param data Data points.
-     * @return Center of the group of points.
+     * @param node Root node of KD tree.
+     * @param pnt Point to be added.
      */
-    private Vector calculateCenter(List<LabeledVector<L>> data) {
-        if (data.isEmpty())
-            return null;
+    private void addIntoExistingTree(TreeNode node, LabeledVector<L> pnt) {
+        int splitDim = 0;
 
-        double[] center = new double[data.get(0).size()];
-        for (int dim = 0; dim < center.length; dim++)
-            center[dim] = calculateMean(data, dim);
+        while (true) {
+            if (pnt.get(splitDim) > node.val.get(splitDim)) {
+                if (node.right == null) {
+                    node.right = new TreeNode(pnt);
+                    break;
+                }
 
-        return VectorUtils.of(center);
-    }
-
-    /**
-     * Calculates best dimension for split space on two balls.
-     *
-     * @param data Data points.
-     * @return Dimension.
-     */
-    private int calculateBestDimForSplit(List<LabeledVector<L>> data) {
-        if (data.isEmpty())
-            return -1;
-
-        double bestStd = 0;
-        int bestDim = -1;
-
-        for (int dim = 0; dim < data.get(0).size(); dim++) {
-            double std = calculateStd(data, dim);
-            if (std > bestStd) {
-                bestStd = std;
-                bestDim = dim;
+                node = node.right;
             }
-        }
+            else {
+                if (node.left == null) {
+                    node.left = new TreeNode(pnt);
+                    break;
+                }
 
-        return bestDim;
-    }
-
-    /**
-     * Calculates max value for the list of data points and specified dimension.
-     *
-     * @param data Data points.
-     * @param dim Dimension.
-     * @return Max value.
-     */
-    private double calculateMax(List<LabeledVector<L>> data, int dim) {
-        double max = Double.NEGATIVE_INFINITY;
-
-        for (LabeledVector<L> dataPnt : data)
-            max = Math.max(max, dataPnt.get(dim));
-
-        return max;
-    }
-
-    /**
-     * Calculates min value for the list of data points and specified dimension.
-     *
-     * @param data Data points.
-     * @param dim Dimension.
-     * @return Min value.
-     */
-    private double calculateMin(List<LabeledVector<L>> data, int dim) {
-        double min = Double.POSITIVE_INFINITY;
-
-        for (LabeledVector<L> dataPnt : data)
-            min = Math.min(min, dataPnt.get(dim));
-
-        return min;
-    }
-
-    /**
-     * Calculates standard deviation for the list of data points and specified dimension.
-     *
-     * @param data Data points.
-     * @param dim Dimension.
-     * @return Standard deviation.
-     */
-    private double calculateStd(List<LabeledVector<L>> data, int dim) {
-        double res = 0;
-
-        double mean = calculateMean(data, dim);
-        for (LabeledVector<L> dataPnt : data)
-            res += Math.pow(dataPnt.get(dim) - mean, 2);
-
-        return Math.sqrt(res / data.size());
-    }
-
-    /**
-     * Calculates mean value for the list of data points and specified dimension.
-     *
-     * @param data Data points.
-     * @param dim Dimension.
-     * @return Mean value.
-     */
-    private double calculateMean(List<LabeledVector<L>> data, int dim) {
-        double res = 0;
-
-        for (LabeledVector<L> dataPnt : data)
-            res += dataPnt.get(dim);
-
-        return res / data.size();
-    }
-
-    /**
-     * Ball tree node.
-     */
-    private abstract class TreeNode {
-        /** Center of the ball. */
-        private final Vector center;
-
-        /** Radius of the ball. */
-        private final double radius;
-
-        /**
-         * Constructs a new instance of Ball tree node.
-         *
-         * @param center Center of the ball.
-         * @param radius Radius of the ball.
-         */
-        TreeNode(Vector center, double radius) {
-            this.center = center;
-            this.radius = radius;
-        }
-
-        /**
-         * Finds {@code k} closest elements the the specified point and adds them into {@code heap}.
-         *
-         * @param pnt Point to be used to calculate distance to other points.
-         * @param heap Heap with closest points.
-         * @param k Number of closest points to be collected.
-         */
-        abstract void findKClosest(Vector pnt, Queue<PointWithDistance<L>> heap, int k);
-
-        /** */
-        public Vector getCenter() {
-            return center;
-        }
-
-        /** */
-        public double getRadius() {
-            return radius;
-        }
-    }
-
-    /**
-     * Inner node of Ball tree that contains two children nodes.
-     */
-    private final class TreeInnerNode extends TreeNode {
-        /** Left child node. */
-        private final TreeNode left;
-
-        /** Right child node. */
-        private final TreeNode right;
-
-        /**
-         * Constructs a new instance of Ball tree inner node.
-         *
-         * @param center Center of the ball.
-         * @param radius Radius of the ball.
-         */
-        TreeInnerNode(Vector center, double radius, TreeNode left, TreeNode right) {
-            super(center, radius);
-            this.left = left;
-            this.right = right;
-        }
-
-        /** {@inheritDoc} */
-        @Override void findKClosest(Vector pnt, Queue<PointWithDistance<L>> heap, int k) {
-            double distToLeftCenter = computeDistToCenter(pnt, left);
-            double distToRightCenter = computeDistToCenter(pnt, right);
-
-            TreeNode primaryBranch = distToLeftCenter > distToRightCenter ? right : left;
-            TreeNode secondaryBranch = primaryBranch == right ? left : right;
-
-            if (primaryBranch != null)
-                primaryBranch.findKClosest(pnt, heap, k);
-
-            // If the distance to the most distant element in the heap is less than distance to the plane we need to process
-            // the secondary branch as well.
-            if (secondaryBranch != null) {
-                double distToSecondaryBall = computeDistToCenter(pnt, secondaryBranch) - secondaryBranch.getRadius();
-                if (heap.size() < k || distToSecondaryBall < heap.peek().getDistance())
-                    secondaryBranch.findKClosest(pnt, heap, k);
+                node = node.left;
             }
-        }
 
-        /**
-         * Computed distance from point to center of Ball tree node.
-         *
-         * @param pnt Point to be used to calculate distance to other points.
-         * @param node Ball tree node.
-         * @return Distance from point to center of Ball tree node.
-         */
-        private double computeDistToCenter(Vector pnt, TreeNode node) {
-            if (node == null)
-                return Double.MAX_VALUE;
-
-            return distanceMeasure.compute(pnt, node.getCenter());
+            splitDim = (splitDim + 1) % pnt.size();
         }
     }
 
     /**
-     * Leaf node of Ball tree that contains an array of points that owned by the leaf.
+     * Binary tree node with {@code val}, {@code left} and {@code right} children.
      */
-    private final class TreeLeafNode extends TreeNode {
-        /** Array of points owned by the leaf. */
-        private final List<LabeledVector<L>> points;
+    private final class TreeNode {
+        /** Value. */
+        private final LabeledVector<L> val;
+
+        /** Left child. */
+        private TreeNode left;
+
+        /** Right child. */
+        private TreeNode right;
 
         /**
-         * Constructs a new instance of Ball tree leaf node.
+         * Constructs a new instance of binary tree node.
          *
-         * @param center Center of the ball.
-         * @param radius Radius of the ball.
-         * @param points List of points owned by the leaf.
+         * @param val value.
          */
-        TreeLeafNode(Vector center, double radius, List<LabeledVector<L>> points) {
-            super(center, radius);
-            this.points = points;
-        }
-
-        /** {@inheritDoc} */
-        @Override void findKClosest(Vector pnt, Queue<PointWithDistance<L>> heap, int k) {
-            for (LabeledVector<L> dataPnt : points) {
-                double distance = distanceMeasure.compute(pnt, dataPnt.features());
-                tryToAddIntoHeap(heap, k, dataPnt, distance);
-            }
+        TreeNode(LabeledVector<L> val) {
+            this.val = val;
         }
     }
 }

@@ -79,9 +79,14 @@ public abstract class KNNModel<L> implements IgniteModel<Vector, L>, SpatialInde
     			(Collection<PointWithDistance<L>> a, Collection<PointWithDistance<L>> b) -> {
         	if(a==null || a.isEmpty()) return b;
     		if(b==null || b.isEmpty()) return a;
-            Queue<PointWithDistance<L>> heap = new PriorityQueue<>(a);
-            //-tryToAddIntoHeap(heap, k, pnt, a, distanceMeasure);
-            tryToAddIntoHeap(heap, k, pnt, b, distanceMeasure);
+            Queue<PointWithDistance<L>> heap = null;
+            if(a instanceof PriorityQueue) {
+            	heap = (PriorityQueue<PointWithDistance<L>>)a;
+            }
+            else {
+            	heap = new PriorityQueue<PointWithDistance<L>>(a);
+            }            
+            tryToAddIntoHeap(heap, k, pnt, b);
             return heap;
         });
     	return res;

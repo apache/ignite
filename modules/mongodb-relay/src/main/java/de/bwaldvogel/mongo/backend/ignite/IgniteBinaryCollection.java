@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import javax.cache.Cache;
+import javax.cache.Cache.Entry;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -30,6 +31,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import com.google.common.collect.Sets;
 
 import de.bwaldvogel.mongo.backend.AbstractMongoCollection;
+import de.bwaldvogel.mongo.backend.CloseableIterator;
 import de.bwaldvogel.mongo.backend.CollectionOptions;
 import de.bwaldvogel.mongo.backend.ComposeKeyValue;
 import de.bwaldvogel.mongo.backend.CursorRegistry;
@@ -40,6 +42,7 @@ import de.bwaldvogel.mongo.backend.Missing;
 import de.bwaldvogel.mongo.backend.QueryResult;
 import de.bwaldvogel.mongo.backend.Utils;
 import de.bwaldvogel.mongo.backend.ignite.util.BinaryObjectMatch;
+import de.bwaldvogel.mongo.backend.ignite.util.TransformerUtil;
 import de.bwaldvogel.mongo.bson.Document;
 import de.bwaldvogel.mongo.exception.BadValueException;
 import de.bwaldvogel.mongo.exception.DuplicateKeyError;
@@ -279,39 +282,24 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 
 
     @Override
-	protected QueryResult matchDocuments(Document query, Document orderBy, int numberToSkip, int numberToReturn,
-			int batchSize, Document fieldSelector) {
-    	Iterable<Document> list = this.matchDocuments(query, orderBy, numberToSkip, numberToReturn);
-    	Stream<Document> documentStream = StreamSupport.stream(list.spliterator(), false);
+	protected QueryResult matchDocuments(Document query, Document orderBy, 
+			int numberToSkip, int numberToReturn,	int batchSize, Document fieldSelector) {
+    	CloseableIterator<Document> list = this.matchDocuments(query, orderBy, numberToSkip, numberToReturn);
+    	Stream<Document> documentStream = StreamSupport.stream(list.toSpliterators(), false);
+    	documentStream.onClose(list::close);
     	return matchDocumentsFromStream(documentStream, query, orderBy, numberToSkip, numberToReturn, batchSize, fieldSelector);
 		
 	}
     
-    protected Iterable<Document> matchDocuments(Document query, Document orderBy, int numberToSkip, int numberToReturn) {
-        List<Document> matchedDocuments = new ArrayList<>();
+    protected CloseableIterator<Document> matchDocuments(Document query, Document orderBy, int numberToSkip, int numberToReturn) {       
         
         IgniteBiPredicate<Object, Object> filter = new BinaryObjectMatch(query,this.idField);
         
         ScanQuery<Object, Object> scan = new ScanQuery<>(query.isEmpty()? null: filter);
 	 
-		QueryCursor<Cache.Entry<Object, Object>>  cursor = dataMap.query(scan);
-		//Iterator<Cache.Entry<Object, BinaryObject>> it = cursor.iterator();
-	    for (Cache.Entry<Object, Object> entry: cursor) {	 	    	
-	    	Document document = objectToDocument(entry.getKey(),entry.getValue(),this.idField);	    	
-	    	matchedDocuments.add(document);
-	    }
+		QueryCursor<Cache.Entry<Object, Object>>  cursor = dataMap.query(scan);		  
 	    
-	    //-sortDocumentsInMemory(matchedDocuments, orderBy);
-	    return matchedDocuments;
-    }
-    
-    protected void sortDocumentsInMemory(List<Document> documents, Document orderBy) {
-        DocumentComparator documentComparator = deriveComparator(orderBy);
-        if (documentComparator != null) {
-            documents.sort(documentComparator);
-        } else if (isNaturalDescending(orderBy)) {
-            Collections.reverse(documents);
-        }
+	    return TransformerUtil.map(cursor,this.idField);
     }
 
     
@@ -361,7 +349,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     	 ScanQuery<Object, BinaryObject> scan = new ScanQuery<>();
     		 
     	 QueryCursor<Cache.Entry<Object, BinaryObject>>  cursor = dataMap.query(scan);
-    	//Iterator<Cache.Entry<Object, Document>> it = cursor.iterator();
+    	
     	 return StreamSupport.stream(cursor.spliterator(),false).map(entry -> new DocumentWithPosition<>(objectToDocument(entry.getKey(),entry.getValue(),this.idField), entry.getKey()));		
          
     }

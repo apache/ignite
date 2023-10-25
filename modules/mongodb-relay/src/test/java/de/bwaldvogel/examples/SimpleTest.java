@@ -110,7 +110,7 @@ public class SimpleTest {
         	System.out.println(doc);
         }
         
-        collection.updateOne(json("_id: 2"), new Document("$set", json("text: 'def',title:'这个 是 标题'")));
+        collection.updateOne(json("_id: 2"), new Document("$set", json("text: 'def', title:'这个 是 标题'")));
         ret = collection.find(json("title: {$text: '标题'}"));
         it = ret.cursor();
         while(it.hasNext()) {

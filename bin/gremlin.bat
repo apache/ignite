@@ -17,7 +17,7 @@
 
 :: Windows launcher script for Gremlin Console
 
-@ECHO ON
+@ECHO OFF
 SETLOCAL EnableDelayedExpansion
 SET work=%CD%
 
@@ -65,8 +65,12 @@ call "%IGNITE_HOME%\bin\include\jvmdefaults.bat" %MAJOR_JAVA_VER% "%JVM_OPTS%" J
 
 CD %IGNITE_HOME%
 
+::
+:: Set IGNITE_LIBS
+::
+call "%IGNITE_HOME%\bin\include\setenv.bat"
 
-SET CP=%CLASSPATH%;libs\ignite-gremlin-server\*;libs\*;libs\ignite-log4j\*;exts\*
+SET CP=%CLASSPATH%;%IGNITE_LIBS%;exts\*
 
 :: jline.terminal workaround for https://issues.apache.org/jira/browse/GROOVY-6453
 :: to debug plugin :install include -Divy.message.logger.level=4 -Dgroovy.grape.report.downloads=true
@@ -94,6 +98,8 @@ IF "%1" == "-jpda" GOTO debug
 :console
 
 java %JAVA_OPTIONS% %JAVA_ARGS% -cp %CP% org.apache.tinkerpop.gremlin.console.Console %*
+
+GOTO finally
 
 :debug
 

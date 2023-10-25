@@ -47,7 +47,6 @@ import java.util.function.Consumer;
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
 public final class TinkerWorkerPool implements AutoCloseable {
-
    
     private final int numberOfWorkers;
     private final ExecutorService workerPool;

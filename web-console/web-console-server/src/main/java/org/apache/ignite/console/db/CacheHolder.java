@@ -43,7 +43,7 @@ public class CacheHolder<K, V> {
     protected final String cacheName;
 
     /** */
-    private IgniteCache cache;
+    private IgniteCache<K, V> cache;
 
     /** */
     protected ExpiryPolicy expiryPlc;

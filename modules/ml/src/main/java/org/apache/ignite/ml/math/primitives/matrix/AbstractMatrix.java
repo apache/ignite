@@ -862,7 +862,8 @@ public abstract class AbstractMatrix implements Matrix {
     @Override public int hashCode() {
         int res = 1;        
         res = res * 37 + sto.hashCode();
-        res = res * 37 + meta.hashCode();
+        // remove@byron
+        //-res = res * 37 + meta.hashCode();
         return res;
     }
 

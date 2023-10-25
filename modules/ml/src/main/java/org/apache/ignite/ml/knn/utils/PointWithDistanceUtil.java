@@ -88,7 +88,7 @@ public class PointWithDistanceUtil {
     public static <L> void tryToAddIntoHeap(Queue<PointWithDistance<L>> heap, int k, LabeledVector<L> dataPnt,
         double distance) {
         if (dataPnt != null) {
-            if (heap.size() == k && heap.peek().getDistance() > distance)
+            if (heap.size() >= k && heap.peek().getDistance() > distance)
                 heap.remove();
 
             if (heap.size() < k)
@@ -110,7 +110,7 @@ public class PointWithDistanceUtil {
     public static <L> void tryToAddIntoHeapUseSimilarity(Queue<PointWithDistance<L>> heap, int k, LabeledVector<L> dataPnt,
         double sim) {
         if (dataPnt != null) {
-            if (heap.size() == k && heap.peek().getDistance() < sim)
+            if (heap.size() >= k && heap.peek().getDistance() < sim)
                 heap.remove();
 
             if (heap.size() < k)
@@ -139,12 +139,12 @@ public class PointWithDistanceUtil {
     }
     
     public static <L> void tryToAddIntoHeap(Queue<PointWithDistance<L>> heap, int k, Vector pnt,
-    		Collection<PointWithDistance<L>> dataPnts, DistanceMeasure distanceMeasure) {
+    		Collection<PointWithDistance<L>> dataPnts) {
             if (dataPnts != null) {
                 for (PointWithDistance<L> dataPnt : dataPnts) {                    
                     if (dataPnt != null) {
                     	double distance = dataPnt.getDistance();
-                        if (heap.size() == k && heap.peek().getDistance() > distance)
+                        if (heap.size() >= k && heap.peek().getDistance() > distance)
                             heap.remove();
 
                         if (heap.size() < k)

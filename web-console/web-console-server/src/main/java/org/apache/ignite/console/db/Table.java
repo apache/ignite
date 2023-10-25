@@ -200,38 +200,5 @@ public class Table<T extends AbstractDto> extends CacheHolder<UUID, T> {
 
         ((IgniteCache)cache()).removeAll(idxIds);
     }
-
-    /**
-     * Index for unique constraint.
-     */
-    public static class UniqueIndex<T> {
-        /** */
-        private final Function<T, Object> keyGenerator;
-
-        /** */
-        private final Function<T, String> msgGenerator;
-
-        /**
-         * Constructor.
-         */
-        UniqueIndex(Function<T, Object> keyGenerator, Function<T, String> msgGenerator) {
-            this.keyGenerator = keyGenerator;
-            this.msgGenerator = msgGenerator;
-        }
-
-        /**
-         * @param val Value.
-         * @return Unique key.
-         */
-        public Object key(T val) {
-            return keyGenerator.apply(val);
-        }
-
-        /**
-         * @param val Value.
-         */
-        public String message(T val) {
-            return msgGenerator.apply(val);
-        }
-    }
+    
 }

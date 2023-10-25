@@ -34,6 +34,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalInterruptedException;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
@@ -70,7 +71,7 @@ public final class TinkerGraphComputer implements GraphComputer {
     private VertexProgram<?> vertexProgram;
     private final IgniteGraph graph;
     private TinkerMemory memory;
-    private final TinkerMessageBoard messageBoard = new TinkerMessageBoard<>();
+    private final TinkerMessageBoard messageBoard = new TinkerMessageBoard();
     private boolean executed = false;
     private final Set<MapReduce> mapReducers = new HashSet<>();
     
@@ -129,6 +130,12 @@ public final class TinkerGraphComputer implements GraphComputer {
         return this;
     }
 
+    @Override
+    public GraphComputer vertexProperties(Traversal<Vertex, ? extends Property<?>> vertexPropertyFilter) {
+        this.graphFilter.setVertexPropertyFilter(vertexPropertyFilter);
+        return this;
+    }
+    
     @Override
     public Future<ComputerResult> submit() {
         // a graph computer can only be executed once
@@ -311,5 +318,5 @@ public final class TinkerGraphComputer implements GraphComputer {
                 return false;
             }
         };
-    }
+    }	
 }

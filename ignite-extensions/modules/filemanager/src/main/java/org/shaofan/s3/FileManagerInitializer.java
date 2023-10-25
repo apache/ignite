@@ -47,7 +47,7 @@ public class FileManagerInitializer implements WebApplicationInitializer {
         }                
         
         XmlWebApplicationContext appContext = new XmlWebApplicationContext();
-        appContext.setConfigLocation("/WEB-INF/springmvc-servlet.xml");
+        appContext.setConfigLocation("classpath:META-INF/springmvc-servlet.xml");
         
         DispatcherServlet  appServlet =  new DispatcherServlet(appContext);
 

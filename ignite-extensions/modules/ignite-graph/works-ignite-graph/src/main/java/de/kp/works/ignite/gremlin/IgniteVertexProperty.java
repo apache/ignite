@@ -24,10 +24,17 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 public class IgniteVertexProperty<V> implements VertexProperty<V>,java.io.Serializable {
     protected final IgniteVertex vertex;
@@ -64,15 +71,31 @@ public class IgniteVertexProperty<V> implements VertexProperty<V>,java.io.Serial
     public boolean isPresent() {
         return null != this.value;
     }
+    
+    @Override
+    public Object clone() {
+        final IgniteVertexProperty<V> vp = new IgniteVertexProperty<>(vertex, key, value);        
+        return vp;
+    }
 
     @Override
-    public <U> Iterator<Property<U>> properties(final String... propertyKeys) {
-        throw new UnsupportedOperationException();
+    public <U> Iterator<Property<U>> properties(final String... propertyKeys) {        
+        // add@byron
+        List<IgniteVertexProperty<U>> list = new ArrayList<>(propertyKeys.length);
+        for(String pkey: propertyKeys) {
+        	String key = this.key+"."+pkey;
+        	Object v = vertex.getProperty(key);
+        	if(v!=null){
+        		list.add(new IgniteVertexProperty(vertex, key, v));
+        	}
+        }
+        return (Iterator)list.iterator();
+		       
     }
 
     @Override
     public <U> Property<U> property(final String key, final U value) {
-        throw new UnsupportedOperationException();
+    	return vertex.property(this.key+"."+key, value);
     }
 
     @Override
@@ -82,7 +105,14 @@ public class IgniteVertexProperty<V> implements VertexProperty<V>,java.io.Serial
 
     @Override
     public Set<String> keys() {
-        throw new UnsupportedOperationException();
+    	Iterable<String> keys = vertex.getPropertyKeys();
+    	Set<String> pKeys = new TreeSet<>();
+    	for(String key: keys) {
+    		if(key.startsWith(this.key+".")){
+    			pKeys.add(key.substring(this.key.length()+1));
+    		}
+    	}
+        return pKeys;
     }
 
     @Override

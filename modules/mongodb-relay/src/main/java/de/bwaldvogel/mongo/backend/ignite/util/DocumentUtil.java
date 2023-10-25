@@ -138,7 +138,7 @@ public class DocumentUtil {
 			doc.append(idField, key);
 			doc.append("_data", obj);
 			return doc;
-		}
+		}		
 		else if(obj instanceof BinaryObject) {
 			BinaryObject bobj = (BinaryObject) obj;
 			return binaryObjectToDocument(key,bobj,idField);
@@ -302,17 +302,16 @@ public class DocumentUtil {
 	    		return bin.deserialize();
     		}
     		String typeName = bobj.type().typeName();
-    		if(typeName.equals("Document") || typeName.equals("SerializationProxy") || typeName.startsWith("Bson")) {
+    		if(typeName.equals("Document") || typeName.equals("SerializationProxy")) {
     			return bobj.deserialize();
     		}
     		
     		fields = bobj.type().fieldNames();
-    		if(fields==null || fields.size()<=2) {
+    		if(fields==null || fields.size()<=1) {
     			return bobj.deserialize();
-    		}
-    		
+    		}    		
     	}
-    	catch(Exception e) {
+    	catch(BinaryObjectException e) {
     		fields = bobj.type().fieldNames();	
     	}
     	
@@ -467,19 +466,19 @@ public class DocumentUtil {
 
             case GridBinaryMarshaller.DATE: {
             	val = buf.getClass()==Date.class? buf: null;
-            	if(val==null) {
-            		
+            	if(val==null) {            		
             		DateFormat[] dateFormats = {
-            				new SimpleDateFormat("yyyy-MM-dd\\'T\\'HH:mm:ss.SSS"), 
-            				new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"), 
-            				new SimpleDateFormat("yyyy-MM-dd HH:mm"),
-            				new SimpleDateFormat("yyyy-MM-dd")
-            			};
+        				new SimpleDateFormat("yyyy-MM-dd\\'T\\'HH:mm:ss.SSS"), 
+        				new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"), 
+        				new SimpleDateFormat("yyyy-MM-dd HH:mm"),
+        				new SimpleDateFormat("yyyy-MM-dd")
+        			};
             		for(int i=0;i<dateFormats.length;i++) {
 	            		try {
 	            			val = dateFormats[i].parse(buf.toString());
 	            			break;
-	            		}catch(ParseException e) {
+	            		}
+	            		catch(ParseException e) {
 	            			
 	            		}
             		}

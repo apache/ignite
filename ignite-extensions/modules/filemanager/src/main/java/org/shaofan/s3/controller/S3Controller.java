@@ -11,6 +11,7 @@ import org.shaofan.s3.config.SystemConfig;
 import org.shaofan.s3.model.*;
 import org.shaofan.s3.service.S3Service;
 import org.shaofan.s3.util.*;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
@@ -31,9 +32,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * api参考地址 https://docs.aws.amazon.com/AmazonS3/latest/API/
+ * @author admin
+ *
+ */
 @RestController
 @RequestMapping("/s3")
-//api参考地址https://docs.aws.amazon.com/AmazonS3/latest/API/
+@CrossOrigin
 public class S3Controller {
     @Autowired
     private S3Service s3Service;

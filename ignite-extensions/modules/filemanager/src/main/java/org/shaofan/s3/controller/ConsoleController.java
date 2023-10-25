@@ -22,6 +22,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/console")
+@CrossOrigin
 public class ConsoleController {
     @Autowired
     private S3Util s3Util;

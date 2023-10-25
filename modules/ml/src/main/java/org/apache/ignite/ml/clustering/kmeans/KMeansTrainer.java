@@ -216,7 +216,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      */
     private Vector[] initClusterCentersRandomly(Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> dataset,
         int k) {
-        Vector[] initCenters = new DenseVector[k];
+        Vector[] initCenters = new Vector[k];
 
         // Gets k or less vectors from each partition.
         List<LabeledVector> rndPnts = dataset.compute(data -> {

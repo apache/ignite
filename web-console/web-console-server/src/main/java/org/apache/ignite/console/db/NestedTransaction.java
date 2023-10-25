@@ -19,7 +19,7 @@ package org.apache.ignite.console.db;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
-import org.apache.ignite.lang.IgniteAsyncSupport;
+
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.Transaction;
@@ -147,21 +147,4 @@ public class NestedTransaction implements Transaction {
         return delegate.label();
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
-    @Override public IgniteAsyncSupport withAsync() {
-        return delegate.withAsync();
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
-    @Override public boolean isAsync() {
-        return delegate.isAsync();
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
-    @Override public <R> IgniteFuture<R> future() {
-        return delegate.future();
-    }
 }

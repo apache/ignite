@@ -26,6 +26,7 @@ import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.session.MapSession;
 import org.springframework.session.Session;
 import org.springframework.session.SessionRepository;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import static org.apache.ignite.console.errors.Errors.convertToDatabaseNotAvailableException;
 

@@ -399,10 +399,10 @@ public class DelegatingVector implements Vector {
     @Override public int hashCode() {
         int res = 1;
 
-        res = res * 37 + meta.hashCode();
-        res = res * 37 + dlg.hashCode();
+        //res = res * 37 + meta.hashCode();
+        //res = res * 37 + dlg.hashCode();
 
-        return res;
+        return dlg.hashCode();
     }
 
     /** {@inheritDoc} */
@@ -414,7 +414,7 @@ public class DelegatingVector implements Vector {
             return false;
 
         DelegatingVector that = (DelegatingVector)o;
-
-        return meta.equals(that.meta) && dlg.equals(that.dlg);
+        
+        return dlg.equals(that.dlg);
     }
 }

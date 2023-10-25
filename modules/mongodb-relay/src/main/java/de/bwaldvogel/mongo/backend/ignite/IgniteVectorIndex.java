@@ -93,8 +93,7 @@ public class IgniteVectorIndex extends Index<Object> {
     /** Distance measure. */
     protected DistanceMeasure distanceMeasure;
     
-    /** Index type. */
-    private SpatialIndexType idxType = SpatialIndexType.KD_TREE; 
+    private String indexType = SpatialIndexType.BALL_TREE.name();
 	
 	private String idField = "_id";
 	
@@ -136,7 +135,7 @@ public class IgniteVectorIndex extends Index<Object> {
 		this.distanceMeasure = new CosineSimilarity();
 		
 		if(sparse) {
-			idxType = SpatialIndexType.ARRAY;
+			indexType = SpatialIndexType.ARRAY.name();
 		}
 		
 		Document options = keys.get(0).textOptions();
@@ -162,15 +161,14 @@ public class IgniteVectorIndex extends Index<Object> {
 				}
 			}			
 			
-			String indexType = options.getOrDefault("indexType", "").toString();
+			String indexType = options.getOrDefault("indexType", "").toString().toUpperCase();
 			if(!indexType.isBlank()) {
 				if(indexType.startsWith("ANN") || indexType.startsWith("IVF")) {
 					defaultANN =  true;
 				}
-				else {
-					idxType = SpatialIndexType.valueOf(indexType.toUpperCase());
-				}
+				this.indexType = indexType;
 			}
+			
 			// 句向量模型
 			embeddingModelName = (String)options.getOrDefault("modelId", "chinese");
 			if(embeddingModelName.equals("chinese")) {
@@ -218,6 +216,20 @@ public class IgniteVectorIndex extends Index<Object> {
 		if(this.knnModel==null) {
 			synchronized(this){
 				if(this.knnModel==null) {
+					/** Index type. */
+				    SpatialIndexType idxType = SpatialIndexType.KD_TREE;
+				    try {
+				    	if(indexType.startsWith("ANN") || indexType.startsWith("IVF")) {
+							defaultANN =  true;
+						}
+				    	else {
+				    		idxType = SpatialIndexType.valueOf(indexType.toUpperCase());
+				    	}
+				    }
+				    catch(Exception e) {
+				    	
+				    }
+				    
 					EmbeddingIntCoordObjectLabelVectorizer vectorizer = new EmbeddingIntCoordObjectLabelVectorizer();
 					CacheBasedDatasetBuilder<Object, Vector> datasetBuilder = new CacheBasedDatasetBuilder<>(ctx.grid(), vecIndex);
 					
@@ -227,7 +239,7 @@ public class IgniteVectorIndex extends Index<Object> {
 				            new KNNPartitionDataBuilder<>(vectorizer, idxType, distanceMeasure),
 				            environment
 				        );
-					this.knnModel = new KNNClassificationModel(knnDataset,distanceMeasure,this.K, false);
+					this.knnModel = new KNNClassificationModel<Object>(knnDataset,distanceMeasure,this.K, false);
 				}
 			}			
 		}
@@ -428,6 +440,7 @@ public class IgniteVectorIndex extends Index<Object> {
 				List<IdWithMeta> positions = getVectorTextList(indexKey,queriedKey);				
 				query.remove(indexKey.getKey());
 				all.addAll(positions);
+				searchKey = searchKey.copyFrom(n, null);
 				n++;
 				continue;
 			}
@@ -445,7 +458,7 @@ public class IgniteVectorIndex extends Index<Object> {
 						searchKey = searchKey.copyFrom(n, keyObj);						
 						query.remove(indexKey.getKey());
 					}
-					else if (expression.contains(QueryOperator.RNN_VECTOR.getValue())) {						
+					else if (expression.contains(QueryOperator.KNN_VECTOR.getValue())) {						
 						searchKey = searchKey.copyFrom(n, keyObj);
 						query.remove(indexKey.getKey());
 					}
@@ -605,6 +618,14 @@ public class IgniteVectorIndex extends Index<Object> {
 					if(opt.containsKey("$max")) {
 						scoreMax = Float.parseFloat(opt.get("$max").toString());
 					}
+					
+					if(opt.containsKey("$indexType")) {					
+						String indexType = opt.get("$indexType").toString().toUpperCase();
+						if(!indexType.equals(this.indexType)) {
+							this.close();
+							this.indexType = indexType;
+						}						
+					}
 				}				
 				
 				Vector vec = this.computeValueEmbedding(obj);
@@ -669,6 +690,14 @@ public class IgniteVectorIndex extends Index<Object> {
 				
 				if(opt.containsKey("$max")) {
 					scoreMax = Float.parseFloat(opt.get("$max").toString());
+				}
+				
+				if(opt.containsKey("$indexType")) {					
+					String indexType = opt.get("$indexType").toString().toUpperCase();
+					if(!indexType.equals(this.indexType)) {
+						this.close();
+						this.indexType = indexType;
+					}
 				}
 			}
 

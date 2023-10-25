@@ -64,6 +64,7 @@ import static org.shaofan.utils.ZipUtils.zipFiles;
  */
 @RestController
 @RequestMapping(value = "s3-rest")
+@CrossOrigin
 public class FileManagerController  {  	
     
     @Autowired

@@ -31,7 +31,8 @@ import javax.servlet.http.HttpServletResponse;
  * for amis 
  */
 @RestController
-@RequestMapping(value = "json")
+@RequestMapping(value = "docs")
+@CrossOrigin
 public class JSONObjectController  {
 	private static final String ACCEPT_JSON = "Accept=application/json";    
    
@@ -56,13 +57,59 @@ public class JSONObjectController  {
             String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
             SimpleDateFormat dt = new SimpleDateFormat(DATE_FORMAT);
             for (S3Object pathObj : list) {
-            	String fname = pathObj.key();
-            	if(!fname.endsWith(".json")) {
-            		continue;
-            	}
+            	String fname = pathObj.key();            	
             	
             	if(name!=null && !name.isEmpty()) {
-            		if(fname.indexOf(name)<0) {
+            		if(name.charAt(0)=='/' && !fname.startsWith(name)) {
+            			continue;
+            		}
+            		if(name.charAt(0)!='/' && fname.indexOf(name)<0) {
+            			continue;
+            		}
+            	}                   
+
+                // 封装返回JSON数据
+                JSONObject fileItem = new JSONObject();
+                fileItem.put("name", fname);
+                fileItem.put("date", dt.format(new Date(pathObj.lastModified().toEpochMilli())));
+                fileItem.put("size", pathObj.size());
+                fileItem.put("etag", pathObj.eTag());
+                fileItem.put("type", fname.endsWith("/")?"dir":"file");
+                fileItems.add(fileItem);
+            }
+            
+            jsonObject.put("data", fileItems);
+            jsonObject.put("status",0);
+            return jsonObject;
+        } catch (Exception e) {
+            return error(e.getMessage(),500);
+        }
+    }
+    
+
+    /**
+     * 展示JSON对象列表
+     */
+    @RequestMapping(value="/{collection}",method=RequestMethod.GET, headers=ACCEPT_JSON)
+    public JSONObject all_collection_docs(@PathVariable("collection") String collection,@RequestParam(value="name",required=false) String name) {
+    	JSONObject jsonObject = new JSONObject();
+        try {
+            // 需要显示的目录路径
+            // 返回的结果集
+            List<JSONObject> fileItems = new ArrayList<>();
+            
+            List<S3Object> list = s3Util.getObjectList(bucketName, collection);
+
+            String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
+            SimpleDateFormat dt = new SimpleDateFormat(DATE_FORMAT);
+            for (S3Object pathObj : list) {
+            	String fname = pathObj.key();            	
+            	
+            	if(name!=null && !name.isEmpty()) {
+            		if(name.charAt(0)=='/' && !fname.startsWith(name)) {
+            			continue;
+            		}
+            		if(name.charAt(0)!='/' && fname.indexOf(name)<0) {
             			continue;
             		}
             	}                   
@@ -86,14 +133,14 @@ public class JSONObjectController  {
     }
 
     /**
-     * 文件创建
+     * 文档创建
      */   
-    @RequestMapping(value="/{path}",method=RequestMethod.POST, headers=ACCEPT_JSON)
-    public JSONObject upload(@PathVariable("path") String destination,@RequestBody JSONObject json) {    
+    @RequestMapping(value="/{collection}/{path}",method=RequestMethod.POST, headers=ACCEPT_JSON)
+    public JSONObject upload(@PathVariable("collection") String collection,@PathVariable("path") String destination,@RequestBody JSONObject json) {    
 
         try {
         	StringInputStream in = new StringInputStream(json.toJSONString());        	
-            s3Util.upload(bucketName, destination, in);
+            s3Util.upload(bucketName, collection+"/"+destination, in);
             return success(destination);
         } catch (Exception e) {
             return error(e.getMessage(),500);
@@ -102,17 +149,17 @@ public class JSONObjectController  {
     
     
     /**
-     * 文件下载/预览
+     *  文档下载/预览
      * @throws IOException 
      */
-    @RequestMapping(value="/{path}",method=RequestMethod.GET, headers=ACCEPT_JSON)
-    public void preview(HttpServletResponse response, @PathVariable("path") String path) throws IOException {
+    @RequestMapping(value="/{collection}/{path}",method=RequestMethod.GET, headers=ACCEPT_JSON)
+    public void preview(HttpServletResponse response,@PathVariable("collection") String collection, @PathVariable("path") String path) throws IOException {
 
         response.setContentType("application/json");
         response.setHeader("Content-Disposition", "inline; filename=\"" + MimeUtility.encodeWord(FilenameUtils.getName(path)) + "\"");
 
         try (
-        	InputStream in = s3Util.getFileInputStream(bucketName, path);
+        	InputStream in = s3Util.getFileInputStream(bucketName, collection+"/"+path);
         	InputStream inputStream = new BufferedInputStream(in)) {
             FileCopyUtils.copy(inputStream, response.getOutputStream());
         }
@@ -125,16 +172,16 @@ public class JSONObjectController  {
     /**
      * 文件下载/预览
      */
-    @RequestMapping(value="/{path}",method=RequestMethod.PUT, headers=ACCEPT_JSON)
+    @RequestMapping(value="/{collection}/{path}",method=RequestMethod.PUT, headers=ACCEPT_JSON)
     @ResponseBody
-    public JSONObject put(@PathVariable("path") String path,@RequestParam("key") String key, @RequestBody JSONObject updates) {
+    public JSONObject put(@PathVariable("collection") String collection,@PathVariable("path") String path,@RequestParam("key") String key, @RequestBody JSONObject updates) {
 
         if (key==null) {
         	return error("Key Not Set",HttpServletResponse.SC_BAD_REQUEST);
         }      
             	
         try {
-        	String jsonString = new String(s3Util.getFileByte(bucketName, path),"UTF-8");
+        	String jsonString = new String(s3Util.getFileByte(bucketName, collection+"/"+path),"UTF-8");
             
             JSONObject json = JSONObject.parseObject(jsonString);
             json.put(key, updates);
@@ -151,12 +198,12 @@ public class JSONObjectController  {
     /**
      * 删除文件或目录
      */
-    @RequestMapping(value="/{path}",method=RequestMethod.DELETE, headers=ACCEPT_JSON)
+    @RequestMapping(value="/{collection}/{path}",method=RequestMethod.DELETE, headers=ACCEPT_JSON)
     @ResponseBody
-    public JSONObject remove(@PathVariable("path") String path,@RequestBody JSONObject deletes) {
+    public JSONObject remove(@PathVariable("collection") String collection,@PathVariable("path") String path,@RequestBody JSONObject deletes) {
         try {
         	
-        	String jsonString = new String(s3Util.getFileByte(bucketName, path),"UTF-8");
+        	String jsonString = new String(s3Util.getFileByte(bucketName, collection+"/"+path),"UTF-8");
             
             JSONObject json = JSONObject.parseObject(jsonString);
             for(String key: deletes.keySet()) {
@@ -178,12 +225,31 @@ public class JSONObjectController  {
     /**
      * 查看文件内容,针对html、txt等可编辑文件
      */
-    @RequestMapping("/getContent/{path}")
-    public JSONObject getContent(@PathVariable("path") String path) {
-        try {            
-        	String jsonString = new String(s3Util.getFileByte(bucketName, path),"UTF-8");
+    @RequestMapping("/{collection}/{path}/meta")
+    public JSONObject getContent(@PathVariable("collection") String collection,@PathVariable("path") String path) {
+        try {      
+        	JSONObject jsonObject = new JSONObject();
+        	List<S3Object> list = s3Util.getObjectList(bucketName, collection+"/"+path);
+        	String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
+        	SimpleDateFormat dt = new SimpleDateFormat(DATE_FORMAT);
+        	for (S3Object pathObj : list) {
+            	String fname = pathObj.key();            	        
 
-            return success(jsonString);
+                // 封装返回JSON数据
+                JSONObject fileItem = new JSONObject();
+                fileItem.put("name", fname);
+                fileItem.put("date", dt.format(new Date(pathObj.lastModified().toEpochMilli())));
+                fileItem.put("size", pathObj.size());
+                fileItem.put("etag", pathObj.eTag());
+                fileItem.put("type", fname.endsWith("/")?"dir":"file");
+                jsonObject.put("data", fileItem);
+                jsonObject.put("status",0);
+            }
+            if(list.size()!=1) {
+            	jsonObject.put("status",400);
+            }
+
+            return jsonObject;
             
         } catch (Exception e) {
             return error(e.getMessage(),500);
@@ -192,8 +258,8 @@ public class JSONObjectController  {
 
    
 
-    @RequestMapping(value="/{path}",method=RequestMethod.PATCH, headers=ACCEPT_JSON)
-    public JSONObject patch(@PathVariable("path") String path,@RequestBody JSONObject updates) {    
+    @RequestMapping(value="/{collection}/{path}",method=RequestMethod.PATCH, headers=ACCEPT_JSON)
+    public JSONObject patch(@PathVariable("collection") String collection,@PathVariable("path") String path,@RequestBody JSONObject updates) {    
     	
         try {
         	String jsonString = new String(s3Util.getFileByte(bucketName, path),"UTF-8");

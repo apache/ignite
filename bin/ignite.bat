@@ -21,7 +21,7 @@
 
 @echo off
 Setlocal EnableDelayedExpansion
-set JVM_OPTS=-agentlib:jdwp=transport=dt_socket,address=0.0.0.0:19001,server=y,suspend=n
+
 if "%OS%" == "Windows_NT"  setlocal
 
 :: Check JAVA_HOME.
@@ -115,7 +115,7 @@ if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 :: Set IGNITE_LIBS
 ::
 call "%SCRIPTS_HOME%\include\setenv.bat"
-call "%SCRIPTS_HOME%\include\build-classpath.bat" &:: Will be removed in the binary release.
+
 set CP=%IGNITE_LIBS%
 
 ::
@@ -174,7 +174,7 @@ if %ERRORLEVEL% equ 0 (
 :: Assertions are disabled by default since version 3.5.
 :: If you want to enable them - set 'ENABLE_ASSERTIONS' flag to '1'.
 ::
-set ENABLE_ASSERTIONS=1
+set ENABLE_ASSERTIONS=0
 
 ::
 :: Set '-ea' options if assertions are enabled.
@@ -202,11 +202,11 @@ call "%SCRIPTS_HOME%\include\jvmdefaults.bat" %MAJOR_JAVA_VER% "%JVM_OPTS%" JVM_
 
 if "%INTERACTIVE%" == "1" (
     "%JAVA_HOME%\bin\java.exe" %JVM_OPTS% %QUIET% %RESTART_SUCCESS_OPT% ^
-    -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="%IGNITE_HOME%" -DIGNITE_PROG_NAME="%PROG_NAME%" %JVM_XOPTS% ^
+     -DIGNITE_HOME="%IGNITE_HOME%" -DIGNITE_PROG_NAME="%PROG_NAME%" %JVM_XOPTS% ^
     -cp "%CP%" %MAIN_CLASS%
 ) else (
     "%JAVA_HOME%\bin\java.exe" %JVM_OPTS% %QUIET% %RESTART_SUCCESS_OPT% ^
-    -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="%IGNITE_HOME%" -DIGNITE_PROG_NAME="%PROG_NAME%" %JVM_XOPTS% ^
+     -DIGNITE_HOME="%IGNITE_HOME%" -DIGNITE_PROG_NAME="%PROG_NAME%" %JVM_XOPTS% ^
     -cp "%CP%" %MAIN_CLASS% "%CONFIG%"
 )
 
