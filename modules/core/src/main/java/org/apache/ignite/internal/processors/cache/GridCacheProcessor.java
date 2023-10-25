@@ -3064,7 +3064,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (snapshotMgr == null)
             snapshotMgr = new IgniteSnapshotManager(ctx);
 
-        return new GridCacheSharedContextBuilder()
+        return new GridCacheSharedContext.Builder()
             .setTxManager(new IgniteTxManager())
             .setMvccManager(new GridCacheMvccManager())
             .setVersionManager(new GridCacheVersionManager())

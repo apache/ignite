@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEvictionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheIoManager;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContextBuilder;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedTtlCleanupManager;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
 import org.apache.ignite.internal.processors.cache.WalStateManager;
@@ -64,7 +64,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
     public GridCacheTestContext(GridTestKernalContext ctx) throws Exception {
         super(
             ctx,
-            new GridCacheSharedContextBuilder()
+            new GridCacheSharedContext.Builder()
                 .setTxManager(new IgniteTxManager())
                 .setVersionManager(new GridCacheVersionManager())
                 .setMvccManager(new GridCacheMvccManager())

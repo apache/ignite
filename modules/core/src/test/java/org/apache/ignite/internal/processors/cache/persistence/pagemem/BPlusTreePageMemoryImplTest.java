@@ -29,7 +29,6 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContextBuilder;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
@@ -77,7 +76,7 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
         cctx.add(new GridMetricManager(cctx));
         cctx.add(new GridSystemViewManager(cctx));
 
-        GridCacheSharedContext<Object, Object> sharedCtx = new GridCacheSharedContextBuilder()
+        GridCacheSharedContext<Object, Object> sharedCtx = new GridCacheSharedContext.Builder()
             .setPageStoreManager(new NoOpPageStoreManager())
             .setWalManager(new NoOpWALManager())
             .setDatabaseManager(new IgniteCacheDatabaseSharedManager(cctx))

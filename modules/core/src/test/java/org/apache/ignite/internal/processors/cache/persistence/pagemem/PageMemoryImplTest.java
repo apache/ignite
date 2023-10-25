@@ -46,7 +46,6 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContextBuilder;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -612,7 +611,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
 
         kernalCtx.add(failureProc);
 
-        GridCacheSharedContext<Object, Object> sharedCtx = new GridCacheSharedContextBuilder()
+        GridCacheSharedContext<Object, Object> sharedCtx = new GridCacheSharedContext.Builder()
             .setPageStoreManager(mgr)
             .setWalManager(new NoOpWALManager())
             .setDatabaseManager(new IgniteCacheDatabaseSharedManager(kernalCtx))

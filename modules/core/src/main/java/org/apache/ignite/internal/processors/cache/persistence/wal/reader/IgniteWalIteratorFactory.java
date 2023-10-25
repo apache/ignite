@@ -40,7 +40,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContextBuilder;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
@@ -413,7 +412,7 @@ public class IgniteWalIteratorFactory {
 
         dbMgr.setPageSize(iteratorParametersBuilder.pageSize);
 
-        return new GridCacheSharedContextBuilder()
+        return new GridCacheSharedContext.Builder()
             .setDatabaseManager(dbMgr)
             .build(kernalCtx, null);
     }

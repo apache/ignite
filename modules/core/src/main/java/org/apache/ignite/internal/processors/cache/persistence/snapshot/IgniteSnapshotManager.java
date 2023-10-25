@@ -123,7 +123,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContextBuilder;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
@@ -2643,7 +2642,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         CacheObjectContext coctx = new CacheObjectContext(ctx, grpName, null, false,
             false, false, false, false);
 
-        GridCacheSharedContext<?, ?> sctx = new GridCacheSharedContextBuilder().build(ctx, null);
+        GridCacheSharedContext<?, ?> sctx = new GridCacheSharedContext.Builder().build(ctx, null);
 
         return new DataPageIterator(sctx, coctx, pageStore, partId);
     }
