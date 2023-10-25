@@ -1663,4 +1663,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         return transVal;
     }
+
+    /** */
+    Map<Integer, CacheContinuousQueryEventBuffer> partitionContinuesQueryEntryBuffers() {
+        return Collections.unmodifiableMap(entryBufs);
+    }
 }

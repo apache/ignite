@@ -286,37 +286,6 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     }
 
     /**
-     * Checks two arguments in the group are not allowed.
-     */
-    @Test
-    public void testInvalidArgumentGroups() {
-        injectTestSystemOut();
-
-        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--cache", "indexes_force_rebuild",
-                "--node-ids", grid(LAST_NODE_NUM).localNode().id().toString() + ',' + grid(0).localNode().id().toString(),
-                "--node-id", grid(LAST_NODE_NUM).localNode().id().toString(),
-                "--cache-names", CACHE_NAME_NO_GRP),
-            "Only one of [--node-ids, --all-nodes, --node-id] allowed");
-
-        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--cache", "indexes_force_rebuild",
-                "--node-ids", grid(LAST_NODE_NUM).localNode().id().toString() + ',' + grid(0).localNode().id().toString(),
-                "--all-nodes",
-                "--cache-names", CACHE_NAME_NO_GRP),
-            "Only one of [--node-ids, --all-nodes, --node-id] allowed");
-
-        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--cache", "indexes_force_rebuild",
-                "--all-nodes",
-                "--node-id", grid(LAST_NODE_NUM).localNode().id().toString(),
-                "--cache-names", CACHE_NAME_NO_GRP),
-            "Only one of [--node-ids, --all-nodes, --node-id] allowed");
-
-        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--cache", "indexes_force_rebuild",
-                "--node-id", grid(LAST_NODE_NUM).localNode().id().toString(),
-                "--cache-names", CACHE_NAME_NO_GRP, "--group-names", CACHE_NAME_NO_GRP),
-            "Only one of [--group-names, --cache-names] allowed");
-    }
-
-    /**
      * Checks --node-id and --cache-names options,
      * correctness of utility output and the fact that indexes were actually rebuilt.
      */
@@ -730,7 +699,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
         assertContains(
             log,
             outputStr,
-            "WARNING: These caches were not found:" + U.nl() + makeStringListWithIndent(cacheNames)
+            CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND + U.nl() + makeStringListWithIndent(cacheNames)
         );
     }
 
@@ -744,7 +713,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
         assertContains(
             log,
             outputStr,
-            "WARNING: These cache groups were not found:" + U.nl() + makeStringListWithIndent(cacheGrps)
+            CacheIndexesForceRebuildCommand.PREF_GROUPS_NOT_FOUND + U.nl() + makeStringListWithIndent(cacheGrps)
         );
     }
 
@@ -815,7 +784,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      * @param prefix    Prefix or header to search.
      * @param targetStr Target string to search after {@code prefix}.
      */
-    private static void validateMultiNodeOutput(String outputStr, String prefix, String targetStr) {
+    static void validateMultiNodeOutput(String outputStr, String prefix, String targetStr) {
         String[] lines = outputStr.split(U.nl());
 
         for (int i = 0, heraderIdx = -1; i < lines.length; ++i) {

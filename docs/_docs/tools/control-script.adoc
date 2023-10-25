@@ -1278,7 +1278,7 @@ The `schedule_indexes_rebuild` commands Apache Ignite to rebuild indexes for spe
 
 [source, shell]
 ----
- control.sh|bat --cache schedule_indexes_rebuild --node-id nodeId --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1] --group-names groupName1,groupName2,...groupNameN
+ control.sh|bat --cache schedule_indexes_rebuild --node-ids nodeId1,...nodeIdN|--all-nodes --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1] --group-names groupName1,groupName2,...groupNameN
 ----
 
 Parameters:
