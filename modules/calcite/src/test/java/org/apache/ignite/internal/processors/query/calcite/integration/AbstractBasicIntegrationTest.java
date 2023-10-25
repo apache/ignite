@@ -47,17 +47,16 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl.INBOX_INITIALIZATION_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  *
  */
-@WithSystemProperty(key = "calcite.debug", value = "false")
 public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     /** */
     protected static final Object[] NULL_RESULT = new Object[] { null };
@@ -83,11 +82,20 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         assertTrue("Not finished queries found on client", waitForCondition(
             () -> queryProcessor(client).queryRegistry().runningQueries().isEmpty(), 1_000L));
 
+        waitForCondition(() -> {
+            for (Ignite ign : G.allGrids()) {
+                if (!queryProcessor(ign).mailboxRegistry().inboxes().isEmpty())
+                    return false;
+            }
+
+            return true;
+        }, INBOX_INITIALIZATION_TIMEOUT * 2);
+
         for (Ignite ign : G.allGrids()) {
             for (String cacheName : ign.cacheNames())
                 ign.destroyCache(cacheName);
 
-            CalciteQueryProcessor qryProc = queryProcessor(((IgniteEx)ign));
+            CalciteQueryProcessor qryProc = queryProcessor(ign);
 
             assertEquals("Not finished queries found [ignite=" + ign.name() + ']',
                 0, qryProc.queryRegistry().runningQueries().size());
@@ -95,6 +103,12 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
             ExecutionServiceImpl<Object[]> execSvc = (ExecutionServiceImpl<Object[]>)qryProc.executionService();
             assertEquals("Tracked memory must be 0 after test [ignite=" + ign.name() + ']',
                 0, execSvc.memoryTracker().allocated());
+
+            assertEquals("Count of inboxes must be 0 after test [ignite=" + ign.name() + ']',
+                0, qryProc.mailboxRegistry().inboxes().size());
+
+            assertEquals("Count of outboxes must be 0 after test [ignite=" + ign.name() + ']',
+                0, qryProc.mailboxRegistry().outboxes().size());
         }
 
         awaitPartitionMapExchange();
@@ -189,8 +203,8 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected CalciteQueryProcessor queryProcessor(IgniteEx ignite) {
-        return Commons.lookupComponent(ignite.context(), CalciteQueryProcessor.class);
+    protected CalciteQueryProcessor queryProcessor(Ignite ignite) {
+        return Commons.lookupComponent(((IgniteEx)ignite).context(), CalciteQueryProcessor.class);
     }
 
     /** */

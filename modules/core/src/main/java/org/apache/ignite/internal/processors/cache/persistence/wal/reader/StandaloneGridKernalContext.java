@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -40,6 +41,7 @@ import org.apache.ignite.internal.LongJVMPauseDetector;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -97,6 +99,7 @@ import org.apache.ignite.internal.processors.tracing.NoopTracing;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
@@ -134,6 +137,10 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** System view manager. */
     private final GridSystemViewManager sysViewMgr;
+
+    /** */
+    @GridToStringExclude
+    private CacheObjectTransformerProcessor transProc;
 
     /**
      * Cache object processor. Used for converting cache objects and keys into binary objects. Null means there is no
@@ -182,24 +189,26 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     ) throws IgniteCheckedException {
         this.log = log;
 
+        marshallerCtx = new MarshallerContextImpl(null, null);
+        cfg = prepareIgniteConfiguration();
+
         try {
-            pluginProc = new StandaloneIgnitePluginProcessor(this, config());
+            pluginProc = new StandaloneIgnitePluginProcessor(this, cfg);
         }
         catch (IgniteCheckedException e) {
             throw new IllegalStateException("Must not fail on empty providers list.", e);
         }
 
-        this.marshallerCtx = new MarshallerContextImpl(null, null);
-        this.cfg = prepareIgniteConfiguration();
-        this.rsrcProc = new GridResourceProcessor(this);
-        this.metricMgr = new GridMetricManager(this);
-        this.sysViewMgr = new GridSystemViewManager(this);
+        rsrcProc = new GridResourceProcessor(this);
+        metricMgr = new GridMetricManager(this);
+        sysViewMgr = new GridSystemViewManager(this);
+        transProc = createComponent(CacheObjectTransformerProcessor.class);
 
         // Fake folder provided to perform processor startup on empty folder.
         if (binaryMetadataFileStoreDir == null)
             binaryMetadataFileStoreDir = new File(DataStorageConfiguration.DFLT_BINARY_METADATA_PATH).getAbsoluteFile();
 
-        this.cacheObjProcessor = binaryProcessor(this, binaryMetadataFileStoreDir);
+        cacheObjProcessor = binaryProcessor(this, binaryMetadataFileStoreDir);
 
         comps.add(rsrcProc);
         comps.add(cacheObjProcessor);
@@ -417,6 +426,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public CacheObjectTransformerProcessor transformer() {
+        return transProc;
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteRestProcessor rest() {
         return null;
     }
@@ -577,12 +591,25 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public PluginProvider pluginProvider(String name) throws PluginNotFoundException {
-        return null;
+        PluginProvider plugin = pluginProc.pluginProvider(name);
+
+        if (plugin == null)
+            throw new PluginNotFoundException(name);
+
+        return plugin;
     }
 
     /** {@inheritDoc} */
     @Override public <T> T createComponent(Class<T> cls) {
-        return null;
+        T res = pluginProc.createComponent(cls);
+
+        if (res != null)
+            return res;
+
+        if (cls.equals(CacheObjectTransformerProcessor.class))
+            return null;
+
+        throw new IgniteException("Unsupported component type: " + cls);
     }
 
     /** {@inheritDoc} */

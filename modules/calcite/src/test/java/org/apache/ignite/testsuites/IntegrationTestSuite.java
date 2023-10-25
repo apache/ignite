@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.IndexScan
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexSpoolIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IntervalTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.JoinIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.JoinRehashIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KeepBinaryIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KillCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KillQueryCommandDdlIntegrationTest;
@@ -126,9 +127,8 @@ import org.junit.runners.Suite;
     DynamicParametersIntegrationTest.class,
     ExpiredEntriesIntegrationTest.class,
     TimeoutIntegrationTest.class,
-
-    // Partition pruning
-    PartitionPruneTest.class
+    PartitionPruneTest.class,
+    JoinRehashIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }

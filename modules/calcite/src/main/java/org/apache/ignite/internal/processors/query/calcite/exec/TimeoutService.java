@@ -15,23 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
+package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.query.calcite.util.Service;
 
 /**
- * No operation, empty plugin processor for creating WAL iterator without node start up
+ * Service to run tasks with the given timeout.
  */
-class StandaloneIgnitePluginProcessor extends IgnitePluginProcessor {
-    /**
-     * @param ctx Kernal context.
-     * @param cfg Ignite configuration.
-     */
-    StandaloneIgnitePluginProcessor(GridKernalContext ctx, IgniteConfiguration cfg) throws IgniteCheckedException {
-        super(ctx, cfg, U.allPluginProviders(cfg));
-    }
+public interface TimeoutService extends Service {
+    /** */
+    public void schedule(Runnable task, long timeout);
 }
