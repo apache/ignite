@@ -306,6 +306,12 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
                 CacheAtomicityMode.TRANSACTIONAL);
     }
 
+    /** */
+    @Test
+    public void tetsds() {
+
+    }
+
     /**
      * Tests {@link ClientIgniteSet} partition awareness in colocated mode.
      */
