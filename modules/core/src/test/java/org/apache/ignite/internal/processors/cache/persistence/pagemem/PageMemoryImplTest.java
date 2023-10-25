@@ -611,27 +611,11 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
 
         kernalCtx.add(failureProc);
 
-        GridCacheSharedContext<Object, Object> sharedCtx = new GridCacheSharedContext<>(
-            kernalCtx,
-            null,
-            null,
-            null,
-            mgr,
-            new NoOpWALManager(),
-            null,
-            new IgniteCacheDatabaseSharedManager(kernalCtx),
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-        );
+        GridCacheSharedContext<Object, Object> sharedCtx = GridCacheSharedContext.builder()
+            .setPageStoreManager(mgr)
+            .setWalManager(new NoOpWALManager())
+            .setDatabaseManager(new IgniteCacheDatabaseSharedManager(kernalCtx))
+            .build(kernalCtx, null);
 
         CheckpointProgressImpl cl0 = Mockito.mock(CheckpointProgressImpl.class);
 
