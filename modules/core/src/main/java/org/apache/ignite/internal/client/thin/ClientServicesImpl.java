@@ -423,23 +423,14 @@ class ClientServicesImpl implements ClientServices {
     }
 
     /** Stores last known service topology. */
-    private void updateTopology(String srvcName, ServiceTopology srvcTop, List<UUID> nodes,
-        AffinityTopologyVersion lastAffTop) {
-        if (F.isEmpty(nodes)) {
-            servicesTopologies.remove(srvcName);
+    private void updateTopology(String srvcName, ServiceTopology srvcTop, List<UUID> nodes, AffinityTopologyVersion lastAffTop) {
+        srvcTop.nodes = nodes;
+        srvcTop.lastAffTop = lastAffTop;
+        srvcTop.lastUpdateRequestTime = System.nanoTime();
 
-            if (log.isDebugEnabled())
-                log.debug("Topology of service '" + srvcName + "' has been cleaned.");
-        }
-        else {
-            srvcTop.nodes = nodes;
-            srvcTop.lastAffTop = lastAffTop;
-            srvcTop.lastUpdateRequestTime = System.nanoTime();
-
-            if (log.isDebugEnabled()) {
-                log.debug("Topology of service '" + srvcName + "' has been updated. The service instance nodes: "
-                    + nodes);
-            }
+        if (log.isDebugEnabled()) {
+            log.debug("Topology of service '" + srvcName + "' has been updated. The service instance nodes: "
+                + nodes);
         }
     }
 
