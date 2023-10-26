@@ -1092,6 +1092,17 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Gets all plugin providers.
+     *
+     * @param cfg Configuration.
+     * @return Plugins.
+     */
+    public static List<PluginProvider> allPluginProviders(IgniteConfiguration cfg) {
+        return cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0 ?
+            Arrays.asList(cfg.getPluginProviders()) : U.allPluginProviders();
+    }
+
+    /**
      * @param svcCls Service class to load.
      * @param <S> Type of loaded interfaces.
      * @return Lazy iterable structure over loaded class implementations.

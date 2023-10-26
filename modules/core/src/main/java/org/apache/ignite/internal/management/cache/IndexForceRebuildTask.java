@@ -101,12 +101,12 @@ public class IndexForceRebuildTask extends VisorMultiNodeTask<CacheIndexesForceR
 
             Set<IndexRebuildStatusInfoContainer> cachesWithRebuildingInProgress =
                 cachesCtxWithRebuildingInProgress.stream()
-                    .map(c -> new IndexRebuildStatusInfoContainer(c.config()))
+                    .map(IndexRebuildStatusInfoContainer::new)
                     .collect(Collectors.toSet());
 
             Set<IndexRebuildStatusInfoContainer> cachesWithStartedRebuild =
                 cachesToRebuild.stream()
-                    .map(c -> new IndexRebuildStatusInfoContainer(c.config()))
+                    .map(IndexRebuildStatusInfoContainer::new)
                     .filter(c -> !cachesWithRebuildingInProgress.contains(c))
                     .collect(Collectors.toSet());
 
