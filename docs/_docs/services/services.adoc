@@ -243,6 +243,12 @@ When used, the thin client knows about nodes with the service instances and invo
 Without Service Awareness, the invocation requests are sent to a random node. If it has no service
 instance deployed, the request is redirected to a proper node. Such redirection costs.
 
+[NOTE]
+====
+The service topology is updated asynchronously starting with the first service invocation.
+Thus, few invocation redirects on the server nodes are still possible. Especially if the service migrates or was redeployed.
+====
+
 
 == Un-deploying Services
 
