@@ -75,7 +75,7 @@ include::{sourceCodeFile}[tag=connect-to-many-nodes,indent=0]
 
 Note that the code above provides a failover mechanism in case of server node failures. Refer to the <<Handling Node Failures>> section for more information.
 
-== Partition Awareness [java_thin_client_partition_awareness]
+== Partition Awareness [partition_awareness]
 
 include::includes/partition-awareness.adoc[]
 
