@@ -56,6 +56,7 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgnitePortProtocol;
@@ -116,6 +117,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** Thin client distributed configuration. */
     private DistributedThinClientConfiguration distrThinCfg;
 
+    /** Client connector configuration. */
+    private ClientConnectorConfiguration cliConnCfg;
+
     /**
      * @param ctx Kernal context.
      */
@@ -127,7 +131,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     @Override public void start() throws IgniteCheckedException {
         IgniteConfiguration cfg = ctx.config();
 
-        ClientConnectorConfiguration cliConnCfg = prepareConfiguration(cfg);
+        cliConnCfg = prepareConfiguration(cfg);
 
         if (cliConnCfg != null) {
             try {
@@ -167,6 +171,11 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                 metrics = new ClientListenerMetrics(mreg);
 
+                IgniteBiInClosure<GridNioSession, Integer> msgQueueSizeLsnr =
+                    cliConnCfg.getSessionOutboundMessageQueueLimit() > 0
+                        ? this::onOutboundMessageOffered
+                        : null;
+
                 for (int port = cliConnCfg.getPort(); port <= portTo && port <= 65535; port++) {
                     try {
                         srv = GridNioServer.<ClientMessage>builder()
@@ -186,6 +195,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                             .directMode(true)
                             .idleTimeout(idleTimeout > 0 ? idleTimeout : Long.MAX_VALUE)
                             .metricRegistry(mreg)
+                            .messageQueueSizeListener(msgQueueSizeLsnr)
                             .build();
 
                         ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
@@ -669,6 +679,22 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
      */
     public ClientProcessorMXBean mxBean() {
         return new ClientProcessorMXBeanImpl();
+    }
+
+    /** */
+    private void onOutboundMessageOffered(GridNioSession ses, int queueSize) {
+        if (queueSize < cliConnCfg.getSessionOutboundMessageQueueLimit())
+            return;
+
+        srv.close(ses).listen(fut -> {
+            if (fut.error() == null && fut.result()) {
+                U.quietAndWarn(log, "Ignite Thin Client outbound message queue size is exceeded" +
+                    " 'SessionOutboundMessageQueueLimit', it will be disconnected" +
+                    " [locNodeId=" + ctx.localNodeId() +
+                    ", clientAddress=" + ses.remoteAddress() +
+                    ", sessionOutboundMessageQueueLimit=" + cliConnCfg.getSessionOutboundMessageQueueLimit() + ']');
+            }
+        });
     }
 
     /**

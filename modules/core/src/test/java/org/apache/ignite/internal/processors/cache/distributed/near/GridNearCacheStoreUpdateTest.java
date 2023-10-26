@@ -84,16 +84,6 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
      * @throws Exception If fail.
      */
     @Test
-    public void testTransactionAtomicUpdateNear() throws Exception {
-        cache = client.createCache(cacheConfiguration(), new NearCacheConfiguration<String, String>());
-
-        checkNear(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
-    }
-
-    /**
-     * @throws Exception If fail.
-     */
-    @Test
     public void testPessimisticRepeatableReadUpdateNear() throws Exception {
         cache = client.createCache(cacheConfiguration().setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL),
             new NearCacheConfiguration<String, String>());
@@ -145,8 +135,8 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
 
         boolean tx = txConc != null && txIsolation != null;
 
-        final IgniteCache<String, String> clientCache = this.cache.withAllowAtomicOpsInTx();
-        final IgniteCache<String, String> srvCache = srv.<String, String>cache(CACHE_NAME).withAllowAtomicOpsInTx();
+        final IgniteCache<String, String> clientCache = cache;
+        final IgniteCache<String, String> srvCache = srv.cache(CACHE_NAME);
 
         if (tx) {
             doInTransaction(client, txConc, txIsolation, new Callable<Object>() {
@@ -271,8 +261,8 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
             data2.put(String.valueOf(i), "other");
         }
 
-        final IgniteCache<String, String> clientCache = this.cache.withAllowAtomicOpsInTx();
-        final IgniteCache<String, String> srvCache = srv.cache(CACHE_NAME).withAllowAtomicOpsInTx();
+        final IgniteCache<String, String> clientCache = cache;
+        final IgniteCache<String, String> srvCache = srv.cache(CACHE_NAME);
 
         boolean tx = txConc != null && txIsolation != null;
 

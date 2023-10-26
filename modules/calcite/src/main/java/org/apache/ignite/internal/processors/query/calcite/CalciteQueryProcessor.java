@@ -74,6 +74,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
+import org.apache.ignite.internal.processors.query.calcite.exec.TimeoutService;
+import org.apache.ignite.internal.processors.query.calcite.exec.TimeoutServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexExecutorImpl;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintsConfig;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
@@ -212,6 +214,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final PrepareServiceImpl prepareSvc;
 
     /** */
+    private final TimeoutService timeoutSvc;
+
+    /** */
     private final QueryRegistry qryReg;
 
     /** */
@@ -241,6 +246,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         mappingSvc = new MappingServiceImpl(ctx);
         exchangeSvc = new ExchangeServiceImpl(ctx);
         prepareSvc = new PrepareServiceImpl(ctx);
+        timeoutSvc = new TimeoutServiceImpl(ctx);
         qryReg = new QueryRegistryImpl(ctx);
 
         QueryEngineConfiguration[] qryEnginesCfg = ctx.config().getSqlConfiguration().getQueryEnginesConfiguration();
@@ -323,6 +329,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     public PrepareServiceImpl prepareService() {
         return prepareSvc;
+    }
+
+    /** */
+    public TimeoutService timeoutService() {
+        return timeoutSvc;
     }
 
     /** */

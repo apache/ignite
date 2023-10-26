@@ -73,7 +73,7 @@ public class LocalQueryIntegrationTest extends AbstractBasicIntegrationTest {
             StringBuilder sb = new StringBuilder("INSERT INTO ").append(tableName)
                     .append("(ID, IDX_VAL, VAL) VALUES ");
 
-            for (int i = 0; i < 10000; ++i) {
+            for (int i = 0; i < ENTRIES_COUNT; ++i) {
                 sb.append("(").append(i).append(", ")
                         .append("'name_").append(i).append("', ")
                         .append("'name_").append(i).append("')");

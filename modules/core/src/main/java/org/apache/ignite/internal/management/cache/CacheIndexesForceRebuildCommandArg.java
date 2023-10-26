@@ -34,7 +34,8 @@ public class CacheIndexesForceRebuildCommandArg extends IgniteDataTransferObject
     private static final long serialVersionUID = 0;
 
     /** */
-    @Argument(description = "Specify node for indexes rebuild (deprecated. Use --node-ids instead)", example = "nodeId")
+    @Argument(description = "Specify node for indexes rebuild (deprecated. Use --node-ids or --all-nodes instead)",
+        example = "nodeId")
     private UUID nodeId;
 
     /** */

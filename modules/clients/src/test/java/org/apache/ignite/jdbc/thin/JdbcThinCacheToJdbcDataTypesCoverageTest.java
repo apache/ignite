@@ -32,6 +32,7 @@ import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -61,6 +62,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -356,9 +358,9 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
     @Test
     public void testSQLTimestampDataType() throws Exception {
         checkBasicCacheOperations(
-            new Dated(Timestamp.valueOf(LocalDateTime.now()), "yyyy-MM-dd HH:mm:ss.SSS"),
-            new Dated(Timestamp.valueOf(LocalDateTime.now()), "yyyy-MM-dd HH:mm:ss.SSSS"),
-            new Dated(Timestamp.valueOf(LocalDateTime.now()), "yyyy-MM-dd HH:mm:ss.SSSSSS"));
+            new Dated(Timestamp.valueOf(LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS)), "yyyy-MM-dd HH:mm:ss.SSS"),
+            new Dated(Timestamp.valueOf(LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS)), "yyyy-MM-dd HH:mm:ss.SSSS"),
+            new Dated(Timestamp.valueOf(LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS)), "yyyy-MM-dd HH:mm:ss.SSSSSS"));
     }
 
     /**
