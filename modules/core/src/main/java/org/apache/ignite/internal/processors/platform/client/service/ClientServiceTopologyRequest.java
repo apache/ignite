@@ -26,16 +26,14 @@ import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Request to get service topology.
+ * Request topology of certain service.
  */
 public class ClientServiceTopologyRequest extends ClientRequest {
-    /** Service name. */
+    /** The service name. */
     private final String name;
 
     /**
-     * Constructor.
-     *
-     * @param reader Reader.
+     * Ctor.
      */
     public ClientServiceTopologyRequest(BinaryRawReader reader) {
         super(reader);

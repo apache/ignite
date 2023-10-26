@@ -394,7 +394,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** IgniteSet.iterator page. */
     private static final short OP_SET_ITERATOR_GET_PAGE = 9023;
 
-    /** Get service mappings. */
+    /** Get service topology. */
     private static final short OP_SERVICE_GET_TOPOLOGY = 9024;
 
     /** Marshaller. */

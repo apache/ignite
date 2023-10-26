@@ -74,8 +74,8 @@ public enum ClientBitmaskFeature implements ThinProtocolFeature {
     /** IndexQuery limit. */
     INDEX_QUERY_LIMIT(15),
 
-    /** Service mappings. */
-    SERVICE_MAPPINGS(16);
+    /** Service topology. */
+    SERVICE_TOPOLOGY(16);
 
     /** */
     private static final EnumSet<ClientBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

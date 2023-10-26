@@ -282,8 +282,8 @@ public enum ClientOperation {
     /** IgniteSet.iterator page. */
     OP_SET_ITERATOR_GET_PAGE(9023),
 
-    /** Get service mappings. */
-    SERVICE_GET_MAPPINGS(9024);
+    /** Get service topolog. */
+    SERVICE_GET_TOPOLOGY(9024);
 
     /** Code. */
     private final int code;

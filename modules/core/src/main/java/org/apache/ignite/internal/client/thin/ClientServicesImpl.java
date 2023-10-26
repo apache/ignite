@@ -53,7 +53,7 @@ import org.jetbrains.annotations.Nullable;
  * Implementation of {@link ClientServices}.
  */
 class ClientServicesImpl implements ClientServices {
-    /** Max duration in mills before asking service topology update. */
+    /** Max service topology update period in mills. */
     static final int SRV_TOP_UPDATE_PERIOD = 10_000;
 
     /** Channel. */
@@ -74,6 +74,9 @@ class ClientServicesImpl implements ClientServices {
     /** Services topology. {@code Null} if partition awareness is not enabled. */
     private final Map<String, ServiceTopology> servicesTopologies;
 
+    /** If {@code False}, service topology is not supported. */
+    private volatile boolean srvcTopSupported = true;
+
     /** Constructor. */
     ClientServicesImpl(ReliableChannel ch, ClientBinaryMarshaller marsh, ClientClusterGroupImpl grp, IgniteLogger log) {
         this.ch = ch;
@@ -84,7 +87,7 @@ class ClientServicesImpl implements ClientServices {
 
         this.log = log;
 
-        servicesTopologies = grp.ch.partitionAwarenessEnabled ? new ConcurrentHashMap<>() : Collections.emptyMap();
+        servicesTopologies = ch.partitionAwarenessEnabled ? new ConcurrentHashMap<>() : Collections.emptyMap();
     }
 
     /** {@inheritDoc} */
@@ -189,26 +192,21 @@ class ClientServicesImpl implements ClientServices {
         return new ClientServicesImpl(ch, marsh, grp, log);
     }
 
-    /** */
+    /**
+     * Keeps topology of certain service and its update progress meta.
+     */
     private static final class ServiceTopology {
-        /** */
+        /** If {@code true}, topology update of current service is in progress. */
         private final AtomicBoolean updateInProgress = new AtomicBoolean();
 
-        /** */
+        /** Time of the last received topology. */
         private volatile long lastUpdateRequestTime;
 
-        /** */
+        /** UUID of the nodes with at leas on service instance. */
         private volatile List<UUID> nodes;
 
-        /** */
+        /** Last cluster topology version when current service topology was actual. */
         private volatile AffinityTopologyVersion lastAffTop;
-
-        /** */
-        private void updateTopology(List<UUID> nodes, AffinityTopologyVersion lastAffTop) {
-            this.nodes = nodes;
-            this.lastAffTop = lastAffTop;
-            lastUpdateRequestTime = System.nanoTime();
-        }
     }
 
     /**
@@ -272,15 +270,15 @@ class ClientServicesImpl implements ClientServices {
          * nodes.
          *
          * @return Last known topology nodes.
-         * @see #tryUpdateServiceTopology(ServiceTopology, String)
+         * @see #tryRequestServiceTopology(ServiceTopology, String)
          */
         private List<UUID> serviceTopology() {
-            if (ch.partitionAwarenessEnabled) {
+            if (ch.partitionAwarenessEnabled && srvcTopSupported) {
                 ServiceTopology srvcTop = servicesTopologies.get(name);
 
                 List<UUID> srvcNodes = srvcTop == null ? Collections.emptyList() : srvcTop.nodes;
 
-                tryUpdateServiceTopology(srvcTop, name);
+                tryRequestServiceTopology(srvcTop, name);
 
                 return srvcNodes;
             }
@@ -347,16 +345,13 @@ class ClientServicesImpl implements ClientServices {
     }
 
     /**
-     * Asynchronously updates the service topology if the partition awareness is enabled and if the update is requred.
+     * Asynchronously requests the service topology if the partition awareness is enabled and if the update is requred.
      *
      * @param srvcTop If not {@code null}, uses this service topology record and ignores {@code name}.
-     * @param name   If {@code srvTop} is {@code null}, gets service topology record by this name.
+     * @param name If {@code srvTop} is {@code null}, gets service topology record by this name.
      * @see #needUpdateSrvcTop(ServiceTopology, AffinityTopologyVersion)
      */
-    private void tryUpdateServiceTopology(@Nullable ServiceTopology srvcTop, String name) {
-        if (!ch.partitionAwarenessEnabled)
-            return;
-
+    private void tryRequestServiceTopology(@Nullable ServiceTopology srvcTop, String name) {
         if (srvcTop == null) {
             srvcTop = servicesTopologies.compute(name, (nm, t) -> {
                 if (t == null)
@@ -381,8 +376,13 @@ class ClientServicesImpl implements ClientServices {
                     log.debug("Requesting service topology update for the service '" + name + "' ...");
 
                 List<UUID> nodes = ch.service(
-                    ClientOperation.SERVICE_GET_MAPPINGS,
-                    req -> utils.writeObject(req.out(), name),
+                    ClientOperation.SERVICE_GET_TOPOLOGY,
+                    req -> {
+                        if (!req.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.SERVICE_TOPOLOGY))
+                            throw new ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature.SERVICE_TOPOLOGY);
+
+                        utils.writeObject(req.out(), name);
+                    },
                     resp -> {
                         int cnt = resp.in().readInt();
 
@@ -395,12 +395,10 @@ class ClientServicesImpl implements ClientServices {
                     }
                 );
 
-                srvcTop0.updateTopology(nodes, curAffTop);
-
-                if (log.isDebugEnabled()) {
-                    log.debug("Topology of service '" + name + "' has been updated. The service instance nodes: "
-                        + srvcTop0.nodes);
-                }
+                updateTopology(name, srvcTop0, nodes, curAffTop);
+            }
+            catch (ClientFeatureNotSupportedByServerException e) {
+                srvcTopSupported = false;
             }
             catch (Throwable t0) {
                 t = t0;
@@ -414,7 +412,7 @@ class ClientServicesImpl implements ClientServices {
     }
 
     /**
-     * @return {code True} if update of the service topology is required.
+     * @return {@code True} if update of the service topology is required. {@code False} otherwise.
      */
     private static boolean needUpdateSrvcTop(ServiceTopology srvcTop, AffinityTopologyVersion curAffTop) {
         AffinityTopologyVersion lastAfftop = srvcTop.lastAffTop;
@@ -422,6 +420,27 @@ class ClientServicesImpl implements ClientServices {
         return (lastAfftop == null || curAffTop.topologyVersion() > lastAfftop.topologyVersion()
             || U.nanosToMillis(System.nanoTime() - srvcTop.lastUpdateRequestTime) >= SRV_TOP_UPDATE_PERIOD)
             && srvcTop.updateInProgress.compareAndSet(false, true);
+    }
+
+    /** Stores last known service topology. */
+    private void updateTopology(String srvcName, ServiceTopology srvcTop, List<UUID> nodes,
+        AffinityTopologyVersion lastAffTop) {
+        if (F.isEmpty(nodes)) {
+            servicesTopologies.remove(srvcName);
+
+            if (log.isDebugEnabled())
+                log.debug("Topology of service '" + srvcName + "' has been cleaned.");
+        }
+        else {
+            srvcTop.nodes = nodes;
+            srvcTop.lastAffTop = lastAffTop;
+            srvcTop.lastUpdateRequestTime = System.nanoTime();
+
+            if (log.isDebugEnabled()) {
+                log.debug("Topology of service '" + srvcName + "' has been updated. The service instance nodes: "
+                    + nodes);
+            }
+        }
     }
 
     /**
