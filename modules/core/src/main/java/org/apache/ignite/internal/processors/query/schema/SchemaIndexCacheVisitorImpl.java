@@ -102,7 +102,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             return;
         }
 
-        cctx.group().metrics().addIndexBuildCountPartitionsLeft(locParts.size());
+        cctx.cache().metrics0().addIndexBuildPartitionsLeftCount(locParts.size());
         cctx.cache().metrics0().resetIndexRebuildKeyProcessed();
 
         beforeExecute();

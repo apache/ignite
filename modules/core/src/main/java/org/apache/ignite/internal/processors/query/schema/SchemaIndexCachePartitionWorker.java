@@ -139,7 +139,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
             int cnt = partsCnt.getAndSet(0);
 
             if (cnt > 0)
-                cctx.group().metrics().addIndexBuildCountPartitionsLeft(-cnt);
+                cctx.cache().metrics0().resetIndexBuildPartitionsLeftCount();
         }
         finally {
             fut.onDone(wrappedClo.indexCacheStat, err);
@@ -213,7 +213,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
             locPart.release();
 
             if (partsCnt.getAndUpdate(v -> v > 0 ? v - 1 : 0) > 0)
-                cctx.group().metrics().decrementIndexBuildCountPartitionsLeft();
+                cctx.cache().metrics0().decrementIndexBuildPartitionsLeftCount();
         }
     }
 
