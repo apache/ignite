@@ -52,7 +52,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Implementation of {@link ClientServices}.
  */
-class ClientServicesImpl implements ClientServices, Runnable {
+class ClientServicesImpl implements ClientServices {
     /** Max duration in mills before asking service topology update. */
     static final int SRV_TOP_UPDATE_PERIOD = 10_000;
 
@@ -84,13 +84,7 @@ class ClientServicesImpl implements ClientServices, Runnable {
 
         this.log = log;
 
-        if (grp.ch.partitionAwarenessEnabled) {
-            servicesTopologies = new ConcurrentHashMap<>();
-
-            ch.addChannelFailListener(this);
-        }
-        else
-            servicesTopologies = Collections.emptyMap();
+        servicesTopologies = grp.ch.partitionAwarenessEnabled ? new ConcurrentHashMap<>() : Collections.emptyMap();
     }
 
     /** {@inheritDoc} */
@@ -350,12 +344,6 @@ class ClientServicesImpl implements ClientServices, Runnable {
                     writer.writeMap(null);
             }
         }
-    }
-
-    /** Channel failure action. */
-    @Override public void run() {
-        if (!ch.partitionAwarenessEnabled)
-            servicesTopologies.clear();
     }
 
     /**

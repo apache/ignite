@@ -442,8 +442,6 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     public void testServiceAwarenessEnabled() {
         // Counters of the invocation redirects.
         AtomicInteger redirectCnt = new AtomicInteger();
-        // Total service call counter.
-        AtomicInteger callCounter = new AtomicInteger();
 
         // Service topology received by the client.
         Set<UUID> top = new GridConcurrentHashSet<>();
@@ -453,10 +451,8 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
         addSrvcTopUpdateClientLogLsnr(uuids -> {
             // Reset counters on the first topology update.
-            if (top.isEmpty()) {
+            if (top.isEmpty())
                 redirectCnt.set(0);
-                callCounter.set(0);
-            }
 
             top.addAll(uuids);
         });
@@ -486,6 +482,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
         // Ensure that client received no service topology update.
         assertTrue(top.isEmpty());
+
         assertTrue(requestedServers.size() == 1 && requestedServers.contains(grid(0).localNode().id()));
 
         partitionAwareness = true;
@@ -596,7 +593,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     }
 
     /**
-     * A client connection channel abble to register the server nodes requested to call a service.
+     * A client connection channel able to register the server nodes requested to call a service.
      */
     private static final class TestTcpChannel extends TcpClientChannel {
         /** */
@@ -616,9 +613,10 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
         /** {@inheritDoc} */
         @Override public <T> T service(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter,
             Function<PayloadInputChannel, T> payloadReader) throws ClientException {
+            UUID srvNodeId = serverNodeId();
 
-            if (op == ClientOperation.SERVICE_INVOKE && serverNodeId() != null && requestedServerNodes != null)
-                requestedServerNodes.add(serverNodeId());
+            if (op == ClientOperation.SERVICE_INVOKE && requestedServerNodes != null && srvNodeId != null)
+                requestedServerNodes.add(srvNodeId);
 
             return super.service(op, payloadWriter, payloadReader);
         }
