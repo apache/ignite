@@ -331,15 +331,34 @@ SELECT /*+ NO_INDEX */ T1.* FROM TBL1 T1 WHERE T1.V1 = T2.V1 AND T1.V2 > ?;
 SELECT /*+ NO_INDEX(TBL1_IDX2, TBL2_IDX1) */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 WHERE T1.V1 = T2.V1 AND T1.V2 > ? AND T2.V2 > ?;
 ----
 
-==== ORDERED_JOINS
+==== ENFORCE_JOIN_ORDER
 Forces join order as appears in a query. Fastens building of joins plan.
 
 ===== Example:
 [source, SQL]
 ----
-SELECT /*+ ORDERED_JOINS */ T1.V1, T2.V1, T2.V2, T3.V1, T3.V2, T3.V3 FROM TBL1 T1 JOIN TBL2 T2 ON T1.V3=T2.V1 JOIN TBL3 T3 ON T2.V3=T3.V1 AND T2.V2=T3.V2
+SELECT /*+ ENFORCE_JOIN_ORDER */ T1.V1, T2.V1, T2.V2, T3.V1, T3.V2, T3.V3 FROM TBL1 T1 JOIN TBL2 T2 ON T1.V3=T2.V1 JOIN TBL3 T3 ON T2.V3=T3.V1 AND T2.V2=T3.V2
 
-SELECT t1.v1, t3.v2 FROM TBL1 t1 JOIN TBL3 t3 on t1.v3=t3.v3 WHERE t1.v2 in (SELECT /*+ ORDERED_JOINS */ t2.v2 FROM TBL2 t2 JOIN TBL3 t3 ON t2.v1=t3.v1)
+SELECT t1.v1, t3.v2 FROM TBL1 t1 JOIN TBL3 t3 on t1.v3=t3.v3 WHERE t1.v2 in (SELECT /*+ ENFORCE_JOIN_ORDER */ t2.v2 FROM TBL2 t2 JOIN TBL3 t3 ON t2.v1=t3.v1)
+----
+
+==== MERGE_JOIN, NL_JOIN, CNL_JOIN
+Forces certain join type: Merge, Nested Loop and Correlated Nested Loop respectively.
+
+Every of those has the negation like 'NO_INDEX': NO_MERGE_JOIN, NO_NL_JOIN, NO_CNL_JOIN. The negation hint disables certain join type.
+
+===== Parameters:
+* Empty. To force or disable certain join type for every join.
+* Single or several tables names force or disable certain join type only for joining of these tables.
+
+===== Example:
+[source, SQL]
+----
+SELECT /*+ MERGE_JOIN */ t1.v1, t2.v2 FROM TBL1 t1, TBL2 t2 WHERE t1.v3=t2.v3
+
+SELECT /*+ NL_JOIN(TBL3,TBL1) */ t4.v1, t2.v2 FROM TBL1 t4 JOIN TBL2 t2 on t1.v3=t2.v3 WHERE t2.v1 in (SELECT t3.v3 FROM TBL3 t3 JOIN TBL1 t4 on t3.v2=t4.v2)
+
+SELECT t1.v1, t2.v2 FROM TBL2 t1 JOIN TBL1 t2 on t1.v3=t2.v3 WHERE t2.v3 in (SELECT /*+ NO_CNL_JOIN(TBL4) */ t3.v3 FROM TBL3 t3 JOIN TBL4 t4 on t3.v1=t4.v1)
 ----
 
 ==== EXPAND_DISTINCT_AGG

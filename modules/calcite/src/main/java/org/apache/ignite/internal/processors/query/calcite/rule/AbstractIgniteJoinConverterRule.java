@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefin
 
 /** */
 abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRule<LogicalJoin> {
-    /** Known join type hints. */
+    /** Known join type hints and the opposite hints. */
     private static final EnumMap<HintDefinition, HintDefinition> HINTS = new EnumMap<>(HintDefinition.class);
 
     /** Hint disabing this join type. */
@@ -134,8 +134,8 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
             }
 
             if (unableToProcess) {
-                HintUtils.skippedHint(join, hint,
-                    "This join type is already disabled or forced to use before by previous hints");
+                HintUtils.skippedHint(join, hint, "This join type is already disabled or forced to use before " +
+                    "by previous hints");
 
                 continue;
             }

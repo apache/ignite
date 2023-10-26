@@ -41,7 +41,6 @@ import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefin
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_CNL_JOIN;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_MERGE_JOIN;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_NL_JOIN;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Planner test for index hints.

@@ -18,10 +18,14 @@
 package org.apache.ignite.internal.processors.query.calcite.hint;
 
 import java.util.Arrays;
+import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintStrategy;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.util.Litmus;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -77,9 +81,38 @@ public final class HintsConfig {
     public static HintStrategyTable buildHintTable() {
         HintStrategyTable.Builder b = HintStrategyTable.builder().errorHandler(Litmus.IGNORE);
 
+        RelOptRule[] disabledRulesTpl = new RelOptRule[0];
+
         Arrays.stream(HintDefinition.values()).forEach(hintDef ->
-            b.hintStrategy(hintDef.name(), HintStrategy.builder(hintDef.predicate()).build()));
+            b.hintStrategy(hintDef.name(), HintStrategy.builder(hintPredicate(hintDef))
+                .excludedRules(hintDef.disabledRules().toArray(disabledRulesTpl)).build()));
 
         return b.build();
+    }
+
+    /**
+     * Adds hint options checker to {@link HintPredicate} if {@code hintDef} has rules to exclude.
+     *
+     * @return Hint predicate.
+     */
+    private static HintPredicate hintPredicate(HintDefinition hintDef) {
+        if (F.isEmpty(hintDef.disabledRules()))
+            return hintDef.predicate();
+
+        return new HintPredicate() {
+            @Override public boolean apply(RelHint hint, RelNode rel) {
+                if (!hintDef.predicate().apply(hint, rel))
+                    return false;
+
+                String optsErrMsg = hintDef.optionsChecker().apply(hint);
+
+                if (F.isEmpty(optsErrMsg))
+                    return true;
+
+                HintUtils.skippedHint(rel, hint, optsErrMsg);
+
+                return false;
+            }
+        };
     }
 }
