@@ -138,11 +138,18 @@ public final class HintUtils {
                 + ' ';
 
             if (!relNode.getInputs().isEmpty())
-                relNode = new NoInputsRelNodeWrap(relNode);
+                relNode = noInputsRelWrap(relNode);
 
             log.debug(String.format("Skipped hint '%s' %sfor relation operator '%s'. %s", hint.hintName,
                 hintOptions, RelOptUtil.toString(relNode, SqlExplainLevel.EXPPLAN_ATTRIBUTES).trim(), reason));
         }
+    }
+
+    /**
+     * @return A RelNode witout any inputs. For logging purposes.
+     */
+    public static RelNode noInputsRelWrap(RelNode rel) {
+        return new NoInputsRelNodeWrap(rel);
     }
 
     /** */
@@ -160,6 +167,11 @@ public final class HintUtils {
         /** {@inheritDoc} */
         @Override public List<RelNode> getInputs() {
             return Collections.emptyList();
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelNode getInput(int i) {
+            throw new UnsupportedOperationException("Failed to pass any node input. This a no-inputs node.");
         }
 
         /** {@inheritDoc} */
