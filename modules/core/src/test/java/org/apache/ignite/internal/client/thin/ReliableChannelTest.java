@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -119,7 +120,9 @@ public class ReliableChannelTest {
 
             rc.channelsInit();
 
-            usedChannels.add(F.first(rc.getChannelHolders().get(rc.getCurrentChannelIndex()).getAddresses()).toString());
+            InetSocketAddress addr = F.first(rc.getChannelHolders().get(rc.getCurrentChannelIndex()).getAddresses());
+
+            usedChannels.add(addr.toString().replace("/<unresolved>", "")); // Remove unnecessary part on JDK 17.
         }
 
         return usedChannels;
@@ -144,7 +147,7 @@ public class ReliableChannelTest {
         ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
 
         Supplier<List<String>> holderAddresses = () -> rc.getChannelHolders().stream()
-            .map(h -> F.first(h.getAddresses()).toString())
+            .map(h -> F.first(h.getAddresses()).toString().replace("/<unresolved>", "")) // Replace unnecessary part on JDK 17.
             .sorted()
             .collect(Collectors.toList());
 
