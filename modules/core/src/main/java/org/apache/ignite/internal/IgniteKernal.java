@@ -918,7 +918,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 throw new IgniteCheckedException("User attribute has illegal name: '" + name + "'. Note that all names " +
                     "starting with '" + ATTR_PREFIX + "' are reserved for internal use.");
 
-        List<PluginProvider> plugins = U.allPluginProviders(cfg);
+        List<PluginProvider> plugins = U.allPluginProviders(cfg, true);
 
         // Spin out SPIs & managers.
         try {
