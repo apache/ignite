@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.ClientClusterGroup;
@@ -368,46 +367,35 @@ class ClientServicesImpl implements ClientServices {
         if (!needUpdateSrvcTop(srvcTop0, curAffTop))
             return;
 
-        ForkJoinPool.commonPool().execute(() -> {
-            Throwable t = null;
+        ch.serviceAsync(
+            ClientOperation.SERVICE_GET_TOPOLOGY,
+            req -> {
+                if(!req.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.SERVICE_TOPOLOGY)){
+                    srvcTopSupported = false;
 
-            try {
-                if (log.isDebugEnabled())
-                    log.debug("Requesting service topology update for the service '" + name + "' ...");
+                    throw new ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature.SERVICE_TOPOLOGY);
+                }
 
-                List<UUID> nodes = ch.service(
-                    ClientOperation.SERVICE_GET_TOPOLOGY,
-                    req -> {
-                        if (!req.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.SERVICE_TOPOLOGY))
-                            throw new ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature.SERVICE_TOPOLOGY);
+                utils.writeObject(req.out(), name);
+            },
+            resp -> {
+                int cnt = resp.in().readInt();
 
-                        utils.writeObject(req.out(), name);
-                    },
-                    resp -> {
-                        int cnt = resp.in().readInt();
+                List<UUID> res = new ArrayList<>(cnt);
 
-                        List<UUID> res = new ArrayList<>(cnt);
+                for (int i = 0; i < cnt; ++i)
+                    res.add(new UUID(resp.in().readLong(), resp.in().readLong()));
 
-                        for (int i = 0; i < cnt; ++i)
-                            res.add(new UUID(resp.in().readLong(), resp.in().readLong()));
-
-                        return res;
-                    }
-                );
-
+                return res;
+            }).whenComplete((nodes, t) -> {
+            if (t == null) {
                 updateTopology(name, srvcTop0, nodes, curAffTop);
-            }
-            catch (ClientFeatureNotSupportedByServerException e) {
-                srvcTopSupported = false;
-            }
-            catch (Throwable t0) {
-                t = t0;
-            }
 
-            srvcTop0.updateInProgress.set(false);
-
-            if (t != null)
-                log.error("Failed to update services mapping for service '" + name + "'.", t);
+                srvcTop0.updateInProgress.set(false);
+            }
+            else if (!(t instanceof ClientFeatureNotSupportedByServerException)) {
+                log.error("Failed to update topology of the service '" + name + "'.", t);
+            }
         });
     }
 

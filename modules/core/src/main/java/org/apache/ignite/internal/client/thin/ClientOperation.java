@@ -216,6 +216,9 @@ public enum ClientOperation {
     /** Get service descriptors. */
     SERVICE_GET_DESCRIPTOR(7002),
 
+    /** Get service topology. */
+    SERVICE_GET_TOPOLOGY(7003),
+
     /** Get or create an AtomicLong by name. */
     ATOMIC_LONG_CREATE(9000),
 
@@ -280,10 +283,8 @@ public enum ClientOperation {
     OP_SET_ITERATOR_START(9022),
 
     /** IgniteSet.iterator page. */
-    OP_SET_ITERATOR_GET_PAGE(9023),
+    OP_SET_ITERATOR_GET_PAGE(9023);
 
-    /** Get service topolog. */
-    SERVICE_GET_TOPOLOGY(9024);
 
     /** Code. */
     private final int code;

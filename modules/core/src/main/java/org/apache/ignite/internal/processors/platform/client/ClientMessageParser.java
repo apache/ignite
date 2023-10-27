@@ -395,7 +395,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     private static final short OP_SET_ITERATOR_GET_PAGE = 9023;
 
     /** Get service topology. */
-    private static final short OP_SERVICE_GET_TOPOLOGY = 9024;
+    private static final short OP_SERVICE_GET_TOPOLOGY = 7003;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
