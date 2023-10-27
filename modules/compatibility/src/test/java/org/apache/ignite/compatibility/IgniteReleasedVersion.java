@@ -17,9 +17,13 @@
 
 package org.apache.ignite.compatibility;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Optional;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.jetbrains.annotations.NotNull;
 
 /** Released Ignite versions. */
 @SuppressWarnings("unused")
@@ -98,6 +102,20 @@ public enum IgniteReleasedVersion {
     public static Collection<String> since(IgniteReleasedVersion ver) {
         return F.transform(F.view(F.asList(values()), v -> v.version().compareTo(ver.version()) >= 0),
             IgniteReleasedVersion::toString);
+    }
+
+    /**
+     *
+     */
+    public static @NotNull IgniteReleasedVersion fromString(String ver) {
+        IgniteProductVersion productVer = IgniteProductVersion.fromString(ver);
+
+        Optional<IgniteReleasedVersion> res = Arrays.stream(values()).filter(el -> el.ver.equals(productVer)).findFirst();
+
+        if (!res.isPresent())
+            throw new IgniteException("Provided version has been never released [version=" + ver);
+
+        return res.get();
     }
 
     /** @return String representation of three-part version number. */

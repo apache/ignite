@@ -19,13 +19,13 @@ package org.apache.ignite.internal.cache.transform;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
+import org.apache.ignite.internal.processors.GridProcessor;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides cache object's bytes transformation (eg. encryption, compression, etc).
  */
-public interface CacheObjectTransformerManager extends GridCacheSharedManager {
+public interface CacheObjectTransformerProcessor extends GridProcessor {
     /**
      * Transforms the data.
      *

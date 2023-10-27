@@ -15,39 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query;
+package org.apache.ignite.cdc;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.transform.TestCacheObjectTransformerPluginProvider;
 import org.apache.ignite.internal.processors.cache.transform.TestCacheObjectTransformerProcessorAdapter;
 
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
 
-/** Test checks that indexing works (including inlining) with enabled cache objects transformer. */
-public class IndexQueryCacheKeyValueTransformedFieldsTest extends IndexQueryCacheKeyValueFieldsTest {
+/**
+ *
+ */
+public class TransformedCdcSelfTest extends CdcSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
-        return super.getConfiguration(instanceName).setPluginProviders(
-            new TestCacheObjectTransformerPluginProvider(new RandomShiftCacheObjectTransformer()));
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setPluginProviders(
+            new TestCacheObjectTransformerPluginProvider(new CacheObjectShiftTransformer()));
     }
 
     /**
-     * Transforms each object with a random shift.
+     * Transforms each object with a shift.
      */
-    protected static final class RandomShiftCacheObjectTransformer extends TestCacheObjectTransformerProcessorAdapter {
+    private static final class CacheObjectShiftTransformer extends TestCacheObjectTransformerProcessorAdapter {
         /** {@inheritDoc} */
         @Override public ByteBuffer transform(ByteBuffer original) {
-            ByteBuffer transformed = ByteBuffer.wrap(new byte[original.remaining() + 5]);
-
-            int shift = ThreadLocalRandom.current().nextInt();
+            ByteBuffer transformed = ByteBuffer.wrap(new byte[original.remaining() + 1]);
 
             transformed.put(TRANSFORMED);
-            transformed.putInt(shift);
 
             while (original.hasRemaining())
-                transformed.put((byte)(original.get() + shift));
+                transformed.put((byte)(original.get() + 42));
 
             transformed.flip();
 
@@ -56,12 +54,10 @@ public class IndexQueryCacheKeyValueTransformedFieldsTest extends IndexQueryCach
 
         /** {@inheritDoc} */
         @Override public ByteBuffer restore(ByteBuffer transformed) {
-            ByteBuffer restored = ByteBuffer.wrap(new byte[transformed.remaining() - 4]);
-
-            int shift = transformed.getInt();
+            ByteBuffer restored = ByteBuffer.wrap(new byte[transformed.remaining()]);
 
             while (transformed.hasRemaining())
-                restored.put((byte)(transformed.get() - shift));
+                restored.put((byte)(transformed.get() - 42));
 
             restored.flip();
 

@@ -29,6 +29,7 @@ public class FeatureChecker {
         "--add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED\n" +
         "--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED\n" +
         "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED\n" +
+        "--add-opens=java.base/jdk.internal.loader=ALL-UNNAMED\n" +
         "--illegal-access=permit";
 
     /** Required Options to Run on Java 15 and higher. */
@@ -36,6 +37,7 @@ public class FeatureChecker {
         "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED\n" +
         "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED\n" +
         "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED\n" +
+        "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED\n" +
         "--add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED\n" +
         "--add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED\n" +
         "--add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED\n" +
@@ -43,6 +45,7 @@ public class FeatureChecker {
         "--add-opens=java.base/java.io=ALL-UNNAMED\n" +
         "--add-opens=java.base/java.nio=ALL-UNNAMED\n" +
         "--add-opens=java.base/java.util=ALL-UNNAMED\n" +
+        "--add-opens=java.base/java.net=ALL-UNNAMED\"" +
         "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED\n" +
         "--add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED\n" +
         "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED\n" +
