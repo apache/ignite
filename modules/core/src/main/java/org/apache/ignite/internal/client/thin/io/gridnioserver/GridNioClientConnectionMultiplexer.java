@@ -157,14 +157,15 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
                         try {
                             ch.socket().close();
                         }
-                        catch (Exception ex) {
+                        catch (Exception ignored) {
                             // ignore close exception
                         }
                     }
+
                     try {
                         ch.close();
                     }
-                    catch (Exception ex) {
+                    catch (Exception ignored) {
                         // ignore close exception
                     }
                 }
