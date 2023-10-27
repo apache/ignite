@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Represents an operation that accepts a single input argument and returns
  * no result. Unlike most other functional interfaces,
- * {@code ThrowableConsumer} is expected to operate via side-effects.
+ * {@code ConsumerX} is expected to operate via side-effects.
  *
  * Also it is able to throw {@link Exception} unlike {@link Consumer}.
  *
