@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.query.schema.management.IndexDescri
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
+import org.apache.ignite.internal.util.lang.ConsumerX;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -350,11 +351,5 @@ public abstract class IndexWithSameNameTestBase extends GridCommonAbstractTest {
 
             return recordedMsgs0;
         }
-    }
-
-    /** */
-    private interface ConsumerX<T> {
-        /** */
-        void accept(T t) throws Exception;
     }
 }

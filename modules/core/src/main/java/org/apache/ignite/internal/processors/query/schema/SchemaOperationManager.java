@@ -29,7 +29,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,7 +56,7 @@ public class SchemaOperationManager {
     private Collection<UUID> nodeIds;
 
     /** Node results. */
-    private Map<UUID, IgniteBiTuple<SchemaOperationException, Boolean>> nodeRess;
+    private Map<UUID, T2<SchemaOperationException, Boolean>> nodeRess;
 
     /** Current coordinator node. */
     private ClusterNode crd;
@@ -162,7 +162,7 @@ public class SchemaOperationManager {
                     log.debug("Received result [opId=" + operationId() + ", nodeId=" + nodeId + ", err=" + err +
                         ", nop=" + nop + ']');
 
-                nodeRess.put(nodeId, F.t(err, nop));
+                nodeRess.put(nodeId, new T2<>(err, nop));
             }
             else {
                 if (log.isDebugEnabled())
@@ -221,7 +221,7 @@ public class SchemaOperationManager {
                 SchemaOperationException err = null;
                 boolean nop = false;
 
-                for (Map.Entry<UUID, IgniteBiTuple<SchemaOperationException, Boolean>> nodeRes : nodeRess.entrySet()) {
+                for (Map.Entry<UUID, T2<SchemaOperationException, Boolean>> nodeRes : nodeRess.entrySet()) {
                     err = nodeRes.getValue().get1();
 
                     if (err != null)
@@ -233,6 +233,9 @@ public class SchemaOperationManager {
                 if (log.isDebugEnabled())
                     log.debug("Collected all results, about to send finish message [opId=" + operationId() +
                         ", err=" + err + ", nop=" + nop + ']');
+
+                // In case of no-op operation results from all nodes must be the same.
+                assert err != null || !nop || nodeRess.entrySet().stream().allMatch(e -> e.getValue().get2()) : nodeRess;
 
                 crdFinished = true;
 
