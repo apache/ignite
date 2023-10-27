@@ -341,12 +341,7 @@ class ClientServicesImpl implements ClientServices {
          */
         private List<UUID> serviceTopology() {
             if (ch.partitionAwarenessEnabled && srvcTopSupported) {
-                ServiceTopology srvcTop = servicesTopologies.compute(name, (nm, t) -> {
-                    if (t == null)
-                        t = new ServiceTopology(name);
-
-                    return t;
-                });
+                ServiceTopology srvcTop = servicesTopologies.computeIfAbsent(name, ServiceTopology::new);
 
                 srvcTop.tryRequestServiceTopology();
 
