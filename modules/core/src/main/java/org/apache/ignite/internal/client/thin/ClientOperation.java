@@ -285,7 +285,6 @@ public enum ClientOperation {
     /** IgniteSet.iterator page. */
     OP_SET_ITERATOR_GET_PAGE(9023);
 
-
     /** Code. */
     private final int code;
 
