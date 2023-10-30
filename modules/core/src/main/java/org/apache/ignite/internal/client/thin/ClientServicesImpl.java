@@ -201,7 +201,7 @@ class ClientServicesImpl implements ClientServices {
         /** Time of the last received topology. */
         private volatile long lastUpdateRequestTime;
 
-        /** UUID of the nodes with at leas on service instance. */
+        /** UUID of the nodes with at least one service instance. */
         private volatile List<UUID> nodes = Collections.emptyList();
 
         /** Last cluster topology version when current service topology was actual. */
