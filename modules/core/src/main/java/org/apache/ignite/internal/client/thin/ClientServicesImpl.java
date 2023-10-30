@@ -73,9 +73,6 @@ class ClientServicesImpl implements ClientServices {
     /** Services topology. {@code Null} if partition awareness is not enabled. */
     private final Map<String, ServiceTopology> servicesTopologies;
 
-    /** If {@code False}, service topology is not supported. */
-    private volatile boolean srvcTopSupported = true;
-
     /** Constructor. */
     ClientServicesImpl(ReliableChannel ch, ClientBinaryMarshaller marsh, ClientClusterGroupImpl grp, IgniteLogger log) {
         this.ch = ch;
@@ -218,7 +215,10 @@ class ClientServicesImpl implements ClientServices {
         /**
          * @return {@code True} if update of the service topology is required. {@code False} otherwise.
          */
-        private boolean needUpdateSrvcTop(AffinityTopologyVersion curAffTop) {
+        private boolean isUpdateRequired(AffinityTopologyVersion curAffTop) {
+            if (!ch.applyOnDefaultChannel(c -> c.protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.SERVICE_TOPOLOGY), null))
+                return false;
+
             return (lastAffTop == null || curAffTop.topologyVersion() > lastAffTop.topologyVersion()
                 || U.nanosToMillis(System.nanoTime() - lastUpdateRequestTime) >= SRV_TOP_UPDATE_PERIOD)
                 && updateInProgress.compareAndSet(false, true);
@@ -227,23 +227,15 @@ class ClientServicesImpl implements ClientServices {
         /**
          * Asynchronously requests the service topology if the partition awareness is enabled and if the update is requred.
          */
-        private void tryRequestServiceTopology() {
+        private void tryUpdate() {
             AffinityTopologyVersion curAffTop = ch.affinityContext().lastTopology().version();
 
-            if (!needUpdateSrvcTop(curAffTop))
+            if (!isUpdateRequired(curAffTop))
                 return;
 
             ch.serviceAsync(
                 ClientOperation.SERVICE_GET_TOPOLOGY,
-                req -> {
-                    if (!req.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.SERVICE_TOPOLOGY)) {
-                        srvcTopSupported = false;
-
-                        throw new ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature.SERVICE_TOPOLOGY);
-                    }
-
-                    utils.writeObject(req.out(), srvcName);
-                },
+                req -> utils.writeObject(req.out(), srvcName),
                 resp -> {
                     int cnt = resp.in().readInt();
 
@@ -255,14 +247,14 @@ class ClientServicesImpl implements ClientServices {
                     return res;
                 }).whenComplete((nodes, t) -> {
                     if (t == null) {
-                        updateTopology(nodes, curAffTop);
+                        set(nodes, curAffTop);
 
                         if (log.isDebugEnabled()) {
-                            log.debug("Topology of service '" + srvcName + "' has been updated. The service instance " +
-                                "nodes: " + nodes);
+                            log.debug("Topology of service '" + srvcName + "' has been updated. The " +
+                                "service instance nodes: " + nodes);
                         }
                     }
-                    else if (!(t instanceof ClientFeatureNotSupportedByServerException))
+                    else
                         log.error("Failed to update topology of the service '" + srvcName + "'.", t);
 
                     updateInProgress.set(false);
@@ -270,7 +262,7 @@ class ClientServicesImpl implements ClientServices {
         }
 
         /** Stores last known service topology. */
-        private void updateTopology(List<UUID> nodes, AffinityTopologyVersion lastAffTop) {
+        private void set(List<UUID> nodes, AffinityTopologyVersion lastAffTop) {
             this.nodes = nodes;
             this.lastAffTop = lastAffTop;
             lastUpdateRequestTime = System.nanoTime();
@@ -340,10 +332,10 @@ class ClientServicesImpl implements ClientServices {
          * @return Last known topology nodes.
          */
         private List<UUID> serviceTopology() {
-            if (ch.partitionAwarenessEnabled && srvcTopSupported) {
+            if (ch.partitionAwarenessEnabled) {
                 ServiceTopology srvcTop = servicesTopologies.computeIfAbsent(name, ServiceTopology::new);
 
-                srvcTop.tryRequestServiceTopology();
+                srvcTop.tryUpdate();
 
                 return srvcTop.nodes;
             }
