@@ -90,13 +90,13 @@ public class DumpReader implements Runnable {
 
                 Map<Integer, List<String>> grpToNodes = new HashMap<>();
 
-                Set<Integer> cacheGroupIds = cfg.cacheGroupNames() != null
+                Set<Integer> cacheGrpIds = cfg.cacheGroupNames() != null
                     ? Arrays.stream(cfg.cacheGroupNames()).map(CU::cacheId).collect(Collectors.toSet())
                     : null;
 
                 for (SnapshotMetadata meta : dump.metadata()) {
                     for (Integer grp : meta.cacheGroupIds()) {
-                        if (cacheGroupIds == null || cacheGroupIds.contains(grp))
+                        if (cacheGrpIds == null || cacheGrpIds.contains(grp))
                             grpToNodes.computeIfAbsent(grp, key -> new ArrayList<>()).add(meta.folderName());
                     }
                 }
@@ -116,10 +116,7 @@ public class DumpReader implements Runnable {
 
                     for (String node : e.getValue()) {
                         for (int part : dump.partitions(node, grp)) {
-                            if (groups != null
-                                &&
-                                !groups.computeIfAbsent(grp, key -> new HashSet<>()).add(part)
-                            ) {
+                            if (groups != null && !groups.computeIfAbsent(grp, key -> new HashSet<>()).add(part)) {
                                 if (log.isDebugEnabled()) {
                                     log.debug("Skip copy partition [node=" + node + ", grp=" + grp +
                                         ", part=" + part + ']');
