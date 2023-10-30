@@ -359,6 +359,7 @@ If `CREATE INDEX` is executed in runtime on live data then the database will ite
 
 Schema changes applied by this command are persisted on disk if link:persistence/native-persistence[Ignite persistence] is enabled. Thus, the changes can survive full cluster restarts.
 
+NOTE: An index name is unique per schema. For example, if there are several tables inside some schema, then you cannot create indexes with the same names, even if each of the indexes will be created on different table.
 
 
 === Indexes Tradeoffs
