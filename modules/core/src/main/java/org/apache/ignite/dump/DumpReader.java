@@ -90,7 +90,7 @@ public class DumpReader implements Runnable {
 
                 Map<Integer, List<String>> grpToNodes = new HashMap<>();
 
-                Set<Integer> cacheGroupIds = cfg.cacheGroupNames() != null
+                Set<Integer> cacheGroupIds = cfg.cacheGroupNames() != null 
                     ? Arrays.stream(cfg.cacheGroupNames()).map(CU::cacheId).collect(Collectors.toSet())
                     : null;
 
