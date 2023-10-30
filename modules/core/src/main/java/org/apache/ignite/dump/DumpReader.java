@@ -90,13 +90,13 @@ public class DumpReader implements Runnable {
 
                 Map<Integer, List<String>> grpToNodes = new HashMap<>();
 
-                Set<Integer> cacheGrpIds = cfg.cacheGroupNames() != null
+                Set<Integer> cacheGroupIds = cfg.cacheGroupNames() != null
                     ? Arrays.stream(cfg.cacheGroupNames()).map(CU::cacheId).collect(Collectors.toSet())
                     : null;
 
                 for (SnapshotMetadata meta : dump.metadata()) {
                     for (Integer grp : meta.cacheGroupIds()) {
-                        if (cacheGrpIds == null || cacheGrpIds.contains(grp))
+                        if (cacheGroupIds == null || cacheGroupIds.contains(grp))
                             grpToNodes.computeIfAbsent(grp, key -> new ArrayList<>()).add(meta.folderName());
                     }
                 }
@@ -111,16 +111,16 @@ public class DumpReader implements Runnable {
 
                 Map<Integer, Set<Integer>> groups = cfg.skipCopies() ? new HashMap<>() : null;
 
+                if (groups != null)
+                    grpToNodes.keySet().forEach(grpId -> groups.put(grpId, new HashSet<>()));
+
                 for (Map.Entry<Integer, List<String>> e : grpToNodes.entrySet()) {
                     int grp = e.getKey();
 
                     for (String node : e.getValue()) {
                         for (int part : dump.partitions(node, grp)) {
-                            if (groups != null && !groups.computeIfAbsent(grp, key -> new HashSet<>()).add(part)) {
-                                if (log.isDebugEnabled()) {
-                                    log.debug("Skip copy partition [node=" + node + ", grp=" + grp +
-                                        ", part=" + part + ']');
-                                }
+                            if (groups != null && !groups.get(grp).add(part)) {
+                                log.info("Skip copy partition [node=" + node + ", grp=" + grp + ", part=" + part + ']');
 
                                 continue;
                             }

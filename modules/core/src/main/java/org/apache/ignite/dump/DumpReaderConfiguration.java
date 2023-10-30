@@ -59,7 +59,7 @@ public class DumpReaderConfiguration {
     private String[] cacheGroupNames;
 
     /** Skip copies. */
-    private boolean skipCopies;
+    private final boolean skipCopies;
 
     /**
      * @param dir Root dump directory.
