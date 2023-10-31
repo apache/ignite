@@ -360,6 +360,7 @@ If `CREATE INDEX` is executed in runtime on live data then the database will ite
 Schema changes applied by this command are persisted on disk if link:persistence/native-persistence[Ignite persistence] is enabled. Thus, the changes can survive full cluster restarts.
 
 
+
 === Indexes Tradeoffs
 There are multiple things you should consider when choosing indexes for your application.
 
