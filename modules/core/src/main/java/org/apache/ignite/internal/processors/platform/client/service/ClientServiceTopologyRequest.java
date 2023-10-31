@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.client.service;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -24,6 +25,9 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Request topology of certain service.
@@ -43,15 +47,15 @@ public class ClientServiceTopologyRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        Map<UUID, Integer> srvcTop = null;
+        Map<UUID, Integer> srvcTop;
 
         try {
             srvcTop = ctx.kernalContext().service().serviceTopology(name, 0);
         }
-        catch (IgniteCheckedException ignored) {
-            // No-op.
+        catch (IgniteCheckedException e) {
+            throw new IgniteClientException(ClientStatus.FAILED, "Failed to get topology for service '" + name + "'.", e);
         }
 
-        return new ClientServiceMappingsResponse(requestId(), srvcTop == null ? null : srvcTop.keySet());
+        return new ClientServiceMappingsResponse(requestId(), F.isEmpty(srvcTop) ? Collections.emptyList() : srvcTop.keySet());
     }
 }
