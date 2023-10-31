@@ -17,20 +17,25 @@
 
 package org.apache.ignite.internal.management.property;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.function.Consumer;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.NoArg;
 
 /** */
-public class PropertyListCommand implements ComputeCommand<NoArg, PropertiesListResult> {
+public class PropertyListCommand implements ComputeCommand<PropertyListCommand.PropertiesTaskArg, PropertiesListResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print list of available properties";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<NoArg> argClass() {
-        return NoArg.class;
+    @Override public Class<PropertiesCommandArg> argClass() {
+
+        return PropertiesCommandArg.class;
     }
 
     /** {@inheritDoc} */
@@ -39,8 +44,35 @@ public class PropertyListCommand implements ComputeCommand<NoArg, PropertiesList
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(NoArg arg, PropertiesListResult res, Consumer<String> printer) {
+    @Override public void printResult(PropertiesTaskArg arg, PropertiesListResult res, Consumer<String> printer) {
         for (String prop : res.properties())
             printer.accept(prop);
+    }
+
+    /** */
+    public abstract static class PropertiesTaskArg extends IgniteDataTransferObject {
+        /** */
+        @Argument(optional = true, description = "Show the list with name: value properties.")
+        private boolean printValues;
+
+        /** {@inheritDoc} */
+        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+            out.writeBoolean(printValues);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+            printValues = in.readBoolean();
+        }
+
+        /** */
+        public boolean printValues() {
+            return printValues;
+        }
+
+        /** */
+        public void printValues(boolean printValues) {
+            this.printValues = printValues;
+        }
     }
 }

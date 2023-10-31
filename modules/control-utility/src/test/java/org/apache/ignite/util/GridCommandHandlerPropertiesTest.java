@@ -39,6 +39,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.GridCacheD
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TRANSFER_RATE_BYTES;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 
 /**
  * Checks command line property commands.
@@ -71,13 +72,32 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
         assertContains(log, out, "control.(sh|bat) --property help");
 
         assertContains(log, out, "Print list of available properties:");
-        assertContains(log, out, "control.(sh|bat) --property list");
+        assertContains(log, out, "control.(sh|bat) --property list [--print-values]");
+        assertContains(log, out, "--print-values  - Show the list with name: value properties.");
 
         assertContains(log, out, "Get the property value:");
         assertContains(log, out, "control.(sh|bat) --property get --name <property_name>");
 
         assertContains(log, out, "Set the property value:");
         assertContains(log, out, "control.(sh|bat) --property set --name <property_name> --val <property_value>");
+    }
+
+    /**
+     * Check the command ' --property list [--print-values]'.
+     * Steps:
+     */
+    @Test
+    public void testListWithValues() {
+        assertEquals(EXIT_CODE_OK, execute("--property", "list", "--print-values"));
+
+        String out = testOut.toString();
+
+        for (DistributedChangeableProperty<Serializable> pd : crd.context()
+            .distributedConfiguration().properties()) {
+            assertContains(log, out, pd.getName());
+            assertContains(log, out, String.valueOf(pd.get()));
+            assertContains(log, out, pd.getName() + ": " + pd.get());
+        }
     }
 
     /**
@@ -91,8 +111,10 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
         String out = testOut.toString();
 
         for (DistributedChangeableProperty<Serializable> pd : crd.context()
-            .distributedConfiguration().properties())
+            .distributedConfiguration().properties()) {
             assertContains(log, out, pd.getName());
+            assertNotContains(log, out, pd.getName() + ": " + pd.get());
+        }
     }
 
     /**

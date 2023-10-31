@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.internal.management.property.PropertyListCommand.PropertiesTaskArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -34,13 +34,13 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.sys
  * Task for property operations.
  */
 @GridInternal
-public class PropertiesListTask extends VisorMultiNodeTask<NoArg, PropertiesListResult, PropertiesListResult> {
+public class PropertiesListTask extends VisorMultiNodeTask<PropertiesTaskArg, PropertiesListResult, PropertiesListResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<NoArg, PropertiesListResult> job(NoArg arg) {
-        return new PropertiesListJob(debug);
+    @Override protected VisorJob<PropertiesTaskArg, PropertiesListResult> job(PropertiesTaskArg arg) {
+        return new PropertiesListJob(arg, debug);
     }
 
     /** {@inheritDoc} */
@@ -60,15 +60,15 @@ public class PropertiesListTask extends VisorMultiNodeTask<NoArg, PropertiesList
     /**
      * Job for property operations (get/set).
      */
-    private static class PropertiesListJob extends VisorJob<NoArg, PropertiesListResult> {
+    private static class PropertiesListJob extends VisorJob<PropertiesTaskArg, PropertiesListResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
          * @param debug Debug.
          */
-        protected PropertiesListJob(boolean debug) {
-            super(null, debug);
+        protected PropertiesListJob(PropertiesTaskArg arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */
@@ -77,10 +77,10 @@ public class PropertiesListTask extends VisorMultiNodeTask<NoArg, PropertiesList
         }
 
         /** {@inheritDoc} */
-        @Override protected PropertiesListResult run(@Nullable NoArg arg) {
+        @Override protected PropertiesListResult run(@Nullable PropertiesTaskArg arg) {
             return new PropertiesListResult(
                 ignite.context().distributedConfiguration().properties().stream()
-                    .map(pd -> pd.getName())
+                    .map(pd -> arg.printValues() ? pd.getName() + ": " + pd.get() : pd.getName())
                     .collect(Collectors.toList())
             );
         }
