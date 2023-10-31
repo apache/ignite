@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
+import org.apache.ignite.internal.processors.query.calcite.exec.TimeoutServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.processors.query.calcite.message.MessageServic
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -159,6 +161,8 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
         for (UUID uuid : nodes) {
             GridTestKernalContext kernal = newContext();
 
+            kernal.add(new GridTimeoutProcessor(kernal));
+
             QueryTaskExecutorImpl taskExecutor = new QueryTaskExecutorImpl(kernal);
             taskExecutor.stripedThreadPoolExecutor(new IgniteTestStripedThreadPoolExecutor(
                 execStgy,
@@ -185,6 +189,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
             exchangeSvc.messageService(msgSvc);
             exchangeSvc.mailboxRegistry(mailboxRegistry);
             exchangeSvc.queryRegistry(new QueryRegistryImpl(kernal));
+            exchangeSvc.timeoutService(new TimeoutServiceImpl(kernal));
             exchangeSvc.init();
 
             exchangeServices.put(uuid, exchangeSvc);

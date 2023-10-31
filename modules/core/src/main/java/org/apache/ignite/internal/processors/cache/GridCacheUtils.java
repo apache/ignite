@@ -334,29 +334,6 @@ public class GridCacheUtils {
         }
     };
 
-    /** Transaction entry to key. */
-    private static final IgniteClosure tx2key = new C1<IgniteTxEntry, Object>() {
-        @Override public Object apply(IgniteTxEntry e) {
-            return e.key();
-        }
-
-        @Override public String toString() {
-            return "Cache transaction entry to key converter.";
-        }
-    };
-
-    /** Transaction entry to key. */
-    private static final IgniteClosure txCol2key = new C1<Collection<IgniteTxEntry>, Collection<Object>>() {
-        @SuppressWarnings( {"unchecked"})
-        @Override public Collection<Object> apply(Collection<IgniteTxEntry> e) {
-            return F.viewReadOnly(e, tx2key);
-        }
-
-        @Override public String toString() {
-            return "Cache transaction entry collection to key collection converter.";
-        }
-    };
-
     /** Converts transaction to XID version. */
     private static final IgniteClosure tx2xidVer = new C1<IgniteInternalTx, GridCacheVersion>() {
         @Override public GridCacheVersion apply(IgniteInternalTx tx) {
@@ -365,13 +342,6 @@ public class GridCacheUtils {
 
         @Override public String toString() {
             return "Transaction to XID version converter.";
-        }
-    };
-
-    /** Converts tx entry to entry. */
-    private static final IgniteClosure tx2entry = new C1<IgniteTxEntry, GridCacheEntryEx>() {
-        @Override public GridCacheEntryEx apply(IgniteTxEntry e) {
-            return e.cached();
         }
     };
 

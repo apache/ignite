@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 import com.google.common.collect.ImmutableList;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
@@ -41,9 +42,13 @@ public class ExecutionPlan {
     private final ImmutableList<Fragment> fragments;
 
     /** */
-    ExecutionPlan(AffinityTopologyVersion ver, List<Fragment> fragments) {
+    private final ImmutableList<PartitionNode> partNodes;
+
+    /** */
+    ExecutionPlan(AffinityTopologyVersion ver, List<Fragment> fragments, List<PartitionNode> partNodes) {
         this.ver = ver;
         this.fragments = ImmutableList.copyOf(fragments);
+        this.partNodes = ImmutableList.copyOf(partNodes);
     }
 
     /** */
@@ -54,6 +59,11 @@ public class ExecutionPlan {
     /** */
     public List<Fragment> fragments() {
         return fragments;
+    }
+
+    /** */
+    public List<PartitionNode> partitionNodes() {
+        return partNodes;
     }
 
     /** */

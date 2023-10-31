@@ -79,6 +79,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTran
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntryChangeListener;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -119,7 +120,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_TRIGGERING
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_READ_LOAD_BALANCING;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
@@ -283,6 +283,9 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Recovery mode flag. */
     private volatile boolean recoveryMode;
+
+    /** Dump callback. */
+    private volatile DumpEntryChangeListener dumpLsnr;
 
     /** */
     private final boolean disableTriggeringCacheInterceptorOnConflict =
@@ -851,14 +854,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public boolean transactional() {
         CacheConfiguration cfg = config();
 
-        return cfg.getAtomicityMode() == TRANSACTIONAL || cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
-    }
-
-    /**
-     * @return {@code True} if transactional snapshot.
-     */
-    public boolean transactionalSnapshot() {
-        return config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
+        return cfg.getAtomicityMode() == TRANSACTIONAL;
     }
 
     /**
@@ -2339,6 +2335,19 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public AtomicReference<IgniteInternalFuture<Boolean>> lastRemoveAllJobFut() {
         return lastRmvAllJobFut;
+    }
+
+    /** */
+    public DumpEntryChangeListener dumpListener() {
+        return dumpLsnr;
+    }
+
+    /** */
+    public void dumpListener(DumpEntryChangeListener dumpEntryChangeLsnr) {
+        assert this.dumpLsnr == null || dumpEntryChangeLsnr == null;
+        assert cacheType == CacheType.USER;
+
+        this.dumpLsnr = dumpEntryChangeLsnr;
     }
 
     /** {@inheritDoc} */

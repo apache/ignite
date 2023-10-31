@@ -101,11 +101,12 @@ public class UsingScanQueries {
         try (Ignite ignite = Ignition.start()) {
             //tag::idxQry[]
             // Create index by 2 fields (orgId, salary).
+            LinkedHashMap<String,String> fields = new LinkedHashMap<>();
+                fields.put("orgId", Integer.class.getName());
+                fields.put("salary", Integer.class.getName());
+      
             QueryEntity personEntity = new QueryEntity(Integer.class, Person.class)
-                .setFields(new LinkedHashMap<String, String>() {{
-                    put("orgId", Integer.class.getName());
-                    put("salary", Integer.class.getName());
-                }})
+                .setFields(fields)
                 .setIndexes(Collections.singletonList(
                     new QueryIndex(Arrays.asList("orgId", "salary"), QueryIndexType.SORTED)
                         .setName("ORG_SALARY_IDX")

@@ -61,7 +61,6 @@
         <module>modules/zookeeper</module>
         <module>modules/web/ignite-appserver-test</module>
         <module>modules/web/ignite-websphere-test</module>
-        <module>modules/cassandra</module>
         <module>modules/kubernetes</module>
         <module>modules/sqlline</module>
         <module>modules/opencensus</module>

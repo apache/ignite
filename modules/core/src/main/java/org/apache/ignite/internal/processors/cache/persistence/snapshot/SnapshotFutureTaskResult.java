@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Represents result of {@link SnapshotFutureTask}.
  */
-class SnapshotFutureTaskResult {
+public class SnapshotFutureTaskResult {
     /** Partitions for which snapshot was created. */
     private final Set<GroupPartitionId> parts;
 
@@ -35,7 +35,7 @@ class SnapshotFutureTaskResult {
     private final @Nullable WALPointer snpPtr;
 
     /** */
-    SnapshotFutureTaskResult(Set<GroupPartitionId> parts, @Nullable WALPointer snpPtr) {
+    public SnapshotFutureTaskResult(Set<GroupPartitionId> parts, @Nullable WALPointer snpPtr) {
         this.parts = Collections.unmodifiableSet(parts);
         this.snpPtr = snpPtr;
     }

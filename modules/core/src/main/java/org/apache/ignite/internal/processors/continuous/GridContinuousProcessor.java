@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -332,6 +333,21 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             fut.onDone(e);
         }
+    }
+
+    /** */
+    Map<UUID, RemoteRoutineInfo> remoteRoutineInfos() {
+        return Collections.unmodifiableMap(rmtInfos);
+    }
+
+    /** */
+    Map<UUID, LocalRoutineInfo> localRoutineInfos() {
+        return Collections.unmodifiableMap(locInfos);
+    }
+
+    /** */
+    Map<UUID, Map<UUID, LocalRoutineInfo>> clientRoutineInfos() {
+        return Collections.unmodifiableMap(clientInfos);
     }
 
     /**

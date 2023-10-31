@@ -50,8 +50,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.CacheOperationContext.allowAtomicOpsInTx;
-
 /**
  * Cache proxy.
  */
@@ -269,8 +267,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                         false,
                         null,
                         false,
-                        null,
-                        allowAtomicOpsInTx()));
+                        null));
         }
         finally {
             gate.leave(prev);
@@ -291,8 +288,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                     false,
                     null,
                     false,
-                    null,
-                    allowAtomicOpsInTx()));
+                    null));
     }
 
     /** {@inheritDoc} */
@@ -1541,8 +1537,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                         false,
                         null,
                         false,
-                        null,
-                        allowAtomicOpsInTx()));
+                        null));
         }
         finally {
             gate.leave(prev);
@@ -1562,8 +1557,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                     true,
                     null,
                     false,
-                    null,
-                    allowAtomicOpsInTx()));
+                    null));
         }
         finally {
             gate.leave(prev);
@@ -1576,18 +1570,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
         try {
             return delegate.lostPartitions();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalCache<K, V> withAllowAtomicOpsInTx() {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return new GridCacheProxyImpl<>(ctx, delegate, opCtx.setAllowAtomicOpsInTx());
         }
         finally {
             gate.leave(prev);

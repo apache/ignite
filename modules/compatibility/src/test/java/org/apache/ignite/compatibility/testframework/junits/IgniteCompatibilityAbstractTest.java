@@ -40,6 +40,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Rule;
 
 import static org.apache.ignite.compatibility.testframework.junits.Dependency.APACHE_IGNITE_GROUP_ID;
 
@@ -56,6 +57,10 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
     /** Waiting milliseconds of the join of a node to topology. */
     protected static final int NODE_JOIN_TIMEOUT = 30_000;
+
+    /** */
+    @Rule
+    public SkipTestIfJdkNewerRule skipIfJdkNewerRule = new SkipTestIfJdkNewerRule();
 
     /** Local JVM Ignite node. */
     protected transient Ignite locJvmInstance = null;
@@ -197,7 +202,9 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         filteredJvmArgs.add("-ea");
 
         for (String arg : U.jvmArgs()) {
-            if (arg.startsWith("-Xmx") || arg.startsWith("-Xms"))
+            if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") || arg.startsWith("--add-opens")
+                || arg.startsWith("--add-exports") || arg.startsWith("--add-modules")
+                || arg.startsWith("--patch-module") || arg.startsWith("--add-reads"))
                 filteredJvmArgs.add(arg);
         }
 

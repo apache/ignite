@@ -552,5 +552,10 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         @Override public long getIndexRebuildKeysProcessed() {
             return 0;
         }
+
+        /** {@inheritDoc} */
+        @Override public int getIndexBuildPartitionsLeftCount() {
+            return 0;
+        }
     }
 }
