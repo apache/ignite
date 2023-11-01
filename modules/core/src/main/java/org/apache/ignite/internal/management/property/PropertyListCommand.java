@@ -17,25 +17,24 @@
 
 package org.apache.ignite.internal.management.property;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Consumer;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.Argument;
+import java.util.stream.Collectors;
+import org.apache.ignite.internal.management.SystemViewCommand;
+import org.apache.ignite.internal.management.SystemViewTask;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 
 /** */
-public class PropertyListCommand implements ComputeCommand<PropertyListCommand.PropertiesTaskArg, PropertiesListResult> {
+public class PropertyListCommand implements ComputeCommand<PropertyListCommandArg, PropertiesListResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print list of available properties";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<PropertiesCommandArg> argClass() {
-
-        return PropertiesCommandArg.class;
+    @Override public Class<PropertyListCommandArg> argClass() {
+        return PropertyListCommandArg.class;
     }
 
     /** {@inheritDoc} */
@@ -44,35 +43,20 @@ public class PropertyListCommand implements ComputeCommand<PropertyListCommand.P
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(PropertiesTaskArg arg, PropertiesListResult res, Consumer<String> printer) {
-        for (String prop : res.properties())
-            printer.accept(prop);
-    }
+    @Override public void printResult(PropertyListCommandArg arg, PropertiesListResult res, Consumer<String> printer) {
+        if (arg.printValues()) {
+            List<SystemViewTask.SimpleType> types = res.titles().stream()
+                .map(x -> SystemViewTask.SimpleType.STRING).collect(Collectors.toList());
 
-    /** */
-    public abstract static class PropertiesTaskArg extends IgniteDataTransferObject {
-        /** */
-        @Argument(optional = true, description = "Show the list with name: value properties.")
-        private boolean printValues;
+            List<List<?>> data = res.properties().keySet().stream()
+                .map(key-> Arrays.asList(key, res.properties().get(key)))
+                .collect(Collectors.toList());
 
-        /** {@inheritDoc} */
-        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-            out.writeBoolean(printValues);
+            SystemViewCommand.printTable(res.titles(), types, data, printer);
         }
-
-        /** {@inheritDoc} */
-        @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-            printValues = in.readBoolean();
-        }
-
-        /** */
-        public boolean printValues() {
-            return printValues;
-        }
-
-        /** */
-        public void printValues(boolean printValues) {
-            this.printValues = printValues;
+        else {
+            for (String prop : res.properties().keySet())
+                printer.accept(prop);
         }
     }
 }

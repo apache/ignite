@@ -20,10 +20,12 @@ package org.apache.ignite.internal.management.property;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -35,7 +37,7 @@ public class PropertiesListResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Properties names. */
-    private Collection<String> props = Collections.emptyList();
+    private Map<String, List<String>> props = new HashMap<>();
 
     /**
      * Constructor for optimized marshaller.
@@ -47,13 +49,13 @@ public class PropertiesListResult extends IgniteDataTransferObject {
     /**
      * @param props Properties.
      */
-    public PropertiesListResult(Collection<String> props) {
+    public PropertiesListResult(Map<String, List<String>> props) {
         this.props = props;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, props);
+        U.writeMap(out, props);
     }
 
     /** {@inheritDoc} */
@@ -61,13 +63,20 @@ public class PropertiesListResult extends IgniteDataTransferObject {
         byte protoVer,
         ObjectInput in
     ) throws IOException, ClassNotFoundException {
-        props = U.readCollection(in);
+        props = U.readHashMap(in);
     }
 
     /**
      * @return Properties (name, description) collection.
      */
-    public Collection<String> properties() {
+    public Map<String, List<String>> properties() {
         return props;
+    }
+
+    /**
+     * @return Column titles.
+     */
+    public List<String> titles() {
+        return F.asList("Name", "Dflt", "Value", "Description");
     }
 }

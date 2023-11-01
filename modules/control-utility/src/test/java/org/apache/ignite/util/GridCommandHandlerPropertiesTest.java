@@ -94,9 +94,9 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
 
         for (DistributedChangeableProperty<Serializable> pd : crd.context()
             .distributedConfiguration().properties()) {
+//            System.out.println("out == " + out);
             assertContains(log, out, pd.getName());
             assertContains(log, out, String.valueOf(pd.get()));
-            assertContains(log, out, pd.getName() + ": " + pd.get());
         }
     }
 
@@ -112,6 +112,7 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
 
         for (DistributedChangeableProperty<Serializable> pd : crd.context()
             .distributedConfiguration().properties()) {
+//            System.out.println("out == " + out);
             assertContains(log, out, pd.getName());
             assertNotContains(log, out, pd.getName() + ": " + pd.get());
         }

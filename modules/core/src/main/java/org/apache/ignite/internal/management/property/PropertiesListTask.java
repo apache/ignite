@@ -17,16 +17,22 @@
 
 package org.apache.ignite.internal.management.property;
 
+import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.Optional;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.management.property.PropertyListCommand.PropertiesTaskArg;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_READ_DISTRIBUTED_PROPERTY;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
 
@@ -34,12 +40,11 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.sys
  * Task for property operations.
  */
 @GridInternal
-public class PropertiesListTask extends VisorMultiNodeTask<PropertiesTaskArg, PropertiesListResult, PropertiesListResult> {
+public class PropertiesListTask extends VisorMultiNodeTask<PropertyListCommandArg, PropertiesListResult, PropertiesListResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** {@inheritDoc} */
-    @Override protected VisorJob<PropertiesTaskArg, PropertiesListResult> job(PropertiesTaskArg arg) {
+    @Override protected VisorJob<PropertyListCommandArg, PropertiesListResult> job(PropertyListCommandArg arg) {
         return new PropertiesListJob(arg, debug);
     }
 
@@ -60,14 +65,14 @@ public class PropertiesListTask extends VisorMultiNodeTask<PropertiesTaskArg, Pr
     /**
      * Job for property operations (get/set).
      */
-    private static class PropertiesListJob extends VisorJob<PropertiesTaskArg, PropertiesListResult> {
+    private static class PropertiesListJob extends VisorJob<PropertyListCommandArg, PropertiesListResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
          * @param debug Debug.
          */
-        protected PropertiesListJob(PropertiesTaskArg arg, boolean debug) {
+        protected PropertiesListJob(PropertyListCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -77,12 +82,35 @@ public class PropertiesListTask extends VisorMultiNodeTask<PropertiesTaskArg, Pr
         }
 
         /** {@inheritDoc} */
-        @Override protected PropertiesListResult run(@Nullable PropertiesTaskArg arg) {
-            return new PropertiesListResult(
-                ignite.context().distributedConfiguration().properties().stream()
-                    .map(pd -> arg.printValues() ? pd.getName() + ": " + pd.get() : pd.getName())
-                    .collect(Collectors.toList())
-            );
+        @Override protected PropertiesListResult run(@Nullable PropertyListCommandArg arg) {
+            List<DistributedChangeableProperty<Serializable>> properties =
+                ignite.context().distributedConfiguration().properties();
+
+            DistributedPropertiesDescription description = new DistributedPropertiesDescription();
+
+            Map<String, List<String>> map = new HashMap<>();
+                for (DistributedChangeableProperty<Serializable> p: properties) {
+                    Optional<Field> first = F.asList(description.getClass().getFields()).stream().filter(f -> {
+                        try {
+                            return f.get(description).equals(p.getName());
+                        }
+                        catch (IllegalAccessException e) {
+                            e.printStackTrace();
+                        }
+                        return false;
+                    }).findFirst();
+                    DistributedPropertyInfo info = first.orElseGet(null)
+                        .getAnnotation(DistributedPropertyInfo.class);
+                    if(info != null)
+                        map.put(p.getName(), F.asList(info.defaults(), String.valueOf(p.get()), info.description()));
+                }
+
+            return new PropertiesListResult(map);
+
+//                return new PropertiesListResult(
+//                    ignite.context().distributedConfiguration().properties().stream()
+//                        .collect(Collectors.toMap(DistributedProperty::getName, p-> F.asList(String.valueOf(p.get()))))
+//                );
         }
     }
 }
