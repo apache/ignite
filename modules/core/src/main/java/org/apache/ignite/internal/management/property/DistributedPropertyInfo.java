@@ -17,10 +17,20 @@
 
 package org.apache.ignite.internal.management.property;
 
-import org.apache.ignite.internal.management.property.PropertyListCommand.PropertiesTaskArg;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-/** */
-public class PropertiesCommandArg extends PropertiesTaskArg {
-    /** */
-    private static final long serialVersionUID = 0;
+/** Ignite Distributed property info. */
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD})
+public @interface DistributedPropertyInfo {
+    /** @return Description. */
+    String description() default "";
+
+    /** @return Default value. */
+    String defaults() default "";
 }
