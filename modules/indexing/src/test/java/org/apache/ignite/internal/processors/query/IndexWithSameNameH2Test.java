@@ -15,23 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
+package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.configuration.QueryEngineConfiguration;
+import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
+import org.apache.ignite.internal.processors.query.schema.IndexWithSameNameTestBase;
 
-/**
- * No operation, empty plugin processor for creating WAL iterator without node start up
- */
-class StandaloneIgnitePluginProcessor extends IgnitePluginProcessor {
-    /**
-     * @param ctx Kernal context.
-     * @param cfg Ignite configuration.
-     */
-    StandaloneIgnitePluginProcessor(GridKernalContext ctx, IgniteConfiguration cfg) throws IgniteCheckedException {
-        super(ctx, cfg, U.allPluginProviders(cfg, false));
+/** */
+public class IndexWithSameNameH2Test extends IndexWithSameNameTestBase {
+    /** {@inheritDoc} */
+    @Override protected QueryEngineConfiguration getEngineConfiguration() {
+        return new IndexingQueryEngineConfiguration().setDefault(true);
     }
 }

@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetServiceImpl;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -1373,8 +1374,9 @@ public class PlatformUtils {
      *
      * @param reader Reader.
      * @param isKey {@code True} if object is a key.
+     * @param ctx Client connection context.
      */
-    public static <T extends CacheObject> T readCacheObject(BinaryReaderExImpl reader, boolean isKey) {
+    public static <T extends CacheObject> T readCacheObject(BinaryReaderExImpl reader, boolean isKey, ClientConnectionContext ctx) {
         BinaryInputStream in = reader.in();
 
         int pos0 = in.position();
@@ -1393,7 +1395,9 @@ public class PlatformUtils {
 
         byte[] objBytes = in.readByteArray(pos1 - pos0);
 
-        return isKey ? (T)new KeyCacheObjectImpl(obj, objBytes, -1) : (T)new CacheObjectImpl(obj, objBytes);
+        return isKey ?
+            (T)new KeyCacheObjectImpl(obj, objBytes, -1) :
+            (T)new CacheObjectImpl(obj, ctx.kernalContext().transformer() == null ? objBytes : null);
     }
 
     /**
