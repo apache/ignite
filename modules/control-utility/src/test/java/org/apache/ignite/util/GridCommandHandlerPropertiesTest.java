@@ -39,7 +39,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.GridCacheD
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TRANSFER_RATE_BYTES;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
-import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 
 /**
  * Checks command line property commands.
@@ -96,6 +95,7 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
             .distributedConfiguration().properties()) {
             assertContains(log, out, pd.getName());
             assertContains(log, out, String.valueOf(pd.get()));
+            assertContains(log, out, pd.getDescription());
         }
     }
 
@@ -112,7 +112,6 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
         for (DistributedChangeableProperty<Serializable> pd : crd.context()
             .distributedConfiguration().properties()) {
             assertContains(log, out, pd.getName());
-            assertNotContains(log, out, pd.getName() + ": " + pd.get());
         }
     }
 

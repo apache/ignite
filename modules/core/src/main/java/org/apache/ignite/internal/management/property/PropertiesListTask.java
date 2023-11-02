@@ -40,6 +40,7 @@ public class PropertiesListTask extends VisorMultiNodeTask<PropertyListCommandAr
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** {@inheritDoc} */
     @Override protected VisorJob<PropertyListCommandArg, PropertiesListResult> job(PropertyListCommandArg arg) {
         return new PropertiesListJob(arg, debug);
     }
@@ -79,11 +80,11 @@ public class PropertiesListTask extends VisorMultiNodeTask<PropertyListCommandAr
 
         /** {@inheritDoc} */
         @Override protected PropertiesListResult run(@Nullable PropertyListCommandArg arg) {
-                return new PropertiesListResult(
-                    ignite.context().distributedConfiguration().properties().stream()
-                        .collect(Collectors.toMap(DistributedProperty::getName,
-                            p -> F.asList(String.valueOf(p.get()), p.getDescription())))
-                );
+            return new PropertiesListResult(
+                ignite.context().distributedConfiguration().properties().stream()
+                    .collect(Collectors.toMap(DistributedProperty::getName,
+                        p -> F.asList(String.valueOf(p.get()), p.getDescription())))
+            );
         }
     }
 }

@@ -49,7 +49,7 @@ public class PropertyListCommand implements ComputeCommand<PropertyListCommandAr
                 .map(x -> SystemViewTask.SimpleType.STRING).collect(Collectors.toList());
 
             List<List<?>> data = res.properties().keySet().stream()
-                .map(key-> F.asList(F.asList(key),
+                .map(key -> F.asList(F.asList(key),
                     F.asList(res.properties().get(key).get(0)),
                     F.asList(res.properties().get(key).get(1))))
                 .collect(Collectors.toList());
