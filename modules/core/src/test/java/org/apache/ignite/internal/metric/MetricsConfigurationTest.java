@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.metric;
 
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Supplier;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -27,8 +34,10 @@ import org.apache.ignite.internal.processors.metric.MetricsMxBeanImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.PeriodicHistogramMetricImpl;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.metric.HistogramMetric;
+import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -40,6 +49,7 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotEquals;
 
@@ -58,7 +68,11 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
     public static final long[] BOUNDS = new long[] {50, 100};
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids(false);
+
         cleanPersistenceDir();
     }
 
@@ -304,6 +318,115 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
             assertNull(g0.context().distributedMetastorage().read(metricName(cacheRegName, "GetTime")));
             assertNull(g1.context().distributedMetastorage().read(metricName(cacheRegName, "GetTime")));
         });
+    }
+
+    /**
+     * Tests that histogram configuration is stored and read again after node restart.
+     */
+    @Test
+    public void testHistogramCfgKeptAfterNodeRestart() throws Exception {
+        doTestMetricConfigStoredAfterReatart(
+            "threadPools.StripedExecutor",
+            "TaskExecutionTime",
+            () -> BOUNDS,
+            (metric, cfgValue) -> F.arrayEq(cfgValue, ((HistogramMetric)metric).bounds()),
+            (node, newCfgValue) -> {
+                try {
+                    node.context().metric().configureHistogram("threadPools.StripedExecutor.TaskExecutionTime", newCfgValue);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException("Unable to configure histogram.", e);
+                }
+            },
+            HISTOGRAM_NAME
+        );
+    }
+
+    /**
+     * Tests that hit rate metric configuration is stored and read again after node restart.
+     */
+    @Test
+    public void testHitRateCfgKeptAfterNodeRestart() throws Exception {
+        doTestMetricConfigStoredAfterReatart(
+            "io.dataregion.default",
+            "AllocationRate",
+            () -> 10_000L,
+            (metric, cfgValue) -> cfgValue == ((HitRateMetric)metric).rateTimeInterval(),
+            (node, newCfgValue) -> {
+                try {
+                    node.context().metric().configureHitRate("io.dataregion.default.AllocationRate", newCfgValue);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException("Unable to configure hit rate metric.", e);
+                }
+            },
+            HITRATE_NAME
+        );
+    }
+
+    /**
+     * Tests that metric configuration is stored and read again after node restart.
+     *
+     * @param regName The registry name.
+     * @param metricName The metric name.
+     * @param newCfgValue New value supplier to the metric config.
+     * @param cfgChecker Returns {@code true} if {@code newCfgValue} is actually set to the metric.
+     * @param configurer Assigns {@code newCfgValue} to the metric.
+     * @param metaStorageMetricType Name of the metric syb-type in Metastorage.
+     */
+    private <T> void doTestMetricConfigStoredAfterReatart(
+        String regName,
+        String metricName,
+        Supplier<T> newCfgValue,
+        BiFunction<Metric, T, Boolean> cfgChecker,
+        BiConsumer<IgniteEx, T> configurer,
+        String metaStorageMetricType
+    ) throws Exception {
+        String gridName = "persistentGrid";
+
+        IgniteEx ignite = startGrid(gridName);
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        Metric metric = ignite.context().metric().registry(regName).findMetric(metricName);
+
+        assertFalse(cfgChecker.apply(metric, newCfgValue.get()));
+
+        configurer.accept(ignite, newCfgValue.get());
+
+        assertTrue(cfgChecker.apply(metric, newCfgValue.get()));
+
+        waitForCondition(() -> {
+            try {
+                Object metaV = ignite.context().distributedMetastorage().read(
+                    metricName("metrics", metaStorageMetricType, metricName(regName, metricName)));
+
+                return F.eq(metaV, newCfgValue.get()) || F.arrayEq(metaV, newCfgValue.get());
+            }
+            catch (Throwable ignored) {
+                return false;
+            }
+        }, getTestTimeout());
+
+        stopGrid(gridName, false);
+
+        metric = startGrid(gridName).context().metric().registry(regName).findMetric(metricName);
+
+        assertTrue(cfgChecker.apply(metric, newCfgValue.get()));
+    }
+
+    /**
+     * Execute query on given node.
+     *
+     * @param node Node.
+     * @param sql Statement.
+     */
+    private List<List<?>> execute(IgniteEx node, String sql, Object... args) {
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql)
+            .setArgs(args)
+            .setSchema("PUBLIC");
+
+        return node.context().query().querySqlFields(qry, true).getAll();
     }
 
     /** Tests metric configuration removed on registry remove. */
