@@ -80,29 +80,11 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
         cctx.add(new GridMetricManager(cctx));
         cctx.add(new GridSystemViewManager(cctx));
 
-        GridCacheSharedContext<Object, Object> sharedCtx = new GridCacheSharedContext<>(
-            cctx,
-            null,
-            null,
-            null,
-            new NoOpPageStoreManager(),
-            new NoOpWALManager(),
-            null,
-            new IgniteCacheDatabaseSharedManager(cctx),
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-        );
+        GridCacheSharedContext<Object, Object> sharedCtx = GridCacheSharedContext.builder()
+            .setPageStoreManager(new NoOpPageStoreManager())
+            .setWalManager(new NoOpWALManager())
+            .setDatabaseManager(new IgniteCacheDatabaseSharedManager(cctx))
+            .build(cctx, null);
 
         IgniteOutClosure<CheckpointProgress> clo = () -> Mockito.mock(CheckpointProgressImpl.class);
 

@@ -261,7 +261,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     CU.isPersistenceEnabled(ctx.config()) && binaryMetadataFileStoreDir == null ?
                         resolveBinaryWorkDir(ctx.config().getWorkDirectory(),
                             ctx.pdsFolderResolver().resolveFolders().folderName()) :
-                        binaryMetadataFileStoreDir);
+                        binaryMetadataFileStoreDir,
+                    false);
 
                 metadataFileStore.start();
             }
@@ -1019,7 +1020,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 ctx,
                 log,
                 resolveBinaryWorkDir(dir.getAbsolutePath(),
-                    ctx.pdsFolderResolver().resolveFolders().folderName()));
+                    ctx.pdsFolderResolver().resolveFolders().folderName()),
+                true
+            );
 
             for (BinaryType type : types)
                 writer.mergeAndWriteMetadata(((BinaryTypeImpl)type).metadata());
@@ -1037,7 +1040,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         try {
             ConcurrentMap<Integer, BinaryMetadataHolder> metaCache = new ConcurrentHashMap<>();
 
-            new BinaryMetadataFileStore(metaCache, ctx, log, metadataDir)
+            new BinaryMetadataFileStore(metaCache, ctx, log, metadataDir, false)
                 .restoreMetadata();
 
             Collection<BinaryMetadata> metadata = F.viewReadOnly(metaCache.values(), BinaryMetadataHolder::metadata);
@@ -1073,7 +1076,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         ConcurrentMap<Integer, BinaryMetadataHolder> metaCache = new ConcurrentHashMap<>();
 
-        new BinaryMetadataFileStore(metaCache, ctx, log, metadataDir).restoreMetadata(typeId);
+        new BinaryMetadataFileStore(metaCache, ctx, log, metadataDir, false).restoreMetadata(typeId);
 
         addMetaLocally(typeId, metaCache.get(typeId).metadata().wrap(binaryContext()), false);
     }

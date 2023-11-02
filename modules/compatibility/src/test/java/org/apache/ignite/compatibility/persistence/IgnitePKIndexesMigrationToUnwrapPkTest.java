@@ -21,6 +21,7 @@ package org.apache.ignite.compatibility.persistence;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.compatibility.testframework.junits.SkipTestIfIsJdkNewer;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.junit.Test;
@@ -28,6 +29,7 @@ import org.junit.Test;
 /**
  * Test to check that starting node with PK index of the old format present doesn't break anything.
  */
+@SkipTestIfIsJdkNewer(11)
 public class IgnitePKIndexesMigrationToUnwrapPkTest extends IndexAbstractCompatibilityTest {
     /** */
     private static final String TABLE_NAME = "TEST_IDX_TABLE";

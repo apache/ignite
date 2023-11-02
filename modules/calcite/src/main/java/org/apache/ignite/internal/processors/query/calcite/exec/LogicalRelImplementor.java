@@ -280,7 +280,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             rel.rightCollation().getFieldCollations().subList(0, pairsCnt)
         );
 
-        Node<Row> node = MergeJoinNode.create(ctx, outType, leftType, rightType, joinType, comp);
+        Node<Row> node = MergeJoinNode.create(ctx, outType, leftType, rightType, joinType, comp, hasExchange(rel));
 
         Node<Row> leftInput = visit(rel.getLeft());
         Node<Row> rightInput = visit(rel.getRight());
@@ -288,6 +288,19 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         node.register(F.asList(leftInput, rightInput));
 
         return node;
+    }
+
+    /** */
+    private boolean hasExchange(RelNode rel) {
+        if (rel instanceof IgniteReceiver)
+            return true;
+
+        for (RelNode in : rel.getInputs()) {
+            if (hasExchange(in))
+                return true;
+        }
+
+        return false;
     }
 
     /** {@inheritDoc} */

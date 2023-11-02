@@ -1092,6 +1092,21 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Gets all plugin providers.
+     *
+     * @param cfg Configuration.
+     * @param includeClsPath Include classpath plugins on empty config.
+     * @return Plugins.
+     */
+    public static List<PluginProvider> allPluginProviders(IgniteConfiguration cfg, boolean includeClsPath) {
+        return cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0 ?
+            Arrays.asList(cfg.getPluginProviders()) :
+            includeClsPath ?
+                U.allPluginProviders() :
+                Collections.emptyList();
+    }
+
+    /**
      * @param svcCls Service class to load.
      * @param <S> Type of loaded interfaces.
      * @return Lazy iterable structure over loaded class implementations.
@@ -10025,7 +10040,21 @@ public abstract class IgniteUtils {
      * @return Resolved work directory.
      * @throws IgniteCheckedException If failed.
      */
-    public static File resolveWorkDirectory(String workDir, String path, boolean delIfExist)
+    public static File resolveWorkDirectory(String workDir, String path, boolean delIfExist) throws IgniteCheckedException {
+        return resolveWorkDirectory(workDir, path, delIfExist, true);
+    }
+
+    /**
+     * Resolves work directory.
+     *
+     * @param workDir Work directory.
+     * @param path Path to resolve.
+     * @param delIfExist Flag indicating whether to delete the specify directory or not.
+     * @param create If {@code true} then directory must be created if not exists.
+     * @return Resolved work directory.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static File resolveWorkDirectory(String workDir, String path, boolean delIfExist, boolean create)
         throws IgniteCheckedException {
         File dir = new File(path);
 
@@ -10040,6 +10069,9 @@ public abstract class IgniteUtils {
             if (!U.delete(dir))
                 throw new IgniteCheckedException("Failed to delete directory: " + dir);
         }
+
+        if (!create)
+            return dir;
 
         if (!mkdirs(dir))
             throw new IgniteCheckedException("Directory does not exist and cannot be created: " + dir);

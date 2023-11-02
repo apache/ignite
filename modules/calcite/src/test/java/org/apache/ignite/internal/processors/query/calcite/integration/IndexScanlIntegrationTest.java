@@ -419,7 +419,7 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
         RowCountingIndex idx = null;
 
         for (Ignite ignite : G.allGrids()) {
-            IgniteTable tbl = (IgniteTable)queryProcessor((IgniteEx)ignite).schemaHolder().schema("PUBLIC").getTable(tableName);
+            IgniteTable tbl = (IgniteTable)queryProcessor(ignite).schemaHolder().schema("PUBLIC").getTable(tableName);
 
             if (ignite == node) {
                 idx = new RowCountingIndex(tbl.getIndex(idxName));

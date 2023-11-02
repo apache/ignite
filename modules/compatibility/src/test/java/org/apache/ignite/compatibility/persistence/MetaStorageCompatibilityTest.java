@@ -23,6 +23,7 @@ import java.nio.file.OpenOption;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.compatibility.testframework.junits.SkipTestIfIsJdkNewer;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -48,6 +49,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 /**
  * Tests migration of metastorage.
  */
+@SkipTestIfIsJdkNewer(11)
 public class MetaStorageCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** Consistent id. */
     private static final String CONSISTENT_ID_1 = "node1";

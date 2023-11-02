@@ -91,6 +91,7 @@ import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
@@ -264,7 +265,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_RESTART_ENABL
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_PORT_RANGE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SHUTDOWN_POLICY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SPI_CLASS;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_SERIALIZABLE_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.BUILD_TSTAMP_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
@@ -917,8 +918,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 throw new IgniteCheckedException("User attribute has illegal name: '" + name + "'. Note that all names " +
                     "starting with '" + ATTR_PREFIX + "' are reserved for internal use.");
 
-        List<PluginProvider> plugins = cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0 ?
-            Arrays.asList(cfg.getPluginProviders()) : U.allPluginProviders();
+        List<PluginProvider> plugins = U.allPluginProviders(cfg, true);
 
         // Spin out SPIs & managers.
         try {
@@ -1100,6 +1100,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 startProcessor(new DistributedMetaStorageImpl(ctx));
                 startProcessor(new DistributedConfigurationProcessor(ctx));
                 startProcessor(new DurableBackgroundTasksProcessor(ctx));
+
+                CacheObjectTransformerProcessor transProc = createComponent(CacheObjectTransformerProcessor.class, ctx);
+
+                if (transProc != null)
+                    startProcessor(transProc);
 
                 startTimer.finishGlobalStage("Start processors");
 
@@ -1695,7 +1700,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         addDataStorageConfigurationAttributes();
 
         // Save transactions configuration.
-        add(ATTR_TX_CONFIG, cfg.getTransactionConfiguration());
+        add(ATTR_TX_SERIALIZABLE_ENABLED, cfg.getTransactionConfiguration().isTxSerializableEnabled());
 
         // Supported features.
         add(ATTR_IGNITE_FEATURES, IgniteFeatures.allFeatures());
@@ -3320,6 +3325,9 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         if (cls.equals(IgniteRestProcessor.class))
             return (T)new GridRestProcessor(ctx);
+
+        if (cls.equals(CacheObjectTransformerProcessor.class))
+            return null;
 
         Class<T> implCls = null;
 

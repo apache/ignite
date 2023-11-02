@@ -597,12 +597,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED = "IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED";
 
     /**
-     * Flag indicating whether atomic operations allowed to be used inside transactions.
-     * Since 2.15.0 atomic operations inside transactions are not allowed by default.
+     * Flag indicating whether atomic and transactional caches are allowed inside the same cache group.
+     * Since 2.16.0 mixed cache groups are not allowed by default.
      */
-    @SystemProperty(value = "Allows atomic operations inside transactions",
-        defaults = "false")
-    public static final String IGNITE_ALLOW_ATOMIC_OPS_IN_TX = "IGNITE_ALLOW_ATOMIC_OPS_IN_TX";
+    @SystemProperty(value = "Allows mixed cache groups", defaults = "false")
+    public static final String IGNITE_ALLOW_MIXED_CACHE_GROUPS = "IGNITE_ALLOW_MIXED_CACHE_GROUPS";
 
     /**
      * Atomic cache deferred update response buffer size.

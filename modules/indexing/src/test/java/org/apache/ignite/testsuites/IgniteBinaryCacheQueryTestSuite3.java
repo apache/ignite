@@ -22,6 +22,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKey
 import org.apache.ignite.internal.cdc.CacheEventsCdcTest;
 import org.apache.ignite.internal.cdc.CdcIndexRebuildTest;
 import org.apache.ignite.internal.cdc.SqlCdcTest;
+import org.apache.ignite.internal.dump.DumpCacheConfigTest;
 import org.apache.ignite.internal.metric.SystemViewSelfTest;
 import org.apache.ignite.internal.processors.cache.BigEntryQueryTest;
 import org.apache.ignite.internal.processors.cache.BinaryMetadataConcurrentUpdateWithIndexesTest;
@@ -86,6 +87,7 @@ import org.apache.ignite.internal.processors.cache.index.BasicJavaTypesIndexTest
 import org.apache.ignite.internal.processors.cache.index.BasicSqlTypesIndexTest;
 import org.apache.ignite.internal.processors.cache.index.DateIndexKeyTypeTest;
 import org.apache.ignite.internal.processors.cache.index.H2ConnectionLeaksSelfTest;
+import org.apache.ignite.internal.processors.cache.index.H2ConnectionSettingsTest;
 import org.apache.ignite.internal.processors.cache.index.H2RowCachePageEvictionTest;
 import org.apache.ignite.internal.processors.cache.index.H2RowCacheSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2RowExpireTimeIndexSelfTest;
@@ -254,6 +256,7 @@ import org.junit.runners.Suite;
     GridCacheQuerySqlFieldInlineSizeSelfTest.class,
     IgniteSqlParameterizedQueryTest.class,
     H2ConnectionLeaksSelfTest.class,
+    H2ConnectionSettingsTest.class,
     IgniteCheckClusterStateBeforeExecuteQueryTest.class,
     OptimizedMarshallerIndexNameTest.class,
     SqlSystemViewsSelfTest.class,
@@ -370,7 +373,9 @@ import org.junit.runners.Suite;
     // CDC tests.
     SqlCdcTest.class,
     CacheEventsCdcTest.class,
-    CdcIndexRebuildTest.class
+    CdcIndexRebuildTest.class,
+
+    DumpCacheConfigTest.class
 })
 public class IgniteBinaryCacheQueryTestSuite3 {
     /** Setup lazy mode default. */

@@ -367,7 +367,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(plan);
 
-        return plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
+        return plan.init(this::intermediateMapping, null, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
     }
 
     /**

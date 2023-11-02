@@ -166,10 +166,9 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         DiscoverySpi srvSpi = ignite(0).configuration().getDiscoverySpi();
 
-        final IgniteCache<Object, Object> cache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME))
-            .withAllowAtomicOpsInTx();
+        final IgniteCache<Object, Object> cache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
-        final IgniteCache<Object, Object> staticCache = client.cache(STATIC_CACHE).withAllowAtomicOpsInTx();
+        final IgniteCache<Object, Object> staticCache = client.cache(STATIC_CACHE);
 
         staticCache.put(1, 1);
 
@@ -180,8 +179,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setName(NEAR_CACHE_NAME);
 
-        final IgniteCache<Object, Object> nearCache = client.getOrCreateCache(ccfg, new NearCacheConfiguration<>())
-            .withAllowAtomicOpsInTx();
+        final IgniteCache<Object, Object> nearCache = client.getOrCreateCache(ccfg, new NearCacheConfiguration<>());
 
         nearCache.put(1, 1);
 
@@ -835,7 +833,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         int cnt = 0;
 
-        for (CacheAtomicityMode atomicityMode : CacheAtomicityMode._values()) {
+        for (CacheAtomicityMode atomicityMode : CacheAtomicityMode.values()) {
             for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
                 CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 

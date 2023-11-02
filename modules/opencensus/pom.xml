@@ -81,6 +81,7 @@
             <groupId>io.opencensus</groupId>
             <artifactId>opencensus-exporter-trace-zipkin</artifactId>
             <version>${opencensus.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>

@@ -138,7 +138,7 @@ public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
      */
     @Test
     public void testJoinQuery3() throws Exception {
-        joinQuery(GROUP1, GROUP1, PARTITIONED, PARTITIONED, TRANSACTIONAL, ATOMIC);
+        joinQuery(GROUP1, GROUP1, PARTITIONED, PARTITIONED, TRANSACTIONAL, TRANSACTIONAL);
     }
 
     /**
@@ -146,7 +146,7 @@ public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
      */
     @Test
     public void testJoinQuery4() throws Exception {
-        joinQuery(GROUP1, GROUP1, REPLICATED, REPLICATED, ATOMIC, TRANSACTIONAL);
+        joinQuery(GROUP1, GROUP1, REPLICATED, REPLICATED, TRANSACTIONAL, TRANSACTIONAL);
     }
 
     /**
@@ -184,14 +184,14 @@ public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
         IgniteCache pers = srv0.createCache(personCacheConfiguration(grp1, "pers")
             .setAffinity(new RendezvousAffinityFunction().setPartitions(10))
             .setCacheMode(cm1)
-            .setAtomicityMode(cam1)).withAllowAtomicOpsInTx();
+            .setAtomicityMode(cam1));
 
         IgniteCache acc = srv0.createCache(accountCacheConfiguration(grp2, "acc")
             .setAffinity(new RendezvousAffinityFunction().setPartitions(10))
             .setCacheMode(cm2)
-            .setAtomicityMode(cam2)).withAllowAtomicOpsInTx();
+            .setAtomicityMode(cam2));
 
-        try (Transaction tx = cam1 == TRANSACTIONAL || cam2 == TRANSACTIONAL ? srv0.transactions().txStart() : null) {
+        try (Transaction tx = cam1 == TRANSACTIONAL && cam2 == TRANSACTIONAL ? srv0.transactions().txStart() : null) {
             for (int i = 0; i < keys; i++) {
 
                 int pKey = i - (i % accsPerPerson);

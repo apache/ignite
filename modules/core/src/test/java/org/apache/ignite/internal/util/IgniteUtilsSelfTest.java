@@ -69,6 +69,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.ConsumerX;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1471,7 +1472,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      * @param consumer Consumer.
      * @throws Exception If failed.
      */
-    private void readLines(String rsrcName, ThrowableConsumer<String> consumer) throws Exception {
+    private void readLines(String rsrcName, ConsumerX<String> consumer) throws Exception {
         byte[] content = readResource(getClass().getClassLoader(), rsrcName);
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(content)))) {
@@ -1654,25 +1655,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
     /** */
     private interface I5 extends I4 {}
-
-    /**
-     * Represents an operation that accepts a single input argument and returns
-     * no result. Unlike most other functional interfaces,
-     * {@code ThrowableConsumer} is expected to operate via side-effects.
-     *
-     * Also it is able to throw {@link Exception} unlike {@link Consumer}.
-     *
-     * @param <T> The type of the input to the operation.
-     */
-    @FunctionalInterface
-    private static interface ThrowableConsumer<T> {
-        /**
-         * Performs this operation on the given argument.
-         *
-         * @param t the input argument.
-         */
-        void accept(@Nullable T t) throws Exception;
-    }
 
     /**
      * Test to verify the {@link U#hashToIndex(int, int)}.

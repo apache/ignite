@@ -71,6 +71,8 @@ public class JdbcThinTcpIoTest extends GridCommonAbstractTest {
 
         assertEquals(java.net.SocketTimeoutException.class, throwable.getCause().getClass());
 
-        assertTrue(throwable.getCause().getMessage().contains("connect timed out"));
+        String message = throwable.getCause().getMessage();
+
+        assertTrue(message.matches(".*[Cc]onnect timed out.*"));
     }
 }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 
 /**
@@ -38,7 +39,7 @@ public interface MultiStepPlan extends QueryPlan {
      *
      * @param ctx Planner context.
      */
-    ExecutionPlan init(MappingService mappingService, MappingQueryContext ctx);
+    ExecutionPlan init(MappingService mappingService, AffinityService affSvc, MappingQueryContext ctx);
 
     /**
      * @return Text representation of query plan
