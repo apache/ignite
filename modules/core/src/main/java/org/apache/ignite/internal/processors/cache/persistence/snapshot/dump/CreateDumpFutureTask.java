@@ -73,6 +73,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.dumpPartFileName;
+import static org.apache.ignite.internal.util.IgniteUtils.toLong;
 
 /**
  * Task creates cache group dump.
@@ -100,7 +101,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
      * Dump contextes.
      * Key is [group_id, partition_id] combined in single long value.
      *
-     * @see #toLong(int, int)
+     * @see IgniteUtils#toLong(int, int)
      */
     private final Map<Long, PartitionDumpContext> dumpCtxs = new ConcurrentHashMap<>();
 
@@ -590,11 +591,6 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
             U.closeQuiet(file);
         }
-    }
-
-    /** */
-    public static long toLong(int high, int low) {
-        return (((long)high) << Integer.SIZE) | (low & 0xffffffffL);
     }
 
     /** */
