@@ -1038,6 +1038,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         List<GridCacheClearAllRunnable<K, V>> jobs = splitClearLocally(srv, near, readers);
 
+        if (!ctx.isRecoveryMode() && ctx.events().isRecordable(EventType.EVT_CACHE_CLEARED))
+            ctx.events().addEvent(EventType.EVT_CACHE_CLEARED);
+
         if (!F.isEmpty(jobs)) {
             ExecutorService execSvc = null;
 
@@ -1131,8 +1134,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         Collection<ClusterNode> srvNodes = ctx.grid().cluster().forCacheNodes(name(), !near, near, false).nodes();
 
         if (!srvNodes.isEmpty()) {
-            if (!ctx.isRecoveryMode() && ctx.events().isRecordable(EventType.EVT_CACHE_CLEARED))
-                ctx.events().addEvent(EventType.EVT_CACHE_CLEARED);
             return ctx.kernalContext().task().execute(
                 new ClearTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), keys, near),
                 null,

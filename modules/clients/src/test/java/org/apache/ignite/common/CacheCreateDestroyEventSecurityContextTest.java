@@ -18,10 +18,11 @@
 package org.apache.ignite.common;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.Config;
@@ -29,6 +30,7 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
@@ -55,7 +57,7 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
 public class CacheCreateDestroyEventSecurityContextTest extends AbstractEventSecurityContextTest {
     /** Counter of the created cache. */
     private static final AtomicInteger CACHE_COUNTER = new AtomicInteger();
-    
+
     /** */
     private String operationInitiatorLogin;
 
@@ -90,12 +92,18 @@ public class CacheCreateDestroyEventSecurityContextTest extends AbstractEventSec
 
         ClientCacheConfiguration ccfg = clientCacheConfiguration();
 
+        Map<Integer, Integer> caches = new HashMap<>();
+
+        for (int i = 0; i < 100; i++)
+            caches.put(i, i);
+
         try (IgniteClient cli = Ignition.startClient(cfg)) {
-            checkCacheEvents(() -> cli.createCache(ccfg).put(UUID.randomUUID(), UUID.randomUUID()), EVT_CACHE_STARTED);
-            checkCacheEvents(() -> cli.getOrCreateCache(ccfg.getName()).clear(), EVT_CACHE_CLEARED);
+            checkCacheEvents(() -> cli.createCache(ccfg.getName()).putAll(caches), EVT_CACHE_STARTED);
+            checkCacheEvents(() -> cli.cache(ccfg.getName()).clear(), EVT_CACHE_CLEARED);
             checkCacheEvents(() -> cli.destroyCache(ccfg.getName()), EVT_CACHE_STOPPED);
 
-            checkCacheEvents(() -> cli.createCacheAsync(ccfg).get(), EVT_CACHE_STARTED);
+            checkCacheEvents(() -> cli.createCacheAsync(ccfg).get().putAllAsync(caches), EVT_CACHE_STARTED);
+            checkCacheEvents(() -> cli.cache(ccfg.getName()).clearAsync(), EVT_CACHE_CLEARED);
             checkCacheEvents(() -> cli.destroyCacheAsync(ccfg.getName()).get(), EVT_CACHE_STOPPED);
 
             checkCacheEvents(() -> cli.getOrCreateCache(clientCacheConfiguration()), EVT_CACHE_STARTED);
@@ -155,14 +163,23 @@ public class CacheCreateDestroyEventSecurityContextTest extends AbstractEventSec
     private void testNode(boolean isClient) throws Exception {
         operationInitiatorLogin = isClient ? "cli" : "crd";
 
-        Ignite ignite = grid(operationInitiatorLogin);
+        IgniteEx ignite = grid(operationInitiatorLogin);
 
         CacheConfiguration<?, ?> ccfg = cacheConfiguration();
+
+        IgniteCache<Integer, Integer> caches = ignite.createCache(ccfg.getName());
+
+        for (int i = 0; i < 100; i++)
+            caches.put(i, i);
+
+        checkCacheEvents(() -> ignite.context().cache().cache(ccfg.getName()).clear(), EVT_CACHE_CLEARED);
+        checkCacheEvents(() -> ignite.cache(ccfg.getName()).destroy(), EVT_CACHE_STOPPED);
 
         checkCacheEvents(() -> ignite.createCache(ccfg), EVT_CACHE_STARTED);
         checkCacheEvents(() -> ignite.destroyCache(ccfg.getName()), EVT_CACHE_STOPPED);
 
-        checkCacheEvents(() -> ignite.createCaches(singletonList(ccfg)), EVT_CACHE_STARTED);
+        checkCacheEvents(() -> ignite.createCaches(singletonList(ccfg)).add(caches), EVT_CACHE_STARTED);
+        checkCacheEvents(() -> ignite.context().cache().cache(ccfg.getName()).clear(), EVT_CACHE_CLEARED);
         checkCacheEvents(() -> ignite.destroyCaches(singletonList(ccfg.getName())), EVT_CACHE_STOPPED);
 
         checkCacheEvents(() -> ignite.getOrCreateCache(cacheConfiguration()), EVT_CACHE_STARTED);
