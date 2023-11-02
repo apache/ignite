@@ -418,7 +418,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private volatile WALPointer lastCheckpointPtr = new WALPointer(0, 0, 0);
 
     /** CDC disabled flag. */
-    private final DistributedBooleanProperty cdcDisabled = detachedBooleanProperty(CDC_DISABLED);
+    private final DistributedBooleanProperty cdcDisabled = detachedBooleanProperty(CDC_DISABLED, "CDC disabled flag.");
 
     /**
      * Constructor.

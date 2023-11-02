@@ -69,7 +69,8 @@ public abstract class DistributedSqlConfiguration {
 
                     dfltQryTimeout = new SimpleDistributedProperty<>(
                         QUERY_TIMEOUT_PROPERTY_NAME,
-                        SimpleDistributedProperty::parseNonNegativeInteger
+                        SimpleDistributedProperty::parseNonNegativeInteger,
+                        "Query timeout."
                     );
 
                     dfltQryTimeout.addListener(makeUpdateListener(PROPERTY_UPDATE_MESSAGE, log));

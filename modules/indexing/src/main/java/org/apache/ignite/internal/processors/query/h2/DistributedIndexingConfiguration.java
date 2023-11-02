@@ -57,7 +57,8 @@ public class DistributedIndexingConfiguration extends DistributedSqlConfiguratio
     /** Disabled SQL functions. */
     private final SimpleDistributedProperty<HashSet<String>> disabledSqlFuncs = new SimpleDistributedProperty<>(
         "sql.disabledFunctions",
-        SimpleDistributedProperty::parseStringSet
+        SimpleDistributedProperty::parseStringSet,
+        "Disabled SQL functions."
     );
 
     /**
@@ -65,7 +66,9 @@ public class DistributedIndexingConfiguration extends DistributedSqlConfiguratio
      * See: 'H2TableDescriptor#luceneIdx'.
      */
     private final DistributedBooleanProperty disableCreateLuceneIndexForStringValueType =
-        DistributedBooleanProperty.detachedBooleanProperty("sql.disableCreateLuceneIndexForStringValueType");
+        DistributedBooleanProperty.detachedBooleanProperty("sql.disableCreateLuceneIndexForStringValueType",
+            "Disable creation Lucene index for String value type by default." +
+                "See: 'H2TableDescriptor#luceneIdx'.");
 
     /**
      * @param ctx Kernal context

@@ -33,12 +33,12 @@ public final class DistributedPropertiesDescription {
      */
     @DistributedPropertyInfo(description = "Shows if dump requests from local node to near node are allowed",
         defaults = true + " ")
-    public static final String txOwnerDumpRequestsAllowed = "txOwnerDumpRequestsAllowed";
+    public static final String txOwnerDumpRequestsAllowed = "txOwnerDumpRequestsAllowed"; // REG
 
     /** Long operations dump timeout. */
     @DistributedPropertyInfo(description = "Long operations dump timeout.",
         defaults = DFLT_LONG_OPERATIONS_DUMP_TIMEOUT + " ")
-    public static final String longOperationsDumpTimeout = "longOperationsDumpTimeout" ;
+    public static final String longOperationsDumpTimeout = "longOperationsDumpTimeout REG" ;
 
     /**
      * Threshold timeout for long transactions, if transaction exceeds it, it will be dumped in log with
@@ -47,12 +47,12 @@ public final class DistributedPropertiesDescription {
      * waiting it). Equals 0 if not set. No transactions are dumped in log if this parameter is not set.
      */
     @DistributedPropertyInfo(description = "Threshold timeout for long transactions", defaults = 0 + " ")
-    public static final String longTransactionTimeDumpThreshold = "longTransactionTimeDumpThreshold";
+    public static final String longTransactionTimeDumpThreshold = "longTransactionTimeDumpThreshold"; // REG
 
     /** The coefficient for samples of completed transactions that will be dumped in log. */
     @DistributedPropertyInfo(description = "The coefficient for samples of completed transactions that will be dumped in log",
         defaults = 0.0f + " ")
-    public static final String transactionTimeDumpSamplesCoefficient = "transactionTimeDumpSamplesCoefficient";
+    public static final String transactionTimeDumpSamplesCoefficient = "transactionTimeDumpSamplesCoefficient"; // REG
 
     /**
      * The limit of samples of completed transactions that will be dumped in log per second, if
@@ -61,22 +61,22 @@ public final class DistributedPropertiesDescription {
      */
     @DistributedPropertyInfo(description = "The limit of samples of completed transactions that will be dumped in log per second",
         defaults = 5 + " ")
-    public static final String longTransactionTimeDumpSamplesPerSecondLimit = "longTransactionTimeDumpSamplesPerSecondLimit";
+    public static final String longTransactionTimeDumpSamplesPerSecondLimit = "longTransactionTimeDumpSamplesPerSecondLimit"; // REG
 
     /** Collisions dump interval. */
     @DistributedPropertyInfo(description = "Collisions dump interval.", defaults = 1000 + " ")
-    public static final String collisionsDumpInterval = "collisionsDumpInterval";
+    public static final String collisionsDumpInterval = "collisionsDumpInterval REG";
 
     /** Disabled SQL functions. */
     @DistributedPropertyInfo(description = "Disabled SQL functions.",
         defaults = "FILE_READ, FILE_WRITE, CSVWRITE, CSVREAD, MEMORY_FREE, MEMORY_USED, LOCK_MODE, LINK_SCHEMA, " +
             "SESSION_ID, CANCEL_SESSION")
-    public static final String disabledFunctions = "sql.disabledFunctions";
+    public static final String disabledFunctions = "sql.disabledFunctions"; // REG
 
     /** Value of manual baseline control or auto adjusting baseline */
     @DistributedPropertyInfo(description = "Value of manual baseline control or auto adjusting baseline",
         defaults = false + "")
-    public static final String baselineAutoAdjustEnabled = "baselineAutoAdjustEnabled";
+    public static final String baselineAutoAdjustEnabled = "baselineAutoAdjustEnabled"; // REG
 
     /** Value of time which we would wait before the actual topology change since last discovery " +
      "event(node join/exit */
@@ -84,15 +84,15 @@ public final class DistributedPropertiesDescription {
         description = "Value of time which we would wait before the actual topology change since last discovery " +
             "event(node join/exit)",
         defaults = 0 + "")
-    public static final String baselineAutoAdjustTimeout = "baselineAutoAdjustTimeout";
+    public static final String baselineAutoAdjustTimeout = "baselineAutoAdjustTimeout"; // REG
 
     /** Snapshot transfer rate limit in bytes/sec. */
     @DistributedPropertyInfo(description = "Snapshot transfer rate limit in bytes/sec.", defaults = 0L + "")
-    public static final String snapshotTransferRate = "snapshotTransferRate";
+    public static final String snapshotTransferRate = "snapshotTransferRate"; // REG
 
     /** Query timeout. */
     @DistributedPropertyInfo(description = "Query timeout.", defaults = 0 + "")
-    public static final String dfltQryTimeout = "sql.defaultQueryTimeout";
+    public static final String dfltQryTimeout = "sql.defaultQueryTimeout"; // REG
 
     /**
      * Disable creation Lucene index for String value type by default.
@@ -100,7 +100,7 @@ public final class DistributedPropertiesDescription {
      */
     @DistributedPropertyInfo(description = "Disable creation Lucene index for String value type by default",
         defaults = false + "")
-    public static final String disableCreateLuceneIndexForStringValueType = "sql.disableCreateLuceneIndexForStringValueType";
+    public static final String disableCreateLuceneIndexForStringValueType = "sql.disableCreateLuceneIndexForStringValueType"; // REG
 
     /** . */
     @DistributedPropertyInfo(description = ".", defaults = false + "")
@@ -109,29 +109,29 @@ public final class DistributedPropertiesDescription {
     /** Timeout interrupt {@link GridJobWorker workers} after {@link GridJobWorker#cancel cancel} im mills. */
     @DistributedPropertyInfo(description = "Timeout interrupt {@link GridJobWorker workers} after " +
         "{@link GridJobWorker#cancel cancel} im mills.", defaults = 10_000 + "")
-    public static final String computeJobWorkerInterruptTimeout = "computeJobWorkerInterruptTimeout";
+    public static final String computeJobWorkerInterruptTimeout = "computeJobWorkerInterruptTimeout"; // REG
 
     /** Property for update policy of shutdown. */
     @DistributedPropertyInfo(description = "Property for update policy of shutdown.", defaults = "IMMEDIATE")
-    public static final String shutdown = "shutdown.policy";
+    public static final String shutdown = "shutdown.policy"; // REG
 
     /** Cluster wide statistics usage state. */
     @DistributedPropertyInfo(description = "Cluster wide statistics usage state.", defaults = "ON")
-    public static final String usageState = "statistics.usage.state";
+    public static final String usageState = "statistics.usage.state"; // REG
 
     /** Checkpoint frequency deviation. */
     @DistributedPropertyInfo(description = "Checkpoint frequency deviation.", defaults =  40 + "")
-    public static final String cpFreqDeviation = "checkpoint.deviation";
+    public static final String cpFreqDeviation = "checkpoint.deviation"; // REG
 
     /** WAL rebalance threshold. */
     @DistributedPropertyInfo(description = "WAL rebalance threshold. ", defaults =  500 + "")
-    public static final String historicalRebalanceThreshold = "historical.rebalance.threshold";
+    public static final String historicalRebalanceThreshold = "historical.rebalance.threshold"; // REG
 
     /**
      * The wrapper of {@code HashMap<TracingConfigurationCoordinates, TracingConfigurationParameters>}
      * for the distributed metastorage binding.
      */
     @DistributedPropertyInfo(description = "TRACING_CONFIGURATION_DISTRIBUTED_METASTORE_KEY ", defaults = "null")
-    public static final String TRACING_CONFIGURATION_DISTRIBUTED_METASTORE_KEY = "tr.config";
+    public static final String TRACING_CONFIGURATION_DISTRIBUTED_METASTORE_KEY = "tr.config"; // REG
 }
 

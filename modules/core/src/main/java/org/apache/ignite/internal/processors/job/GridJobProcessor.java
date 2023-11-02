@@ -322,7 +322,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
     /** Timeout interrupt {@link GridJobWorker workers} after {@link GridJobWorker#cancel cancel} im mills. */
     private final DistributedLongProperty computeJobWorkerInterruptTimeout =
-        detachedLongProperty(COMPUTE_JOB_WORKER_INTERRUPT_TIMEOUT);
+        detachedLongProperty(COMPUTE_JOB_WORKER_INTERRUPT_TIMEOUT,
+            "Timeout interrupt {@link GridJobWorker workers} after {@link GridJobWorker#cancel cancel} im mills.");
 
     /**
      * @param ctx Kernal context.

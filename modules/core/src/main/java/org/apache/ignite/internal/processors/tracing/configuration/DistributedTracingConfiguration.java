@@ -37,7 +37,7 @@ public class DistributedTracingConfiguration
      * Constructor.
      */
     public DistributedTracingConfiguration() {
-        super(TRACING_CONFIGURATION_DISTRIBUTED_METASTORE_KEY, null);
+        super(TRACING_CONFIGURATION_DISTRIBUTED_METASTORE_KEY, null, "");
     }
 
     /**

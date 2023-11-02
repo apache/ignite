@@ -77,6 +77,6 @@ public class PropertiesListResult extends IgniteDataTransferObject {
      * @return Column titles.
      */
     public List<String> titles() {
-        return F.asList("Name", "Dflt", "Value", "Description");
+        return F.asList("Name", "Value", "Description");
     }
 }

@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.management.property;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.management.SystemViewTask;
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class PropertyListCommand implements ComputeCommand<PropertyListCommandArg, PropertiesListResult> {
@@ -49,7 +49,9 @@ public class PropertyListCommand implements ComputeCommand<PropertyListCommandAr
                 .map(x -> SystemViewTask.SimpleType.STRING).collect(Collectors.toList());
 
             List<List<?>> data = res.properties().keySet().stream()
-                .map(key-> Arrays.asList(key, res.properties().get(key)))
+                .map(key-> F.asList(F.asList(key),
+                    F.asList(res.properties().get(key).get(0)),
+                    F.asList(res.properties().get(key).get(1))))
                 .collect(Collectors.toList());
 
             SystemViewCommand.printTable(res.titles(), types, data, printer);

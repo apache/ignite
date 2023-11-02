@@ -83,11 +83,14 @@ public class DistributedTransactionConfiguration {
      * owner thread.
      */
     private final DistributedChangeableProperty<Boolean> txOwnerDumpRequestsAllowed =
-        detachedBooleanProperty("txOwnerDumpRequestsAllowed");
+        detachedBooleanProperty("txOwnerDumpRequestsAllowed",
+            "Shows if dump requests from local node to near node are allowed, when long running transaction" +
+                "is found. If allowed, the compute request to near node will be made to get thread dump of transaction" +
+                "owner thread.");
 
     /** Long operations dump timeout. */
     private final DistributedChangeableProperty<Long> longOperationsDumpTimeout =
-        detachedLongProperty("longOperationsDumpTimeout");
+        detachedLongProperty("longOperationsDumpTimeout", "Long operations dump timeout.");
 
     /**
      * Threshold timeout for long transactions, if transaction exceeds it, it will be dumped in log with
@@ -96,11 +99,16 @@ public class DistributedTransactionConfiguration {
      * waiting it). Equals 0 if not set. No transactions are dumped in log if this parameter is not set.
      */
     private final DistributedChangeableProperty<Long> longTransactionTimeDumpThreshold =
-        detachedLongProperty("longTransactionTimeDumpThreshold");
+        detachedLongProperty("longTransactionTimeDumpThreshold",
+            "Threshold timeout for long transactions, if transaction exceeds it, it will be dumped in log with" +
+                "information about how much time did it spent in system time (time while aquiring locks, preparing," +
+                "commiting, etc) and user time (time when client node runs some code while holding transaction and not" +
+                "waiting it). Equals 0 if not set. No transactions are dumped in log if this parameter is not set.");
 
     /** The coefficient for samples of completed transactions that will be dumped in log. */
     private final DistributedChangeableProperty<Double> transactionTimeDumpSamplesCoefficient =
-        detachedDoubleProperty("transactionTimeDumpSamplesCoefficient");
+        detachedDoubleProperty("transactionTimeDumpSamplesCoefficient",
+            "The coefficient for samples of completed transactions that will be dumped in log.");
 
     /**
      * The limit of samples of completed transactions that will be dumped in log per second, if
@@ -108,11 +116,15 @@ public class DistributedTransactionConfiguration {
      * greater than <code>0</code>.
      */
     private final DistributedChangeableProperty<Integer> longTransactionTimeDumpSamplesPerSecondLimit =
-        detachedIntegerProperty("longTransactionTimeDumpSamplesPerSecondLimit");
+        detachedIntegerProperty("longTransactionTimeDumpSamplesPerSecondLimit",
+            "The limit of samples of completed transactions that will be dumped in log per second, if" +
+                "{@link #transactionTimeDumpSamplesCoefficient} is above <code>0.0</code>. Must be integer value" +
+                "greater than <code>0</code>.");
 
     /** Collisions dump interval. */
     private final DistributedChangeableProperty<Integer> collisionsDumpInterval =
-        detachedIntegerProperty("collisionsDumpInterval");
+        detachedIntegerProperty("collisionsDumpInterval",
+            "Collisions dump interval.");
 
     /**
      * @param ctx Kernal context.

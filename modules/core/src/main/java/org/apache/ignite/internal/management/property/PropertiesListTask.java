@@ -17,15 +17,11 @@
 
 package org.apache.ignite.internal.management.property;
 
-import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedProperty;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -83,34 +79,11 @@ public class PropertiesListTask extends VisorMultiNodeTask<PropertyListCommandAr
 
         /** {@inheritDoc} */
         @Override protected PropertiesListResult run(@Nullable PropertyListCommandArg arg) {
-            List<DistributedChangeableProperty<Serializable>> properties =
-                ignite.context().distributedConfiguration().properties();
-
-            DistributedPropertiesDescription description = new DistributedPropertiesDescription();
-
-            Map<String, List<String>> map = new HashMap<>();
-                for (DistributedChangeableProperty<Serializable> p: properties) {
-                    Optional<Field> first = F.asList(description.getClass().getFields()).stream().filter(f -> {
-                        try {
-                            return f.get(description).equals(p.getName());
-                        }
-                        catch (IllegalAccessException e) {
-                            e.printStackTrace();
-                        }
-                        return false;
-                    }).findFirst();
-                    DistributedPropertyInfo info = first.orElseGet(null)
-                        .getAnnotation(DistributedPropertyInfo.class);
-                    if(info != null)
-                        map.put(p.getName(), F.asList(info.defaults(), String.valueOf(p.get()), info.description()));
-                }
-
-            return new PropertiesListResult(map);
-
-//                return new PropertiesListResult(
-//                    ignite.context().distributedConfiguration().properties().stream()
-//                        .collect(Collectors.toMap(DistributedProperty::getName, p-> F.asList(String.valueOf(p.get()))))
-//                );
+                return new PropertiesListResult(
+                    ignite.context().distributedConfiguration().properties().stream()
+                        .collect(Collectors.toMap(DistributedProperty::getName,
+                            p -> F.asList(String.valueOf(p.get()), p.getDescription())))
+                );
         }
     }
 }
