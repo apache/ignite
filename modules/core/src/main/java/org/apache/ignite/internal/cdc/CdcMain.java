@@ -367,6 +367,11 @@ public class CdcMain implements Runnable {
 
                 return cfg;
             }
+
+            /** {@inheritDoc} */
+            @Override public String igniteInstanceName() {
+                return config().getIgniteInstanceName();
+            }
         };
 
         kctx.resource().setSpringContext(ctx);
