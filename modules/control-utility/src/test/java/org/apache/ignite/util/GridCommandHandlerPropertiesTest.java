@@ -71,8 +71,8 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
         assertContains(log, out, "control.(sh|bat) --property help");
 
         assertContains(log, out, "Print list of available properties:");
-        assertContains(log, out, "control.(sh|bat) --property list [--print-values]");
-        assertContains(log, out, "--print-values  - Show the list with name: value properties.");
+        assertContains(log, out, "control.(sh|bat) --property list [--info]");
+        assertContains(log, out, "--info  - Print detailed information: name, value, description.");
 
         assertContains(log, out, "Get the property value:");
         assertContains(log, out, "control.(sh|bat) --property get --name <property_name>");
@@ -82,12 +82,12 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
     }
 
     /**
-     * Check the command ' --property list [--print-values]'.
+     * Check the command ' --property list [--info]'.
      * Steps:
      */
     @Test
     public void testListWithValues() {
-        assertEquals(EXIT_CODE_OK, execute("--property", "list", "--print-values"));
+        assertEquals(EXIT_CODE_OK, execute("--property", "list", "--info"));
 
         String out = testOut.toString();
 
@@ -95,7 +95,7 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
             .distributedConfiguration().properties()) {
             assertContains(log, out, pd.getName());
             assertContains(log, out, String.valueOf(pd.get()));
-            assertContains(log, out, pd.getDescription());
+            assertContains(log, out, pd.description());
         }
     }
 
@@ -110,9 +110,8 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
         String out = testOut.toString();
 
         for (DistributedChangeableProperty<Serializable> pd : crd.context()
-            .distributedConfiguration().properties()) {
+            .distributedConfiguration().properties())
             assertContains(log, out, pd.getName());
-        }
     }
 
     /**

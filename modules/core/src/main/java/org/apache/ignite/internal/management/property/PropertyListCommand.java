@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.management.property;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.management.SystemViewTask;
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 
 /** */
@@ -44,20 +46,22 @@ public class PropertyListCommand implements ComputeCommand<PropertyListCommandAr
 
     /** {@inheritDoc} */
     @Override public void printResult(PropertyListCommandArg arg, PropertiesListResult res, Consumer<String> printer) {
-        if (arg.printValues()) {
-            List<SystemViewTask.SimpleType> types = res.titles().stream()
+        if (arg.info()) {
+            List<SystemViewTask.SimpleType> types = F.asList("Name", "Value", "Description").stream()
                 .map(x -> SystemViewTask.SimpleType.STRING).collect(Collectors.toList());
 
-            List<List<?>> data = res.properties().keySet().stream()
-                .map(key -> F.asList(F.asList(key),
-                    F.asList(res.properties().get(key).get(0)),
-                    F.asList(res.properties().get(key).get(1))))
+            List<List<?>> data = res.properties().stream()
+                .map(p -> F.asList(p.get1(), p.get2(), p.get3()))
+                .sorted(Comparator.comparing(list -> list.get(0)))
                 .collect(Collectors.toList());
 
-            SystemViewCommand.printTable(res.titles(), types, data, printer);
+            SystemViewCommand.printTable(F.asList("Name", "Value", "Description"), types, data, printer);
         }
         else {
-            for (String prop : res.properties().keySet())
+            for (String prop : res.properties().stream()
+                .map(GridTuple3::get1)
+                .sorted()
+                .collect(Collectors.toList()))
                 printer.accept(prop);
         }
     }

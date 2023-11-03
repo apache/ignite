@@ -50,7 +50,7 @@ public class DistributedEnumProperty<T extends Enum> implements DistributedChang
      * Property constructor.
      *
      * @param name Name of property.
-     * @param desc Description of property.
+     * @param desc Property description.
      * @param fromOrdinalFunc Function reflects an integer to an enumiration value.
      * @param toOrdinalFunc Function converts an enumeration value to an integer.
      */
@@ -121,8 +121,8 @@ public class DistributedEnumProperty<T extends Enum> implements DistributedChang
     }
 
     /** {@inheritDoc} */
-    @Override public String getDescription() {
-        return internal.getDescription();
+    @Override public String description() {
+        return internal.description();
     }
 
     /** {@inheritDoc} */

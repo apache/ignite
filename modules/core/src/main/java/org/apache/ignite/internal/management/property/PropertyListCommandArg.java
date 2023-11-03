@@ -29,26 +29,26 @@ public class PropertyListCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Argument(optional = true, description = "Show the list with name: value properties.")
-    private boolean printValues;
+    @Argument(optional = true, description = "Print detailed information: name, value, description")
+    private boolean info;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeBoolean(printValues);
+        out.writeBoolean(info);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        printValues = in.readBoolean();
+        info = in.readBoolean();
     }
 
     /** */
-    public boolean printValues() {
-        return printValues;
+    public boolean info() {
+        return info;
     }
 
     /** */
-    public void printValues(boolean printValues) {
-        this.printValues = printValues;
+    public void info(boolean info) {
+        this.info = info;
     }
 }

@@ -123,7 +123,7 @@ public class SimpleDistributedProperty<T extends Serializable> implements Distri
     }
 
     /** {@inheritDoc} */
-    @Override public String getDescription() {
+    @Override public String description() {
         return description;
     }
 

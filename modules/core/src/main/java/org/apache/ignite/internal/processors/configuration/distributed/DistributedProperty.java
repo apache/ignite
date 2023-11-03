@@ -83,9 +83,9 @@ public interface DistributedProperty<T extends Serializable> {
     String getName();
 
     /**
-     * @return Description of property.
+     * @return Property description.
      */
-    String getDescription();
+    String description();
 
     /**
      * @param listener Update listener.

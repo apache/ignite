@@ -20,12 +20,10 @@ package org.apache.ignite.internal.management.property;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.Collection;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -36,8 +34,8 @@ public class PropertiesListResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Properties names. */
-    private Map<String, List<String>> props = new HashMap<>();
+    /** Properties info: name, value, description. */
+    private Collection<T3<String, String, String>> props;
 
     /**
      * Constructor for optimized marshaller.
@@ -49,13 +47,13 @@ public class PropertiesListResult extends IgniteDataTransferObject {
     /**
      * @param props Properties.
      */
-    public PropertiesListResult(Map<String, List<String>> props) {
+    public PropertiesListResult(Collection<T3<String, String, String>> props) {
         this.props = props;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, props);
+        U.writeCollection(out, props);
     }
 
     /** {@inheritDoc} */
@@ -63,20 +61,13 @@ public class PropertiesListResult extends IgniteDataTransferObject {
         byte protoVer,
         ObjectInput in
     ) throws IOException, ClassNotFoundException {
-        props = U.readHashMap(in);
+        props = U.readCollection(in);
     }
 
     /**
-     * @return Properties (name, description) collection.
+     * @return Properties (name, value, description) collection.
      */
-    public Map<String, List<String>> properties() {
+    public Collection<T3<String, String, String>> properties() {
         return props;
-    }
-
-    /**
-     * @return Column titles.
-     */
-    public List<String> titles() {
-        return F.asList("Name", "Value", "Description");
     }
 }

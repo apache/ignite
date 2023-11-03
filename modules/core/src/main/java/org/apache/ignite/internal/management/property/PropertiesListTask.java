@@ -21,9 +21,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedProperty;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
@@ -82,8 +81,8 @@ public class PropertiesListTask extends VisorMultiNodeTask<PropertyListCommandAr
         @Override protected PropertiesListResult run(@Nullable PropertyListCommandArg arg) {
             return new PropertiesListResult(
                 ignite.context().distributedConfiguration().properties().stream()
-                    .collect(Collectors.toMap(DistributedProperty::getName,
-                        p -> F.asList(String.valueOf(p.get()), p.getDescription())))
+                    .map(p -> new T3<>(p.getName(), String.valueOf(p.get()), p.description()))
+                    .collect(Collectors.toList())
             );
         }
     }
