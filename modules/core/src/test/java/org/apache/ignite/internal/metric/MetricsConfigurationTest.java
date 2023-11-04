@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.metric;
 
-import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -71,7 +69,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        stopAllGrids(false);
+        stopAllGrids();
 
         cleanPersistenceDir();
     }
@@ -321,11 +319,11 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests that histogram configuration is stored and read again after node restart.
+     * Tests that histogram configuration is read again after node restart.
      */
     @Test
     public void testHistogramCfgKeptAfterNodeRestart() throws Exception {
-        doTestMetricConfigStoredAfterReatart(
+        doTestMetricConfigIsReadAfterReatart(
             "threadPools.StripedExecutor",
             "TaskExecutionTime",
             () -> BOUNDS,
@@ -347,7 +345,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testHitRateCfgKeptAfterNodeRestart() throws Exception {
-        doTestMetricConfigStoredAfterReatart(
+        doTestMetricConfigIsReadAfterReatart(
             "io.dataregion.default",
             "AllocationRate",
             () -> 10_000L,
@@ -365,16 +363,16 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests that metric configuration is stored and read again after node restart.
+     * Tests that metric configuration is read again after node restart.
      *
      * @param regName The registry name.
      * @param metricName The metric name.
-     * @param newCfgValue New value supplier to the metric config.
+     * @param newCfgValue New setting supplier to the metric config.
      * @param cfgChecker Returns {@code true} if {@code newCfgValue} is actually set to the metric.
      * @param configurer Assigns {@code newCfgValue} to the metric.
      * @param metaStorageMetricType Name of the metric syb-type in Metastorage.
      */
-    private <T> void doTestMetricConfigStoredAfterReatart(
+    private <T> void doTestMetricConfigIsReadAfterReatart(
         String regName,
         String metricName,
         Supplier<T> newCfgValue,
@@ -413,20 +411,6 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
         metric = startGrid(gridName).context().metric().registry(regName).findMetric(metricName);
 
         assertTrue(cfgChecker.apply(metric, newCfgValue.get()));
-    }
-
-    /**
-     * Execute query on given node.
-     *
-     * @param node Node.
-     * @param sql Statement.
-     */
-    private List<List<?>> execute(IgniteEx node, String sql, Object... args) {
-        SqlFieldsQuery qry = new SqlFieldsQuery(sql)
-            .setArgs(args)
-            .setSchema("PUBLIC");
-
-        return node.context().query().querySqlFields(qry, true).getAll();
     }
 
     /** Tests metric configuration removed on registry remove. */

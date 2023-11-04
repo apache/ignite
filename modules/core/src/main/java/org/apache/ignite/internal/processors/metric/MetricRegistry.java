@@ -269,9 +269,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @see HitRateMetric
      */
     public HitRateMetric hitRateMetric(String name, @Nullable String desc, long rateTimeInterval, int size) {
-        String fullName = metricName(regName, name);
-
-        return addMetric(name, new HitRateMetric(fullName, desc, rateTimeInterval, size));
+        return addMetric(name, new HitRateMetric(metricName(regName, name), desc, rateTimeInterval, size));
     }
 
     /**
@@ -295,9 +293,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @return {@link HistogramMetricImpl}
      */
     public HistogramMetricImpl histogram(String name, long[] bounds, @Nullable String desc) {
-        String fullName = metricName(regName, name);
-
-        return addMetric(name, new HistogramMetricImpl(fullName, desc, bounds));
+        return addMetric(name, new HistogramMetricImpl(metricName(regName, name), desc, bounds));
     }
 
     /**
@@ -322,7 +318,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
     }
 
     /**
-     * Sets metric settings if metric is configurable.
+     * Sets metric settings if {@code metric} is configurable.
      */
     private void configureMetrics(Metric metric) {
         if (metric instanceof HistogramMetricImpl) {
