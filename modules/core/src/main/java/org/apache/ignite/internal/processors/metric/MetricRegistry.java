@@ -318,7 +318,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
     }
 
     /**
-     * Sets metric settings if {@code metric} is configurable.
+     * Assigns metric settings if {@code metric} is configurable.
      */
     private void configureMetrics(Metric metric) {
         if (metric instanceof HistogramMetricImpl) {
