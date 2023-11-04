@@ -341,7 +341,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests that hit rate metric configuration is stored and read again after node restart.
+     * Tests that hit rate metric configuration is read again after node restart.
      */
     @Test
     public void testHitRateCfgKeptAfterNodeRestart() throws Exception {
