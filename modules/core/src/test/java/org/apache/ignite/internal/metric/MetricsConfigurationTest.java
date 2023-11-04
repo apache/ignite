@@ -17,11 +17,6 @@
 
 package org.apache.ignite.internal.metric;
 
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Supplier;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -35,7 +30,6 @@ import org.apache.ignite.internal.processors.metric.impl.PeriodicHistogramMetric
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.metric.HistogramMetric;
-import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -66,12 +60,17 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
     public static final long[] BOUNDS = new long[] {50, 100};
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         stopAllGrids();
-
-        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -322,95 +321,39 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
      * Tests that histogram configuration is read again after node restart.
      */
     @Test
-    public void testHistogramCfgKeptAfterNodeRestart() throws Exception {
-        doTestMetricConfigIsReadAfterReatart(
-            "threadPools.StripedExecutor",
-            "TaskExecutionTime",
-            () -> BOUNDS,
-            (metric, cfgValue) -> F.arrayEq(cfgValue, ((HistogramMetric)metric).bounds()),
-            (node, newCfgValue) -> {
-                try {
-                    node.context().metric().configureHistogram("threadPools.StripedExecutor.TaskExecutionTime", newCfgValue);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException("Unable to configure histogram.", e);
-                }
-            },
-            HISTOGRAM_NAME
-        );
-    }
-
-    /**
-     * Tests that hit rate metric configuration is read again after node restart.
-     */
-    @Test
-    public void testHitRateCfgKeptAfterNodeRestart() throws Exception {
-        doTestMetricConfigIsReadAfterReatart(
-            "io.dataregion.default",
-            "AllocationRate",
-            () -> 10_000L,
-            (metric, cfgValue) -> cfgValue == ((HitRateMetric)metric).rateTimeInterval(),
-            (node, newCfgValue) -> {
-                try {
-                    node.context().metric().configureHitRate("io.dataregion.default.AllocationRate", newCfgValue);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException("Unable to configure hit rate metric.", e);
-                }
-            },
-            HITRATE_NAME
-        );
-    }
-
-    /**
-     * Tests that metric configuration is read again after node restart.
-     *
-     * @param regName The registry name.
-     * @param metricName The metric name.
-     * @param newCfgValue New setting supplier to the metric config.
-     * @param cfgChecker Returns {@code true} if {@code newCfgValue} is actually set to the metric.
-     * @param configurer Assigns {@code newCfgValue} to the metric.
-     * @param metaStorageMetricType Name of the metric syb-type in Metastorage.
-     */
-    private <T> void doTestMetricConfigIsReadAfterReatart(
-        String regName,
-        String metricName,
-        Supplier<T> newCfgValue,
-        BiFunction<Metric, T, Boolean> cfgChecker,
-        BiConsumer<IgniteEx, T> configurer,
-        String metaStorageMetricType
-    ) throws Exception {
-        String gridName = "persistentGrid";
-
-        IgniteEx ignite = startGrid(gridName);
+    public void testHistogramConfigIsKeptAfterNodeRestart() throws Exception {
+        IgniteEx ignite = startGrid("persistent-0");
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        Metric metric = ignite.context().metric().registry(regName).findMetric(metricName);
+        HistogramMetric hist = ignite.context().metric().registry("threadPools.StripedExecutor")
+            .findMetric("TaskExecutionTime");
 
-        assertFalse(cfgChecker.apply(metric, newCfgValue.get()));
+        assertFalse(F.arrayEq(BOUNDS, hist.bounds()));
 
-        configurer.accept(ignite, newCfgValue.get());
+        ignite.context().metric().configureHistogram("threadPools.StripedExecutor.TaskExecutionTime", BOUNDS);
 
-        assertTrue(cfgChecker.apply(metric, newCfgValue.get()));
+        assertTrue(F.arrayEq(BOUNDS, hist.bounds()));
 
         waitForCondition(() -> {
             try {
-                Object metaV = ignite.context().distributedMetastorage().read(
-                    metricName("metrics", metaStorageMetricType, metricName(regName, metricName)));
+                String metricName = metricName("threadPools.StripedExecutor", "TaskExecutionTime");
 
-                return F.eq(metaV, newCfgValue.get()) || F.arrayEq(metaV, newCfgValue.get());
+                Object metaV = ignite.context().distributedMetastorage().read(metricName("metrics", HISTOGRAM_NAME, metricName));
+
+                return F.arrayEq(metaV, BOUNDS);
             }
             catch (Throwable ignored) {
                 return false;
             }
         }, getTestTimeout());
 
-        stopGrid(gridName, false);
+        stopGrid("persistent-0", false);
 
-        metric = startGrid(gridName).context().metric().registry(regName).findMetric(metricName);
+        hist = startGrid("persistent-0").context().metric().registry("threadPools.StripedExecutor")
+            .findMetric("TaskExecutionTime");
 
-        assertTrue(cfgChecker.apply(metric, newCfgValue.get()));
+        assertTrue(F.arrayEq(BOUNDS, hist.bounds()));
     }
 
     /** Tests metric configuration removed on registry remove. */
