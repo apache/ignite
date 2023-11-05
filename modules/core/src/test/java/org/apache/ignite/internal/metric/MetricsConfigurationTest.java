@@ -40,6 +40,8 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.HIT
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_EXEC_TIME;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertArrayEquals;
@@ -326,32 +328,21 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        HistogramMetric hist = ignite.context().metric().registry("threadPools.StripedExecutor")
-            .findMetric("TaskExecutionTime");
+        String regName = metricName(THREAD_POOLS, "StripedExecutor");
+
+        HistogramMetric hist = ignite.context().metric().registry(regName).findMetric(TASK_EXEC_TIME);
 
         assertFalse(F.arrayEq(BOUNDS, hist.bounds()));
 
-        ignite.context().metric().configureHistogram("threadPools.StripedExecutor.TaskExecutionTime", BOUNDS);
+        ignite.context().metric().configureHistogram(metricName(regName, TASK_EXEC_TIME), BOUNDS);
 
         assertTrue(F.arrayEq(BOUNDS, hist.bounds()));
 
-        waitForCondition(() -> {
-            try {
-                String metricName = metricName("threadPools.StripedExecutor", "TaskExecutionTime");
-
-                Object metaV = ignite.context().distributedMetastorage().read(metricName("metrics", HISTOGRAM_NAME, metricName));
-
-                return F.arrayEq(metaV, BOUNDS);
-            }
-            catch (Throwable ignored) {
-                return false;
-            }
-        }, getTestTimeout());
-
         stopGrid("persistent-0", false);
 
-        hist = startGrid("persistent-0").context().metric().registry("threadPools.StripedExecutor")
-            .findMetric("TaskExecutionTime");
+        ignite = startGrid("persistent-0");
+
+        hist = ignite.context().metric().registry(regName).findMetric(TASK_EXEC_TIME);
 
         assertTrue(F.arrayEq(BOUNDS, hist.bounds()));
     }
