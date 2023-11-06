@@ -97,7 +97,6 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setMvccVacuumFrequency(1000)
             .setCacheConfiguration(createCacheConfigs())
             .setGridLogger(listeningLog)
             .setConnectorConfiguration(new ConnectorConfiguration());

@@ -989,6 +989,52 @@ public class CommandHandlerParsingTest {
             IllegalArgumentException.class,
             "Unexpected value: --some-other-arg"
         );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList(
+                CACHE, "indexes_force_rebuild",
+                "--node-id", nodeId,
+                "--node-ids", nodeId + ',' + nodeId,
+                "--cache-names", "someNames"
+            )),
+            IllegalArgumentException.class,
+            "Only one of [--node-ids, --all-nodes, --node-id] allowed"
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList(
+                CACHE, "indexes_force_rebuild",
+                "--node-id", nodeId,
+                "--all-nodes"
+            )),
+            IllegalArgumentException.class,
+            "Only one of [--node-ids, --all-nodes, --node-id] allowed"
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList(
+                CACHE, "indexes_force_rebuild",
+                "--node-ids", nodeId + ',' + nodeId,
+                "--all-nodes"
+            )),
+            IllegalArgumentException.class,
+            "Only one of [--node-ids, --all-nodes, --node-id] allowed"
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList(
+                CACHE, "indexes_force_rebuild",
+                "--node-id", nodeId,
+                "--node-ids", nodeId + ',' + nodeId,
+                "--all-nodes"
+            )),
+            IllegalArgumentException.class,
+            "Only one of [--node-ids, --all-nodes, --node-id] allowed"
+        );
     }
 
     /** */
@@ -1045,6 +1091,37 @@ public class CommandHandlerParsingTest {
             () -> parseArgs(asList(CACHE, "schedule_indexes_rebuild", "--cache-names", "foo[]")),
             IllegalArgumentException.class,
             "Square brackets must contain comma-separated indexes or not be used at all."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList(CACHE, "schedule_indexes_rebuild", "--node-id", nodeId, "--all-nodes", "--group-names", "a")),
+            IllegalArgumentException.class,
+            "Only one of [--node-ids, --all-nodes, --node-id]"
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList(CACHE, "schedule_indexes_rebuild", "--node-id", nodeId, "--node-ids", nodeId + ',' + nodeId,
+                "--group-names", "a")),
+            IllegalArgumentException.class,
+            "Only one of [--node-ids, --all-nodes, --node-id]"
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList(CACHE, "schedule_indexes_rebuild", "--all-nodes", "--node-ids", nodeId + ',' + nodeId,
+                "--group-names", "a")),
+            IllegalArgumentException.class,
+            "Only one of [--node-ids, --all-nodes, --node-id]"
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList(CACHE, "schedule_indexes_rebuild", "--node-id", nodeId, "--all-nodes",
+                "--node-ids", nodeId + ',' + nodeId, "--group-names", "a")),
+            IllegalArgumentException.class,
+            "Only one of [--node-ids, --all-nodes, --node-id]"
         );
     }
 

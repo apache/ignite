@@ -26,7 +26,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -57,13 +56,6 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
 
     /** Cache 2. */
     private IgniteCache<Integer, Integer> cache2;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.METRICS);
-
-        super.beforeTestsStarted();
-    }
 
     /**
      * Test cluster group metrics in case of statistics enabled.

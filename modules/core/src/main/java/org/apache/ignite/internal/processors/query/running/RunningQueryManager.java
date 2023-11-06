@@ -270,7 +270,7 @@ public class RunningQueryManager {
             qry,
             qryType,
             schemaName,
-            System.currentTimeMillis(),
+            U.currentTimeMillis(),
             ctx.performanceStatistics().enabled() ? System.nanoTime() : 0,
             cancel,
             loc,
@@ -349,6 +349,60 @@ public class RunningQueryManager {
             if (failed)
                 qrySpan.addTag(ERROR, failReason::getMessage);
 
+            //We need to collect query history and metrics only for SQL queries.
+            if (isSqlQuery(qry)) {
+                qry.runningFuture().onDone();
+
+                qryHistTracker.collectHistory(qry, failed);
+
+                if (!failed)
+                    successQrsCnt.increment();
+                else {
+                    failedQrsCnt.increment();
+
+                    // We measure cancel metric as "number of times user's queries ended up with query cancelled exception",
+                    // not "how many user's KILL QUERY command succeeded". These may be not the same if cancel was issued
+                    // right when query failed due to some other reason.
+                    if (QueryUtils.wasCancelled(failReason))
+                        canceledQrsCnt.increment();
+                }
+            }
+
+            if (ctx.performanceStatistics().enabled() && qry.startTimeNanos() > 0) {
+                String flags = null;
+
+                // Create string for flags with not default values.
+                if (qry.local())
+                    flags = "local";
+
+                if (!qry.lazy())
+                    flags = (flags == null ? "" : flags + ", ") + "notLazy";
+
+                if (qry.distributedJoins())
+                    flags = (flags == null ? "" : flags + ", ") + "distributedJoins";
+
+                if (qry.enforceJoinOrder())
+                    flags = (flags == null ? "" : flags + ", ") + "enforceJoinOrder";
+
+                if (flags != null) {
+                    ctx.performanceStatistics().queryProperty(
+                        qry.queryType(),
+                        qry.nodeId(),
+                        qry.id(),
+                        "Flags",
+                        flags
+                    );
+                }
+
+                ctx.performanceStatistics().query(
+                    qry.queryType(),
+                    qry.query(),
+                    qry.id(),
+                    qry.startTime(),
+                    System.nanoTime() - qry.startTimeNanos(),
+                    !failed);
+            }
+
             if (!qryFinishedListeners.isEmpty()) {
                 GridQueryFinishedInfo info = new GridQueryFinishedInfo(
                     qry.id(),
@@ -357,7 +411,7 @@ public class RunningQueryManager {
                     qry.queryType(),
                     qry.schemaName(),
                     qry.startTime(),
-                    System.currentTimeMillis(),
+                    U.currentTimeMillis(),
                     qry.local(),
                     qry.enforceJoinOrder(),
                     qry.lazy(),
@@ -384,35 +438,6 @@ public class RunningQueryManager {
                 catch (IgniteCheckedException ex) {
                     throw new IgniteException(ex.getMessage(), ex);
                 }
-            }
-
-            //We need to collect query history and metrics only for SQL queries.
-            if (isSqlQuery(qry)) {
-                qry.runningFuture().onDone();
-
-                qryHistTracker.collectHistory(qry, failed);
-
-                if (!failed)
-                    successQrsCnt.increment();
-                else {
-                    failedQrsCnt.increment();
-
-                    // We measure cancel metric as "number of times user's queries ended up with query cancelled exception",
-                    // not "how many user's KILL QUERY command succeeded". These may be not the same if cancel was issued
-                    // right when query failed due to some other reason.
-                    if (QueryUtils.wasCancelled(failReason))
-                        canceledQrsCnt.increment();
-                }
-            }
-
-            if (ctx.performanceStatistics().enabled() && qry.startTimeNanos() > 0) {
-                ctx.performanceStatistics().query(
-                    qry.queryType(),
-                    qry.query(),
-                    qry.id(),
-                    qry.startTime(),
-                    System.nanoTime() - qry.startTimeNanos(),
-                    !failed);
             }
         }
         finally {
@@ -498,7 +523,7 @@ public class RunningQueryManager {
     public Collection<GridRunningQueryInfo> runningQueries(long duration) {
         Collection<GridRunningQueryInfo> res = new ArrayList<>();
 
-        long curTime = System.currentTimeMillis();
+        long curTime = U.currentTimeMillis();
 
         for (GridRunningQueryInfo runningQryInfo : runs.values()) {
             if (curTime - runningQryInfo.startTime() > duration)
@@ -720,7 +745,7 @@ public class RunningQueryManager {
             }
 
             if (!msg.asyncResponse())
-                runningQryInfo.runningFuture().listen((f) -> sendKillResponse(msg, node, f.result()));
+                runningQryInfo.runningFuture().listen(f -> sendKillResponse(msg, node, f.result()));
         }
     }
 

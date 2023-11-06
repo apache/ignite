@@ -39,6 +39,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
@@ -334,6 +335,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    private CacheObjectTransformerProcessor transProc;
+
+    /** */
+    @GridToStringExclude
     private List<GridComponent> comps = new LinkedList<>();
 
     /** */
@@ -585,6 +590,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             durableBackgroundTasksProcessor = (DurableBackgroundTasksProcessor)comp;
         else if (comp instanceof MaintenanceProcessor)
             maintenanceProc = (MaintenanceProcessor)comp;
+        else if (comp instanceof CacheObjectTransformerProcessor)
+            transProc = (CacheObjectTransformerProcessor)comp;
         else if (comp instanceof PerformanceStatisticsProcessor)
             perfStatProc = (PerformanceStatisticsProcessor)comp;
         else if (comp instanceof IndexProcessor)
@@ -685,6 +692,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public MaintenanceRegistry maintenanceRegistry() {
         return maintenanceProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObjectTransformerProcessor transformer() {
+        return transProc;
     }
 
     /** {@inheritDoc} */

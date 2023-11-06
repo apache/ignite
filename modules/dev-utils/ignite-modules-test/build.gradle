@@ -78,7 +78,6 @@ dependencies {
     /* compile (group: 'org.apache.ignite', name: 'ignite-spring', version: ignVer) {
         exclude group: 'org.apache.lucene'  // to remove "lucene-sandbox and analyzers-commons" package conflicts.
     }*/
-    compile group: 'org.apache.ignite', name: 'ignite-ml', version: ignVer
 
     compile group: 'org.apache.ignite', name: 'ignite-log4j2', version: ignVer
     compile group: 'org.apache.ignite', name: 'ignite-slf4j', version: ignVer
@@ -108,12 +107,6 @@ dependencies {
     */
 
     // compile group: 'org.apache.ignite', name: 'ignite-compress', version: ignVer
-
-    compile (group: 'org.apache.ignite', name: 'ignite-cassandra-store', version: ignVer) {
-        exclude group: 'org.apache.lucene'  // to remove "lucene-sandbox and analyzers-commons" package conflicts.
-
-        exclude group: 'org.apache.ignite', module: 'ignite-spring'
-    }
 }
 
 test {

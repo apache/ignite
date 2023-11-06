@@ -54,11 +54,15 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Sorted index implementation.
  */
 public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
+    /** */
+    public static final String INDEX_METRIC_PREFIX = "index";
+
     /** Unique ID. */
     private final UUID id = UUID.randomUUID();
 
@@ -222,7 +226,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
     /** */
     private boolean isSingleRowLookup(IndexRow lower, IndexRow upper) throws IgniteCheckedException {
-        return !cctx.mvccEnabled() && def.primary() && lower != null && isFullSchemaSearch(lower) && checkRowsTheSame(lower, upper);
+        return def.primary() && lower != null && isFullSchemaSearch(lower) && checkRowsTheSame(lower, upper);
     }
 
     /**
@@ -475,8 +479,6 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
         MvccSnapshot v = qryCtx.mvccSnapshot();
 
-        assert !cctx.mvccEnabled() || v != null;
-
         if (cacheFilter == null && v == null && qryCtx.rowFilter() == null)
             return null;
 
@@ -555,6 +557,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                 }
 
                 cctx.kernalContext().metric().remove(stats.metricRegistryName());
+                cctx.kernalContext().metric().remove(metricName(INDEX_METRIC_PREFIX, def.idxName().fullName()));
 
                 if (cctx.group().persistenceEnabled() ||
                     cctx.shared().kernalContext().state().clusterState().state() != INACTIVE) {

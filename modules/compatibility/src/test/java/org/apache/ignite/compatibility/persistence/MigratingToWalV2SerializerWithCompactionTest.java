@@ -24,6 +24,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.compatibility.testframework.junits.SkipTestIfIsJdkNewer;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -39,6 +40,7 @@ import org.junit.Test;
 /**
  * Saves data using previous version of ignite and then load this data using actual version
  */
+@SkipTestIfIsJdkNewer(8)
 public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** */
     private static final String TEST_CACHE_NAME = MigratingToWalV2SerializerWithCompactionTest.class.getSimpleName();

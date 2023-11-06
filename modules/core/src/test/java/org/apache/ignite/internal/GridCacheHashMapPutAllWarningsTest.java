@@ -31,7 +31,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -105,9 +104,6 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testHashMapPutAllExplicitOptimistic() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            return;
-
         List<String> messages = Collections.synchronizedList(new ArrayList<>());
 
         testLog = new ListeningTestLogger(log());

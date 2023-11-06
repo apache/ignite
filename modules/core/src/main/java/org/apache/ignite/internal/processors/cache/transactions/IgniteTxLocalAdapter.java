@@ -34,11 +34,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.EntryProcessorResourceInjectorProxy;
@@ -70,7 +67,6 @@ import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -408,9 +404,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         try {
             cctx.tm().prepareTx(this, entries);
-
-            if (txState().mvccEnabled())
-                calculatePartitionUpdateCounters();
         }
         catch (IgniteCheckedException e) {
             throw e;
@@ -543,7 +536,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         checkValid();
 
-        Collection<IgniteTxEntry> commitEntries = (near() || cctx.snapshot().needTxReadLogging()) ? allEntries() : writeEntries();
+        Collection<IgniteTxEntry> commitEntries = near() ? allEntries() : writeEntries();
 
         boolean empty = F.isEmpty(commitEntries) && !queryEnlisted();
 
@@ -816,22 +809,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         updateNearEntrySafely(cacheCtx, txEntry.key(), GridCacheEntryEx::innerReload);
                                 }
                                 else if (op == READ) {
-                                    CacheGroupContext grp = cacheCtx.group();
-
-                                    if (grp.logDataRecords() && cctx.snapshot().needTxReadLogging()) {
-                                        ptr = grp.wal().log(new DataRecord(new DataEntry(
-                                            cacheCtx.cacheId(),
-                                            txEntry.key(),
-                                            val,
-                                            op,
-                                            nearXidVersion(),
-                                            writeVersion(),
-                                            0,
-                                            txEntry.key().partition(),
-                                            txEntry.updateCounter(),
-                                            DataEntry.flags(CU.txOnPrimary(this)))));
-                                    }
-
                                     ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
                                     if (expiry != null) {
@@ -879,7 +856,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                 }
 
-                if (!txState.mvccEnabled() && txCounters != null) {
+                if (txCounters != null) {
                     cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters());
 
                     for (IgniteTxEntry entry : commitEntries) {
@@ -908,9 +885,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     boolean persistenceEnabled = CU.isPersistenceEnabled(cctx.kernalContext().config());
 
                     if (persistenceEnabled) {
-                        GridCacheDatabaseSharedManager dbManager = (GridCacheDatabaseSharedManager)cctx.database();
+                        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
 
-                        dbManager.getCheckpointer().skipCheckpointOnNodeStop(true);
+                        dbMgr.getCheckpointer().skipCheckpointOnNodeStop(true);
                     }
 
                     throw ex;
@@ -1299,9 +1276,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(txEntry.key(), key0, cacheVal,
                     val0, ver, txEntry.keepBinary(), txEntry.cached());
 
-                EntryProcessor<Object, Object, ?> entryProcessor = t.get1();
+                EntryProcessor<Object, Object, ?> entryProc = t.get1();
 
-                res = entryProcessor.process(invokeEntry, t.get2());
+                res = entryProc.process(invokeEntry, t.get2());
 
                 val0 = invokeEntry.getValue(txEntry.keepBinary());
 
@@ -1383,7 +1360,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param val Value.
      * @param expiryPlc Explicitly specified expiry policy.
      * @param invokeArgs Optional arguments for EntryProcessor.
-     * @param entryProcessor Entry processor.
+     * @param entryProc Entry processor.
      * @param entry Cache entry.
      * @param filter Filter.
      * @param filtersSet {@code True} if filter should be marked as set.
@@ -1395,7 +1372,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      */
     public final IgniteTxEntry addEntry(GridCacheOperation op,
         @Nullable CacheObject val,
-        @Nullable EntryProcessor entryProcessor,
+        @Nullable EntryProcessor entryProc,
         Object[] invokeArgs,
         GridCacheEntryEx entry,
         @Nullable ExpiryPolicy expiryPlc,
@@ -1426,12 +1403,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         IgniteTxEntry txEntry;
 
         if (old != null) {
-            if (entryProcessor != null) {
+            if (entryProc != null) {
                 assert val == null;
                 assert op == TRANSFORM;
 
                 // Will change the op.
-                old.addEntryProcessor(entryProcessor, invokeArgs);
+                old.addEntryProcessor(entryProc, invokeArgs);
             }
             else {
                 assert old.op() != TRANSFORM;
@@ -1469,7 +1446,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 this,
                 op,
                 val,
-                EntryProcessorResourceInjectorProxy.wrap(cctx.kernalContext(), entryProcessor),
+                EntryProcessorResourceInjectorProxy.wrap(cctx.kernalContext(), entryProc),
                 invokeArgs,
                 hasDrTtl ? drTtl : -1L,
                 entry,
@@ -1637,20 +1614,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /**
-     * Marks that there are entries, enlisted by query.
-     */
-    public void markQueryEnlisted() {
-        assert mvccSnapshot != null && txState.mvccEnabled();
-
-        if (!qryEnlisted) {
-            qryEnlisted = true;
-
-            if (!cctx.localNode().isClient())
-                cctx.coordinators().registerLocalTransaction(mvccSnapshot.coordinatorVersion(), mvccSnapshot.counter());
-        }
-    }
-
-    /**
      * Post-lock closure alias.
      *
      * @param <T> Return type.
@@ -1730,10 +1693,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 setRollbackOnly();
 
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteInternalTx>, T>() {
-                        @Override public T apply(IgniteInternalFuture<IgniteInternalTx> f) {
-                            throw new GridClosureException(e);
-                        }
+                    return rollbackAsync().chain(() -> {
+                        throw new GridClosureException(e);
                     });
 
                 throw new GridClosureException(e);
@@ -1749,10 +1710,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 );
 
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteInternalTx>, T>() {
-                        @Override public T apply(IgniteInternalFuture<IgniteInternalTx> f) {
-                            throw ex;
-                        }
+                    return rollbackAsync().chain(() -> {
+                        throw ex;
                     });
 
                 throw ex;
@@ -1782,10 +1741,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             }
             catch (final IgniteCheckedException ex) {
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteInternalTx>, T>() {
-                        @Override public T apply(IgniteInternalFuture<IgniteInternalTx> f) {
-                            throw new GridClosureException(ex);
-                        }
+                    return rollbackAsync().chain(() -> {
+                        throw new GridClosureException(ex);
                     });
 
                 throw new GridClosureException(ex);
@@ -1864,6 +1821,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
          * @throws IgniteCheckedException If operation is failed.
          * @throws GridCacheEntryRemovedException If entry is removed.
          */
-        public void apply(E entry) throws IgniteCheckedException, GridCacheEntryRemovedException;
+        void apply(E entry) throws IgniteCheckedException, GridCacheEntryRemovedException;
     }
 }

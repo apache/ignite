@@ -150,11 +150,11 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
             try {
                 IgniteInternalFuture<R> fut = exec.apply((I)msg.request());
 
-                fut.listen(f -> {
-                    if (f.error() != null)
-                        p.resFut.onDone(f.error());
+                fut.listen(() -> {
+                    if (fut.error() != null)
+                        p.resFut.onDone(fut.error());
                     else
-                        p.resFut.onDone(f.result());
+                        p.resFut.onDone(fut.result());
 
                     if (!ctx.clientNode() || p.waitClnRes) {
                         assert crd != null;
@@ -215,7 +215,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
             UUID leftNodeId = evt.eventNode().id();
 
             for (Process p : processes.values()) {
-                p.initFut.listen(fut -> {
+                p.initFut.listen(() -> {
                     if (F.eq(leftNodeId, p.crdId)) {
                         ClusterNode crd = coordinator();
 
@@ -231,7 +231,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                             initCoordinator(p, discoCache.version());
 
                         if (!ctx.clientNode() || p.waitClnRes)
-                            p.resFut.listen(f -> sendSingleMessage(p));
+                            p.resFut.listen(() -> sendSingleMessage(p));
                     }
                     else if (F.eq(ctx.localNodeId(), p.crdId)) {
                         boolean isEmpty = false;
@@ -328,7 +328,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
     private void onSingleNodeMessageReceived(SingleNodeMessage<R> msg, UUID nodeId) {
         Process p = processes.computeIfAbsent(msg.processId(), id -> new Process(msg.processId()));
 
-        p.initCrdFut.listen(f -> {
+        p.initCrdFut.listen(() -> {
             boolean isEmpty;
 
             synchronized (mux) {

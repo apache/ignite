@@ -277,7 +277,7 @@ public abstract class AbstractCacheObjectTransformationTest extends GridCommonAb
     /**
      *
      */
-    protected static final class ControllableCacheObjectTransformer extends TestCacheObjectTransformerManagerAdapter {
+    protected static final class ControllableCacheObjectTransformer extends TestCacheObjectTransformerProcessorAdapter {
         /** Shift. */
         private static volatile int shift;
 

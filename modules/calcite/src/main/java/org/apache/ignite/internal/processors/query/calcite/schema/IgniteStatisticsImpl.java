@@ -122,7 +122,7 @@ public class IgniteStatisticsImpl implements Statistic {
     private void refreshStatsIfNeededEx() {
         if (cliReqCnt.getAndIncrement() % STATS_CLI_UPDATE_THRESHOLD == 0) {
             try {
-                primaryRowCnt = desc.cacheInfo().cacheContext().cache().size(new CachePeekMode[] {CachePeekMode.PRIMARY});
+                primaryRowCnt = desc.cacheInfo().cacheContext().cache().sizeLong(new CachePeekMode[] {CachePeekMode.PRIMARY});
             }
             catch (IgniteCheckedException ignore) {
                 // No-op.

@@ -121,11 +121,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMvcc() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean detached() {
         return false;
     }
@@ -297,12 +292,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         info.version(version());
 
         return info;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public List<GridCacheEntryInfo> allVersionsInfo()
-        throws IgniteCheckedException {
-        return null;
     }
 
     /** {@inheritDoc} */

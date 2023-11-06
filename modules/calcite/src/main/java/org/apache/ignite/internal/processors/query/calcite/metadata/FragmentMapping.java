@@ -27,7 +27,6 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.query.calcite.message.MarshalableMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MarshallingContext;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -89,14 +88,6 @@ public class FragmentMapping implements MarshalableMessage {
     }
 
     /** */
-    public FragmentMapping prune(IgniteRel rel) {
-        if (colocationGroups.size() != 1)
-            return this;
-
-        return new FragmentMapping(F.first(colocationGroups).prune(rel));
-    }
-
-    /** */
     public FragmentMapping combine(FragmentMapping other) {
         return new FragmentMapping(Commons.combine(colocationGroups, other.colocationGroups));
     }
@@ -117,6 +108,14 @@ public class FragmentMapping implements MarshalableMessage {
     }
 
     /** */
+    public FragmentMapping local(UUID nodeId) throws ColocationMappingException {
+        if (colocationGroups.isEmpty())
+            return create(nodeId).colocate(this);
+
+        return new FragmentMapping(Commons.transform(colocationGroups, c -> c.local(nodeId)));
+    }
+
+    /** */
     public List<UUID> nodeIds() {
         return colocationGroups.stream()
             .flatMap(g -> g.nodeIds().stream())
@@ -124,15 +123,32 @@ public class FragmentMapping implements MarshalableMessage {
     }
 
     /** */
-    public FragmentMapping finalize(Supplier<List<UUID>> nodesSource) {
+    public List<ColocationGroup> colocationGroups() {
+        return Collections.unmodifiableList(colocationGroups);
+    }
+
+    /** */
+    public FragmentMapping finalizeMapping(Supplier<List<UUID>> nodesSource) {
         if (colocationGroups.isEmpty())
             return this;
 
         List<ColocationGroup> colocationGroups = this.colocationGroups;
 
-        colocationGroups = Commons.transform(colocationGroups, ColocationGroup::finalaze);
+        colocationGroups = Commons.transform(colocationGroups, ColocationGroup::finalizeMapping);
         List<UUID> nodes = nodeIds(), nodes0 = nodes.isEmpty() ? nodesSource.get() : nodes;
         colocationGroups = Commons.transform(colocationGroups, g -> g.mapToNodes(nodes0));
+
+        return new FragmentMapping(colocationGroups);
+    }
+
+    /** */
+    public FragmentMapping filterByPartitions(int[] parts) throws ColocationMappingException {
+        List<ColocationGroup> colocationGroups = this.colocationGroups;
+
+        if (!F.isEmpty(parts) && colocationGroups.size() > 1)
+            throw new ColocationMappingException("Execution of non-collocated query with partition parameter is not possible");
+
+        colocationGroups = Commons.transform(colocationGroups, g -> g.filterByPartitions(parts));
 
         return new FragmentMapping(colocationGroups);
     }

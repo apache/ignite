@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -612,30 +611,11 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
 
         kernalCtx.add(failureProc);
 
-        GridCacheSharedContext<Object, Object> sharedCtx = new GridCacheSharedContext<>(
-            kernalCtx,
-            null,
-            null,
-            null,
-            mgr,
-            new NoOpWALManager(),
-            null,
-            new IgniteCacheDatabaseSharedManager(kernalCtx),
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-        );
+        GridCacheSharedContext<Object, Object> sharedCtx = GridCacheSharedContext.builder()
+            .setPageStoreManager(mgr)
+            .setWalManager(new NoOpWALManager())
+            .setDatabaseManager(new IgniteCacheDatabaseSharedManager(kernalCtx))
+            .build(kernalCtx, null);
 
         CheckpointProgressImpl cl0 = Mockito.mock(CheckpointProgressImpl.class);
 
@@ -655,12 +635,10 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
                 sharedCtx.pageStore(),
                 PAGE_SIZE,
                 replaceWriter,
-                new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
-                    @Override public void applyx(Long page, FullPageId fullId, PageMemoryEx pageMem) {
-                    }
-                },
+                true,
                 () -> true,
                 new DataRegionMetricsImpl(igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration(), kernalCtx),
+                igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration(),
                 throttlingPlc,
                 noThrottle
             ) :
@@ -671,12 +649,10 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
                 sharedCtx.pageStore(),
                 PAGE_SIZE,
                 replaceWriter,
-                new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
-                    @Override public void applyx(Long page, FullPageId fullId, PageMemoryEx pageMem) {
-                    }
-                },
+                true,
                 () -> true,
                 new DataRegionMetricsImpl(igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration(), kernalCtx),
+                igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration(),
                 throttlingPlc,
                 noThrottle
             ) {

@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
@@ -82,6 +83,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteExcept
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
 import org.apache.ignite.internal.processors.query.calcite.prepare.DdlPlan;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ExecutionPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadataImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
@@ -545,7 +547,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             IgniteTypeFactory typeFactory = qry.context().typeFactory();
 
             resCur.fieldsMeta(new FieldsMetadataImpl(RelOptUtil.createDmlRowType(
-                SqlKind.INSERT, typeFactory), null).queryFieldsMetadata(typeFactory));
+                SqlKind.INSERT, typeFactory), null, null).queryFieldsMetadata(typeFactory));
 
             return resCur;
         }
@@ -558,10 +560,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     ) {
         qry.mapping();
 
-        MappingQueryContext mapCtx = Commons.mapContext(locNodeId, topologyVersion());
-        plan.init(mappingSvc, mapCtx);
+        Map<String, Object> qryParams = Commons.parametersMap(qry.parameters());
 
-        List<Fragment> fragments = plan.fragments();
+        MappingQueryContext mapCtx = Commons.mapContext(locNodeId, topologyVersion(), qry.context(), qryParams);
+
+        ExecutionPlan execPlan = plan.init(mappingSvc, partSvc, mapCtx);
+
+        List<Fragment> fragments = execPlan.fragments();
 
         // Local execution
         Fragment fragment = F.first(fragments);
@@ -569,20 +574,28 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         if (U.assertionsEnabled()) {
             assert fragment != null;
 
-            FragmentMapping mapping = plan.mapping(fragment);
+            FragmentMapping mapping = execPlan.mapping(fragment);
 
             assert mapping != null;
 
             List<UUID> nodes = mapping.nodeIds();
 
-            assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(localNodeId());
+            assert nodes != null && (nodes.size() == 1 && F.first(nodes).equals(localNodeId()) || nodes.isEmpty())
+                    : "nodes=" + nodes + ", localNode=" + localNodeId();
+        }
+
+        long timeout = qry.remainingTime();
+
+        if (timeout == 0) {
+            throw new IgniteSQLException("The query was cancelled due to timeout", IgniteQueryErrorCode.QUERY_CANCELED,
+                new QueryCancelledException());
         }
 
         FragmentDescription fragmentDesc = new FragmentDescription(
             fragment.fragmentId(),
-            plan.mapping(fragment),
-            plan.target(fragment),
-            plan.remotes(fragment));
+            execPlan.mapping(fragment),
+            execPlan.target(fragment),
+            execPlan.remotes(fragment));
 
         ExecutionContext<Row> ectx = new ExecutionContext<>(
             qry.context(),
@@ -595,12 +608,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             handler,
             qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
             createIoTracker(locNodeId, qry.localQueryId()),
-            Commons.parametersMap(qry.parameters()));
+            timeout,
+            qryParams);
 
         Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
             exchangeService(), failureProcessor()).go(fragment.root());
 
-        qry.run(ectx, plan, node);
+        qry.run(ectx, execPlan, plan.fieldsMetadata(), node);
 
         Map<UUID, Long> fragmentsPerNode = fragments.stream()
             .skip(1)
@@ -612,9 +626,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             fragment = fragments.get(i);
             fragmentDesc = new FragmentDescription(
                 fragment.fragmentId(),
-                plan.mapping(fragment),
-                plan.target(fragment),
-                plan.remotes(fragment));
+                execPlan.mapping(fragment),
+                execPlan.target(fragment),
+                execPlan.remotes(fragment));
 
             Throwable ex = null;
             byte[] parametersMarshalled = null;
@@ -633,7 +647,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                             fragmentDesc,
                             fragmentsPerNode.get(nodeId).intValue(),
                             qry.parameters(),
-                            parametersMarshalled
+                            parametersMarshalled,
+                            timeout
                         );
 
                         messageService().send(nodeId, req);
@@ -647,6 +662,16 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                     }
                 }
             }
+        }
+
+        if (perfStatProc.enabled()) {
+            perfStatProc.queryProperty(
+                GridCacheQueryType.SQL_FIELDS,
+                qry.initiatorNodeId(),
+                qry.localQueryId(),
+                "Query plan",
+                plan.textPlan()
+            );
         }
 
         QueryProperties qryProps = qry.context().unwrap(QueryProperties.class);
@@ -696,8 +721,22 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             };
         }
 
+        Runnable onClose = () -> {
+            if (perfStatProc.enabled()) {
+                perfStatProc.queryRowsProcessed(
+                    GridCacheQueryType.SQL_FIELDS,
+                    qry.initiatorNodeId(),
+                    qry.localQueryId(),
+                    "Fetched",
+                    resultSetChecker.fetchedSize()
+                );
+            }
+
+            resultSetChecker.checkOnClose();
+        };
+
         Iterator<List<?>> it = new ConvertingClosableIterator<>(iteratorsHolder().iterator(qry.iterator()), ectx,
-            fieldConverter, rowConverter, resultSetChecker::checkOnClose);
+            fieldConverter, rowConverter, onClose);
 
         return new ListFieldsQueryCursor<>(plan, it, ectx);
     }
@@ -776,6 +815,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 handler,
                 qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
                 createIoTracker(nodeId, msg.originatingQryId()),
+                msg.timeout(),
                 Commons.parametersMap(msg.parameters())
             );
 
@@ -794,19 +834,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Error occurred during send error message: " + X.getFullStackTrace(e));
-
-                IgniteException wrpEx = new IgniteException("Error occurred during send error message", e);
-
-                e.addSuppressed(ex);
-
-                Query<Row> qry = (Query<Row>)qryReg.query(msg.queryId());
-
-                qry.cancel();
-
-                throw wrpEx;
             }
-
-            throw ex;
+            finally {
+                qryReg.query(msg.queryId()).onError(ex);
+            }
         }
     }
 
@@ -842,7 +873,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 );
             }
 
-            ((RootQuery<Row>)qry).onError(e);
+            qry.onError(e);
         }
     }
 

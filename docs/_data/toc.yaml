@@ -51,6 +51,8 @@
         url: installation/kubernetes/gke-deployment
   - title: VMWare
     url: installation/vmware-installation
+  - title: Version Upgrade
+    url: installation/upgrades
 - title: Setting Up
   items:
     - title: Understanding Configuration
@@ -248,6 +250,8 @@
       url: sql-reference/system-functions
     - title: Data Types
       url: sql-reference/data-types
+    - title: Optimizer Hints
+      url: sql-reference/hints
 - title: Distributed Computing
   items:
     - title: Distributed Computing API
@@ -430,16 +434,12 @@
       url: monitoring-metrics/cluster-id
     - title: Cluster States
       url: monitoring-metrics/cluster-states
-    - title: Metrics
-      items: 
-        - title: Configuring Metrics
-          url: monitoring-metrics/configuring-metrics
-        - title: JMX Metrics
-          url: monitoring-metrics/metrics
-    - title: New Metrics System 
+    - title: Metrics System 
       items:
         - title: Introduction 
           url: monitoring-metrics/new-metrics-system
+        - title: Configuring Metrics
+          url: monitoring-metrics/configuring-metrics
         - title: Metrics
           url: monitoring-metrics/new-metrics
     - title: System Views

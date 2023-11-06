@@ -24,7 +24,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.WorkProgressDispatcher;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -79,18 +78,13 @@ public class CheckpointContextImpl implements CheckpointListener.Context {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean nextSnapshot() {
-        return curr.nextSnapshot();
-    }
-
-    /** {@inheritDoc} */
     @Override public void walFlush(boolean flush) {
         forceWalFlush = flush;
     }
 
     /** {@inheritDoc} */
     @Override public boolean walFlush() {
-        return forceWalFlush || nextSnapshot();
+        return forceWalFlush;
     }
 
     /** {@inheritDoc} */
@@ -104,17 +98,12 @@ public class CheckpointContextImpl implements CheckpointListener.Context {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean needToSnapshot(String cacheOrGrpName) {
-        return curr.snapshotOperation().cacheGroupIds().contains(CU.cacheId(cacheOrGrpName));
-    }
-
-    /** {@inheritDoc} */
     @Override public Executor executor() {
         return asyncRunner == null ? null : cmd -> {
             try {
                 GridFutureAdapter<?> res = new GridFutureAdapter<>();
 
-                res.listen(fut -> heartbeatUpdater.updateHeartbeat());
+                res.listen(heartbeatUpdater::updateHeartbeat);
 
                 asyncRunner.execute(U.wrapIgniteFuture(cmd, res));
 

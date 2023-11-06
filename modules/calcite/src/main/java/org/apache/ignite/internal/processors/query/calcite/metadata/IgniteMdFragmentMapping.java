@@ -159,7 +159,7 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
      * Prunes involved partitions (hence nodes, involved in query execution) if possible.
      */
     public FragmentMapping fragmentMapping(IgniteFilter rel, RelMetadataQuery mq, MappingQueryContext ctx) {
-        return _fragmentMapping(rel.getInput(), mq, ctx).prune(rel);
+        return _fragmentMapping(rel.getInput(), mq, ctx);
     }
 
     /**

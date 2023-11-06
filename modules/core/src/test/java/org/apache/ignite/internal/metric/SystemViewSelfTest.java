@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
@@ -52,7 +51,6 @@ import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -157,6 +155,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CAC
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_METADATA_VIEW;
+import static org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl.DATASTORAGE_METRIC_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.DATA_REGION_PAGE_LIST_VIEW;
 import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.PAGE_TS_HISTOGRAM_VIEW;
@@ -178,6 +177,7 @@ import static org.apache.ignite.internal.processors.datastructures.DataStructure
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.STAMPED_VIEW;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.VOLATILE_DATA_REGION_NAME;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DISTRIBUTED_METASTORE_VIEW;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_ATTR_VIEW;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.STREAM_POOL_QUEUE_VIEW;
@@ -886,10 +886,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 assertEquals(0, txv.timeout());
                 assertTrue(txv.startTime() <= System.currentTimeMillis());
                 assertEquals(String.valueOf(cacheId(cache1.getName())), txv.cacheIds());
-
-                //Only pessimistic transactions are supported when MVCC is enabled.
-                if (Objects.equals(System.getProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS), "true"))
-                    return;
 
                 GridTestUtils.runMultiThreadedAsync(() -> {
                     try (Transaction tx = g.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
@@ -2055,9 +2051,9 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             )))) {
             ignite.cluster().state(ClusterState.ACTIVE);
 
-            String histogramName = "my-histogram";
+            String histogramName = "CheckpointBeforeLockHistogram";
 
-            ignite.context().metric().configureHistogram(histogramName, new long[] { 1, 2, 3});
+            ignite.context().metric().configureHistogram(metricName(DATASTORAGE_METRIC_PREFIX, histogramName), new long[] { 1, 2, 3});
 
             DistributedMetaStorage dms = ignite.context().distributedMetastorage();
 

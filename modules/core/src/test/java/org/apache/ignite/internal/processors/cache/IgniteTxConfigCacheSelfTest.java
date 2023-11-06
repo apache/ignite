@@ -41,11 +41,9 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionTimeoutException;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -105,8 +103,6 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testUserTxTimeout() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7952", MvccFeatureChecker.forcedMvcc());
-
         final Ignite ignite = grid(0);
 
         final IgniteCache<Object, Object> cache = ignite.getOrCreateCache(CACHE_NAME);

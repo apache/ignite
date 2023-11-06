@@ -47,12 +47,10 @@ import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -428,11 +426,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                      */
                     final IgniteInternalFuture finalPrepFut = prepFut;
 
-                    lockFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                        @Override public void apply(IgniteInternalFuture<?> ignored) {
-                            finishTx(false, finalPrepFut, fut);
-                        }
-                    });
+                    lockFut.listen(() -> finishTx(false, finalPrepFut, fut));
 
                     return;
                 }
@@ -502,13 +496,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         if (prep != null) {
             if (prep.isDone())
                 finishTx(true, prep, fut);
-            else {
-                prep.listen(new CI1<IgniteInternalFuture<?>>() {
-                    @Override public void apply(IgniteInternalFuture<?> f) {
-                        finishTx(true, f, fut);
-                    }
-                });
-            }
+            else
+                prep.listen(() -> finishTx(true, prep, fut));
         }
         else {
             assert optimistic();
@@ -551,16 +540,12 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
         cctx.mvcc().addFuture(fut, fut.futureId());
 
-        GridDhtTxPrepareFuture prepFut = this.prepFut;
+        GridDhtTxPrepareFuture prep = prepFut;
 
-        if (prepFut != null) {
-            prepFut.complete();
+        if (prep != null) {
+            prep.complete();
 
-            prepFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> f) {
-                    finishTx(false, f, fut);
-                }
-            });
+            prep.listen(() -> finishTx(false, prep, fut));
         }
         else
             finishTx(false, null, fut);

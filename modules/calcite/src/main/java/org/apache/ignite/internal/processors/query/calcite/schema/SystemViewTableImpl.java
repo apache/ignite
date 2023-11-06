@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -96,18 +94,17 @@ public class SystemViewTableImpl extends AbstractTable implements IgniteTable {
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-        return IgniteLogicalTableScan.create(cluster, cluster.traitSet(), relOptTbl, proj, cond, requiredColumns);
+        return IgniteLogicalTableScan.create(cluster, cluster.traitSet(), relOptTbl, Collections.emptyList(), proj,
+            cond, requiredColumns);
     }
 
     /** {@inheritDoc} */
     @Override public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
         ColocationGroup grp,
-        Predicate<Row> filter,
-        Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet usedColumns
     ) {
-        return new SystemViewScan<>(execCtx, desc, null, filter, rowTransformer, usedColumns);
+        return new SystemViewScan<>(execCtx, desc, null, usedColumns);
     }
 
     /** {@inheritDoc} */
@@ -161,6 +158,11 @@ public class SystemViewTableImpl extends AbstractTable implements IgniteTable {
     /** {@inheritDoc} */
     @Override public boolean isIndexRebuildInProgress() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return desc.name();
     }
 
     /** */

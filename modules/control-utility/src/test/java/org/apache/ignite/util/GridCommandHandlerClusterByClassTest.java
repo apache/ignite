@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongSupplier;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
@@ -59,12 +60,16 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteVersionUtils;
+import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.commandline.ArgumentParser;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
@@ -96,6 +101,7 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionState;
+import org.apache.maven.surefire.shared.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assume;
 import org.junit.Test;
@@ -723,6 +729,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             assertContains(log, dumpWithZeros, "Partition: PartitionKeyV2 [grpId=1544803905, grpName=default, partId=0]");
             assertContains(log, dumpWithZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
             assertContains(log, dumpWithZeros, "no conflicts have been found");
+            assertCompactFooterStat(dumpWithZeros, 0, 0, 0, keysCount);
 
             assertSort(parts, dumpWithZeros);
         }
@@ -741,11 +748,57 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             assertNotContains(log, dumpWithoutZeros, "updateCntr=0, partitionState=OWNING, size=0, partHash=0");
 
             assertContains(log, dumpWithoutZeros, "no conflicts have been found");
+            assertCompactFooterStat(dumpWithoutZeros, 0, 0, 0, keysCount);
 
             assertSort(keysCount, dumpWithoutZeros);
         }
         else
             fail("Should be found both files");
+
+        for (int i = 0; i < keysCount / 2; i++)
+            ignite.cache(DEFAULT_CACHE_NAME).put(new TestClass(i, String.valueOf(i)), i);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", DEFAULT_CACHE_NAME));
+
+        fileNameMatcher = dumpFileNameMatcher();
+
+        assertTrue(fileNameMatcher.find());
+
+        String report = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+        assertCompactFooterStat(report, keysCount / 2, 0, keysCount / 2, keysCount);
+
+        ClientConfiguration cliCfg = new ClientConfiguration()
+            .setAddresses("127.0.0.1:10800")
+            .setAutoBinaryConfigurationEnabled(false)
+            .setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
+
+        try (IgniteClient cli = TcpIgniteClient.start(cliCfg)) {
+            for (int i = keysCount; i < keysCount * 3; i++)
+                cli.cache(DEFAULT_CACHE_NAME).put(new TestClass(i, String.valueOf(i)), i);
+        }
+
+        for (int i = 0; i < keysCount; i++)
+            ignite.cache(DEFAULT_CACHE_NAME).put(String.valueOf(i), i);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", DEFAULT_CACHE_NAME));
+
+        fileNameMatcher = dumpFileNameMatcher();
+
+        assertTrue(fileNameMatcher.find());
+
+        report = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+        assertCompactFooterStat(report, keysCount / 2, keysCount * 2, keysCount / 2 + keysCount * 2, keysCount * 2);
+    }
+
+    /** */
+    private static void assertCompactFooterStat(String report, long cf, long noCf, long binary, long regular) {
+        assertContains(log, report, "CompactFooter statistic for keys [" +
+            "compactFooter=" + cf + ", " +
+            "noCompactFooter=" + noCf + ", " +
+            "binary=" + binary + ", " +
+            "regular=" + regular + "]");
     }
 
     /**
@@ -1601,6 +1654,31 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "testCache", "--limit", "10"));
 
         assertNotContains(log, testOut.toString(), "Result limited");
+    }
+
+    /** */
+    @Test
+    public void testCacheScanLimit() {
+        injectTestSystemOut();
+
+        IgniteCache<Integer, Object> c = crd.createCache(new CacheConfiguration<Integer, Object>("testCache")
+            .setStatisticsEnabled(true));
+
+        for (int i = 0; i < 1000; i++)
+            c.put(i, false);
+
+        LongSupplier reads = () -> G.allGrids().stream().mapToLong(srv -> srv.cache(c.getName())
+            .metrics(srv.cluster().forLocal()).getCacheGets()).sum();
+
+        long before = reads.getAsLong();
+
+        int limit = 5;
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "testCache", "--limit", String.valueOf(limit)));
+
+        assertTrue(reads.getAsLong() - before < limit * 3);
+        assertEquals(limit, StringUtils.countMatches(testOut.toString(), Integer.class.getName()));
+        assertContains(log, testOut.toString(), "Result limited");
     }
 
     /** */

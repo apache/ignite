@@ -48,4 +48,9 @@ public class Key {
     @Override public int hashCode() {
         return Objects.hash(id);
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "Key[id=" + id + ']';
+    }
 }

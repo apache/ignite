@@ -35,10 +35,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.CacheEvictableEntryImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
+
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -242,21 +242,14 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
 
                             int j = rnd.nextInt(keyCnt);
 
-                            while (true) {
-                                try (Transaction tx = ignite.transactions().txStart()) {
-                                    // Put or remove?
-                                    if (rnd.nextBoolean())
-                                        cache.put(j, j);
-                                    else
-                                        cache.remove(j);
+                            try (Transaction tx = ignite.transactions().txStart()) {
+                                // Put or remove?
+                                if (rnd.nextBoolean())
+                                    cache.put(j, j);
+                                else
+                                    cache.remove(j);
 
-                                    tx.commit();
-
-                                    break;
-                                }
-                                catch (Exception e) {
-                                    MvccFeatureChecker.assertMvccWriteConflict(e);
-                                }
+                                tx.commit();
                             }
 
                             if (i != 0 && i % 5000 == 0)

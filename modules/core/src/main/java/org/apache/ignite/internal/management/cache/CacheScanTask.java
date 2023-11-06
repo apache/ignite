@@ -19,11 +19,15 @@ package org.apache.ignite.internal.management.cache;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import javax.cache.Cache;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
@@ -33,6 +37,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+
+import static java.lang.Math.min;
+import static org.apache.ignite.cache.query.Query.DFLT_PAGE_SIZE;
 
 /**
  * Task that scan cache entries.
@@ -73,18 +80,26 @@ public class CacheScanTask extends VisorOneNodeTask<CacheScanCommandArg, CacheSc
             if (arg.limit() <= 0)
                 throw new IllegalStateException("Invalid limit value.");
 
+            IgniteCache<Object, Object> cache = ignite.cache(arg.cacheName()).withKeepBinary();
+
             List<String> titles = Arrays.asList("Key Class", "Key", "Value Class", "Value");
 
             int cnt = 0;
             List<List<?>> entries = new ArrayList<>();
 
-            for (Cache.Entry<?, ?> entry : ignite.cache(arg.cacheName()).withKeepBinary()) {
-                Object k = entry.getKey();
-                Object v = entry.getValue();
-                entries.add(Arrays.asList(typeOf(k), valueOf(k), typeOf(v), valueOf(v)));
+            ScanQuery<Object, Object> scanQry = new ScanQuery<>().setPageSize(min(arg.limit(), DFLT_PAGE_SIZE));
 
-                if (++cnt >= arg.limit())
-                    break;
+            try (QueryCursor<Cache.Entry<Object, Object>> qry = cache.query(scanQry)) {
+                Iterator<Cache.Entry<Object, Object>> iter = qry.iterator();
+
+                while (cnt++ < arg.limit() && iter.hasNext()) {
+                    Cache.Entry<Object, Object> next = iter.next();
+
+                    Object k = next.getKey();
+                    Object v = next.getValue();
+
+                    entries.add(Arrays.asList(typeOf(k), valueOf(k), typeOf(v), valueOf(v)));
+                }
             }
 
             return new CacheScanTaskResult(titles, entries);

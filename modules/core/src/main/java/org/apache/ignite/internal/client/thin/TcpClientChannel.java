@@ -439,9 +439,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         ClientOperation op = pendingReq.operation;
         long startTimeNanos = pendingReq.startTimeNanos;
 
-        pendingReq.listen(payloadFut -> asyncContinuationExecutor.execute(() -> {
+        pendingReq.listen(() -> asyncContinuationExecutor.execute(() -> {
             try {
-                ByteBuffer payload = payloadFut.get();
+                ByteBuffer payload = pendingReq.get();
 
                 T res = null;
                 if (payload != null && payloadReader != null)
@@ -686,12 +686,6 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         if (F.isEmpty(addrs))
             error = "At least one Ignite server node must be specified in the Ignite client configuration";
-        else {
-            for (InetSocketAddress addr : addrs) {
-                if (addr.getPort() < 1024 || addr.getPort() > 49151)
-                    error = String.format("Ignite client port %s is out of valid ports range 1024...49151", addr.getPort());
-            }
-        }
 
         if (error == null && cfg.getHeartbeatInterval() <= 0)
             error = "heartbeatInterval cannot be zero or less.";

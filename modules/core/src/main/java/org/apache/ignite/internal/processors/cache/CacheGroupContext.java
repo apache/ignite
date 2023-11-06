@@ -75,7 +75,6 @@ import org.apache.ignite.plugin.CacheTopologyValidatorProvider;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_MISSED;
@@ -265,7 +264,7 @@ public class CacheGroupContext {
 
         storeCacheId = affNode && dataRegion.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
 
-        mvccEnabled = ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
+        mvccEnabled = false;
 
         log = ctx.kernalContext().log(getClass());
 
@@ -285,13 +284,6 @@ public class CacheGroupContext {
         hasAtomicCaches = ccfg.getAtomicityMode() == ATOMIC;
 
         topValidators = Collections.unmodifiableCollection(topologyValidators(ccfg, ctx.kernalContext().plugins()));
-    }
-
-    /**
-     * @return Mvcc flag.
-     */
-    public boolean mvccEnabled() {
-        return mvccEnabled;
     }
 
     /**

@@ -22,13 +22,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
@@ -49,12 +46,6 @@ public class CheckpointProgressImpl implements CheckpointProgress {
 
     /** Cause of fail, which has happened during the checkpoint or null if checkpoint was successful. */
     private volatile Throwable failCause;
-
-    /** Flag indicates that snapshot operation will be performed after checkpoint. */
-    private volatile boolean nextSnapshot;
-
-    /** Snapshot operation that should be performed if {@link #nextSnapshot} set to true. */
-    private volatile SnapshotOperation snapshotOperation;
 
     /** Partitions destroy queue. */
     private final PartitionDestroyQueue destroyQueue = new PartitionDestroyQueue();
@@ -163,13 +154,6 @@ public class CheckpointProgressImpl implements CheckpointProgress {
     }
 
     /**
-     * @return Flag indicates that snapshot operation will be performed after checkpoint.
-     */
-    public boolean nextSnapshot() {
-        return nextSnapshot;
-    }
-
-    /**
      * @return Scheduled time of checkpoint.
      */
     public long nextCpNanos() {
@@ -193,27 +177,6 @@ public class CheckpointProgressImpl implements CheckpointProgress {
      */
     public void reason(String reason) {
         this.reason = reason;
-    }
-
-    /**
-     * @return Snapshot operation that should be performed if  set to true.
-     */
-    public SnapshotOperation snapshotOperation() {
-        return snapshotOperation;
-    }
-
-    /**
-     * @param snapshotOperation New snapshot operation that should be performed if  set to true.
-     */
-    public void snapshotOperation(SnapshotOperation snapshotOperation) {
-        this.snapshotOperation = snapshotOperation;
-    }
-
-    /**
-     * @param nextSnapshot New flag indicates that snapshot operation will be performed after checkpoint.
-     */
-    public void nextSnapshot(boolean nextSnapshot) {
-        this.nextSnapshot = nextSnapshot;
     }
 
     /** {@inheritDoc} */
@@ -283,9 +246,9 @@ public class CheckpointProgressImpl implements CheckpointProgress {
 
     /** {@inheritDoc} */
     @Override public void onStateChanged(CheckpointState state, Runnable clo) {
-        GridFutureAdapter<?> fut0 = futureFor(state);
+        GridFutureAdapter<?> fut = futureFor(state);
 
-        fut0.listen((IgniteInClosure<IgniteInternalFuture>)fut -> {
+        fut.listen(() -> {
             if (fut.error() == null)
                 clo.run();
         });
