@@ -43,7 +43,6 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_EXEC_TIME;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotEquals;
 
