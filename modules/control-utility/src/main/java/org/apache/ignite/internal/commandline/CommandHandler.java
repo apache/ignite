@@ -875,7 +875,7 @@ public class CommandHandler {
                     if (fld.isAnnotationPresent(EnumDescription.class)) {
                         EnumDescription enumDesc = fld.getAnnotation(EnumDescription.class);
 
-                        String[] names = enumDesc.names();
+                        String[] names = formattedEnumNames(fld);
                         String[] descriptions = enumDesc.descriptions();
 
                         for (int i = 0; i < names.length; i++)
@@ -964,6 +964,15 @@ public class CommandHandler {
     }
 
     /** */
+    private static String[] formattedEnumNames(Field fld) {
+        EnumDescription desc = fld.getAnnotation(EnumDescription.class);
+
+        String indent = fld.isAnnotationPresent(Positional.class) ? "" : INDENT;
+
+        return Arrays.stream(desc.names()).map(s -> indent + s).toArray(String[]::new);
+    }
+
+    /** */
     private static class LengthCalculator implements Consumer<Field> {
         /** */
         int length;
@@ -973,9 +982,7 @@ public class CommandHandler {
             length = Math.max(length, parameterExample(fld, false).length());
 
             if (fld.isAnnotationPresent(EnumDescription.class)) {
-                EnumDescription enumDesc = fld.getAnnotation(EnumDescription.class);
-
-                for (String name : enumDesc.names())
+                for (String name : formattedEnumNames(fld))
                     length = Math.max(length, name.length());
             }
         }

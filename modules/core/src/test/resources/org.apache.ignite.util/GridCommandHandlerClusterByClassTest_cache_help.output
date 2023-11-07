@@ -23,12 +23,12 @@ Arguments: --cache help --yes
     Parameters:
       --check-crc                                                       - check the CRC-sum of pages stored on disk before verifying data consistency in partitions between primary and backup nodes.
       --cache-filter DEFAULT|SYSTEM|PERSISTENT|NOT_PERSISTENT|USER|ALL  - Type of cache(s).
-      DEFAULT                                                           - Default - user only, or all caches specified by name.
-      SYSTEM                                                            - System.
-      PERSISTENT                                                        - Persistent.
-      NOT_PERSISTENT                                                    - Not persistent.
-      USER                                                              - User.
-      ALL                                                               - All.
+        DEFAULT                                                         - Default - user only, or all caches specified by name.
+        SYSTEM                                                          - System.
+        PERSISTENT                                                      - Persistent.
+        NOT_PERSISTENT                                                  - Not persistent.
+        USER                                                            - User.
+        ALL                                                             - All.
 
   Calculate partition hash and print into standard output:
     control.(sh|bat) --cache idle_verify --dump [cacheName1,...,cacheNameN] [--skip-zeros] [--check-crc] [--exclude-caches cacheName1,...,cacheNameN] [--cache-filter DEFAULT|SYSTEM|PERSISTENT|NOT_PERSISTENT|USER|ALL]
@@ -36,12 +36,12 @@ Arguments: --cache help --yes
     Parameters:
       --check-crc                                                       - check the CRC-sum of pages stored on disk before verifying data consistency in partitions between primary and backup nodes.
       --cache-filter DEFAULT|SYSTEM|PERSISTENT|NOT_PERSISTENT|USER|ALL  - Type of cache(s).
-      DEFAULT                                                           - Default - user only, or all caches specified by name.
-      SYSTEM                                                            - System.
-      PERSISTENT                                                        - Persistent.
-      NOT_PERSISTENT                                                    - Not persistent.
-      USER                                                              - User.
-      ALL                                                               - All.
+        DEFAULT                                                         - Default - user only, or all caches specified by name.
+        SYSTEM                                                          - System.
+        PERSISTENT                                                      - Persistent.
+        NOT_PERSISTENT                                                  - Not persistent.
+        USER                                                            - User.
+        ALL                                                             - All.
 
   Show information about caches, groups or sequences that match a regular expression. When executed without parameters, this subcommand prints the list of caches:
     control.(sh|bat) --cache list regexPattern [nodeId] [--config] [--output-format multi-line] [--groups|--seq]
