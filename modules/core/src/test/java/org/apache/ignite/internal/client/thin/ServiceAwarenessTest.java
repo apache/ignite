@@ -381,10 +381,8 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
                     catch (ClientException e) {
                         String m = e.getMessage();
 
-                        // Until the service topology is not updated yet, service invoke request can be redirected to
-                        // node which has just left the cluster. This case raises a node-left exception in the service
-                        // call response. Unfortunately, this exception is not processed by the client service proxy as
-                        // a resend attempts.
+                        // TODO: IGNITE-20802 : Exception should not occur.
+                        // Client doesn't retry service invocation if the redirected-to service instance node leaves cluster.
                         if (addNodes || (!m.contains("Node has left grid") && !m.contains("Failed to send job due to node failure"))
                             || newNodesUUIDs.stream().noneMatch(nid -> m.contains(nid.toString())))
                             throw e;
