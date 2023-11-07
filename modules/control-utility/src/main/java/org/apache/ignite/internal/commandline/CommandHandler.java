@@ -89,6 +89,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS
 import static org.apache.ignite.internal.management.api.CommandUtils.asOptional;
 import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
 import static org.apache.ignite.internal.management.api.CommandUtils.executable;
+import static org.apache.ignite.internal.management.api.CommandUtils.hasDescription;
 import static org.apache.ignite.internal.management.api.CommandUtils.join;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
@@ -979,6 +980,9 @@ public class CommandHandler {
 
         /** {@inheritDoc} */
         @Override public void accept(Field fld) {
+            if (!hasDescription(fld))
+                return;
+
             length = Math.max(length, parameterExample(fld, false).length());
 
             if (fld.isAnnotationPresent(EnumDescription.class)) {

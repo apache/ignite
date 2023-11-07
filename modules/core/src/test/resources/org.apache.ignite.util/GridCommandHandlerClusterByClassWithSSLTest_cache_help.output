@@ -75,10 +75,10 @@ Arguments: --cache help --yes
     control.(sh|bat) --cache validate_indexes [cacheName1,...,cacheNameN] [nodeId] [--check-first N] [--check-through K] [--check-crc] [--check-sizes]
 
     Parameters:
-      --check-first N            - validate only the first N keys.
-      --check-through K          - validate every Kth key.
-      --check-crc                - check the CRC-sum of pages stored on disk.
-      --check-sizes              - check that index size and cache size are the same.
+      --check-first N    - validate only the first N keys.
+      --check-through K  - validate every Kth key.
+      --check-crc        - check the CRC-sum of pages stored on disk.
+      --check-sizes      - check that index size and cache size are the same.
 
   Checks that secondary indexes inline size are same on the cluster nodes:
     control.(sh|bat) --cache check_index_inline_sizes

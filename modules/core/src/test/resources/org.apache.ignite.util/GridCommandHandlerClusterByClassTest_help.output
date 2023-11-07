@@ -61,18 +61,18 @@ This utility can do the following commands:
     control.(sh|bat) --baseline auto_adjust [--verbose] [DISABLE|ENABLE] [timeout <timeoutMillis>] [--yes]
 
     Parameters:
-      --verbose                - Show the full list of node ips.
-      ENABLE                   - Enable baseline auto adjust.
-      DISABLE                  - Disable baseline auto adjust.
+      --verbose  - Show the full list of node ips.
+      ENABLE     - Enable baseline auto adjust.
+      DISABLE    - Disable baseline auto adjust.
 
   List or kill transactions:
     control.(sh|bat) --tx [--xid XID] [--min-duration SECONDS] [--min-size SIZE] [--label PATTERN_REGEX] [--limit NUMBER] [--order DURATION|SIZE|START_TIME] [--kill] [--servers|--clients|--nodes consistentId1[,consistentId2,....,consistentIdN]] [--yes]
 
     Parameters:
-      --order DURATION|SIZE|START_TIME                          - Output order.
-        DURATION                                                - Sort by duration.
-        SIZE                                                    - Sort by size.
-        START_TIME                                              - Sort by start time.
+      --order DURATION|SIZE|START_TIME  - Output order.
+        DURATION                        - Sort by duration.
+        SIZE                            - Sort by size.
+        START_TIME                      - Sort by start time.
 
   Print detailed information (topology and key lock ownership) about specific transaction:
     control.(sh|bat) --tx --info <TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] (can be found in logs)>|<TX identifier as UUID (can be retrieved via --tx command)>
@@ -325,12 +325,12 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
     control.(sh|bat) --tracing-configuration set --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL [--label label] [--sampling-rate Decimal value between 0 and 1, where 0 means never and 1 means always. More or less reflects the probability of sampling specific trace.] [--included-scopes Set of scopes with comma as separator  DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL]
 
     Parameters:
-      --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL                                                                                                           - Tracing span scope.
-        DISCOVERY                                                                                                                                               - Discovery scope.
-        EXCHANGE                                                                                                                                                - Exchange scope.
-        COMMUNICATION                                                                                                                                           - Communication scope.
-        TX                                                                                                                                                      - Transactional scope.
-        SQL                                                                                                                                                     - SQL scope.
+      --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL  - Tracing span scope.
+        DISCOVERY                                      - Discovery scope.
+        EXCHANGE                                       - Exchange scope.
+        COMMUNICATION                                  - Communication scope.
+        TX                                             - Transactional scope.
+        SQL                                            - SQL scope.
 
   Stop warm-up:
     control.(sh|bat) --warm-up --stop
