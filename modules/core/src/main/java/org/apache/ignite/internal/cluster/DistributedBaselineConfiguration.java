@@ -62,14 +62,15 @@ public class DistributedBaselineConfiguration {
 
     /** Value of manual baseline control or auto adjusting baseline. */
     private final DistributedChangeableProperty<Boolean> baselineAutoAdjustEnabled =
-        detachedBooleanProperty("baselineAutoAdjustEnabled", "Value of manual baseline control or auto adjusting baseline.");
+        detachedBooleanProperty("baselineAutoAdjustEnabled", "Value of manual baseline control or auto" +
+            " adjusting baseline. True - If cluster in auto-adjust. False - If cluster in manuale.");
 
     /**
      * Value of time which we would wait before the actual topology change since last discovery event(node join/exit).
      */
     private final DistributedChangeableProperty<Long> baselineAutoAdjustTimeout =
         detachedLongProperty("baselineAutoAdjustTimeout",
-            "Value of time which we would wait before the actual topology change since last discovery event(node join/exit).");
+            "Number of milliseconds to wait before the actual topology change since last server topology change.");
 
     /**
      * @param isp Subscription processor.
