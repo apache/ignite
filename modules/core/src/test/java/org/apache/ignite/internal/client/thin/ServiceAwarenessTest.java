@@ -228,7 +228,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      * Tests several nodes come while one thread is used to call the service.
      */
     @Test
-    public void testNodesComeOneThread() throws Exception {
+    public void testNodesJoinSingleThreaded() throws Exception {
         doTestClusterTopChangesWhileServiceCalling(3, true, false);
     }
 
@@ -236,7 +236,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      * Tests several nodes come while several threads are used to call the service.
      */
     @Test
-    public void testNodesComeMultiThreads() throws Exception {
+    public void testNodesJoinMultiThreaded() throws Exception {
         doTestClusterTopChangesWhileServiceCalling(3, true, true);
     }
 
@@ -244,7 +244,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      * Tests several nodes leaves while one thread is used to call the service.
      */
     @Test
-    public void testNodesLeaveOneThread() throws Exception {
+    public void testNodesLeaveSingleThreaded() throws Exception {
         doTestClusterTopChangesWhileServiceCalling(3, false, false);
     }
 
@@ -252,7 +252,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      * Tests several nodes leave while several threads are used to call the service.
      */
     @Test
-    public void testNodesLeaveMultiThreads() throws Exception {
+    public void testNodesLeaveMultiThreaded() throws Exception {
         doTestClusterTopChangesWhileServiceCalling(3, false, true);
     }
 
