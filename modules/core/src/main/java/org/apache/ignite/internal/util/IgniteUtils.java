@@ -1095,11 +1095,15 @@ public abstract class IgniteUtils {
      * Gets all plugin providers.
      *
      * @param cfg Configuration.
+     * @param includeClsPath Include classpath plugins on empty config.
      * @return Plugins.
      */
-    public static List<PluginProvider> allPluginProviders(IgniteConfiguration cfg) {
+    public static List<PluginProvider> allPluginProviders(IgniteConfiguration cfg, boolean includeClsPath) {
         return cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0 ?
-            Arrays.asList(cfg.getPluginProviders()) : U.allPluginProviders();
+            Arrays.asList(cfg.getPluginProviders()) :
+            includeClsPath ?
+                U.allPluginProviders() :
+                Collections.emptyList();
     }
 
     /**

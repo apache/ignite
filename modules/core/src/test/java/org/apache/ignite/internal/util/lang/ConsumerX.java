@@ -15,23 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
+package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import java.util.function.Consumer;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * No operation, empty plugin processor for creating WAL iterator without node start up
+ * Represents an operation that accepts a single input argument and returns
+ * no result. Unlike most other functional interfaces,
+ * {@code ConsumerX} is expected to operate via side-effects.
+ *
+ * Also it is able to throw {@link Exception} unlike {@link Consumer}.
+ *
+ * @param <T> The type of the input to the operation.
  */
-class StandaloneIgnitePluginProcessor extends IgnitePluginProcessor {
+@FunctionalInterface
+public interface ConsumerX<T> {
     /**
-     * @param ctx Kernal context.
-     * @param cfg Ignite configuration.
+     * Performs this operation on the given argument.
+     *
+     * @param t the input argument.
      */
-    StandaloneIgnitePluginProcessor(GridKernalContext ctx, IgniteConfiguration cfg) throws IgniteCheckedException {
-        super(ctx, cfg, U.allPluginProviders(cfg, false));
-    }
+    public void accept(@Nullable T t) throws Exception;
 }
