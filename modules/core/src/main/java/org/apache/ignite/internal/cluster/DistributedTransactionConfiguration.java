@@ -84,36 +84,33 @@ public class DistributedTransactionConfiguration {
      */
     private final DistributedChangeableProperty<Boolean> txOwnerDumpRequestsAllowed =
         detachedBooleanProperty("txOwnerDumpRequestsAllowed",
-            "Setting determines whether requests for obtaining information about long-running transactions" +
-                " are allowed from a local node to a nearby node. If this is allowed, a request is sent to the nearby " +
-                "node to retrieve a snapshot of the transaction and the specific thread that is responsible for it.");
+            "Shows if dump requests from local node to near node are allowed, when " +
+                "long running transaction is found. If allowed, the compute request to near node will be made to get" +
+                " thread dump of transaction owner thread.");
 
     /** Long operations dump timeout. */
     private final DistributedChangeableProperty<Long> longOperationsDumpTimeout =
         detachedLongProperty("longOperationsDumpTimeout", "Cache operations that take more time than value " +
-            "of this property will be output to log. Set to 0 to disable.");
+            "of this property in milliseconds will be output to log. Set to 0 to disable.");
 
     /**
      * Threshold timeout for long transactions, if transaction exceeds it, it will be dumped in log with
      * information about how much time did it spent in system time (time while aquiring locks, preparing,
      * commiting, etc) and user time (time when client node runs some code while holding transaction and not
-     * waiting it). Equals 0 if not set. No transactions are dumped in log if this parameter is not set.
+     * waiting it). Equals 0 if not set.
      */
     private final DistributedChangeableProperty<Long> longTransactionTimeDumpThreshold =
         detachedLongProperty("longTransactionTimeDumpThreshold",
-            "Threshold timeout for long transactions, if transaction exceeds it, it will be dumped in log with" +
-                "information about how much time did it spent in system time (time while aquiring locks, preparing," +
-                "commiting, etc) and user time (time when client node runs some code while holding transaction and not" +
-                "waiting it). Equals 0 if not set. No transactions are dumped in log if this parameter is not set.");
+            "Threshold timeout for long transactions, if transaction exceeds it, it will be dumped in log with " +
+                "information about how much time did it spent in system time (time while acquiring " +
+                "locks, preparing, committing, etc) and user time (time when client node runs some code while holding " +
+                "transaction and not waiting it). Equals 0 if not set.");
 
     /** The coefficient for samples of completed transactions that will be dumped in log. */
     private final DistributedChangeableProperty<Double> transactionTimeDumpSamplesCoefficient =
         detachedDoubleProperty("transactionTimeDumpSamplesCoefficient",
-            "The proportion of completed transactions that will be recorded in the system log. " +
-                "This coefficient is a decimal number between 0 and 1. If the value is 0, no transactions will be logged." +
-                " If it's 0.1, for example, approximately 10% of transactions will be logged. This setting is useful " +
-                "for performance monitoring and debugging, as it allows you to record a subset of transactions for " +
-                "detailed analysis.");
+            "The coefficient for samples of completed transactions that will be dumped " +
+        "in log. Must be float value between 0.0 and 1.0 inclusive.");
 
     /**
      * The limit of samples of completed transactions that will be dumped in log per second, if
@@ -122,18 +119,16 @@ public class DistributedTransactionConfiguration {
      */
     private final DistributedChangeableProperty<Integer> longTransactionTimeDumpSamplesPerSecondLimit =
         detachedIntegerProperty("longTransactionTimeDumpSamplesPerSecondLimit",
-            "A maximum limit on the number of transactions that can be logged per second. " +
-                "This is to prevent the system from being overloaded by too many log entries." +
-                "If the coefficient transactionTimeDumpSamplesCoefficient is equal to 0 or less, no transaction will be" +
-                " logged, regardless of the other parameter. If the coefficient is greater than 0, the specified number" +
-                " of transactions will be logged per second, but not more than the value specified in this parameter.");
+            "The limit of samples of completed transactions that will be dumped in log per second, if " +
+                IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT + " is above 0.0. Must be integer value " +
+                "greater than 0.");
 
     /** Collisions dump interval. */
     private final DistributedChangeableProperty<Integer> collisionsDumpInterval =
         detachedIntegerProperty("collisionsDumpInterval",
-            "The frequency at which the system logs transaction key collisions. A transaction key collision occurs" +
-                " when multiple transactions attempt to access the same data simultaneously. If it sets to a value greater" +
-                " than zero, the system will log these collisions at the specified interval.");
+            "When above zero, prints tx key collisions once per interval. Each transaction besides " +
+                "OPTIMISTIC SERIALIZABLE capture locks on all enlisted keys, for some reasons per key lock queue may rise. " +
+                "This property sets the interval in milliseconds during which statistics are collected.");
 
     /**
      * @param ctx Kernal context.

@@ -67,8 +67,7 @@ public class DistributedIndexingConfiguration extends DistributedSqlConfiguratio
      */
     private final DistributedBooleanProperty disableCreateLuceneIndexForStringValueType =
         DistributedBooleanProperty.detachedBooleanProperty("sql.disableCreateLuceneIndexForStringValueType",
-            "The default creation of Lucene indexes for string values. When set to true, " +
-                "it means that Lucene indexes for string values won't be created automatically by default.");
+            "Flag to disable creation Lucene index for String value type by default.");
 
     /**
      * @param ctx Kernal context

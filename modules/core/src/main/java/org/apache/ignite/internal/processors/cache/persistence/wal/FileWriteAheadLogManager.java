@@ -419,8 +419,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** CDC disabled flag. */
     private final DistributedBooleanProperty cdcDisabled = detachedBooleanProperty(CDC_DISABLED,
-        "Disables CDC in the cluster to avoid disk overflow. Note that cache changes will be lost when CDC is" +
-            " disabled. Useful if the CDC application is down for a long time.");
+        "CDC disabled flag. Disables CDC in the cluster to avoid disk overflow. " +
+            "Note that cache changes will be lost when CDC is disabled. Useful if the CDC application " +
+            "is down for a long time.");
 
     /**
      * Constructor.

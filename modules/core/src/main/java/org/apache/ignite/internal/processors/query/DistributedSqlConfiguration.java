@@ -70,8 +70,7 @@ public abstract class DistributedSqlConfiguration {
                     dfltQryTimeout = new SimpleDistributedProperty<>(
                         QUERY_TIMEOUT_PROPERTY_NAME,
                         SimpleDistributedProperty::parseNonNegativeInteger,
-                        "Timeout in milliseconds for default query timeout 0 means there is no timeout " +
-                            "(this is a default value)."
+                        "Timeout in milliseconds for default query timeout. 0 means there is no timeout."
                     );
 
                     dfltQryTimeout.addListener(makeUpdateListener(PROPERTY_UPDATE_MESSAGE, log));

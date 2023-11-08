@@ -58,11 +58,10 @@ public class PropertyListCommand implements ComputeCommand<PropertyListCommandAr
             SystemViewCommand.printTable(F.asList("Name", "Value", "Description"), types, data, printer);
         }
         else {
-            for (String prop : res.properties().stream()
+            res.properties().stream()
                 .map(GridTuple3::get1)
                 .sorted()
-                .collect(Collectors.toList()))
-                printer.accept(prop);
+                .forEach(printer);
         }
     }
 }

@@ -361,8 +361,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** WAL rebalance threshold. */
     private final SimpleDistributedProperty<Integer> historicalRebalanceThreshold =
         new SimpleDistributedProperty<>(HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY, Integer::parseInt,
-            "The master threshold value determines when to use historical data or perform a complete " +
-                "rebalance for the local partition.");
+            "WAL rebalance threshold. Threshold value to use history or full rebalance for local partition.");
 
     /** */
     private GridKernalContext ctx;
@@ -542,11 +541,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             kernalCtx.internalSubscriptionProcessor().registerDatabaseListener(new MetastorageRecoveryLifecycle());
 
             cpFreqDeviation = new SimpleDistributedProperty<>("checkpoint.deviation", Integer::parseInt,
-                "The deviation as a percentage from the configured checkpoint frequency. " +
-                    "A lower percentage will result in more frequent checkpoints, providing greater data durability but " +
-                    "potentially impacting performance. Conversely, a higher percentage allows for fewer checkpoints, " +
-                    "potentially improving performance but increasing the risk of data loss in case of failure. " +
-                    "It provides a way to fine-tune the balance between performance and data reliability.");
+                "Checkpoint frequency deviation from the configured frequency in percentage. " +
+                    "Gets a checkpoint interval with a randomized delay. It helps when the cluster makes a checkpoint " +
+                    "in the same time in every node.");
 
             kernalCtx.internalSubscriptionProcessor().registerDistributedConfigurationListener(dispatcher -> {
                 cpFreqDeviation.addListener((name, oldVal, newVal) ->
