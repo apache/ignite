@@ -107,6 +107,9 @@ public class TcpIgniteClient implements IgniteClient {
     /** Serializer/deserializer. */
     private final ClientUtils serDes;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /**
      * Private constructor. Use {@link TcpIgniteClient#start(ClientConfiguration)} to create an instance of
      * {@code TcpIgniteClient}.
@@ -122,6 +125,8 @@ public class TcpIgniteClient implements IgniteClient {
             BiFunction<ClientChannelConfiguration, ClientConnectionMultiplexer, ClientChannel> chFactory,
             ClientConfiguration cfg
     ) throws ClientException {
+        log = NullLogger.whenNull(cfg.getLogger());
+
         final ClientBinaryMetadataHandler metadataHnd = new ClientBinaryMetadataHandler();
 
         ClientMarshallerContext marshCtx = new ClientMarshallerContext();
@@ -159,7 +164,7 @@ public class TcpIgniteClient implements IgniteClient {
 
             compute = new ClientComputeImpl(ch, marsh, cluster.defaultClusterGroup());
 
-            services = new ClientServicesImpl(ch, marsh, cluster.defaultClusterGroup(), NullLogger.whenNull(cfg.getLogger()));
+            services = new ClientServicesImpl(ch, marsh, cluster.defaultClusterGroup(), log);
 
             lsnrsRegistry = new ClientCacheEntryListenersRegistry();
         }
@@ -474,8 +479,6 @@ public class TcpIgniteClient implements IgniteClient {
 
         if (clusterCfg == null)
             return;
-
-        IgniteLogger log = NullLogger.whenNull(cfg.getLogger());
 
         if (log.isDebugEnabled())
             log.debug("Cluster binary configuration retrieved: " + clusterCfg);

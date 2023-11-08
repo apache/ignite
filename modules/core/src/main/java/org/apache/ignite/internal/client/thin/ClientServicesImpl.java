@@ -216,22 +216,21 @@ class ClientServicesImpl implements ClientServices {
          * @return {@code True} if update of the service topology is required. {@code False} otherwise.
          */
         private boolean isUpdateRequired(AffinityTopologyVersion curAffTop) {
-            if (!ch.applyOnDefaultChannel(c -> c.protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.SERVICE_TOPOLOGY), null))
-                return false;
-
             return (lastAffTop == null || curAffTop.topologyVersion() > lastAffTop.topologyVersion()
                 || U.nanosToMillis(System.nanoTime() - lastUpdateRequestTime) >= SRV_TOP_UPDATE_PERIOD)
                 && updateInProgress.compareAndSet(false, true);
         }
 
         /**
-         * Asynchronously requests the service topology if the partition awareness is enabled and if the update is requred.
+         * Provides current known service topology and asynchronously initiates service topology update if requred.
+         *
+         * @return Current known service topology.
          */
-        private void tryUpdate() {
+        private List<UUID> getAndUpdate() {
             AffinityTopologyVersion curAffTop = ch.affinityContext().lastTopology().version();
 
             if (!isUpdateRequired(curAffTop))
-                return;
+                return nodes;
 
             ch.serviceAsync(
                 ClientOperation.SERVICE_GET_TOPOLOGY,
@@ -247,7 +246,9 @@ class ClientServicesImpl implements ClientServices {
                     return res;
                 }).whenComplete((nodes, t) -> {
                     if (t == null) {
-                        set(nodes, curAffTop);
+                        this.nodes = nodes;
+                        lastAffTop = curAffTop;
+                        lastUpdateRequestTime = System.nanoTime();
 
                         if (log.isDebugEnabled()) {
                             log.debug("Topology of service '" + srvcName + "' has been updated. The " +
@@ -259,13 +260,8 @@ class ClientServicesImpl implements ClientServices {
 
                     updateInProgress.set(false);
                 });
-        }
 
-        /** Stores last known service topology. */
-        private void set(List<UUID> nodes, AffinityTopologyVersion lastAffTop) {
-            this.nodes = nodes;
-            this.lastAffTop = lastAffTop;
-            lastUpdateRequestTime = System.nanoTime();
+            return nodes;
         }
     }
 
@@ -314,33 +310,20 @@ class ClientServicesImpl implements ClientServices {
                 if (nodeIds != null && nodeIds.isEmpty())
                     throw new ClientException("Cluster group is empty.");
 
+                List<UUID> serviceTopology = ch.partitionAwarenessEnabled
+                    && ch.applyOnDefaultChannel(c -> c.protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.SERVICE_TOPOLOGY), null)
+                    ? servicesTopologies.computeIfAbsent(name, ServiceTopology::new).getAndUpdate()
+                    : Collections.emptyList();
+
                 return ch.service(ClientOperation.SERVICE_INVOKE,
                     req -> writeServiceInvokeRequest(req, nodeIds, method, args),
                     res -> utils.readObject(res.in(), false, method.getReturnType()),
-                    serviceTopology()
+                    serviceTopology
                 );
             }
             catch (ClientError e) {
                 throw new ClientException(e);
             }
-        }
-
-        /**
-         * If the partition awareness is enabled, notifies the service topology update and provides last knows service
-         * nodes.
-         *
-         * @return Last known topology nodes.
-         */
-        private List<UUID> serviceTopology() {
-            if (ch.partitionAwarenessEnabled) {
-                ServiceTopology srvcTop = servicesTopologies.computeIfAbsent(name, ServiceTopology::new);
-
-                srvcTop.tryUpdate();
-
-                return srvcTop.nodes;
-            }
-
-            return Collections.emptyList();
         }
 
         /**

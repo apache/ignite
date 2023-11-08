@@ -37,7 +37,9 @@ public class ClientServiceTopologyRequest extends ClientRequest {
     private final String name;
 
     /**
-     * Ctor.
+     * Creates the service topology request.
+     *
+     * @param reader Reader to read the {@link #name} from.
      */
     public ClientServiceTopologyRequest(BinaryRawReader reader) {
         super(reader);

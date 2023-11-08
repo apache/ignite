@@ -936,7 +936,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @return Service topology.
      * @throws IgniteCheckedException On error.
      */
-    public @Nullable Map<UUID, Integer> serviceTopology(String name, long timeout) throws IgniteCheckedException {
+    @Nullable public Map<UUID, Integer> serviceTopology(String name, long timeout) throws IgniteCheckedException {
         assert timeout >= 0;
 
         long startTime = U.currentTimeMillis();
