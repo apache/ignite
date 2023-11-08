@@ -58,7 +58,7 @@ public class DistributedIndexingConfiguration extends DistributedSqlConfiguratio
     private final SimpleDistributedProperty<HashSet<String>> disabledSqlFuncs = new SimpleDistributedProperty<>(
         "sql.disabledFunctions",
         SimpleDistributedProperty::parseStringSet,
-        "List of disabled SQL functions."
+        "List of disabled SQL functions. Specify comma-separated functions to set a value."
     );
 
     /**
