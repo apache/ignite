@@ -466,7 +466,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Snapshot transfer rate limit in bytes/sec. */
     private final DistributedLongProperty snapshotTransferRate = detachedLongProperty(SNAPSHOT_TRANSFER_RATE_DMS_KEY,
-        "Snapshot transfer rate in bytes per second at which snapshot files are created.");
+        "Snapshot transfer rate in bytes per second at which snapshot files are created. " +
+            "0 means there is no limit.");
 
     /** Value of {@link IgniteSystemProperties#IGNITE_SNAPSHOT_SEQUENTIAL_WRITE}. */
     private final boolean sequentialWrite =
