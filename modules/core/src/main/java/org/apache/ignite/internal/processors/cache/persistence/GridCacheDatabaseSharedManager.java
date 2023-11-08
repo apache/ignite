@@ -542,12 +542,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             kernalCtx.internalSubscriptionProcessor().registerDatabaseListener(new MetastorageRecoveryLifecycle());
 
             cpFreqDeviation = new SimpleDistributedProperty<>("checkpoint.deviation", Integer::parseInt,
-                "This parameter allows you to specify the deviation as a percentage from the configured " +
-                    "checkpoint frequency. A lower percentage will result in more frequent checkpoints, providing " +
-                    "greater data durability but potentially impacting performance. Conversely, a higher percentage " +
-                    "allows for fewer checkpoints, potentially improving performance but increasing the risk of data " +
-                    "loss in case of failure. It provides a way to fine-tune the balance between performance and data" +
-                    " reliability");
+                "The deviation as a percentage from the configured checkpoint frequency. " +
+                    "A lower percentage will result in more frequent checkpoints, providing greater data durability but " +
+                    "potentially impacting performance. Conversely, a higher percentage allows for fewer checkpoints, " +
+                    "potentially improving performance but increasing the risk of data loss in case of failure. " +
+                    "It provides a way to fine-tune the balance between performance and data reliability.");
 
             kernalCtx.internalSubscriptionProcessor().registerDistributedConfigurationListener(dispatcher -> {
                 cpFreqDeviation.addListener((name, oldVal, newVal) ->

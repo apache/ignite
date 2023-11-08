@@ -58,8 +58,7 @@ public class DistributedIndexingConfiguration extends DistributedSqlConfiguratio
     private final SimpleDistributedProperty<HashSet<String>> disabledSqlFuncs = new SimpleDistributedProperty<>(
         "sql.disabledFunctions",
         SimpleDistributedProperty::parseStringSet,
-        "Paramater is used to disable specific SQL functions in database queries. " +
-            "You can specify a list of functions that won't be available for use in SQL queries."
+        "List of disabled SQL functions."
     );
 
     /**
@@ -68,7 +67,7 @@ public class DistributedIndexingConfiguration extends DistributedSqlConfiguratio
      */
     private final DistributedBooleanProperty disableCreateLuceneIndexForStringValueType =
         DistributedBooleanProperty.detachedBooleanProperty("sql.disableCreateLuceneIndexForStringValueType",
-            "Parameter controls the default creation of Lucene indexes for string values. When set to true, " +
+            "The default creation of Lucene indexes for string values. When set to true, " +
                 "it means that Lucene indexes for string values won't be created automatically by default.");
 
     /**

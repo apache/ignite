@@ -130,7 +130,7 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
     }
 
     /**
-     * Check the set command fro property 'sql.disabledFunctions'.
+     * Check the set command for property 'sql.disabledFunctions'.
      * Steps:
      */
     @Test

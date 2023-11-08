@@ -63,7 +63,7 @@ public class DistributedBaselineConfiguration {
     /** Value of manual baseline control or auto adjusting baseline. */
     private final DistributedChangeableProperty<Boolean> baselineAutoAdjustEnabled =
         detachedBooleanProperty("baselineAutoAdjustEnabled", "Value of manual baseline control or auto" +
-            " adjusting baseline. True - If cluster in auto-adjust. False - If cluster in manuale.");
+            " adjusting baseline. true - If cluster in auto-adjust. false - If cluster in manual.");
 
     /**
      * Value of time which we would wait before the actual topology change since last discovery event(node join/exit).

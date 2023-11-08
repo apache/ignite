@@ -38,7 +38,7 @@ public class DistributedTracingConfiguration
      */
     public DistributedTracingConfiguration() {
         super(TRACING_CONFIGURATION_DISTRIBUTED_METASTORE_KEY, null,
-            "Parameter represents the key for accessing tracing configuration in the distributed metastore.");
+            "The key for accessing tracing configuration in the distributed metastore.");
     }
 
     /**

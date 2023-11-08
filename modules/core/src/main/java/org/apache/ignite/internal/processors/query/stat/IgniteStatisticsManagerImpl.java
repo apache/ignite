@@ -98,8 +98,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     /** Cluster wide statistics usage state. */
     private final DistributedEnumProperty<StatisticsUsageState> usageState = new DistributedEnumProperty<>(
         "statistics.usage.state",
-        "Parameter controls the state of using statistics across the entire cluster." +
-            "OFF - No statistics used, NO_UPDATE - Statistics used 'as is' without updates, " +
+        "Statistics usage state. OFF - No statistics used, NO_UPDATE - Statistics used 'as is' without updates, " +
             "ON - Statistics used and updated after each changes.",
         StatisticsUsageState::fromOrdinal,
         StatisticsUsageState::index,

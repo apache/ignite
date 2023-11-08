@@ -84,14 +84,14 @@ public class DistributedTransactionConfiguration {
      */
     private final DistributedChangeableProperty<Boolean> txOwnerDumpRequestsAllowed =
         detachedBooleanProperty("txOwnerDumpRequestsAllowed",
-            "This setting determines whether requests for obtaining information about long-running transactions" +
+            "Setting determines whether requests for obtaining information about long-running transactions" +
                 " are allowed from a local node to a nearby node. If this is allowed, a request is sent to the nearby " +
                 "node to retrieve a snapshot of the transaction and the specific thread that is responsible for it.");
 
     /** Long operations dump timeout. */
     private final DistributedChangeableProperty<Long> longOperationsDumpTimeout =
         detachedLongProperty("longOperationsDumpTimeout", "Cache operations that take more time than value " +
-            "of this property will be output to log. Set to 0 to disable");
+            "of this property will be output to log. Set to 0 to disable.");
 
     /**
      * Threshold timeout for long transactions, if transaction exceeds it, it will be dumped in log with
@@ -109,10 +109,11 @@ public class DistributedTransactionConfiguration {
     /** The coefficient for samples of completed transactions that will be dumped in log. */
     private final DistributedChangeableProperty<Double> transactionTimeDumpSamplesCoefficient =
         detachedDoubleProperty("transactionTimeDumpSamplesCoefficient",
-            "Parameter is a setting that determines the proportion of completed transactions that will be recorded in the system log" +
+            "The proportion of completed transactions that will be recorded in the system log. " +
                 "This coefficient is a decimal number between 0 and 1. If the value is 0, no transactions will be logged." +
                 " If it's 0.1, for example, approximately 10% of transactions will be logged. This setting is useful " +
-                "for performance monitoring and debugging, as it allows you to record a subset of transactions for detailed analysis.");
+                "for performance monitoring and debugging, as it allows you to record a subset of transactions for " +
+                "detailed analysis.");
 
     /**
      * The limit of samples of completed transactions that will be dumped in log per second, if
@@ -121,7 +122,7 @@ public class DistributedTransactionConfiguration {
      */
     private final DistributedChangeableProperty<Integer> longTransactionTimeDumpSamplesPerSecondLimit =
         detachedIntegerProperty("longTransactionTimeDumpSamplesPerSecondLimit",
-            "Parameter sets a maximum limit on the number of transactions that can be logged per second. " +
+            "A maximum limit on the number of transactions that can be logged per second. " +
                 "This is to prevent the system from being overloaded by too many log entries." +
                 "If the coefficient transactionTimeDumpSamplesCoefficient is equal to 0 or less, no transaction will be" +
                 " logged, regardless of the other parameter. If the coefficient is greater than 0, the specified number" +
@@ -130,9 +131,9 @@ public class DistributedTransactionConfiguration {
     /** Collisions dump interval. */
     private final DistributedChangeableProperty<Integer> collisionsDumpInterval =
         detachedIntegerProperty("collisionsDumpInterval",
-            "Parameter is a setting that defines the frequency at which the system logs transaction key collisions." +
-                " A transaction key collision occurs when multiple transactions attempt to access the same data simultaneously. " +
-                "If it sets to a value greater than zero, the system will log these collisions at the specified interval.");
+            "The frequency at which the system logs transaction key collisions. A transaction key collision occurs" +
+                " when multiple transactions attempt to access the same data simultaneously. If it sets to a value greater" +
+                " than zero, the system will log these collisions at the specified interval.");
 
     /**
      * @param ctx Kernal context.

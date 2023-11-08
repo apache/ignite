@@ -466,7 +466,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Snapshot transfer rate limit in bytes/sec. */
     private final DistributedLongProperty snapshotTransferRate = detachedLongProperty(SNAPSHOT_TRANSFER_RATE_DMS_KEY,
-        "That allows to specify the maximum data transfer rate for cache snapshots in bytes per second. " +
+        "The maximum data transfer rate for cache snapshots in bytes per second. " +
             "It helps control the speed of data transfer between cluster nodes, ensuring efficient network utilization" +
             " and preventing network congestion when moving data.");
 
