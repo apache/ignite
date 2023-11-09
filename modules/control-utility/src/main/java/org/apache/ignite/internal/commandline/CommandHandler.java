@@ -89,6 +89,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS
 import static org.apache.ignite.internal.management.api.CommandUtils.asOptional;
 import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
 import static org.apache.ignite.internal.management.api.CommandUtils.executable;
+import static org.apache.ignite.internal.management.api.CommandUtils.hasDescription;
 import static org.apache.ignite.internal.management.api.CommandUtils.join;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
@@ -867,16 +868,15 @@ public class CommandHandler {
                         );
                     };
 
-                    if (!fld.isAnnotationPresent(EnumDescription.class)) {
-                        logParam.accept(
-                            parameterExample(fld, false),
-                            fld.getAnnotation(Argument.class).description()
-                        );
-                    }
-                    else {
+                    logParam.accept(
+                        parameterExample(fld, false),
+                        fld.getAnnotation(Argument.class).description()
+                    );
+
+                    if (fld.isAnnotationPresent(EnumDescription.class)) {
                         EnumDescription enumDesc = fld.getAnnotation(EnumDescription.class);
 
-                        String[] names = enumDesc.names();
+                        String[] names = formattedEnumNames(fld);
                         String[] descriptions = enumDesc.descriptions();
 
                         for (int i = 0; i < names.length; i++)
@@ -965,18 +965,28 @@ public class CommandHandler {
     }
 
     /** */
+    private static String[] formattedEnumNames(Field fld) {
+        EnumDescription desc = fld.getAnnotation(EnumDescription.class);
+
+        String indent = fld.isAnnotationPresent(Positional.class) ? "" : INDENT;
+
+        return Arrays.stream(desc.names()).map(s -> indent + s).toArray(String[]::new);
+    }
+
+    /** */
     private static class LengthCalculator implements Consumer<Field> {
         /** */
         int length;
 
         /** {@inheritDoc} */
         @Override public void accept(Field fld) {
+            if (!hasDescription(fld))
+                return;
+
             length = Math.max(length, parameterExample(fld, false).length());
 
             if (fld.isAnnotationPresent(EnumDescription.class)) {
-                EnumDescription enumDesc = fld.getAnnotation(EnumDescription.class);
-
-                for (String name : enumDesc.names())
+                for (String name : formattedEnumNames(fld))
                     length = Math.max(length, name.length());
             }
         }
