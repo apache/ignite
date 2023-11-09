@@ -97,6 +97,9 @@ public abstract class AbstractWalRecordsIterator
     /** Factory to provide I/O interfaces for read primitives with files. */
     private final SegmentFileInputFactory segmentFileInputFactory;
 
+    /** Optional end pointer. */
+    private final @Nullable WALPointer endPtr;
+
     /** Position of last read valid record. */
     private WALPointer lastRead;
 
@@ -106,6 +109,7 @@ public abstract class AbstractWalRecordsIterator
      * @param serializerFactory Serializer of current version to read headers.
      * @param ioFactory ioFactory for file IO access.
      * @param initialReadBufferSize buffer for reading records size.
+     * @param endPtr Optional end pointer.
      * @param segmentFileInputFactory Factory to provide I/O interfaces for read primitives with files.
      */
     protected AbstractWalRecordsIterator(
@@ -114,12 +118,14 @@ public abstract class AbstractWalRecordsIterator
         @NotNull final RecordSerializerFactory serializerFactory,
         @NotNull final FileIOFactory ioFactory,
         final int initialReadBufferSize,
+        @Nullable WALPointer endPtr,
         SegmentFileInputFactory segmentFileInputFactory) {
         this.log = log;
         this.sharedCtx = sharedCtx;
         this.serializerFactory = serializerFactory;
         this.ioFactory = ioFactory;
         this.segmentFileInputFactory = segmentFileInputFactory;
+        this.endPtr = endPtr;
 
         buf = new ByteBufferExpander(initialReadBufferSize, ByteOrder.nativeOrder());
     }
@@ -268,6 +274,10 @@ public abstract class AbstractWalRecordsIterator
             return null;
 
         WALPointer actualFilePtr = new WALPointer(hnd.idx(), (int)hnd.in().position(), 0);
+
+        // Fast stop condition, after high bound reached.
+        if (endPtr != null && actualFilePtr.compareTo(endPtr) > 0)
+            return null;
 
         try {
             WALRecord rec = hnd.ser().readRecord(hnd.in(), actualFilePtr);

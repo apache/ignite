@@ -128,6 +128,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             new RecordSerializerFactoryImpl(sharedCtx, readTypeFilter),
             ioFactory,
             initialReadBufferSize,
+            highBound,
             FILE_INPUT_FACTORY
         );
 
@@ -288,17 +289,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         if (tup == null)
             return tup;
 
-        if (!checkBounds(tup.get1())) {
-            if (curRec != null) {
-                WALPointer prevRecPtr = curRec.get1();
-
-                // Fast stop condition, after high bound reached.
-                if (prevRecPtr != null && prevRecPtr.compareTo(highBound) > 0)
-                    return null;
-            }
-
+        if (!checkBounds(tup.get1()))
             return new T2<>(tup.get1(), FilteredRecord.INSTANCE); // FilteredRecord for mark as filtered.
-        }
 
         return tup;
     }

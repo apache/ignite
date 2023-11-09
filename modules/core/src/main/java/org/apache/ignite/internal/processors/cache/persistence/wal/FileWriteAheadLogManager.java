@@ -3015,6 +3015,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 serializerFactory,
                 ioFactory,
                 dsCfg.getWalRecordIteratorBufferSize(),
+                end,
                 segmentFileInputFactory
             );
 
