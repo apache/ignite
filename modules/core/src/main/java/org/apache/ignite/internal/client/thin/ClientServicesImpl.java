@@ -216,21 +216,18 @@ class ClientServicesImpl implements ClientServices {
          * @return {@code True} if update of the service topology is required. {@code False} otherwise.
          */
         private boolean isUpdateRequired(AffinityTopologyVersion curAffTop) {
-            return (lastAffTop == null || curAffTop.topologyVersion() > lastAffTop.topologyVersion()
-                || U.nanosToMillis(System.nanoTime() - lastUpdateRequestTime) >= SRV_TOP_UPDATE_PERIOD)
-                && updateInProgress.compareAndSet(false, true);
+            return lastAffTop == null || curAffTop.topologyVersion() > lastAffTop.topologyVersion()
+                || U.nanosToMillis(System.nanoTime() - lastUpdateRequestTime) >= SRV_TOP_UPDATE_PERIOD;
         }
 
         /**
-         * Provides current known service topology and asynchronously initiates service topology update if requred.
-         *
-         * @return Current known service topology.
+         * Asynchronously updates the service topology.
          */
-        private List<UUID> getAndUpdate() {
+        private void updateTopologyAsync() {
             AffinityTopologyVersion curAffTop = ch.affinityContext().lastTopology().version();
 
-            if (!isUpdateRequired(curAffTop))
-                return nodes;
+            if (!updateInProgress.compareAndSet(false, true))
+                return;
 
             ch.serviceAsync(
                 ClientOperation.SERVICE_GET_TOPOLOGY,
@@ -244,8 +241,8 @@ class ClientServicesImpl implements ClientServices {
                         res.add(new UUID(resp.in().readLong(), resp.in().readLong()));
 
                     return res;
-                }).whenComplete((nodes, t) -> {
-                    if (t == null) {
+                }).whenComplete((nodes, err) -> {
+                    if (err == null) {
                         this.nodes = nodes;
                         lastAffTop = curAffTop;
                         lastUpdateRequestTime = System.nanoTime();
@@ -256,10 +253,20 @@ class ClientServicesImpl implements ClientServices {
                         }
                     }
                     else
-                        log.error("Failed to update topology of the service '" + srvcName + "'.", t);
+                        log.error("Failed to update topology of the service '" + srvcName + "'.", err);
 
                     updateInProgress.set(false);
                 });
+        }
+
+        /**
+         * Provides last known service topology and asynchronously updates it if required.
+         *
+         * @return Last known service topology.
+         */
+        public List<UUID> getAndUpdate() {
+            if (isUpdateRequired(ch.affinityContext().lastTopology().version()))
+                updateTopologyAsync();
 
             return nodes;
         }
@@ -310,20 +317,27 @@ class ClientServicesImpl implements ClientServices {
                 if (nodeIds != null && nodeIds.isEmpty())
                     throw new ClientException("Cluster group is empty.");
 
-                List<UUID> serviceTopology = ch.partitionAwarenessEnabled
-                    && ch.applyOnDefaultChannel(c -> c.protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.SERVICE_TOPOLOGY), null)
-                    ? servicesTopologies.computeIfAbsent(name, ServiceTopology::new).getAndUpdate()
-                    : Collections.emptyList();
-
                 return ch.service(ClientOperation.SERVICE_INVOKE,
                     req -> writeServiceInvokeRequest(req, nodeIds, method, args),
                     res -> utils.readObject(res.in(), false, method.getReturnType()),
-                    serviceTopology
+                    serviceTopology()
                 );
             }
             catch (ClientError e) {
                 throw new ClientException(e);
             }
+        }
+
+        /**
+         * @return Actual known service topology or empty list if: service topology is not enabled, not supported or
+         * not received yet.
+         */
+        private List<UUID> serviceTopology() {
+            if (!ch.partitionAwarenessEnabled
+                || !ch.applyOnDefaultChannel(c -> c.protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.SERVICE_TOPOLOGY), null))
+                return Collections.emptyList();
+
+            return servicesTopologies.computeIfAbsent(name, ServiceTopology::new).getAndUpdate();
         }
 
         /**
