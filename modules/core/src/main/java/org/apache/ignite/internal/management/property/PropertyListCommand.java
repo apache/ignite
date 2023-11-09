@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.management.property;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -52,7 +51,6 @@ public class PropertyListCommand implements ComputeCommand<PropertyListCommandAr
 
             List<List<?>> data = res.properties().stream()
                 .map(p -> F.asList(p.get1(), p.get2(), p.get3()))
-                .sorted(Comparator.comparing(list -> list.get(0)))
                 .collect(Collectors.toList());
 
             SystemViewCommand.printTable(F.asList("Name", "Value", "Description"), types, data, printer);
@@ -60,7 +58,6 @@ public class PropertyListCommand implements ComputeCommand<PropertyListCommandAr
         else {
             res.properties().stream()
                 .map(GridTuple3::get1)
-                .sorted()
                 .forEach(printer);
         }
     }

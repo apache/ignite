@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.management.property;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -82,6 +84,7 @@ public class PropertiesListTask extends VisorMultiNodeTask<PropertyListCommandAr
             return new PropertiesListResult(
                 ignite.context().distributedConfiguration().properties().stream()
                     .map(p -> new T3<>(p.getName(), String.valueOf(p.get()), p.description()))
+                    .sorted(Comparator.comparing(GridTuple3::get1))
                     .collect(Collectors.toList())
             );
         }
