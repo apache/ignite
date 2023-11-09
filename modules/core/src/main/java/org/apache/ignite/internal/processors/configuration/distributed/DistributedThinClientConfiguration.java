@@ -36,7 +36,9 @@ public class DistributedThinClientConfiguration {
 
     /** . */
     private final DistributedChangeableProperty<Boolean> showStackTrace =
-        detachedBooleanProperty("thinClientProperty.showStackTrace");
+        detachedBooleanProperty("thinClientProperty.showStackTrace",
+            "If true, thin client response will include full stack trace when exception occurs." +
+                " When false, only top level exception message is included.");
 
     /** Message of baseline auto-adjust parameter was changed. */
     private static final String PROPERTY_UPDATE_MESSAGE =

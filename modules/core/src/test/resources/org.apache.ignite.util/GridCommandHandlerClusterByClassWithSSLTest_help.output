@@ -339,7 +339,10 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
     control.(sh|bat) --property help
 
   Print list of available properties:
-    control.(sh|bat) --property list
+    control.(sh|bat) --property list [--info]
+
+    Parameters:
+      --info  - Print detailed information: name, value, description.
 
   Get the property value:
     control.(sh|bat) --property get --name <property_name>
