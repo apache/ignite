@@ -31,6 +31,7 @@ import org.apache.ignite.internal.client.thin.InactiveClusterCacheRequestTest;
 import org.apache.ignite.internal.client.thin.MetadataRegistrationTest;
 import org.apache.ignite.internal.client.thin.OptimizedMarshallerClassesCachedTest;
 import org.apache.ignite.internal.client.thin.ReliableChannelTest;
+import org.apache.ignite.internal.client.thin.ServiceAwarenessTest;
 import org.apache.ignite.internal.client.thin.ServicesBinaryArraysTests;
 import org.apache.ignite.internal.client.thin.ServicesTest;
 import org.apache.ignite.internal.client.thin.ThinClientEnpointsDiscoveryTest;
@@ -68,6 +69,7 @@ import org.junit.runners.Suite;
     ClusterGroupTest.class,
     ServicesTest.class,
     ServicesBinaryArraysTests.class,
+    ServiceAwarenessTest.class,
     CacheEntryListenersTest.class,
     ThinClientPartitionAwarenessStableTopologyTest.class,
     ThinClientPartitionAwarenessUnstableTopologyTest.class,
