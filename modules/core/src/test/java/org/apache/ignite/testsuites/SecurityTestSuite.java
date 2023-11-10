@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.security.client.ThinClientSecurityC
 import org.apache.ignite.internal.processors.security.client.ThinClientSslPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cluster.ClusterNodeOperationPermissionTest;
 import org.apache.ignite.internal.processors.security.cluster.ClusterStatePermissionTest;
+import org.apache.ignite.internal.processors.security.cluster.NodeJoinPermissionsTest;
 import org.apache.ignite.internal.processors.security.compute.ComputePermissionCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskCancelRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskRemoteSecurityContextCheckTest;
@@ -138,7 +139,8 @@ import org.junit.runners.Suite;
     ServiceAuthorizationTest.class,
     ServiceStaticConfigTest.class,
     ClusterNodeOperationPermissionTest.class,
-    NodeSecurityContextPropagationTest.class
+    NodeSecurityContextPropagationTest.class,
+    NodeJoinPermissionsTest.class
 })
 public class SecurityTestSuite {
     /** */

@@ -53,7 +53,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     public static final Map<Object, TestSecurityData> USERS = new ConcurrentHashMap<>();
 
     /** */
-    private static final Map<UUID, SecurityContext> SECURITY_CONTEXTS = new ConcurrentHashMap<>();
+    protected static final Map<UUID, SecurityContext> SECURITY_CONTEXTS = new ConcurrentHashMap<>();
 
     /** */
     private static final Collection<Class<?>> EXT_SYS_CLASSES = ConcurrentHashMap.newKeySet();
