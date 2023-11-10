@@ -70,12 +70,20 @@ public interface SecuritySubject extends Serializable {
      * Authorized permission set for the subject.
      *
      * @return Authorized permission set for the subject.
+     * @deprecated {@link SecuritySubject} must contain only immutable set of
+     * information that represents a security principal. Security permissions are part of authorization process
+     * and have nothing to do with {@link SecuritySubject}. This method will be removed in the future releases.
      */
+    @Deprecated
     public SecurityPermissionSet permissions();
 
     /**
      * @return Permissions for SecurityManager checks.
+     * @deprecated {@link SecuritySubject} must contain only immutable set of
+     * information that represents a security principal. Security permissions are part of authorization process
+     * and have nothing to do with {@link SecuritySubject}. This method will be removed in the future releases.
      */
+    @Deprecated
     public default PermissionCollection sandboxPermissions() {
         ProtectionDomain pd = SecurityUtils.doPrivileged(() -> getClass().getProtectionDomain());
 
