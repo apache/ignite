@@ -82,13 +82,14 @@ public class CacheObjectTransformationCacheApiTest extends GridCommonAbstractTes
         cfg.setPluginProviders(
             new TestCacheObjectTransformerPluginProvider(new CacheObjectDuplicatorTransformer()));
 
-        CacheConfiguration<?,?> cCfg = new CacheConfiguration<>(CACHE_NAME).setAtomicityMode(mode);
+        CacheConfiguration<?, ?> cCfg = new CacheConfiguration<>(CACHE_NAME).setAtomicityMode(mode);
 
         cfg.setCacheConfiguration(cCfg);
 
         return cfg;
     }
 
+    /** */
     @Test
     public void testCachePut() throws Exception {
         doTest(() -> {
@@ -107,6 +108,7 @@ public class CacheObjectTransformationCacheApiTest extends GridCommonAbstractTes
         });
     }
 
+    /** */
     @Test
     public void testClientCachePut() throws Exception {
         doTest(() -> {
@@ -142,6 +144,7 @@ public class CacheObjectTransformationCacheApiTest extends GridCommonAbstractTes
         });
     }
 
+    /** */
     private void doTest(Runnable r) throws Exception {
         try {
             cleanPersistenceDir();
