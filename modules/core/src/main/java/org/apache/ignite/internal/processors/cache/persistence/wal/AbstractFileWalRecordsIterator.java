@@ -25,7 +25,6 @@ import java.nio.ByteOrder;
 import java.util.Optional;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -36,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.SegmentHeader;
-import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -49,21 +47,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  * Iterator over WAL segments. This abstract class provides most functionality for reading records in log. Subclasses
  * are to override segment switching functionality
  */
-public abstract class AbstractWalRecordsIterator
-    extends GridCloseableIteratorAdapter<IgniteBiTuple<WALPointer, WALRecord>> implements WALIterator {
+public abstract class AbstractFileWalRecordsIterator extends AbstractWalRecordsIteratorAdapter {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /**
-     * Current record preloaded, to be returned on next()<br> Normally this should be not null because advance() method
-     * should already prepare some value<br>
-     */
-    protected IgniteBiTuple<WALPointer, WALRecord> curRec;
-
-    /**
-     * The exception which can be thrown during reading next record. It holds until the next calling of next record.
-     */
-    private IgniteCheckedException curException;
 
     /**
      * Current WAL segment absolute index. <br> Determined as lowest number of file at start, is changed during advance
@@ -108,7 +94,7 @@ public abstract class AbstractWalRecordsIterator
      * @param initialReadBufferSize buffer for reading records size.
      * @param segmentFileInputFactory Factory to provide I/O interfaces for read primitives with files.
      */
-    protected AbstractWalRecordsIterator(
+    protected AbstractFileWalRecordsIterator(
         @NotNull final IgniteLogger log,
         @NotNull final GridCacheSharedContext sharedCtx,
         @NotNull final RecordSerializerFactory serializerFactory,
@@ -122,31 +108,6 @@ public abstract class AbstractWalRecordsIterator
         this.segmentFileInputFactory = segmentFileInputFactory;
 
         buf = new ByteBufferExpander(initialReadBufferSize, ByteOrder.nativeOrder());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteBiTuple<WALPointer, WALRecord> onNext() throws IgniteCheckedException {
-        if (curException != null)
-            throw curException;
-
-        IgniteBiTuple<WALPointer, WALRecord> ret = curRec;
-
-        try {
-            advance();
-        }
-        catch (IgniteCheckedException e) {
-            curException = e;
-        }
-
-        return ret;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean onHasNext() throws IgniteCheckedException {
-        if (curException != null)
-            throw curException;
-
-        return curRec != null;
     }
 
     /** {@inheritDoc} */
@@ -167,7 +128,7 @@ public abstract class AbstractWalRecordsIterator
      *
      * @throws IgniteCheckedException If failed.
      */
-    protected void advance() throws IgniteCheckedException {
+    @Override protected void advance() throws IgniteCheckedException {
         if (curRec != null)
             lastRead = curRec.get1();
 
@@ -192,8 +153,6 @@ public abstract class AbstractWalRecordsIterator
                 }
             }
             catch (WalSegmentTailReachedException e) {
-                AbstractReadFileHandle currWalSegment = this.currWalSegment;
-
                 IgniteCheckedException e0 = validateTailReachedException(e, currWalSegment);
 
                 if (e0 != null)
