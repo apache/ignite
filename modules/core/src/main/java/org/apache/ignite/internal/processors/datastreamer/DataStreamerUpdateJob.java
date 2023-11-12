@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
+import static org.apache.ignite.internal.managers.deployment.P2PClassLoadingIssues.wrapWithP2PFailure;
+
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.deployment.P2PClassLoadingIssues;
@@ -146,7 +149,7 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
             return null;
         }
         catch (NoClassDefFoundError e) {
-            return P2PClassLoadingIssues.rethrowDisarmedP2PClassLoadingFailure(e);
+            throw wrapWithP2PFailure(e);
         }
         finally {
             if (ignoreDepOwnership)
