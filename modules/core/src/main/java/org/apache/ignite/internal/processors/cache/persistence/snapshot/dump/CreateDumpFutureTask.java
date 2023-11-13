@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.ZipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractCreateSnapshotFutureTask;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
@@ -72,6 +74,7 @@ import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
 
 /**
@@ -92,6 +95,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
     /** */
     private final FileIOFactory ioFactory;
+
+    /** */
+    private final boolean zip;
 
     /**
      * Dump contextes.
@@ -120,6 +126,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
      * @param ioFactory IO factory.
      * @param snpSndr Snapshot sender.
      * @param parts Parts to dump.
+     * @param zip If {@code true} then zip the file.
      */
     public CreateDumpFutureTask(
         GridCacheSharedContext<?, ?> cctx,
@@ -129,7 +136,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         File dumpDir,
         FileIOFactory ioFactory,
         SnapshotSender snpSndr,
-        Map<Integer, Set<Integer>> parts
+        Map<Integer, Set<Integer>> parts,
+        boolean zip
     ) {
         super(
             cctx,
@@ -142,6 +150,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         this.dumpDir = dumpDir;
         this.ioFactory = ioFactory;
+        this.zip = zip;
     }
 
     /** {@inheritDoc} */
@@ -444,12 +453,14 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 for (int cache : gctx.cacheIds())
                     changed.put(cache, new GridConcurrentHashSet<>());
 
-                File dumpFile = new File(groupDirectory(gctx), PART_FILE_PREFIX + part + DUMP_FILE_EXT);
+                String fileName = PART_FILE_PREFIX + part + DUMP_FILE_EXT;
+
+                File dumpFile = new File(groupDirectory(gctx), zip ? fileName + ZIP_SUFFIX : fileName);
 
                 if (!dumpFile.createNewFile())
                     throw new IgniteException("Dump file can't be created: " + dumpFile);
 
-                file = ioFactory.create(dumpFile);
+                file = zip ? new ZipFileIO(dumpFile) : ioFactory.create(dumpFile);
             }
             catch (IOException | IgniteCheckedException e) {
                 throw new IgniteException(e);

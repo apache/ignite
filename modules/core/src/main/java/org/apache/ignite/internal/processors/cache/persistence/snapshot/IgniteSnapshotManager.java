@@ -1193,7 +1193,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 parts,
                 withMetaStorage,
                 req.dump(),
-                locSndrFactory.apply(req.snapshotName(), req.snapshotPath()));
+                locSndrFactory.apply(req.snapshotName(), req.snapshotPath()),
+                req.zip());
 
             if (withMetaStorage && task0 instanceof SnapshotFutureTask) {
                 ((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage())
@@ -1808,6 +1809,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         return createSnapshot(name, null, cacheGroupNames, false, false, true);
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> createDump(String name, @Nullable Collection<String> cacheGroupNames, boolean zip) {
+        return createSnapshot(name, null, cacheGroupNames, false, false, true, zip);
+    }
+
     /**
      * @param name Snapshot name.
      *
@@ -2215,11 +2221,36 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean onlyPrimary,
         boolean dump
     ) {
+        return createSnapshot(name, snpPath, cacheGroupNames, incremental, onlyPrimary, dump, false);
+    }
+
+    /**
+     * Create a consistent copy of all persistence cache groups from the whole cluster.
+     *
+     * @param name Snapshot unique name which satisfies the following name pattern [a-zA-Z0-9_].
+     * @param snpPath Snapshot directory path.
+     * @param cacheGroupNames Cache groups to include in snapshot or {@code null} to include all.
+     * @param incremental Incremental snapshot flag.
+     * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
+     * @param dump If {@code true} cache dump must be created.
+     * @param zip If {@code true} then zip the file.
+     * @return Future which will be completed when a process ends.
+     */
+    public IgniteFutureImpl<Void> createSnapshot(
+        String name,
+        @Nullable String snpPath,
+        @Nullable Collection<String> cacheGroupNames,
+        boolean incremental,
+        boolean onlyPrimary,
+        boolean dump,
+        boolean zip
+    ) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
         A.ensure(!(incremental && onlyPrimary), "Only primary not supported for incremental snapshots");
         A.ensure(!(dump && incremental), "Incremental dump not supported");
         A.ensure(!(cacheGroupNames != null && !dump), "Cache group names filter supported only for dump");
+        A.ensure(!zip || dump, "Zipping is supported only for dumps");
 
         try {
             cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
@@ -2346,7 +2377,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 incremental,
                 incIdx,
                 onlyPrimary,
-                dump
+                dump,
+                zip
             ));
 
             String msg =
@@ -2738,8 +2770,43 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean dump,
         SnapshotSender snpSndr
     ) {
+        return registerSnapshotTask(snpName, snpPath, srcNodeId, requestId, parts, withMetaStorage, dump, snpSndr, false);
+    }
+
+    /**
+     * @param snpName Unique snapshot name.
+     * @param snpPath Snapshot path.
+     * @param srcNodeId Node id which cause snapshot operation.
+     * @param requestId Snapshot operation request ID.
+     * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
+     * @param withMetaStorage {@code true} if all metastorage data must be also included into snapshot.
+     * @param dump {@code true} if cache group dump must be created.
+     * @param snpSndr Factory which produces snapshot receiver instance.
+     * @param zip If {@code true} then zip the file.
+     * @return Snapshot operation task which should be registered on checkpoint to run.
+     */
+    AbstractSnapshotFutureTask<?> registerSnapshotTask(
+        String snpName,
+        @Nullable String snpPath,
+        UUID srcNodeId,
+        UUID requestId,
+        Map<Integer, Set<Integer>> parts,
+        boolean withMetaStorage,
+        boolean dump,
+        SnapshotSender snpSndr,
+        boolean zip
+    ) {
         AbstractSnapshotFutureTask<?> task = registerTask(snpName, dump
-            ? new CreateDumpFutureTask(cctx, srcNodeId, requestId, snpName, snapshotLocalDir(snpName, snpPath), ioFactory, snpSndr, parts)
+            ? new CreateDumpFutureTask(cctx,
+                srcNodeId,
+                requestId,
+                snpName,
+                snapshotLocalDir(snpName, snpPath),
+                ioFactory,
+                snpSndr,
+                parts,
+                zip
+            )
             : new SnapshotFutureTask(cctx, srcNodeId, requestId, snpName, tmpWorkDir, ioFactory, snpSndr, parts, withMetaStorage, locBuff));
 
         if (!withMetaStorage) {

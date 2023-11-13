@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -68,6 +69,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
@@ -226,13 +228,21 @@ public class Dump implements AutoCloseable {
      */
     public List<Integer> partitions(String node, int group) {
         File[] parts = dumpGroupDirectory(node, group)
-            .listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(DUMP_FILE_EXT));
+            .listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) &&
+                (f.getName().endsWith(DUMP_FILE_EXT) ||
+                    f.getName().endsWith(DUMP_FILE_EXT + ZIP_SUFFIX)
+                )
+            );
 
         if (parts == null)
             return Collections.emptyList();
 
         return Arrays.stream(parts)
-            .map(partFile -> Integer.parseInt(partFile.getName().replace(PART_FILE_PREFIX, "").replace(DUMP_FILE_EXT, "")))
+            .map(partFile -> Integer.parseInt(partFile.getName()
+                .replace(PART_FILE_PREFIX, "")
+                .replace(DUMP_FILE_EXT, "")
+                .replace(ZIP_SUFFIX, "")
+            ))
             .collect(Collectors.toList());
     }
 
@@ -247,7 +257,11 @@ public class Dump implements AutoCloseable {
         FileIO dumpFile;
 
         try {
-            dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, group), PART_FILE_PREFIX + part + DUMP_FILE_EXT));
+            File file = new File(dumpGroupDirectory(node, group), PART_FILE_PREFIX + part + DUMP_FILE_EXT);
+
+            dumpFile = file.exists()
+                ? ioFactory.create(file)
+                : new UnzipFileIO(new File(dumpGroupDirectory(node, group), file.getName() + ZIP_SUFFIX));
         }
         catch (IOException e) {
             throw new RuntimeException(e);

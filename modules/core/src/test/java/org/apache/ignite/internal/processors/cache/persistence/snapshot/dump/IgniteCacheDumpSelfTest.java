@@ -148,6 +148,23 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
     /** */
     @Test
+    public void testZippedCacheDump() throws Exception {
+        snpPoolSz = 4;
+
+        try {
+            IgniteEx ign = startGridAndFillCaches();
+
+            createDump(ign, DMP_NAME, null, true);
+
+            checkDump(ign);
+        }
+        finally {
+            snpPoolSz = 1;
+        }
+    }
+
+    /** */
+    @Test
     public void testCacheDumpWithReadGroupFilter() throws Exception {
         snpPoolSz = 4;
 

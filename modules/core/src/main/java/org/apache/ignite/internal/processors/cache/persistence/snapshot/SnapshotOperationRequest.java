@@ -94,6 +94,9 @@ public class SnapshotOperationRequest implements Serializable {
     /** If {@code true} then create dump. */
     private final boolean dump;
 
+    /** If {@code true} then zip the file. */
+    private final boolean zip;
+
     /**
      * @param reqId Request ID.
      * @param opNodeId Operational node ID.
@@ -116,7 +119,8 @@ public class SnapshotOperationRequest implements Serializable {
         boolean incremental,
         int incIdx,
         boolean onlyPrimary,
-        boolean dump
+        boolean dump,
+        boolean zip
     ) {
         this.reqId = reqId;
         this.opNodeId = opNodeId;
@@ -128,6 +132,7 @@ public class SnapshotOperationRequest implements Serializable {
         this.incIdx = incIdx;
         this.onlyPrimary = onlyPrimary;
         this.dump = dump;
+        this.zip = zip;
         startTime = U.currentTimeMillis();
     }
 
@@ -205,6 +210,11 @@ public class SnapshotOperationRequest implements Serializable {
     /** @return If {@code true} then create dump. */
     public boolean dump() {
         return dump;
+    }
+
+    /** If {@code true} then zip the file. */
+    public boolean zip() {
+        return zip;
     }
 
     /** @return Start time. */
