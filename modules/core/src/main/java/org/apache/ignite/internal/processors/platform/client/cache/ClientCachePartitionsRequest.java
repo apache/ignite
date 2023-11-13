@@ -190,12 +190,6 @@ public class ClientCachePartitionsRequest extends ClientRequest {
         IgnitePredicate<?> filter = ccfg.getNodeFilter();
         boolean hasNodeFilter = filter != null && !(filter instanceof CacheConfiguration.IgniteAllNodesPredicate);
 
-        // We cannot be sure that two caches are co-located if custom node filter is present.
-        // Note that technically we may try to compare two filters. However, this adds unnecessary complexity
-        // and potential deserialization issues.
-        if (hasNodeFilter)
-            return false;
-
         return withCustomMappings || isDefaultMapping(ccfg);
     }
 
