@@ -96,9 +96,6 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     /** Replay from bound include. */
     private final WALPointer lowBound;
 
-    /** Replay to bound include */
-    private final WALPointer highBound;
-
     /**
      * Creates iterator in file-by-file iteration mode. Directory
      *
@@ -136,7 +133,6 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             strictCheck(walFiles, lowBound, highBound);
 
         this.lowBound = lowBound;
-        this.highBound = highBound;
 
         this.keepBinary = keepBinary;
 

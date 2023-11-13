@@ -2969,9 +2969,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** Optional start pointer. */
         @Nullable private final WALPointer start;
 
-        /** Optional end pointer. */
-        @Nullable private final WALPointer end;
-
         /** Manager of segment location. */
         private final SegmentRouter segmentRouter;
 
@@ -3023,7 +3020,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             this.walWorkDir = walWorkDir;
             this.archiver = archiver;
             this.start = start;
-            this.end = end;
             this.dsCfg = dsCfg;
 
             this.decompressor = decompressor;
@@ -3110,7 +3106,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             curWalSegmIdx--;
 
             if (log.isDebugEnabled())
-                log.debug("Initialized WAL cursor [start=" + start + ", end=" + end + ", curWalSegmIdx=" + curWalSegmIdx + ']');
+                log.debug("Initialized WAL cursor [start=" + start + ", end=" + highBound + ", curWalSegmIdx=" + curWalSegmIdx + ']');
 
             advance();
         }
@@ -3123,7 +3119,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 curWalSegment.close();
 
             // We are past the end marker.
-            if (end != null && curWalSegmIdx + 1 > end.index())
+            if (highBound != null && curWalSegmIdx + 1 > highBound.index())
                 return null; //stop iteration
 
             curWalSegmIdx++;
@@ -3162,7 +3158,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                                 "Next segment file is not found [" +
                                     "curWalSegmIdx=" + curWalSegmIdx
                                     + ", start=" + start
-                                    + ", end=" + end
+                                    + ", end=" + highBound
                                     + ", filePath=" + (fd == null ? "<empty>" : fd.file.getAbsolutePath())
                                     + ", walWorkDir=" + walWorkDir
                                     + ", walWorkDirContent=" + listFileNames(walWorkDir)
@@ -3208,7 +3204,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         @Override protected IgniteCheckedException handleRecordException(Exception e, @Nullable WALPointer ptr) {
             if (e instanceof IgniteCheckedException && X.hasCause(e, IgniteDataIntegrityViolationException.class)) {
                 // This means that there is no explicit last segment, so we iterate until the very end.
-                if (end == null) {
+                if (highBound == null) {
                     long nextWalSegmentIdx = curWalSegmIdx + 1;
 
                     if (archiver == null) {
