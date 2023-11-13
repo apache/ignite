@@ -187,9 +187,6 @@ public class ClientCachePartitionsRequest extends ClientRequest {
         if (ccfg.getCacheMode() != CacheMode.PARTITIONED)
             return false;
 
-        IgnitePredicate<?> filter = ccfg.getNodeFilter();
-        boolean hasNodeFilter = filter != null && !(filter instanceof CacheConfiguration.IgniteAllNodesPredicate);
-
         return withCustomMappings || isDefaultMapping(ccfg);
     }
 
