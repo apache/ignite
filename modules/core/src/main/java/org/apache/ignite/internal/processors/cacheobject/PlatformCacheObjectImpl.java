@@ -63,8 +63,8 @@ public class PlatformCacheObjectImpl extends CacheObjectImpl {
 
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
-            if (valBytes == null)
-                valBytes = valueBytesFromArray(ctx);
+        if (valBytes == null)
+            valBytes = valueBytesFromArray(ctx);
 
         return this;
     }
