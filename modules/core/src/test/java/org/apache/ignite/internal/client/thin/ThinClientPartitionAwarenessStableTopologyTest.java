@@ -18,8 +18,11 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -35,6 +38,7 @@ import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.client.ClientPartitionAwarenessMapper;
 import org.apache.ignite.client.ClientPartitionAwarenessMapperFactory;
 import org.apache.ignite.configuration.AtomicConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -43,6 +47,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
@@ -188,6 +193,80 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     @Test
     public void testPartitionedCache1Backups() throws Exception {
         testApplicableCache(PART_CACHE_1_BACKUPS_NAME, i -> i);
+    }
+
+    /**
+     * Test affinity awareness for all applicable operation types for partitioned cache with a node filter.
+     */
+    @Test
+    public void testPartitionedWithNodeFilter() throws Exception {
+        CacheConfiguration<?, ?> c1 = Arrays.asList(grid(0).configuration().getCacheConfiguration())
+            .stream().filter(ccfg -> ccfg.getName().endsWith(PART_CACHE_2_BACKUPS_NF_NAME)).findFirst().get();
+
+        doTestCacheWithNodeFilter(false, c1);
+    }
+
+    /**
+     * Test affinity awareness for all applicable operation types for partitioned cache group with a node filter.
+     */
+    @Test
+    public void testPartitionedGroupWithNodeFilter() throws Exception {
+        CacheConfiguration<?, ?> c1 = new CacheConfiguration<>()
+            .setName("groupWithNodeFilter1")
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setGroupName("filteredGrp")
+            .setBackups(1);
+
+        CacheConfiguration<?, ?> c2 = new CacheConfiguration<>(c1).setName("groupWithNodeFilter2");
+
+        doTestCacheWithNodeFilter(true, c1, c2);
+    }
+
+    /**
+     *
+     */
+    private void doTestCacheWithNodeFilter(boolean createCaches, CacheConfiguration<?, ?>... ccfgs) throws Exception {
+        if (createCaches) {
+            for (CacheConfiguration<?, ?> ccfg : ccfgs)
+                grid(0).createCache(ccfg.setNodeFilter(new NodeOrder2Filter()));
+        }
+
+        awaitPartitionMapExchange();
+
+        try {
+            client.close();
+
+            Arrays.fill(channels, null);
+
+            initClient(getClientConfiguration(0, 1, 2), 0, 1, 2);
+
+            awaitChannelsInit(0, 1, 2);
+
+            Set<String> requestedCaches = new HashSet<>();
+
+            for (CacheConfiguration<?, ?> ccfg : ccfgs) {
+                String cacheOrGrpName = F.isEmpty(ccfg.getGroupName()) ? ccfg.getName() : ccfg.getGroupName();
+
+                testApplicableCache(
+                    ccfg.getName(),
+                    i -> i,
+                    !requestedCaches.contains(cacheOrGrpName),
+                    ch -> !grid(1).localNode().id().equals(ch.serverNodeId())
+                );
+
+                requestedCaches.add(cacheOrGrpName);
+
+                opsQueue.clear();
+            }
+        }
+        finally {
+            if (createCaches) {
+                for (CacheConfiguration<?, ?> ccfg : ccfgs)
+                    grid(0).destroyCache(ccfg.getName());
+
+                awaitPartitionMapExchange();
+            }
+        }
     }
 
     /**
@@ -409,20 +488,43 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
      * @param keyFactory Key factory function.
      */
     private void testApplicableCache(String cacheName, Function<Integer, Object> keyFactory) throws Exception {
+        testApplicableCache(cacheName, keyFactory, true, null);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param keyFactory Key factory function.
+     * @param getPartitionsExpected {@code True} if {@link ClientOperation#CACHE_PARTITIONS} is expected first.
+     * @param channelChecker A predicate to check the channel for current operations. If {@code null}, ignored.
+     */
+    private void testApplicableCache(
+        String cacheName,
+        Function<Integer, Object> keyFactory,
+        boolean getPartitionsExpected,
+        @Nullable Predicate<TestTcpClientChannel> channelChecker
+    ) throws Exception {
         ClientCache<Object, Object> clientCache = client.cache(cacheName);
         IgniteInternalCache<Object, Object> igniteCache = grid(0).context().cache().cache(cacheName);
 
         clientCache.put(keyFactory.apply(0), 0);
 
-        TestTcpClientChannel opCh = affinityChannel(keyFactory.apply(0), igniteCache);
+        TestTcpClientChannel opCh = affinityChannel(0, igniteCache);
 
-        assertOpOnChannel(null, ClientOperation.CACHE_PARTITIONS);
+        if (channelChecker != null)
+            assertTrue("Unexpected channel to node: " + opCh.serverNodeId(), channelChecker.test(opCh));
+
+        if (getPartitionsExpected)
+            assertOpOnChannel(null, ClientOperation.CACHE_PARTITIONS);
+
         assertOpOnChannel(opCh, ClientOperation.CACHE_PUT);
 
         for (int i = 1; i < KEY_CNT; i++) {
             Object key = keyFactory.apply(i);
 
             opCh = affinityChannel(key, igniteCache);
+
+            if (channelChecker != null)
+                assertTrue("Unexpected channel to node: " + opCh.serverNodeId(), channelChecker.test(opCh));
 
             clientCache.put(key, key);
             assertOpOnChannel(opCh, ClientOperation.CACHE_PUT);

@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -67,8 +68,11 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
     /** Name of a partitioned cache with 0 backups. */
     protected static final String PART_CACHE_0_BACKUPS_NAME = "partitioned_0_backup_cache";
 
-    /** Name of a partitioned cache with 1 backups. */
+    /** Name of a partitioned cache with 1 backup. */
     protected static final String PART_CACHE_1_BACKUPS_NAME = "partitioned_1_backup_cache";
+
+    /** Name of a partitioned cache with 2 backups and a node filter. */
+    protected static final String PART_CACHE_2_BACKUPS_NF_NAME = "partitioned_2_backup_nodeFilter_cache";
 
     /** Name of a partitioned cache with 3 backups. */
     protected static final String PART_CACHE_3_BACKUPS_NAME = "partitioned_3_backup_cache";
@@ -125,7 +129,13 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setBackups(3);
 
-        return cfg.setCacheConfiguration(ccfg0, ccfg1, ccfg2, ccfg3, ccfg4, ccfg5);
+        CacheConfiguration ccfg6 = new CacheConfiguration<>()
+            .setName(PART_CACHE_2_BACKUPS_NF_NAME)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setNodeFilter(new NodeOrder2Filter())
+            .setBackups(2);
+
+        return cfg.setCacheConfiguration(ccfg0, ccfg1, ccfg2, ccfg3, ccfg4, ccfg5, ccfg6);
     }
 
     /** {@inheritDoc} */
@@ -387,6 +397,16 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
         /** {@inheritDoc} */
         @Override public String toString() {
             return cfg.getAddresses().toString();
+        }
+    }
+
+    /**
+     * Excludes node if its consistent id ends with 'Test1'.
+     */
+    protected static final class NodeOrder2Filter implements IgnitePredicate<ClusterNode> {
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode node) {
+            return !node.consistentId().toString().endsWith("Test1");
         }
     }
 }

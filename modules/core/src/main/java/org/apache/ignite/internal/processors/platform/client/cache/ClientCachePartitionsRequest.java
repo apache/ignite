@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.util.lang.gridfunc.NotContainsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isCustomAffinityMapper;
