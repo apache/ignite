@@ -132,9 +132,9 @@ public class CacheObjectTransformationCacheApiTest extends GridCommonAbstractTes
     /** */
     @Test
     public void testCachePut() {
-        Ignite prim = primaryNode(0, CACHE_NAME);
+        Ignite ignite = grid(0);
 
-        IgniteCache<Object, Object> cache = prim.getOrCreateCache(CACHE_NAME);
+        IgniteCache<Object, Object> cache = ignite.getOrCreateCache(CACHE_NAME);
 
         for (int i = 0; i < 100; i++) {
             Object val = gen.apply(i);
@@ -149,10 +149,10 @@ public class CacheObjectTransformationCacheApiTest extends GridCommonAbstractTes
     /** */
     @Test
     public void testClientCachePut() {
-        Ignite prim = primaryNode(0, CACHE_NAME);
+        Ignite ignite = grid(0);
 
-        String host = prim.configuration().getLocalHost();
-        int port = prim.configuration().getClientConnectorConfiguration().getPort();
+        String host = ignite.configuration().getLocalHost();
+        int port = ignite.configuration().getClientConnectorConfiguration().getPort();
 
         try (IgniteClient client = G.startClient(new ClientConfiguration().setAddresses(host + ":" + port))) {
             ClientCache<Object, Object> cache = client.cache(CACHE_NAME);
