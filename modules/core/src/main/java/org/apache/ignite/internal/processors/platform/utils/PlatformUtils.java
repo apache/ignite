@@ -61,9 +61,9 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cacheobject.PlatformCacheObjectImpl;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
@@ -1397,7 +1397,7 @@ public class PlatformUtils {
 
         return isKey ?
             (T)new KeyCacheObjectImpl(obj, objBytes, -1) :
-            (T)new CacheObjectImpl(obj, ctx.kernalContext().transformer() == null ? objBytes : null);
+            (T)new PlatformCacheObjectImpl(obj, objBytes);
     }
 
     /**
