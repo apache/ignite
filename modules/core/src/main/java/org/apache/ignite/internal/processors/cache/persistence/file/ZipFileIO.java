@@ -38,6 +38,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  * It is not designed for multithreaded writing.
  */
 public class ZipFileIO extends AbstractFileIO {
+    /** Buffer size */
+    private static final int BUFFER_SIZE = 128 * 1024;
+
     /** */
     private final ZipOutputStream zos;
 
@@ -53,7 +56,7 @@ public class ZipFileIO extends AbstractFileIO {
 
         String entryName = file.getName().substring(0, file.getName().length() - ZIP_SUFFIX.length());
 
-        zos = new ZipOutputStream(new BufferedOutputStream(Files.newOutputStream(Paths.get(file.getPath()))));
+        zos = new ZipOutputStream(new BufferedOutputStream(Files.newOutputStream(Paths.get(file.getPath())), BUFFER_SIZE));
 
         zos.setLevel(9);
 
