@@ -85,6 +85,29 @@ public class CacheObjectTransformationCacheApiTest extends GridCommonAbstractTes
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
+
+        Ignite ignite = startGrids(NODES);
+
+        if (persistence)
+            ignite.cluster().state(ClusterState.ACTIVE);
+
+        awaitPartitionMapExchange();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -108,77 +131,52 @@ public class CacheObjectTransformationCacheApiTest extends GridCommonAbstractTes
 
     /** */
     @Test
-    public void testCachePut() throws Exception {
-        doTest(() -> {
-            Ignite prim = primaryNode(0, CACHE_NAME);
+    public void testCachePut() {
+        Ignite prim = primaryNode(0, CACHE_NAME);
 
-            IgniteCache<Object, Object> cache = prim.getOrCreateCache(CACHE_NAME);
+        IgniteCache<Object, Object> cache = prim.getOrCreateCache(CACHE_NAME);
 
-            for (int i = 0; i < 100; i++) {
-                Object val = gen.apply(i);
+        for (int i = 0; i < 100; i++) {
+            Object val = gen.apply(i);
 
-                cache.put(i, val);
-                cache.put(i, val); // Override check.
+            cache.put(i, val);
+            cache.put(i, val); // Override check.
 
-                assertEqualsArraysAware(cache.get(i), val);
-            }
-        });
+            assertEqualsArraysAware(cache.get(i), val);
+        }
     }
 
     /** */
     @Test
-    public void testClientCachePut() throws Exception {
-        doTest(() -> {
-            Ignite prim = primaryNode(0, CACHE_NAME);
+    public void testClientCachePut() {
+        Ignite prim = primaryNode(0, CACHE_NAME);
 
-            String host = prim.configuration().getLocalHost();
-            int port = prim.configuration().getClientConnectorConfiguration().getPort();
+        String host = prim.configuration().getLocalHost();
+        int port = prim.configuration().getClientConnectorConfiguration().getPort();
 
-            try (IgniteClient client = G.startClient(new ClientConfiguration().setAddresses(host + ":" + port))) {
-                ClientCache<Object, Object> cache = client.cache(CACHE_NAME);
+        try (IgniteClient client = G.startClient(new ClientConfiguration().setAddresses(host + ":" + port))) {
+            ClientCache<Object, Object> cache = client.cache(CACHE_NAME);
 
-                for (int i = 0; i < 100; i++) {
-                    Object val = gen.apply(i);
+            for (int i = 0; i < 100; i++) {
+                Object val = gen.apply(i);
 
-                    if (i % 2 == 0) {
-                        cache.put(i, val);
-                        cache.put(i, val); // Override check.
-                    }
-                    else {
-                        Map<Object, T3<Object, GridCacheVersion, Long>> data = new HashMap<>();
-
-                        GridCacheVersion otherVer = new GridCacheVersion(1, 1, 1, 0);
-
-                        data.put(i, new T3<>(val, otherVer, 0L));
-
-                        ((TcpClientCache)cache).putAllConflict(data);
-                        ((TcpClientCache)cache).putAllConflict(data); // Override check.
-                    }
-
-                    assertEqualsArraysAware(cache.get(i), val);
+                if (i % 2 == 0) {
+                    cache.put(i, val);
+                    cache.put(i, val); // Override check.
                 }
+                else {
+                    Map<Object, T3<Object, GridCacheVersion, Long>> data = new HashMap<>();
+
+                    GridCacheVersion otherVer = new GridCacheVersion(1, 1, 1, 0);
+
+                    data.put(i, new T3<>(val, otherVer, 0L));
+
+                    ((TcpClientCache)cache).putAllConflict(data);
+                    ((TcpClientCache)cache).putAllConflict(data); // Override check.
+                }
+
+                assertEqualsArraysAware(cache.get(i), val);
             }
-        });
-    }
-
-    /** */
-    private void doTest(Runnable r) throws Exception {
-        try {
-            cleanPersistenceDir();
-
-            Ignite ignite = startGrids(NODES);
-
-            if (persistence)
-                ignite.cluster().state(ClusterState.ACTIVE);
-
-            awaitPartitionMapExchange();
-
-            r.run();
-        }
-        finally {
-            stopAllGrids();
-
-            cleanPersistenceDir();
         }
     }
 
