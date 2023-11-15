@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 
 import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils.readCacheObject;
 
