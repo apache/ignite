@@ -22,17 +22,20 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.cdc.CdcFileLockHolder;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.CdcDisableRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -42,10 +45,11 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.cdc.CdcConsumerState.WAL_STATE_FILE_NAME;
 import static org.apache.ignite.internal.cdc.CdcMain.STATE_DIR;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DISABLE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 
 /**
- * Task to delete lost segment CDC links.
+ * Task to delete lost segment CDC links before the CDC is disabled or the last gap.
  */
 @GridInternal
 public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostSegmentLinksCommandArg, Void, Void> {
@@ -78,6 +82,12 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
         @LoggerResource
         protected IgniteLogger log;
 
+        /** */
+        private transient FileWriteAheadLogManager wal;
+
+        /** */
+        private transient File walCdcDir;
+
         /**
          * Create job with specified argument.
          *
@@ -90,9 +100,12 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
 
         /** {@inheritDoc} */
         @Override protected Void run(CdcDeleteLostSegmentLinksCommandArg arg) throws IgniteException {
-            FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ignite.context().cache().context().wal(true);
+            wal = (FileWriteAheadLogManager)ignite.context().cache().context().wal(true);
 
-            File walCdcDir = wal.walCdcDirectory();
+            if (wal == null)
+                throw new IgniteException("CDC is not configured.");
+
+            walCdcDir = wal.walCdcDirectory();
 
             if (walCdcDir == null)
                 throw new IgniteException("CDC is not configured.");
@@ -102,61 +115,21 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
             try {
                 lock.tryLock(1);
 
-                try (Stream<Path> cdcFiles = Files.list(walCdcDir.toPath())) {
-                    Set<File> delete = new HashSet<>();
+                Long lastSegBeforeSkip = findLastSegmentBeforeSkip();
 
-                    AtomicLong lastSgmnt = new AtomicLong(-1);
+                deleteAllUntil(lastSegBeforeSkip);
 
-                    cdcFiles
-                        .filter(p -> WAL_SEGMENT_FILE_FILTER.accept(p.toFile()))
-                        .sorted(Comparator.comparingLong(FileWriteAheadLogManager::segmentIndex)
-                            .reversed()) // Sort by segment index.
-                        .forEach(path -> {
-                            long idx = FileWriteAheadLogManager.segmentIndex(path);
+                Long cdcDisableSgmnt = findLastSegmentWithCdcDisabledRecord();
 
-                            if (lastSgmnt.get() == -1 || lastSgmnt.get() - idx == 1) {
-                                lastSgmnt.set(idx);
+                deleteAllUntil(cdcDisableSgmnt);
 
-                                return;
-                            }
-
-                            delete.add(path.toFile());
-                        });
-
-                    if (delete.isEmpty()) {
-                        log.info("Lost segment CDC links were not found.");
-
-                        return null;
-                    }
-
-                    log.info("Found lost segment CDC links. The following links will be deleted: " + delete);
-
-                    delete.forEach(file -> {
-                        if (!file.delete()) {
-                            throw new IgniteException("Failed to delete lost segment CDC link [file=" +
-                                file.getAbsolutePath() + ']');
-                        }
-
-                        log.info("Segment CDC link deleted [file=" + file.getAbsolutePath() + ']');
-                    });
-
-                    Path stateDir = walCdcDir.toPath().resolve(STATE_DIR);
-
-                    if (stateDir.toFile().exists()) {
-                        File walState = stateDir.resolve(WAL_STATE_FILE_NAME).toFile();
-
-                        if (walState.exists() && !walState.delete()) {
-                            throw new IgniteException("Failed to delete wal state file [file=" +
-                                walState.getAbsolutePath() + ']');
-                        }
-                    }
-                }
-                catch (IOException e) {
-                    throw new RuntimeException("Failed to delete lost segment CDC links.", e);
-                }
+                if (lastSegBeforeSkip != null || cdcDisableSgmnt != null)
+                    deleteCdcWalState();
+                else if (log.isInfoEnabled())
+                    log.info("Lost segment CDC links or CDC disable record were not found.");
             }
             catch (IgniteCheckedException e) {
-                throw new RuntimeException("Failed to delete lost segment CDC links. " +
+                throw new IgniteException("Failed to delete lost segment CDC links. " +
                     "Unable to acquire lock to lock CDC folder. Make sure a CDC app is shut down " +
                     "[dir=" + walCdcDir.getAbsolutePath() + ", reason=" + e.getMessage() + ']');
             }
@@ -165,6 +138,114 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
             }
 
             return null;
+        }
+
+        /** @return The index of the segment previous to the last gap or {@code null} if no gaps were found. */
+        private Long findLastSegmentBeforeSkip() {
+            AtomicReference<Long> lastLostSgmnt = new AtomicReference<>();
+            AtomicLong lastSgmnt = new AtomicLong(-1);
+
+            consumeCdcSegments(segment -> {
+                if (lastLostSgmnt.get() != null)
+                    return;
+
+                long idx = FileWriteAheadLogManager.segmentIndex(segment);
+
+                if (lastSgmnt.get() == -1 || lastSgmnt.get() - idx == 1) {
+                    lastSgmnt.set(idx);
+
+                    return;
+                }
+
+                if (log.isInfoEnabled())
+                    log.info("Found lost segment CDC links [lastLostSgmntIdx=" + idx + ']');
+
+                lastLostSgmnt.set(idx);
+            });
+
+            return lastLostSgmnt.get();
+        }
+
+        /** @return The index of the segment that contains the last {@link CdcDisableRecord}. */
+        private Long findLastSegmentWithCdcDisabledRecord() {
+            AtomicReference<Long> lastRec = new AtomicReference<>();
+
+            consumeCdcSegments(segment -> {
+                if (lastRec.get() != null)
+                    return;
+
+                if (log.isInfoEnabled())
+                    log.info("Start process CDC segment [segment=" + segment + ']');
+
+                IgniteWalIteratorFactory.IteratorParametersBuilder builder =
+                    new IgniteWalIteratorFactory.IteratorParametersBuilder()
+                        .log(log)
+                        .sharedContext(ignite.context().cache().context())
+                        .filesOrDirs(segment.toFile())
+                        .addFilter((type, ptr) -> type == CDC_DISABLE);
+
+                if (ignite.configuration().getDataStorageConfiguration().getPageSize() != 0)
+                    builder.pageSize(ignite.configuration().getDataStorageConfiguration().getPageSize());
+
+                try (WALIterator it = new IgniteWalIteratorFactory(log).iterator(builder)) {
+                    if (it.hasNext()) {
+                        if (log.isInfoEnabled())
+                            log.info("Found CDC disable record [ptr=" + it.next().get1() + ']');
+
+                        lastRec.set(FileWriteAheadLogManager.segmentIndex(segment));
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException("Failed to read CDC segment [path=" + segment + ']', e);
+                }
+            });
+
+            return lastRec.get();
+        }
+
+        /** */
+        private void deleteCdcWalState() {
+            Path stateDir = walCdcDir.toPath().resolve(STATE_DIR);
+
+            File state = stateDir.resolve(WAL_STATE_FILE_NAME).toFile();
+
+            if (state.exists() && !state.delete())
+                throw new IgniteException("Failed to delete wal state file [file=" + state.getAbsolutePath() + ']');
+
+            if (log.isInfoEnabled())
+                log.info("The CDC application WAL state has been deleted.");
+        }
+
+        /** Delete all segments with an absolute index less than or equal to the given one. */
+        private void deleteAllUntil(Long lastIdx) {
+            if (lastIdx == null)
+                return;
+
+            consumeCdcSegments(segment -> {
+                if (FileWriteAheadLogManager.segmentIndex(segment) > lastIdx)
+                    return;
+
+                if (!segment.toFile().delete()) {
+                    throw new IgniteException("Failed to delete lost segment CDC link [segment=" +
+                        segment.toAbsolutePath() + ']');
+                }
+
+                log.info("Segment CDC link deleted [file=" + segment.toAbsolutePath() + ']');
+            });
+        }
+
+        /** Consume CDC segments in descending order. */
+        private void consumeCdcSegments(Consumer<Path> cnsmr) {
+            try (Stream<Path> cdcFiles = Files.list(walCdcDir.toPath())) {
+                cdcFiles
+                    .filter(p -> WAL_SEGMENT_FILE_FILTER.accept(p.toFile()))
+                    .sorted(Comparator.comparingLong(FileWriteAheadLogManager::segmentIndex)
+                        .reversed()) // Sort by segment index in descending order.
+                    .forEach(cnsmr);
+            }
+            catch (IOException e) {
+                throw new RuntimeException("Failed to list CDC links.", e);
+            }
         }
     }
 }

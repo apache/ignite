@@ -240,8 +240,6 @@ public class WalRecordsConsumer<K, V> {
         /** @param walIter WAL iterator. */
         DataEntryIterator(WALIterator walIter) {
             this.walIter = walIter;
-
-            advance();
         }
 
         /** @return Current state. */
@@ -265,6 +263,9 @@ public class WalRecordsConsumer<K, V> {
 
         /** {@inheritDoc} */
         @Override public boolean hasNext() {
+            if (next == null)
+                advance();
+
             return next != null;
         }
 
@@ -276,8 +277,6 @@ public class WalRecordsConsumer<K, V> {
             DataEntry e = next;
 
             next = null;
-
-            advance();
 
             return e;
         }
@@ -302,6 +301,12 @@ public class WalRecordsConsumer<K, V> {
                 return;
 
             curRec = walIter.next();
+
+            if (curRec.get2().type() == WALRecord.RecordType.CDC_DISABLE) {
+                throw new IgniteException("CDC disabled on node. Please, check node log. Exiting! " +
+                    "To continue CDC, please, use the command: control.sh|bat --cdc delete_lost_segment_links " +
+                    "[state=" + curRec.get1() + ']');
+            }
 
             next = ((DataRecord)curRec.get2()).get(entryIdx);
         }

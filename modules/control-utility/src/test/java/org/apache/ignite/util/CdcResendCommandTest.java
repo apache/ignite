@@ -32,6 +32,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.testframework.GridTestUtils.stopThreads;
 import static org.apache.ignite.util.CdcCommandTest.CDC;
 import static org.apache.ignite.util.CdcCommandTest.RESEND;
+import static org.apache.ignite.util.CdcCommandTest.WAL_ARCHIVE_TIMEOUT;
 import static org.apache.ignite.util.CdcCommandTest.runCdc;
 import static org.apache.ignite.util.CdcCommandTest.waitForSize;
 import static org.apache.ignite.util.GridCommandHandlerClusterByClassTest.CACHES;
@@ -45,7 +46,7 @@ public class CdcResendCommandTest extends GridCommandHandlerAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setWalForceArchiveTimeout(1000)
+            .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setCdcEnabled(true)
                 .setPersistenceEnabled(true)));

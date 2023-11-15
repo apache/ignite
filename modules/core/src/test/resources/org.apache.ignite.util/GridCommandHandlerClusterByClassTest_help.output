@@ -451,7 +451,7 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
     control.(sh|bat) --consistency finalize
 
   [EXPERIMENTAL]
-  Delete lost segment CDC links:
+  Delete lost segment CDC links before the CDC is disabled or the last gap:
     control.(sh|bat) --cdc delete_lost_segment_links [--node-id node_id] [--yes]
 
     Parameters:

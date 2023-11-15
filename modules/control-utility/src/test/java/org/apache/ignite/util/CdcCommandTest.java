@@ -20,6 +20,7 @@ package org.apache.ignite.util;
 import java.io.File;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -29,10 +30,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cdc.AbstractCdcTest.UserCdcConsumer;
 import org.apache.ignite.cdc.CdcConfiguration;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
@@ -56,8 +59,10 @@ import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assume;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.cdc.AbstractCdcTest.KEYS_CNT;
 import static org.apache.ignite.cdc.CdcSelfTest.addData;
@@ -67,14 +72,17 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 import static org.apache.ignite.testframework.GridTestUtils.stopThreads;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.util.GridCommandHandlerClusterByClassTest.CACHES;
 import static org.apache.ignite.util.SystemViewCommandTest.NODE_ID;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * CDC command tests.
  */
+@RunWith(Parameterized.class)
 public class CdcCommandTest extends GridCommandHandlerAbstractTest {
     /** */
     private static final String CDC_DISABLED_DATA_REGION = "cdc_disabled_data_region";
@@ -84,6 +92,9 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
     /** */
     public static final String RESEND = "resend";
+
+    /** */
+    public static final int WAL_ARCHIVE_TIMEOUT = 1_000;
 
     /** */
     private IgniteEx srv0;
@@ -100,6 +111,16 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
     /** */
     private volatile IgniteThrowableConsumer<WALRecord> onLogLsnr;
 
+    /** */
+    @Parameterized.Parameter(1)
+    public boolean persistenceEnabled;
+
+    /** */
+    @Parameterized.Parameters(name = "cmdHnd={0}, persistence={1}")
+    public static Collection<Object[]> parameters() {
+        return cartesianProduct(CMD_HNDS.keySet(), F.asList(true, false));
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -108,12 +129,13 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
             .setBackups(1));
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setWalForceArchiveTimeout(1000)
+            .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
             .setDataRegionConfigurations(new DataRegionConfiguration()
                 .setName(CDC_DISABLED_DATA_REGION)
                 .setCdcEnabled(false))
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setCdcEnabled(true)));
+                .setCdcEnabled(true)
+                .setPersistenceEnabled(persistenceEnabled)));
 
         cfg.setIncludeEventTypes(EVT_WAL_SEGMENT_ARCHIVED);
 
@@ -148,6 +170,9 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         srv0 = startGrid(0);
         srv1 = startGrid(1);
+
+        if (persistenceEnabled)
+            srv0.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -216,25 +241,64 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
     /** */
     @Test
     public void testDeleteLostSegmentLinks() throws Exception {
-        checkDeleteLostSegmentLinks(F.asList(0L, 2L), F.asList(2L), true);
+        assumeTrue(persistenceEnabled);
+
+        archiveAndCheckDeleteLostSegmentLinks(F.asList(0L, 2L), F.asList(2L), true);
     }
 
     /** */
     @Test
     public void testDeleteLostSegmentLinksOneNode() throws Exception {
-        checkDeleteLostSegmentLinks(F.asList(0L, 2L), F.asList(2L), false);
+        assumeTrue(persistenceEnabled);
+
+        archiveAndCheckDeleteLostSegmentLinks(F.asList(0L, 2L), F.asList(2L), false);
     }
 
     /** */
     @Test
     public void testDeleteLostSegmentLinksMultipleGaps() throws Exception {
-        checkDeleteLostSegmentLinks(F.asList(0L, 3L, 5L), F.asList(5L), true);
+        assumeTrue(persistenceEnabled);
+
+        archiveAndCheckDeleteLostSegmentLinks(F.asList(0L, 3L, 5L), F.asList(5L), true);
     }
 
     /** */
-    private void checkDeleteLostSegmentLinks(List<Long> expBefore, List<Long> expAfter, boolean allNodes) throws Exception {
+    @Test
+    public void testDeleteLostSegmentLinksNoGaps() throws Exception {
+        archiveAndCheckDeleteLostSegmentLinks(F.asList(0L, 1L), F.asList(0L, 1L), true);
+    }
+
+    /** */
+    @Test
+    public void testDeleteLostSegmentLinksCdcDisable() throws Exception {
+        addData(srv1.cache(DEFAULT_CACHE_NAME), 0, KEYS_CNT);
+
+        cdcDisabled.propagate(true);
+
+        addData(srv1.cache(DEFAULT_CACHE_NAME), 0, KEYS_CNT);
+
+        cdcDisabled.propagate(false);
+
+        addData(srv1.cache(DEFAULT_CACHE_NAME), 0, KEYS_CNT);
+
+        U.sleep(2 * WAL_ARCHIVE_TIMEOUT);
+
+        checkDeleteLostSegmentLinks(F.asList(0L, 1L), F.asList(1L), true);
+    }
+
+    /** */
+    private void archiveAndCheckDeleteLostSegmentLinks(
+        List<Long> expBefore,
+        List<Long> expAfter,
+        boolean allNodes
+    ) throws Exception {
         archiveSegmentLinks(expBefore);
 
+        checkDeleteLostSegmentLinks(expBefore, expAfter, allNodes);
+    }
+
+    /** */
+    private void checkDeleteLostSegmentLinks(List<Long> expBefore, List<Long> expAfter, boolean allNodes) {
         checkLinks(srv0, expBefore);
         checkLinks(srv1, expBefore);
 
@@ -254,34 +318,35 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         File[] links = wal0.walCdcDirectory().listFiles(WAL_SEGMENT_FILE_FILTER);
 
         assertEquals(expLinks.size(), links.length);
-        Arrays.stream(links).map(File::toPath).map(FileWriteAheadLogManager::segmentIndex)
-            .allMatch(expLinks::contains);
+        assertTrue(Arrays.stream(links).map(File::toPath).map(FileWriteAheadLogManager::segmentIndex)
+            .allMatch(expLinks::contains));
     }
 
     /** Archive given segments links with possible gaps. */
     private void archiveSegmentLinks(List<Long> idxs) throws Exception {
         for (long idx = 0; idx <= idxs.stream().mapToLong(v -> v).max().getAsLong(); idx++) {
-            cdcDisabled.propagate(!idxs.contains(idx));
+            CountDownLatch latch = new CountDownLatch(G.allGrids().size());
 
-            archiveSegment();
+            for (Ignite srv : G.allGrids()) {
+                long idx0 = idx;
+
+                srv.events().localListen(evt -> {
+                    if (idx0 == ((WalSegmentArchivedEvent)evt).getAbsWalSegmentIdx())
+                        latch.countDown();
+
+                    return true;
+                }, EVT_WAL_SEGMENT_ARCHIVED);
+            }
+
+            addData(srv1.cache(DEFAULT_CACHE_NAME), 0, KEYS_CNT);
+
+            boolean skipNext = !idxs.contains(idx + 1) && idx < idxs.get(idxs.size() - 1);
+
+            if (!skipNext || !idxs.contains(idx))
+                latch.await(2 * WAL_ARCHIVE_TIMEOUT, TimeUnit.MILLISECONDS);
+
+            cdcDisabled.propagate(skipNext);
         }
-    }
-
-    /** */
-    private void archiveSegment() throws Exception {
-        CountDownLatch latch = new CountDownLatch(G.allGrids().size());
-
-        for (Ignite srv : G.allGrids()) {
-            srv.events().localListen(evt -> {
-                latch.countDown();
-
-                return false;
-            }, EVT_WAL_SEGMENT_ARCHIVED);
-        }
-
-        addData(srv1.cache(DEFAULT_CACHE_NAME), 0, KEYS_CNT);
-
-        latch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
     }
 
     /** */
@@ -371,7 +436,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
     /** */
     @Test
     public void testResendCancelOnRebalanceInProgress() throws Exception {
-        Assume.assumeTrue(commandHandler.equals(CLI_CMD_HND));
+        assumeTrue(commandHandler.equals(CLI_CMD_HND));
 
         injectTestSystemOut();
 
@@ -391,7 +456,12 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
             });
         }
 
-        GridTestUtils.runAsync(() -> startGrid(3));
+        GridTestUtils.runAsync(() -> {
+            startGrid(3);
+
+            if (persistenceEnabled)
+                srv0.cluster().setBaselineTopology(srv0.cluster().forServers().nodes());
+        });
 
         rebalanceStarted.await();
 

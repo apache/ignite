@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -82,6 +83,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assume.assumeTrue;
@@ -798,30 +800,135 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         ign.cluster().state(ACTIVE);
 
+        FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ign.context().cache().context().wal(true);
+
+        DistributedChangeableProperty<Serializable> cdcDisabled = ign.context().distributedConfiguration()
+            .property(FileWriteAheadLogManager.CDC_DISABLED);
+
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         addData(cache, 0, 1);
 
-        File walCdcDir = U.field(ign.context().cache().context().wal(true), "walCdcDir");
+        cdcDisabled.propagate(true);
 
-        assertTrue(waitForCondition(() -> 1 == walCdcDir.list().length, 2 * WAL_ARCHIVE_TIMEOUT));
+        long lastIdx = wal.lastWritePointer().index();
 
-        DistributedChangeableProperty<Serializable> disabled = ign.context().distributedConfiguration()
-            .property(FileWriteAheadLogManager.CDC_DISABLED);
-
-        disabled.propagate(true);
-
-        addData(cache, 0, 1);
+        addData(cache, 0, 2);
 
         Thread.sleep(2 * WAL_ARCHIVE_TIMEOUT);
 
-        assertEquals(1, walCdcDir.list().length);
+        // In-memory CDC should not produce WAL records when disabled.
+        assertEquals(persistenceEnabled ? lastIdx + 1 : lastIdx, wal.lastWritePointer().index());
 
-        disabled.propagate(false);
+        cdcDisabled.propagate(false);
+
+        addData(cache, 0, 3);
+
+        checkCdcAppFailed(ign, 1, 3);
+    }
+
+    /** */
+    @Test
+    public void testDisableNodeJoin() throws Exception {
+        assumeTrue("CDC with 2 local nodes can't determine correct PDS directory without specificConsistentId.",
+            specificConsistentId);
+
+        IgniteEx ign0 = startGrid(0);
+
+        ign0.cluster().state(ACTIVE);
+
+        DistributedChangeableProperty<Serializable> cdcDisabled = ign0.context().distributedConfiguration()
+            .property(FileWriteAheadLogManager.CDC_DISABLED);
+
+        IgniteCache<Integer, User> cache0 = ign0.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        primaryKeys(cache0, 1).forEach(k -> cache0.put(k, createUser(k)));
+
+        cdcDisabled.propagate(true);
+
+        IgniteEx ign1 = startGrid(1);
+
+        if (persistenceEnabled)
+            ign1.cluster().setBaselineTopology(ign1.cluster().forServers().nodes());
+
+        IgniteCache<Integer, User> cache1 = ign1.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        primaryKeys(cache0, 2).forEach(k -> cache0.put(k, createUser(k)));
+        primaryKeys(cache1, 2).forEach(k -> cache1.put(k, createUser(k)));
+
+        U.sleep(2 * WAL_ARCHIVE_TIMEOUT);
+
+        cdcDisabled.propagate(false);
+
+        primaryKeys(cache0, 3).forEach(k -> cache0.put(k, createUser(k)));
+        primaryKeys(cache1, 3).forEach(k -> cache1.put(k, createUser(k)));
+
+        checkCdcAppFailed(ign0, 1, 3);
+        checkCdcApp(ign1, new UserCdcConsumer(), 3);
+    }
+
+    /** */
+    @Test
+    public void testDisableNodeRestart() throws Exception {
+        IgniteEx ign = startGrid(0);
+
+        ign.cluster().state(ACTIVE);
+
+        DistributedChangeableProperty<Serializable> cdcDisabled = ign.context().distributedConfiguration()
+            .property(FileWriteAheadLogManager.CDC_DISABLED);
+
+        IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         addData(cache, 0, 1);
 
-        assertTrue(waitForCondition(() -> 2 == walCdcDir.list().length, 2 * WAL_ARCHIVE_TIMEOUT));
+        cdcDisabled.propagate(true);
+
+        addData(cache, 0, 2);
+
+        stopGrid(0);
+
+        ign = startGrid(0);
+        cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
+        cdcDisabled = ign.context().distributedConfiguration().property(FileWriteAheadLogManager.CDC_DISABLED);
+
+        addData(cache, 0, 3);
+
+        U.sleep(2 * WAL_ARCHIVE_TIMEOUT);
+
+        if (persistenceEnabled)
+            cdcDisabled.propagate(false);
+
+        addData(cache, 0, 4);
+
+        checkCdcAppFailed(ign, 1, persistenceEnabled ? 4 : 7);
+    }
+
+    /** */
+    private void checkCdcAppFailed(Ignite ign, int expSizeBeforeFail, int expSizeAfterFail) throws Exception {
+        UserCdcConsumer cnsmr = new UserCdcConsumer();
+
+        IgniteInternalFuture<?> cdcFut = runAsync(createCdc(cnsmr, getConfiguration(ign.name())));
+
+        waitForSize(expSizeBeforeFail, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
+
+        // Cdc application must fail due to skipped data.
+        assertThrowsAnyCause(log, cdcFut::get, IgniteException.class, "CDC disabled on node.");
+
+        ign.compute().execute(CdcDeleteLostSegmentsTask.class,
+            new VisorTaskArgument<>(F.nodeIds(ign.cluster().nodes()), false));
+
+        cnsmr.clear();
+
+        checkCdcApp(ign, cnsmr, expSizeAfterFail);
+    }
+
+    /** */
+    private void checkCdcApp(Ignite ign, UserCdcConsumer cnsmr, int expSize) throws Exception {
+        IgniteInternalFuture<?> cdcFut = runAsync(createCdc(cnsmr, getConfiguration(ign.name())));
+
+        waitForSize(expSize, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
+
+        cdcFut.cancel();
     }
 
     /** */
@@ -872,8 +979,7 @@ public class CdcSelfTest extends AbstractCdcTest {
         // Write next segment after skipped.
         writeSgmnt.run();
 
-        assertThrows(log, () -> fut.get(getTestTimeout()), IgniteCheckedException.class,
-            "Found missed segments. Some events are missed.");
+        assertThrows(log, () -> fut.get(getTestTimeout()), IgniteCheckedException.class, "Found missed segments.");
 
         ign.compute().execute(CdcDeleteLostSegmentsTask.class, new VisorTaskArgument<>(ign.localNode().id(), false));
 

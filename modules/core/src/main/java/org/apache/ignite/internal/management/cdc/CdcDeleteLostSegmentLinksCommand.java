@@ -28,13 +28,13 @@ import static org.apache.ignite.internal.management.api.CommandUtils.node;
 import static org.apache.ignite.internal.management.api.CommandUtils.servers;
 
 /**
- * Command to delete lost segment links.
+ * Command to delete lost segment CDC links before the CDC is disabled or the last gap.
  */
 @IgniteExperimental
 public class CdcDeleteLostSegmentLinksCommand implements ComputeCommand<CdcDeleteLostSegmentLinksCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Delete lost segment CDC links";
+        return "Delete lost segment CDC links before the CDC is disabled or the last gap";
     }
 
     /** {@inheritDoc} */
@@ -66,6 +66,6 @@ public class CdcDeleteLostSegmentLinksCommand implements ComputeCommand<CdcDelet
             "previous to the last gap." + U.nl() +
             "All changes in deleted segment links will be lost!" + U.nl() +
             "Make sure you need to sync data before restarting the CDC application. You can synchronize caches " +
-            "using snapshot or other methods.";
+            "using the '--resend' command, snapshot or other methods.";
     }
 }
