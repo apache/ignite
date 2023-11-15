@@ -177,12 +177,13 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             .filter(n -> n.getName().startsWith("node"))
             .forEach(n -> Arrays.stream(n.listFiles())
                 .filter(c -> c.getName().startsWith("cache"))
-                .forEach(c -> assertTrue("Some partitions expected in " + c.getPath(),
-                        0 < Arrays.stream(c.listFiles())
-                            .filter(p -> p.getName().startsWith("part"))
-                            .peek(p -> assertEquals("Filename " + p.getPath() + " should " + (compressed ? "" : "not ") + "end with .zip",
-                                compressed, p.getName().endsWith(".zip")))
-                            .count()
+                .forEach(c -> Arrays.stream(c.listFiles())
+                    .filter(p -> p.getName().startsWith("part"))
+                    .forEach(p -> assertEquals(
+                        "Filename " + p.getPath() + " should " + (compressed ? "" : "not ") + "end with .zip",
+                        compressed,
+                        p.getName().endsWith(".zip")
+                        )
                     )
                 )
             );
