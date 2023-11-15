@@ -47,12 +47,12 @@ public class ClientDataStreamerAddDataRequest extends ClientDataStreamerRequest 
      *
      * @param reader Data reader.
      */
-    public ClientDataStreamerAddDataRequest(BinaryReaderExImpl reader, ClientConnectionContext ctx) {
+    public ClientDataStreamerAddDataRequest(BinaryReaderExImpl reader) {
         super(reader);
 
         streamerId = reader.readLong();
         flags = reader.readByte();
-        entries = ClientDataStreamerReader.read(reader, ctx);
+        entries = ClientDataStreamerReader.read(reader);
     }
 
     /**

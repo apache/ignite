@@ -1374,9 +1374,8 @@ public class PlatformUtils {
      *
      * @param reader Reader.
      * @param isKey {@code True} if object is a key.
-     * @param ctx Client connection context.
      */
-    public static <T extends CacheObject> T readCacheObject(BinaryReaderExImpl reader, boolean isKey, ClientConnectionContext ctx) {
+    public static <T extends CacheObject> T readCacheObject(BinaryReaderExImpl reader, boolean isKey) {
         BinaryInputStream in = reader.in();
 
         int pos0 = in.position();
