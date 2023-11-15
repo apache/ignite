@@ -144,10 +144,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             Set<Integer> parts = meta.partitions().get(grpId) == null ? Collections.emptySet() :
                 new HashSet<>(meta.partitions().get(grpId));
 
-            for (File part : meta.dump()
-                ? cachePartitionFiles(dir, new String[] {DUMP_FILE_EXT, DUMP_FILE_EXT + ZIP_SUFFIX})
-                : cachePartitionFiles(dir, FILE_SUFFIX)
-            ) {
+            for (File part : cachePartitionFiles(dir,
+                (meta.dump() ? DUMP_FILE_EXT : FILE_SUFFIX) + (opCtx.compress() ? ZIP_SUFFIX : "")
+            )) {
                 int partId = partId(part.getName());
 
                 if (!parts.remove(partId))

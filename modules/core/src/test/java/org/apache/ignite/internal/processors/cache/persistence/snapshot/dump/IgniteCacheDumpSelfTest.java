@@ -121,11 +121,17 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
             checkDump(ign);
 
+            checkPartitionsNames(ign, false);
+
             assertThrows(null, () -> createDump(ign), IgniteException.class, EXISTS_ERR_MSG);
 
-            createDump(ign, DMP_NAME + 2, null);
+            createDump(ign, DMP_NAME + 2, null, false);
 
             checkDump(ign, DMP_NAME + 2);
+
+            checkDump(ign);
+
+            checkPartitionsNames(ign, false);
 
             if (persistence) {
                 assertThrows(null, () -> ign.snapshot().createSnapshot(DMP_NAME).get(), IgniteException.class, EXISTS_ERR_MSG);
@@ -157,10 +163,29 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             createDump(ign, DMP_NAME, null, true);
 
             checkDump(ign);
+
+            checkPartitionsNames(ign, true);
         }
         finally {
             snpPoolSz = 1;
         }
+    }
+
+    /** */
+    private void checkPartitionsNames(IgniteEx ign, boolean compressed) throws IgniteCheckedException {
+        Arrays.stream(new File(dumpDirectory(ign, DMP_NAME), "db").listFiles())
+            .filter(n -> n.getName().startsWith("node"))
+            .forEach(n -> Arrays.stream(n.listFiles())
+                .filter(c -> c.getName().startsWith("cache"))
+                .forEach(c -> assertTrue("Some partitions expected in " + c.getPath(),
+                        0 < Arrays.stream(c.listFiles())
+                            .filter(p -> p.getName().startsWith("part"))
+                            .peek(p -> assertEquals("Filename " + p.getPath() + " should " + (compressed ? "" : "not ") + "end with .zip",
+                                compressed, p.getName().endsWith(".zip")))
+                            .count()
+                    )
+                )
+            );
     }
 
     /** */
@@ -259,7 +284,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             String name = DMP_NAME;
 
             {
-                createDump(ign, name, Collections.singleton(DEFAULT_CACHE_NAME));
+                createDump(ign, name, Collections.singleton(DEFAULT_CACHE_NAME), false);
 
                 checkDumpWithCommand(ign, name, backups);
 
@@ -274,7 +299,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             name = DMP_NAME + "2";
 
             {
-                createDump(cli, name, Collections.singleton(GRP));
+                createDump(cli, name, Collections.singleton(GRP), false);
 
                 checkDumpWithCommand(ign, name, backups);
 
@@ -289,7 +314,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             name = DMP_NAME + "3";
 
             {
-                createDump(cli, name, new HashSet<>(Arrays.asList(DEFAULT_CACHE_NAME, GRP)));
+                createDump(cli, name, new HashSet<String>(Arrays.asList(DEFAULT_CACHE_NAME, GRP)), false);
 
                 checkDumpWithCommand(ign, name, backups);
 
@@ -313,7 +338,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
         doTestConcurrentOperations(ignite -> {
             assertThrows(
                 null,
-                () -> createDump(ignite, "other_dump", null),
+                () -> createDump(ignite, "other_dump", null, false),
                 IgniteException.class,
                 "Create snapshot request has been rejected. The previous snapshot operation was not completed."
             );

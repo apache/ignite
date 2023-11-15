@@ -520,6 +520,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     (String)ignite.configuration().getConsistentId()
                 ))),
                 null,
+                false,
                 0,
                 true
             )

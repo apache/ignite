@@ -63,6 +63,9 @@ public class SnapshotMetadata implements Serializable {
      */
     private final String folderName;
 
+    /** If {@code true} then compress the files. */
+    private final boolean compress;
+
     /** Page size of stored snapshot data. */
     private final int pageSize;
 
@@ -109,6 +112,7 @@ public class SnapshotMetadata implements Serializable {
      * @param snpName Snapshot name.
      * @param consId Consistent id of a node to which this metadata relates.
      * @param folderName Directory name which stores the data files.
+     * @param compress If {@code true} then zip the files.
      * @param pageSize Page size of stored snapshot data.
      * @param grpIds The list of cache groups ids which were included into snapshot.
      * @param bltNodes The set of affected by snapshot baseline nodes.
@@ -122,6 +126,7 @@ public class SnapshotMetadata implements Serializable {
         String snpName,
         String consId,
         String folderName,
+        boolean compress,
         int pageSize,
         List<Integer> grpIds,
         Collection<Integer> compGrpIds,
@@ -136,6 +141,7 @@ public class SnapshotMetadata implements Serializable {
         this.snpName = snpName;
         this.consId = consId;
         this.folderName = folderName;
+        this.compress = compress;
         this.pageSize = pageSize;
         this.grpIds = grpIds;
         this.bltNodes = bltNodes;
@@ -181,6 +187,13 @@ public class SnapshotMetadata implements Serializable {
      */
     public String folderName() {
         return folderName;
+    }
+
+    /**
+     * @return {@code true} if compress the files.
+     */
+    public boolean compress() {
+        return compress;
     }
 
     /**

@@ -85,6 +85,7 @@ public abstract class AbstractSnapshotVerificationTask extends
                     createJob(
                         meta.snapshotName(),
                         arg.snapshotPath(),
+                        arg.compress(),
                         arg.incrementIndex(),
                         meta.consistentId(),
                         arg.cacheGroupNames(),
@@ -133,6 +134,7 @@ public abstract class AbstractSnapshotVerificationTask extends
     /**
      * @param name Snapshot name.
      * @param path Snapshot directory path.
+     * @param compress If {@code true} then compress the files.
      * @param incIdx Incremental snapshot index.
      * @param constId Snapshot metadata file name.
      * @param groups Cache groups to be restored from the snapshot. May be empty if all cache groups are being restored.
@@ -142,6 +144,7 @@ public abstract class AbstractSnapshotVerificationTask extends
     protected abstract ComputeJob createJob(
         String name,
         @Nullable String path,
+        boolean compress,
         int incIdx,
         String constId,
         Collection<String> groups,

@@ -486,7 +486,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     protected void createDump(IgniteEx ign) {
-        createDump(ign, DMP_NAME, null);
+        createDump(ign, DMP_NAME, null, false);
     }
 
     /** */
@@ -535,13 +535,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
-    void createDump(IgniteEx ign, String name, @Nullable Collection<String> cacheGroupNames) {
-        ign.context().cache().context().snapshotMgr().createSnapshot(name, null, cacheGroupNames, false, onlyPrimary, true).get();
-    }
-
-    /** */
-    void createDump(IgniteEx ign, String name, @Nullable Collection<String> cacheGroupNames, boolean zip) {
-        ign.context().cache().context().snapshotMgr().createSnapshot(name, null, cacheGroupNames, false, onlyPrimary, true, zip).get();
+    void createDump(IgniteEx ign, String name, @Nullable Collection<String> cacheGroupNames, boolean compress) {
+        ign.context().cache().context().snapshotMgr().createSnapshot(name, null, cacheGroupNames, false, onlyPrimary, true, compress).get();
     }
 
     /** */

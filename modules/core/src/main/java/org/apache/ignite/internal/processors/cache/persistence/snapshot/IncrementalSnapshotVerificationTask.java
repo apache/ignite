@@ -150,6 +150,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
     @Override protected ComputeJob createJob(
         String name,
         @Nullable String path,
+        boolean compress,
         int incIdx,
         String constId,
         Collection<String> groups,

@@ -75,18 +75,6 @@ public interface IgniteSnapshot {
     public IgniteFuture<Void> createDump(String name, @Nullable Collection<String> cacheGroupNames);
 
     /**
-     * Creates cache groups dump.
-     * Dump is consistent entry by entry backup of cache group content.
-     * In-memory cache groups also supported.
-     *
-     * @param name Dump name.
-     * @param cacheGroupNames Cache groups to include in snapshot or {@code null} to include all.
-     * @param zip If the dump file should be zipped.
-     * @return Future which will be completed when dump ends.
-     */
-    public IgniteFuture<Void> createDump(String name, @Nullable Collection<String> cacheGroupNames, boolean zip);
-
-    /**
      * Restore cache group(s) from the snapshot.
      * <p>
      * <b>NOTE:</b> Cache groups to be restored from the snapshot must not present in the cluster, if they present,

@@ -95,7 +95,7 @@ public class SnapshotOperationRequest implements Serializable {
     private final boolean dump;
 
     /** If {@code true} then zip the file. */
-    private final boolean zip;
+    private final boolean compress;
 
     /**
      * @param reqId Request ID.
@@ -108,6 +108,7 @@ public class SnapshotOperationRequest implements Serializable {
      * @param incIdx Incremental snapshot index.
      * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
      * @param dump If {@code true} then create dump.
+     * @param compress If {@code true} then compress the file.
      */
     public SnapshotOperationRequest(
         UUID reqId,
@@ -120,7 +121,7 @@ public class SnapshotOperationRequest implements Serializable {
         int incIdx,
         boolean onlyPrimary,
         boolean dump,
-        boolean zip
+        boolean compress
     ) {
         this.reqId = reqId;
         this.opNodeId = opNodeId;
@@ -132,7 +133,7 @@ public class SnapshotOperationRequest implements Serializable {
         this.incIdx = incIdx;
         this.onlyPrimary = onlyPrimary;
         this.dump = dump;
-        this.zip = zip;
+        this.compress = compress;
         startTime = U.currentTimeMillis();
     }
 
@@ -212,9 +213,9 @@ public class SnapshotOperationRequest implements Serializable {
         return dump;
     }
 
-    /** If {@code true} then zip the file. */
-    public boolean zip() {
-        return zip;
+    /** @return If {@code true} then compress the file. */
+    public boolean compress() {
+        return compress;
     }
 
     /** @return Start time. */

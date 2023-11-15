@@ -32,6 +32,9 @@ public class SnapshotHandlerContext {
     /** The full path to the snapshot files. */
     private final File snpDir;
 
+    /** If {@code true} then compress the files. */
+    private final boolean compress;
+
     /** The names of the cache groups on which the operation is performed. */
     private final Collection<String> grps;
 
@@ -50,6 +53,7 @@ public class SnapshotHandlerContext {
      * {@code False} otherwise. Always {@code false} for snapshot restoration.
      * @param locNode Local node.
      * @param snpDir The full path to the snapshot files.
+     * @param compress If {@code true} then compress the files.
      * @param streamerWrn {@code True} if concurrent streaming updates occurred during snapshot operation.
      * @param check If {@code true} check snapshot integrity.
      */
@@ -58,6 +62,7 @@ public class SnapshotHandlerContext {
         @Nullable Collection<String> grps,
         ClusterNode locNode,
         File snpDir,
+        boolean compress,
         boolean streamerWrn,
         boolean check
     ) {
@@ -65,6 +70,7 @@ public class SnapshotHandlerContext {
         this.grps = grps;
         this.locNode = locNode;
         this.snpDir = snpDir;
+        this.compress = compress;
         this.streamerWrn = streamerWrn;
         this.check = check;
     }
@@ -81,6 +87,13 @@ public class SnapshotHandlerContext {
      */
     public File snapshotDirectory() {
         return snpDir;
+    }
+
+    /**
+     * @return {@code true} if compress the files.
+     */
+    public boolean compress() {
+        return compress;
     }
 
     /**
