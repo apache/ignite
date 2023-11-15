@@ -19,26 +19,27 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCluster;
-import org.apache.ignite.client.ClientCluster;
-import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * Test create cache in persistent data region
+ * Test create cache in persistent data region with custom name
  */
-public class CacheNameTest extends AbstractThinClientTest {
+public class CacheNameTest extends GridCommonAbstractTest {
+    /** */
+    static final String dataRegionName = "persistence-region";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setName("persistence-region")
+                    .setName(dataRegionName)
                     .setPersistenceEnabled(true)))
             .setClusterStateOnStart(ClusterState.ACTIVE);
     }
@@ -63,26 +64,23 @@ public class CacheNameTest extends AbstractThinClientTest {
 
     /** Test cache names */
     @Test
-    public void testContinuousQueries() throws Exception {
-        try (IgniteClient client = startClient(0)) {
-            ClientCluster clientCluster = client.cluster();
-            IgniteCluster igniteCluster = grid(0).cluster();
+    public void testCreateCacheWithPersistenceAndCustomName() {
+        IgniteCluster igniteCluster = grid(0).cluster();
 
-            igniteCluster.state(ClusterState.ACTIVE);
+        igniteCluster.state(ClusterState.ACTIVE);
 
-            String name = "/\"";
+        String name = "/\"";
 
-            CacheConfiguration cacheCfg = new CacheConfiguration()
-                .setName(name)
-                .setDataRegionName("persistence-region");
+        CacheConfiguration cacheCfg = new CacheConfiguration()
+            .setName(name)
+            .setDataRegionName(dataRegionName);
 
-            IgniteCache<Integer, String> cache = grid(0).getOrCreateCache(cacheCfg);
+        IgniteCache<Integer, String> cache = grid(0).getOrCreateCache(cacheCfg);
 
-            assertEquals(name, cache.getName());
+        assertEquals(name, cache.getName());
 
-            cache.put(1, "string");
+        cache.put(1, "string");
 
-            assertEquals("string", cache.get(1));
-        }
+        assertEquals("string", cache.get(1));
     }
 }
