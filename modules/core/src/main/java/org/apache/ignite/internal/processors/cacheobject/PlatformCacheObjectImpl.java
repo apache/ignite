@@ -66,6 +66,6 @@ public class PlatformCacheObjectImpl extends CacheObjectImpl {
         if (valBytes == null)
             valBytes = valueBytesFromArray(ctx);
 
-        return this;
+        return new CacheObjectImpl(val, valBytes);
     }
 }
