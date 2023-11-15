@@ -329,6 +329,13 @@ public class ClientCacheAffinityContext {
         public Iterable<UUID> nodes() {
             return Collections.unmodifiableCollection(nodes);
         }
+
+        /**
+         * @return Topology version.
+         */
+        public AffinityTopologyVersion version() {
+            return topVer;
+        }
     }
 
     /** Holder of a mapper factory and cacheName. */
