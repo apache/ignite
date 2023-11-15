@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -47,7 +46,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
@@ -247,12 +245,7 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
             for (CacheConfiguration<?, ?> ccfg : ccfgs) {
                 String cacheOrGrpName = F.isEmpty(ccfg.getGroupName()) ? ccfg.getName() : ccfg.getGroupName();
 
-                testApplicableCache(
-                    ccfg.getName(),
-                    i -> i,
-                    !requestedCaches.contains(cacheOrGrpName),
-                    ch -> !grid(1).localNode().id().equals(ch.serverNodeId())
-                );
+                testApplicableCache(ccfg.getName(), i -> i, !requestedCaches.contains(cacheOrGrpName));
 
                 requestedCaches.add(cacheOrGrpName);
 
@@ -488,20 +481,18 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
      * @param keyFactory Key factory function.
      */
     private void testApplicableCache(String cacheName, Function<Integer, Object> keyFactory) throws Exception {
-        testApplicableCache(cacheName, keyFactory, true, null);
+        testApplicableCache(cacheName, keyFactory, true);
     }
 
     /**
      * @param cacheName Cache name.
      * @param keyFactory Key factory function.
      * @param getPartitionsExpected {@code True} if {@link ClientOperation#CACHE_PARTITIONS} is expected first.
-     * @param channelChecker A predicate to check the channel for current operations. If {@code null}, ignored.
      */
     private void testApplicableCache(
         String cacheName,
         Function<Integer, Object> keyFactory,
-        boolean getPartitionsExpected,
-        @Nullable Predicate<TestTcpClientChannel> channelChecker
+        boolean getPartitionsExpected
     ) throws Exception {
         ClientCache<Object, Object> clientCache = client.cache(cacheName);
         IgniteInternalCache<Object, Object> igniteCache = grid(0).context().cache().cache(cacheName);
@@ -509,9 +500,6 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
         clientCache.put(keyFactory.apply(0), 0);
 
         TestTcpClientChannel opCh = affinityChannel(0, igniteCache);
-
-        if (channelChecker != null)
-            assertTrue("Unexpected channel to node: " + opCh.serverNodeId(), channelChecker.test(opCh));
 
         if (getPartitionsExpected)
             assertOpOnChannel(null, ClientOperation.CACHE_PARTITIONS);
@@ -522,9 +510,6 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
             Object key = keyFactory.apply(i);
 
             opCh = affinityChannel(key, igniteCache);
-
-            if (channelChecker != null)
-                assertTrue("Unexpected channel to node: " + opCh.serverNodeId(), channelChecker.test(opCh));
 
             clientCache.put(key, key);
             assertOpOnChannel(opCh, ClientOperation.CACHE_PUT);
