@@ -36,7 +36,7 @@ public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvid
     protected final SecurityPermissionSet perms;
 
     /** */
-    private final Permissions sandboxPerms;
+    protected final Permissions sandboxPerms;
 
     /** Global authentication. */
     protected final boolean globalAuth;
