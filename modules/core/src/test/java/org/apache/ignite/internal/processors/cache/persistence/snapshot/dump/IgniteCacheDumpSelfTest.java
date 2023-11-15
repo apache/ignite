@@ -314,7 +314,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             name = DMP_NAME + "3";
 
             {
-                createDump(cli, name, new HashSet<String>(Arrays.asList(DEFAULT_CACHE_NAME, GRP)), false);
+                createDump(cli, name, new HashSet<>(Arrays.asList(DEFAULT_CACHE_NAME, GRP)), false);
 
                 checkDumpWithCommand(ign, name, backups);
 

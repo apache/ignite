@@ -52,7 +52,8 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
     @Override protected ComputeJob createJob(
         String name,
         @Nullable String path,
-        boolean compress, int incIdx,
+        boolean compress,
+        int incIdx,
         String constId,
         Collection<String> groups,
         boolean check
@@ -156,7 +157,14 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
                 SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpDir, consistentId);
 
                 return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE,
-                    new SnapshotHandlerContext(meta, grps, ignite.localNode(), snpDir, false, false, check));
+                    new SnapshotHandlerContext(meta,
+                        grps,
+                        ignite.localNode(),
+                        snpDir,
+                        meta.compress(),
+                        false,
+                        check
+                    ));
             }
             catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);

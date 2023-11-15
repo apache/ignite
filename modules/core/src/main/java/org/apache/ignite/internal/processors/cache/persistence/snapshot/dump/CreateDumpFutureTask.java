@@ -450,9 +450,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 for (int cache : gctx.cacheIds())
                     changed.put(cache, new GridConcurrentHashSet<>());
 
-                String fileName = PART_FILE_PREFIX + part + DUMP_FILE_EXT;
-
-                File dumpFile = new File(groupDirectory(gctx), fileName);
+                File dumpFile = new File(groupDirectory(gctx), PART_FILE_PREFIX + part + DUMP_FILE_EXT);
 
                 if (!compress && !dumpFile.createNewFile())
                     throw new IgniteException("Dump file can't be created: " + dumpFile);
