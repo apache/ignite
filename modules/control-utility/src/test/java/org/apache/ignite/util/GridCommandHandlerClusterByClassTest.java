@@ -486,7 +486,8 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         try {
             assertTrue("Diff must be empty [lines=" + lines + ']', lines == 0);
-        } catch (Throwable t){
+        }
+        catch (Throwable t) {
             String separator = U.nl() + "^^^^^^^^^^^^^<<<<<<<<<<<<<>>>>>>>>>>>>^^^^^^^^^^^^^" + U.nl();
 
             log.error("Passed wrong output: " + separator + output + separator);
