@@ -411,7 +411,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
                         }
                     );
                 }
-
             }
             else
                 assertContains(log, output, CommandHandler.UTILITY_NAME);
@@ -463,7 +462,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         int lines = 0;
 
         if (!diff.isEmpty()) {
-            Consumer<String> printer = System.out::println;
+            Consumer<String> printer = System.err::println;
 
             for (DiffRow row : diff) {
                 if (row.getTag() == DiffRow.Tag.EQUAL)
@@ -485,7 +484,13 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             }
         }
 
-        assertTrue("Diff must be empty [lines=" + lines + ']', lines == 0);
+        try {
+            assertTrue("Diff must be empty [lines=" + lines + ']', lines == 0);
+        } catch (Throwable t){
+            log.error("Passed wrong output: " + U.nl() + output);
+
+            throw t;
+        }
     }
 
     /** */
