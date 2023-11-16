@@ -15,22 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
+package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 
 /**
- * File I/O factory which provides {@link WriteOnlyZipFileIO} implementation of FileIO.
+ * File I/O factory which provides {@link UnzipFileIO} implementation of FileIO.
  */
-public class WriteOnlyZipFileIOFactory implements FileIOFactory {
+public class UnzipFileIOFactory implements FileIOFactory {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public WriteOnlyZipFileIO create(File file, OpenOption... modes) throws IOException {
-        return new WriteOnlyZipFileIO(file);
+    @Override public UnzipFileIO create(File file, OpenOption... modes) throws IOException {
+        return new UnzipFileIO(file);
     }
 }

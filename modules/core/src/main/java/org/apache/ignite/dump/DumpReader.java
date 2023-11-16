@@ -101,6 +101,9 @@ public class DumpReader implements Runnable {
                     }
                 }
 
+                Map<String, Boolean> compressions = dump.metadata().stream()
+                    .collect(Collectors.toMap(SnapshotMetadata::folderName, SnapshotMetadata::compress));
+
                 cnsmr.onCacheConfigs(grpToNodes.entrySet().stream()
                     .flatMap(e -> dump.configs(F.first(e.getValue()), e.getKey()).stream())
                     .iterator());
@@ -118,7 +121,7 @@ public class DumpReader implements Runnable {
                     int grp = e.getKey();
 
                     for (String node : e.getValue()) {
-                        for (int part : dump.partitions(node, grp)) {
+                        for (int part : dump.partitions(node, grp, compressions.get(node))) {
                             if (groups != null && !groups.get(grp).add(part)) {
                                 log.info("Skip copy partition [node=" + node + ", grp=" + grp + ", part=" + part + ']');
 
@@ -135,7 +138,9 @@ public class DumpReader implements Runnable {
                                     return;
                                 }
 
-                                try (DumpedPartitionIterator iter = dump.iterator(node, grp, part)) {
+                                try (DumpedPartitionIterator iter = dump
+                                    .iterator(node, grp, part, compressions.get(node))
+                                ) {
                                     if (log.isDebugEnabled()) {
                                         log.debug("Consuming partition [node=" + node + ", grp=" + grp +
                                             ", part=" + part + ']');

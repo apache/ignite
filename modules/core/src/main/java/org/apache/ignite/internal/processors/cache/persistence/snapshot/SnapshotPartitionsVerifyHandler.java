@@ -365,10 +365,15 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             String consistentId = cctx.kernalContext().pdsFolderResolver().resolveFolders().consistentId().toString();
 
             try (Dump dump = new Dump(opCtx.snapshotDirectory(), consistentId, true, true, log)) {
+                Map<String, Boolean> compressions = dump.metadata().stream()
+                    .collect(Collectors.toMap(SnapshotMetadata::folderName, SnapshotMetadata::compress));
+
                 Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
                     cctx.snapshotMgr().snapshotExecutorService(),
                     partFiles,
-                    part -> calculateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()))
+                    part -> calculateDumpedPartitionHash(dump,
+                        cacheGroupName(part.getParentFile()), partId(part.getName()),
+                        compressions.get(part.getParentFile().getParentFile().getName()))
                 );
 
                 return partitionHashRecordV2s.stream().collect(Collectors.toMap(PartitionHashRecordV2::partitionKey, r -> r));
@@ -385,7 +390,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** */
-    private PartitionHashRecordV2 calculateDumpedPartitionHash(Dump dump, String grpName, int part) {
+    private PartitionHashRecordV2 calculateDumpedPartitionHash(Dump dump, String grpName, int part, boolean compressed) {
         if (skipHash()) {
             return new PartitionHashRecordV2(
                 new PartitionKeyV2(CU.cacheId(grpName), part, grpName),
@@ -401,7 +406,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         try {
             String node = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
 
-            try (Dump.DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part)) {
+            try (Dump.DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part, compressed)) {
                 long size = 0;
 
                 VerifyPartitionContext ctx = new VerifyPartitionContext();
