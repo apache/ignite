@@ -411,6 +411,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
                         }
                     );
                 }
+
             }
             else
                 assertContains(log, output, CommandHandler.UTILITY_NAME);
@@ -484,16 +485,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             }
         }
 
-        try {
-            assertTrue("Diff must be empty [lines=" + lines + ']', lines == 0);
-        }
-        catch (Throwable t) {
-            String separator = U.nl() + "^^^^^^^^^^^^^<<<<<<<<<<<<<>>>>>>>>>>>>^^^^^^^^^^^^^" + U.nl();
-
-            log.error("Passed wrong output: " + separator + output + separator);
-
-            throw t;
-        }
+        assertTrue("Diff must be empty [lines=" + lines + ']', lines == 0);
     }
 
     /** */
