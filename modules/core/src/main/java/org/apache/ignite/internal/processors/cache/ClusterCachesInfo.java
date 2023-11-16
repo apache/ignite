@@ -18,8 +18,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1135,13 +1136,13 @@ public class ClusterCachesInfo {
 
         File storeWorkDir = null;
         try {
-            storeWorkDir = ctx.pdsFolderResolver().resolveFolders().persistentStoreRootPath();
+            storeWorkDir = ctx.pdsFolderResolver().resolveFolders().persistentStoreNodePath();
         }
         catch (IgniteCheckedException ignored) {
             //No-op.
         }
         if (!CU.isSystemCache(ccfg.getName()) && !validateStringFilenameUsingContains(storeWorkDir, cacheName))
-            err = new IgniteCheckedException("Invalid cache name " +  cacheName);
+            err = new IgniteCheckedException("Invalid cache name " + cacheName);
 
         if (err != null) {
             if (persistedCfgs)
@@ -1216,16 +1217,13 @@ public class ClusterCachesInfo {
      *
      * @return {@code True} if there is no errors for creating this directorie.
      */
-    private static boolean validateStringFilenameUsingContains(File storeWorkDir ,String cacheDirName) {
-        File file = new File(storeWorkDir, "cache-" + cacheDirName);
+    private static boolean validateStringFilenameUsingContains(File storeWorkDir, String cacheDirName) {
         try {
-            return file.createNewFile();
+            Path expDir = Paths.get(storeWorkDir.getAbsolutePath(), cacheDirName);
+            return expDir.getFileName().toFile().getName().equals(cacheDirName);
         }
-        catch (IOException e) {
+        catch (Exception e) {
             return false;
-        }
-        finally {
-            file.delete();
         }
     }
 
