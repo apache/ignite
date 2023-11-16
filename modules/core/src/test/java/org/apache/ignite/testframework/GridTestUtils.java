@@ -382,9 +382,9 @@ public final class GridTestUtils {
             assertFalse(str.contains(substr));
         }
         catch (AssertionError e) {
-            U.warn(log, String.format("String contain substring: '%s', but shouldn't:", substr));
-            U.warn(log, "String:");
-            U.warn(log, str);
+            String separator = U.nl() + "^^^^^^^^^^^^^<<<<<<<<<<<<<>>>>>>>>>>>>^^^^^^^^^^^^^" + U.nl();
+
+            U.warn(log, String.format("String %s%s%s contains substring: '%s', but shouldn't:", separator, str, separator, substr));
 
             throw e;
         }

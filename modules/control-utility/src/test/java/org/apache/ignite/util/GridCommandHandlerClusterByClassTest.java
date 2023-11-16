@@ -462,7 +462,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         int lines = 0;
 
         if (!diff.isEmpty()) {
-            Consumer<String> printer = System.err::println;
+            Consumer<String> printer = s -> log.error(s);
 
             for (DiffRow row : diff) {
                 if (row.getTag() == DiffRow.Tag.EQUAL)
@@ -487,7 +487,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         try {
             assertTrue("Diff must be empty [lines=" + lines + ']', lines == 0);
         } catch (Throwable t){
-            log.error("Passed wrong output: " + U.nl() + output);
+            String separator = U.nl() + "^^^^^^^^^^^^^<<<<<<<<<<<<<>>>>>>>>>>>>^^^^^^^^^^^^^" + U.nl();
+
+            log.error("Passed wrong output: " + separator + output + separator);
 
             throw t;
         }
