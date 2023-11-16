@@ -631,10 +631,10 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientServiceGetDescriptorRequest(reader);
 
             case OP_DATA_STREAMER_START:
-                return new ClientDataStreamerStartRequest(reader, ctx);
+                return new ClientDataStreamerStartRequest(reader);
 
             case OP_DATA_STREAMER_ADD_DATA:
-                return new ClientDataStreamerAddDataRequest(reader, ctx);
+                return new ClientDataStreamerAddDataRequest(reader);
 
             case OP_ATOMIC_LONG_CREATE:
                 return new ClientAtomicLongCreateRequest(reader);
