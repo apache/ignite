@@ -1814,7 +1814,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createDump(String name, @Nullable Collection<String> cacheGroupNames) {
-        return createSnapshot(name, null, cacheGroupNames, false, false, true);
+        return createSnapshot(name, null, cacheGroupNames, false, false, true, false);
     }
 
     /**
@@ -1997,13 +1997,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 kctx0.task().execute(
                         cls,
-                        new SnapshotPartitionsVerifyTaskArg(grps,
-                            metas,
-                            snpPath,
-                            metas.values().iterator().next().iterator().next().compress(),
-                            incIdx,
-                            check
-                        ),
+                        new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath, incIdx, check),
                         options(new ArrayList<>(metas.keySet()))
                     ).listen(f1 -> {
                         if (f1.error() == null)
@@ -2208,29 +2202,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean incremental,
         boolean onlyPrimary
     ) {
-        return createSnapshot(name, snpPath, null, incremental, onlyPrimary, false);
-    }
-
-    /**
-     * Create a consistent copy of all persistence cache groups from the whole cluster.
-     *
-     * @param name Snapshot unique name which satisfies the following name pattern [a-zA-Z0-9_].
-     * @param snpPath Snapshot directory path.
-     * @param cacheGroupNames Cache groups to include in snapshot or {@code null} to include all.
-     * @param incremental Incremental snapshot flag.
-     * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
-     * @param dump If {@code true} cache dump must be created.
-     * @return Future which will be completed when a process ends.
-     */
-    public IgniteFutureImpl<Void> createSnapshot(
-        String name,
-        @Nullable String snpPath,
-        @Nullable Collection<String> cacheGroupNames,
-        boolean incremental,
-        boolean onlyPrimary,
-        boolean dump
-    ) {
-        return createSnapshot(name, snpPath, cacheGroupNames, incremental, onlyPrimary, dump, false);
+        return createSnapshot(name, snpPath, null, incremental, onlyPrimary, false, false);
     }
 
     /**
@@ -4771,7 +4743,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     cacheGroupNames,
                     false,
                     onlyPrimary,
-                    dump
+                    dump,
+                    false
                 ).get();
             }
 

@@ -330,7 +330,8 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 null,
                 false,
                 false,
-                true
+                true,
+                false
             ).get();
 
             assertFalse(

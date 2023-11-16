@@ -85,7 +85,7 @@ public abstract class AbstractSnapshotVerificationTask extends
                     createJob(
                         meta.snapshotName(),
                         arg.snapshotPath(),
-                        arg.compress(),
+                        meta.compress(),
                         arg.incrementIndex(),
                         meta.consistentId(),
                         arg.cacheGroupNames(),

@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  * It doesn't support reading or random access.
  * It is not designed for multithreaded writing.
  */
-public class ZipFileIO extends AbstractFileIO {
+public class WriteOnlyZipFileIO extends AbstractFileIO {
     /** Buffer size */
     private static final int BUFFER_SIZE = 128 * 1024;
 
@@ -53,7 +53,7 @@ public class ZipFileIO extends AbstractFileIO {
     private long pos;
 
     /** */
-    public ZipFileIO(File file) throws IOException {
+    public WriteOnlyZipFileIO(File file) throws IOException {
         A.ensure(file.getName().endsWith(ZIP_SUFFIX), "File name should end with " + ZIP_SUFFIX);
 
         String entryName = file.getName().substring(0, file.getName().length() - ZIP_SUFFIX.length());

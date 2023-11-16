@@ -26,19 +26,19 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 
 /**
- * File I/O factory which provides ZipFileIO implementation of FileIO.
+ * File I/O factory which provides {@link WriteOnlyZipFileIO} implementation of FileIO.
  */
-public class ZipFileIOFactory implements FileIOFactory {
+public class WriteOnlyZipFileIOFactory implements FileIOFactory {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public ZipFileIO create(File file, OpenOption... modes) throws IOException {
+    @Override public WriteOnlyZipFileIO create(File file, OpenOption... modes) throws IOException {
         file = new File(file.getPath() + ZIP_SUFFIX);
 
         if (!file.createNewFile())
             throw new IgniteException("Dump file can't be created: " + file);
 
-        return new ZipFileIO(file);
+        return new WriteOnlyZipFileIO(file);
     }
 }

@@ -44,9 +44,6 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     /** Snapshot directory path. */
     private String snpPath;
 
-    /** If {@code true} then compress the file. */
-    private boolean compress;
-
     /** If {@code true} check snapshot integrity. */
     private boolean check;
 
@@ -69,14 +66,12 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
         Collection<String> grpNames,
         Map<ClusterNode, List<SnapshotMetadata>> clusterMetas,
         @Nullable String snpPath,
-        boolean compress,
         int incIdx,
         boolean check
     ) {
         this.grpNames = grpNames;
         this.clusterMetas = clusterMetas;
         this.snpPath = snpPath;
-        this.compress = compress;
         this.incIdx = incIdx;
         this.check = check;
     }
@@ -100,11 +95,6 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
      */
     public String snapshotPath() {
         return snpPath;
-    }
-
-    /** @return If {@code true} then compress the file. */
-    public boolean compress() {
-        return compress;
     }
 
     /**

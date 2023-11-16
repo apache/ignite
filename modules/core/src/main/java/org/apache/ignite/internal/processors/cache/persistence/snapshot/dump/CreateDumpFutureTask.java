@@ -146,7 +146,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         );
 
         this.dumpDir = dumpDir;
-        this.ioFactory = compress ? new ZipFileIOFactory() : ioFactory;
+        this.ioFactory = compress ? new WriteOnlyZipFileIOFactory() : ioFactory;
         this.compress = compress;
     }
 
