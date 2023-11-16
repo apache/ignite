@@ -250,6 +250,9 @@ public class TcpHandshakeExecutor {
     /** Ssl transport */
     private static class SslTransport extends BlockingTransport {
         /** */
+        private static final int READ_BUFFER_CAPACITY = 1024;
+
+        /** */
         private final BlockingSslHandler handler;
 
         /** */
@@ -267,7 +270,9 @@ public class TcpHandshakeExecutor {
                 if (!handler.handshake())
                     throw new HandshakeException("SSL handshake is not completed.");
 
-                readBuf = ByteBuffer.allocate(1024).order(ByteOrder.LITTLE_ENDIAN);
+                readBuf = directBuf ? ByteBuffer.allocateDirect(READ_BUFFER_CAPACITY) : ByteBuffer.allocate(READ_BUFFER_CAPACITY);
+
+                readBuf.order(ByteOrder.LITTLE_ENDIAN);
             }
             catch (SSLException e) {
                 throw new IgniteCheckedException("SSL handhshake failed", e);
