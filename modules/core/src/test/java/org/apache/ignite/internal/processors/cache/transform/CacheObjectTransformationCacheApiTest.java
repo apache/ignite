@@ -63,11 +63,11 @@ public class CacheObjectTransformationCacheApiTest extends GridCommonAbstractTes
     @Parameterized.Parameter()
     public CacheAtomicityMode mode;
 
-    /** Atomicity mode. */
+    /** Persistence enabled flag. */
     @Parameterized.Parameter(1)
     public boolean persistence;
 
-    /** Atomicity mode. */
+    /** Generator. */
     @Parameterized.Parameter(2)
     public Gen gen;
 
