@@ -462,7 +462,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         int lines = 0;
 
         if (!diff.isEmpty()) {
-            Consumer<String> printer = s -> log.error(s);
+            Consumer<String> printer = System.out::println;
 
             for (DiffRow row : diff) {
                 if (row.getTag() == DiffRow.Tag.EQUAL)
