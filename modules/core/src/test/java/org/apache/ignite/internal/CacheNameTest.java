@@ -18,12 +18,14 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -75,12 +77,16 @@ public class CacheNameTest extends GridCommonAbstractTest {
             .setName(name)
             .setDataRegionName(dataRegionName);
 
+        GridTestUtils.assertThrows(log, () -> grid(0).getOrCreateCache(cacheCfg),
+            IgniteCheckedException.class, "Invalid cache name /\"");
+
+        cacheCfg.setName(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, String> cache = grid(0).getOrCreateCache(cacheCfg);
 
-        assertEquals(name, cache.getName());
+        assertEquals(DEFAULT_CACHE_NAME, cache.getName());
 
-        cache.put(1, "string");
+        cache.put(1, "value");
 
-        assertEquals("string", cache.get(1));
+        assertEquals("value", cache.get(1));
     }
 }

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1131,6 +1133,16 @@ public class ClusterCachesInfo {
             }
         }
 
+        File storeWorkDir = null;
+        try {
+            storeWorkDir = ctx.pdsFolderResolver().resolveFolders().persistentStoreRootPath();
+        }
+        catch (IgniteCheckedException ignored) {
+            //No-op.
+        }
+        if (!CU.isSystemCache(ccfg.getName()) && !validateStringFilenameUsingContains(storeWorkDir, cacheName))
+            err = new IgniteCheckedException("Invalid cache name " +  cacheName);
+
         if (err != null) {
             if (persistedCfgs)
                 res.errs.add(err);
@@ -1194,6 +1206,27 @@ public class ClusterCachesInfo {
         exchangeActions.addCacheToStart(req, startDesc);
 
         return true;
+    }
+
+    /**
+     * Validate name of new cache.
+     *
+     * @param storeWorkDir Path for creation.
+     * @param cacheDirName Cache's name of user.
+     *
+     * @return {@code True} if there is no errors for creating this directorie.
+     */
+    private static boolean validateStringFilenameUsingContains(File storeWorkDir ,String cacheDirName) {
+        File file = new File(storeWorkDir, "cache-" + cacheDirName);
+        try {
+            return file.createNewFile();
+        }
+        catch (IOException e) {
+            return false;
+        }
+        finally {
+            file.delete();
+        }
     }
 
     /**

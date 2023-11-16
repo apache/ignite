@@ -1010,7 +1010,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @return Store directory for given cache.
      */
     public static File cacheWorkDir(File storeWorkDir, String cacheDirName) {
-        return new File(storeWorkDir, U.maskForFileName(cacheDirName));
+            return new File(storeWorkDir, cacheDirName);
     }
 
     /**
