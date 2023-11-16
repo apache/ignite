@@ -60,8 +60,8 @@ public class ClientCachePutAllConflictRequest extends ClientCacheDataRequest imp
         map = new LinkedHashMap<>(cnt);
 
         for (int i = 0; i < cnt; i++) {
-            KeyCacheObject key = readCacheObject(reader, true, ctx);
-            CacheObject val = readCacheObject(reader, false, ctx);
+            KeyCacheObject key = readCacheObject(reader, true);
+            CacheObject val = readCacheObject(reader, false);
             GridCacheVersion ver = (GridCacheVersion)reader.readObjectDetached();
             long expireTime = reader.readLong();
 
