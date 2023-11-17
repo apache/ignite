@@ -1141,8 +1141,16 @@ public class ClusterCachesInfo {
         catch (IgniteCheckedException ignored) {
             //No-op.
         }
-        if (!CU.isSystemCache(ccfg.getName()) && !validateStringFilenameUsingContains(storeWorkDir, cacheName))
-            err = new IgniteCheckedException("Invalid cache name " + cacheName);
+
+        boolean isGroupName = ccfg.getGroupName() == null;
+
+        String fileName = isGroupName ? cacheName : ccfg.getGroupName();
+
+        String msg = isGroupName ? "Invalid cache name " : "Invalid cache group name ";
+
+        if (CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration())
+            && !validateFileName(storeWorkDir, fileName))
+            err = new IgniteCheckedException(msg + fileName);
 
         if (err != null) {
             if (persistedCfgs)
@@ -1217,7 +1225,7 @@ public class ClusterCachesInfo {
      *
      * @return {@code True} if there is no errors for creating this directorie.
      */
-    private static boolean validateStringFilenameUsingContains(File storeWorkDir, String cacheDirName) {
+    private static boolean validateFileName(File storeWorkDir, String cacheDirName) {
         try {
             Path expDir = Paths.get(storeWorkDir.getAbsolutePath(), cacheDirName);
             return expDir.getFileName().toFile().getName().equals(cacheDirName);
