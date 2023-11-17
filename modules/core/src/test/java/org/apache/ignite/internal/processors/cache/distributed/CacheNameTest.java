@@ -73,12 +73,13 @@ public class CacheNameTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
     }
 
-    /** */
-    @After
-    public void cleanUp() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
         grid(0).destroyCaches(grid(0).cacheNames());
 
         stopAllGrids();
+
+        super.afterTest();
     }
 
     /** Test cache names. */
