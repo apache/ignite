@@ -25,9 +25,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -56,6 +60,9 @@ import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
  */
 @IgniteExperimental
 public class DumpReader implements Runnable {
+    /** Update rate stats print period. */
+    private static final int UPDATE_RATE_STATS_PRINT_PERIOD = 30_000;
+
     /** Configuration. */
     private final DumpReaderConfiguration cfg;
 
@@ -74,6 +81,8 @@ public class DumpReader implements Runnable {
     /** {@inheritDoc} */
     @Override public void run() {
         ackAsciiLogo();
+
+        boolean runOk = false;
 
         try (Dump dump = new Dump(cfg.dumpRoot(), cfg.keepBinary(), false, log)) {
             DumpConsumer cnsmr = cfg.consumer();
@@ -107,59 +116,55 @@ public class DumpReader implements Runnable {
 
                 ExecutorService execSvc = cfg.threadCount() > 1 ? Executors.newFixedThreadPool(cfg.threadCount()) : null;
 
-                AtomicBoolean skip = new AtomicBoolean(false);
+                int partsCount = processPartitions(grpToNodes, dump, cnsmr, execSvc, 0, true, null, new AtomicInteger(0));
 
-                Map<Integer, Set<Integer>> groups = cfg.skipCopies() ? new HashMap<>() : null;
+                LongAdder recordsProcessed = new LongAdder();
 
-                if (groups != null)
-                    grpToNodes.keySet().forEach(grpId -> groups.put(grpId, new HashSet<>()));
+                AtomicInteger partsProcessed = new AtomicInteger(0);
 
-                for (Map.Entry<Integer, List<String>> e : grpToNodes.entrySet()) {
-                    int grp = e.getKey();
+                new Timer("dump-stats-log-timer", true).scheduleAtFixedRate(
+                    new TimerTask() {
+                        /** */
+                        private long startTime;
 
-                    for (String node : e.getValue()) {
-                        for (int part : dump.partitions(node, grp)) {
-                            if (groups != null && !groups.get(grp).add(part)) {
-                                log.info("Skip copy partition [node=" + node + ", grp=" + grp + ", part=" + part + ']');
+                        /** */
+                        private long lastLogTime;
 
-                                continue;
+                        /** */
+                        private long lastObservedCount;
+
+                        /** {@inheritDoc} */
+                        @Override public void run() {
+                            long now = System.currentTimeMillis();
+                            long count = recordsProcessed.longValue();
+
+                            if (startTime == 0)
+                                startTime = now;
+
+                            if (lastLogTime > 0 && partsProcessed.get() < partsCount) {
+                                long currentRate = 1000L * (count - lastObservedCount) / (now - lastLogTime);
+                                long avgRate = 1000L * count / (now - startTime);
+
+                                log.info("Processed stats [totalRecords=" +
+                                    count +
+                                    ", newRecords=" +
+                                    (count - lastObservedCount) +
+                                    ", avgRate=" +
+                                    avgRate +
+                                    ", currentRate=" +
+                                    currentRate +
+                                    "]");
                             }
 
-                            Runnable consumePart = () -> {
-                                if (skip.get()) {
-                                    if (log.isDebugEnabled()) {
-                                        log.debug("Skip partition due to previous error [node=" + node + ", grp=" + grp +
-                                            ", part=" + part + ']');
-                                    }
-
-                                    return;
-                                }
-
-                                try (DumpedPartitionIterator iter = dump.iterator(node, grp, part)) {
-                                    if (log.isDebugEnabled()) {
-                                        log.debug("Consuming partition [node=" + node + ", grp=" + grp +
-                                            ", part=" + part + ']');
-                                    }
-
-                                    cnsmr.onPartition(grp, part, iter);
-                                }
-                                catch (Exception ex) {
-                                    skip.set(cfg.failFast());
-
-                                    log.error("Error consuming partition [node=" + node + ", grp=" + grp +
-                                        ", part=" + part + ']', ex);
-
-                                    throw new IgniteException(ex);
-                                }
-                            };
-
-                            if (cfg.threadCount() > 1)
-                                execSvc.submit(consumePart);
-                            else
-                                consumePart.run();
+                            lastLogTime = now;
+                            lastObservedCount = count;
                         }
-                    }
-                }
+                    },
+                    0,
+                    UPDATE_RATE_STATS_PRINT_PERIOD
+                );
+
+                processPartitions(grpToNodes, dump, cnsmr, execSvc, partsCount, false, recordsProcessed, partsProcessed);
 
                 if (cfg.threadCount() > 1) {
                     execSvc.shutdown();
@@ -176,10 +181,98 @@ public class DumpReader implements Runnable {
             finally {
                 cnsmr.stop();
             }
+
+            runOk = true;
         }
-        catch (Exception e) {
-            throw new IgniteException(e);
+        catch (Throwable e) {
+            log.error("Error running DumpReader", e);
+
+            e.printStackTrace();
         }
+
+        if (runOk)
+            log.info("\n\nOK all processed\n\n");
+        else
+            log.error("\n\nFinished with errors\n\n");
+    }
+
+    /** */
+    private int processPartitions(Map<Integer,
+        List<String>> grpToNodes,
+        Dump dump,
+        DumpConsumer cnsmr,
+        ExecutorService execSvc,
+        int totalPartitions,
+        boolean justCount,
+        LongAdder recsProcessed,
+        AtomicInteger partsProcessed
+    ) {
+        AtomicBoolean skip = new AtomicBoolean(false);
+
+        Map<Integer, Set<Integer>> groups = cfg.skipCopies() ? new HashMap<>() : null;
+
+        if (groups != null)
+            grpToNodes.keySet().forEach(grpId -> groups.put(grpId, new HashSet<>()));
+
+        for (Map.Entry<Integer, List<String>> e : grpToNodes.entrySet()) {
+            int grp = e.getKey();
+
+            for (String node : e.getValue()) {
+                for (int part : dump.partitions(node, grp)) {
+                    if (groups != null && !groups.get(grp).add(part)) {
+                        log.info("Skip copy partition [node=" + node + ", grp=" + grp + ", part=" + part + ']');
+
+                        continue;
+                    }
+
+                    if (justCount) {
+                        partsProcessed.incrementAndGet();
+
+                        continue;
+                    }
+
+                    Runnable consumePart = () -> {
+                        if (skip.get()) {
+                            if (log.isDebugEnabled()) {
+                                log.debug("Skip partition due to previous error [node=" + node + ", grp=" + grp +
+                                    ", part=" + part + ']');
+                            }
+
+                            return;
+                        }
+
+                        try (DumpedPartitionIterator iter = dump.iterator(node, grp, part, recsProcessed)) {
+                            if (log.isDebugEnabled()) {
+                                log.debug("Consuming partition [node=" + node + ", grp=" + grp +
+                                    ", part=" + part + ']');
+                            }
+
+                            cnsmr.onPartition(grp, part, iter);
+
+                            int partNo = partsProcessed.incrementAndGet();
+
+                            if (log.isInfoEnabled())
+                                log.info("Consumed partitions " + partNo + " of " + totalPartitions);
+                        }
+                        catch (Exception ex) {
+                            skip.set(cfg.failFast());
+
+                            log.error("Error consuming partition [node=" + node + ", grp=" + grp +
+                                ", part=" + part + ']', ex);
+
+                            throw new IgniteException(ex);
+                        }
+                    };
+
+                    if (cfg.threadCount() > 1)
+                        execSvc.submit(consumePart);
+                    else
+                        consumePart.run();
+                }
+            }
+        }
+
+        return partsProcessed.get();
     }
 
     /** */
@@ -225,10 +318,6 @@ public class DumpReader implements Runnable {
 
             if (log instanceof GridLoggerProxy)
                 U.quiet(false, "  ^-- Logging by '" + ((GridLoggerProxy)log).getLoggerInfo() + '\'');
-
-            U.quiet(false,
-                "  ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or \"-v\" to ignite-cdc.{sh|bat}",
-                "");
         }
     }
 }
