@@ -72,7 +72,7 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
      *
      * @param reader Data reader.
      */
-    public ClientDataStreamerStartRequest(BinaryReaderExImpl reader, ClientConnectionContext ctx) {
+    public ClientDataStreamerStartRequest(BinaryReaderExImpl reader) {
         super(reader);
 
         cacheId = reader.readInt();
@@ -81,7 +81,7 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
         perThreadBufferSize = reader.readInt();
         receiverObj = reader.readObjectDetached();
         receiverPlatform = receiverObj == null ? 0 : reader.readByte();
-        entries = ClientDataStreamerReader.read(reader, ctx);
+        entries = ClientDataStreamerReader.read(reader);
     }
 
     /** {@inheritDoc} */
