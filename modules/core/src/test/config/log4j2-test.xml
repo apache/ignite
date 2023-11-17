@@ -89,7 +89,6 @@
         -->
         <Logger name="org" level="INFO"/>
         <Logger name="org.eclipse.jetty" level="INFO"/>
-        <Logger name="org.apache.zookeeper" level="INFO"/>
 
         <Root level="INFO">
             <!--
