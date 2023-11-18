@@ -52,7 +52,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 @RunWith(Parameterized.class)
 public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClientAbstractPartitionAwarenessTest {
     /** */
-    @Parameterized.Parameter(0)
+    @Parameterized.Parameter
     public boolean sslEnabled;
 
     /** */
@@ -64,7 +64,7 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
     public static Collection<?> parameters() {
         return Arrays.asList(new Object[][] {
             {false, PART_CACHE_NAME},
-            {false, PART_CACHE_2_BACKUPS_NF_NAME},
+            {false, PART_CACHE_1_BACKUPS_NF_NAME},
             {true, PART_CACHE_NAME}
         });
     }

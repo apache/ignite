@@ -68,11 +68,11 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
     /** Name of a partitioned cache with 0 backups. */
     protected static final String PART_CACHE_0_BACKUPS_NAME = "partitioned_0_backup_cache";
 
-    /** Name of a partitioned cache with 1 backup. */
+    /** Name of a partitioned cache with 1 backups. */
     protected static final String PART_CACHE_1_BACKUPS_NAME = "partitioned_1_backup_cache";
 
-    /** Name of a partitioned cache with 2 backups and a node filter. */
-    protected static final String PART_CACHE_2_BACKUPS_NF_NAME = "partitioned_2_backup_nodeFilter_cache";
+    /** Name of a partitioned cache with 1 backups and a node filter. */
+    protected static final String PART_CACHE_1_BACKUPS_NF_NAME = "partitioned_1_backup_nodeFilter_cache";
 
     /** Name of a partitioned cache with 3 backups. */
     protected static final String PART_CACHE_3_BACKUPS_NAME = "partitioned_3_backup_cache";
@@ -130,10 +130,10 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
                 .setBackups(3);
 
         CacheConfiguration ccfg6 = new CacheConfiguration<>()
-            .setName(PART_CACHE_2_BACKUPS_NF_NAME)
+            .setName(PART_CACHE_1_BACKUPS_NF_NAME)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setNodeFilter(new NodeOrder2Filter())
-            .setBackups(2);
+            .setNodeFilter(new ConsistentIdNodeFilter())
+            .setBackups(1);
 
         return cfg.setCacheConfiguration(ccfg0, ccfg1, ccfg2, ccfg3, ccfg4, ccfg5, ccfg6);
     }
@@ -403,7 +403,7 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
     /**
      * Excludes node if its consistent id ends with 'Test1'.
      */
-    protected static final class NodeOrder2Filter implements IgnitePredicate<ClusterNode> {
+    protected static final class ConsistentIdNodeFilter implements IgnitePredicate<ClusterNode> {
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
             return !node.consistentId().toString().endsWith("Test1");

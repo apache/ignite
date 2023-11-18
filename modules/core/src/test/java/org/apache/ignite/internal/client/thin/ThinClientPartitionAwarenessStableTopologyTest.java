@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -46,6 +49,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
@@ -194,21 +198,19 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     }
 
     /**
-     * Test affinity awareness for all applicable operation types for partitioned cache with a node filter.
+     * Test affinity awareness for cache with a node filter.
      */
     @Test
     public void testPartitionedWithNodeFilter() throws Exception {
-        CacheConfiguration<?, ?> c1 = Arrays.asList(grid(0).configuration().getCacheConfiguration())
-            .stream().filter(ccfg -> ccfg.getName().endsWith(PART_CACHE_2_BACKUPS_NF_NAME)).findFirst().get();
-
-        doTestCacheWithNodeFilter(false, c1);
+        doTestCachesWithEqualAffinities(Collections.singletonList(PART_CACHE_1_BACKUPS_NF_NAME), null);
     }
 
     /**
-     * Test affinity awareness for all applicable operation types for partitioned cache group with a node filter.
+     * Test affinity awareness for a caches with the same cache group and with a node filter.
+     * Tests equal partitions mappings are grouped in single {@link ClientCachePartitionAwarenessGroup}.
      */
     @Test
-    public void testPartitionedGroupWithNodeFilter() throws Exception {
+    public void testCacheGroupWithNodeFilter() throws Exception {
         CacheConfiguration<?, ?> c1 = new CacheConfiguration<>()
             .setName("groupWithNodeFilter1")
             .setCacheMode(CacheMode.PARTITIONED)
@@ -217,16 +219,41 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
 
         CacheConfiguration<?, ?> c2 = new CacheConfiguration<>(c1).setName("groupWithNodeFilter2");
 
-        doTestCacheWithNodeFilter(true, c1, c2);
+        doTestCachesWithEqualAffinities(Collections.singletonList(PART_CACHE_1_BACKUPS_NF_NAME), Arrays.asList(c1, c2));
     }
 
     /**
-     *
+     * Test equal patritions mappings are grouped in single {@link ClientCachePartitionAwarenessGroup}.
+     * Expects strictly one {@link ClientOperation.CACHE_PARTITIONS} invoked for all the caches.
      */
-    private void doTestCacheWithNodeFilter(boolean createCaches, CacheConfiguration<?, ?>... ccfgs) throws Exception {
-        if (createCaches) {
-            for (CacheConfiguration<?, ?> ccfg : ccfgs)
-                grid(0).createCache(ccfg.setNodeFilter(new NodeOrder2Filter()));
+    @Test
+    public void testPartitionsMappingsGrouped() throws Exception {
+        List<String> caches = Arrays.asList(PART_CACHE_NAME, PART_CACHE_0_BACKUPS_NAME, PART_CACHE_1_BACKUPS_NAME,
+            PART_CACHE_3_BACKUPS_NAME);
+
+        doTestCachesWithEqualAffinities(caches, null);
+    }
+
+    /**
+     * Test affinity awareness for the caches {@code cacheToUse} and {@code cachesToCreate}. Requires equal affinities
+     * for all the caches. Expects strictly one {@link ClientOperation.CACHE_PARTITIONS} invoked for all the caches.
+     *
+     * @param cacheToUse Existing caches to test.
+     * @param cachesToCreate Caches to create for the test. Are removed after.
+     */
+    private void doTestCachesWithEqualAffinities(
+        @Nullable Collection<String> cacheToUse,
+        @Nullable Collection<CacheConfiguration<?, ?>> cachesToCreate
+    ) throws Exception {
+        assert !F.isEmpty(cacheToUse) || !F.isEmpty(cachesToCreate);
+
+        ArrayList<CacheConfiguration<?, ?>> cachesToTest = new ArrayList<>();
+
+        if (!F.isEmpty(cachesToCreate)) {
+            for (CacheConfiguration<?, ?> ccfg : cachesToCreate)
+                grid(0).createCache(ccfg.setNodeFilter(new ConsistentIdNodeFilter()));
+
+            cachesToTest.addAll(cachesToCreate);
         }
 
         awaitPartitionMapExchange();
@@ -240,25 +267,26 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
 
             awaitChannelsInit(0, 1, 2);
 
-            Set<String> requestedCaches = new HashSet<>();
+            if (!F.isEmpty(cacheToUse)) {
+                for (String cacheName : cacheToUse)
+                    cachesToTest.add(grid(0).context().cache().cacheConfiguration(cacheName));
+            }
 
-            for (CacheConfiguration<?, ?> ccfg : ccfgs) {
-                String cacheOrGrpName = F.isEmpty(ccfg.getGroupName()) ? ccfg.getName() : ccfg.getGroupName();
+            AtomicBoolean firstCall = new AtomicBoolean(true);
 
-                testApplicableCache(ccfg.getName(), i -> i, !requestedCaches.contains(cacheOrGrpName));
+            for (CacheConfiguration<?, ?> ccfg : cachesToTest) {
+                log.info("Testing cache '" + ccfg.getName() + "'...");
 
-                requestedCaches.add(cacheOrGrpName);
-
-                opsQueue.clear();
+                testApplicableCache(ccfg.getName(), i -> i, firstCall.getAndSet(false));
             }
         }
         finally {
-            if (createCaches) {
-                for (CacheConfiguration<?, ?> ccfg : ccfgs)
+            if (!F.isEmpty(cachesToCreate)) {
+                for (CacheConfiguration<?, ?> ccfg : cachesToCreate)
                     grid(0).destroyCache(ccfg.getName());
-
-                awaitPartitionMapExchange();
             }
+
+            awaitPartitionMapExchange();
         }
     }
 
@@ -487,12 +515,12 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     /**
      * @param cacheName Cache name.
      * @param keyFactory Key factory function.
-     * @param getPartitionsExpected {@code True} if {@link ClientOperation#CACHE_PARTITIONS} is expected first.
+     * @param partitionsRequestExpected If {@code true}, awaits {@link ClientOperation#CACHE_PARTITIONS} first.
      */
     private void testApplicableCache(
         String cacheName,
         Function<Integer, Object> keyFactory,
-        boolean getPartitionsExpected
+        boolean partitionsRequestExpected
     ) throws Exception {
         ClientCache<Object, Object> clientCache = client.cache(cacheName);
         IgniteInternalCache<Object, Object> igniteCache = grid(0).context().cache().cache(cacheName);
@@ -501,7 +529,7 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
 
         TestTcpClientChannel opCh = affinityChannel(0, igniteCache);
 
-        if (getPartitionsExpected)
+        if (partitionsRequestExpected)
             assertOpOnChannel(null, ClientOperation.CACHE_PARTITIONS);
 
         assertOpOnChannel(opCh, ClientOperation.CACHE_PUT);
