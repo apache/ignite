@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -198,15 +197,15 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     }
 
     /**
-     * Test affinity awareness for cache with a node filter.
+     * Test partition awareness for cache with a node filter.
      */
     @Test
     public void testPartitionedWithNodeFilter() throws Exception {
-        doTestCachesWithEqualAffinities(Collections.singletonList(PART_CACHE_1_BACKUPS_NF_NAME), null);
+        doTestCachesWithEqualAffinities(Arrays.asList(PART_CACHE_1_BACKUPS_NF_NAME), null);
     }
 
     /**
-     * Test affinity awareness for a caches with the same cache group and with a node filter.
+     * Test partition awareness for caches with the same cache group and with a node filter.
      * Tests equal partitions mappings are grouped in single {@link ClientCachePartitionAwarenessGroup}.
      */
     @Test
@@ -215,6 +214,7 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
             .setName("groupWithNodeFilter1")
             .setCacheMode(CacheMode.PARTITIONED)
             .setGroupName("filteredGrp")
+            .setNodeFilter(new ConsistentIdNodeFilter())
             .setBackups(1);
 
         CacheConfiguration<?, ?> c2 = new CacheConfiguration<>(c1).setName("groupWithNodeFilter2");
@@ -223,15 +223,49 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     }
 
     /**
-     * Test equal patritions mappings are grouped in single {@link ClientCachePartitionAwarenessGroup}.
-     * Expects strictly one {@link ClientOperation.CACHE_PARTITIONS} invoked for all the caches.
+     * Test partition awareness for caches with equal affinity.
+     * Tests equal partitions mappings are grouped in single {@link ClientCachePartitionAwarenessGroup}.
      */
     @Test
-    public void testPartitionsMappingsGrouped() throws Exception {
-        List<String> caches = Arrays.asList(PART_CACHE_NAME, PART_CACHE_0_BACKUPS_NAME, PART_CACHE_1_BACKUPS_NAME,
-            PART_CACHE_3_BACKUPS_NAME);
+    public void testPartitionedWithNodeFilter1() throws Exception {
+        doTestCachesWithEqualAffinities(Arrays.asList(PART_CACHE_NAME, PART_CACHE_1_BACKUPS_NAME, PART_CACHE_3_BACKUPS_NAME), null);
+    }
 
-        doTestCachesWithEqualAffinities(caches, null);
+    /**
+     * Tests different affinities mappings are not included in single {@link ClientCachePartitionAwarenessGroup} and
+     * requested anew with {@link ClientOperation.CACHE_PARTITIONS}.
+     */
+    @Test
+    public void testGroupingOfDifferentAffinities() {
+        client.cache(PART_CACHE_NAME).get(0);
+
+        assertOpOnChannel(null, ClientOperation.CACHE_PARTITIONS);
+        assertOpOnChannel(null, ClientOperation.CACHE_GET);
+
+        client.cache(PART_CACHE_1_BACKUPS_NF_NAME).get(0);
+
+        assertOpOnChannel(null, ClientOperation.CACHE_PARTITIONS);
+        assertOpOnChannel(null, ClientOperation.CACHE_GET);
+    }
+
+    /**
+     * Tests different affinities mappings are included in single {@link ClientCachePartitionAwarenessGroup} and
+     * no additional {@link ClientOperation.CACHE_PARTITIONS} request is required.
+     */
+    @Test
+    public void testGroupingOfEqualAffinities() {
+        client.cache(PART_CACHE_NAME).get(0);
+
+        assertOpOnChannel(null, ClientOperation.CACHE_PARTITIONS);
+        assertOpOnChannel(null, ClientOperation.CACHE_GET);
+
+        client.cache(PART_CACHE_NAME).get(0);
+
+        assertOpOnChannel(null, ClientOperation.CACHE_GET);
+
+        client.cache(PART_CACHE_3_BACKUPS_NAME).get(0);
+
+        assertOpOnChannel(null, ClientOperation.CACHE_GET);
     }
 
     /**
@@ -251,7 +285,7 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
 
         if (!F.isEmpty(cachesToCreate)) {
             for (CacheConfiguration<?, ?> ccfg : cachesToCreate)
-                grid(0).createCache(ccfg.setNodeFilter(new ConsistentIdNodeFilter()));
+                grid(0).createCache(ccfg);
 
             cachesToTest.addAll(cachesToCreate);
         }
