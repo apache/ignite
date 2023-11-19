@@ -518,8 +518,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                                     name, oldVal, newVal));
                             }
 
-                            if (newVal != null && newVal)
+                            if (newVal != null && newVal) {
                                 log.warning("CDC was disabled.");
+
+                                if (cctx.cdc() != null)
+                                    cctx.cdc().stop(true);
+                            }
                         });
 
                         dispatcher.registerProperty(cdcDisabled);
@@ -798,6 +802,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
         }
 
+        if (cctx.cdc() != null)
+            cctx.cdc().beforeResumeLogging(filePtr);
+
         // walDisableContext is started after FileWriteAheadLogManager, so we obtain actual walDisableContext ref here.
         synchronized (this) {
             walDisableContext = cctx.walState().walDisableContext();
@@ -835,6 +842,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         if (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0)
             scheduleNextRolloverCheck();
+
+        if (cctx.cdc() != null)
+            cctx.cdc().afterResumeLogging();
     }
 
     /**

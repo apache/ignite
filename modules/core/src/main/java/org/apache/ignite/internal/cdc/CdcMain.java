@@ -50,6 +50,9 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cdc.WalRecordsConsumer.DataEntryIterator;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.CdcManagerRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
@@ -66,6 +69,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
@@ -79,6 +84,8 @@ import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgnitionEx.initializeDefaultMBeanServer;
 import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DATA_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_MANAGER_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_MANAGER_STOP_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.segmentIndex;
@@ -159,6 +166,9 @@ public class CdcMain implements Runnable {
     /** Cdc directory metric name. */
     public static final String CDC_DIR = "CdcDir";
 
+    /** Cdc manager mode state metric name. */
+    public static final String CDC_MANAGER_MODE = "CdcManagerMode";
+
     /** Ignite configuration. */
     private final IgniteConfiguration igniteCfg;
 
@@ -221,6 +231,9 @@ public class CdcMain implements Runnable {
 
     /** Caches state. */
     private Map<Integer, Long> cachesState;
+
+    /** CDC manager mode state. */
+    private volatile CdcManagerMode cdcMgrModeState;
 
     /** Stopped flag. */
     private volatile boolean started;
@@ -312,6 +325,7 @@ public class CdcMain implements Runnable {
                 typesState = state.loadTypesState();
                 mappingsState = state.loadMappingsState();
                 cachesState = state.loadCaches();
+                cdcMgrModeState = state.loadCdcManagerMode();
 
                 if (walState != null) {
                     committedSegmentIdx.value(walState.get1().index());
@@ -395,6 +409,8 @@ public class CdcMain implements Runnable {
         lastSegmentConsumptionTs =
             mreg.longMetric(LAST_SEG_CONSUMPTION_TIME, "Last time of consumption of WAL segment");
         metaUpdate = mreg.histogram(META_UPDATE, new long[] {100, 500, 1000}, "Metadata update time");
+
+        mreg.register(CDC_MANAGER_MODE, () -> cdcMgrModeState.name(), String.class, "CDC manager mode");
     }
 
     /**
@@ -444,7 +460,7 @@ public class CdcMain implements Runnable {
                 try (Stream<Path> cdcFiles = Files.list(cdcDir)) {
                     Set<Path> exists = new HashSet<>();
 
-                    cdcFiles
+                    Iterator<Path> it = cdcFiles
                         .peek(exists::add) // Store files that exists in cdc dir.
                         // Need unseen WAL segments only.
                         .filter(p -> WAL_SEGMENT_FILE_FILTER.accept(p.toFile()) && !seen.contains(p))
@@ -459,8 +475,31 @@ public class CdcMain implements Runnable {
                             }
 
                             lastSgmnt.set(nextSgmnt);
-                        })
-                        .forEach(this::consumeSegment); // Consuming segments.
+                        }).iterator();
+
+                    while (it.hasNext()) {
+                        Path segment = it.next();
+
+                        if (log.isInfoEnabled())
+                            log.info("Processing WAL segment [mode=" + cdcMgrModeState.name() + ", segment=" + segment + ']');
+
+                        lastSegmentConsumptionTs.value(System.currentTimeMillis());
+                        curSegmentIdx.value(segmentIndex(segment));
+
+                        if (cdcMgrModeState == CdcManagerMode.IGNITE_NODE_ACTIVE) {
+                            // Reset passively handled segments handled. Need to consume it again.
+                            if (!consumeSegmentPassively(segment)) {
+                                cdcMgrModeState = CdcManagerMode.CDC_UTILITY_ACTIVE;
+
+                                seen.clear();
+                                lastSgmnt.set(-1);
+
+                                break;
+                            }
+                        }
+                        else
+                            consumeSegment(segment);
+                    }
 
                     seen.removeIf(p -> !exists.contains(p)); // Clean up seen set.
 
@@ -481,27 +520,11 @@ public class CdcMain implements Runnable {
     private void consumeSegment(Path segment) {
         updateMetadata();
 
-        if (log.isInfoEnabled())
-            log.info("Processing WAL segment [segment=" + segment + ']');
-
-        IgniteWalIteratorFactory.IteratorParametersBuilder builder =
-            new IgniteWalIteratorFactory.IteratorParametersBuilder()
-                .log(log)
-                .binaryMetadataFileStoreDir(binaryMeta)
-                .marshallerMappingFileStoreDir(marshaller)
-                .igniteConfigurationModifier((cfg) -> cfg.setPluginProviders(igniteCfg.getPluginProviders()))
-                .keepBinary(cdcCfg.isKeepBinary())
-                .filesOrDirs(segment.toFile())
-                .addFilter((type, ptr) -> type == DATA_RECORD_V2 || type == CDC_DATA_RECORD);
-
-        if (igniteCfg.getDataStorageConfiguration().getPageSize() != 0)
-            builder.pageSize(igniteCfg.getDataStorageConfiguration().getPageSize());
+        IgniteWalIteratorFactory.IteratorParametersBuilder builder = walIteratorParametersBuilder(
+            segment,
+            (type, ptr) -> type == DATA_RECORD_V2 || type == CDC_DATA_RECORD);
 
         long segmentIdx = segmentIndex(segment);
-
-        lastSegmentConsumptionTs.value(System.currentTimeMillis());
-
-        curSegmentIdx.value(segmentIdx);
 
         if (walState != null) {
             if (segmentIdx > walState.get1().index()) {
@@ -537,40 +560,13 @@ public class CdcMain implements Runnable {
                 walState = null;
             }
 
-            boolean interrupted = false;
+            boolean interrupted;
 
             do {
                 boolean commit = consumer.onRecords(iter);
 
-                if (commit) {
-                    T2<WALPointer, Integer> curState = iter.state();
-
-                    if (curState == null)
-                        continue;
-
-                    if (log.isDebugEnabled())
-                        log.debug("Saving state [curState=" + curState + ']');
-
-                    state.saveWal(curState);
-
-                    committedSegmentIdx.value(curState.get1().index());
-                    committedSegmentOffset.value(curState.get1().fileOffset());
-
-                    // Can delete after new file state save.
-                    if (!processedSegments.isEmpty()) {
-                        // WAL segment is a hard link to a segment file in a specifal Change Data Capture folder.
-                        // So we can safely delete it after success processing.
-                        for (Path processedSegment : processedSegments) {
-                            // Can't delete current segment, because state points to it.
-                            if (processedSegment.equals(segment))
-                                continue;
-
-                            Files.delete(processedSegment);
-                        }
-
-                        processedSegments.clear();
-                    }
-                }
+                if (commit)
+                    saveState(iter.state());
 
                 interrupted = Thread.interrupted();
             } while (iter.hasNext() && !interrupted);
@@ -583,6 +579,113 @@ public class CdcMain implements Runnable {
         catch (IgniteCheckedException | IOException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * Consumes and handles Reltime CDC records from the segment.
+     * @param segment Segment to consume.
+     * @return {@code true} if {@link #cdcMgrModeState} didn't change.
+     */
+    private boolean consumeSegmentPassively(Path segment) {
+        IgniteWalIteratorFactory.IteratorParametersBuilder builder = walIteratorParametersBuilder(
+            segment,
+            (type, ptr) -> type == CDC_MANAGER_STOP_RECORD || type == CDC_MANAGER_RECORD);
+
+        try (WALIterator iter = new IgniteWalIteratorFactory(log).iterator(builder)) {
+            boolean interrupted = false;
+
+            while (iter.hasNext() && !interrupted) {
+                IgniteBiTuple<WALPointer, WALRecord> next = iter.next();
+
+                WALRecord walRecord = next.get2();
+
+                switch (walRecord.type()) {
+                    case CDC_MANAGER_RECORD:
+                        walState = ((CdcManagerRecord)walRecord).cdcConsumerState();
+
+                        saveState(walState);
+
+                        break;
+
+                    case CDC_MANAGER_STOP_RECORD:
+                        return false;
+
+                    default:
+                        throw new IgniteException("Unexpected record [type=" + walRecord.type() + ']');
+                }
+
+                interrupted = Thread.interrupted();
+            }
+
+            if (interrupted)
+                throw new IgniteException("Change Data Capture Application interrupted");
+
+            processedSegments.add(segment);
+
+            return true;
+        }
+        catch (IgniteCheckedException | IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** Saves WAL state. */
+    private void saveState(T2<WALPointer, Integer> curState) throws IOException {
+        if (curState == null)
+            return;
+
+        if (log.isDebugEnabled())
+            log.debug("Saving state [curState=" + curState + ']');
+
+        state.saveWal(curState);
+
+        committedSegmentIdx.value(curState.get1().index());
+        committedSegmentOffset.value(curState.get1().fileOffset());
+
+        // Can delete after new file state save.
+        if (!processedSegments.isEmpty()) {
+            Set<Path> processingSegments = new HashSet<>(processedSegments);
+
+            // WAL segment is a hard link to a segment file in a specifal Change Data Capture folder.
+            // So we can safely delete it after success processing.
+            for (Path processedSegment : processedSegments) {
+                // Can't delete current segment, because state points to it.
+                if (segmentIndex(processedSegment) >= curState.get1().index())
+                    continue;
+
+                Files.delete(processedSegment);
+
+                processingSegments.remove(processedSegment);
+            }
+
+            processedSegments.clear();
+            processedSegments.addAll(processingSegments);
+        }
+    }
+
+    /**
+     * Prepares WAL iterator parameters builder for particular segment.
+     *
+     * @param segment Segment to build WAL iterator for.
+     * @param recTypeFilter WAL records filter.
+     */
+    private IgniteWalIteratorFactory.IteratorParametersBuilder walIteratorParametersBuilder(
+        Path segment,
+        IgniteBiPredicate<WALRecord.RecordType, WALPointer> recTypeFilter
+    ) {
+        IgniteWalIteratorFactory.IteratorParametersBuilder builder = new IgniteWalIteratorFactory.IteratorParametersBuilder()
+            .log(log)
+            .binaryMetadataFileStoreDir(binaryMeta)
+            .marshallerMappingFileStoreDir(marshaller)
+            .igniteConfigurationModifier((cfg) -> cfg.setPluginProviders(igniteCfg.getPluginProviders()))
+            .keepBinary(cdcCfg.isKeepBinary())
+            .filesOrDirs(segment.toFile())
+            .addFilter(recTypeFilter);
+
+        if (igniteCfg.getDataStorageConfiguration().getPageSize() != 0)
+            builder.pageSize(igniteCfg.getDataStorageConfiguration().getPageSize());
+
+        return builder;
     }
 
     /** Metadata update. */

@@ -406,14 +406,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
                     if (segs != null) {
                         assert segs.size() == 1;
 
-                        SegmentedRingByteBuffer.ReadSegment seg = segs.get(0);
-
-                        int off = seg.buffer().position();
-                        int len = seg.buffer().limit() - off;
-
-                        fsync((MappedByteBuffer)buf.buf, off, len);
-
-                        seg.release();
+                        fsyncReadSegment(segs.get(0));
                     }
                 }
                 else
@@ -499,7 +492,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
                     if (segs != null) {
                         assert segs.size() == 1;
 
-                        segs.get(0).release();
+                        fsyncReadSegment(segs.get(0));
                     }
                 }
 
@@ -535,6 +528,23 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
         }
         else
             return false;
+    }
+
+    /**
+     * Make fsync for part of the WAL segment file. And collect it to CDC if enabled.
+     *
+     * @param seg Part of the WAL segment file.
+     */
+    private void fsyncReadSegment(SegmentedRingByteBuffer.ReadSegment seg) throws IgniteCheckedException {
+        int off = seg.buffer().position();
+        int len = seg.buffer().limit() - off;
+
+        fsync((MappedByteBuffer)buf.buf, off, len);
+
+        if (cctx.cdc() != null)
+            cctx.cdc().collect(buf.buf, off, off + len);
+
+        seg.release();
     }
 
     /**

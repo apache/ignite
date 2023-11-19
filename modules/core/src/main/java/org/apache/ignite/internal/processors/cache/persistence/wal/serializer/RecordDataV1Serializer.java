@@ -37,6 +37,8 @@ import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
+import org.apache.ignite.internal.pagemem.wal.record.CdcManagerRecord;
+import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -541,6 +543,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return 4 + 8 + 1;
 
             case SWITCH_SEGMENT_RECORD:
+            case CDC_MANAGER_STOP_RECORD:
                 return 0;
 
             case TX_RECORD:
@@ -566,6 +569,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case INCREMENTAL_SNAPSHOT_FINISH_RECORD:
                 return ((IncrementalSnapshotFinishRecord)record).dataSize();
+
+            case CDC_MANAGER_RECORD:
+                return 8 + 4 + 4 + 4;
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
@@ -1323,6 +1329,22 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case CDC_MANAGER_RECORD:
+                long walSegIdx = in.readLong();
+                int fileOff = in.readInt();
+                int size = in.readInt();
+
+                int entryIdx = in.readInt();
+
+                res = new CdcManagerRecord(new T2<>(new WALPointer(walSegIdx, fileOff, size), entryIdx));
+
+                break;
+
+            case CDC_MANAGER_STOP_RECORD:
+                res = new CdcManagerStopRecord();
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + type);
         }
@@ -1912,6 +1934,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case SWITCH_SEGMENT_RECORD:
+            case CDC_MANAGER_STOP_RECORD:
                 break;
 
             case MASTER_KEY_CHANGE_RECORD_V2:
@@ -1999,6 +2022,17 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 buf.putInt(snpName.length);
                 buf.put(snpName);
+
+                break;
+
+            case CDC_MANAGER_RECORD:
+                T2<WALPointer, Integer> state = ((CdcManagerRecord)rec).cdcConsumerState();
+
+                buf.putLong(state.get1().index());
+                buf.putInt(state.get1().fileOffset());
+                buf.putInt(state.get1().length());
+
+                buf.putInt(state.get2());
 
                 break;
 
