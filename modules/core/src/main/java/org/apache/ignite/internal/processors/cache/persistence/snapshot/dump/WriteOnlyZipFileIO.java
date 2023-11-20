@@ -37,7 +37,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  * {@link FileIO} that allows to write ZIP compressed file.
  * It doesn't support reading or random access.
- * It is not designed for multithreaded writing.
+ * It is not designed for writing concurrently from several threads.
  */
 public class WriteOnlyZipFileIO extends AbstractFileIO {
     /** Buffer size */

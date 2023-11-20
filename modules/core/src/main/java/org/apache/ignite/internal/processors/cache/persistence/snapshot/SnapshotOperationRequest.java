@@ -94,7 +94,7 @@ public class SnapshotOperationRequest implements Serializable {
     /** If {@code true} then create dump. */
     private final boolean dump;
 
-    /** If {@code true} then zip the file. */
+    /** If {@code true} then compress the file. */
     private final boolean compress;
 
     /**
