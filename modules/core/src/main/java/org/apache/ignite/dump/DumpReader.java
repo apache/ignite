@@ -116,7 +116,17 @@ public class DumpReader implements Runnable {
 
                 ExecutorService execSvc = cfg.threadCount() > 1 ? Executors.newFixedThreadPool(cfg.threadCount()) : null;
 
-                int partsCount = processPartitions(grpToNodes, dump, cnsmr, execSvc, 0, true, null, new AtomicInteger(0));
+                Map<Integer, Set<Integer>> groups = cfg.skipCopies() ? new HashMap<>() : null;
+
+                if (groups != null)
+                    grpToNodes.keySet().forEach(grpId -> groups.put(grpId, new HashSet<>()));
+
+                int partsCount = grpToNodes.entrySet().stream().mapToInt(e ->
+                        (int)e.getValue().stream()
+                            .flatMap(node -> dump.partitions(node, e.getKey()).stream())
+                            .filter(part -> groups == null || groups.get(e.getKey()).add(part))
+                            .count())
+                    .sum();
 
                 LongAdder recordsProcessed = new LongAdder();
 
@@ -164,7 +174,62 @@ public class DumpReader implements Runnable {
                     UPDATE_RATE_STATS_PRINT_PERIOD
                 );
 
-                processPartitions(grpToNodes, dump, cnsmr, execSvc, partsCount, false, recordsProcessed, partsProcessed);
+                AtomicBoolean skip = new AtomicBoolean(false);
+
+                if (groups != null)
+                    grpToNodes.keySet().forEach(grpId -> groups.put(grpId, new HashSet<>()));
+
+                for (Map.Entry<Integer, List<String>> e : grpToNodes.entrySet()) {
+                    int grp = e.getKey();
+
+                    for (String node : e.getValue()) {
+                        for (int part : dump.partitions(node, grp)) {
+                            if (groups != null && !groups.get(grp).add(part)) {
+                                log.info("Skip copy partition [node=" + node + ", grp=" + grp + ", part=" + part + ']');
+
+                                continue;
+                            }
+
+                            Runnable consumePart = () -> {
+                                if (skip.get()) {
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Skip partition due to previous error [node=" + node + ", grp=" + grp +
+                                            ", part=" + part + ']');
+                                    }
+
+                                    return;
+                                }
+
+                                try (DumpedPartitionIterator iter = dump.iterator(node, grp, part, recordsProcessed)) {
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Consuming partition [node=" + node + ", grp=" + grp +
+                                            ", part=" + part + ']');
+                                    }
+
+                                    cnsmr.onPartition(grp, part, iter);
+
+                                    int partNo = partsProcessed.incrementAndGet();
+
+                                    if (log.isInfoEnabled())
+                                        log.info("Consumed partitions " + partNo + " of " + partsCount);
+                                }
+                                catch (Exception ex) {
+                                    skip.set(cfg.failFast());
+
+                                    log.error("Error consuming partition [node=" + node + ", grp=" + grp +
+                                        ", part=" + part + ']', ex);
+
+                                    throw new IgniteException(ex);
+                                }
+                            };
+
+                            if (cfg.threadCount() > 1)
+                                execSvc.submit(consumePart);
+                            else
+                                consumePart.run();
+                        }
+                    }
+                }
 
                 if (cfg.threadCount() > 1) {
                     execSvc.shutdown();
@@ -194,85 +259,6 @@ public class DumpReader implements Runnable {
             log.info("\n\nOK all processed\n\n");
         else
             log.error("\n\nFinished with errors\n\n");
-    }
-
-    /** */
-    private int processPartitions(Map<Integer,
-        List<String>> grpToNodes,
-        Dump dump,
-        DumpConsumer cnsmr,
-        ExecutorService execSvc,
-        int totalPartitions,
-        boolean justCount,
-        LongAdder recsProcessed,
-        AtomicInteger partsProcessed
-    ) {
-        AtomicBoolean skip = new AtomicBoolean(false);
-
-        Map<Integer, Set<Integer>> groups = cfg.skipCopies() ? new HashMap<>() : null;
-
-        if (groups != null)
-            grpToNodes.keySet().forEach(grpId -> groups.put(grpId, new HashSet<>()));
-
-        for (Map.Entry<Integer, List<String>> e : grpToNodes.entrySet()) {
-            int grp = e.getKey();
-
-            for (String node : e.getValue()) {
-                for (int part : dump.partitions(node, grp)) {
-                    if (groups != null && !groups.get(grp).add(part)) {
-                        log.info("Skip copy partition [node=" + node + ", grp=" + grp + ", part=" + part + ']');
-
-                        continue;
-                    }
-
-                    if (justCount) {
-                        partsProcessed.incrementAndGet();
-
-                        continue;
-                    }
-
-                    Runnable consumePart = () -> {
-                        if (skip.get()) {
-                            if (log.isDebugEnabled()) {
-                                log.debug("Skip partition due to previous error [node=" + node + ", grp=" + grp +
-                                    ", part=" + part + ']');
-                            }
-
-                            return;
-                        }
-
-                        try (DumpedPartitionIterator iter = dump.iterator(node, grp, part, recsProcessed)) {
-                            if (log.isDebugEnabled()) {
-                                log.debug("Consuming partition [node=" + node + ", grp=" + grp +
-                                    ", part=" + part + ']');
-                            }
-
-                            cnsmr.onPartition(grp, part, iter);
-
-                            int partNo = partsProcessed.incrementAndGet();
-
-                            if (log.isInfoEnabled())
-                                log.info("Consumed partitions " + partNo + " of " + totalPartitions);
-                        }
-                        catch (Exception ex) {
-                            skip.set(cfg.failFast());
-
-                            log.error("Error consuming partition [node=" + node + ", grp=" + grp +
-                                ", part=" + part + ']', ex);
-
-                            throw new IgniteException(ex);
-                        }
-                    };
-
-                    if (cfg.threadCount() > 1)
-                        execSvc.submit(consumePart);
-                    else
-                        consumePart.run();
-                }
-            }
-        }
-
-        return partsProcessed.get();
     }
 
     /** */
