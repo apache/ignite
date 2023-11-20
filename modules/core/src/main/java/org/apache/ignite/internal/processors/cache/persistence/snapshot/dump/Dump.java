@@ -264,8 +264,6 @@ public class Dump implements AutoCloseable {
 
             Set<Object> partKeys = new HashSet<>();
 
-            boolean countingEnabled;
-
             /** {@inheritDoc} */
             @Override public boolean hasNext() {
                 advance();
