@@ -33,7 +33,6 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -240,10 +239,9 @@ public class Dump implements AutoCloseable {
     /**
      * @param node Node directory name.
      * @param group Group id.
-     * @param recordsProcessed Total records processed statistics summer.
      * @return Dump iterator.
      */
-    public DumpedPartitionIterator iterator(String node, int group, int part, LongAdder recordsProcessed) {
+    public DumpedPartitionIterator iterator(String node, int group, int part) {
         FileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
         FileIO dumpFile;
@@ -306,21 +304,6 @@ public class Dump implements AutoCloseable {
 
                     if (next == null)
                         partKeys = null; // Let GC do the rest.
-
-                    if (recordsProcessed != null) {
-                        /*
-                         * First call of advance() happens before consumer processes a record and counter won't increase.
-                         * The counter will increase when consumer processes a record and after then advance() executed.
-                         * After last record processing next invocation of advance() will increase the counter and disable counting.
-                         */
-                        if (countingEnabled)
-                            recordsProcessed.increment();
-                        else
-                            countingEnabled = true;
-
-                        if (next == null)
-                            countingEnabled = false;
-                    }
                 }
                 catch (IOException | IgniteCheckedException e) {
                     throw new IgniteException(e);

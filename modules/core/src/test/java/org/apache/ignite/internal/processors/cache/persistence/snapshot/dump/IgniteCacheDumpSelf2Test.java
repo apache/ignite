@@ -235,7 +235,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
             assertThrows(
                 null,
-                () -> dump.iterator(nodes.get(0), CU.cacheId(DEFAULT_CACHE_NAME), 0, null).next(),
+                () -> dump.iterator(nodes.get(0), CU.cacheId(DEFAULT_CACHE_NAME), 0).next(),
                 IgniteException.class,
                 "Data corrupted"
             );

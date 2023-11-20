@@ -200,7 +200,40 @@ public class DumpReader implements Runnable {
                                     return;
                                 }
 
-                                try (DumpedPartitionIterator iter = dump.iterator(node, grp, part, recordsProcessed)) {
+                                try (DumpedPartitionIterator iter = new DumpedPartitionIterator() {
+                                    /** */
+                                    final DumpedPartitionIterator srcIter = dump.iterator(node, grp, part);
+
+                                    /** */
+                                    final AtomicBoolean consumerProcessingEntry = new AtomicBoolean(false);
+
+                                    /** {@inheritDoc } */
+                                    @Override public boolean hasNext() {
+                                        if (consumerProcessingEntry.compareAndSet(true, false))
+                                            recordsProcessed.increment();
+
+                                        return srcIter.hasNext();
+                                    }
+
+                                    /** {@inheritDoc } */
+                                    @Override public DumpEntry next() {
+                                        if (consumerProcessingEntry.compareAndSet(true, false)) {
+                                            // Consumer didn't execute hasNext()
+                                            recordsProcessed.increment();
+                                        }
+
+                                        DumpEntry next = srcIter.next();
+
+                                        consumerProcessingEntry.set(true);
+
+                                        return next;
+                                    }
+
+                                    /** {@inheritDoc } */
+                                    @Override public void close() throws Exception {
+                                        srcIter.close();
+                                    }
+                                }) {
                                     if (log.isDebugEnabled()) {
                                         log.debug("Consuming partition [node=" + node + ", grp=" + grp +
                                             ", part=" + part + ']');
