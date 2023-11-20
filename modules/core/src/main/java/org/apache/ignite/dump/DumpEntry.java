@@ -23,7 +23,7 @@ import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Single cache entry from dump.
- * 
+ *
  * @see Dump#iterator(String, int, int)
  * @see DumpConsumer#onPartition(int, int, Iterator)
  * @see org.apache.ignite.IgniteSnapshot#createDump(String)
