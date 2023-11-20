@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.File;
 import java.io.Serializable;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -98,6 +96,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CLUSTER_READ_ONLY_MODE_ERROR_MSG_FORMAT;
 import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.validateIncomingConfiguration;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
 
 /**
@@ -1134,23 +1133,11 @@ public class ClusterCachesInfo {
             }
         }
 
-        File storeWorkDir = null;
-        try {
-            storeWorkDir = ctx.pdsFolderResolver().resolveFolders().persistentStoreNodePath();
+        if (containsInvalidFileNameChars(ccfg)) {
+            err = new IgniteCheckedException("Cache start failed. Cache or group name contains the characters " +
+                "that are not allowed in file names [cache= + cacheName " +
+            (ccfg.getGroupName() == null ? "" : ", group=" + ccfg.getGroupName()) + ']');
         }
-        catch (IgniteCheckedException ignored) {
-            //No-op.
-        }
-
-        boolean isGroupName = ccfg.getGroupName() == null;
-
-        String fileName = isGroupName ? cacheName : ccfg.getGroupName();
-
-        String msg = isGroupName ? "Invalid cache name " : "Invalid cache group name ";
-
-        if (CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration())
-            && !validateFileName(storeWorkDir, fileName))
-            err = new IgniteCheckedException(msg + fileName);
 
         if (err != null) {
             if (persistedCfgs)
@@ -1220,19 +1207,17 @@ public class ClusterCachesInfo {
     /**
      * Validate name of new cache.
      *
-     * @param storeWorkDir Path for creation.
-     * @param cacheDirName Cache's name of user.
+     * @param ccfg Configuration of Cache.
      *
      * @return {@code True} if there is no errors for creating this directorie.
      */
-    private static boolean validateFileName(File storeWorkDir, String cacheDirName) {
-        try {
-            Path expDir = Paths.get(storeWorkDir.getAbsolutePath(), cacheDirName);
-            return expDir.getFileName().toFile().getName().equals(cacheDirName);
-        }
-        catch (Exception e) {
+    private boolean containsInvalidFileNameChars(CacheConfiguration<?, ?> ccfg) {
+        if (!CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration()))
             return false;
-        }
+
+        String expDir = cacheDirName(ccfg);
+
+        return !expDir.equals(Paths.get(expDir).toFile().getName());
     }
 
     /**

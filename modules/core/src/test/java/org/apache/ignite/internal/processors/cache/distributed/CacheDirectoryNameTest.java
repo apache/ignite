@@ -18,37 +18,37 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.Collection;
-import org.apache.ignite.IgniteCache;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.util.lang.GridFunc.asList;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 
 /**
- * Test create cache in persistent data region with custom name
+ * Test cache directory name validation.
  */
 @RunWith(Parameterized.class)
-public class CacheNameTest extends GridCommonAbstractTest {
+public class CacheDirectoryNameTest extends GridCommonAbstractTest {
     /** */
     @Parameterized.Parameter
     public boolean persistenceEnabled;
 
     /** */
     @Parameterized.Parameter(1)
-    public boolean isGroupName;
+    public boolean checkGroup;
 
     /** @return Test parameters. */
     @Parameterized.Parameters(name = "persistenceEnabled={0}, isGroupName={1}")
@@ -68,62 +68,46 @@ public class CacheNameTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        cleanPersistenceDir();
-
         super.beforeTestsStarted();
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).destroyCaches(grid(0).cacheNames());
-
         stopAllGrids();
 
-        super.afterTest();
+        cleanPersistenceDir();
     }
 
-    /** Test cache names. */
+    /** */
     @Test
-    public void testCreateCacheWithPersistenceAndCustomName() throws Exception {
-        startGrid(0);
+    public void testCacheDirectoryContainsInvalidFileNameChars() throws Exception {
+        IgniteEx srv = startGrid();
 
-        grid(0).cluster().state(ClusterState.ACTIVE);
+        srv.cluster().state(ClusterState.ACTIVE);
 
-        F.asMap(
-            "/\"", false,
-            "app/cache1", false,
-            "/", false,
-            "app@cache1", true,
-            "app>cache1", U.isLinux() || U.isMacOs())
-            .forEach(this::checkCreate);
-    }
+        List<String> illegalNames = F.asList("/", "a/b");
 
-    /**
-     * Checking cache names.
-     *
-     * @param name Name cache or cache group.
-     * @param result Expected result of creating the directory {@code true} if name is valid.
-     */
-    private void checkCreate(String name, boolean result) {
-        CacheConfiguration<Integer, String> cfg = new CacheConfiguration<Integer, String>()
-            .setName(name);
+        if (U.isWindows())
+            illegalNames.add("a>b");
 
-        if (isGroupName)
-            cfg.setGroupName(name);
+        for (String name : illegalNames) {
+            CacheConfiguration<Object, Object> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
-        if (result || !persistenceEnabled) {
-            IgniteCache<Integer, String> cache = grid(0).createCache(cfg);
+            if (checkGroup)
+                cfg.setGroupName(name);
+            else
+                cfg.setName(name);
 
-            assertEquals(name, cache.getName());
-
-            if (isGroupName)
-                assertEquals(name, cache.getConfiguration(CacheConfiguration.class).getGroupName());
-        }
-        else {
-            String msg = isGroupName ? "Invalid cache group name " : "Invalid cache name ";
-
-            GridTestUtils.assertThrows(log, () -> grid(0).createCache(cfg),
-                IgniteCheckedException.class, msg + name);
+            if (persistenceEnabled) {
+                assertThrows(log, () -> srv.createCache(cfg), IgniteCheckedException.class,
+                    "Cache start failed. Cache or group name contains the characters that are not allowed in file names");
+            }
+            else {
+                srv.createCache(cfg);
+                srv.destroyCache(cfg.getName());
+            }
         }
     }
 }
