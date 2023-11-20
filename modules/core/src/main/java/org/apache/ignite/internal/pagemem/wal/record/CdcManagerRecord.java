@@ -38,7 +38,7 @@ public class CdcManagerRecord extends WALRecord {
     }
 
     /** @return CDC consumer WAL state. */
-    public T2<WALPointer, Integer> cdcConsumerState() {
+    public T2<WALPointer, Integer> walState() {
         return state;
     }
 

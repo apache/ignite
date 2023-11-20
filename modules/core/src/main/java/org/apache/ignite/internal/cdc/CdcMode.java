@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.cdc;
 
 /** CDC modes. */
-public enum CdcManagerMode {
-    /** CDC events handled by {@link CdcManager} within Ignite node. */
+public enum CdcMode {
+    /** CDC events are handled by {@link CdcManager} within Ignite node. */
     IGNITE_NODE_ACTIVE,
 
-    /** CDC events handled by {@link CdcMain} utility. */
+    /** CDC events are handled by {@link CdcMain} utility. */
     CDC_UTILITY_ACTIVE
 }

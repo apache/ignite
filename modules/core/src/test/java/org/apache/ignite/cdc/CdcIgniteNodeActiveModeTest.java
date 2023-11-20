@@ -36,7 +36,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.cdc.CdcManager;
-import org.apache.ignite.internal.cdc.CdcManagerMode;
+import org.apache.ignite.internal.cdc.CdcMode;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerRecord;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
@@ -57,7 +57,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.internal.cdc.CdcMain.CDC_MANAGER_MODE;
+import static org.apache.ignite.internal.cdc.CdcMain.CDC_MODE;
 import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_IDX;
 import static org.apache.ignite.internal.cdc.CdcMain.CUR_SEG_IDX;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
@@ -66,7 +66,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-public class CdcMainManagerModeTest extends AbstractCdcTest {
+public class CdcIgniteNodeActiveModeTest extends AbstractCdcTest {
     /** */
     private IgniteEx ign;
 
@@ -119,8 +119,8 @@ public class CdcMainManagerModeTest extends AbstractCdcTest {
 
     /** */
     @Test
-    public void testCdcMetricsInManagerMode() throws Exception {
-        awaitManagerModeValue(CdcManagerMode.IGNITE_NODE_ACTIVE);
+    public void testCdcMetricsIgniteNodeActiveMode() throws Exception {
+        awaitCdcModeValue(CdcMode.IGNITE_NODE_ACTIVE);
 
         IgniteCache<Integer, User> cache = ign.cache(DEFAULT_CACHE_NAME);
 
@@ -142,27 +142,27 @@ public class CdcMainManagerModeTest extends AbstractCdcTest {
         assertTrue(GridTestUtils.waitForCondition(() ->
             mreg.<LongMetric>findMetric(COMMITTED_SEG_IDX).value() > 1, 10_000, 100));
 
-        awaitManagerModeValue(CdcManagerMode.IGNITE_NODE_ACTIVE);
+        awaitCdcModeValue(CdcMode.IGNITE_NODE_ACTIVE);
     }
 
     /** */
     @Test
-    public void testManagerModeDisabled() throws Exception {
+    public void testSwitchToCdcUtilityActiveMode() throws Exception {
         writeCdcManagerStopCdcRecord();
 
         rollSegment();
 
-        awaitManagerModeValue(CdcManagerMode.CDC_UTILITY_ACTIVE);
+        awaitCdcModeValue(CdcMode.CDC_UTILITY_ACTIVE);
     }
 
     /** */
     @Test
-    public void testManagerModeWritesByIgniteNodeOnly() throws Exception {
+    public void testCdcModeWritesByIgniteNodeOnly() throws Exception {
         writeCdcManagerStopCdcRecord();
 
         rollSegment();
 
-        awaitManagerModeValue(CdcManagerMode.CDC_UTILITY_ACTIVE);
+        awaitCdcModeValue(CdcMode.CDC_UTILITY_ACTIVE);
 
         cdcMainFut.cancel();
 
@@ -170,7 +170,7 @@ public class CdcMainManagerModeTest extends AbstractCdcTest {
 
         cdcMainFut = runAsync(cdcMain);
 
-        awaitManagerModeValue(CdcManagerMode.IGNITE_NODE_ACTIVE);
+        awaitCdcModeValue(CdcMode.IGNITE_NODE_ACTIVE);
     }
 
     /** */
@@ -194,7 +194,7 @@ public class CdcMainManagerModeTest extends AbstractCdcTest {
 
         rollSegment();
 
-        awaitManagerModeValue(CdcManagerMode.CDC_UTILITY_ACTIVE);
+        awaitCdcModeValue(CdcMode.CDC_UTILITY_ACTIVE);
 
         checkConsumerData(expUsers);
 
@@ -279,7 +279,7 @@ public class CdcMainManagerModeTest extends AbstractCdcTest {
 
         rollSegment();
 
-        awaitManagerModeValue(CdcManagerMode.CDC_UTILITY_ACTIVE);
+        awaitCdcModeValue(CdcMode.CDC_UTILITY_ACTIVE);
 
         checkConsumerData(expUsers);
 
@@ -332,11 +332,11 @@ public class CdcMainManagerModeTest extends AbstractCdcTest {
     }
 
     /** */
-    private void awaitManagerModeValue(CdcManagerMode expVal) throws IgniteInterruptedCheckedException {
+    private void awaitCdcModeValue(CdcMode expVal) throws IgniteInterruptedCheckedException {
         assertTrue(waitForCondition(() -> {
             try {
                 ObjectMetric<String> m = GridTestUtils.<StandaloneGridKernalContext>getFieldValue(cdcMain, "kctx")
-                    .metric().registry("cdc").findMetric(CDC_MANAGER_MODE);
+                    .metric().registry("cdc").findMetric(CDC_MODE);
 
                 return expVal.name().equals(m.value());
             }

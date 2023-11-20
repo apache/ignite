@@ -41,13 +41,13 @@ import org.jetbrains.annotations.Nullable;
  *         {@link CdcMain} should start consume records instead since last consumed {@link CdcManagerRecord}.
  *     </li>
  *     <li>
- *         The current behavior of {@link CdcManager} is persisted within {@link CdcConsumerState#saveCdcManagerMode(CdcManagerMode)}.
- *         After the mode set to {@link CdcManagerMode#CDC_UTILITY_ACTIVE} it will not reset.
+ *         The current behavior of {@link CdcManager} is persisted within {@link CdcConsumerState#saveCdcMode(CdcMode)}.
+ *         After the mode set to {@link CdcMode#CDC_UTILITY_ACTIVE} it will not reset.
  *     </li>
  * </ul>
  *
  * @see CdcConsumer#onEvents(Iterator)
- * @see CdcConsumerState#saveCdcManagerMode(CdcManagerMode)
+ * @see CdcConsumerState#saveCdcMode(CdcMode)
  */
 public interface CdcManager extends GridCacheSharedManager {
     /**

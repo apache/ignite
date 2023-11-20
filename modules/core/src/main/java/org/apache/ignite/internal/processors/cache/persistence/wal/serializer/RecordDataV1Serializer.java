@@ -2026,7 +2026,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case CDC_MANAGER_RECORD:
-                T2<WALPointer, Integer> state = ((CdcManagerRecord)rec).cdcConsumerState();
+                T2<WALPointer, Integer> state = ((CdcManagerRecord)rec).walState();
 
                 buf.putLong(state.get1().index());
                 buf.putInt(state.get1().fileOffset());

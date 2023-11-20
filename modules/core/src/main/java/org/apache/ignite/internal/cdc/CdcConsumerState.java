@@ -73,13 +73,13 @@ public class CdcConsumerState {
 
     /**
      * The file stores state of CDC mode. {@link CdcManager} creates the file and writes into it, {@link CdcMain} only reads it.
-     * Content of the file is a boolean value:
+     * Content of the file is a {@link CdcMode} value:
      * <ul>
-     *     <li>{@code false} means that {@link CdcMain} captures data and delivers them to {@link CdcConsumer}.</li>
-     *     <li>{@code true} means that {@link CdcManager} captures data within Ignite node, while {@link CdcMain} is passive.</li>
+     *     <li>{@link CdcMode#CDC_UTILITY_ACTIVE} means that {@link CdcMain} utility captures data.</li>
+     *     <li>{@link CdcMode#IGNITE_NODE_ACTIVE} means that {@link CdcManager} captures data within Ignite node.</li>
      * </ul>
      */
-    public static final String CDC_MANAGER_MODE_FILE_NAME = "cdc-manager-mode" + FILE_SUFFIX;
+    public static final String CDC_MODE_FILE_NAME = "cdc-mode" + FILE_SUFFIX;
 
     /** Log. */
     private final IgniteLogger log;
@@ -109,10 +109,10 @@ public class CdcConsumerState {
     private final Path tmpCaches;
 
     /** CDC manager mode state file. */
-    private final Path cdcMgrMode;
+    private final Path cdcMode;
 
     /** Temp CDC manager mode state file. */
-    private final Path tmpCdcMgrMode;
+    private final Path tmpCdcMode;
 
     /**
      * @param stateDir State directory.
@@ -127,8 +127,8 @@ public class CdcConsumerState {
         tmpMappings = stateDir.resolve(MAPPINGS_STATE_FILE_NAME + TMP_SUFFIX);
         caches = stateDir.resolve(CACHES_STATE_FILE_NAME);
         tmpCaches = stateDir.resolve(CACHES_STATE_FILE_NAME + TMP_SUFFIX);
-        cdcMgrMode = stateDir.resolve(CDC_MANAGER_MODE_FILE_NAME);
-        tmpCdcMgrMode = stateDir.resolve(CDC_MANAGER_MODE_FILE_NAME + TMP_SUFFIX);
+        cdcMode = stateDir.resolve(CDC_MODE_FILE_NAME);
+        tmpCdcMode = stateDir.resolve(CDC_MODE_FILE_NAME + TMP_SUFFIX);
     }
 
     /**
@@ -298,24 +298,24 @@ public class CdcConsumerState {
     }
 
     /**
-     * Loads CDC manager mode state from file.
+     * Loads CDC mode state from file.
      *
-     * @return CDC manager mode state.
+     * @return CDC mode state.
      */
-    public CdcManagerMode loadCdcManagerMode() {
-        CdcManagerMode state = load(cdcMgrMode, () -> CdcManagerMode.IGNITE_NODE_ACTIVE);
+    public CdcMode loadCdcMode() {
+        CdcMode state = load(cdcMode, () -> CdcMode.IGNITE_NODE_ACTIVE);
 
-        log.info("CDC manager mode loaded [" + state + ']');
+        log.info("CDC mode loaded [" + state + ']');
 
         return state;
     }
 
     /**
-     * Saves CDC manager mode state to file.
+     * Saves CDC mode state to file.
      *
-     * @param mode CDC manager mode.
+     * @param mode CDC mode.
      */
-    public void saveCdcManagerMode(CdcManagerMode mode) throws IOException {
-        save(mode, tmpCdcMgrMode, cdcMgrMode);
+    public void saveCdcMode(CdcMode mode) throws IOException {
+        save(mode, tmpCdcMode, cdcMode);
     }
 }

@@ -49,7 +49,7 @@ public class FileCdcManager extends GridCacheSharedManagerAdapter implements Cdc
 
             CdcConsumerState state = new CdcConsumerState(log, stateDir);
 
-            state.saveCdcManagerMode(CdcManagerMode.CDC_UTILITY_ACTIVE);
+            state.saveCdcMode(CdcMode.CDC_UTILITY_ACTIVE);
 
             writeStopRecord = true;
         }

@@ -165,8 +165,8 @@ public class CdcMain implements Runnable {
     /** Cdc directory metric name. */
     public static final String CDC_DIR = "CdcDir";
 
-    /** Cdc manager mode state metric name. */
-    public static final String CDC_MANAGER_MODE = "CdcManagerMode";
+    /** Cdc mode metric name. */
+    public static final String CDC_MODE = "CdcMode";
 
     /** Ignite configuration. */
     private final IgniteConfiguration igniteCfg;
@@ -231,8 +231,8 @@ public class CdcMain implements Runnable {
     /** Caches state. */
     private Map<Integer, Long> cachesState;
 
-    /** CDC manager mode state. */
-    private volatile CdcManagerMode cdcMgrModeState;
+    /** CDC mode state. */
+    private volatile CdcMode cdcModeState;
 
     /** Stopped flag. */
     private volatile boolean started;
@@ -324,7 +324,7 @@ public class CdcMain implements Runnable {
                 typesState = state.loadTypesState();
                 mappingsState = state.loadMappingsState();
                 cachesState = state.loadCaches();
-                cdcMgrModeState = state.loadCdcManagerMode();
+                cdcModeState = state.loadCdcMode();
 
                 if (walState != null) {
                     committedSegmentIdx.value(walState.get1().index());
@@ -409,7 +409,7 @@ public class CdcMain implements Runnable {
             mreg.longMetric(LAST_SEG_CONSUMPTION_TIME, "Last time of consumption of WAL segment");
         metaUpdate = mreg.histogram(META_UPDATE, new long[] {100, 500, 1000}, "Metadata update time");
 
-        mreg.register(CDC_MANAGER_MODE, () -> cdcMgrModeState.name(), String.class, "CDC manager mode");
+        mreg.register(CDC_MODE, () -> cdcModeState.name(), String.class, "CDC mode");
     }
 
     /**
@@ -561,7 +561,7 @@ public class CdcMain implements Runnable {
             builder.from(walState.get1());
         }
 
-        if (cdcMgrModeState == CdcManagerMode.IGNITE_NODE_ACTIVE) {
+        if (cdcModeState == CdcMode.IGNITE_NODE_ACTIVE) {
             if (consumeSegmentPassively(builder))
                 return true;
         }
@@ -574,7 +574,7 @@ public class CdcMain implements Runnable {
     }
 
     /**
-     * Consumes CDC events in {@link CdcManagerMode#CDC_UTILITY_ACTIVE} mode.
+     * Consumes CDC events in {@link CdcMode#CDC_UTILITY_ACTIVE} mode.
      */
     private void consumeSegmentActively(IgniteWalIteratorFactory.IteratorParametersBuilder builder) {
         builder.addFilter((type, ptr) -> type == DATA_RECORD_V2 || type == CDC_DATA_RECORD);
@@ -640,7 +640,7 @@ public class CdcMain implements Runnable {
     }
 
     /**
-     * Consumes CDC events in {@link CdcManagerMode#IGNITE_NODE_ACTIVE} mode.
+     * Consumes CDC events in {@link CdcMode#IGNITE_NODE_ACTIVE} mode.
      *
      * @return {@code true} if mode switched.
      */
@@ -659,14 +659,14 @@ public class CdcMain implements Runnable {
 
                 switch (walRecord.type()) {
                     case CDC_MANAGER_RECORD:
-                        T2<WALPointer, Integer> walState = ((CdcManagerRecord)walRecord).cdcConsumerState();
+                        T2<WALPointer, Integer> walState = ((CdcManagerRecord)walRecord).walState();
 
                         saveState(walState);
 
                         break;
 
                     case CDC_MANAGER_STOP_RECORD:
-                        cdcMgrModeState = CdcManagerMode.CDC_UTILITY_ACTIVE;
+                        cdcModeState = CdcMode.CDC_UTILITY_ACTIVE;
 
                         return true;
 
