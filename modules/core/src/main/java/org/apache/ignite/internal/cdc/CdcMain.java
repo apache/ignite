@@ -456,12 +456,10 @@ public class CdcMain implements Runnable {
                     return;
                 }
 
-                CdcManagerMode initMode = cdcMgrModeState;
-
                 try (Stream<Path> cdcFiles = Files.list(cdcDir)) {
                     Set<Path> exists = new HashSet<>();
 
-                    cdcFiles
+                    Iterator<Path> segments = cdcFiles
                         .peek(exists::add) // Store files that exists in cdc dir.
                         // Need unseen WAL segments only.
                         .filter(p -> WAL_SEGMENT_FILE_FILTER.accept(p.toFile()) && !seen.contains(p))
@@ -476,15 +474,20 @@ public class CdcMain implements Runnable {
                             }
 
                             lastSgmnt.set(nextSgmnt);
-                        })
-                        .forEach(this::consumeSegment); // Consuming segments.
+                        }).iterator();
 
-                    // Reset partitions info to handle them again actively.
-                    if (cdcMgrModeState == CdcManagerMode.CDC_UTILITY_ACTIVE && initMode != cdcMgrModeState) {
-                        seen.clear();
-                        lastSgmnt.set(-1);
+                    while (segments.hasNext()) {
+                        Path segment = segments.next();
 
-                        walState = state.loadWalState();
+                        if (consumeSegment(segment)) {
+                            // CDC mode switched. Reset partitions info to handle them again actively.
+                            seen.clear();
+                            lastSgmnt.set(-1);
+
+                            walState = state.loadWalState();
+
+                            break;
+                        }
                     }
 
                     seen.removeIf(p -> !exists.contains(p)); // Clean up seen set.
@@ -502,8 +505,12 @@ public class CdcMain implements Runnable {
         }
     }
 
-    /** Reads all available records from segment. */
-    private void consumeSegment(Path segment) {
+    /**
+     * Reads all available records from segment.
+     *
+     * @return {@code true} if mode switched.
+     */
+    private boolean consumeSegment(Path segment) {
         updateMetadata();
 
         if (log.isInfoEnabled())
@@ -544,7 +551,7 @@ public class CdcMain implements Runnable {
                 try {
                     Files.delete(segment);
 
-                    return;
+                    return false;
                 }
                 catch (IOException e) {
                     throw new IgniteException(e);
@@ -555,13 +562,15 @@ public class CdcMain implements Runnable {
         }
 
         if (cdcMgrModeState == CdcManagerMode.IGNITE_NODE_ACTIVE) {
-            if (!consumeSegmentPassively(builder))
-                return;
+            if (consumeSegmentPassively(builder))
+                return true;
         }
         else
             consumeSegmentActively(builder);
 
         processedSegments.add(segment);
+
+        return false;
     }
 
     /**
@@ -633,7 +642,7 @@ public class CdcMain implements Runnable {
     /**
      * Consumes CDC events in {@link CdcManagerMode#IGNITE_NODE_ACTIVE} mode.
      *
-     * @return {@code true} if the CDC mode didn't switch.
+     * @return {@code true} if mode switched.
      */
     private boolean consumeSegmentPassively(IgniteWalIteratorFactory.IteratorParametersBuilder builder) {
         builder.addFilter((type, ptr) -> type == CDC_MANAGER_STOP_RECORD || type == CDC_MANAGER_RECORD);
@@ -659,7 +668,7 @@ public class CdcMain implements Runnable {
                     case CDC_MANAGER_STOP_RECORD:
                         cdcMgrModeState = CdcManagerMode.CDC_UTILITY_ACTIVE;
 
-                        return false;
+                        return true;
 
                     default:
                         throw new IgniteException("Unexpected record [type=" + walRecord.type() + ']');
@@ -671,7 +680,7 @@ public class CdcMain implements Runnable {
             if (interrupted)
                 throw new IgniteException("Change Data Capture Application interrupted");
 
-            return true;
+            return false;
         }
         catch (IgniteCheckedException | IOException e) {
             throw new IgniteException(e);
