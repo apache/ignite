@@ -457,10 +457,12 @@ public class CdcMain implements Runnable {
                     return;
                 }
 
+                CdcManagerMode initMode = cdcMgrModeState;
+
                 try (Stream<Path> cdcFiles = Files.list(cdcDir)) {
                     Set<Path> exists = new HashSet<>();
 
-                    Iterator<Path> it = cdcFiles
+                    cdcFiles
                         .peek(exists::add) // Store files that exists in cdc dir.
                         // Need unseen WAL segments only.
                         .filter(p -> WAL_SEGMENT_FILE_FILTER.accept(p.toFile()) && !seen.contains(p))
@@ -475,30 +477,12 @@ public class CdcMain implements Runnable {
                             }
 
                             lastSgmnt.set(nextSgmnt);
-                        }).iterator();
+                        })
+                        .forEach(this::consumeSegment); // Consuming segments.
 
-                    while (it.hasNext()) {
-                        Path segment = it.next();
-
-                        if (log.isInfoEnabled())
-                            log.info("Processing WAL segment [mode=" + cdcMgrModeState.name() + ", segment=" + segment + ']');
-
-                        lastSegmentConsumptionTs.value(System.currentTimeMillis());
-                        curSegmentIdx.value(segmentIndex(segment));
-
-                        if (cdcMgrModeState == CdcManagerMode.IGNITE_NODE_ACTIVE) {
-                            // Reset passively handled segments handled. Need to consume it again.
-                            if (!consumeSegmentPassively(segment)) {
-                                cdcMgrModeState = CdcManagerMode.CDC_UTILITY_ACTIVE;
-
-                                seen.clear();
-                                lastSgmnt.set(-1);
-
-                                break;
-                            }
-                        }
-                        else
-                            consumeSegment(segment);
+                    if (cdcMgrModeState == CdcManagerMode.CDC_UTILITY_ACTIVE && initMode != cdcMgrModeState) {
+                        seen.clear();
+                        lastSgmnt.set(-1);
                     }
 
                     seen.removeIf(p -> !exists.contains(p)); // Clean up seen set.
@@ -520,18 +504,28 @@ public class CdcMain implements Runnable {
     private void consumeSegment(Path segment) {
         updateMetadata();
 
-        IgniteWalIteratorFactory.IteratorParametersBuilder builder = walIteratorParametersBuilder(
-            segment,
-            (type, ptr) -> type == DATA_RECORD_V2 || type == CDC_DATA_RECORD);
+        if (log.isInfoEnabled())
+            log.info("Processing WAL segment [segment=" + segment + ']');
+
+        IgniteWalIteratorFactory.IteratorParametersBuilder builder =
+            new IgniteWalIteratorFactory.IteratorParametersBuilder()
+                .log(log)
+                .binaryMetadataFileStoreDir(binaryMeta)
+                .marshallerMappingFileStoreDir(marshaller)
+                .igniteConfigurationModifier((cfg) -> cfg.setPluginProviders(igniteCfg.getPluginProviders()))
+                .keepBinary(cdcCfg.isKeepBinary())
+                .filesOrDirs(segment.toFile());
+
+        if (igniteCfg.getDataStorageConfiguration().getPageSize() != 0)
+            builder.pageSize(igniteCfg.getDataStorageConfiguration().getPageSize());
 
         long segmentIdx = segmentIndex(segment);
 
-        if (walState != null) {
-            if (segmentIdx > walState.get1().index()) {
-                throw new IgniteException("Found segment greater then saved state. Some events are missed. Exiting! " +
-                    "[state=" + walState + ", segment=" + segmentIdx + ']');
-            }
+        lastSegmentConsumptionTs.value(System.currentTimeMillis());
 
+        curSegmentIdx.value(segmentIdx);
+
+        if (walState != null) {
             if (segmentIdx < walState.get1().index()) {
                 if (log.isInfoEnabled()) {
                     log.info("Already processed segment found. Skipping and deleting the file [segment=" +
@@ -553,6 +547,20 @@ public class CdcMain implements Runnable {
             builder.from(walState.get1());
         }
 
+        if (cdcMgrModeState == CdcManagerMode.IGNITE_NODE_ACTIVE) {
+            if (!consumeSegmentPassively(builder))
+                return;
+        }
+        else
+            consumeSegmentActively(builder);
+
+        processedSegments.add(segment);
+    }
+
+    /** */
+    private void consumeSegmentActively(IgniteWalIteratorFactory.IteratorParametersBuilder builder) {
+        builder.addFilter((type, ptr) -> type == DATA_RECORD_V2 || type == CDC_DATA_RECORD);
+
         try (DataEntryIterator iter = new DataEntryIterator(new IgniteWalIteratorFactory(log).iterator(builder))) {
             if (walState != null) {
                 iter.init(walState.get2());
@@ -573,8 +581,6 @@ public class CdcMain implements Runnable {
 
             if (interrupted)
                 throw new IgniteException("Change Data Capture Application interrupted");
-
-            processedSegments.add(segment);
         }
         catch (IgniteCheckedException | IOException e) {
             throw new IgniteException(e);
@@ -583,13 +589,10 @@ public class CdcMain implements Runnable {
 
     /**
      * Consumes and handles Reltime CDC records from the segment.
-     * @param segment Segment to consume.
      * @return {@code true} if {@link #cdcMgrModeState} didn't change.
      */
-    private boolean consumeSegmentPassively(Path segment) {
-        IgniteWalIteratorFactory.IteratorParametersBuilder builder = walIteratorParametersBuilder(
-            segment,
-            (type, ptr) -> type == CDC_MANAGER_STOP_RECORD || type == CDC_MANAGER_RECORD);
+    private boolean consumeSegmentPassively(IgniteWalIteratorFactory.IteratorParametersBuilder builder) {
+        builder.addFilter((type, ptr) -> type == CDC_MANAGER_STOP_RECORD || type == CDC_MANAGER_RECORD);
 
         try (WALIterator iter = new IgniteWalIteratorFactory(log).iterator(builder)) {
             boolean interrupted = false;
@@ -608,6 +611,8 @@ public class CdcMain implements Runnable {
                         break;
 
                     case CDC_MANAGER_STOP_RECORD:
+                        cdcMgrModeState = CdcManagerMode.CDC_UTILITY_ACTIVE;
+
                         return false;
 
                     default:
@@ -619,8 +624,6 @@ public class CdcMain implements Runnable {
 
             if (interrupted)
                 throw new IgniteException("Change Data Capture Application interrupted");
-
-            processedSegments.add(segment);
 
             return true;
         }
