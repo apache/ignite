@@ -94,7 +94,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     /** */
     private final FileIOFactory ioFactory;
 
-    /** */
+    /** If {@code true} then compress the files. */
     private final boolean compress;
 
     /**
@@ -452,6 +452,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                     changed.put(cache, new GridConcurrentHashSet<>());
 
                 File dumpFile = new File(groupDirectory(gctx), PART_FILE_PREFIX + part + DUMP_FILE_EXT + (compress ? ZIP_SUFFIX : ""));
+
+                if (!dumpFile.createNewFile())
+                    throw new IgniteException("Dump file can't be created: " + dumpFile);
 
                 file = ioFactory.create(dumpFile);
             }
