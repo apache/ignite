@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1211,7 +1212,12 @@ public class ClusterCachesInfo {
 
         String expDir = cacheDirName(ccfg);
 
-        return !expDir.equals(Paths.get(expDir).toFile().getName());
+        try {
+            return !expDir.equals(Paths.get(expDir).toFile().getName());
+        }
+        catch (InvalidPathException ignored) {
+            return true;
+        }
     }
 
     /**

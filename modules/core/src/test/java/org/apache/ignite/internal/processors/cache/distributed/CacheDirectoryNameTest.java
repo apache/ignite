@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
@@ -26,7 +27,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -87,10 +87,15 @@ public class CacheDirectoryNameTest extends GridCommonAbstractTest {
 
         srv.cluster().state(ClusterState.ACTIVE);
 
-        List<String> illegalNames = F.asList("/", "a/b");
+        List<String> illegalNames = new ArrayList<>();
 
-        if (U.isWindows())
+        illegalNames.add("/");
+        illegalNames.add("a/b");
+
+        if (U.isWindows()) {
             illegalNames.add("a>b");
+            illegalNames.add("a\\b");
+        }
 
         for (String name : illegalNames) {
             CacheConfiguration<Object, Object> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
