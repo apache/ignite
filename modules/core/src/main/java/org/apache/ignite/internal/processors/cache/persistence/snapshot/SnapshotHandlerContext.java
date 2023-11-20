@@ -32,9 +32,6 @@ public class SnapshotHandlerContext {
     /** The full path to the snapshot files. */
     private final File snpDir;
 
-    /** If {@code true} then compress the files. */
-    private final boolean compress;
-
     /** The names of the cache groups on which the operation is performed. */
     private final Collection<String> grps;
 
@@ -70,7 +67,6 @@ public class SnapshotHandlerContext {
         this.grps = grps;
         this.locNode = locNode;
         this.snpDir = snpDir;
-        this.compress = compress;
         this.streamerWrn = streamerWrn;
         this.check = check;
     }
@@ -87,13 +83,6 @@ public class SnapshotHandlerContext {
      */
     public File snapshotDirectory() {
         return snpDir;
-    }
-
-    /**
-     * @return {@code true} if compress the files.
-     */
-    public boolean compress() {
-        return compress;
     }
 
     /**

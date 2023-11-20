@@ -145,7 +145,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 new HashSet<>(meta.partitions().get(grpId));
 
             for (File part : cachePartitionFiles(dir,
-                (meta.dump() ? DUMP_FILE_EXT : FILE_SUFFIX) + (opCtx.compress() ? ZIP_SUFFIX : "")
+                (meta.dump() ? DUMP_FILE_EXT : FILE_SUFFIX) + (meta.compress() ? ZIP_SUFFIX : "")
             )) {
                 int partId = partId(part.getName());
 
