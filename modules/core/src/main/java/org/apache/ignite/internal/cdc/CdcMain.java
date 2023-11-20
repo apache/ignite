@@ -483,6 +483,8 @@ public class CdcMain implements Runnable {
                     if (cdcMgrModeState == CdcManagerMode.CDC_UTILITY_ACTIVE && initMode != cdcMgrModeState) {
                         seen.clear();
                         lastSgmnt.set(-1);
+
+                        walState = state.loadWalState();
                     }
 
                     seen.removeIf(p -> !exists.contains(p)); // Clean up seen set.
@@ -526,8 +528,7 @@ public class CdcMain implements Runnable {
         curSegmentIdx.value(segmentIdx);
 
         if (walState != null) {
-            // In the IGNITE_NIDE_ACTIVE mode it doesn't clear the `walState`.
-            if (cdcMgrModeState == CdcManagerMode.CDC_UTILITY_ACTIVE && segmentIdx > walState.get1().index()) {
+            if (segmentIdx > walState.get1().index()) {
                 throw new IgniteException("Found segment greater then saved state. Some events are missed. Exiting! " +
                     "[state=" + walState + ", segment=" + segmentIdx + ']');
             }
@@ -638,6 +639,8 @@ public class CdcMain implements Runnable {
         builder.addFilter((type, ptr) -> type == CDC_MANAGER_STOP_RECORD || type == CDC_MANAGER_RECORD);
 
         try (WALIterator iter = new IgniteWalIteratorFactory(log).iterator(builder)) {
+            walState = null;
+
             boolean interrupted = false;
 
             while (iter.hasNext() && !interrupted) {
@@ -647,8 +650,7 @@ public class CdcMain implements Runnable {
 
                 switch (walRecord.type()) {
                     case CDC_MANAGER_RECORD:
-                        // Store `walState` to use it in case of switch modes.
-                        walState = ((CdcManagerRecord)walRecord).cdcConsumerState();
+                        T2<WALPointer, Integer> walState = ((CdcManagerRecord)walRecord).cdcConsumerState();
 
                         saveState(walState);
 
