@@ -1204,13 +1204,7 @@ public class ClusterCachesInfo {
         return true;
     }
 
-    /**
-     * Validate name of new cache.
-     *
-     * @param ccfg Configuration of Cache.
-     *
-     * @return {@code True} if there is no errors for creating this directorie.
-     */
+    /** @return {@code True} if cache directory contains the characters that are not allowed in file names. */
     private boolean containsInvalidFileNameChars(CacheConfiguration<?, ?> ccfg) {
         if (!CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration()))
             return false;
