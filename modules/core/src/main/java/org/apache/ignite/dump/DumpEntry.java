@@ -18,11 +18,12 @@
 package org.apache.ignite.dump;
 
 import java.util.Iterator;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Single cache entry from dump.
- * @see #iterator(String, int, int)
+ * @see Dump#iterator(String, int, int)
  * @see DumpConsumer#onPartition(int, int, Iterator)
  * @see org.apache.ignite.IgniteSnapshot#createDump(String)
  */
