@@ -121,17 +121,17 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
             checkDump(ign);
 
-            checkPartitionsNames(ign, false);
+            checkPartitionsNames(ign, comprParts);
 
             assertThrows(null, () -> createDump(ign), IgniteException.class, EXISTS_ERR_MSG);
 
-            createDump(ign, DMP_NAME + 2, null, false);
+            createDump(ign, DMP_NAME + 2, null);
 
             checkDump(ign, DMP_NAME + 2);
 
             checkDump(ign);
 
-            checkPartitionsNames(ign, false);
+            checkPartitionsNames(ign, comprParts);
 
             if (persistence) {
                 assertThrows(null, () -> ign.snapshot().createSnapshot(DMP_NAME).get(), IgniteException.class, EXISTS_ERR_MSG);
@@ -146,25 +146,6 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
                     "Create snapshot request has been rejected. Snapshots on an in-memory clusters are not allowed."
                 );
             }
-        }
-        finally {
-            snpPoolSz = 1;
-        }
-    }
-
-    /** */
-    @Test
-    public void testZippedCacheDump() throws Exception {
-        snpPoolSz = 4;
-
-        try {
-            IgniteEx ign = startGridAndFillCaches();
-
-            createDump(ign, DMP_NAME, null, true);
-
-            checkDump(ign);
-
-            checkPartitionsNames(ign, true);
         }
         finally {
             snpPoolSz = 1;
@@ -285,7 +266,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             String name = DMP_NAME;
 
             {
-                createDump(ign, name, Collections.singleton(DEFAULT_CACHE_NAME), false);
+                createDump(ign, name, Collections.singleton(DEFAULT_CACHE_NAME));
 
                 checkDumpWithCommand(ign, name, backups);
 
@@ -300,7 +281,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             name = DMP_NAME + "2";
 
             {
-                createDump(cli, name, Collections.singleton(GRP), false);
+                createDump(cli, name, Collections.singleton(GRP));
 
                 checkDumpWithCommand(ign, name, backups);
 
@@ -315,7 +296,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             name = DMP_NAME + "3";
 
             {
-                createDump(cli, name, new HashSet<>(Arrays.asList(DEFAULT_CACHE_NAME, GRP)), false);
+                createDump(cli, name, new HashSet<>(Arrays.asList(DEFAULT_CACHE_NAME, GRP)));
 
                 checkDumpWithCommand(ign, name, backups);
 
@@ -339,7 +320,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
         doTestConcurrentOperations(ignite -> {
             assertThrows(
                 null,
-                () -> createDump(ignite, "other_dump", null, false),
+                () -> createDump(ignite, "other_dump", null),
                 IgniteException.class,
                 "Create snapshot request has been rejected. The previous snapshot operation was not completed."
             );
@@ -503,6 +484,8 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     /** */
     @Test
     public void testDumpCancelOnListenerWriteError() throws Exception {
+        assumeFalse(comprParts);
+
         IgniteEx ign = startGridAndFillCaches();
 
         IgniteCache<Object, Object> cache = ign.cache(DEFAULT_CACHE_NAME);

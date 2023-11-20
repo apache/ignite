@@ -128,7 +128,11 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     public boolean onlyPrimary;
 
     /** */
-    @Parameterized.Parameters(name = "nodes={0},backups={1},persistence={2},mode={3},useDataStreamer={4},onlyPrimary={5}")
+    @Parameterized.Parameter(6)
+    public boolean comprParts;
+
+    /** */
+    @Parameterized.Parameters(name = "nodes={0},backups={1},persistence={2},mode={3},useDataStreamer={4},onlyPrimary={5},comprParts={6}")
     public static List<Object[]> params() {
         List<Object[]> params = new ArrayList<>();
 
@@ -137,15 +141,15 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 for (boolean persistence : new boolean[]{true, false})
                     for (CacheAtomicityMode mode : CacheAtomicityMode.values()) {
                         for (boolean useDataStreamer : new boolean[]{true, false}) {
-                            if (nodes == 1 && backups != 0)
-                                continue;
+                            for (boolean comprParts : new boolean[]{true, false}) {
+                                if (nodes == 1 && backups != 0)
+                                    continue;
 
-                            if (backups > 0) {
-                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, false});
-                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, true});
+                                params.add(new Object[] {nodes, backups, persistence, mode, useDataStreamer, false, comprParts});
+
+                                if (backups > 0)
+                                    params.add(new Object[] {nodes, backups, persistence, mode, useDataStreamer, true, comprParts});
                             }
-                            else
-                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, false});
                         }
                     }
 
@@ -486,7 +490,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     protected void createDump(IgniteEx ign) {
-        createDump(ign, DMP_NAME, null, false);
+        createDump(ign, DMP_NAME, null);
     }
 
     /** */
@@ -535,8 +539,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     }
 
     /** */
-    void createDump(IgniteEx ign, String name, @Nullable Collection<String> cacheGroupNames, boolean compress) {
-        ign.context().cache().context().snapshotMgr().createSnapshot(name, null, cacheGroupNames, false, onlyPrimary, true, compress).get();
+    void createDump(IgniteEx ign, String name, @Nullable Collection<String> cacheGroupNames) {
+        ign.context().cache().context().snapshotMgr().createSnapshot(name, null, cacheGroupNames, false, onlyPrimary, true, comprParts).get();
     }
 
     /** */
