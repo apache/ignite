@@ -69,7 +69,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.platform.PlatformType;
@@ -480,6 +479,7 @@ public class CdcMain implements Runnable {
                         })
                         .forEach(this::consumeSegment); // Consuming segments.
 
+                    // Reset partitions info to handle them again actively.
                     if (cdcMgrModeState == CdcManagerMode.CDC_UTILITY_ACTIVE && initMode != cdcMgrModeState) {
                         seen.clear();
                         lastSgmnt.set(-1);
@@ -526,6 +526,12 @@ public class CdcMain implements Runnable {
         curSegmentIdx.value(segmentIdx);
 
         if (walState != null) {
+            // In the IGNITE_NIDE_ACTIVE mode it doesn't clear the `walState`.
+            if (cdcMgrModeState == CdcManagerMode.CDC_UTILITY_ACTIVE && segmentIdx > walState.get1().index()) {
+                throw new IgniteException("Found segment greater then saved state. Some events are missed. Exiting! " +
+                    "[state=" + walState + ", segment=" + segmentIdx + ']');
+            }
+
             if (segmentIdx < walState.get1().index()) {
                 if (log.isInfoEnabled()) {
                     log.info("Already processed segment found. Skipping and deleting the file [segment=" +
@@ -557,7 +563,9 @@ public class CdcMain implements Runnable {
         processedSegments.add(segment);
     }
 
-    /** */
+    /**
+     * Consumes CDC events in {@link CdcManagerMode#CDC_UTILITY_ACTIVE} mode.
+     */
     private void consumeSegmentActively(IgniteWalIteratorFactory.IteratorParametersBuilder builder) {
         builder.addFilter((type, ptr) -> type == DATA_RECORD_V2 || type == CDC_DATA_RECORD);
 
@@ -581,51 +589,6 @@ public class CdcMain implements Runnable {
 
             if (interrupted)
                 throw new IgniteException("Change Data Capture Application interrupted");
-        }
-        catch (IgniteCheckedException | IOException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /**
-     * Consumes and handles Reltime CDC records from the segment.
-     * @return {@code true} if {@link #cdcMgrModeState} didn't change.
-     */
-    private boolean consumeSegmentPassively(IgniteWalIteratorFactory.IteratorParametersBuilder builder) {
-        builder.addFilter((type, ptr) -> type == CDC_MANAGER_STOP_RECORD || type == CDC_MANAGER_RECORD);
-
-        try (WALIterator iter = new IgniteWalIteratorFactory(log).iterator(builder)) {
-            boolean interrupted = false;
-
-            while (iter.hasNext() && !interrupted) {
-                IgniteBiTuple<WALPointer, WALRecord> next = iter.next();
-
-                WALRecord walRecord = next.get2();
-
-                switch (walRecord.type()) {
-                    case CDC_MANAGER_RECORD:
-                        walState = ((CdcManagerRecord)walRecord).cdcConsumerState();
-
-                        saveState(walState);
-
-                        break;
-
-                    case CDC_MANAGER_STOP_RECORD:
-                        cdcMgrModeState = CdcManagerMode.CDC_UTILITY_ACTIVE;
-
-                        return false;
-
-                    default:
-                        throw new IgniteException("Unexpected record [type=" + walRecord.type() + ']');
-                }
-
-                interrupted = Thread.interrupted();
-            }
-
-            if (interrupted)
-                throw new IgniteException("Change Data Capture Application interrupted");
-
-            return true;
         }
         catch (IgniteCheckedException | IOException e) {
             throw new IgniteException(e);
@@ -667,28 +630,50 @@ public class CdcMain implements Runnable {
     }
 
     /**
-     * Prepares WAL iterator parameters builder for particular segment.
+     * Consumes CDC events in {@link CdcManagerMode#IGNITE_NODE_ACTIVE} mode.
      *
-     * @param segment Segment to build WAL iterator for.
-     * @param recTypeFilter WAL records filter.
+     * @return {@code true} if the CDC mode didn't switch.
      */
-    private IgniteWalIteratorFactory.IteratorParametersBuilder walIteratorParametersBuilder(
-        Path segment,
-        IgniteBiPredicate<WALRecord.RecordType, WALPointer> recTypeFilter
-    ) {
-        IgniteWalIteratorFactory.IteratorParametersBuilder builder = new IgniteWalIteratorFactory.IteratorParametersBuilder()
-            .log(log)
-            .binaryMetadataFileStoreDir(binaryMeta)
-            .marshallerMappingFileStoreDir(marshaller)
-            .igniteConfigurationModifier((cfg) -> cfg.setPluginProviders(igniteCfg.getPluginProviders()))
-            .keepBinary(cdcCfg.isKeepBinary())
-            .filesOrDirs(segment.toFile())
-            .addFilter(recTypeFilter);
+    private boolean consumeSegmentPassively(IgniteWalIteratorFactory.IteratorParametersBuilder builder) {
+        builder.addFilter((type, ptr) -> type == CDC_MANAGER_STOP_RECORD || type == CDC_MANAGER_RECORD);
 
-        if (igniteCfg.getDataStorageConfiguration().getPageSize() != 0)
-            builder.pageSize(igniteCfg.getDataStorageConfiguration().getPageSize());
+        try (WALIterator iter = new IgniteWalIteratorFactory(log).iterator(builder)) {
+            boolean interrupted = false;
 
-        return builder;
+            while (iter.hasNext() && !interrupted) {
+                IgniteBiTuple<WALPointer, WALRecord> next = iter.next();
+
+                WALRecord walRecord = next.get2();
+
+                switch (walRecord.type()) {
+                    case CDC_MANAGER_RECORD:
+                        // Store `walState` to use it in case of switch modes.
+                        walState = ((CdcManagerRecord)walRecord).cdcConsumerState();
+
+                        saveState(walState);
+
+                        break;
+
+                    case CDC_MANAGER_STOP_RECORD:
+                        cdcMgrModeState = CdcManagerMode.CDC_UTILITY_ACTIVE;
+
+                        return false;
+
+                    default:
+                        throw new IgniteException("Unexpected record [type=" + walRecord.type() + ']');
+                }
+
+                interrupted = Thread.interrupted();
+            }
+
+            if (interrupted)
+                throw new IgniteException("Change Data Capture Application interrupted");
+
+            return true;
+        }
+        catch (IgniteCheckedException | IOException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** Metadata update. */
