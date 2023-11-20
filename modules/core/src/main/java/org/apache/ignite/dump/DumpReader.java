@@ -101,7 +101,7 @@ public class DumpReader implements Runnable {
                     }
                 }
 
-                boolean compressed = dump.metadata().get(0).compress();
+                boolean compressed = dump.metadata().get(0).comprParts();
 
                 cnsmr.onCacheConfigs(grpToNodes.entrySet().stream()
                     .flatMap(e -> dump.configs(F.first(e.getValue()), e.getKey()).stream())
@@ -137,9 +137,7 @@ public class DumpReader implements Runnable {
                                     return;
                                 }
 
-                                try (DumpedPartitionIterator iter = dump
-                                    .iterator(node, grp, part, compressed)
-                                ) {
+                                try (DumpedPartitionIterator iter = dump.iterator(node, grp, part, compressed)) {
                                     if (log.isDebugEnabled()) {
                                         log.debug("Consuming partition [node=" + node + ", grp=" + grp +
                                             ", part=" + part + ']');
