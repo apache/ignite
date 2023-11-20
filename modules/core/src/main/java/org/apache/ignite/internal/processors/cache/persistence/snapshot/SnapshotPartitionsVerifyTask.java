@@ -55,13 +55,12 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
     @Override protected ComputeJob createJob(
         String name,
         String path,
-        boolean compress,
         int incIdx,
         String constId,
         Collection<String> groups,
         boolean check
     ) {
-        return new VerifySnapshotPartitionsJob(name, path, compress, constId, groups, check);
+        return new VerifySnapshotPartitionsJob(name, path, constId, groups, check);
     }
 
     /** {@inheritDoc} */
@@ -88,9 +87,6 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
         /** Snapshot directory path. */
         private final String snpPath;
 
-        /** If {@code true} then compress the file. */
-        private final boolean compress;
-
         /** Consistent snapshot metadata file name. */
         private final String consId;
 
@@ -110,7 +106,6 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
         public VerifySnapshotPartitionsJob(
             String snpName,
             @Nullable String snpPath,
-            boolean compress,
             String consId,
             Collection<String> rqGrps,
             boolean check
@@ -119,7 +114,6 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
             this.consId = consId;
             this.rqGrps = rqGrps;
             this.snpPath = snpPath;
-            this.compress = compress;
             this.check = check;
         }
 
@@ -137,7 +131,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
                 SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(snpDir, consId);
 
                 return new SnapshotPartitionsVerifyHandler(cctx)
-                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, compress, false, check));
+                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false, check));
             }
             catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);

@@ -50,7 +50,6 @@ public class SnapshotHandlerContext {
      * {@code False} otherwise. Always {@code false} for snapshot restoration.
      * @param locNode Local node.
      * @param snpDir The full path to the snapshot files.
-     * @param compress If {@code true} then compress the files.
      * @param streamerWrn {@code True} if concurrent streaming updates occurred during snapshot operation.
      * @param check If {@code true} check snapshot integrity.
      */
@@ -59,7 +58,6 @@ public class SnapshotHandlerContext {
         @Nullable Collection<String> grps,
         ClusterNode locNode,
         File snpDir,
-        boolean compress,
         boolean streamerWrn,
         boolean check
     ) {

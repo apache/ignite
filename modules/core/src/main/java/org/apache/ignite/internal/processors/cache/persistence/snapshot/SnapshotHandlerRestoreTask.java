@@ -52,7 +52,6 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
     @Override protected ComputeJob createJob(
         String name,
         @Nullable String path,
-        boolean compress,
         int incIdx,
         String constId,
         Collection<String> groups,
@@ -161,7 +160,6 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
                         grps,
                         ignite.localNode(),
                         snpDir,
-                        meta.compress(),
                         false,
                         check
                     ));

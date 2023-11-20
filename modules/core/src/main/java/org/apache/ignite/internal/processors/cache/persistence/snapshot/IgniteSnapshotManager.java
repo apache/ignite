@@ -1238,7 +1238,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     req.groups(),
                     cctx.localNode(),
                     snpDir,
-                    req.compress(),
                     req.streamerWarning(),
                     true
                 );
