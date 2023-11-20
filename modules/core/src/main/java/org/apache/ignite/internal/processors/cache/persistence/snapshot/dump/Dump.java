@@ -307,20 +307,20 @@ public class Dump implements AutoCloseable {
                     if (next == null)
                         partKeys = null; // Let GC do the rest.
 
-                    /*
-                     * First call of advance() happens before consumer processes a record and counter won't increase.
-                     * The counter will increase when consumer processes a record and after then advance() executed.
-                     * After last record processing next invokation of advance() will increase the counter and disable counting.
-                     */
-                    if (countingEnabled) {
-                        if (recordsProcessed != null)
+                    if (recordsProcessed != null) {
+                        /*
+                         * First call of advance() happens before consumer processes a record and counter won't increase.
+                         * The counter will increase when consumer processes a record and after then advance() executed.
+                         * After last record processing next invocation of advance() will increase the counter and disable counting.
+                         */
+                        if (countingEnabled)
                             recordsProcessed.increment();
-                    }
-                    else
-                        countingEnabled = true;
+                        else
+                            countingEnabled = true;
 
-                    if (next == null)
-                        countingEnabled = false;
+                        if (next == null)
+                            countingEnabled = false;
+                    }
                 }
                 catch (IOException | IgniteCheckedException e) {
                     throw new IgniteException(e);

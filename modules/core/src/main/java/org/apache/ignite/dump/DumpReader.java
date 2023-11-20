@@ -116,6 +116,8 @@ public class DumpReader implements Runnable {
 
                 ExecutorService execSvc = cfg.threadCount() > 1 ? Executors.newFixedThreadPool(cfg.threadCount()) : null;
 
+                AtomicBoolean skip = new AtomicBoolean(false);
+
                 Map<Integer, Set<Integer>> groups = cfg.skipCopies() ? new HashMap<>() : null;
 
                 if (groups != null)
@@ -173,8 +175,6 @@ public class DumpReader implements Runnable {
                     0,
                     UPDATE_RATE_STATS_PRINT_PERIOD
                 );
-
-                AtomicBoolean skip = new AtomicBoolean(false);
 
                 if (groups != null)
                     grpToNodes.keySet().forEach(grpId -> groups.put(grpId, new HashSet<>()));
