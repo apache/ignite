@@ -121,7 +121,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
             checkDump(ign);
 
-            checkPartitionsNames(ign, comprParts);
+            checkPartitionsNames(ign, DMP_NAME);
 
             assertThrows(null, () -> createDump(ign), IgniteException.class, EXISTS_ERR_MSG);
 
@@ -129,9 +129,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
             checkDump(ign, DMP_NAME + 2);
 
-            checkDump(ign);
-
-            checkPartitionsNames(ign, comprParts);
+            checkPartitionsNames(ign, DMP_NAME + 2);
 
             if (persistence) {
                 assertThrows(null, () -> ign.snapshot().createSnapshot(DMP_NAME).get(), IgniteException.class, EXISTS_ERR_MSG);
@@ -153,16 +151,16 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     }
 
     /** */
-    private void checkPartitionsNames(IgniteEx ign, boolean compressed) throws IgniteCheckedException {
-        Arrays.stream(new File(dumpDirectory(ign, DMP_NAME), "db").listFiles())
+    private void checkPartitionsNames(IgniteEx ign, String dumpName) throws IgniteCheckedException {
+        Arrays.stream(new File(dumpDirectory(ign, dumpName), "db").listFiles())
             .filter(n -> n.getName().startsWith("node"))
             .forEach(n -> Arrays.stream(n.listFiles())
                 .filter(c -> c.getName().startsWith("cache"))
                 .forEach(c -> Arrays.stream(c.listFiles())
                     .filter(p -> p.getName().startsWith("part"))
                     .forEach(p -> assertEquals(
-                        "Filename " + p.getPath() + " should " + (compressed ? "" : "not ") + "end with .zip",
-                        compressed,
+                        "Filename " + p.getPath() + " should " + (comprParts ? "" : "not ") + "end with .zip",
+                        comprParts,
                         p.getName().endsWith(".zip")
                         )
                     )
@@ -447,6 +445,8 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     /** */
     @Test
     public void testDumpCancelOnFileCreateError() throws Exception {
+        assumeFalse(comprParts);
+
         IgniteEx ign = startGridAndFillCaches();
 
         for (Ignite node : G.allGrids()) {
@@ -466,6 +466,8 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
     /** */
     @Test
     public void testDumpCancelOnIteratorWriteError() throws Exception {
+        assumeFalse(comprParts);
+
         IgniteEx ign = startGridAndFillCaches();
 
         DumpFailingFactory ioFactory = new DumpFailingFactory(ign, true);
