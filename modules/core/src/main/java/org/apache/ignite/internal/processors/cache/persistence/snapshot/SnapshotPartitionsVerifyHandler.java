@@ -145,7 +145,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 new HashSet<>(meta.partitions().get(grpId));
 
             for (File part : cachePartitionFiles(dir,
-                (meta.dump() ? DUMP_FILE_EXT : FILE_SUFFIX) + (meta.comprParts() ? ZIP_SUFFIX : "")
+                (meta.dump() ? DUMP_FILE_EXT : FILE_SUFFIX) + (meta.compressPartitions() ? ZIP_SUFFIX : "")
             )) {
                 int partId = partId(part.getName());
 
@@ -365,14 +365,12 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             String consistentId = cctx.kernalContext().pdsFolderResolver().resolveFolders().consistentId().toString();
 
             try (Dump dump = new Dump(opCtx.snapshotDirectory(), consistentId, true, true, log)) {
-                boolean compressed = dump.metadata().get(0).comprParts();
-
                 Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
                     cctx.snapshotMgr().snapshotExecutorService(),
                     partFiles,
                     part -> calculateDumpedPartitionHash(dump,
-                        cacheGroupName(part.getParentFile()), partId(part.getName()),
-                        compressed)
+                        cacheGroupName(part.getParentFile()), partId(part.getName())
+                    )
                 );
 
                 return partitionHashRecordV2s.stream().collect(Collectors.toMap(PartitionHashRecordV2::partitionKey, r -> r));
@@ -389,7 +387,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** */
-    private PartitionHashRecordV2 calculateDumpedPartitionHash(Dump dump, String grpName, int part, boolean compressed) {
+    private PartitionHashRecordV2 calculateDumpedPartitionHash(Dump dump, String grpName, int part) {
         if (skipHash()) {
             return new PartitionHashRecordV2(
                 new PartitionKeyV2(CU.cacheId(grpName), part, grpName),
@@ -405,7 +403,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         try {
             String node = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
 
-            try (Dump.DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part, compressed)) {
+            try (Dump.DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part)) {
                 long size = 0;
 
                 VerifyPartitionContext ctx = new VerifyPartitionContext();

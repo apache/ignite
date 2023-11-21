@@ -36,7 +36,7 @@ import org.junit.runners.Parameterized;
 /** */
 public class IgniteConcurrentCacheDumpTest extends AbstractCacheDumpTest {
     /** */
-    @Parameterized.Parameters(name = "nodes={0},backups={1},persistence={2},mode={3},useDataStreamer={4},onlyPrimary={5}")
+    @Parameterized.Parameters(name = "nodes={0},backups={1},persistence={2},mode={3},useDataStreamer={4},onlyPrimary={5},comprParts={6}")
     public static List<Object[]> params() {
         List<Object[]> params = new ArrayList<>();
 
@@ -44,7 +44,7 @@ public class IgniteConcurrentCacheDumpTest extends AbstractCacheDumpTest {
             for (int backups : new int[]{1, 2})
                 for (boolean persistence : new boolean[]{true, false})
                     for (CacheAtomicityMode mode : CacheAtomicityMode.values())
-                        params.add(new Object[]{nodes, backups, persistence, mode, false, false});
+                        params.add(new Object[]{nodes, backups, persistence, mode, false, false, true});
 
         return params;
     }

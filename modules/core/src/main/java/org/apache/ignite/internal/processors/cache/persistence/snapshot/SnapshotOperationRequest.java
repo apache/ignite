@@ -94,7 +94,7 @@ public class SnapshotOperationRequest implements Serializable {
     /** If {@code true} then create dump. */
     private final boolean dump;
 
-    /** If {@code true} then compress the file. */
+    /** If {@code true} then compress partition files. */
     private final boolean compress;
 
     /**
@@ -108,7 +108,7 @@ public class SnapshotOperationRequest implements Serializable {
      * @param incIdx Incremental snapshot index.
      * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
      * @param dump If {@code true} then create dump.
-     * @param compress If {@code true} then compress the file.
+     * @param compress If {@code true} then compress partition files.
      */
     public SnapshotOperationRequest(
         UUID reqId,
@@ -213,7 +213,7 @@ public class SnapshotOperationRequest implements Serializable {
         return dump;
     }
 
-    /** @return If {@code true} then compress the file. */
+    /** @return If {@code true} then compress partition files. */
     public boolean compress() {
         return compress;
     }

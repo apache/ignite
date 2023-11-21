@@ -224,13 +224,14 @@ public class Dump implements AutoCloseable {
     /**
      * @param node Node directory name.
      * @param group Group id.
-     * @param compressed {@code true} if partition is compressed.
      * @return Dump iterator.
      */
-    public List<Integer> partitions(String node, int group, boolean compressed) {
+    public List<Integer> partitions(String node, int group) {
+        String suffix = metadata.get(0).compressPartitions() ? DUMP_FILE_EXT + ZIP_SUFFIX : DUMP_FILE_EXT;
+
         File[] parts = dumpGroupDirectory(node, group)
             .listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) &&
-                (f.getName().endsWith(compressed ? DUMP_FILE_EXT + ZIP_SUFFIX : DUMP_FILE_EXT))
+                (f.getName().endsWith(suffix))
             );
 
         if (parts == null)
@@ -239,7 +240,7 @@ public class Dump implements AutoCloseable {
         return Arrays.stream(parts)
             .map(partFile -> Integer.parseInt(partFile.getName()
                 .replace(PART_FILE_PREFIX, "")
-                .replace(compressed ? DUMP_FILE_EXT + ZIP_SUFFIX : DUMP_FILE_EXT, "")
+                .replace(suffix, "")
             ))
             .collect(Collectors.toList());
     }
@@ -247,18 +248,17 @@ public class Dump implements AutoCloseable {
     /**
      * @param node Node directory name.
      * @param group Group id.
-     * @param compressed {@code true} if the pertition is compressed.
      * @return Dump iterator.
      */
-    public DumpedPartitionIterator iterator(String node, int group, int part, boolean compressed) {
+    public DumpedPartitionIterator iterator(String node, int group, int part) {
+        boolean compressed = metadata.get(0).compressPartitions();
+
         FileIOFactory ioFactory = compressed ? new UnzipFileIOFactory() : new RandomAccessFileIOFactory();
 
         FileIO dumpFile;
 
         try {
-            dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, group),
-                PART_FILE_PREFIX + part + DUMP_FILE_EXT + (compressed ? ZIP_SUFFIX : "")
-            ));
+            dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, group), getDumpPartFileName(part, compressed)));
         }
         catch (IOException e) {
             throw new RuntimeException(e);
@@ -326,6 +326,15 @@ public class Dump implements AutoCloseable {
                 partKeys = null;
             }
         };
+    }
+
+    /**
+     * @param part Partition number.
+     * @param compressed If {@code true} then compressed partition file.
+     * @return Dump partition file name
+     */
+    public static String getDumpPartFileName(int part, boolean compressed) {
+        return PART_FILE_PREFIX + part + DUMP_FILE_EXT + (compressed ? ZIP_SUFFIX : "");
     }
 
     /** @return Root dump directory. */

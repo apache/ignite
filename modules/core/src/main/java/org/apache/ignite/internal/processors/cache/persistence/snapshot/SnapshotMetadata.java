@@ -64,11 +64,10 @@ public class SnapshotMetadata implements Serializable {
     private final String folderName;
 
     /**
-     * If {@code true} then compress the files.
+     * If {@code true} then compress partition files.
      * This shouldn't be confused with {@link SnapshotMetadata#comprGrpIds} which represents how Ignite keeps data in memory pages
      * while {@link SnapshotMetadata#comprParts} represents how the dump files stored onto disk.
      */
-    @SuppressWarnings("JavadocDeclaration")
     private final boolean comprParts;
 
     /** Page size of stored snapshot data. */
@@ -117,7 +116,7 @@ public class SnapshotMetadata implements Serializable {
      * @param snpName Snapshot name.
      * @param consId Consistent id of a node to which this metadata relates.
      * @param folderName Directory name which stores the data files.
-     * @param comprParts If {@code true} then zip the files.
+     * @param comprParts If {@code true} then compress partition files.
      * @param pageSize Page size of stored snapshot data.
      * @param grpIds The list of cache groups ids which were included into snapshot.
      * @param bltNodes The set of affected by snapshot baseline nodes.
@@ -195,9 +194,9 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /**
-     * @return {@code true} if compress the files.
+     * @return {@code true} if compress partition files.
      */
-    public boolean comprParts() {
+    public boolean compressPartitions() {
         return comprParts;
     }
 

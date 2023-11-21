@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.AbstractFile
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
+import static java.util.zip.Deflater.BEST_COMPRESSION;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 
 /**
@@ -60,7 +61,7 @@ public class WriteOnlyZipFileIO extends AbstractFileIO {
 
         zos = new ZipOutputStream(new BufferedOutputStream(Files.newOutputStream(Paths.get(file.getPath())), BUFFER_SIZE));
 
-        zos.setLevel(9);
+        zos.setLevel(BEST_COMPRESSION);
 
         zos.putNextEntry(new ZipEntry(entryName));
 
