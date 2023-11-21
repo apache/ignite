@@ -105,6 +105,9 @@ public class Dump implements AutoCloseable {
      */
     private final ConcurrentMap<Long, ByteBuffer> thLocBufs = new ConcurrentHashMap<>();
 
+    /** If {@code true} then compress partition files. */
+    private final boolean comprParts;
+
     /**
      * @param dumpDir Dump directory.
      * @param keepBinary If {@code true} then keep read entries in binary form.
@@ -132,6 +135,7 @@ public class Dump implements AutoCloseable {
         this.keepBinary = keepBinary;
         this.cctx = standaloneKernalContext(dumpDir, log);
         this.raw = raw;
+        this.comprParts = metadata.get(0).compressPartitions();
     }
 
     /**
@@ -227,7 +231,7 @@ public class Dump implements AutoCloseable {
      * @return Dump iterator.
      */
     public List<Integer> partitions(String node, int group) {
-        String suffix = metadata.get(0).compressPartitions() ? DUMP_FILE_EXT + ZIP_SUFFIX : DUMP_FILE_EXT;
+        String suffix = comprParts ? DUMP_FILE_EXT + ZIP_SUFFIX : DUMP_FILE_EXT;
 
         File[] parts = dumpGroupDirectory(node, group)
             .listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(suffix));
@@ -246,14 +250,12 @@ public class Dump implements AutoCloseable {
      * @return Dump iterator.
      */
     public DumpedPartitionIterator iterator(String node, int group, int part) {
-        boolean compressed = metadata.get(0).compressPartitions();
-
-        FileIOFactory ioFactory = compressed ? new UnzipFileIOFactory() : new RandomAccessFileIOFactory();
+        FileIOFactory ioFactory = comprParts ? new UnzipFileIOFactory() : new RandomAccessFileIOFactory();
 
         FileIO dumpFile;
 
         try {
-            dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, group), getDumpPartFileName(part, compressed)));
+            dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, group), dumpPartFileName(part, comprParts)));
         }
         catch (IOException e) {
             throw new RuntimeException(e);
@@ -326,9 +328,9 @@ public class Dump implements AutoCloseable {
     /**
      * @param part Partition number.
      * @param compressed If {@code true} then compressed partition file.
-     * @return Dump partition file name
+     * @return Dump partition file name.
      */
-    public static String getDumpPartFileName(int part, boolean compressed) {
+    public static String dumpPartFileName(int part, boolean compressed) {
         return PART_FILE_PREFIX + part + DUMP_FILE_EXT + (compressed ? ZIP_SUFFIX : "");
     }
 

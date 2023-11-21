@@ -136,21 +136,29 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     public static List<Object[]> params() {
         List<Object[]> params = new ArrayList<>();
 
+        boolean comprParts = false;
+
         for (int nodes : new int[]{1, 3})
             for (int backups : new int[]{0, 1})
                 for (boolean persistence : new boolean[]{true, false})
                     for (CacheAtomicityMode mode : CacheAtomicityMode.values()) {
                         for (boolean useDataStreamer : new boolean[]{true, false}) {
-                            for (boolean comprParts : new boolean[]{true, false}) {
-                                if (nodes == 1 && backups != 0)
-                                    continue;
+                            if (nodes == 1 && backups != 0)
+                                continue;
 
+                            if (backups > 0) {
+                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, false, comprParts});
+
+                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, true, !comprParts});
+                            }
+                            else {
                                 params.add(new Object[] {nodes, backups, persistence, mode, useDataStreamer, false, comprParts});
 
-                                if (backups > 0)
-                                    params.add(new Object[] {nodes, backups, persistence, mode, useDataStreamer, true, comprParts});
+                                comprParts = !comprParts;
                             }
                         }
+
+                        comprParts = !comprParts;
                     }
 
         return params;

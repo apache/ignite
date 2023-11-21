@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.Channels;
@@ -48,6 +49,9 @@ public class WriteOnlyZipFileIO extends AbstractFileIO {
     private final ZipOutputStream zos;
 
     /** */
+    private final OutputStream bos;
+
+    /** */
     private final WritableByteChannel ch;
 
     /** */
@@ -65,7 +69,9 @@ public class WriteOnlyZipFileIO extends AbstractFileIO {
 
         zos.putNextEntry(new ZipEntry(entryName));
 
-        ch = Channels.newChannel(zos);
+        bos = new BufferedOutputStream(zos, BUFFER_SIZE);
+
+        ch = Channels.newChannel(bos);
     }
 
     /** {@inheritDoc} */
@@ -139,6 +145,8 @@ public class WriteOnlyZipFileIO extends AbstractFileIO {
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
+        bos.flush();
+
         zos.closeEntry();
 
         ch.close();

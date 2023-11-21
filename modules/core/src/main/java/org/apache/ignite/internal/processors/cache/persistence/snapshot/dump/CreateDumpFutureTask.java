@@ -72,7 +72,7 @@ import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.getDumpPartFileName;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.dumpPartFileName;
 
 /**
  * Task creates cache group dump.
@@ -450,7 +450,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 for (int cache : gctx.cacheIds())
                     changed.put(cache, new GridConcurrentHashSet<>());
 
-                File dumpFile = new File(groupDirectory(gctx), getDumpPartFileName(part, compress));
+                File dumpFile = new File(groupDirectory(gctx), dumpPartFileName(part, compress));
 
                 if (!dumpFile.createNewFile())
                     throw new IgniteException("Dump file can't be created: " + dumpFile);

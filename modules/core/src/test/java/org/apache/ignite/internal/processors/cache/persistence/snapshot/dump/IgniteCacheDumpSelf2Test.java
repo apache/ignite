@@ -25,12 +25,14 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -60,10 +62,12 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TMP_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.CACHE_0;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.DMP_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.KEYS_CNT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.USER_FACTORY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.dump;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.dumpDirectory;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.invokeCheckCommand;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntrySerializer.HEADER_SZ;
@@ -401,5 +405,59 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         ign.snapshot().createDump(DMP_NAME + "2", Arrays.asList(DEFAULT_CACHE_NAME, "non-existing-group")).get();
 
         assertTrue(lsnr.check());
+    }
+
+    /** */
+    @Test
+    public void testCompareRawWithCompressedCacheDumps() throws Exception {
+        IgniteEx ign = startGrid();
+
+        int parts = 20;
+
+        IgniteCache<Integer, Integer> cache = ign.createCache(new CacheConfiguration<Integer, Integer>()
+            .setName(CACHE_0)
+            .setAffinity(new RendezvousAffinityFunction().setPartitions(parts))
+        );
+
+        IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
+
+        String rawDump = "rawDump";
+        String zipDump = "zipDump";
+
+        ign.context().cache().context().snapshotMgr()
+            .createSnapshot(rawDump, null, null, false, true, true, false).get();
+
+        ign.context().cache().context().snapshotMgr()
+            .createSnapshot(zipDump, null, null, false, true, true, true).get();
+
+        stopAllGrids();
+
+        Map<Integer, Long> rawSizes = Arrays
+            .stream(new File(dumpDirectory(ign, rawDump) + "/db/127_0_0_1_47500/cache-cache-0/").listFiles())
+            .filter(f -> !f.getName().equals("cache_data.dat"))
+            .peek(f -> assertTrue(f.getName().startsWith("part-") && f.getName().endsWith(".dump")))
+            .collect(Collectors.toMap(
+                f -> Integer.parseInt(f.getName().substring("part-".length(), f.getName().length() - ".dump".length())),
+                f -> f.length()
+            ));
+
+        Map<Integer, Long> zipSizes = Arrays
+            .stream(new File(dumpDirectory(ign, zipDump) + "/db/127_0_0_1_47500/cache-cache-0/").listFiles())
+            .filter(f -> !f.getName().equals("cache_data.dat"))
+            .peek(f -> assertTrue(f.getName().startsWith("part-") && f.getName().endsWith(".dump.zip")))
+            .collect(Collectors.toMap(
+                f -> Integer.parseInt(f.getName().substring("part-".length(), f.getName().length() - ".dump.zip".length())),
+                f -> f.length()
+            ));
+
+        assertEquals(parts, rawSizes.keySet().size());
+
+        assertEquals("Different set of partitions", rawSizes.keySet(), zipSizes.keySet());
+
+        rawSizes.keySet().stream().forEach( p ->
+            assertTrue("Compressed size " + rawSizes.get(p) + " should be smaller than compressed " + zipSizes.get(p),
+                rawSizes.get(p) > zipSizes.get(p)
+            )
+        );
     }
 }
