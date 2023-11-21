@@ -230,7 +230,7 @@ public class Dump implements AutoCloseable {
         String suffix = metadata.get(0).compressPartitions() ? DUMP_FILE_EXT + ZIP_SUFFIX : DUMP_FILE_EXT;
 
         File[] parts = dumpGroupDirectory(node, group)
-            .listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) && (f.getName().endsWith(suffix)));
+            .listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(suffix));
 
         if (parts == null)
             return Collections.emptyList();
