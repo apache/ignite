@@ -24,7 +24,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-13}
 
 # Image name to run nodes
-JDK_VERSION="${JDK_VERSION:-8}"
+JDK_VERSION="${JDK_VERSION:-8u392-b08-jdk-focal}"
 IMAGE_PREFIX="ducker-ignite-openjdk"
 
 ###
@@ -137,7 +137,7 @@ done
 
 if [ -z "$IMAGE_NAME" ]; then
     IMAGE_NAME="$IMAGE_PREFIX-$JDK_VERSION"
-    "$SCRIPT_DIR"/ducker-ignite build -j "openjdk:$JDK_VERSION" $IMAGE_NAME || die "ducker-ignite build failed"
+    "$SCRIPT_DIR"/ducker-ignite build -j "eclipse-temurin:$JDK_VERSION" $IMAGE_NAME || die "ducker-ignite build failed"
 else
     echo "[WARN] Used non-default image $IMAGE_NAME. Be sure you use actual version of the image. " \
          "Otherwise build it with 'ducker-ignite build' command"

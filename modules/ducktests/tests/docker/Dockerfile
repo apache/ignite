@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG jdk_version=openjdk:8
+ARG jdk_version=eclipse-temurin:8u392-b08-jdk-focal
 FROM $jdk_version
 
 MAINTAINER Apache Ignite dev@ignite.apache.org
@@ -33,11 +33,7 @@ ARG ducker_creator=default
 LABEL ducker.creator=$ducker_creator
 
 # Update Linux and install necessary utilities.
-RUN cat /etc/apt/sources.list | sed 's/http:\/\/deb.debian.org/https:\/\/deb.debian.org/g' > /etc/apt/sources.list.2 && mv /etc/apt/sources.list.2 /etc/apt/sources.list
-RUN apt update && apt install -y sudo netcat iptables rsync unzip wget curl jq coreutils openssh-server net-tools vim python3-pip python3-dev libffi-dev libssl-dev cmake pkg-config libfuse-dev iperf traceroute mc && apt-get -y clean
-RUN python3 -m pip install -U pip==20.2.2;
-COPY ./requirements.txt /root/requirements.txt
-RUN pip3 install -r /root/requirements.txt
+RUN apt update && apt install -y sudo build-essential git netcat iptables rsync unzip wget curl jq coreutils openssh-server net-tools vim python3-pip python3-dev libffi-dev libssl-dev cmake pkg-config libfuse-dev iperf traceroute mc && apt-get -y clean
 
 # Set up ssh
 COPY ./ssh-config /root/.ssh/config
@@ -49,7 +45,7 @@ ARG APACHE_MIRROR="https://apache-mirror.rbc.ru/pub/apache/"
 ARG APACHE_ARCHIVE="https://archive.apache.org/dist/"
 
 # Install binary test dependencies.
-RUN for v in "2.7.6" "2.8.0" "2.8.1" "2.9.0" "2.9.1" "2.10.0" "2.11.0" "2.11.1" "2.12.0" "2.13.0" "2.14.0"; \
+RUN for v in "2.7.6" "2.8.1" "2.15.0"; \
     do cd /opt; \
     curl -O $APACHE_ARCHIVE/ignite/$v/apache-ignite-$v-bin.zip;\
     unzip apache-ignite-$v-bin.zip && mv /opt/apache-ignite-$v-bin /opt/ignite-$v;\
@@ -67,14 +63,6 @@ RUN cd /opt && curl -O $APACHE_ARCHIVE/zookeeper/$ZOOKEEPER_NAME/$ZOOKEEPER_RELE
  && tar xvf $ZOOKEEPER_RELEASE_ARTIFACT && rm $ZOOKEEPER_RELEASE_ARTIFACT
 RUN mv /opt/$ZOOKEEPER_RELEASE_NAME /opt/$ZOOKEEPER_NAME
 
-# Install spark
-ARG SPARK_VERSION="2.3.4"
-ARG SPARK_NAME="spark-$SPARK_VERSION"
-ARG SPARK_RELEASE_NAME="spark-$SPARK_VERSION-bin-hadoop2.7"
-
-RUN cd /opt && curl -O $APACHE_ARCHIVE/spark/$SPARK_NAME/$SPARK_RELEASE_NAME.tgz && tar xvf $SPARK_RELEASE_NAME.tgz && rm $SPARK_RELEASE_NAME.tgz
-RUN mv /opt/$SPARK_RELEASE_NAME /opt/$SPARK_NAME
-
 # The version of Kibosh to use for testing.
 # If you update this, also update vagrant/base.sh
 ARG KIBOSH_VERSION="8841dd392e6fbf02986e2fb1f1ebf04df344b65a"
@@ -90,15 +78,23 @@ ARG JMXTERM_ARTIFACT="$JMXTERM_NAME-$JMXTERM_VERSION-uber.jar"
 RUN cd /opt && curl -OL https://github.com/jiaqi/jmxterm/releases/download/v$JMXTERM_VERSION/$JMXTERM_ARTIFACT \
        && mv $JMXTERM_ARTIFACT $JMXTERM_NAME.jar
 
+#Install python deps
+RUN python3 -m pip install -U pip==20.2.2;
+COPY ./requirements.txt /root/requirements.txt
+RUN pip3 install -r /root/requirements.txt
+
 # Set up the ducker user.
 RUN useradd -ms /bin/bash ducker \
     && mkdir -p /home/ducker/ \
-    && rsync -aiq /root/.ssh/ /home/ducker/.ssh \
-    && chown -R ducker /home/ducker/ /mnt/ /var/log/ \
+    && chown -R ducker /mnt/ /var/log/ /opt \
+    && echo 'ducker ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+
+RUN  rsync -aiq /root/.ssh/ /home/ducker/.ssh \
+    && echo "JAVA_HOME=$JAVA_HOME" >> /home/ducker/.ssh/environment \
     && echo "LANG=C.UTF-8" >> /home/ducker/.ssh/environment \
     && echo "PATH=$(runuser -l ducker -c 'echo $PATH'):$JAVA_HOME/bin" >> /home/ducker/.ssh/environment \
-    && echo 'PATH=$PATH:'"$JAVA_HOME/bin" >> /home/ducker/.profile \
-    && echo 'ducker ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+    && chown -R ducker /home/ducker
+
 USER ducker
 
 CMD sudo service ssh start && tail -f /dev/null

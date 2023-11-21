@@ -146,8 +146,8 @@ class JvmVersionMixin:
         """
         :return: Full java version on current node.
         """
-        cmd = r"java -version 2>&1 | awk -F[\"\-] '/version/ {print $2}'"
+        cmd = r"$JAVA_HOME/bin/java -version 2>&1 | awk -F[\"\-] '/version/ {print $2}'"
 
-        raw_version = next(node.account.ssh_capture(cmd, allow_fail=False))
+        raw_version = list(node.account.ssh_capture(cmd, allow_fail=False))
 
-        return raw_version.strip() if raw_version else ''
+        return raw_version[0].strip() if raw_version else ''
