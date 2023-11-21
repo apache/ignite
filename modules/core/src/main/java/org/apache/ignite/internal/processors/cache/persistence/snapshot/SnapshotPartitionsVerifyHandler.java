@@ -368,9 +368,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
                     cctx.snapshotMgr().snapshotExecutorService(),
                     partFiles,
-                    part -> calculateDumpedPartitionHash(dump,
-                        cacheGroupName(part.getParentFile()), partId(part.getName())
-                    )
+                    part -> calculateDumpedPartitionHash(dump, cacheGroupName(part.getParentFile()), partId(part.getName()))
                 );
 
                 return partitionHashRecordV2s.stream().collect(Collectors.toMap(PartitionHashRecordV2::partitionKey, r -> r));
