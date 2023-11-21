@@ -19,6 +19,7 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -34,6 +35,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.ClientServices;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -434,10 +436,33 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     }
 
     /**
-     * Tests client uses service awareness when partitionAwareness is enabled.
+     * Tests the client uses Service Awareness for all the servers when partitionAwareness is enabled.
      */
     @Test
-    public void testServiceAwarenessEnabled() {
+    public void testServiceAwarenessEnabledAlLServers() {
+        doTestServiceAwarenessForClusterGroup(null);
+    }
+
+    /**
+     * Tests the client invokes only the proper node when partitionAwareness is enabled and just one correct server is
+     * passed as the cluster group.
+     */
+    @Test
+    public void testServiceAwarenessEnabledOneServer() {
+        doTestServiceAwarenessForClusterGroup(Collections.singletonList(grid(1).localNode().id()));
+    }
+
+    /**
+     * Tests the client invokes only the proper nodes when partitionAwareness is enabled and just a couple of correct
+     * servers are passed as the cluster group.
+     */
+    @Test
+    public void testServiceAwarenessEnabledTwoServers() {
+        doTestServiceAwarenessForClusterGroup(Arrays.asList(grid(1).localNode().id(), grid(2).localNode().id()));
+    }
+
+    /** */
+    private void doTestServiceAwarenessForClusterGroup(@Nullable Collection<UUID> serverIds) {
         // Counters of the invocation redirects.
         AtomicInteger redirectCnt = new AtomicInteger();
 
@@ -469,7 +494,9 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
         ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
         try (IgniteClient client = startClient(requestedServers)) {
-            ServicesTest.TestServiceInterface svc = client.services().serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
+            ClientServices clientServices = F.isEmpty(serverIds) ? client.services() : client.services(client.cluster().forNodeIds(serverIds));
+
+            ServicesTest.TestServiceInterface svc = clientServices.serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
 
             for (int i = 0; i < 100; ++i)
                 svc.testMethod();
@@ -486,7 +513,9 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
         partitionAwareness = true;
 
         try (IgniteClient client = startClient(requestedServers)) {
-            ServicesTest.TestServiceInterface svc = client.services().serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
+            ClientServices clientServices = F.isEmpty(serverIds) ? client.services() : client.services(client.cluster().forNodeIds(serverIds));
+
+            ServicesTest.TestServiceInterface svc = clientServices.serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
 
             // We assume that the topology will be received and used for the further requests.
             for (int i = 0; i < 1000; ++i)
@@ -504,7 +533,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
             && top.contains(grid(2).localNode().id()));
 
         // Ensure that only the target nodes were requeted after the topology getting.
-        assertEquals(top, requestedServers);
+        assertEquals(new HashSet<>(F.isEmpty(serverIds) ? top : serverIds), new HashSet<>(requestedServers));
 
         // Ensure there were no redirected sertvic calls any more.
         assertEquals(0, redirectCnt.get());

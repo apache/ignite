@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientException;
@@ -243,7 +244,7 @@ class ClientServicesImpl implements ClientServices {
                     return res;
                 }).whenComplete((nodes, err) -> {
                     if (err == null) {
-                        this.nodes = nodes;
+                        this.nodes = Collections.unmodifiableList(nodes);
                         lastAffTop = curAffTop;
                         lastUpdateRequestTime = System.nanoTime();
 
@@ -312,15 +313,22 @@ class ClientServicesImpl implements ClientServices {
         /** {@inheritDoc} */
         @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             try {
-                Collection<UUID> nodeIds = grp.nodeIds();
+                List<UUID> nodesToCall = serviceTopology();
 
-                if (nodeIds != null && nodeIds.isEmpty())
-                    throw new ClientException("Cluster group is empty.");
+                Collection<UUID> requestedNodeIds = grp.nodeIds();
+
+                if (requestedNodeIds != null) {
+                    if (requestedNodeIds.isEmpty())
+                        throw new ClientException("Cluster group is empty.");
+
+                    if (!F.isEmpty(nodesToCall))
+                        nodesToCall = nodesToCall.stream().filter(requestedNodeIds::contains).collect(Collectors.toList());
+                }
 
                 return ch.service(ClientOperation.SERVICE_INVOKE,
-                    req -> writeServiceInvokeRequest(req, nodeIds, method, args),
+                    req -> writeServiceInvokeRequest(req, requestedNodeIds, method, args),
                     res -> utils.readObject(res.in(), false, method.getReturnType()),
-                    serviceTopology()
+                    nodesToCall
                 );
             }
             catch (ClientError e) {
