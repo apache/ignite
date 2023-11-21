@@ -47,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
  *         last consumed {@link CdcManagerRecord}.
  *     </li>
  *     <li>
- *         Apache Ignite provides a default implementation - {@link FileCdcManager}. It will set the CDC mode to
+ *         Apache Ignite provides a default implementation - {@link CdcUtilityActiveCdcManager}. It will set the CDC mode to
  *         {@link CdcMode#CDC_UTILITY_ACTIVE} on node start up.
  *     </li>
  * </ul>

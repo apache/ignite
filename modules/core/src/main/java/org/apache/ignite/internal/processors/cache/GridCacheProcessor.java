@@ -80,7 +80,7 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cdc.CdcManager;
-import org.apache.ignite.internal.cdc.FileCdcManager;
+import org.apache.ignite.internal.cdc.CdcUtilityActiveCdcManager;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -3082,7 +3082,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             if (cdcMgr == null)
-                cdcMgr = new FileCdcManager();
+                cdcMgr = new CdcUtilityActiveCdcManager();
         }
 
         IgniteSnapshotManager snapshotMgr = ctx.plugins().createComponent(IgniteSnapshotManager.class);

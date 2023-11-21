@@ -33,7 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cdc.CdcManager;
-import org.apache.ignite.internal.cdc.FileCdcManager;
+import org.apache.ignite.internal.cdc.CdcUtilityActiveCdcManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
@@ -319,7 +319,7 @@ public class CdcManagerTest extends GridCommonAbstractTest {
             if (cdcStart)
                 assertTrue(cdcMgr(ign) instanceof TestCdcManager);
             else
-                assertTrue(ign.context().cache().context().cdc() instanceof FileCdcManager);
+                assertTrue(ign.context().cache().context().cdc() instanceof CdcUtilityActiveCdcManager);
         }
     }
 

@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -32,9 +31,9 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.cdc.CdcMain.stateDirFile;
 
 /**
- * CDC is based on consuming by {@link CdcMain} WAL segments stored in {@link DataStorageConfiguration#getCdcWalPath()}.
+ * CDC manager that delegates consuming CDC events to the {@link CdcMain} utility.
  */
-public class FileCdcManager extends GridCacheSharedManagerAdapter implements CdcManager {
+public class CdcUtilityActiveCdcManager extends GridCacheSharedManagerAdapter implements CdcManager {
     /** If {@code true} then should notify {@link CdcMain} to start consuming WAL segments. */
     private boolean writeStopRecord;
 
