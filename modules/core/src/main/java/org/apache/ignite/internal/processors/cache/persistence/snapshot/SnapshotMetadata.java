@@ -66,7 +66,7 @@ public class SnapshotMetadata implements Serializable {
     /**
      * If {@code true} then compress partition files.
      * This shouldn't be confused with {@link SnapshotMetadata#comprGrpIds} which represents how Ignite keeps data in memory pages
-     * while {@link SnapshotMetadata#comprParts} represents how the dump files stored onto disk.
+     * while {@link SnapshotMetadata#comprParts} represents how dump files are stored on disk.
      */
     private final boolean comprParts;
 
