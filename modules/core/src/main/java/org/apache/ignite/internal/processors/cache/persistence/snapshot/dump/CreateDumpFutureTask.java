@@ -123,7 +123,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
      * @param ioFactory IO factory.
      * @param snpSndr Snapshot sender.
      * @param parts Parts to dump.
-     * @param compress If {@code true} then compress the file.
+     * @param compress If {@code true} then compress partition files.
      */
     public CreateDumpFutureTask(
         GridCacheSharedContext<?, ?> cctx,
