@@ -403,10 +403,5 @@ public class CdcIgniteNodeActiveModeTest extends AbstractCdcTest {
         @Override public void beforeResumeLogging(@Nullable WALPointer ptr) {
             // No-op.
         }
-
-        /** {@inheritDoc} */
-        @Override public void afterResumeLogging() {
-            // No-op.
-        }
     }
 }

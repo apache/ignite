@@ -69,6 +69,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.platform.PlatformType;
@@ -168,6 +169,14 @@ public class CdcMain implements Runnable {
     /** Cdc mode metric name. */
     public static final String CDC_MODE = "CdcMode";
 
+    /** Filter for consumption in {@link CdcMode#IGNITE_NODE_ACTIVE} mode. */
+    private static final IgniteBiPredicate<WALRecord.RecordType, WALPointer> PASSIVE_RECS =
+        (type, ptr) -> type == CDC_MANAGER_STOP_RECORD || type == CDC_MANAGER_RECORD;
+
+    /** Filter for consumption in {@link CdcMode#CDC_UTILITY_ACTIVE} mode. */
+    private static final IgniteBiPredicate<WALRecord.RecordType, WALPointer> ACTIVE_RECS =
+        (type, ptr) -> type == DATA_RECORD_V2 || type == CDC_DATA_RECORD;
+
     /** Ignite configuration. */
     private final IgniteConfiguration igniteCfg;
 
@@ -219,7 +228,13 @@ public class CdcMain implements Runnable {
     /** Change Data Capture state. */
     private CdcConsumerState state;
 
-    /** Save state to start from. */
+    /**
+     * Saved state to start from. Points to the last committed offset. Set to {@code null} after failover on start and
+     * switching from {@link CdcMode#IGNITE_NODE_ACTIVE} to {@link CdcMode#CDC_UTILITY_ACTIVE}.
+     *
+     * @see #removeProcessedOnFailover(Path)
+     * @see #consumeSegmentActively(IgniteWalIteratorFactory.IteratorParametersBuilder)
+     */
     private T2<WALPointer, Integer> walState;
 
     /** Types state. */
@@ -408,7 +423,6 @@ public class CdcMain implements Runnable {
         lastSegmentConsumptionTs =
             mreg.longMetric(LAST_SEG_CONSUMPTION_TIME, "Last time of consumption of WAL segment");
         metaUpdate = mreg.histogram(META_UPDATE, new long[] {100, 500, 1000}, "Metadata update time");
-
         mreg.register(CDC_MODE, () -> cdcModeState.name(), String.class, "CDC mode");
     }
 
@@ -479,6 +493,9 @@ public class CdcMain implements Runnable {
                     while (segments.hasNext()) {
                         Path segment = segments.next();
 
+                        if (walState != null && removeProcessedOnFailover(segment))
+                            continue;
+
                         if (consumeSegment(segment)) {
                             // CDC mode switched. Reset partitions info to handle them again actively.
                             seen.clear();
@@ -488,6 +505,8 @@ public class CdcMain implements Runnable {
 
                             break;
                         }
+
+                        walState = null;
                     }
 
                     seen.removeIf(p -> !exists.contains(p)); // Clean up seen set.
@@ -528,38 +547,14 @@ public class CdcMain implements Runnable {
         if (igniteCfg.getDataStorageConfiguration().getPageSize() != 0)
             builder.pageSize(igniteCfg.getDataStorageConfiguration().getPageSize());
 
+        if (walState != null)
+            builder.from(walState.get1());
+
         long segmentIdx = segmentIndex(segment);
 
         lastSegmentConsumptionTs.value(System.currentTimeMillis());
 
         curSegmentIdx.value(segmentIdx);
-
-        if (walState != null) {
-            if (segmentIdx > walState.get1().index()) {
-                throw new IgniteException("Found segment greater then saved state. Some events are missed. Exiting! " +
-                    "[state=" + walState + ", segment=" + segmentIdx + ']');
-            }
-
-            if (segmentIdx < walState.get1().index()) {
-                if (log.isInfoEnabled()) {
-                    log.info("Already processed segment found. Skipping and deleting the file [segment=" +
-                        segmentIdx + ", state=" + walState.get1().index() + ']');
-                }
-
-                // WAL segment is a hard link to a segment file in the special Change Data Capture folder.
-                // So, we can safely delete it after processing.
-                try {
-                    Files.delete(segment);
-
-                    return false;
-                }
-                catch (IOException e) {
-                    throw new IgniteException(e);
-                }
-            }
-
-            builder.from(walState.get1());
-        }
 
         if (cdcModeState == CdcMode.IGNITE_NODE_ACTIVE) {
             if (consumeSegmentPassively(builder))
@@ -577,14 +572,9 @@ public class CdcMain implements Runnable {
      * Consumes CDC events in {@link CdcMode#CDC_UTILITY_ACTIVE} mode.
      */
     private void consumeSegmentActively(IgniteWalIteratorFactory.IteratorParametersBuilder builder) {
-        builder.addFilter((type, ptr) -> type == DATA_RECORD_V2 || type == CDC_DATA_RECORD);
-
-        try (DataEntryIterator iter = new DataEntryIterator(new IgniteWalIteratorFactory(log).iterator(builder))) {
-            if (walState != null) {
+        try (DataEntryIterator iter = new DataEntryIterator(new IgniteWalIteratorFactory(log).iterator(builder.addFilter(ACTIVE_RECS)))) {
+            if (walState != null)
                 iter.init(walState.get2());
-
-                walState = null;
-            }
 
             boolean interrupted;
 
@@ -592,7 +582,7 @@ public class CdcMain implements Runnable {
                 boolean commit = consumer.onRecords(iter);
 
                 if (commit)
-                    saveState(iter.state());
+                    saveStateAndRemoveProcessed(iter.state());
 
                 interrupted = Thread.interrupted();
             } while (iter.hasNext() && !interrupted);
@@ -605,51 +595,13 @@ public class CdcMain implements Runnable {
         }
     }
 
-    /** Saves WAL state. */
-    private void saveState(T2<WALPointer, Integer> curState) throws IOException {
-        if (curState == null)
-            return;
-
-        if (log.isDebugEnabled())
-            log.debug("Saving state [curState=" + curState + ']');
-
-        state.saveWal(curState);
-
-        committedSegmentIdx.value(curState.get1().index());
-        committedSegmentOffset.value(curState.get1().fileOffset());
-
-        // Can delete after new file state save.
-        if (!processedSegments.isEmpty()) {
-            Set<Path> processingSegments = new HashSet<>(processedSegments);
-
-            // WAL segment is a hard link to a segment file in a specifal Change Data Capture folder.
-            // So we can safely delete it after success processing.
-            for (Path processedSegment : processedSegments) {
-                // Can't delete current segment, because state points to it.
-                if (segmentIndex(processedSegment) >= curState.get1().index())
-                    continue;
-
-                Files.delete(processedSegment);
-
-                processingSegments.remove(processedSegment);
-            }
-
-            processedSegments.clear();
-            processedSegments.addAll(processingSegments);
-        }
-    }
-
     /**
      * Consumes CDC events in {@link CdcMode#IGNITE_NODE_ACTIVE} mode.
      *
      * @return {@code true} if mode switched.
      */
     private boolean consumeSegmentPassively(IgniteWalIteratorFactory.IteratorParametersBuilder builder) {
-        builder.addFilter((type, ptr) -> type == CDC_MANAGER_STOP_RECORD || type == CDC_MANAGER_RECORD);
-
-        try (WALIterator iter = new IgniteWalIteratorFactory(log).iterator(builder)) {
-            walState = null;
-
+        try (WALIterator iter = new IgniteWalIteratorFactory(log).iterator(builder.addFilter(PASSIVE_RECS))) {
             boolean interrupted = false;
 
             while (iter.hasNext() && !interrupted) {
@@ -659,9 +611,7 @@ public class CdcMain implements Runnable {
 
                 switch (walRecord.type()) {
                     case CDC_MANAGER_RECORD:
-                        T2<WALPointer, Integer> walState = ((CdcManagerRecord)walRecord).walState();
-
-                        saveState(walState);
+                        saveStateAndRemoveProcessed(((CdcManagerRecord)walRecord).walState());
 
                         break;
 
@@ -825,6 +775,72 @@ public class CdcMain implements Runnable {
         }
         catch (IOException e) {
             throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * Remove segment file if it already processed. {@link #walState} points to the last committed offset so all files
+     * before this offset can be removed.
+     *
+     * @param segment Segment to check.
+     * @return {@code True} if segment file was deleted, {@code false} otherwise.
+     */
+    private boolean removeProcessedOnFailover(Path segment) {
+        long segmentIdx = segmentIndex(segment);
+
+        if (segmentIdx > walState.get1().index()) {
+            throw new IgniteException("Found segment greater then saved state. Some events are missed. Exiting! " +
+                "[state=" + walState + ", segment=" + segmentIdx + ']');
+        }
+
+        if (segmentIdx < walState.get1().index()) {
+            if (log.isInfoEnabled()) {
+                log.info("Already processed segment found. Skipping and deleting the file [segment=" +
+                    segmentIdx + ", state=" + walState.get1().index() + ']');
+            }
+
+            // WAL segment is a hard link to a segment file in the special Change Data Capture folder.
+            // So, we can safely delete it after processing.
+            try {
+                Files.delete(segment);
+
+                return true;
+            }
+            catch (IOException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        return false;
+    }
+
+    /** Saves WAL consumption state and delete segments that no longer required. */
+    private void saveStateAndRemoveProcessed(T2<WALPointer, Integer> curState) throws IOException {
+        if (curState == null)
+            return;
+
+        if (log.isDebugEnabled())
+            log.debug("Saving state [curState=" + curState + ']');
+
+        state.saveWal(curState);
+
+        committedSegmentIdx.value(curState.get1().index());
+        committedSegmentOffset.value(curState.get1().fileOffset());
+
+        Iterator<Path> rmvIter = processedSegments.iterator();
+
+        while (rmvIter.hasNext()) {
+            Path processedSegment = rmvIter.next();
+
+            // Can't delete current segment, because state points to it.
+            if (segmentIndex(processedSegment) >= curState.get1().index())
+                continue;
+
+            // WAL segment is a hard link to a segment file in a specifal Change Data Capture folder.
+            // So we can safely delete it after success processing.
+            Files.delete(processedSegment);
+
+            rmvIter.remove();
         }
     }
 

@@ -19,11 +19,13 @@ package org.apache.ignite.internal.cdc;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerRecord;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -38,7 +40,8 @@ import org.jetbrains.annotations.Nullable;
  *     </li>
  *     <li>
  *         This manager writes {@link CdcManagerStopRecord} after it stopped handling records by any reason.
- *         {@link CdcMain} should start consume records instead since last consumed {@link CdcManagerRecord}.
+ *         {@link CdcMain} should start consume records instead since {@link CdcManagerRecord#walState()} of
+ *         last consumed {@link CdcManagerRecord}.
  *     </li>
  *     <li>
  *         The current behavior of {@link CdcManager} is persisted within {@link CdcConsumerState#saveCdcMode(CdcMode)}.
@@ -46,12 +49,37 @@ import org.jetbrains.annotations.Nullable;
  *     </li>
  * </ul>
  *
+ * Ignite can be extended with custom CDC manager implemented with {@link PluginProvider}.
+ *
  * @see CdcConsumer#onEvents(Iterator)
  * @see CdcConsumerState#saveCdcMode(CdcMode)
  */
 public interface CdcManager extends GridCacheSharedManager {
     /**
-     * Collects byte buffer contains WAL records.
+     * Collects byte buffer contains WAL records. Provided buffer {@code dataBuf} is a continuous part of WAL segment file.
+     * The buffer might contain full content of a segment or only piece of it. There are guarantees:
+     * <ul>
+     *     <li>
+     *         This method invokes sequentially, the provided buffer in the specified bounds of {@code off} and {@code limit}
+     *         is a continuation of the previous one.
+     *     </li>
+     *     <li>The {@code dataBuf} is a read-only buffer.</li>
+     * </ul>
+     *
+     * Implementation suggestions:
+     *  <ul>
+     *      <li>
+     *          Frequence of calling the method depends on frequence of fsyncing WAL segment.
+     *          See {@link IgniteSystemProperties#IGNITE_WAL_SEGMENT_SYNC_TIMEOUT}.
+     *      </li>
+     *      <li>
+     *          It must handle the content of the {@code dataBuf} within the calling thread.
+     *          There is a guarantee that content of the buffer will not change before this method finished.
+     *          But Ignite doesn't guarantee it after the method finished.
+     *      </li>
+     *      <li>It must not block the calling thread and work quickly.</li>
+     *      <li>Ignite logs and ignores any {@link Throwable} throwed from this method.</li>
+     *  </ul>
      *
      * @param dataBuf Buffer that contains data to collect.
      * @param off Offset of the data within the buffer.
@@ -60,14 +88,16 @@ public interface CdcManager extends GridCacheSharedManager {
     public void collect(ByteBuffer dataBuf, int off, int limit);
 
     /**
-     * Callback before WAL resumes logging.
+     * Callback before WAL resumes logging. The method might be invoked few times on Ignite node start-up and Ignite
+     * cluster activation. WALPointer {@code ptr} points to the head of the WAL, or {@code null} if no WAL records had written yet.
      *
-     * @param ptr Pointer to the WAL head to resume logging.
+     * The value of the pointer should be used for validating the collected data is full and checking its integrity.
+     * The data before this pointer might not be collected with {@link #collect(ByteBuffer, int, int)} method and can
+     * be read from WAL segments stored on the disk.
+     *
+     * There is a guarantee that all data after this pointer will be collected with {@link #collect(ByteBuffer, int, int)} method.
+     *
+     * @param ptr Pointer to the current WAL head record, {@code null} if no WAL records had written yet.
      */
     public void beforeResumeLogging(@Nullable WALPointer ptr);
-
-    /**
-     * Callback after WAL resumes logging.
-     */
-    public void afterResumeLogging();
 }

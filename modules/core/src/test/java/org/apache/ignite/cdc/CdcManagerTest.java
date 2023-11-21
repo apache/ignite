@@ -400,11 +400,6 @@ public class CdcManagerTest extends GridCommonAbstractTest {
                 restoredPtr = ptr;
         }
 
-        /** {@inheritDoc} */
-        @Override public void afterResumeLogging() {
-            // No-op.
-        }
-
         /** @return {@code true} if stopped, otherwise {@code false}. */
         final boolean stopped() {
             return isStopping();

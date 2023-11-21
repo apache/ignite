@@ -842,9 +842,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         if (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0)
             scheduleNextRolloverCheck();
-
-        if (cctx.cdc() != null)
-            cctx.cdc().afterResumeLogging();
     }
 
     /**

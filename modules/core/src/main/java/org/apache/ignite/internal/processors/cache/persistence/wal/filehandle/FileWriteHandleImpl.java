@@ -541,8 +541,14 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
 
         fsync((MappedByteBuffer)buf.buf, off, len);
 
-        if (cctx.cdc() != null)
-            cctx.cdc().collect(buf.buf, off, off + len);
+        if (cctx.cdc() != null) {
+            try {
+                cctx.cdc().collect(buf.buf.asReadOnlyBuffer(), off, off + len);
+            }
+            catch (Throwable cdcErr) {
+                U.error(log, "Error happened during CDC data collection.", cdcErr);
+            }
+        }
 
         seg.release();
     }

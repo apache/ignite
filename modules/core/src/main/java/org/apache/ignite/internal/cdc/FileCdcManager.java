@@ -60,16 +60,6 @@ public class FileCdcManager extends GridCacheSharedManagerAdapter implements Cdc
 
     /** {@inheritDoc} */
     @Override public void collect(ByteBuffer dataBuf, int off, int limit) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void beforeResumeLogging(@Nullable WALPointer ptr) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void afterResumeLogging() {
         try {
             if (writeStopRecord) {
                 cctx.wal(true).log(new CdcManagerStopRecord());
@@ -80,5 +70,10 @@ public class FileCdcManager extends GridCacheSharedManagerAdapter implements Cdc
         catch (IgniteCheckedException e) {
             U.warn(log, "Failed to write WAL record. CDC might not work.");
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void beforeResumeLogging(@Nullable WALPointer ptr) {
+        // No-op.
     }
 }
