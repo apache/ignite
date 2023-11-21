@@ -19,42 +19,59 @@ package org.apache.ignite.internal.cdc;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cdc.CdcConsumer;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerRecord;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * CDC manager responsible for logic of capturing data within Ignite node. There is a contract between {@link CdcManager}
- * and {@link CdcMain}. Communication between these components are built with over WAL records. {@link CdcManager} can
+ * and {@link CdcMain}. Communication between these components are built with WAL records. {@link CdcManager} can
  * write some records, while {@link CdcMain} must listen to them.
  * <ul>
  *     <li>
  *         This manager can write {@link CdcManagerRecord} that contains info about consumer state.
- *         This record must be handled by {@link CdcMain} the same way it handles {@link CdcConsumer#onEvents(Iterator)}
+ *         This record will be handled by {@link CdcMain} the same way it handles {@link CdcConsumer#onEvents(Iterator)}
  *         when it returns {@code true}.
  *     </li>
  *     <li>
- *         This manager writes {@link CdcManagerStopRecord} after it stopped handling records by any reason.
- *         {@link CdcMain} should start consume records instead since {@link CdcManagerRecord#walState()} of
+ *         This manager must write {@link CdcManagerStopRecord} after it stopped handling records by any reason.
+ *         {@link CdcMain} will start consume records instead since {@link CdcManagerRecord#walState()} of
  *         last consumed {@link CdcManagerRecord}.
  *     </li>
  *     <li>
- *         The current behavior of {@link CdcManager} is persisted within {@link CdcConsumerState#saveCdcMode(CdcMode)}.
- *         After the mode set to {@link CdcMode#CDC_UTILITY_ACTIVE} it will not reset.
+ *         Apache Ignite provides a default implementation - {@link FileCdcManager}. It will set the CDC mode to
+ *         {@link CdcMode#CDC_UTILITY_ACTIVE} on node start up.
  *     </li>
  * </ul>
  *
- * Ignite can be extended with custom CDC manager implemented with {@link PluginProvider}.
+ * Ignite can be extended with custom CDC manager. It's required to implement this interface, create own {@link PluginProvider}
+ * that will return the implementation with {@link PluginProvider#createComponent(PluginContext, Class)} method.
+ * The {@code Class} parameter in the method is {@code CdcManager} class.
  *
  * @see CdcConsumer#onEvents(Iterator)
  * @see CdcConsumerState#saveCdcMode(CdcMode)
  */
 public interface CdcManager extends GridCacheSharedManager {
+    /**
+     * Callback is invoked once, after Ignite restores memory on start-up. It runs within Ignite start thread before
+     * {@link IgniteWriteAheadLogManager} enables writing new WAL records. WALPointer {@code restoredPtr} points
+     * to the head of the WAL, or {@code null} if no WAL records had written yet.
+     *
+     * This method invoked before first call of {@link #collect(ByteBuffer)}. The first collected buffer starts from
+     * the next pointer after {@code restoredPtr}.
+     *
+     * @param restoredPtr Pointer to WAL head record, {@code null} if no WAL records had written yet.
+     */
+    public void afterMemoryRestore(@Nullable WALPointer restoredPtr) throws IgniteCheckedException;
+
     /**
      * Collects byte buffer contains WAL records. Provided buffer {@code dataBuf} is a continuous part of WAL segment file.
      * The buffer might contain full content of a segment or only piece of it. There are guarantees:
@@ -74,7 +91,7 @@ public interface CdcManager extends GridCacheSharedManager {
      *      </li>
      *      <li>
      *          It must handle the content of the {@code dataBuf} within the calling thread.
-     *          There is a guarantee that content of the buffer will not change before this method finished.
+     *          Content of the buffer will not be changed before this method returns.
      *          But Ignite doesn't guarantee it after the method finished.
      *      </li>
      *      <li>It must not block the calling thread and work quickly.</li>
@@ -82,22 +99,6 @@ public interface CdcManager extends GridCacheSharedManager {
      *  </ul>
      *
      * @param dataBuf Buffer that contains data to collect.
-     * @param off Offset of the data within the buffer.
-     * @param limit Limit of the data within the buffer.
      */
-    public void collect(ByteBuffer dataBuf, int off, int limit);
-
-    /**
-     * Callback before WAL resumes logging. The method might be invoked few times on Ignite node start-up and Ignite
-     * cluster activation. WALPointer {@code ptr} points to the head of the WAL, or {@code null} if no WAL records had written yet.
-     *
-     * The value of the pointer should be used for validating the collected data is full and checking its integrity.
-     * The data before this pointer might not be collected with {@link #collect(ByteBuffer, int, int)} method and can
-     * be read from WAL segments stored on the disk.
-     *
-     * There is a guarantee that all data after this pointer will be collected with {@link #collect(ByteBuffer, int, int)} method.
-     *
-     * @param ptr Pointer to the current WAL head record, {@code null} if no WAL records had written yet.
-     */
-    public void beforeResumeLogging(@Nullable WALPointer ptr);
+    public void collect(ByteBuffer dataBuf);
 }

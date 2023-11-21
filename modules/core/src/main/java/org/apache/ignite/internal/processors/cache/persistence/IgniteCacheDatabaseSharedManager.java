@@ -1067,6 +1067,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             if (ptr != null)
                 ptr = ptr.next();
 
+            if (cctx.cdc() != null)
+                cctx.cdc().afterMemoryRestore(ptr);
+
             cctx.wal(true).startAutoReleaseSegments();
             cctx.wal(true).resumeLogging(ptr);
         }

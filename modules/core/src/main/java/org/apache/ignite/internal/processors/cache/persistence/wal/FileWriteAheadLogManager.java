@@ -802,9 +802,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
         }
 
-        if (cctx.cdc() != null)
-            cctx.cdc().beforeResumeLogging(filePtr);
-
         // walDisableContext is started after FileWriteAheadLogManager, so we obtain actual walDisableContext ref here.
         synchronized (this) {
             walDisableContext = cctx.walState().walDisableContext();

@@ -25,12 +25,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.cdc.CdcMain.STATE_DIR;
+import static org.apache.ignite.internal.cdc.CdcMain.stateDirFile;
 
 /**
  * CDC is based on consuming by {@link CdcMain} WAL segments stored in {@link DataStorageConfiguration#getCdcWalPath()}.
@@ -42,8 +41,7 @@ public class FileCdcManager extends GridCacheSharedManagerAdapter implements Cdc
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         try {
-            Path stateDir = ((FileWriteAheadLogManager)cctx.wal(true)).walCdcDirectory()
-                .toPath().resolve(STATE_DIR);
+            Path stateDir = stateDirFile(cctx).toPath();
 
             Files.createDirectories(stateDir);
 
@@ -59,7 +57,7 @@ public class FileCdcManager extends GridCacheSharedManagerAdapter implements Cdc
     }
 
     /** {@inheritDoc} */
-    @Override public void collect(ByteBuffer dataBuf, int off, int limit) {
+    @Override public void collect(ByteBuffer dataBuf) {
         try {
             if (writeStopRecord) {
                 cctx.wal(true).log(new CdcManagerStopRecord());
@@ -73,7 +71,7 @@ public class FileCdcManager extends GridCacheSharedManagerAdapter implements Cdc
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeResumeLogging(@Nullable WALPointer ptr) {
+    @Override public void afterMemoryRestore(@Nullable WALPointer restoredPtr) throws IgniteCheckedException {
         // No-op.
     }
 }

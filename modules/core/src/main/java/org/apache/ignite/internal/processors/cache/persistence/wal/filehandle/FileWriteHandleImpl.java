@@ -543,7 +543,11 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
 
         if (cctx.cdc() != null) {
             try {
-                cctx.cdc().collect(buf.buf.asReadOnlyBuffer(), off, off + len);
+                ByteBuffer cdcBuf = buf.buf.asReadOnlyBuffer();
+                cdcBuf.position(off);
+                cdcBuf.limit(off + len);
+
+                cctx.cdc().collect(cdcBuf);
             }
             catch (Throwable cdcErr) {
                 U.error(log, "Error happened during CDC data collection.", cdcErr);

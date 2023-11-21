@@ -382,22 +382,17 @@ public class CdcManagerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void collect(ByteBuffer dataBuf, int off, int limit) {
+        @Override public void collect(ByteBuffer dataBuf) {
             if (log.isDebugEnabled())
-                log.debug("Collect data buffer [offset=" + off + ", limit=" + limit + ']');
+                log.debug("Collect data buffer [offset=" + dataBuf.position() + ", limit=" + dataBuf.limit() + ']');
 
-            ByteBuffer src = dataBuf.duplicate();
-            src.position(off);
-            src.limit(limit);
-            src.order(dataBuf.order());
-
-            buf.put(src);
+            buf.put(dataBuf);
         }
 
         /** {@inheritDoc} */
-        @Override public void beforeResumeLogging(@Nullable WALPointer ptr) {
-            if (restoredPtr == null)
-                restoredPtr = ptr;
+        @Override public void afterMemoryRestore(@Nullable WALPointer restoredPtr) {
+            if (this.restoredPtr == null)
+                this.restoredPtr = restoredPtr;
         }
 
         /** @return {@code true} if stopped, otherwise {@code false}. */
