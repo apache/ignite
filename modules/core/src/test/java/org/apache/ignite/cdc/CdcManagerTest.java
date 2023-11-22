@@ -39,7 +39,6 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -131,14 +130,14 @@ public class CdcManagerTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testDisableByProperty() throws Exception {
-        assertFalse(cdcMgr(ign).stopped());
+        assertTrue(cdcMgr(ign).active());
 
         DistributedChangeableProperty<Serializable> cdcDisableProp = ign.context().distributedConfiguration()
             .property(FileWriteAheadLogManager.CDC_DISABLED);
 
         cdcDisableProp.localUpdate(true);
 
-        assertTrue(GridTestUtils.waitForCondition(() -> cdcMgr(ign).stopped(), 10_000, 10));
+        assertTrue(GridTestUtils.waitForCondition(() -> !cdcMgr(ign).active(), 10_000, 10));
     }
 
     /** */
@@ -266,8 +265,6 @@ public class CdcManagerTest extends GridCommonAbstractTest {
         ign = startGrid(0);
         cdcMgr = cdcMgr(ign);
 
-        assertEquals(new WALPointer(0, len0, 0), cdcMgr(ign).restoredPtr);
-
         for (int i = 0; i < 100; i++)
             ign.cache(DEFAULT_CACHE_NAME).put(i, i);
 
@@ -369,9 +366,6 @@ public class CdcManagerTest extends GridCommonAbstractTest {
         /** Buffer to store collected data. */
         private final ByteBuffer buf;
 
-        /** Pointer to restored Ignite state. */
-        private volatile WALPointer restoredPtr;
-
         /** */
         TestCdcManager() {
             buf = ByteBuffer.allocate(2 * WAL_SEG_SIZE);
@@ -390,14 +384,13 @@ public class CdcManagerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void afterMemoryRestore(@Nullable WALPointer restoredPtr) {
-            if (this.restoredPtr == null)
-                this.restoredPtr = restoredPtr;
+        @Override public boolean active() {
+            return !isStopping();
         }
 
-        /** @return {@code true} if stopped, otherwise {@code false}. */
-        final boolean stopped() {
-            return isStopping();
+        /** {@inheritDoc} */
+        @Override public void afterMemoryRestore() {
+            // No-op.
         }
 
         /** @return CdcManager for specified Ignite node. */

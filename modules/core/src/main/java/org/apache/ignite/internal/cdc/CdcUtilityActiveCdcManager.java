@@ -17,16 +17,12 @@
 
 package org.apache.ignite.internal.cdc;
 
-import java.io.IOException;
+import java.io.File;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.cdc.CdcMain.stateDirFile;
 
@@ -35,28 +31,21 @@ import static org.apache.ignite.internal.cdc.CdcMain.stateDirFile;
  */
 public class CdcUtilityActiveCdcManager extends GridCacheSharedManagerAdapter implements CdcManager {
     /** If {@code true} then should notify {@link CdcMain} to start consuming WAL segments. */
-    private boolean writeStopRecord;
+    private boolean writeStopRecord = true;
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        try {
-            Path stateDir = stateDirFile(cctx).toPath();
+        File stateDir = stateDirFile(cctx);
 
-            Files.createDirectories(stateDir);
+        if (stateDir.exists()) {
+            CdcConsumerState state = new CdcConsumerState(log, stateDir.toPath());
 
-            CdcConsumerState state = new CdcConsumerState(log, stateDir);
-
-            state.saveCdcMode(CdcMode.CDC_UTILITY_ACTIVE);
-
-            writeStopRecord = true;
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException(e);
+            writeStopRecord = state.loadCdcMode() == CdcMode.IGNITE_NODE_ACTIVE;
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void collect(ByteBuffer dataBuf) {
+    @Override public void onKernalStart0(boolean active) {
         try {
             if (writeStopRecord) {
                 cctx.wal(true).log(new CdcManagerStopRecord());
@@ -70,7 +59,17 @@ public class CdcUtilityActiveCdcManager extends GridCacheSharedManagerAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public void afterMemoryRestore(@Nullable WALPointer restoredPtr) throws IgniteCheckedException {
+    @Override public boolean active() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void collect(ByteBuffer dataBuf) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void afterMemoryRestore() throws IgniteCheckedException {
         // No-op.
     }
 }

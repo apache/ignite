@@ -1100,7 +1100,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 U.log(log, "Binary memory state restored at node startup [restoredPtr=" + restored + ']');
 
             if (cctx.cdc() != null)
-                cctx.cdc().afterMemoryRestore(restored);
+                cctx.cdc().afterMemoryRestore();
 
             // Wal logging is now available.
             cctx.wal().resumeLogging(restored);

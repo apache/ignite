@@ -395,12 +395,17 @@ public class CdcIgniteNodeActiveModeTest extends AbstractCdcTest {
     /** */
     protected static class NoOpCdcManager extends GridCacheSharedManagerAdapter implements CdcManager {
         /** {@inheritDoc} */
+        @Override public boolean active() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
         @Override public void collect(ByteBuffer dataBuf) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void afterMemoryRestore(@Nullable WALPointer restoredPtr) {
+        @Override public void afterMemoryRestore() {
             // No-op.
         }
     }

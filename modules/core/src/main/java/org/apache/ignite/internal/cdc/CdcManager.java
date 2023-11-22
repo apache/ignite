@@ -26,10 +26,8 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerRecord;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * CDC manager responsible for logic of capturing data within Ignite node. There is a contract between {@link CdcManager}
@@ -62,15 +60,11 @@ import org.jetbrains.annotations.Nullable;
 public interface CdcManager extends GridCacheSharedManager {
     /**
      * Callback is invoked once, after Ignite restores memory on start-up. It runs within Ignite start thread before
-     * {@link IgniteWriteAheadLogManager} enables writing new WAL records. WALPointer {@code restoredPtr} points
-     * to the head of the WAL, or {@code null} if no WAL records had written yet.
+     * {@link IgniteWriteAheadLogManager} starts writing WAL records.
      *
-     * This method invoked before first call of {@link #collect(ByteBuffer)}. The first collected buffer starts from
-     * the next pointer after {@code restoredPtr}.
-     *
-     * @param restoredPtr Pointer to WAL head record, {@code null} if no WAL records had written yet.
+     * This method invoked before the first call of {@link #collect(ByteBuffer)}.
      */
-    public void afterMemoryRestore(@Nullable WALPointer restoredPtr) throws IgniteCheckedException;
+    public void afterMemoryRestore() throws IgniteCheckedException;
 
     /**
      * Collects byte buffer contains WAL records. Provided buffer {@code dataBuf} is a continuous part of WAL segment file.
@@ -101,4 +95,11 @@ public interface CdcManager extends GridCacheSharedManager {
      * @param dataBuf Buffer that contains data to collect.
      */
     public void collect(ByteBuffer dataBuf);
+
+    /**
+     * If this manager isn't active then Ignite skips preparing data for the {@link #collect(ByteBuffer)} method.
+     *
+     * @return {@code true} if manager is active, otherwise {@code false}.
+     */
+    public boolean active();
 }
