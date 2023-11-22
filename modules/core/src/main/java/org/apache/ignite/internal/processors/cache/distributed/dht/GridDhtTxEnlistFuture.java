@@ -80,7 +80,9 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
         EnlistOperation op,
         @Nullable CacheEntryPredicate filter,
         boolean needRes,
-        boolean keepBinary) {
+        boolean keepBinary,
+        boolean keepCache
+    ) {
         super(nearNodeId,
             nearLockVer,
             mvccSnapshot,
@@ -90,7 +92,8 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
             timeout,
             cctx,
             filter,
-            keepBinary);
+            keepBinary,
+            keepCache);
 
         this.op = op;
         this.needRes = needRes;
@@ -127,7 +130,8 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
                 res.addEntryProcessResult(cctx, key, null, invokeRes.result(), invokeRes.error(), keepBinary);
         }
         else if (needRes)
-            res.set(cctx, txRes.prevValue(), txRes.success(), keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+            res.set(cctx, txRes.prevValue(), txRes.success(), keepBinary, keepCache,
+                U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
     }
 
     /** {@inheritDoc} */

@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
  * Cache get and put if absent request.
@@ -36,10 +38,14 @@ public class ClientCacheGetAndPutIfAbsentRequest extends ClientCacheKeyValueRequ
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public ClientResponse process0(ClientConnectionContext ctx) {
-        Object res = cache(ctx).getAndPutIfAbsent(key(), val());
+        try {
+            Object res = binaryCache(ctx).getAndPutIfAbsent(key(), val());
 
-        return new ClientObjectResponse(requestId(), res);
+            return new ClientObjectResponse(requestId(), res);
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
     }
 }

@@ -68,6 +68,9 @@ public class GridCacheReturn implements Externalizable, Message {
     /** */
     private volatile boolean invokeRes;
 
+    /** */
+    private volatile boolean keepCacheObjects;
+
     /** Local result flag, if non local then do not need unwrap cache objects. */
     @GridDirectTransient
     private transient boolean loc;
@@ -110,6 +113,7 @@ public class GridCacheReturn implements Externalizable, Message {
         GridCacheContext cctx,
         boolean loc,
         boolean keepBinary,
+        boolean keepCacheObjects,
         @Nullable ClassLoader ldr,
         Object v,
         boolean success
@@ -119,7 +123,7 @@ public class GridCacheReturn implements Externalizable, Message {
 
         if (v != null) {
             if (v instanceof CacheObject)
-                initValue(cctx, (CacheObject)v, keepBinary, ldr);
+                initValue(cctx, (CacheObject)v, keepBinary, keepCacheObjects, ldr);
             else {
                 assert loc;
 
@@ -132,7 +136,7 @@ public class GridCacheReturn implements Externalizable, Message {
      * @return Value.
      */
     @Nullable public <V> V value() {
-        return (V)v;
+        return keepCacheObjects ? (V)cacheObj : (V)v;
     }
 
     /**
@@ -163,8 +167,8 @@ public class GridCacheReturn implements Externalizable, Message {
      * @param ldr Class loader, used for deserialization from binary representation.
      * @return This instance for chaining.
      */
-    public GridCacheReturn value(GridCacheContext cctx, CacheObject v, boolean keepBinary, @Nullable ClassLoader ldr) {
-        initValue(cctx, v, keepBinary, ldr);
+    public GridCacheReturn value(GridCacheContext cctx, CacheObject v, boolean keepBinary, @Nullable ClassLoader ldr, boolean keepCache) {
+        initValue(cctx, v, keepBinary, keepCache, ldr);
 
         return this;
     }
@@ -189,11 +193,12 @@ public class GridCacheReturn implements Externalizable, Message {
         @Nullable CacheObject cacheObj,
         boolean success,
         boolean keepBinary,
+        boolean keepCacheObjects,
         @Nullable ClassLoader ldr
     ) {
         this.success = success;
 
-        initValue(cctx, cacheObj, keepBinary, ldr);
+        initValue(cctx, cacheObj, keepBinary, keepCacheObjects, ldr);
 
         return this;
     }
@@ -208,9 +213,10 @@ public class GridCacheReturn implements Externalizable, Message {
         GridCacheContext cctx,
         @Nullable CacheObject cacheObj,
         boolean keepBinary,
+        boolean keepCache,
         @Nullable ClassLoader ldr
     ) {
-        if (loc)
+        if (loc && !keepCache)
             v = cctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheObj, keepBinary, true, ldr);
         else {
             assert cacheId == 0 || cacheId == cctx.cacheId();
@@ -218,6 +224,9 @@ public class GridCacheReturn implements Externalizable, Message {
             cacheId = cctx.cacheId();
 
             this.cacheObj = cacheObj;
+
+            if (keepCache)
+                keepCacheObjects = true;
         }
     }
 
@@ -362,7 +371,7 @@ public class GridCacheReturn implements Externalizable, Message {
     public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         loc = true;
 
-        if (cacheObj != null) {
+        if (cacheObj != null && !keepCacheObjects) {
             cacheObj.finishUnmarshal(ctx.cacheObjectContext(), ldr);
 
             v = ctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheObj, true, false, ldr);
@@ -438,6 +447,11 @@ public class GridCacheReturn implements Externalizable, Message {
 
                 writer.incrementState();
 
+            case 5:
+                if (!writer.writeBoolean("keepCacheObjects", keepCacheObjects))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -491,6 +505,13 @@ public class GridCacheReturn implements Externalizable, Message {
 
                 reader.incrementState();
 
+            case 5:
+                keepCacheObjects = reader.readBoolean("keepCacheObjects");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridCacheReturn.class);
@@ -498,7 +519,7 @@ public class GridCacheReturn implements Externalizable, Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 6;
     }
 
     /** {@inheritDoc} */

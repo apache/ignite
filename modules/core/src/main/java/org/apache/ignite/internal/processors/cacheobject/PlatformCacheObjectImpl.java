@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.cacheobject;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectTransformerUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Wraps value provided by platform, must be transformed before stored in cache.
@@ -52,6 +54,22 @@ public class PlatformCacheObjectImpl extends CacheObjectImpl {
         this.arr = arr;
     }
 
+    /** {@inheritDoc} */
+    @Override public <T> @Nullable T value(CacheObjectValueContext ctx, boolean cpy, ClassLoader ldr) {
+        if (valBytes == null)
+            valBytes = valueBytesFromArray(ctx);
+
+        return super.value(ctx, cpy, ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
+        if (valBytes == null)
+            valBytes = valueBytesFromArray(ctx);
+
+        return valBytes;
+    }
+
     /**
      * @return Value bytes.
      */
@@ -59,6 +77,22 @@ public class PlatformCacheObjectImpl extends CacheObjectImpl {
         assert arr != null;
 
         return CacheObjectTransformerUtils.transformIfNecessary(arr, 0, arr.length, ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
+        if (valBytes == null)
+            valBytes = valueBytesFromArray(ctx);
+
+        super.prepareMarshal(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        if (valBytes == null)
+            valBytes = valueBytesFromArray(ctx);
+
+        super.finishUnmarshal(ctx, ldr);
     }
 
     /** {@inheritDoc} */

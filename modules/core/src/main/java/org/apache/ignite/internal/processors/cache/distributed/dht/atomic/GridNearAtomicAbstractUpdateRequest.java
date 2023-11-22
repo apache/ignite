@@ -72,6 +72,9 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     /** */
     private static final int AFFINITY_MAPPING_FLAG_MASK = 0x80;
 
+    /** */
+    private static final int KEEP_CACHE_FLAG_MASK = 0x100;
+
     /** Target node ID. */
     @GridDirectTransient
     protected UUID nodeId;
@@ -161,7 +164,8 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         boolean needPrimaryRes,
         boolean skipStore,
         boolean keepBinary,
-        boolean recovery) {
+        boolean recovery,
+        boolean keepCache) {
         byte flags = 0;
 
         if (nearCache)
@@ -184,6 +188,9 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
         if (keepBinary)
             flags |= KEEP_BINARY_FLAG_MASK;
+
+        if (keepCache)
+            flags |= KEEP_CACHE_FLAG_MASK;
 
         if (recovery)
             flags |= RECOVERY_FLAG_MASK;
@@ -366,6 +373,20 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      */
     public void skipStore(boolean val) {
         setFlag(val, SKIP_STORE_FLAG_MASK);
+    }
+
+    /**
+     * @return Keep binary flag.
+     */
+    public final boolean keepCache() {
+        return isFlag(KEEP_CACHE_FLAG_MASK);
+    }
+
+    /**
+     * @param val Keep binary flag.
+     */
+    public void keepCache(boolean val) {
+        setFlag(val, KEEP_CACHE_FLAG_MASK);
     }
 
     /**

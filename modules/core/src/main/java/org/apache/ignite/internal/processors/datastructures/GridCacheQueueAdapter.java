@@ -440,7 +440,8 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             false,
             null,
             false,
-            null)
+            null,
+            false)
             : opCtx.keepBinary();
 
         cctx.operationContextPerCall(opCtx);

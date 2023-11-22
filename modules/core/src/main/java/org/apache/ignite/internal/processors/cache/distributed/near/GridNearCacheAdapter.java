@@ -221,6 +221,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVal,
         boolean skipStore,
+        boolean keepCacheObjects,
         boolean needVer
     ) {
         if (F.isEmpty(keys))
@@ -240,7 +241,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             expiry,
             skipVal,
             needVer,
-            false,
+            keepCacheObjects,
             recovery);
 
         // init() will register future for responses if future has remote mappings.

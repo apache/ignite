@@ -48,6 +48,9 @@ public class CacheOperationContext implements Serializable {
     /** Keep binary flag. */
     private final boolean keepBinary;
 
+    /** Keep cache objects flag (don't unwrap object from CacheObject class) */
+    private final boolean keepCacheObjects;
+
     /** Expiry policy. */
     private final ExpiryPolicy expiryPlc;
 
@@ -65,6 +68,7 @@ public class CacheOperationContext implements Serializable {
         recovery = false;
         readRepairStrategy = null;
         dataCenterId = null;
+        keepCacheObjects = false;
     }
 
     /**
@@ -81,7 +85,8 @@ public class CacheOperationContext implements Serializable {
         boolean noRetries,
         @Nullable Byte dataCenterId,
         boolean recovery,
-        @Nullable ReadRepairStrategy readRepairStrategy
+        @Nullable ReadRepairStrategy readRepairStrategy,
+        boolean keepCacheObjects
     ) {
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
@@ -90,6 +95,7 @@ public class CacheOperationContext implements Serializable {
         this.dataCenterId = dataCenterId;
         this.recovery = recovery;
         this.readRepairStrategy = readRepairStrategy;
+        this.keepCacheObjects = keepCacheObjects;
     }
 
     /**
@@ -97,6 +103,13 @@ public class CacheOperationContext implements Serializable {
      */
     public boolean isKeepBinary() {
         return keepBinary;
+    }
+
+    /**
+     * @return Keep cache objects flag.
+     */
+    public boolean isKeepCacheObjects() {
+        return keepCacheObjects;
     }
 
     /**
@@ -119,7 +132,8 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            readRepairStrategy);
+            readRepairStrategy,
+            keepCacheObjects);
     }
 
     /**
@@ -152,7 +166,8 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            readRepairStrategy);
+            readRepairStrategy,
+            keepCacheObjects);
     }
 
     /**
@@ -176,7 +191,8 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            readRepairStrategy);
+            readRepairStrategy,
+            keepCacheObjects);
     }
 
     /**
@@ -191,7 +207,8 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            readRepairStrategy);
+            readRepairStrategy,
+            keepCacheObjects);
     }
 
     /**
@@ -206,7 +223,8 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            readRepairStrategy);
+            readRepairStrategy,
+            keepCacheObjects);
     }
 
     /**
@@ -221,7 +239,8 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            readRepairStrategy);
+            readRepairStrategy,
+            keepCacheObjects);
     }
 
     /**
@@ -236,7 +255,23 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            readRepairStrategy);
+            readRepairStrategy,
+            keepCacheObjects);
+    }
+
+    /**
+     * @return New instance of CacheOperationContext with keep cache objects flag.
+     */
+    public CacheOperationContext keepCacheObjects() {
+        return new CacheOperationContext(
+            skipStore,
+            keepBinary,
+            expiryPlc,
+            noRetries,
+            dataCenterId,
+            recovery,
+            readRepairStrategy,
+            true);
     }
 
     /**

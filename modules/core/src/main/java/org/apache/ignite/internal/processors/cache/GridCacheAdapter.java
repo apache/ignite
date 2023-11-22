@@ -484,7 +484,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             false,
             null,
             false,
-            null);
+            null,
+            false);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
@@ -498,7 +499,23 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             false,
             null,
             false,
-            null);
+            null,
+            false);
+
+        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)this, opCtx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public final <K1, V1> GridCacheProxyImpl<K1, V1> keepCacheObjects() {
+        CacheOperationContext opCtx = new CacheOperationContext(
+            false,
+            true,
+            null,
+            false,
+            null,
+            false,
+            null,
+            true);
 
         return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)this, opCtx);
     }
@@ -519,7 +536,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             false,
             null,
             false,
-            null);
+            null,
+            false);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
@@ -533,7 +551,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             true,
             null,
             false,
-            null);
+            null,
+            false);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
@@ -1808,6 +1827,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             forcePrimary,
             skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
             skipVals,
+            opCtx.isKeepCacheObjects(),
             needVer);
     }
 
@@ -1837,6 +1857,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final boolean forcePrimary,
         @Nullable IgniteCacheExpiryPolicy expiry,
         final boolean skipVals,
+        final boolean keepCacheObjects,
         final boolean needVer
     ) {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
@@ -1851,7 +1872,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             deserializeBinary,
             expiry,
             skipVals,
-            /*keep cache objects*/false,
+            keepCacheObjects,
             recovery,
             readRepairStrategy,
             needVer,
@@ -2250,7 +2271,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         keys,
                         deserializeBinary,
                         skipVals,
-                        false,
+                        // TODO It's dangerous to change it here.
+                        keepCacheObjects,
                         !readThrough,
                         recovery,
                         readRepairStrategy,

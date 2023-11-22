@@ -267,7 +267,8 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                         false,
                         null,
                         false,
-                        null));
+                        null,
+                        false));
         }
         finally {
             gate.leave(prev);
@@ -288,7 +289,28 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                     false,
                     null,
                     false,
-                    null));
+                    null,
+                    false));
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K1, V1> GridCacheProxyImpl<K1, V1> keepCacheObjects() {
+        if (opCtx != null && opCtx.isKeepCacheObjects())
+            return (GridCacheProxyImpl<K1, V1>)this;
+
+        return new GridCacheProxyImpl<>(
+            (GridCacheContext<K1, V1>)ctx,
+            (GridCacheAdapter<K1, V1>)delegate,
+            opCtx != null ? opCtx.keepCacheObjects() :
+                new CacheOperationContext(
+                    false,
+                    true,
+                    null,
+                    false,
+                    null,
+                    false,
+                    null,
+                    true));
     }
 
     /** {@inheritDoc} */
@@ -1537,7 +1559,8 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                         false,
                         null,
                         false,
-                        null));
+                        null,
+                        false));
         }
         finally {
             gate.leave(prev);
@@ -1557,7 +1580,8 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                     true,
                     null,
                     false,
-                    null));
+                    null,
+                    false));
         }
         finally {
             gate.leave(prev);

@@ -24,6 +24,8 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
 
+import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils.readCacheObject;
+
 /**
  * PutAll request.
  */
@@ -44,11 +46,10 @@ public class ClientCachePutAllRequest extends ClientCacheDataRequest implements 
         map = new LinkedHashMap<>(cnt);
 
         for (int i = 0; i < cnt; i++)
-            map.put(reader.readObjectDetached(), reader.readObjectDetached());
+            map.put(readCacheObject(reader, true), readCacheObject(reader, false));
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         cache(ctx).putAll(map);
 

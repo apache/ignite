@@ -1216,8 +1216,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         boolean binaryEnabled = marsh instanceof BinaryMarshaller && !GridCacheUtils.isSystemCache(ccfg.getName());
 
-        AffinityKeyMapper cacheAffMapper = ccfg.getAffinityMapper();
-
         AffinityKeyMapper dfltAffMapper = binaryEnabled ?
             new CacheDefaultBinaryAffinityKeyMapper(ccfg.getKeyConfiguration()) :
             new GridCacheDefaultAffinityKeyMapper();

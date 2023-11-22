@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
@@ -49,9 +52,18 @@ class ClientCacheGetAllResponse extends ClientResponse {
 
         writer.writeInt(res.size());
 
-        for (Map.Entry e : res.entrySet()) {
+        for (Map.Entry<Object, Object> e : res.entrySet()) {
+            try {
+                writer.out().writeByteArray(((CacheObject)e.getKey()).valueBytes(null));
+                writer.out().writeByteArray(((CacheObject)e.getValue()).valueBytes(null));
+            }
+            catch (IgniteCheckedException ex) {
+                throw new IgniteException(ex);
+            }
+/*
             writer.writeObjectDetached(e.getKey());
             writer.writeObjectDetached(e.getValue());
+*/
         }
     }
 }

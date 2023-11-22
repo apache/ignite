@@ -187,6 +187,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     /** Keep binary. */
     private final boolean keepBinary;
 
+    /** Keep binary. */
+    private final boolean keepCache;
+
     /**
      * @param cctx Cache context.
      * @param nearNodeId Near node ID.
@@ -215,7 +218,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         long createTtl,
         long accessTtl,
         boolean skipStore,
-        boolean keepBinary) {
+        boolean keepBinary,
+        boolean keepCache
+    ) {
         super(CU.boolReducer());
 
         assert nearNodeId != null;
@@ -235,6 +240,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         this.accessTtl = accessTtl;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
+        this.keepCache = keepCache;
 
         if (tx != null)
             tx.topologyVersion(topVer);
@@ -920,7 +926,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             cctx.store().configured(),
                             keepBinary,
                             cctx.deploymentEnabled(),
-                            inTx() ? tx.label() : null);
+                            inTx() ? tx.label() : null,
+                            keepCache
+                        );
 
                         try {
                             for (ListIterator<GridDhtCacheEntry> it = dhtMapping.listIterator(); it.hasNext(); ) {

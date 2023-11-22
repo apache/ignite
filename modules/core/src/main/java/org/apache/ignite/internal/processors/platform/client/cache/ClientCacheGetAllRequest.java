@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -36,10 +38,14 @@ public class ClientCacheGetAllRequest extends ClientCacheKeysRequest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        Map val = cache(ctx).getAll(keys());
+        try {
+            Map<Object, Object> val = binaryCache(ctx).getAll(keys());
 
-        return new ClientCacheGetAllResponse(requestId(), val);
+            return new ClientCacheGetAllResponse(requestId(), val);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 }

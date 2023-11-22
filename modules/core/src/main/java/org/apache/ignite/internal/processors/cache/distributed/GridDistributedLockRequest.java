@@ -54,6 +54,9 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     /** */
     private static final int STORE_USED_FLAG_MASK = 0x04;
 
+    /** Keep binary flag. */
+    private static final int KEEP_CACHE_FLAG_MASK = 0x05;
+
     /** Sender node ID. */
     private UUID nodeId;
 
@@ -139,7 +142,8 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         int txSize,
         boolean skipStore,
         boolean keepBinary,
-        boolean addDepInfo
+        boolean addDepInfo,
+        boolean keepCache
     ) {
         super(lockVer, keyCnt, addDepInfo);
 
@@ -163,6 +167,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
         skipStore(skipStore);
         keepBinary(keepBinary);
+        keepCache(keepCache);
     }
 
     /**
@@ -247,10 +252,22 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         flags = keepBinary ? (byte)(flags | KEEP_BINARY_FLAG_MASK) : (byte)(flags & ~KEEP_BINARY_FLAG_MASK);
     }
 
+    /** */
+    public void keepCache(boolean keepCache) {
+        flags = keepCache ? (byte)(flags | KEEP_CACHE_FLAG_MASK) : (byte)(flags & ~KEEP_CACHE_FLAG_MASK);
+    }
+
     /**
      * @return Keep binary.
      */
     public boolean keepBinary() {
+        return (flags & KEEP_BINARY_FLAG_MASK) != 0;
+    }
+
+    /**
+     * @return Keep binary.
+     */
+    public boolean keepCache() {
         return (flags & KEEP_BINARY_FLAG_MASK) != 0;
     }
 

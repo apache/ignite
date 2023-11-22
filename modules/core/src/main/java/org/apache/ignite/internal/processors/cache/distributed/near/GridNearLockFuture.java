@@ -168,6 +168,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     /** Keep binary context flag. */
     private final boolean keepBinary;
 
+    /** Keep binary context flag. */
+    private final boolean keepCache;
+
     /** Recovery mode context flag. */
     private final boolean recovery;
 
@@ -200,7 +203,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         CacheEntryPredicate[] filter,
         boolean skipStore,
         boolean keepBinary,
-        boolean recovery
+        boolean recovery,
+        boolean keepCache
     ) {
         super(CU.boolReducer());
 
@@ -219,6 +223,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
         this.recovery = recovery;
+        this.keepCache = keepCache;
 
         ignoreInterrupts();
 
@@ -1108,7 +1113,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                                 clientFirst,
                                                 true,
                                                 cctx.deploymentEnabled(),
-                                                inTx() ? tx.label() : null);
+                                                inTx() ? tx.label() : null,
+                                                keepCache);
 
                                             mapping.request(req);
                                         }

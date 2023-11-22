@@ -1193,7 +1193,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 cacheCtx,
                                 v,
                                 txEntry.keepBinary(),
-                                U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
+                                U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId),
+                                txEntry.keepCacheObject()
                             );
                         }
                     }
@@ -1383,7 +1384,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         @Nullable GridCacheVersion drVer,
         boolean skipStore,
         boolean keepBinary,
-        boolean addReader
+        boolean addReader,
+        boolean keepCache
     ) {
         assert invokeArgs == null || op == TRANSFORM;
 
@@ -1424,6 +1426,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             // Keep old skipStore and keepBinary flags.
             old.skipStore(skipStore);
             old.keepBinary(keepBinary);
+            old.keepCacheObject(keepCache);
 
             // Update ttl if specified.
             if (drTtl >= 0L) {
@@ -1454,7 +1457,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 drVer,
                 skipStore,
                 keepBinary,
-                addReader);
+                addReader,
+                keepCache);
 
             txEntry.conflictExpireTime(drExpireTime);
 

@@ -42,7 +42,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
      * @param valBytes Value bytes.
      */
     public CacheObjectImpl(Object val, byte[] valBytes) {
-        assert val != null || valBytes != null;
+//        assert val != null || valBytes != null;
 
         this.val = val;
         this.valBytes = valBytes;

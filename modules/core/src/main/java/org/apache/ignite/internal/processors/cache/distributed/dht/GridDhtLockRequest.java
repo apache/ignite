@@ -147,7 +147,8 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         boolean storeUsed,
         boolean keepBinary,
         boolean addDepInfo,
-        String txLbl
+        String txLbl,
+        boolean keepCache
     ) {
         super(cacheId,
             nodeId,
@@ -164,7 +165,9 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             txSize,
             skipStore,
             keepBinary,
-            addDepInfo);
+            addDepInfo,
+            keepCache
+        );
 
         this.topVer = topVer;
 

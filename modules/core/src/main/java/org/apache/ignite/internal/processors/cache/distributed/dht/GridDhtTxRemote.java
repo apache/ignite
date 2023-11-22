@@ -308,7 +308,9 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         @Nullable Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessors,
         long ttl,
         boolean skipStore,
-        boolean keepBinary) {
+        boolean keepBinary,
+        boolean keepCache
+    ) {
         checkInternal(key);
 
         if (isSystemInvalidate())
@@ -325,7 +327,9 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             cached,
             null,
             skipStore,
-            keepBinary);
+            keepBinary,
+            keepCache
+        );
 
         txEntry.entryProcessors(entryProcessors);
 

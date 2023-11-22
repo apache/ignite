@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
@@ -36,10 +38,14 @@ public class ClientCacheGetAndRemoveRequest extends ClientCacheKeyRequest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public ClientResponse process0(ClientConnectionContext ctx) {
-        Object val = cache(ctx).getAndRemove(key());
+        try {
+            Object val = binaryCache(ctx).getAndRemove(key());
 
-        return new ClientObjectResponse(requestId(), val);
+            return new ClientObjectResponse(requestId(), val);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 }

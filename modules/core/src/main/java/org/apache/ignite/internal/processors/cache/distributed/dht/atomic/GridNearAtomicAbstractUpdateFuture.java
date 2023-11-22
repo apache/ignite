@@ -109,6 +109,9 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     /** Keep binary flag. */
     protected final boolean keepBinary;
 
+    /** Keep binary flag. */
+    protected final boolean keepCache;
+
     /** Recovery flag. */
     protected final boolean recovery;
 
@@ -177,7 +180,8 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         boolean skipStore,
         boolean keepBinary,
         boolean recovery,
-        int remapCnt
+        int remapCnt,
+        boolean keepCache
     ) {
         if (log == null) {
             msgLog = cctx.shared().atomicMessageLogger();
@@ -202,6 +206,8 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         nearEnabled = CU.isNearEnabled(cctx);
 
         this.remapCnt = remapCnt;
+
+        this.keepCache = keepCache;
     }
 
     /**
@@ -347,12 +353,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * @param futId Not null ID if need remove future.
      */
     final void completeFuture(@Nullable GridCacheReturn ret, Throwable err, @Nullable Long futId) {
-        Object retval = ret == null ? null : rawRetval ? ret : (this.retval || op == TRANSFORM) ?
-            cctx.unwrapBinaryIfNeeded(
-                ret.value(),
-                keepBinary,
-                U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
-            ) : ret.success();
+        Object retval = returnValue(ret);
 
         if (op == TRANSFORM && retval == null)
             retval = Collections.emptyMap();
@@ -361,6 +362,27 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
             cctx.mvcc().removeAtomicFuture(futId);
 
         super.onDone(retval, err);
+    }
+
+    /** */
+    private Object returnValue(GridCacheReturn ret) {
+        if (ret == null)
+            return null;
+
+        if (rawRetval)
+            return ret;
+
+        if (this.retval || op == TRANSFORM) {
+            if (keepCache)
+                return ret.value();
+
+            return cctx.unwrapBinaryIfNeeded(
+                ret.value(),
+                keepBinary,
+                U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+        }
+        else
+            return ret.success();
     }
 
     /** {@inheritDoc} */

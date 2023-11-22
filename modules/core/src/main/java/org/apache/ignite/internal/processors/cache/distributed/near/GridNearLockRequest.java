@@ -141,7 +141,8 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         boolean firstClientReq,
         boolean nearCache,
         boolean addDepInfo,
-        @Nullable String txLbl
+        @Nullable String txLbl,
+        boolean keepCache
     ) {
         super(
             cacheId,
@@ -159,7 +160,8 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
             txSize,
             skipStore,
             keepBinary,
-            addDepInfo);
+            addDepInfo,
+            keepCache);
 
         assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
 

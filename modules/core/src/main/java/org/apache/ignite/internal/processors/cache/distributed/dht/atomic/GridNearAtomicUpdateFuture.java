@@ -130,7 +130,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         boolean skipStore,
         boolean keepBinary,
         boolean recovery,
-        int remapCnt
+        int remapCnt,
+        boolean keepCache
     ) {
         super(cctx,
             cache,
@@ -145,7 +146,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             skipStore,
             keepBinary,
             recovery,
-            remapCnt);
+            remapCnt,
+            keepCache);
 
         assert vals == null || vals.size() == keys.size();
         assert conflictPutVals == null || conflictPutVals.size() == keys.size();
@@ -700,7 +702,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         }
 
         if (syncMode == FULL_ASYNC)
-            completeFuture(new GridCacheReturn(cctx, true, true, null, null, true), null, null);
+            completeFuture(new GridCacheReturn(cctx, true, true, false, null, null, true), null, null);
     }
 
     /** {@inheritDoc} */
@@ -793,7 +795,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             assert mappings0 != null;
 
             if (size == 0) {
-                completeFuture(new GridCacheReturn(cctx, true, true, null, null, true), null, futId);
+                completeFuture(new GridCacheReturn(cctx, true, true, false, null, null, true), null, futId);
 
                 return;
             }
@@ -802,7 +804,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         }
 
         if (syncMode == FULL_ASYNC) {
-            completeFuture(new GridCacheReturn(cctx, true, true, null, null, true), null, futId);
+            completeFuture(new GridCacheReturn(cctx, true, true, false, null, null, true), null, futId);
 
             return;
         }
@@ -996,7 +998,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                     needPrimaryRes,
                     skipStore,
                     keepBinary,
-                    recovery);
+                    recovery,
+                    keepCache);
 
                 GridNearAtomicFullUpdateRequest req = new GridNearAtomicFullUpdateRequest(
                     cctx.cacheId(),
@@ -1109,7 +1112,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             needPrimaryRes,
             skipStore,
             keepBinary,
-            recovery);
+            recovery,
+            keepCache);
 
         GridNearAtomicFullUpdateRequest req = new GridNearAtomicFullUpdateRequest(
             cctx.cacheId(),

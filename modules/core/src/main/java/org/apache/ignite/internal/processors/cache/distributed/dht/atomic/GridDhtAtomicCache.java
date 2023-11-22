@@ -461,6 +461,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean skipStore = opCtx != null && opCtx.skipStore();
         final boolean recovery = opCtx != null && opCtx.recovery();
         final ReadRepairStrategy readRepairStrategy = opCtx != null ? opCtx.readRepairStrategy() : null;
+        final boolean keepCacheObjects = opCtx != null && opCtx.isKeepCacheObjects();
 
         return asyncOp(new CO<IgniteInternalFuture<V>>() {
             @Override public IgniteInternalFuture<V> apply() {
@@ -473,6 +474,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     expiryPlc,
                     skipVals,
                     skipStore,
+                    keepCacheObjects,
                     needVer);
             }
         });
@@ -554,6 +556,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         final boolean skipStore = opCtx != null && opCtx.skipStore();
 
+        final boolean keepCacheObjects = opCtx != null && opCtx.isKeepCacheObjects();
+
         if (asyncOp) {
             return asyncOp(new CO<IgniteInternalFuture<Map<K, V>>>() {
                 @Override public IgniteInternalFuture<Map<K, V>> apply() {
@@ -566,6 +570,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         expiryPlc,
                         skipVals,
                         skipStore,
+                        keepCacheObjects,
                         needVer);
                 }
             });
@@ -580,6 +585,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 expiryPlc,
                 skipVals,
                 skipStore,
+                keepCacheObjects,
                 needVer);
         }
     }
@@ -1072,7 +1078,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES);
+            opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
+            opCtx != null && opCtx.isKeepCacheObjects());
 
         if (async) {
             return asyncOp(new CO<IgniteInternalFuture<Object>>() {
@@ -1259,7 +1266,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 opCtx != null && opCtx.skipStore(),
                 opCtx != null && opCtx.isKeepBinary(),
                 opCtx != null && opCtx.recovery(),
-                opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES
+                opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
+                opCtx != null && opCtx.isKeepCacheObjects()
             );
         }
         else {
@@ -1281,7 +1289,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 opCtx != null && opCtx.skipStore(),
                 opCtx != null && opCtx.isKeepBinary(),
                 opCtx != null && opCtx.recovery(),
-                opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES);
+                opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
+                opCtx != null && opCtx.isKeepCacheObjects());
         }
     }
 
@@ -1341,7 +1350,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES);
+            opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
+            opCtx != null && opCtx.isKeepCacheObjects());
 
         if (async) {
             return asyncOp(new CO<IgniteInternalFuture<Object>>() {
@@ -1382,6 +1392,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean skipStore,
+        boolean keepCacheObjects,
         boolean needVer
     ) {
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
@@ -1401,7 +1412,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 expiry,
                 skipVals,
                 needVer,
-                false,
+                keepCacheObjects,
                 null).single();
         }
 
@@ -1415,7 +1426,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             expiry,
             skipVals,
             needVer,
-            false,
+            keepCacheObjects,
             recovery,
             null,
             null);
@@ -1447,6 +1458,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean skipStore,
+        boolean keepCacheObjects,
         boolean needVer
     ) {
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
@@ -1468,7 +1480,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 expiry,
                 skipVals,
                 needVer,
-                false,
+                keepCacheObjects,
                 null).multi();
         }
 
@@ -1496,7 +1508,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                     key,
                                     row.value(),
                                     skipVals,
-                                    false,
+                                    keepCacheObjects,
                                     deserializeBinary,
                                     true,
                                     null,
@@ -1578,7 +1590,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                             key,
                                             v,
                                             skipVals,
-                                            false,
+                                            keepCacheObjects,
                                             deserializeBinary,
                                             true,
                                             getRes,
@@ -1647,7 +1659,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             expiry,
             skipVals,
             needVer,
-            false,
+            keepCacheObjects,
             null,
             null,
             null);
@@ -2011,7 +2023,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridDhtAtomicAbstractUpdateFuture dhtFut = dhtUpdRes.dhtFuture();
 
         if (retVal == null)
-            retVal = new GridCacheReturn(ctx, node.isLocal(), true, null, null, true);
+            retVal = new GridCacheReturn(ctx, node.isLocal(), true, req.keepCache(), null, null, true);
 
         res.returnValue(retVal);
 
@@ -2670,6 +2682,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         retVal = new GridCacheReturn(ctx,
                             nearNode.isLocal(),
                             req.keepBinary(),
+                            req.keepCache(),
                             U.deploymentClassLoader(ctx.kernalContext(), U.contextDeploymentClassLoaderId(ctx.kernalContext())),
                             req.returnValue() ? ret : null,
                             updRes.success());
@@ -3135,7 +3148,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             req.skipStore(),
             req.keepBinary(),
             req.recovery(),
-            MAX_RETRIES);
+            MAX_RETRIES,
+            req.keepCache());
 
         updateFut.map();
     }

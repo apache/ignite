@@ -19,12 +19,18 @@ package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Extended reader interface.
  */
 public interface BinaryRawReaderEx extends BinaryRawReader {
+    /**
+     * @return Input stream.
+     */
+    public BinaryInputStream in();
+
     /**
      * @return Object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
@@ -36,5 +42,5 @@ public interface BinaryRawReaderEx extends BinaryRawReader {
      * @return Object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    @Nullable public Object readObjectDetached(boolean deserialize) throws BinaryObjectException;
+    @Nullable public Object readObjectDetached(boolean deserialize, boolean resolveReferences) throws BinaryObjectException;
 }
