@@ -90,6 +90,18 @@ def java_major_version(version):
     return -1
 
 
+def java_version(node):
+    """
+    :param node: Ducktape cluster node
+    :return: java version
+    """
+    cmd = r"java -version 2>&1 | awk -F[\"\-] '/version/ {print $2}'"
+
+    raw_version = list(node.account.ssh_capture(cmd, allow_fail=False))
+
+    return raw_version[0].strip() if raw_version else ''
+
+
 def _to_map(params):
     """"""
     assert isinstance(params, (str, list)), "JVM params an be string or list only."
@@ -142,12 +154,8 @@ class JvmVersionMixin:
     Mixin to get java version on node.
     """
     @memoize
-    def java_version(self, node):
+    def java_version(self):
         """
-        :return: Full java version on current node.
+        :return: Full java version of service.
         """
-        cmd = r"$JAVA_HOME/bin/java -version 2>&1 | awk -F[\"\-] '/version/ {print $2}'"
-
-        raw_version = list(node.account.ssh_capture(cmd, allow_fail=False))
-
-        return raw_version[0].strip() if raw_version else ''
+        return java_version(self.nodes[0])

@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG jdk_version=eclipse-temurin:8u392-b08-jdk-focal
+ARG jdk_version=openjdk:8
 FROM $jdk_version
 
 MAINTAINER Apache Ignite dev@ignite.apache.org
@@ -33,7 +33,11 @@ ARG ducker_creator=default
 LABEL ducker.creator=$ducker_creator
 
 # Update Linux and install necessary utilities.
-RUN apt update && apt install -y sudo build-essential git netcat iptables rsync unzip wget curl jq coreutils openssh-server net-tools vim python3-pip python3-dev libffi-dev libssl-dev cmake pkg-config libfuse-dev iperf traceroute mc && apt-get -y clean
+RUN cat /etc/apt/sources.list | sed 's/http:\/\/deb.debian.org/https:\/\/deb.debian.org/g' > /etc/apt/sources.list.2 && mv /etc/apt/sources.list.2 /etc/apt/sources.list
+RUN apt update && apt install -y sudo netcat iptables rsync unzip wget curl jq coreutils openssh-server net-tools vim python3-pip python3-dev libffi-dev libssl-dev cmake pkg-config libfuse-dev iperf traceroute mc && apt-get -y clean
+RUN python3 -m pip install -U pip==20.2.2;
+COPY ./requirements.txt /root/requirements.txt
+RUN pip3 install -r /root/requirements.txt
 
 # Set up ssh
 COPY ./ssh-config /root/.ssh/config
@@ -45,7 +49,7 @@ ARG APACHE_MIRROR="https://apache-mirror.rbc.ru/pub/apache/"
 ARG APACHE_ARCHIVE="https://archive.apache.org/dist/"
 
 # Install binary test dependencies.
-RUN for v in "2.7.6" "2.8.1" "2.15.0"; \
+RUN for v in "2.7.6" "2.15.0"; \
     do cd /opt; \
     curl -O $APACHE_ARCHIVE/ignite/$v/apache-ignite-$v-bin.zip;\
     unzip apache-ignite-$v-bin.zip && mv /opt/apache-ignite-$v-bin /opt/ignite-$v;\
@@ -78,23 +82,15 @@ ARG JMXTERM_ARTIFACT="$JMXTERM_NAME-$JMXTERM_VERSION-uber.jar"
 RUN cd /opt && curl -OL https://github.com/jiaqi/jmxterm/releases/download/v$JMXTERM_VERSION/$JMXTERM_ARTIFACT \
        && mv $JMXTERM_ARTIFACT $JMXTERM_NAME.jar
 
-#Install python deps
-RUN python3 -m pip install -U pip==20.2.2;
-COPY ./requirements.txt /root/requirements.txt
-RUN pip3 install -r /root/requirements.txt
-
 # Set up the ducker user.
 RUN useradd -ms /bin/bash ducker \
     && mkdir -p /home/ducker/ \
-    && chown -R ducker /mnt/ /var/log/ /opt \
-    && echo 'ducker ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
-
-RUN  rsync -aiq /root/.ssh/ /home/ducker/.ssh \
-    && echo "JAVA_HOME=$JAVA_HOME" >> /home/ducker/.ssh/environment \
+    && rsync -aiq /root/.ssh/ /home/ducker/.ssh \
+    && chown -R ducker /home/ducker/ /mnt/ /var/log/ /opt \
     && echo "LANG=C.UTF-8" >> /home/ducker/.ssh/environment \
     && echo "PATH=$(runuser -l ducker -c 'echo $PATH'):$JAVA_HOME/bin" >> /home/ducker/.ssh/environment \
-    && chown -R ducker /home/ducker
-
+    && echo 'PATH=$PATH:'"$JAVA_HOME/bin" >> /home/ducker/.profile \
+    && echo 'ducker ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 USER ducker
 
 CMD sudo service ssh start && tail -f /dev/null

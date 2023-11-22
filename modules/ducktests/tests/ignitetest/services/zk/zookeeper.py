@@ -111,7 +111,7 @@ class ZookeeperService(DucktestsService, PathAware):
         log_config_file = self.render('log4j.properties.j2', log_dir=self.log_dir)
         node.account.create_file(self.log_config_file, log_config_file)
 
-        start_cmd = f"nohup $JAVA_HOME/bin/java -cp {os.path.join(self.home_dir, 'lib')}/*:{self.persistent_root} " \
+        start_cmd = f"nohup java -cp {os.path.join(self.home_dir, 'lib')}/*:{self.persistent_root} " \
                     f"org.apache.zookeeper.server.quorum.QuorumPeerMain {self.config_file} >/dev/null 2>&1 &"
 
         node.account.ssh(start_cmd)
