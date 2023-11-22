@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.ClientAuthenticationException;
+import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientServices;
@@ -65,6 +66,7 @@ import org.apache.logging.log4j.Level;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -436,29 +438,49 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     }
 
     /**
-     * Tests the client uses Service Awareness for all the servers when partitionAwareness is enabled.
+     * Tests the client invokes only the proper nodes when partitionAwareness is enabled and no
+     * {@link ClientClusterGroup} is set.
      */
     @Test
-    public void testServiceAwarenessEnabledAlLServers() {
+    public void testWithNoSubCluster() {
         doTestServiceAwarenessForClusterGroup(null);
     }
 
     /**
      * Tests the client invokes only the proper node when partitionAwareness is enabled and just one correct server is
-     * passed as the cluster group.
+     * passed as {@link ClientClusterGroup}.
      */
     @Test
-    public void testServiceAwarenessEnabledOneServer() {
+    public void testWithOneCorrectServer() {
         doTestServiceAwarenessForClusterGroup(Collections.singletonList(grid(1).localNode().id()));
     }
 
     /**
      * Tests the client invokes only the proper nodes when partitionAwareness is enabled and just a couple of correct
-     * servers are passed as the cluster group.
+     * servers are passed as {@link ClientClusterGroup} to invoke the service on.
      */
     @Test
-    public void testServiceAwarenessEnabledTwoServers() {
+    public void testWithTwoCorrectServers() {
         doTestServiceAwarenessForClusterGroup(Arrays.asList(grid(1).localNode().id(), grid(2).localNode().id()));
+    }
+
+    /**
+     * Tests the client invokes only the proper node when partitionAwareness is enabled and one correct
+     * server and one incorrect server (having no service instance) are passed as {@link ClientClusterGroup} to invoke
+     * the service on.
+     */
+    @Test
+    public void testWithOneCorrectOneIncorrectServers() {
+        doTestServiceAwarenessForClusterGroup(Arrays.asList(grid(0).localNode().id(), grid(2).localNode().id()));
+    }
+
+    /**
+     * Tests the client invokes only the proper node when partitionAwareness is enabled and only incorrect
+     * server (having no service instance) are passed as {@link ClientClusterGroup} to invoke the service on.
+     */
+    @Test
+    public void testWithIncorrectServer() {
+        doTestServiceAwarenessForClusterGroup(Collections.singletonList(grid(0).localNode().id()));
     }
 
     /** */
@@ -471,6 +493,11 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
         // Requested server nodes with a service invocation.
         Collection<UUID> requestedServers = new GridConcurrentHashSet<>();
+
+        // All or properly filtered nodes with the service instances.
+        Set<UUID> targetNodes = F.isEmpty(serverIds)
+            ? top
+            : serverIds.stream().filter(nid -> new TestNodeFilter().apply(grid(0).cluster().node(nid))).collect(Collectors.toSet());
 
         addSrvcTopUpdateClientLogLsnr(uuids -> {
             // Reset counters on the first topology update.
@@ -494,16 +521,22 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
         ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
         try (IgniteClient client = startClient(requestedServers)) {
-            ClientServices clientServices = F.isEmpty(serverIds) ? client.services() : client.services(client.cluster().forNodeIds(serverIds));
+            ClientServices clientServices = F.isEmpty(serverIds)
+                ? client.services()
+                : client.services(client.cluster().forNodeIds(serverIds));
 
             ServicesTest.TestServiceInterface svc = clientServices.serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
 
-            for (int i = 0; i < 100; ++i)
-                svc.testMethod();
+            if (F.isEmpty(targetNodes) && !F.isEmpty(serverIds))
+                assertThrows(null, () -> svc.testMethod(), ClientException.class, "Failed to find deployed service:");
+            else {
+                for (int i = 0; i < 100; ++i)
+                    svc.testMethod();
+            }
         }
 
         // Check no service awareness: continous redirections.
-        assertEquals(100, redirectCnt.get());
+        assertEquals(F.isEmpty(targetNodes) && !F.isEmpty(serverIds) ? 0 : 100, redirectCnt.get());
 
         // Ensure that client received no service topology update.
         assertTrue(top.isEmpty());
@@ -513,27 +546,33 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
         partitionAwareness = true;
 
         try (IgniteClient client = startClient(requestedServers)) {
-            ClientServices clientServices = F.isEmpty(serverIds) ? client.services() : client.services(client.cluster().forNodeIds(serverIds));
+            ClientServices clientServices = F.isEmpty(serverIds)
+                ? client.services()
+                : client.services(client.cluster().forNodeIds(serverIds));
 
             ServicesTest.TestServiceInterface svc = clientServices.serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
 
-            // We assume that the topology will be received and used for the further requests.
-            for (int i = 0; i < 1000; ++i)
-                svc.testMethod();
+            if (F.isEmpty(targetNodes) && !F.isEmpty(serverIds))
+                assertThrows(null, () -> svc.testMethod(), ClientException.class, "Failed to find deployed service:");
+            else {
+                for (int i = 0; i < 100; ++i)
+                    svc.testMethod();
 
-            redirectCnt.set(0);
-            requestedServers.clear();
+                // We assume that the topology will be received and used for the further requests.
+                redirectCnt.set(0);
+                requestedServers.clear();
 
-            for (int i = 0; i < 1000; ++i)
-                svc.testMethod();
+                for (int i = 0; i < 1000; ++i)
+                    svc.testMethod();
+
+                // Ensure that only the target nodes were requested after the topology getting.
+                assertEquals(targetNodes, requestedServers);
+            }
         }
 
         // Check the received topology.
         assertTrue(top.size() == INIT_SRVC_NODES_CNT && top.contains(grid(1).localNode().id())
             && top.contains(grid(2).localNode().id()));
-
-        // Ensure that only the target nodes were requeted after the topology getting.
-        assertEquals(new HashSet<>(F.isEmpty(serverIds) ? top : serverIds), new HashSet<>(requestedServers));
 
         // Ensure there were no redirected sertvic calls any more.
         assertEquals(0, redirectCnt.get());
