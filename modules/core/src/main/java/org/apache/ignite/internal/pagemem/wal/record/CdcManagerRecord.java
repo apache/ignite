@@ -20,11 +20,12 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import java.util.Iterator;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.cdc.CdcManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.T2;
 
 /**
- * This record notifies {@link CdcMain} that Ignite node saves offset of captured data for CDC manager mode.
+ * Through this record {@link CdcManager} notifies {@link CdcMain} about committed CDC consumer WAL state.
  *
  * @see CdcConsumer#onEvents(Iterator)
  */

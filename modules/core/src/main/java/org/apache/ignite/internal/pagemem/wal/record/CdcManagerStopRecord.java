@@ -21,7 +21,7 @@ import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.cdc.CdcManager;
 
 /**
- * This record notifies {@link CdcMain} that Ignite node stops capturing data in {@link CdcManager}.
+ * Through this {@link CdcManager} record notifies {@link CdcMain} that Ignite node stops capturing data.
  */
 public class CdcManagerStopRecord extends WALRecord {
     /** {@inheritDoc} */

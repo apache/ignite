@@ -34,7 +34,7 @@ import org.apache.ignite.plugin.PluginProvider;
 
 /**
  * CDC manager responsible for logic of capturing data within Ignite node. Communication between {@link CdcManager} and
- * {@link CdcMain} components are built with WAL records. {@link CdcManager} logs CDC management records, while {@link CdcMain}
+ * {@link CdcMain} components is established through CDC management WAL records. {@link CdcManager} logs them, while {@link CdcMain}
  * listens to them:
  * <ul>
  *     <li>
@@ -48,12 +48,12 @@ import org.apache.ignite.plugin.PluginProvider;
  *     </li>
  *     <li>
  *         Apache Ignite provides a default implementation - {@link CdcUtilityActiveCdcManager}. It is disabled from the
- *         beginning, logs the {@link CdcManagerStopRecord} on Ignite node activation, and then delegates consuming CDC
+ *         beginning, logs the {@link CdcManagerStopRecord} after Ignite node activated, and then delegates consuming CDC
  *         events to the {@link CdcMain} utility.
  *     </li>
  * </ul>
  *
- * Ignite can be extended with custom CDC manager. It's required to implement this interface, create own {@link PluginProvider}
+ * Apache Ignite can be extended with custom CDC manager. It's required to implement this interface, create own {@link PluginProvider}
  * that will return the implementation with {@link PluginProvider#createComponent(PluginContext, Class)} method.
  * The {@code Class} parameter in the method is {@code CdcManager} class.
  *
@@ -77,8 +77,9 @@ public interface CdcManager extends GridCacheSharedManager {
      * Collects byte buffer contains WAL records. The provided buffer is a continuous part of WAL segment file.
      * The buffer might contain full content of a segment or only piece of it. There are guarantees:
      * <ul>
-     *     <li>This method invokes sequentially, the provided buffer is a continuation of the previous one.</li>
-     *     <li>{@code dataBuf} contains finite number of completed WAL records. No partially written WAL records present.</li>
+     *     <li>This method invokes sequentially.</li>
+     *     <li>Provided {@code dataBuf} is a continuation of the previous one.</li>
+     *     <li>{@code dataBuf} contains finite number of completed WAL records. No partially written WAL records are present.</li>
      *     <li>Records can be read from the buffer with {@link RecordSerializer#readRecord(FileInput, WALPointer)}.</li>
      *     <li>{@code dataBuf} is a read-only buffer.</li>
      * </ul>
@@ -109,7 +110,6 @@ public interface CdcManager extends GridCacheSharedManager {
      * <ul>
      *     <li>Callback can be used for starting actual processing of collected data.</li>
      *     <li>After this callback it's safe to log the CDC management records.</li>
-     *     <li>It must not block the calling thread.</li>
      *     <li>Ignite node will fail in case the method throws an exception.</li>
      * </ul>
      */
