@@ -3954,12 +3954,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** @throws Exception If fails. */
     @Test
     public void testCacheIdleVerifyLogLevelDebug() throws Exception {
-
-        IgniteEx ignite = startGrids(3);
+        IgniteEx ignite = startGrids(2);
 
         ignite.cluster().state(ACTIVE);
 
         IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+
                 .setAffinity(new RendezvousAffinityFunction(false, 32))
                 .setBackups(1));
         cache.put("key", "value");
