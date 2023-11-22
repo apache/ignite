@@ -2208,7 +2208,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param incremental Incremental snapshot flag.
      * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
      * @param dump If {@code true} cache dump must be created.
-     * @param compress If {@code true} then compress compress partition files.
+     * @param compress If {@code true} then compress partition files.
      * @return Future which will be completed when a process ends.
      */
     public IgniteFutureImpl<Void> createSnapshot(
@@ -2732,7 +2732,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
      * @param withMetaStorage {@code true} if all metastorage data must be also included into snapshot.
      * @param dump {@code true} if cache group dump must be created.
-     * @param compress If {@code true} then compress the file.
+     * @param compress If {@code true} then compress partition files.
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @return Snapshot operation task which should be registered on checkpoint to run.
      */
