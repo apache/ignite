@@ -128,15 +128,9 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     public boolean onlyPrimary;
 
     /** */
-    @Parameterized.Parameter(6)
-    public boolean comprParts;
-
-    /** */
-    @Parameterized.Parameters(name = "nodes={0},backups={1},persistence={2},mode={3},useDataStreamer={4},onlyPrimary={5},comprParts={6}")
+    @Parameterized.Parameters(name = "nodes={0},backups={1},persistence={2},mode={3},useDataStreamer={4},onlyPrimary={5}")
     public static List<Object[]> params() {
         List<Object[]> params = new ArrayList<>();
-
-        boolean comprParts = false;
 
         for (int nodes : new int[]{1, 3})
             for (int backups : new int[]{0, 1})
@@ -147,18 +141,12 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                                 continue;
 
                             if (backups > 0) {
-                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, false, comprParts});
-
-                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, true, !comprParts});
+                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, false});
+                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, true});
                             }
-                            else {
-                                params.add(new Object[] {nodes, backups, persistence, mode, useDataStreamer, false, comprParts});
-
-                                comprParts = !comprParts;
-                            }
+                            else
+                                params.add(new Object[] {nodes, backups, persistence, mode, useDataStreamer, false});
                         }
-
-                        comprParts = !comprParts;
                     }
 
         return params;
@@ -548,6 +536,11 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     void createDump(IgniteEx ign, String name, @Nullable Collection<String> cacheGroupNames) {
+        createDump(ign, name, cacheGroupNames, false);
+    }
+
+    /** */
+    void createDump(IgniteEx ign, String name, @Nullable Collection<String> cacheGroupNames, boolean comprParts) {
         ign.context().cache().context().snapshotMgr()
             .createSnapshot(name, null, cacheGroupNames, false, onlyPrimary, true, comprParts).get();
     }
