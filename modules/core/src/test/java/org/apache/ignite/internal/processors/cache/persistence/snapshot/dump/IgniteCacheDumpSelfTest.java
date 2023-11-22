@@ -171,20 +171,38 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
     /** */
     private void checkPartitionsNames(IgniteEx ign, String dumpName, boolean comprParts) throws IgniteCheckedException {
-        Arrays.stream(new File(dumpDirectory(ign, dumpName), "db").listFiles())
-            .filter(n -> n.getName().startsWith("node"))
-            .forEach(n -> Arrays.stream(n.listFiles())
-                .filter(c -> c.getName().startsWith("cache"))
-                .forEach(c -> Arrays.stream(c.listFiles())
-                    .filter(p -> p.getName().startsWith("part"))
-                    .forEach(p -> assertEquals(
-                        "Filename " + p.getPath() + " should " + (comprParts ? "" : "not ") + "end with .zip",
-                        comprParts,
-                        p.getName().endsWith(".zip")
-                        )
-                    )
-                )
-            );
+        File dumpDir = dumpDirectory(ign, dumpName);
+
+        File dbDir = new File(dumpDir, "db");
+
+        File[] nodeDirs = dbDir.listFiles(f -> f.getName().startsWith("node") || f.getName().startsWith("127"));
+
+        assertTrue("There must be at least one node directory in " + dbDir, nodeDirs != null && nodeDirs.length > 0);
+
+        for (File nodeDir : nodeDirs) {
+            File[] cacheDirs = nodeDir.listFiles(c -> c.getName().startsWith("cache"));
+
+            assertTrue("There must be at least one cache directory in " + nodeDir, cacheDirs != null && cacheDirs.length > 0);
+
+            for (File cacheDir : cacheDirs) {
+                File[] partFiles = cacheDir.listFiles(p -> p.getName().startsWith("part"));
+
+                assertTrue("There must be at least one part file in " + cacheDir, partFiles != null && partFiles.length > 0);
+
+                for (File partFile : partFiles) {
+                    if (comprParts) {
+                        assertTrue("Filename " + partFile.getPath() + " should end with .dump.zip",
+                            partFile.getName().endsWith(".dump.zip")
+                        );
+                    }
+                    else {
+                        assertTrue("Filename " + partFile.getPath() + " should end with .dump",
+                            partFile.getName().endsWith(".dump")
+                        );
+                    }
+                }
+            }
+        }
     }
 
     /** */

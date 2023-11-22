@@ -2732,30 +2732,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
      * @param withMetaStorage {@code true} if all metastorage data must be also included into snapshot.
      * @param dump {@code true} if cache group dump must be created.
-     * @param snpSndr Factory which produces snapshot receiver instance.
-     * @return Snapshot operation task which should be registered on checkpoint to run.
-     */
-    AbstractSnapshotFutureTask<?> registerSnapshotTask(
-        String snpName,
-        @Nullable String snpPath,
-        UUID srcNodeId,
-        UUID requestId,
-        Map<Integer, Set<Integer>> parts,
-        boolean withMetaStorage,
-        boolean dump,
-        SnapshotSender snpSndr
-    ) {
-        return registerSnapshotTask(snpName, snpPath, srcNodeId, requestId, parts, withMetaStorage, dump, false, snpSndr);
-    }
-
-    /**
-     * @param snpName Unique snapshot name.
-     * @param snpPath Snapshot path.
-     * @param srcNodeId Node id which cause snapshot operation.
-     * @param requestId Snapshot operation request ID.
-     * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
-     * @param withMetaStorage {@code true} if all metastorage data must be also included into snapshot.
-     * @param dump {@code true} if cache group dump must be created.
      * @param compress If {@code true} then compress the file.
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @return Snapshot operation task which should be registered on checkpoint to run.
