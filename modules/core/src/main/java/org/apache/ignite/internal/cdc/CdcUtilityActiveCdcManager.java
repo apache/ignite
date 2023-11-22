@@ -31,28 +31,21 @@ import static org.apache.ignite.internal.cdc.CdcMain.STATE_DIR;
  * CDC manager that delegates consuming CDC events to the {@link CdcMain} utility.
  */
 public class CdcUtilityActiveCdcManager extends GridCacheSharedManagerAdapter implements CdcManager {
-    /** If {@code true} then should notify {@link CdcMain} to start consuming WAL segments. */
-    private boolean writeStopRecord = true;
-
-    /** {@inheritDoc} */
-    @Override protected void start0() throws IgniteCheckedException {
-        File stateDir = new File(((FileWriteAheadLogManager)cctx.wal(true)).walCdcDirectory(), STATE_DIR);
-
-        if (stateDir.exists()) {
-            CdcConsumerState state = new CdcConsumerState(log, stateDir.toPath());
-
-            writeStopRecord = state.loadCdcMode() == CdcMode.IGNITE_NODE_ACTIVE;
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public void onKernalStart0(boolean active) {
         try {
-            if (writeStopRecord) {
-                cctx.wal(true).log(new CdcManagerStopRecord());
+            File stateDir = new File(((FileWriteAheadLogManager)cctx.wal(true)).walCdcDirectory(), STATE_DIR);
 
-                writeStopRecord = false;
+            boolean writeStopRecord = true;
+
+            if (stateDir.exists()) {
+                CdcConsumerState state = new CdcConsumerState(log, stateDir.toPath());
+
+                writeStopRecord = state.loadCdcMode() == CdcMode.IGNITE_NODE_ACTIVE;
             }
+
+            if (writeStopRecord)
+                cctx.wal(true).log(new CdcManagerStopRecord());
         }
         catch (IgniteCheckedException e) {
             U.warn(log, "Failed to write WAL record. CDC might not work.");
