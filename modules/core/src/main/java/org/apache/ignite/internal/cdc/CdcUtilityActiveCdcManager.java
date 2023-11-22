@@ -32,19 +32,19 @@ import static org.apache.ignite.internal.cdc.CdcMain.STATE_DIR;
  */
 public class CdcUtilityActiveCdcManager extends GridCacheSharedManagerAdapter implements CdcManager {
     /** {@inheritDoc} */
-    @Override public void onKernalStart0(boolean active) {
+    @Override public void onActivate() {
         try {
             File stateDir = new File(((FileWriteAheadLogManager)cctx.wal(true)).walCdcDirectory(), STATE_DIR);
 
-            boolean writeStopRecord = true;
+            boolean logStopRecord = true;
 
             if (stateDir.exists()) {
                 CdcConsumerState state = new CdcConsumerState(log, stateDir.toPath());
 
-                writeStopRecord = state.loadCdcMode() == CdcMode.IGNITE_NODE_ACTIVE;
+                logStopRecord = state.loadCdcMode() == CdcMode.IGNITE_NODE_ACTIVE;
             }
 
-            if (writeStopRecord)
+            if (logStopRecord)
                 cctx.wal(true).log(new CdcManagerStopRecord());
         }
         catch (IgniteCheckedException e) {
@@ -53,7 +53,7 @@ public class CdcUtilityActiveCdcManager extends GridCacheSharedManagerAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public boolean active() {
+    @Override public boolean enabled() {
         return false;
     }
 

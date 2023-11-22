@@ -616,7 +616,7 @@ public class CdcMain implements Runnable {
                         break;
 
                     case CDC_MANAGER_STOP_RECORD:
-                        cdcModeState = CdcMode.CDC_UTILITY_ACTIVE;
+                        state.saveCdcMode((cdcModeState = CdcMode.CDC_UTILITY_ACTIVE));
 
                         return true;
 

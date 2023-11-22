@@ -1021,6 +1021,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             walTail = null;
 
+            if (cctx.cdc() != null)
+                cctx.cdc().onActivate();
+
             // Recreate metastorage to refresh page memory state after deactivation.
             if (metaStorage == null)
                 metaStorage = createMetastorage(false);
@@ -1099,7 +1102,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             else if (restored != null)
                 U.log(log, "Binary memory state restored at node startup [restoredPtr=" + restored + ']');
 
-            if (cctx.cdc() != null && cctx.cdc().active())
+            if (cctx.cdc() != null && cctx.cdc().enabled())
                 cctx.cdc().afterMemoryRestore();
 
             // Wal logging is now available.

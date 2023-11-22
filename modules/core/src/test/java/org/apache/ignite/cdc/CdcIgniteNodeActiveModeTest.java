@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cdc.CdcConsumerState;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.cdc.CdcManager;
 import org.apache.ignite.internal.cdc.CdcMode;
@@ -263,6 +264,20 @@ public class CdcIgniteNodeActiveModeTest extends AbstractCdcTest {
     }
 
     /** */
+    @Test
+    public void testStoreCdcMode() throws Exception {
+        writeCdcManagerStopCdcRecord();
+
+        rollSegment();
+
+        awaitCdcModeValue(CdcMode.CDC_UTILITY_ACTIVE);
+
+        CdcConsumerState state = GridTestUtils.getFieldValue(cdcMain, "state");
+
+        assertEquals(CdcMode.CDC_UTILITY_ACTIVE, state.loadCdcMode());
+    }
+
+    /** */
     private WALPointer rollSegment() throws IgniteCheckedException {
         return walMgr().log(RecordUtils.buildCheckpointRecord(), RolloverType.CURRENT_SEGMENT);
     }
@@ -367,12 +382,17 @@ public class CdcIgniteNodeActiveModeTest extends AbstractCdcTest {
     /** */
     protected static class NoOpCdcManager extends GridCacheSharedManagerAdapter implements CdcManager {
         /** {@inheritDoc} */
-        @Override public boolean active() {
+        @Override public boolean enabled() {
             return true;
         }
 
         /** {@inheritDoc} */
         @Override public void collect(ByteBuffer dataBuf) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onActivate() {
             // No-op.
         }
 

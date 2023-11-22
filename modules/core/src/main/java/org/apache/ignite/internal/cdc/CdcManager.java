@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.Iterator;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cdc.CdcConsumer;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerRecord;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
@@ -33,22 +34,22 @@ import org.apache.ignite.plugin.PluginProvider;
 
 /**
  * CDC manager responsible for logic of capturing data within Ignite node. Communication between {@link CdcManager} and
- * {@link CdcMain} components are built with WAL records. {@link CdcManager} writes CDC management records,
- * while {@link CdcMain} listens to them:
+ * {@link CdcMain} components are built with WAL records. {@link CdcManager} logs CDC management records, while {@link CdcMain}
+ * listens to them:
  * <ul>
  *     <li>
- *         This manager can write {@link CdcManagerRecord} with committed consumer state. This record will be handled by
+ *         This manager can log {@link CdcManagerRecord} with committed consumer state. This record will be handled by
  *         {@link CdcMain} the same way it handles {@link CdcConsumer#onEvents(Iterator)} when it returns {@code true}.
  *     </li>
  *     <li>
- *         This manager must write {@link CdcManagerStopRecord} after it stopped handling records by any reason.
+ *         This manager must log {@link CdcManagerStopRecord} after it stopped handling records by any reason.
  *         {@link CdcMain} will start consume records instead since {@link CdcManagerRecord#walState()} of
  *         last consumed {@link CdcManagerRecord}.
  *     </li>
  *     <li>
- *         Apache Ignite provides a default implementation - {@link CdcUtilityActiveCdcManager}. It is inactive,
- *         writes the {@link CdcManagerStopRecord} on Ignite node start, and then delegates consuming CDC events to the
- *         {@link CdcMain} utility.
+ *         Apache Ignite provides a default implementation - {@link CdcUtilityActiveCdcManager}. It is disabled from the
+ *         beginning, logs the {@link CdcManagerStopRecord} on Ignite node activation, and then delegates consuming CDC
+ *         events to the {@link CdcMain} utility.
  *     </li>
  * </ul>
  *
@@ -62,12 +63,12 @@ import org.apache.ignite.plugin.PluginProvider;
 public interface CdcManager extends GridCacheSharedManager {
     /**
      * Callback is invoked only once after Ignite restores memory on start-up. It invokes before {@link IgniteWriteAheadLogManager}
-     * starts writing WAL records and before the first call of {@link #collect(ByteBuffer)}.
+     * enables logging into WAL and before the first call of {@link #collect(ByteBuffer)}.
      * <p> Implementation suggestions:
      * <ul>
-     *     <li>This method can be used for restoring CDC state on Ignite node start, collecting missed events from WAL segments.</li>
-     *     <li>Be aware, this method runs in Ignite main thread and might lengthen the Ignite start procedure.</li>
-     *     <li>Ignite node fails in case the method throws an exception.</li>
+     *     <li>Callback can be used for restoring CDC state on Ignite node start, collecting missed events from WAL segments.</li>
+     *     <li>Be aware, this method runs in the Ignite main thread and might lengthen the Ignite start procedure.</li>
+     *     <li>Ignite node will fail in case the method throws an exception.</li>
      * </ul>
      */
     public void afterMemoryRestore();
@@ -77,33 +78,47 @@ public interface CdcManager extends GridCacheSharedManager {
      * The buffer might contain full content of a segment or only piece of it. There are guarantees:
      * <ul>
      *     <li>This method invokes sequentially, the provided buffer is a continuation of the previous one.</li>
-     *     <li>{@code dataBuf} contains finite number of completed WAL records. No partially written WAL records exist.</li>
+     *     <li>{@code dataBuf} contains finite number of completed WAL records. No partially written WAL records present.</li>
      *     <li>Records can be read from the buffer with {@link RecordSerializer#readRecord(FileInput, WALPointer)}.</li>
      *     <li>{@code dataBuf} is a read-only buffer.</li>
      * </ul>
      *
-     * Implementation suggestions:
-     *  <ul>
-     *      <li>
-     *          Frequence of calling the method depends on frequence of fsyncing WAL segment.
-     *          See {@link IgniteSystemProperties#IGNITE_WAL_SEGMENT_SYNC_TIMEOUT}.
-     *      </li>
-     *      <li>
-     *          It must handle the content of the {@code dataBuf} within the calling thread.
-     *          Content of the buffer will not be changed before this method returns.
-     *      </li>
-     *      <li>It must not block the calling thread and work quickly.</li>
-     *      <li>Ignite logs and ignores any {@link Throwable} throwed from this method.</li>
-     *  </ul>
+     * <p> Implementation suggestions:
+     * <ul>
+     *     <li>
+     *         Frequence of calling the method depends on frequence of fsyncing WAL segment.
+     *         See {@link IgniteSystemProperties#IGNITE_WAL_SEGMENT_SYNC_TIMEOUT}.
+     *     </li>
+     *     <li>
+     *         It must handle the content of the {@code dataBuf} within the calling thread.
+     *         Content of the buffer will not be changed before this method returns.
+     *     </li>
+     *     <li>It must not block the calling thread and work quickly.</li>
+     *     <li>Ignite will ignore any {@link Throwable} throwed from this method.</li>
+     * </ul>
      *
      * @param dataBuf Buffer that contains data to collect.
      */
     public void collect(ByteBuffer dataBuf);
 
     /**
-     * If this manager isn't active then Ignite skips calls of {@link #afterMemoryRestore()} and {@link #collect(ByteBuffer)} methods.
+     * Callback is invoked after Ignite node is fully activated: {@link IgniteWriteAheadLogManager} enables logging into
+     * WAL, caches are inited. It is called on node start and each time cluster state is changed to {@link ClusterState#ACTIVE}.
      *
-     * @return {@code true} if manager is active, otherwise {@code false}.
+     * <p> Implementation suggestions:
+     * <ul>
+     *     <li>Callback can be used for starting actual processing of collected data.</li>
+     *     <li>After this callback it's safe to log the CDC management records.</li>
+     *     <li>It must not block the calling thread.</li>
+     *     <li>Ignite node will fail in case the method throws an exception.</li>
+     * </ul>
      */
-    public boolean active();
+    public void onActivate();
+
+    /**
+     * If this manager isn't enabled then Ignite skips calling {@link #afterMemoryRestore()} and {@link #collect(ByteBuffer)} methods.
+     *
+     * @return {@code true} if manager is enabled, otherwise {@code false}.
+     */
+    public boolean enabled();
 }

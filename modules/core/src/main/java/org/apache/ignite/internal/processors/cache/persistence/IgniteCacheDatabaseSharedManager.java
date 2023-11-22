@@ -1067,7 +1067,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             if (ptr != null)
                 ptr = ptr.next();
 
-            if (cctx.cdc() != null && cctx.cdc().active())
+            if (cctx.cdc() != null && cctx.cdc().enabled())
                 cctx.cdc().afterMemoryRestore();
 
             cctx.wal(true).startAutoReleaseSegments();
@@ -1455,6 +1455,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         for (DatabaseLifecycleListener lsnr : getDatabaseListeners(kctx))
             lsnr.afterInitialise(this);
+
+        if (cctx.cdc() != null)
+            cctx.cdc().onActivate();
     }
 
     /**
