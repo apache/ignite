@@ -1886,15 +1886,22 @@ public class BinaryUtils {
      */
     @Nullable public static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach) throws BinaryObjectException {
-        return unmarshal(in, ctx, ldr, handles, detach, false);
+        return unmarshal(in, ctx, ldr, handles, detach, false, false);
     }
 
     /**
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) throws BinaryObjectException {
+    @Nullable public static Object unmarshal(
+        BinaryInputStream in,
+        BinaryContext ctx,
+        ClassLoader ldr,
+        BinaryReaderHandlesHolder handles,
+        boolean detach,
+        boolean deserialize,
+        boolean resolveReferences
+    ) throws BinaryObjectException {
         int start = in.position();
 
         byte flag = in.readByte();
@@ -1913,7 +1920,7 @@ public class BinaryUtils {
 
                     in.position(handlePos);
 
-                    obj = unmarshal(in, ctx, ldr, handles, detach, deserialize);
+                    obj = unmarshal(in, ctx, ldr, handles, detach, deserialize, resolveReferences);
 
                     in.position(retPos);
                 }
@@ -1924,15 +1931,16 @@ public class BinaryUtils {
             case GridBinaryMarshaller.OBJ: {
                 checkProtocolVersion(in.readByte());
 
-                int len = length(in, start);
-
                 BinaryObjectExImpl po;
 
                 if (detach) {
-                    // In detach mode we simply copy object's content.
-                    in.position(start);
+                    BinaryObjectImpl binObj = new BinaryObjectImpl(ctx, in.array(), start);
 
-                    po = new BinaryObjectImpl(ctx, in.readByteArray(len), 0);
+                    binObj.detachAllowed(true);
+
+                    in.position(start + binObj.length());
+
+                    po = binObj.detach(resolveReferences);
                 }
                 else {
                     if (in.offheapPointer() == 0)
@@ -2283,7 +2291,9 @@ public class BinaryUtils {
      */
     private static Object deserializeOrUnmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) {
-        return deserialize ? doReadObject(in, ctx, ldr, handles) : unmarshal(in, ctx, ldr, handles, detach, deserialize);
+        return deserialize
+            ? doReadObject(in, ctx, ldr, handles)
+            : unmarshal(in, ctx, ldr, handles, detach, deserialize, false);
     }
 
     /**

@@ -102,6 +102,9 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage implements GridC
     /** Keep binary flag. */
     private boolean keepBinary;
 
+    /** Keep binary flag. */
+    private boolean keepCache;
+
     /** Filter. */
     @GridToStringExclude
     private CacheEntryPredicate filter;
@@ -149,7 +152,9 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage implements GridC
         EnlistOperation op,
         boolean needRes,
         boolean keepBinary,
-        @Nullable CacheEntryPredicate filter) {
+        @Nullable CacheEntryPredicate filter,
+        boolean keepCache
+    ) {
         this.txTimeout = txTimeout;
         this.keepBinary = keepBinary;
         this.filter = filter;
@@ -166,6 +171,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage implements GridC
         this.rows = rows;
         this.op = op;
         this.needRes = needRes;
+        this.keepCache = keepCache;
     }
 
     /**
@@ -264,6 +270,13 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage implements GridC
      */
     public boolean keepBinary() {
         return keepBinary;
+    }
+
+    /**
+     * @return Keep binary flag.
+     */
+    public boolean keepCache() {
+        return keepCache;
     }
 
     /**

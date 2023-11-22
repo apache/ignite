@@ -117,6 +117,9 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     /** Keep binary flag. */
     private final boolean keepBinary;
 
+    /** Keep binary flag. */
+    private final boolean keepCache;
+
     /**
      * @param cctx Cache context.
      * @param tx Transaction.
@@ -136,7 +139,9 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         boolean sequential,
         @Nullable CacheEntryPredicate filter,
         boolean needRes,
-        boolean keepBinary) {
+        boolean keepBinary,
+        boolean keepCache
+    ) {
         super(cctx, tx, timeout, null);
 
         this.it = it;
@@ -145,6 +150,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         this.filter = filter;
         this.needRes = needRes;
         this.keepBinary = keepBinary;
+        this.keepCache = keepCache;
     }
 
     /** {@inheritDoc} */
@@ -457,7 +463,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             it.operation(),
             needRes,
             keepBinary,
-            filter
+            filter,
+            keepCache
         );
 
         sendRequest(req, nodeId);
@@ -494,7 +501,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             it.operation(),
             filter,
             needRes,
-            keepBinary);
+            keepBinary,
+            keepCache);
 
         updateLocalFuture(fut);
 

@@ -21,6 +21,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
@@ -73,20 +74,8 @@ public class ClientCacheRequest extends ClientRequest {
      * @param ctx Kernal context.
      * @return Cache.
      */
-    protected IgniteCache cache(ClientConnectionContext ctx) {
-        return rawCache(ctx).withKeepBinary();
-    }
-
-    /**
-     * Gets the internal cache implementation, with binary mode enabled.
-     *
-     * @param ctx Kernal context.
-     * @return Cache.
-     */
-    protected IgniteInternalCache<?, ?> cachex(ClientConnectionContext ctx) {
-        String cacheName = cacheDescriptor(ctx).cacheName();
-
-        return ctx.kernalContext().grid().cachex(cacheName).keepBinary();
+    protected <K, V> IgniteInternalCache<K, V> binaryCache(ClientConnectionContext ctx) {
+        return internalCache(ctx).keepBinary().keepCacheObjects();
     }
 
     /**
@@ -117,21 +106,27 @@ public class ClientCacheRequest extends ClientRequest {
     }
 
     /**
-     * Gets the cache for current cache id, ignoring any flags.
+     * Gets the IgniteCache instance for current cache id.
      *
      * @param ctx Kernal context.
      * @return Cache.
      */
-    protected IgniteCache rawCache(ClientConnectionContext ctx) {
-        DynamicCacheDescriptor cacheDesc = cacheDescriptor(ctx);
+    protected <K, V> IgniteCache<K, V> cache(ClientConnectionContext ctx) {
+        IgniteCache<K, V> cache = ctx.kernalContext().grid().cache(cacheName(ctx, cacheId));
 
-        String cacheName = cacheDesc.cacheName();
+        return withExpiryPolicy() ? cache.withExpiryPolicy(expiryPolicy) : cache;
+    }
 
-        IgniteCache<Object, Object> cache = ctx.kernalContext().grid().cache(cacheName);
-        if (withExpiryPolicy())
-            cache = cache.withExpiryPolicy(expiryPolicy);
-        
-        return cache;
+    /**
+     * Gets the IgniteInternalCache instance for current cache id.
+     *
+     * @param ctx Kernal context.
+     * @return Cache.
+     */
+    protected <K, V> IgniteInternalCache<K, V> internalCache(ClientConnectionContext ctx) {
+        IgniteInternalCache<K, V> cache = ctx.kernalContext().grid().cachex(cacheName(ctx, cacheId));
+
+        return withExpiryPolicy() ? cache.withExpiryPolicy(expiryPolicy) : cache;
     }
 
     /**
@@ -159,6 +154,15 @@ public class ClientCacheRequest extends ClientRequest {
                     cacheId + "]", null);
 
         return desc;
+    }
+
+    /**
+     * @param ctx Context.
+     */
+    protected static String cacheName(ClientConnectionContext ctx, int cacheId) {
+        GridCacheContext<Object, Object> cctx = ctx.kernalContext().cache().context().cacheContext(cacheId);
+
+        return cctx == null ? cacheDescriptor(ctx, cacheId).cacheName() : cctx.name();
     }
 
     /**

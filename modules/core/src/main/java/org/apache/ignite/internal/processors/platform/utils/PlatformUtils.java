@@ -53,12 +53,12 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryNoopMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinarySchemaRegistry;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.binary.builder.BinaryBuilderReader;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
@@ -1374,28 +1374,43 @@ public class PlatformUtils {
      * @param reader Reader.
      * @param isKey {@code True} if object is a key.
      */
-    public static <T extends CacheObject> T readCacheObject(BinaryReaderExImpl reader, boolean isKey) {
+    public static <T extends CacheObject> T readCacheObject(BinaryRawReaderEx reader, boolean isKey) {
         BinaryInputStream in = reader.in();
 
-        int pos0 = in.position();
+        int objStartPos = in.position();
 
-        Object obj = reader.readObjectDetached();
+        if (isKey) {
+            Object obj = reader.readObjectDetached(false, true);
 
-        if (obj == null)
-            return null;
+            if (obj == null)
+                return null;
 
-        if (obj instanceof CacheObject)
-            return (T)obj;
+            if (obj instanceof CacheObject)
+                return (T)obj;
 
-        int pos1 = in.position();
+            int objEndPos = in.position();
 
-        in.position(pos0);
+            in.position(objStartPos);
 
-        byte[] objBytes = in.readByteArray(pos1 - pos0);
+            byte[] objBytes = in.readByteArray(objEndPos - objStartPos);
 
-        return isKey ?
-            (T)new KeyCacheObjectImpl(obj, objBytes, -1) :
-            (T)new PlatformCacheObjectImpl(obj, objBytes);
+//            return isKey ? (T)new KeyCacheObjectImpl(obj, null, -1) : (T)new PlatformCacheObjectImpl(null, objBytes);
+            return (T)new KeyCacheObjectImpl(obj, objBytes, -1);
+        }
+        else {
+            BinaryBuilderReader r = new BinaryBuilderReader(reader);
+
+            r.skipValue();
+
+            int objEndPos = r.position();
+
+            if (objEndPos - objStartPos == 1)
+                return null;
+
+            byte[] objBytes = in.readByteArray(objEndPos - objStartPos);
+
+            return (T)new PlatformCacheObjectImpl(null, objBytes);
+        }
     }
 
     /**

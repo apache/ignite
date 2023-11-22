@@ -546,7 +546,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         long accessTtl,
         boolean skipStore,
         boolean keepBinary,
-        boolean nearCache
+        boolean nearCache,
+        boolean keepCache
     ) {
         try {
             checkValid();
@@ -618,7 +619,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                             null,
                             skipStore,
                             keepBinary,
-                            nearCache);
+                            nearCache,
+                            keepCache);
 
                         if (read)
                             txEntry.ttl(accessTtl);
@@ -660,7 +662,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 createTtl,
                 accessTtl,
                 skipStore,
-                keepBinary);
+                keepBinary,
+                keepCache);
         }
         catch (IgniteCheckedException e) {
             setRollbackOnly();
@@ -689,7 +692,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         final long createTtl,
         final long accessTtl,
         boolean skipStore,
-        boolean keepBinary) {
+        boolean keepBinary,
+        boolean keepCache
+    ) {
         if (log.isDebugEnabled())
             log.debug("Before acquiring transaction lock on keys [keys=" + passedKeys + ']');
 
@@ -720,7 +725,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             accessTtl,
             CU.empty0(),
             skipStore,
-            keepBinary);
+            keepBinary,
+            keepCache);
 
         return new GridEmbeddedFuture<>(
             fut,

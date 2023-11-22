@@ -34,6 +34,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
@@ -278,12 +279,23 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         return BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.TOTAL_LEN_POS);
     }
 
+    /** */
+    public BinaryObjectImpl detach() {
+        return detach(false);
+    }
+
     /**
      * @return Detached binary object.
      */
-    public BinaryObjectImpl detach() {
+    public BinaryObjectImpl detach(boolean resolveReferences) {
         if (!detachAllowed || detached())
             return this;
+
+        if (resolveReferences) {
+            BinaryObjectBuilderImpl builder = new BinaryObjectBuilderImpl(this);
+
+            return (BinaryObjectImpl)builder.build();
+        }
 
         int len = length();
 

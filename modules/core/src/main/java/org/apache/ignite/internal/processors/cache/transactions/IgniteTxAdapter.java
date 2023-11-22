@@ -1617,7 +1617,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     cacheCtx,
                     txEntry.value(),
                     txEntry.keepBinary(),
-                    U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
+                    U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId),
+                    txEntry.keepCacheObject()
                 );
             }
 

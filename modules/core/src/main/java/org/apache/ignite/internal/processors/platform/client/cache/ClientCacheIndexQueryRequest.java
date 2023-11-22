@@ -155,7 +155,7 @@ public class ClientCacheIndexQueryRequest extends ClientCacheQueryRequest {
      * {@inheritDoc}
      */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        IgniteCache cache = !isKeepBinary() ? rawCache(ctx) : cache(ctx);
+        IgniteCache cache = !isKeepBinary() ? cache(ctx) : cache(ctx).withKeepBinary();
 
         if (qry.getPartition() != null)
             updateAffinityMetrics(ctx, qry.getPartition());

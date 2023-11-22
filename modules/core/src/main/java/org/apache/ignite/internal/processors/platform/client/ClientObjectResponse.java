@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 
 /**
  * Single object response.
@@ -41,6 +44,15 @@ public class ClientObjectResponse extends ClientResponse {
     @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
         super.encode(ctx, writer);
 
-        writer.writeObject(val);
+        if (val instanceof CacheObject) {
+            try {
+                writer.out().writeByteArray(((CacheObject)val).valueBytes(null));
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+        else
+            writer.writeObject(val);
     }
 }

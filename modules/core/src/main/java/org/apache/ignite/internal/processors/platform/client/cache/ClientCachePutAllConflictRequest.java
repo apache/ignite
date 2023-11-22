@@ -53,7 +53,7 @@ public class ClientCachePutAllConflictRequest extends ClientCacheDataRequest imp
     public ClientCachePutAllConflictRequest(BinaryReaderExImpl reader, ClientConnectionContext ctx) {
         super(reader);
 
-        boolean expPlc = cachex(ctx).configuration().getExpiryPolicyFactory() != null;
+        boolean expPlc = internalCache(ctx).configuration().getExpiryPolicyFactory() != null;
 
         int cnt = reader.readInt();
 
@@ -78,7 +78,7 @@ public class ClientCachePutAllConflictRequest extends ClientCacheDataRequest imp
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         try {
-            cachex(ctx).putAllConflict(map);
+            internalCache(ctx).putAllConflict(map);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

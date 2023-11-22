@@ -99,6 +99,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** Flag indicating that 'invoke' operation was no-op on primary. */
     private static final int TX_ENTRY_NOOP_ON_PRIMARY = 1 << 4;
 
+    /** Keep binary flag. */
+    private static final int TX_ENTRY_KEEP_CACHE_FLAG_MASK = 1 << 5;
+
     /** Prepared flag updater. */
     private static final AtomicIntegerFieldUpdater<IgniteTxEntry> PREPARED_UPD =
         AtomicIntegerFieldUpdater.newUpdater(IgniteTxEntry.class, "prepared");
@@ -254,7 +257,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         GridCacheEntryEx entry,
         @Nullable GridCacheVersion conflictVer,
         boolean skipStore,
-        boolean keepBinary
+        boolean keepBinary,
+        boolean keepCache
     ) {
         assert ctx != null;
         assert tx != null;
@@ -271,6 +275,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         skipStore(skipStore);
         keepBinary(keepBinary);
+        keepCacheObject(keepCache);
 
         key = entry.key();
 
@@ -305,7 +310,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         GridCacheVersion conflictVer,
         boolean skipStore,
         boolean keepBinary,
-        boolean addReader
+        boolean addReader,
+        boolean keepCache
     ) {
         assert ctx != null;
         assert tx != null;
@@ -323,6 +329,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         skipStore(skipStore);
         keepBinary(keepBinary);
         addReader(addReader);
+        keepCacheObject(keepCache);
 
         if (entryProcessor != null)
             addEntryProcessor(entryProcessor, invokeArgs);
@@ -547,6 +554,22 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     public boolean keepBinary() {
         return isFlag(TX_ENTRY_KEEP_BINARY_FLAG_MASK);
+    }
+
+    /**
+     * Sets keep binary flag value.
+     *
+     * @param keepBinary Keep binary flag value.
+     */
+    public void keepCacheObject(boolean keepBinary) {
+        setFlag(keepBinary, TX_ENTRY_KEEP_CACHE_FLAG_MASK);
+    }
+
+    /**
+     * @return Keep binary flag value.
+     */
+    public boolean keepCacheObject() {
+        return isFlag(TX_ENTRY_KEEP_CACHE_FLAG_MASK);
     }
 
     /**

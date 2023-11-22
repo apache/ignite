@@ -306,7 +306,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     /**
      * @return Input stream.
      */
-    public BinaryInputStream in() {
+    @Override public BinaryInputStream in() {
         return in;
     }
 
@@ -1333,12 +1333,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Nullable @Override public Object readObjectDetached() throws BinaryObjectException {
-        return readObjectDetached(false);
+        return readObjectDetached(false, false);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object readObjectDetached(boolean deserialize) throws BinaryObjectException {
-        return BinaryUtils.unmarshal(in, ctx, ldr, this, true, deserialize);
+    @Nullable @Override public Object readObjectDetached(boolean deserialize, boolean resolvereferences) throws BinaryObjectException {
+        return BinaryUtils.unmarshal(in, ctx, ldr, this, true, deserialize, resolvereferences);
     }
 
     /** {@inheritDoc} */

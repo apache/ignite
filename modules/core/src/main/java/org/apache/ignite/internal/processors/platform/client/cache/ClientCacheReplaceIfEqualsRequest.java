@@ -22,6 +22,8 @@ import org.apache.ignite.internal.processors.platform.client.ClientBooleanRespon
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
+import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils.readCacheObject;
+
 /**
  * Cache replace request.
  */
@@ -37,11 +39,10 @@ public class ClientCacheReplaceIfEqualsRequest extends ClientCacheKeyValueReques
     public ClientCacheReplaceIfEqualsRequest(BinaryRawReaderEx reader) {
         super(reader);
 
-        newVal = reader.readObjectDetached();
+        newVal = readCacheObject(reader, false);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public ClientResponse process0(ClientConnectionContext ctx) {
         boolean res = cache(ctx).replace(key(), val(), newVal);
 

@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
  * Cache local peek request.
@@ -38,10 +40,14 @@ public class ClientCacheLocalPeekRequest extends ClientCacheKeyRequest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public ClientResponse process0(ClientConnectionContext ctx) {
-        Object val = cache(ctx).localPeek(key(), CachePeekMode.ALL);
+        try {
+            Object val = binaryCache(ctx).localPeek(key(), new CachePeekMode[] {CachePeekMode.ALL});
 
-        return new ClientObjectResponse(requestId(), val);
+            return new ClientObjectResponse(requestId(), val);
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
     }
 }

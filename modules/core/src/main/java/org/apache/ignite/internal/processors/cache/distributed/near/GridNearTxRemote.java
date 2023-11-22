@@ -354,7 +354,8 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         CacheObject val,
         @Nullable GridCacheVersion drVer,
         boolean skipStore,
-        boolean keepBinary
+        boolean keepBinary,
+        boolean keepCache
     ) throws IgniteCheckedException {
         checkInternal(key);
 
@@ -388,7 +389,8 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
                         cached,
                         drVer,
                         skipStore,
-                        keepBinary);
+                        keepBinary,
+                        keepCache);
 
                     txState.addWriteEntry(key, txEntry);
 

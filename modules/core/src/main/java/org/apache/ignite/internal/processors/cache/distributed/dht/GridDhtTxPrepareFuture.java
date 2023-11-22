@@ -364,7 +364,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      *
      */
     private void onEntriesLocked() {
-        ret = new GridCacheReturn(null, tx.localResult(), true, null, null, true);
+        ret = new GridCacheReturn(null, tx.localResult(), true, false, null, null, true);
 
         for (IgniteTxEntry writeEntry : req.writes()) {
             IgniteTxEntry txEntry = tx.entry(writeEntry.txKey());
@@ -412,6 +412,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         entryProc = F.first(txEntry.entryProcessors()).get1();
 
                     final boolean keepBinary = txEntry.keepBinary();
+                    final boolean keepCache = txEntry.keepCacheObject();
 
                     val = oldVal = cached.innerGet(
                         null,
@@ -506,7 +507,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             }
                         }
                         else if (retVal)
-                            ret.value(cacheCtx, val, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+                            ret.value(cacheCtx, val, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId), keepCache);
                     }
 
                     if (hasFilters && !cacheCtx.isAll(cached, txEntry.filters())) {
@@ -2002,7 +2003,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                         cacheCtx,
                                         info.value(),
                                         false,
-                                        U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
+                                        U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId),
+                                        false
                                     );
                                 }
                             }

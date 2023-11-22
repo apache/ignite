@@ -267,6 +267,13 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public <K1, V1> IgniteInternalCache<K1, V1> keepBinary();
 
     /**
+     * Creates a projection that will not unwrap CacheObject's types when returning result.
+     *
+     * @return New internal cache instance with keepCacheObjects flag.
+     */
+    public <K1, V1> IgniteInternalCache<K1, V1> keepCacheObjects();
+
+    /**
      * Returns {@code true} if this map contains no key-value mappings.
      *
      * @return {@code true} if this map contains no key-value mappings.

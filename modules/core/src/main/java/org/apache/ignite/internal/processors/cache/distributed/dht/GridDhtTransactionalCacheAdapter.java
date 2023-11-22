@@ -313,7 +313,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 null,
                                 req.accessTtl(),
                                 req.skipStore(),
-                                req.keepBinary());
+                                req.keepBinary(),
+                                req.keepCache());
                         }
 
                         entry = entryExx(key, req.topologyVersion());
@@ -882,7 +883,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             accessTtl,
             CU.empty0(),
             opCtx != null && opCtx.skipStore(),
-            opCtx != null && opCtx.isKeepBinary());
+            opCtx != null && opCtx.isKeepBinary(),
+            opCtx != null && opCtx.isKeepCacheObjects());
     }
 
     /**
@@ -912,7 +914,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         long accessTtl,
         CacheEntryPredicate[] filter,
         boolean skipStore,
-        boolean keepBinary) {
+        boolean keepBinary,
+        boolean keepCache
+    ) {
         if (keys == null || keys.isEmpty())
             return new GridDhtFinishedFuture<>(true);
 
@@ -934,7 +938,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             createTtl,
             accessTtl,
             skipStore,
-            keepBinary);
+            keepBinary,
+            keepCache);
 
         if (fut.isDone()) // Possible in case of cancellation or timeout or rollback.
             return fut;
@@ -1116,7 +1121,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         req.createTtl(),
                         req.accessTtl(),
                         req.skipStore(),
-                        req.keepBinary());
+                        req.keepBinary(),
+                        req.keepCache());
 
                     // Add before mapping.
                     if (!ctx.mvcc().addFuture(fut))
@@ -1189,7 +1195,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     req.accessTtl(),
                     req.skipStore(),
                     req.keepBinary(),
-                    req.nearCache());
+                    req.nearCache(),
+                    req.keepCache());
 
                 final GridDhtTxLocal t = tx;
 
@@ -2017,7 +2024,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             req.operation(),
             req.filter(),
             req.needRes(),
-            req.keepBinary());
+            req.keepBinary(),
+            req.keepCache());
 
         fut.listen(NearTxResultHandler.instance());
 

@@ -615,6 +615,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
+            boolean keepCache = opCtx != null && opCtx.isKeepCacheObjects();
+
             final CacheEntryPredicate[] filters = CU.filterArray(filter);
 
             final IgniteInternalFuture<Void> loadFut = enlistWrite(
@@ -631,7 +633,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 opCtx != null && opCtx.skipStore(),
                 keepBinary,
                 opCtx != null && opCtx.recovery(),
-                dataCenterId);
+                dataCenterId,
+                opCtx != null && opCtx.isKeepCacheObjects());
 
             try {
                 loadFut.get();
@@ -709,7 +712,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 }
             }
             else
-                return optimisticPutFuture(cacheCtx, loadFut, ret, keepBinary);
+                return optimisticPutFuture(cacheCtx, loadFut, ret, keepBinary, keepCache);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture(e);
@@ -900,6 +903,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             final Collection<KeyCacheObject> enlisted = new ArrayList<>(keySet.size());
 
             final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+            final boolean keepCache = opCtx != null && opCtx.isKeepCacheObjects();
 
             final IgniteInternalFuture<Void> loadFut = enlistWrite(
                 cacheCtx,
@@ -919,7 +923,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 false,
                 keepBinary,
                 opCtx != null && opCtx.recovery(),
-                dataCenterId);
+                dataCenterId,
+                opCtx != null && opCtx.isKeepCacheObjects());
 
             try {
                 loadFut.get();
@@ -995,7 +1000,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 }
             }
             else
-                return optimisticPutFuture(cacheCtx, loadFut, ret, keepBinary);
+                return optimisticPutFuture(cacheCtx, loadFut, ret, keepBinary, keepCache);
         }
         catch (RuntimeException e) {
             onException();
@@ -1033,7 +1038,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         boolean skipStore,
         boolean keepBinary,
         boolean recovery,
-        Byte dataCenterId) {
+        Byte dataCenterId,
+        boolean keepCache
+    ) {
         try (TraceSurroundings ignored2 =
                  MTC.support(context().kernalContext().tracing().create(TX_NEAR_ENLIST_WRITE, MTC.span()))) {
             GridFutureAdapter<Void> enlistFut = new GridFutureAdapter<>();
@@ -1072,7 +1079,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     hasFilters,
                     needVal,
                     needReadVer,
-                    keepBinary);
+                    keepBinary,
+                    keepCache);
 
                 if (loadMissed) {
                     AffinityTopologyVersion topVer = topologyVersionSnapshot();
@@ -1092,7 +1100,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         retval,
                         keepBinary,
                         recovery,
-                        expiryPlc);
+                        expiryPlc,
+                        keepCache);
 
                     loadFut.listen(() -> {
                         try {
@@ -1158,7 +1167,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean singleRmv,
         final boolean keepBinary,
         final boolean recovery,
-        Byte dataCenterId
+        Byte dataCenterId,
+        boolean keepCache
     ) {
         assert retval || invokeMap == null;
 
@@ -1260,7 +1270,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         hasFilters,
                         needVal,
                         needReadVer,
-                        keepBinary);
+                        keepBinary,
+                        keepCache);
 
                     if (loadMissed) {
                         if (missedForLoad == null)
@@ -1288,7 +1299,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         retval,
                         keepBinary,
                         recovery,
-                        expiryPlc);
+                        expiryPlc,
+                        keepCache);
 
                     loadFut.listen(() -> {
                         try {
@@ -1353,7 +1365,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         boolean hasFilters,
         final boolean needVal,
         boolean needReadVer,
-        boolean keepBinary
+        boolean keepBinary,
+        boolean keepCache
     ) throws IgniteCheckedException {
         boolean loadMissed = false;
 
@@ -1451,6 +1464,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             old,
                             false,
                             keepBinary,
+                            keepCache,
                             U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
                         );
 
@@ -1469,7 +1483,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                     drVer,
                                     skipStore,
                                     keepBinary,
-                                    CU.isNearEnabled(cacheCtx));
+                                    CU.isNearEnabled(cacheCtx),
+                                    keepCache);
                             }
                             else {
                                 txEntry = addEntry(READ,
@@ -1485,7 +1500,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                     null,
                                     skipStore,
                                     keepBinary,
-                                    CU.isNearEnabled(cacheCtx));
+                                    CU.isNearEnabled(cacheCtx),
+                                    keepCache);
                             }
 
                             txEntry.markValid();
@@ -1521,7 +1537,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         drVer,
                         skipStore,
                         keepBinary,
-                        CU.isNearEnabled(cacheCtx));
+                        CU.isNearEnabled(cacheCtx),
+                        keepCache);
 
                     if (op == TRANSFORM && txEntry.value() == null && old != null)
                         txEntry.value(cacheCtx.toCacheObject(old), false, false);
@@ -1545,6 +1562,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                         null,
                                         true,
                                         keepBinary,
+                                        keepCache,
                                         U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
                                     );
                                 }
@@ -1560,7 +1578,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             }
 
                             if (retval && !transform)
-                                ret.set(cacheCtx, old, true, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+                                ret.set(cacheCtx, old, true, keepBinary, keepCache,
+                                    U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
                             else {
                                 if (txEntry.op() == TRANSFORM) {
                                     GridCacheVersion ver;
@@ -1588,7 +1607,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     // Pessimistic.
                     else {
                         if (retval && !transform)
-                            ret.set(cacheCtx, old, true, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+                            ret.set(cacheCtx, old, true, keepBinary, keepCache,
+                                U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
                         else
                             ret.success(true);
                     }
@@ -1614,7 +1634,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             if (!del) {
                 if (hasFilters && !filter(entry.context(), cacheKey, v, filter)) {
-                    ret.set(cacheCtx, v, false, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+                    ret.set(cacheCtx, v, false, keepBinary, keepCache, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
 
                     return loadMissed;
                 }
@@ -1640,7 +1660,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     drVer,
                     skipStore,
                     keepBinary,
-                    CU.isNearEnabled(cacheCtx));
+                    CU.isNearEnabled(cacheCtx),
+                    keepCache);
 
                 if (enlisted != null)
                     enlisted.add(cacheKey);
@@ -1668,7 +1689,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 txEntry.markValid();
 
                 if (retval && !transform)
-                    ret.set(cacheCtx, v, true, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+                    ret.set(cacheCtx, v, true, keepBinary, keepCache, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
                 else
                     ret.success(true);
             }
@@ -1774,6 +1795,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             plc = null;
 
         final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+        final boolean keepCache = opCtx != null && opCtx.isKeepCacheObjects();
 
         final IgniteInternalFuture<Void> loadFut = enlistWrite(
             cacheCtx,
@@ -1793,7 +1815,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             singleRmv,
             keepBinary,
             opCtx != null && opCtx.recovery(),
-            dataCenterId
+            dataCenterId,
+            opCtx != null && opCtx.isKeepCacheObjects()
         );
 
         try {
@@ -1891,6 +1914,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                     cacheCtx,
                                     true,
                                     keepBinary,
+                                    keepCache,
                                     U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId),
                                     implicitRes.value(),
                                     implicitRes.success()
@@ -2003,12 +2027,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             final CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
             final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+            final boolean keepCache = opCtx != null && opCtx.isKeepCacheObjects();
 
             /* TODO: IGNITE-9688: 'sequential' is always true here which can slowdown bulk operations,
              but possibly we can safely optimize this. */
 
             GridNearTxEnlistFuture fut = new GridNearTxEnlistFuture(cacheCtx, this,
-                timeout, it, 0, true, filter, retval, keepBinary);
+                timeout, it, 0, true, filter, retval, keepBinary, keepCache);
 
             fut.init();
 
@@ -2038,6 +2063,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         cacheCtx,
                         true,
                         keepBinary,
+                        keepCache,
                         U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId),
                         val,
                         futRes.success()
@@ -2341,7 +2367,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                                     skipStore,
                                                     !deserializeBinary,
                                                     recovery,
-                                                    null);
+                                                    null,
+                                                    keepCacheObjects);
 
                                                 // Rewriting repaired, initially filled by explicit lock operation.
                                                 if (getRes != null)
@@ -2735,7 +2762,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                     null,
                                     skipStore,
                                     !deserializeBinary,
-                                    CU.isNearEnabled(cacheCtx));
+                                    CU.isNearEnabled(cacheCtx),
+                                    keepCacheObjects);
 
                                 // As optimization, mark as checked immediately
                                 // for non-pessimistic if value is not null.
@@ -2802,7 +2830,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean retval,
         final boolean keepBinary,
         final boolean recovery,
-        final ExpiryPolicy expiryPlc) {
+        final ExpiryPolicy expiryPlc,
+        boolean keepCache
+    ) {
         GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c =
             (KeyCacheObject key, @Nullable Object val, @Nullable GridCacheVersion loadVer) -> {
                 if (log.isDebugEnabled())
@@ -2822,7 +2852,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     assert !hasFilters && !retval;
                     assert val == null || Boolean.TRUE.equals(val) : val;
 
-                    ret.set(cacheCtx, null, val != null, keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
+                    ret.set(cacheCtx, null, val != null, keepBinary,
+                        keepCache, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
                 }
                 else {
                     CacheObject cacheVal = cacheCtx.toCacheObject(val);
@@ -2866,6 +2897,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             cacheVal,
                             success,
                             keepBinary,
+                            keepCache,
                             U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
                         );
                     }
@@ -2904,7 +2936,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final GridCacheContext cacheCtx,
         IgniteInternalFuture<Void> loadFut,
         final GridCacheReturn ret,
-        final boolean keepBinary
+        final boolean keepBinary,
+        boolean keepCache
     ) {
         if (implicit()) {
             // Should never load missing values for implicit transaction as values will be returned
@@ -2930,6 +2963,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 cacheCtx,
                                 true,
                                 keepBinary,
+                                keepCache,
                                 U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId),
                                 res,
                                 implicitRes.success()
@@ -4246,7 +4280,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         long createTtl,
         long accessTtl,
         boolean skipStore,
-        boolean keepBinary) {
+        boolean keepBinary,
+        boolean keepCache
+    ) {
         assert pessimistic();
 
         try {
@@ -4282,7 +4318,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             accessTtl,
             CU.empty0(),
             skipStore,
-            keepBinary);
+            keepBinary,
+            keepCache);
 
         return new GridEmbeddedFuture<>(
             fut,

@@ -141,6 +141,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
         final boolean skipStore = opCtx != null && opCtx.skipStore();
 
+        final boolean keepCacheObjects = opCtx != null && opCtx.isKeepCacheObjects();
+
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
                 @Override public IgniteInternalFuture<Map<K, V>> op(GridNearTxLocal tx, AffinityTopologyVersion readyTopVer) {
@@ -149,7 +151,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         ctx.cacheKeysView(keys),
                         deserializeBinary,
                         skipVals,
-                        false,
+                        keepCacheObjects,
                         skipStore,
                         recovery,
                         readRepairStrategy,
@@ -167,6 +169,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals,
             skipStore,
+            keepCacheObjects,
             needVer);
     }
 
@@ -348,7 +351,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     null /*Value.*/,
                                     null /*dr version*/,
                                     req.skipStore(),
-                                    req.keepBinary());
+                                    req.keepBinary(),
+                                    req.keepCache());
                             }
 
                             // Add remote candidate before reordering.
@@ -463,7 +467,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             CU.empty0(),
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
-            opCtx != null && opCtx.recovery());
+            opCtx != null && opCtx.recovery(),
+            opCtx != null && opCtx.isKeepCacheObjects());
 
         fut.map();
 
