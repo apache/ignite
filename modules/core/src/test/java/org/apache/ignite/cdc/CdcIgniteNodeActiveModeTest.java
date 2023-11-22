@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
@@ -119,7 +120,7 @@ public class CdcIgniteNodeActiveModeTest extends AbstractCdcTest {
 
     /** */
     @Test
-    public void testCdcMetricsIgniteNodeActiveMode() throws Exception {
+    public void testCdcMetrics() throws Exception {
         awaitCdcModeValue(CdcMode.IGNITE_NODE_ACTIVE);
 
         IgniteCache<Integer, User> cache = ign.cache(DEFAULT_CACHE_NAME);
@@ -157,25 +158,7 @@ public class CdcIgniteNodeActiveModeTest extends AbstractCdcTest {
 
     /** */
     @Test
-    public void testCdcModeWritesByIgniteNodeOnly() throws Exception {
-        writeCdcManagerStopCdcRecord();
-
-        rollSegment();
-
-        awaitCdcModeValue(CdcMode.CDC_UTILITY_ACTIVE);
-
-        cdcMainFut.cancel();
-
-        cdcMain = createCdc(new UserCdcConsumer(), ign.configuration());
-
-        cdcMainFut = runAsync(cdcMain);
-
-        awaitCdcModeValue(CdcMode.IGNITE_NODE_ACTIVE);
-    }
-
-    /** */
-    @Test
-    public void testSwitchToPreviousSegment() throws Exception {
+    public void testSkipsNodeCommittedData() throws Exception {
         List<Integer> expUsers = new ArrayList<>();
 
         addData(0, 1, null);
@@ -207,7 +190,7 @@ public class CdcIgniteNodeActiveModeTest extends AbstractCdcTest {
 
     /** */
     @Test
-    public void testCleanOldWals() throws Exception {
+    public void testCleanWalsAfterCdcManagerRecord() throws Exception {
         checkCdcSegmentsExists(0, -1);  // No segments stored in CDC dir.
 
         rollSegment();
@@ -240,20 +223,13 @@ public class CdcIgniteNodeActiveModeTest extends AbstractCdcTest {
 
     /** */
     @Test
-    public void testIteratorSimple() throws Exception {
-        checkIterator(false);
-    }
+    public void testRestoreModeOnRestart() throws Exception {
+        RunnableX restartUtil = () -> {
+            cdcMainFut.cancel();
+            cdcMain = createCdc(cnsmr, getConfiguration(getTestIgniteInstanceName()));
+            cdcMainFut = runAsync(cdcMain);
+        };
 
-    /** */
-    @Test
-    public void testIteratorWithCdcRestart() throws Exception {
-        checkIterator(true);
-    }
-
-    /**
-     * @param restartCdc Restart cdc.
-     */
-    private void checkIterator(boolean restartCdc) throws Exception {
         List<Integer> expUsers = new ArrayList<>();
 
         addData(0, 1, null);
@@ -262,13 +238,7 @@ public class CdcIgniteNodeActiveModeTest extends AbstractCdcTest {
 
         addData(2, 3, null);
 
-        if (restartCdc) {
-            cdcMainFut.cancel();
-
-            cdcMain = createCdc(cnsmr, getConfiguration(getTestIgniteInstanceName()));
-
-            cdcMainFut = runAsync(cdcMain);
-        }
+        restartUtil.run();
 
         rollSegment();
 
@@ -278,6 +248,8 @@ public class CdcIgniteNodeActiveModeTest extends AbstractCdcTest {
         addData(4, 5, expUsers);
 
         rollSegment();
+
+        restartUtil.run();
 
         awaitCdcModeValue(CdcMode.CDC_UTILITY_ACTIVE);
 
@@ -338,7 +310,7 @@ public class CdcIgniteNodeActiveModeTest extends AbstractCdcTest {
                 ObjectMetric<String> m = GridTestUtils.<StandaloneGridKernalContext>getFieldValue(cdcMain, "kctx")
                     .metric().registry("cdc").findMetric(CDC_MODE);
 
-                return expVal.name().equals(m.value());
+                return m != null && expVal.name().equals(m.value());
             }
             catch (Exception e) {
                 return false;

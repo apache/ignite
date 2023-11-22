@@ -22,9 +22,10 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.cdc.CdcMain.stateDirFile;
+import static org.apache.ignite.internal.cdc.CdcMain.STATE_DIR;
 
 /**
  * CDC manager that delegates consuming CDC events to the {@link CdcMain} utility.
@@ -35,7 +36,7 @@ public class CdcUtilityActiveCdcManager extends GridCacheSharedManagerAdapter im
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        File stateDir = stateDirFile(cctx);
+        File stateDir = new File(((FileWriteAheadLogManager)cctx.wal(true)).walCdcDirectory(), STATE_DIR);
 
         if (stateDir.exists()) {
             CdcConsumerState state = new CdcConsumerState(log, stateDir.toPath());

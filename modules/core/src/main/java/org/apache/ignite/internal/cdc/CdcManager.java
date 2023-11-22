@@ -59,10 +59,14 @@ import org.apache.ignite.plugin.PluginProvider;
  */
 public interface CdcManager extends GridCacheSharedManager {
     /**
-     * Callback is invoked once, after Ignite restores memory on start-up. It runs within Ignite start thread before
-     * {@link IgniteWriteAheadLogManager} starts writing WAL records.
+     * Callback is invoked once, after Ignite restores memory on start-up. It invokes before {@link IgniteWriteAheadLogManager}
+     * starts writing WAL records amd before the first call of {@link #collect(ByteBuffer)}.
      *
-     * This method invoked before the first call of {@link #collect(ByteBuffer)}.
+     * Implementation suggestions:
+     * <ul>
+     *     <li>This method can be used for restoring CDC state on Ignite node start, collecting missed events from WAL segments.</li>
+     *     <li>Be aware, this method runs in Ignite main thread and might lengthen the Ignite start procedure.</li>
+     * </ul>
      */
     public void afterMemoryRestore() throws IgniteCheckedException;
 
@@ -97,7 +101,7 @@ public interface CdcManager extends GridCacheSharedManager {
     public void collect(ByteBuffer dataBuf);
 
     /**
-     * If this manager isn't active then Ignite skips preparing data for the {@link #collect(ByteBuffer)} method.
+     * If this manager isn't active then Ignite skips calls of {@link #afterMemoryRestore()} and {@link #collect(ByteBuffer)} methods.
      *
      * @return {@code true} if manager is active, otherwise {@code false}.
      */

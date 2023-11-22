@@ -72,8 +72,7 @@ public class CdcConsumerState {
     public static final String CACHES_STATE_FILE_NAME = "cdc-caches-state" + FILE_SUFFIX;
 
     /**
-     * The file stores state of CDC mode. {@link CdcManager} creates the file and writes into it, {@link CdcMain} only reads it.
-     * Content of the file is a {@link CdcMode} value:
+     * The file stores state of CDC mode. Content of the file is a {@link CdcMode} value:
      * <ul>
      *     <li>{@link CdcMode#CDC_UTILITY_ACTIVE} means that {@link CdcMain} utility captures data.</li>
      *     <li>{@link CdcMode#IGNITE_NODE_ACTIVE} means that {@link CdcManager} captures data within Ignite node.</li>

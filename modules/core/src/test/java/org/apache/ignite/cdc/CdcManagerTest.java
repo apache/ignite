@@ -130,14 +130,14 @@ public class CdcManagerTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testDisableByProperty() throws Exception {
-        assertTrue(cdcMgr(ign).active());
+        assertFalse(cdcMgr(ign).stopped());
 
         DistributedChangeableProperty<Serializable> cdcDisableProp = ign.context().distributedConfiguration()
             .property(FileWriteAheadLogManager.CDC_DISABLED);
 
         cdcDisableProp.localUpdate(true);
 
-        assertTrue(GridTestUtils.waitForCondition(() -> !cdcMgr(ign).active(), 10_000, 10));
+        assertTrue(GridTestUtils.waitForCondition(() -> cdcMgr(ign).stopped(), 10_000, 10));
     }
 
     /** */
@@ -164,7 +164,7 @@ public class CdcManagerTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testMultipleSegmentContent() throws Exception {
-        testCdcContentWithRollover(() -> {
+        checkCdcContentWithRollover(() -> {
             for (int i = 0; i < Integer.MAX_VALUE; i++) {
                 ign.cache(DEFAULT_CACHE_NAME).put(i, i);
 
@@ -177,76 +177,13 @@ public class CdcManagerTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testMultipleSegmentContentWithForceNextSegmentRollover() throws Exception {
-        testCdcContentWithRollover(() -> {
-            if (persistentEnabled)
-                dbMgr(ign).checkpointReadLock();
-
-            try {
-                walMgr.log(new CheckpointRecord(null), RolloverType.NEXT_SEGMENT);
-            }
-            catch (Exception e) {
-                // No-op.
-            }
-            finally {
-                if (persistentEnabled)
-                    dbMgr(ign).checkpointReadUnlock();
-            }
-        });
+        checkMultipleSegmentContentWithForceRollover(RolloverType.NEXT_SEGMENT);
     }
 
     /** */
     @Test
     public void testMultipleSegmentContentWithForceCurrentSegmentRollover() throws Exception {
-        testCdcContentWithRollover(() -> {
-            if (persistentEnabled)
-                dbMgr(ign).checkpointReadLock();
-
-            try {
-                walMgr.log(new CheckpointRecord(null), RolloverType.CURRENT_SEGMENT);
-            }
-            catch (Exception e) {
-                // No-op.
-            }
-            finally {
-                if (persistentEnabled)
-                    dbMgr(ign).checkpointReadUnlock();
-            }
-        });
-    }
-
-    /** */
-    public void testCdcContentWithRollover(Runnable rollSegment) throws Exception {
-        for (int i = 0; i < 10_000; i++)
-            ign.cache(DEFAULT_CACHE_NAME).put(i, i);
-
-        rollSegment.run();
-
-        for (int i = 0; i < 10_000; i++)
-            ign.cache(DEFAULT_CACHE_NAME).put(i, i);
-
-        File walDir = walDir(ign);
-
-        stopGrid(0);
-
-        List<File> segs = Arrays.stream(walDir.listFiles()).sorted()
-            .limit(2)
-            .collect(Collectors.toList());
-
-        int firstSegActLen = writtenLength(segs.get(0));
-
-        ByteBuffer walBuf = ByteBuffer.wrap(Files.readAllBytes(segs.get(0).toPath()));
-        ByteBuffer cdcBuf = ByteBuffer.wrap(cdcMgr.buf.array());
-        walBuf.limit(firstSegActLen);
-        cdcBuf.limit(firstSegActLen);
-
-        assertEquals(0, walBuf.compareTo(cdcBuf));
-
-        walBuf = ByteBuffer.wrap(Files.readAllBytes(segs.get(1).toPath()));
-        cdcBuf = ByteBuffer.wrap(cdcMgr.buf.array());
-        cdcBuf.position(firstSegActLen + 1);
-        cdcBuf.limit(firstSegActLen + 1 + WAL_SEG_SIZE);
-
-        assertEquals(0, walBuf.compareTo(cdcBuf));
+        checkMultipleSegmentContentWithForceRollover(RolloverType.CURRENT_SEGMENT);
     }
 
     /** */
@@ -320,6 +257,60 @@ public class CdcManagerTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    public void checkMultipleSegmentContentWithForceRollover(RolloverType rollType) throws Exception {
+        checkCdcContentWithRollover(() -> {
+            if (persistentEnabled)
+                dbMgr(ign).checkpointReadLock();
+
+            try {
+                walMgr.log(new CheckpointRecord(null), rollType);
+            }
+            catch (Exception e) {
+                // No-op.
+            }
+            finally {
+                if (persistentEnabled)
+                    dbMgr(ign).checkpointReadUnlock();
+            }
+        });
+    }
+
+    /** */
+    public void checkCdcContentWithRollover(Runnable rollSegment) throws Exception {
+        for (int i = 0; i < 10_000; i++)
+            ign.cache(DEFAULT_CACHE_NAME).put(i, i);
+
+        rollSegment.run();
+
+        for (int i = 0; i < 10_000; i++)
+            ign.cache(DEFAULT_CACHE_NAME).put(i, i);
+
+        File walDir = walDir(ign);
+
+        stopGrid(0);
+
+        List<File> segs = Arrays.stream(walDir.listFiles()).sorted()
+            .limit(2)
+            .collect(Collectors.toList());
+
+        int firstSegActLen = writtenLength(segs.get(0));
+
+        ByteBuffer walBuf = ByteBuffer.wrap(Files.readAllBytes(segs.get(0).toPath()));
+        ByteBuffer cdcBuf = ByteBuffer.wrap(cdcMgr.buf.array());
+        walBuf.limit(firstSegActLen);
+        cdcBuf.limit(firstSegActLen);
+
+        assertEquals(0, walBuf.compareTo(cdcBuf));
+
+        walBuf = ByteBuffer.wrap(Files.readAllBytes(segs.get(1).toPath()));
+        cdcBuf = ByteBuffer.wrap(cdcMgr.buf.array());
+        cdcBuf.position(firstSegActLen + 1);
+        cdcBuf.limit(firstSegActLen + 1 + WAL_SEG_SIZE);
+
+        assertEquals(0, walBuf.compareTo(cdcBuf));
+    }
+
     /** Get WAL directory. */
     private File walDir(IgniteEx ign) throws Exception {
         return new File(
@@ -377,15 +368,20 @@ public class CdcManagerTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void collect(ByteBuffer dataBuf) {
-            if (log.isDebugEnabled())
-                log.debug("Collect data buffer [offset=" + dataBuf.position() + ", limit=" + dataBuf.limit() + ']');
+            if (log.isInfoEnabled())
+                log.info("Collect data buffer [offset=" + dataBuf.position() + ", limit=" + dataBuf.limit() + ']');
 
             buf.put(dataBuf);
         }
 
+        /** */
+        public boolean stopped() {
+            return isStopping();
+        }
+
         /** {@inheritDoc} */
         @Override public boolean active() {
-            return !isStopping();
+            return true;
         }
 
         /** {@inheritDoc} */

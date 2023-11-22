@@ -53,7 +53,6 @@ import org.apache.ignite.internal.cdc.WalRecordsConsumer.DataEntryIterator;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
@@ -969,11 +968,6 @@ public class CdcMain implements Runnable {
                 "  ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or \"-v\" to ignite-cdc.{sh|bat}",
                 "");
         }
-    }
-
-    /** @return Path to CDC state directory. */
-    public static File stateDirFile(GridCacheSharedContext<?, ?> cctx) {
-        return new File(((FileWriteAheadLogManager)cctx.wal(true)).walCdcDirectory(), STATE_DIR);
     }
 
     /** */
