@@ -70,7 +70,7 @@ public class CdcUtilityActiveCdcManager extends GridCacheSharedManagerAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public void afterMemoryRestore() throws IgniteCheckedException {
+    @Override public void afterMemoryRestore() {
         // No-op.
     }
 }
