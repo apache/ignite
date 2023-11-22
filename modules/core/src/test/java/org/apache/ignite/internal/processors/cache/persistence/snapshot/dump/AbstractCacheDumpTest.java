@@ -145,7 +145,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                                 params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, true});
                             }
                             else
-                                params.add(new Object[] {nodes, backups, persistence, mode, useDataStreamer, false});
+                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, false});
                         }
                     }
 
