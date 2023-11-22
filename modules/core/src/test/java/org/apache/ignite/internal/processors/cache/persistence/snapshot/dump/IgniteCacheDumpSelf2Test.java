@@ -59,6 +59,7 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TMP_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
@@ -410,7 +411,9 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     /** */
     @Test
     public void testCompareRawWithCompressedCacheDumps() throws Exception {
-        IgniteEx ign = startGrid();
+        String id = "test";
+
+        IgniteEx ign = startGrid(getConfiguration(id).setConsistentId(id));
 
         int parts = 20;
 
@@ -433,28 +436,30 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         stopAllGrids();
 
         Map<Integer, Long> rawSizes = Arrays
-            .stream(new File(dumpDirectory(ign, rawDump) + "/db/127_0_0_1_47500/cache-cache-0/").listFiles())
+            .stream(new File(dumpDirectory(ign, rawDump) + "/db/" + id + "/cache-" + CACHE_0).listFiles())
             .filter(f -> !f.getName().equals("cache_data.dat"))
-            .peek(f -> assertTrue(f.getName().startsWith("part-") && f.getName().endsWith(".dump")))
+            .peek(f -> assertTrue(f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(DUMP_FILE_EXT)))
             .collect(Collectors.toMap(
-                f -> Integer.parseInt(f.getName().substring("part-".length(), f.getName().length() - ".dump".length())),
-                f -> f.length()
+                f -> Integer.parseInt(f.getName().substring(PART_FILE_PREFIX.length(), f.getName().length() - DUMP_FILE_EXT.length())),
+                File::length
             ));
 
         Map<Integer, Long> zipSizes = Arrays
-            .stream(new File(dumpDirectory(ign, zipDump) + "/db/127_0_0_1_47500/cache-cache-0/").listFiles())
+            .stream(new File(dumpDirectory(ign, zipDump) + "/db/" + id + "/cache-" + CACHE_0).listFiles())
             .filter(f -> !f.getName().equals("cache_data.dat"))
-            .peek(f -> assertTrue(f.getName().startsWith("part-") && f.getName().endsWith(".dump.zip")))
+            .peek(f -> assertTrue(f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(DUMP_FILE_EXT + ZIP_SUFFIX)))
             .collect(Collectors.toMap(
-                f -> Integer.parseInt(f.getName().substring("part-".length(), f.getName().length() - ".dump.zip".length())),
-                f -> f.length()
+                f -> Integer.parseInt(f.getName().substring(PART_FILE_PREFIX.length(),
+                    f.getName().length() - (DUMP_FILE_EXT + ZIP_SUFFIX).length())
+                ),
+                File::length
             ));
 
         assertEquals(parts, rawSizes.keySet().size());
 
         assertEquals("Different set of partitions", rawSizes.keySet(), zipSizes.keySet());
 
-        rawSizes.keySet().stream().forEach( p ->
+        rawSizes.keySet().forEach( p ->
             assertTrue("Compressed size " + rawSizes.get(p) + " should be smaller than compressed " + zipSizes.get(p),
                 rawSizes.get(p) > zipSizes.get(p)
             )
