@@ -93,7 +93,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     /** */
     private final FileIOFactory ioFactory;
 
-    /** If {@code true} then compress the files. */
+    /** If {@code true} then compress partition files. */
     private final boolean compress;
 
     /**

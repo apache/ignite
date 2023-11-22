@@ -308,7 +308,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     ) throws Exception {
         checkDumpWithCommand(ign, name, backups);
 
-        if (persistence)
+        if (persistence && !ign.context().clientNode())
             assertNull(ign.context().cache().context().database().metaStorage().read(SNP_RUNNING_DIR_KEY));
 
         Dump dump = dump(ign, name);

@@ -2250,7 +2250,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return new IgniteSnapshotFutureImpl(cctx.kernalContext().closure()
                     .callAsync(
                         BALANCE,
-                        new CreateSnapshotCallable(name, cacheGroupNames, incremental, onlyPrimary, dump),
+                        new CreateSnapshotCallable(name, cacheGroupNames, incremental, onlyPrimary, dump, compress),
                         options(Collections.singletonList(crd)).withFailoverDisabled()
                     ));
             }
@@ -4675,7 +4675,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private final boolean onlyPrimary;
 
         /** If {@code true} create cache dump. */
+
         private final boolean dump;
+
+        /** If {@code true} then compress partition files. */
+        private final boolean comprParts;
 
         /** Auto-injected grid instance. */
         @IgniteInstanceResource
@@ -4687,19 +4691,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param incremental If {@code true} then incremental snapshot must be created.
          * @param onlyPrimary If {@code true} then only copy of primary partitions will be created.
          * @param dump If {@code true} then cache dump must be created.
+         * @param comprParts If {@code true} then compress partition files.
          */
         public CreateSnapshotCallable(
             String snpName,
             @Nullable Collection<String> cacheGroupNames,
             boolean incremental,
             boolean onlyPrimary,
-            boolean dump
+            boolean dump,
+            boolean comprParts
         ) {
             this.snpName = snpName;
             this.cacheGroupNames = cacheGroupNames;
             this.incremental = incremental;
             this.onlyPrimary = onlyPrimary;
             this.dump = dump;
+            this.comprParts = comprParts;
         }
 
         /** {@inheritDoc} */
@@ -4714,7 +4721,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     false,
                     onlyPrimary,
                     dump,
-                    false
+                    comprParts
                 ).get();
             }
 

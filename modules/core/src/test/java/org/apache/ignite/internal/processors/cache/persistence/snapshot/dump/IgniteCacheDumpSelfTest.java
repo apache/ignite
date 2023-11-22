@@ -157,6 +157,10 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             createDump(ign, DMP_NAME, null, true);
 
             checkDump(ign);
+
+            createDump(cli, DMP_NAME + 2, null, true);
+
+            checkDump(cli, DMP_NAME + 2);
         }
         finally {
             snpPoolSz = 1;
