@@ -77,6 +77,9 @@ public class CdcManagerTest extends GridCommonAbstractTest {
     private WALMode walMode;
 
     /** */
+    private static volatile boolean failCollect;
+
+    /** */
     @Parameterized.Parameter
     public boolean persistentEnabled;
 
@@ -125,6 +128,8 @@ public class CdcManagerTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        failCollect = false;
     }
 
     /** */
@@ -258,6 +263,25 @@ public class CdcManagerTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testCollectFailedIgnored() throws Exception {
+        LogListener cdcErrLsnr = LogListener
+            .matches("Error happened during CDC data collection.")
+            .atLeast(1)
+            .build();
+
+        lsnrLog.registerListener(cdcErrLsnr);
+
+        failCollect = true;
+
+        ign.cache(DEFAULT_CACHE_NAME).put(0, 0);
+
+        assertTrue(GridTestUtils.waitForCondition(cdcErrLsnr::check, 10_000, 10));
+
+        assertEquals(0, ign.cache(DEFAULT_CACHE_NAME).get(0));
+    }
+
+    /** */
     public void checkMultipleSegmentContentWithForceRollover(RolloverType rollType) throws Exception {
         checkCdcContentWithRollover(() -> {
             if (persistentEnabled)
@@ -368,8 +392,11 @@ public class CdcManagerTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void collect(ByteBuffer dataBuf) {
-            if (log.isInfoEnabled())
-                log.info("Collect data buffer [offset=" + dataBuf.position() + ", limit=" + dataBuf.limit() + ']');
+            if (failCollect)
+                throw new RuntimeException();
+
+            if (log.isDebugEnabled())
+                log.debug("Collect data buffer [offset=" + dataBuf.position() + ", limit=" + dataBuf.limit() + ']');
 
             buf.put(dataBuf);
         }
