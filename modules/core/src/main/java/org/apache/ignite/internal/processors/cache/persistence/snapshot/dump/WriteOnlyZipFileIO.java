@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.Channels;
@@ -40,17 +39,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  * {@link FileIO} that allows to write ZIP compressed file.
  * It doesn't support reading or random access.
  * It is not designed for writing concurrently from several threads.
- * It uses 128KB buffer to temporarily keep data to improve throughput.
  */
 public class WriteOnlyZipFileIO extends AbstractFileIO {
-    /** Buffer size */
-    private static final int BUFFER_SIZE = 128 * 1024;
-
     /** */
     private final ZipOutputStream zos;
-
-    /** */
-    private final OutputStream bos;
 
     /** */
     private final WritableByteChannel ch;
@@ -64,15 +56,13 @@ public class WriteOnlyZipFileIO extends AbstractFileIO {
 
         String entryName = file.getName().substring(0, file.getName().length() - ZIP_SUFFIX.length());
 
-        zos = new ZipOutputStream(new BufferedOutputStream(Files.newOutputStream(Paths.get(file.getPath())), BUFFER_SIZE));
+        zos = new ZipOutputStream(new BufferedOutputStream(Files.newOutputStream(Paths.get(file.getPath()))));
 
         zos.setLevel(BEST_COMPRESSION);
 
         zos.putNextEntry(new ZipEntry(entryName));
 
-        bos = new BufferedOutputStream(zos, BUFFER_SIZE);
-
-        ch = Channels.newChannel(bos);
+        ch = Channels.newChannel(zos);
     }
 
     /** {@inheritDoc} */
@@ -146,8 +136,6 @@ public class WriteOnlyZipFileIO extends AbstractFileIO {
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
-        bos.flush();
-
         zos.closeEntry();
 
         ch.close();

@@ -4675,7 +4675,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private final boolean onlyPrimary;
 
         /** If {@code true} create cache dump. */
-
         private final boolean dump;
 
         /** If {@code true} then compress partition files. */
