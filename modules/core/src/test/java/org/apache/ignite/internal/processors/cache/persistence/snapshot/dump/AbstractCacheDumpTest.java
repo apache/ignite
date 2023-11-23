@@ -283,6 +283,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         checkDump(ign, DMP_NAME, false);
     }
 
+    /** */
     void checkDump(IgniteEx ign, String name, boolean expectedComprParts) throws Exception {
         checkDump(ign,
             name,
