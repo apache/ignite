@@ -618,7 +618,7 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
 
         clientCache.put(keyFactory.apply(0), 0);
 
-        TestTcpClientChannel opCh = affinityChannel(0, igniteCache);
+        TestTcpClientChannel opCh = affinityChannel(keyFactory.apply(0), igniteCache);
 
         if (partitionsRequestExpected)
             assertOpOnChannel(null, ClientOperation.CACHE_PARTITIONS);
@@ -722,7 +722,9 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     }
 
     /**
-     * Excludes node if its consistent id ends with 'Test1'.
+     * Excludes node if its consistent id ends with 'Test1'. The same as {@link ConsistentIdNodeFilter}. We do not
+     * use one parametrized filter because we validate node filters equality for a cache group only by their
+     * classes.
      */
     protected static final class ConsistentIdNodeFilter1 implements IgnitePredicate<ClusterNode> {
         /** {@inheritDoc} */
@@ -732,7 +734,9 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     }
 
     /**
-     * Excludes node if its consistent id ends with 'Test2'.
+     * Excludes node if its consistent id ends with 'Test2'. Similar to {@link ConsistentIdNodeFilter} and
+     * {@link ConsistentIdNodeFilter1}. We do not use one parametrized filter because we validate node filters
+     * equality for a cache group only by their classes.
      */
     protected static final class ConsistentIdNodeFilter2 implements IgnitePredicate<ClusterNode> {
         /** {@inheritDoc} */

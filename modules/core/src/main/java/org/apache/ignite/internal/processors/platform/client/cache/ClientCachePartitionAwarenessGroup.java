@@ -42,7 +42,7 @@ class ClientCachePartitionAwarenessGroup {
     private final boolean dfltAffinity;
 
     /** Descriptor of the associated caches. */
-    final Map<Integer, CacheConfiguration<?, ?>> cacheCfgs = new HashMap<>();
+    private final Map<Integer, CacheConfiguration<?, ?>> cacheCfgs = new HashMap<>();
 
     /**
      * @param mapping Partition mapping.
