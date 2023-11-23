@@ -32,6 +32,7 @@ class DataRegionConfiguration(NamedTuple):
     max_size: int = 512 * 1024 * 1024
     metrics_enabled: bool = True
     metrics_rate_time_interval: int = None
+    checkpoint_page_buffer_size: int = None
 
 
 class DataStorageConfiguration(NamedTuple):
