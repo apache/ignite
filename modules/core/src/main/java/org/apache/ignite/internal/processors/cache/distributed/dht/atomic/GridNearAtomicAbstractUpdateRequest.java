@@ -96,7 +96,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
     /** Compressed boolean flags. Make sure 'toString' is updated when add new flag. */
     @GridToStringExclude
-    protected byte flags;
+    protected short flags;
 
     /** */
     @GridDirectTransient
@@ -130,7 +130,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         int taskNameHash,
-        byte flags,
+        short flags,
         boolean addDepInfo
     ) {
         this.cacheId = cacheId;
@@ -156,7 +156,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @param recovery Recovery mode flag.
      * @return Flags.
      */
-    static byte flags(
+    static short flags(
         boolean nearCache,
         boolean topLocked,
         boolean retval,
@@ -166,7 +166,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         boolean keepBinary,
         boolean recovery,
         boolean keepCache) {
-        byte flags = 0;
+        short flags = 0;
 
         if (nearCache)
             flags |= NEAR_CACHE_FLAG_MASK;
@@ -555,7 +555,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeShort("flags", flags))
                     return false;
 
                 writer.incrementState();
@@ -607,7 +607,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
         switch (reader.state()) {
             case 4:
-                flags = reader.readByte("flags");
+                flags = reader.readShort("flags");
 
                 if (!reader.isLastRead())
                     return false;
