@@ -69,7 +69,7 @@ getJavaSpecificOpts() {
           --add-opens=java.base/jdk.internal.access=ALL-UNNAMED \
           --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED \
           --add-opens=java.base/sun.nio.ch=ALL-UNNAMED \
-          --add-opens=java.base/sun.util.calendar=ALL-UNNAME \
+          --add-opens=java.base/sun.util.calendar=ALL-UNNAMED \
           --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
           --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
           --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
