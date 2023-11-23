@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLong;
@@ -428,6 +429,63 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         assertEquals((Long)1000L, rowsFetchedPerQuery.get(firstQryId.get()));
         assertEquals((Long)4L, rowsFetchedPerQuery.get(lastQryId.get()));
         assertEquals(5L, rowsScanned.get());
+    }
+
+    /** */
+    @Test
+    public void testPerformanceStatisticsEnableAfterQuery() throws Exception {
+        cleanPerformanceStatisticsDir();
+
+        String qry = "SELECT * FROM table(system_range(1, 1000))";
+
+        sql(grid(0), qry);
+
+        startCollectStatistics();
+
+        AtomicInteger finishQryCnt = new AtomicInteger();
+        grid(0).context().query().runningQueryManager().registerQueryFinishedListener(q -> finishQryCnt.incrementAndGet());
+
+        sql(grid(0), qry);
+
+        assertTrue(GridTestUtils.waitForCondition(() -> finishQryCnt.get() == 1, 1_000L));
+
+        AtomicInteger qryCnt = new AtomicInteger();
+        AtomicBoolean hasPlan = new AtomicBoolean();
+
+        stopCollectStatisticsAndRead(new AbstractPerformanceStatisticsTest.TestHandler() {
+            @Override public void query(
+                UUID nodeId,
+                GridCacheQueryType type,
+                String text,
+                long id,
+                long qryStartTime,
+                long duration,
+                boolean success
+            ) {
+                qryCnt.incrementAndGet();
+
+                assertEquals(grid(0).localNode().id(), nodeId);
+                assertEquals(SQL_FIELDS, type);
+                assertTrue(success);
+            }
+
+            @Override public void queryProperty(
+                UUID nodeId,
+                GridCacheQueryType type,
+                UUID qryNodeId,
+                long id,
+                String name,
+                String val
+            ) {
+                if ("Query plan".equals(name)) {
+                    assertFalse(F.isEmpty(val));
+                    hasPlan.set(true);
+                }
+            }
+        });
+
+        assertEquals(1, qryCnt.get());
+        assertTrue(hasPlan.get());
     }
 
     /** */
