@@ -991,7 +991,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             PrimaryRequestState mapped = pendingMappings.get(nodeId);
 
             if (mapped == null) {
-                byte flags = GridNearAtomicAbstractUpdateRequest.flags(nearEnabled,
+                short flags = GridNearAtomicAbstractUpdateRequest.flags(nearEnabled,
                     topLocked,
                     retval,
                     mappingKnown,
@@ -1105,7 +1105,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
         boolean needPrimaryRes = !mappingKnown || primary.isLocal() || nodes.size() == 1 || nearEnabled;
 
-        byte flags = GridNearAtomicAbstractUpdateRequest.flags(nearEnabled,
+        short flags = GridNearAtomicAbstractUpdateRequest.flags(nearEnabled,
             topLocked,
             retval,
             mappingKnown,
