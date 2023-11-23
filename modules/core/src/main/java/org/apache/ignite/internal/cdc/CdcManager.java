@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.Iterator;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cdc.CdcConsumer;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerRecord;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
@@ -48,7 +47,7 @@ import org.apache.ignite.plugin.PluginProvider;
  *     </li>
  *     <li>
  *         Apache Ignite provides a default implementation - {@link CdcUtilityActiveCdcManager}. It is disabled from the
- *         beginning, logs the {@link CdcManagerStopRecord} after Ignite node activated, and then delegates consuming CDC
+ *         beginning, logs the {@link CdcManagerStopRecord} after Ignite node started, and then delegates consuming CDC
  *         events to the {@link CdcMain} utility.
  *     </li>
  * </ul>
@@ -101,19 +100,6 @@ public interface CdcManager extends GridCacheSharedManager {
      * @param dataBuf Buffer that contains data to collect.
      */
     public void collect(ByteBuffer dataBuf);
-
-    /**
-     * Callback is invoked after Ignite node is fully activated: {@link IgniteWriteAheadLogManager} enables logging into
-     * WAL, caches are inited. It is called on node start and each time cluster state is changed to {@link ClusterState#ACTIVE}.
-     *
-     * <p> Implementation suggestions:
-     * <ul>
-     *     <li>Callback can be used for starting actual processing of collected data.</li>
-     *     <li>After this callback it's safe to log the CDC management records.</li>
-     *     <li>Ignite node will fail in case the method throws an exception.</li>
-     * </ul>
-     */
-    public void onActivate();
 
     /**
      * If this manager isn't enabled then Ignite skips calling {@link #afterMemoryRestore()} and {@link #collect(ByteBuffer)} methods.

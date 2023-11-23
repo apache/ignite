@@ -23,6 +23,8 @@ import java.nio.file.Paths;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -32,20 +34,22 @@ import static org.apache.ignite.internal.cdc.CdcMain.STATE_DIR;
 /**
  * CDC manager that delegates consuming CDC events to the {@link CdcMain} utility.
  */
-public class CdcUtilityActiveCdcManager extends GridCacheSharedManagerAdapter implements CdcManager {
-    /** {@inheritDoc} */
-    @Override public void onActivate() {
-        try {
-            File cdcModeFile = Paths.get(
-                ((FileWriteAheadLogManager)cctx.wal(true)).walCdcDirectory().getAbsolutePath(),
-                STATE_DIR,
-                CDC_MODE_FILE_NAME).toFile();
+public class CdcUtilityActiveCdcManager extends GridCacheSharedManagerAdapter implements CdcManager, PartitionsExchangeAware {
+    /** */
+    @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+        if (fut.localJoinExchange() || fut.activateCluster()) {
+            try {
+                File cdcModeFile = Paths.get(
+                    ((FileWriteAheadLogManager)cctx.wal(true)).walCdcDirectory().getAbsolutePath(),
+                    STATE_DIR,
+                    CDC_MODE_FILE_NAME).toFile();
 
-            if (!cdcModeFile.exists())
-                cctx.wal(true).log(new CdcManagerStopRecord());
-        }
-        catch (IgniteCheckedException e) {
-            U.warn(log, "Failed to activate CdcManager. CDC might not work.");
+                if (!cdcModeFile.exists())
+                    cctx.wal(true).log(new CdcManagerStopRecord());
+            }
+            catch (IgniteCheckedException e) {
+                U.warn(log, "Failed to activate CdcManager. CDC might not work.");
+            }
         }
     }
 

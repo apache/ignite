@@ -407,11 +407,6 @@ public class CdcManagerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onActivate() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean enabled() {
             return true;
         }

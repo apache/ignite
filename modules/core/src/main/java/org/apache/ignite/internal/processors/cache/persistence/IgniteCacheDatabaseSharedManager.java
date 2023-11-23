@@ -1455,9 +1455,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         for (DatabaseLifecycleListener lsnr : getDatabaseListeners(kctx))
             lsnr.afterInitialise(this);
-
-        if (cctx.cdc() != null)
-            cctx.cdc().onActivate();
     }
 
     /**

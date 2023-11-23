@@ -392,11 +392,6 @@ public class CdcIgniteNodeActiveModeTest extends AbstractCdcTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onActivate() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
         @Override public void afterMemoryRestore() {
             // No-op.
         }

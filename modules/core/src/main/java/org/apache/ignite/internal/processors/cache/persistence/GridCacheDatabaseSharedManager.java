@@ -1021,9 +1021,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             walTail = null;
 
-            if (cctx.cdc() != null)
-                cctx.cdc().onActivate();
-
             // Recreate metastorage to refresh page memory state after deactivation.
             if (metaStorage == null)
                 metaStorage = createMetastorage(false);
