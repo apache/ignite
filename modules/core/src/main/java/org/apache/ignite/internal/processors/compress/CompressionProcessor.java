@@ -108,6 +108,7 @@ public class CompressionProcessor extends GridProcessorAdapter {
 
             case SNAPPY:
             case SKIP_GARBAGE:
+            case DISABLED:
                 return 0;
         }
 
