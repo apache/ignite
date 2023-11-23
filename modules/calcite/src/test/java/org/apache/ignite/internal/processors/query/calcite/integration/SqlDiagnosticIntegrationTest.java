@@ -148,6 +148,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         super.afterTest();
 
         stopAllGrids();
+
+        cleanPerformanceStatisticsDir();
     }
 
     /** */
