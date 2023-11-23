@@ -125,7 +125,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
             createDump(ign, DMP_NAME + 2, null);
 
-            checkDump(ign, DMP_NAME + 2);
+            checkDump(ign, DMP_NAME + 2, false);
 
             if (persistence) {
                 assertThrows(null, () -> ign.snapshot().createSnapshot(DMP_NAME).get(), IgniteException.class, EXISTS_ERR_MSG);
@@ -156,11 +156,11 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
             createDump(ign, DMP_NAME, null, true);
 
-            checkDump(ign);
+            checkDump(ign, DMP_NAME, true);
 
             createDump(cli, DMP_NAME + 2, null, true);
 
-            checkDump(cli, DMP_NAME + 2);
+            checkDump(cli, DMP_NAME + 2, true);
         }
         finally {
             snpPoolSz = 1;
@@ -185,6 +185,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
                 0,
                 2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
                 0,
+                false,
                 false
             );
 
@@ -196,6 +197,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
                 KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
                 0,
                 KEYS_CNT,
+                false,
                 false
             );
 
@@ -207,6 +209,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
                 KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
                 2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
                 KEYS_CNT,
+                false,
                 false
             );
         }
@@ -233,6 +236,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
                 KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
                 2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
                 KEYS_CNT,
+                false,
                 false
             );
 
@@ -244,7 +248,8 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
                 KEYS_CNT,
                 2 * KEYS_CNT,
                 KEYS_CNT,
-                true
+                true,
+                false
             );
         }
         finally {

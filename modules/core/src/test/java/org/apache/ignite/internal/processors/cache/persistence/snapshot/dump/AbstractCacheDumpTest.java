@@ -280,11 +280,10 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     protected void checkDump(IgniteEx ign) throws Exception {
-        checkDump(ign, DMP_NAME);
+        checkDump(ign, DMP_NAME, false);
     }
 
-    /** */
-    void checkDump(IgniteEx ign, String name) throws Exception {
+    void checkDump(IgniteEx ign, String name, boolean expectedComprParts) throws Exception {
         checkDump(ign,
             name,
             null,
@@ -292,7 +291,9 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
             2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
             KEYS_CNT,
-            false);
+            false,
+            expectedComprParts
+        );
     }
 
     /** */
@@ -304,7 +305,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         int expectedDfltDumpSz,
         int expectedGrpDumpSz,
         int expectedCount,
-        boolean skipCopies
+        boolean skipCopies,
+        boolean expectedComprParts
     ) throws Exception {
         checkDumpWithCommand(ign, name, backups);
 
@@ -322,6 +324,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             assertEquals(name, meta.snapshotName());
             assertTrue(meta.dump());
             assertFalse(meta.cacheGroupIds().contains(CU.cacheId(UTILITY_CACHE_NAME)));
+            assertEquals(expectedComprParts, meta.compressPartitions());
         }
 
         List<String> nodesDirs = dump.nodesDirectories();
