@@ -82,8 +82,6 @@ public class DumpReader implements Runnable {
     @Override public void run() {
         ackAsciiLogo();
 
-        boolean runOk = false;
-
         try (Dump dump = new Dump(cfg.dumpRoot(), cfg.keepBinary(), false, log)) {
             DumpConsumer cnsmr = cfg.consumer();
 
@@ -118,15 +116,14 @@ public class DumpReader implements Runnable {
 
                 AtomicBoolean skip = new AtomicBoolean(false);
 
-                Map<Integer, Set<Integer>> groups = cfg.skipCopies() ? new HashMap<>() : null;
+                Map<Integer, Set<Integer>> grpToParts = cfg.skipCopies() ? new HashMap<>() : null;
 
-                if (groups != null)
-                    grpToNodes.keySet().forEach(grpId -> groups.put(grpId, new HashSet<>()));
+                initGrpToParts(grpToParts, grpToNodes);
 
-                int partsCount = grpToNodes.entrySet().stream().mapToInt(e ->
+                int partsCnt = grpToNodes.entrySet().stream().mapToInt(e ->
                         (int)e.getValue().stream()
                             .flatMap(node -> dump.partitions(node, e.getKey()).stream())
-                            .filter(part -> groups == null || groups.get(e.getKey()).add(part))
+                            .filter(part -> grpToParts == null || grpToParts.get(e.getKey()).add(part))
                             .count())
                     .sum();
 
@@ -153,7 +150,7 @@ public class DumpReader implements Runnable {
                             if (startTime == 0)
                                 startTime = now;
 
-                            if (lastLogTime > 0 && partsProcessed.get() < partsCount) {
+                            if (lastLogTime > 0 && partsProcessed.get() < partsCnt) {
                                 long currentRate = 1000L * (count - lastObservedCount) / (now - lastLogTime);
                                 long avgRate = 1000L * count / (now - startTime);
 
@@ -176,15 +173,14 @@ public class DumpReader implements Runnable {
                     UPDATE_RATE_STATS_PRINT_PERIOD
                 );
 
-                if (groups != null)
-                    grpToNodes.keySet().forEach(grpId -> groups.put(grpId, new HashSet<>()));
+                initGrpToParts(grpToParts, grpToNodes);
 
                 for (Map.Entry<Integer, List<String>> e : grpToNodes.entrySet()) {
                     int grp = e.getKey();
 
                     for (String node : e.getValue()) {
                         for (int part : dump.partitions(node, grp)) {
-                            if (groups != null && !groups.get(grp).add(part)) {
+                            if (grpToParts != null && !grpToParts.get(grp).add(part)) {
                                 log.info("Skip copy partition [node=" + node + ", grp=" + grp + ", part=" + part + ']');
 
                                 continue;
@@ -202,7 +198,7 @@ public class DumpReader implements Runnable {
 
                                 try (DumpedPartitionIterator iter = new DumpedPartitionIterator() {
                                     /** */
-                                    final DumpedPartitionIterator srcIter = dump.iterator(node, grp, part);
+                                    final DumpedPartitionIterator delegate = dump.iterator(node, grp, part);
 
                                     /** */
                                     final AtomicBoolean consumerProcessingEntry = new AtomicBoolean(false);
@@ -212,7 +208,7 @@ public class DumpReader implements Runnable {
                                         if (consumerProcessingEntry.compareAndSet(true, false))
                                             recordsProcessed.increment();
 
-                                        return srcIter.hasNext();
+                                        return delegate.hasNext();
                                     }
 
                                     /** {@inheritDoc } */
@@ -222,7 +218,7 @@ public class DumpReader implements Runnable {
                                             recordsProcessed.increment();
                                         }
 
-                                        DumpEntry next = srcIter.next();
+                                        DumpEntry next = delegate.next();
 
                                         consumerProcessingEntry.set(true);
 
@@ -231,7 +227,7 @@ public class DumpReader implements Runnable {
 
                                     /** {@inheritDoc } */
                                     @Override public void close() throws Exception {
-                                        srcIter.close();
+                                        delegate.close();
                                     }
                                 }) {
                                     if (log.isDebugEnabled()) {
@@ -244,7 +240,7 @@ public class DumpReader implements Runnable {
                                     int partNo = partsProcessed.incrementAndGet();
 
                                     if (log.isInfoEnabled())
-                                        log.info("Consumed partitions " + partNo + " of " + partsCount);
+                                        log.info("Consumed partitions " + partNo + " of " + partsCnt);
                                 }
                                 catch (Exception ex) {
                                     skip.set(cfg.failFast());
@@ -279,19 +275,16 @@ public class DumpReader implements Runnable {
             finally {
                 cnsmr.stop();
             }
-
-            runOk = true;
         }
-        catch (Throwable e) {
-            log.error("Error running DumpReader", e);
-
-            e.printStackTrace();
+        catch (Exception e) {
+            throw new IgniteException(e);
         }
+    }
 
-        if (runOk)
-            log.info("\n\nOK all processed\n\n");
-        else
-            log.error("\n\nFinished with errors\n\n");
+    /** */
+    private static void initGrpToParts(Map<Integer, Set<Integer>> grpToParts, Map<Integer, List<String>> grpToNodes) {
+        if (grpToParts != null)
+            grpToNodes.keySet().forEach(grpId -> grpToParts.put(grpId, new HashSet<>()));
     }
 
     /** */
