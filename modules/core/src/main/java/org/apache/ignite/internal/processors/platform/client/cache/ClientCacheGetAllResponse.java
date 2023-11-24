@@ -54,8 +54,8 @@ class ClientCacheGetAllResponse extends ClientResponse {
 
         for (Map.Entry<Object, Object> e : res.entrySet()) {
             try {
-                writer.out().writeByteArray(((CacheObject)e.getKey()).valueBytes(null));
-                writer.out().writeByteArray(((CacheObject)e.getValue()).valueBytes(null));
+                writer.out().writeByteArray(((CacheObject)e.getKey()).rawBytes(null));
+                writer.out().writeByteArray(((CacheObject)e.getValue()).rawBytes(null));
             }
             catch (IgniteCheckedException ex) {
                 throw new IgniteException(ex);
