@@ -116,14 +116,14 @@ public class DumpReader implements Runnable {
 
                 AtomicBoolean skip = new AtomicBoolean(false);
 
-                Map<Integer, Set<Integer>> grpToParts = cfg.skipCopies() ? new HashMap<>() : null;
+                Map<Integer, Set<Integer>> groups = cfg.skipCopies() ? new HashMap<>() : null;
 
-                initGrpToParts(grpToParts, grpToNodes);
+                initGrpToParts(groups, grpToNodes);
 
                 int partsCnt = grpToNodes.entrySet().stream().mapToInt(e ->
                         (int)e.getValue().stream()
                             .flatMap(node -> dump.partitions(node, e.getKey()).stream())
-                            .filter(part -> grpToParts == null || grpToParts.get(e.getKey()).add(part))
+                            .filter(part -> groups == null || groups.get(e.getKey()).add(part))
                             .count())
                     .sum();
 
@@ -173,14 +173,14 @@ public class DumpReader implements Runnable {
                     UPDATE_RATE_STATS_PRINT_PERIOD
                 );
 
-                initGrpToParts(grpToParts, grpToNodes);
+                initGrpToParts(groups, grpToNodes);
 
                 for (Map.Entry<Integer, List<String>> e : grpToNodes.entrySet()) {
                     int grp = e.getKey();
 
                     for (String node : e.getValue()) {
                         for (int part : dump.partitions(node, grp)) {
-                            if (grpToParts != null && !grpToParts.get(grp).add(part)) {
+                            if (groups != null && !groups.get(grp).add(part)) {
                                 log.info("Skip copy partition [node=" + node + ", grp=" + grp + ", part=" + part + ']');
 
                                 continue;
