@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -2820,9 +2821,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             id = new QueryTypeIdKey(cacheName, typeId);
         }
         else {
-            valCls = val.value(coctx, false).getClass();
+            Object value = val.value(coctx, false);
 
-            id = new QueryTypeIdKey(cacheName, valCls);
+            if (ctx.cacheObjects().isBinaryObject(value)) {
+                int typeId = ctx.cacheObjects().typeId(value);
+
+                binaryVal = true;
+
+                id = new QueryTypeIdKey(cacheName, typeId);
+            }
+            else {
+                valCls = val.value(coctx, false).getClass();
+
+                id = new QueryTypeIdKey(cacheName, valCls);
+            }
         }
 
         QueryTypeDescriptorImpl desc = types.get(id);
