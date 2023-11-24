@@ -110,6 +110,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
         return valBytes;
     }
 
+    /** {@inheritDoc} */
     @Override public byte[] rawBytes(GridKernalContext ctx) throws IgniteCheckedException {
         return CacheObjectTransformerUtils.restoreIfNecessary(valBytes, ctx);
     }

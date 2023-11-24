@@ -250,6 +250,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
             throw new UnsupportedOperationException();
         }
 
+        /** {@inheritDoc} */
         @Override public byte[] rawBytes(GridKernalContext ctx) throws IgniteCheckedException {
             throw new UnsupportedOperationException();
         }
