@@ -1193,7 +1193,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 parts,
                 withMetaStorage,
                 req.dump(),
-                locSndrFactory.apply(req.snapshotName(), req.snapshotPath()));
+                req.compress(),
+                locSndrFactory.apply(req.snapshotName(), req.snapshotPath())
+            );
 
             if (withMetaStorage && task0 instanceof SnapshotFutureTask) {
                 ((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage())
@@ -1220,6 +1222,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     req.snapshotName(),
                     cctx.localNode().consistentId().toString(),
                     pdsSettings.folderName(),
+                    req.compress(),
                     cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
                     grpIds,
                     comprGrpIds,
@@ -1805,7 +1808,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createDump(String name, @Nullable Collection<String> cacheGroupNames) {
-        return createSnapshot(name, null, cacheGroupNames, false, false, true);
+        return createSnapshot(name, null, cacheGroupNames, false, false, true, false);
     }
 
     /**
@@ -2193,7 +2196,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean incremental,
         boolean onlyPrimary
     ) {
-        return createSnapshot(name, snpPath, null, incremental, onlyPrimary, false);
+        return createSnapshot(name, snpPath, null, incremental, onlyPrimary, false, false);
     }
 
     /**
@@ -2205,6 +2208,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param incremental Incremental snapshot flag.
      * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
      * @param dump If {@code true} cache dump must be created.
+     * @param compress If {@code true} then compress partition files.
      * @return Future which will be completed when a process ends.
      */
     public IgniteFutureImpl<Void> createSnapshot(
@@ -2213,13 +2217,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Nullable Collection<String> cacheGroupNames,
         boolean incremental,
         boolean onlyPrimary,
-        boolean dump
+        boolean dump,
+        boolean compress
     ) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
         A.ensure(!(incremental && onlyPrimary), "Only primary not supported for incremental snapshots");
         A.ensure(!(dump && incremental), "Incremental dump not supported");
         A.ensure(!(cacheGroupNames != null && !dump), "Cache group names filter supported only for dump");
+        A.ensure(!compress || dump, "Compression is supported only for dumps");
 
         try {
             cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
@@ -2244,7 +2250,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return new IgniteSnapshotFutureImpl(cctx.kernalContext().closure()
                     .callAsync(
                         BALANCE,
-                        new CreateSnapshotCallable(name, cacheGroupNames, incremental, onlyPrimary, dump),
+                        new CreateSnapshotCallable(name, cacheGroupNames, incremental, onlyPrimary, dump, compress),
                         options(Collections.singletonList(crd)).withFailoverDisabled()
                     ));
             }
@@ -2346,7 +2352,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 incremental,
                 incIdx,
                 onlyPrimary,
-                dump
+                dump,
+                compress
             ));
 
             String msg =
@@ -2725,6 +2732,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
      * @param withMetaStorage {@code true} if all metastorage data must be also included into snapshot.
      * @param dump {@code true} if cache group dump must be created.
+     * @param compress If {@code true} then compress partition files.
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @return Snapshot operation task which should be registered on checkpoint to run.
      */
@@ -2736,10 +2744,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         Map<Integer, Set<Integer>> parts,
         boolean withMetaStorage,
         boolean dump,
+        boolean compress,
         SnapshotSender snpSndr
     ) {
         AbstractSnapshotFutureTask<?> task = registerTask(snpName, dump
-            ? new CreateDumpFutureTask(cctx, srcNodeId, requestId, snpName, snapshotLocalDir(snpName, snpPath), ioFactory, snpSndr, parts)
+            ? new CreateDumpFutureTask(cctx,
+                srcNodeId,
+                requestId,
+                snpName,
+                snapshotLocalDir(snpName, snpPath),
+                ioFactory,
+                snpSndr,
+                parts,
+                compress
+            )
             : new SnapshotFutureTask(cctx, srcNodeId, requestId, snpName, tmpWorkDir, ioFactory, snpSndr, parts, withMetaStorage, locBuff));
 
         if (!withMetaStorage) {
@@ -4659,6 +4677,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** If {@code true} create cache dump. */
         private final boolean dump;
 
+        /** If {@code true} then compress partition files. */
+        private final boolean comprParts;
+
         /** Auto-injected grid instance. */
         @IgniteInstanceResource
         private transient IgniteEx ignite;
@@ -4669,19 +4690,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param incremental If {@code true} then incremental snapshot must be created.
          * @param onlyPrimary If {@code true} then only copy of primary partitions will be created.
          * @param dump If {@code true} then cache dump must be created.
+         * @param comprParts If {@code true} then compress partition files.
          */
         public CreateSnapshotCallable(
             String snpName,
             @Nullable Collection<String> cacheGroupNames,
             boolean incremental,
             boolean onlyPrimary,
-            boolean dump
+            boolean dump,
+            boolean comprParts
         ) {
             this.snpName = snpName;
             this.cacheGroupNames = cacheGroupNames;
             this.incremental = incremental;
             this.onlyPrimary = onlyPrimary;
             this.dump = dump;
+            this.comprParts = comprParts;
         }
 
         /** {@inheritDoc} */
@@ -4695,7 +4719,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     cacheGroupNames,
                     false,
                     onlyPrimary,
-                    dump
+                    dump,
+                    comprParts
                 ).get();
             }
 
