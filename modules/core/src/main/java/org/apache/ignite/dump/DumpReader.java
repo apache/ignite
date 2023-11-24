@@ -87,6 +87,8 @@ public class DumpReader implements Runnable {
 
             cnsmr.start();
 
+            Timer timer = new Timer("dump-stats-log-timer", true);
+
             try {
                 File[] files = new File(cfg.dumpRoot(), DFLT_MARSHALLER_PATH).listFiles(BinaryUtils::notTmpFile);
 
@@ -131,7 +133,7 @@ public class DumpReader implements Runnable {
 
                 AtomicInteger partsProcessed = new AtomicInteger(0);
 
-                new Timer("dump-stats-log-timer", true).scheduleAtFixedRate(
+                timer.scheduleAtFixedRate(
                     new TimerTask() {
                         /** */
                         private long startTime;
@@ -273,6 +275,8 @@ public class DumpReader implements Runnable {
                 }
             }
             finally {
+                timer.cancel();
+
                 cnsmr.stop();
             }
         }
