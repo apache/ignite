@@ -118,6 +118,7 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
             return new byte[0];
         }
 
+        /** {@inheritDoc} */
         @Override public byte[] rawBytes(GridKernalContext ctx) throws IgniteCheckedException {
             return new byte[0];
         }

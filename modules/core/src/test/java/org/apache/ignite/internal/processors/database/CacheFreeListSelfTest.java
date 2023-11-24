@@ -730,6 +730,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
             return data;
         }
 
+        /** {@inheritDoc} */
         @Override public byte[] rawBytes(GridKernalContext ctx) throws IgniteCheckedException {
             return data;
         }

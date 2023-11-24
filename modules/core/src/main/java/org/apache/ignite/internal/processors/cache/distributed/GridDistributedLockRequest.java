@@ -55,7 +55,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     private static final int STORE_USED_FLAG_MASK = 0x04;
 
     /** Keep binary flag. */
-    private static final int KEEP_CACHE_FLAG_MASK = 0x05;
+    private static final int KEEP_CACHE_FLAG_MASK = 0x08;
 
     /** Sender node ID. */
     private UUID nodeId;
@@ -268,7 +268,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      * @return Keep binary.
      */
     public boolean keepCache() {
-        return (flags & KEEP_BINARY_FLAG_MASK) != 0;
+        return (flags & KEEP_CACHE_FLAG_MASK) != 0;
     }
 
     /**

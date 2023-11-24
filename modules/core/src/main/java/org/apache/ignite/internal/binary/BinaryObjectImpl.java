@@ -208,6 +208,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         return valBytes;
     }
 
+    /** {@inheritDoc} */
     @Override public byte[] rawBytes(GridKernalContext ctx) throws IgniteCheckedException {
         if (arr != null)
             return arr;

@@ -83,6 +83,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
         return valBytes;
     }
 
+    /** {@inheritDoc} */
     @Override public byte[] rawBytes(GridKernalContext ctx) throws IgniteCheckedException {
         return valBytes;
     }
