@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.cdc.CdcManager;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -531,7 +532,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
     }
 
     /**
-     * Make fsync for part of the WAL segment file. And collect it to CDC if enabled.
+     * Make fsync for part of the WAL segment file. And collect it to {@link CdcManager} if enabled.
      *
      * @param seg Part of the WAL segment file.
      */

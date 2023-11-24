@@ -25,7 +25,8 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.T2;
 
 /**
- * Through this record {@link CdcManager} notifies {@link CdcMain} about committed CDC consumer WAL state.
+ * This record notifies {@link CdcMain} about committed WAL state. It's assumed that WAL state will be inferred from
+ * {@link CdcConsumer} committed WALPointer.
  *
  * @see CdcConsumer#onEvents(Iterator)
  */

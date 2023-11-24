@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
+import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.cdc.CdcManager;
 
 /**
- * Through this {@link CdcManager} record notifies {@link CdcMain} that Ignite node stops capturing data.
+ * Record notifies {@link CdcMain} that {@link CdcManager} fails and stop processing WAL data in-memory.
+ * {@link CdcMain} must start capturing and process {@link CdcEvent} in regularly(active) way.
  */
 public class CdcManagerStopRecord extends WALRecord {
     /** {@inheritDoc} */
