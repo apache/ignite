@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.management.cache.PartitionKeyV2;
@@ -46,7 +47,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerificationTask.HashHolder;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.F;
@@ -392,7 +392,7 @@ public class IdleVerifyUtility {
         public void update(
             KeyCacheObject key,
             CacheObject val,
-            @Nullable GridCacheVersion ver
+            CacheEntryVersion ver
         ) throws IgniteCheckedException {
             partHash += key.hashCode();
 

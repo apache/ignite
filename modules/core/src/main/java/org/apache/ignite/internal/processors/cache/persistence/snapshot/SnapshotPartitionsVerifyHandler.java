@@ -409,7 +409,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 while (iter.hasNext()) {
                     DumpEntry e = iter.next();
 
-                    ctx.update((KeyCacheObject)e.key(), (CacheObject)e.value(), null);
+                    ctx.update((KeyCacheObject)e.key(), (CacheObject)e.value(), e.version());
 
                     size++;
                 }
