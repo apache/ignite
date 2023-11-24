@@ -29,7 +29,7 @@ function makeRoot() {
     rm -f "${ALIAS}.pem"
 
     keytool -genkeypair -keystore "${ALIAS}.jks" -alias "${ALIAS}" -dname "${DNAME}" -ext bc:c -storepass "${PSWD}" \
-     -keypass "${PSWD}" -storetype JKS -noprompt -v
+     -keypass "${PSWD}" -storetype JKS -keyalg RSA -noprompt -v
 
     keytool -keystore "${ALIAS}.jks" -storepass "${PSWD}" -keypass "${PSWD}" -alias "${ALIAS}" -exportcert \
      -rfc -file "${ALIAS}.pem" -v
@@ -50,7 +50,7 @@ function makeCA() {
     rm -f "${ALIAS}.pem"
 
     keytool -genkeypair -keystore "${ALIAS}.jks" -alias "${ALIAS}" -dname "${DNAME}" -ext bc:c -storepass "${PSWD}" \
-     -keypass "${PSWD}" -storetype JKS -noprompt -v
+     -keypass "${PSWD}" -storetype JKS -keyalg RSA -noprompt -v
 
     keytool -storepass "${PSWD}" -keypass "${PSWD}" -keystore "${ALIAS}.jks" -certreq -alias "${ALIAS}" \
       | keytool -storepass "${PSWD}" -keypass "${PSWD}" -keystore "${ROOT}.jks" -gencert -alias "${ROOT}" \

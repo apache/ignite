@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.util.lang.gridfunc.NotContainsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isCustomAffinityMapper;
@@ -185,15 +184,6 @@ public class ClientCachePartitionsRequest extends ClientRequest {
     private static boolean isApplicable(CacheConfiguration<?, ?> ccfg, boolean withCustomMappings) {
         // Partition could be extracted only from PARTITIONED caches.
         if (ccfg.getCacheMode() != CacheMode.PARTITIONED)
-            return false;
-
-        IgnitePredicate<?> filter = ccfg.getNodeFilter();
-        boolean hasNodeFilter = filter != null && !(filter instanceof CacheConfiguration.IgniteAllNodesPredicate);
-
-        // We cannot be sure that two caches are co-located if custom node filter is present.
-        // Note that technically we may try to compare two filters. However, this adds unnecessary complexity
-        // and potential deserialization issues.
-        if (hasNodeFilter)
             return false;
 
         return withCustomMappings || isDefaultMapping(ccfg);

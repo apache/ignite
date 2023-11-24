@@ -1186,12 +1186,6 @@ public class GridNioServerWrapper {
         try {
             return tcpHandshakeExecutor.tcpHandshake(ch, rmtNodeId, sslMeta, msg);
         }
-        catch (IOException e) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to read from channel: " + e);
-
-            throw new IgniteCheckedException("Failed to read from channel.", e);
-        }
         finally {
             if (!timeoutObject.cancel())
                 throw handshakeTimeoutException();

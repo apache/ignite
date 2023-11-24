@@ -280,11 +280,11 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     protected void checkDump(IgniteEx ign) throws Exception {
-        checkDump(ign, DMP_NAME);
+        checkDump(ign, DMP_NAME, false);
     }
 
     /** */
-    void checkDump(IgniteEx ign, String name) throws Exception {
+    void checkDump(IgniteEx ign, String name, boolean expectedComprParts) throws Exception {
         checkDump(ign,
             name,
             null,
@@ -292,7 +292,9 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
             2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
             KEYS_CNT,
-            false);
+            false,
+            expectedComprParts
+        );
     }
 
     /** */
@@ -304,11 +306,12 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         int expectedDfltDumpSz,
         int expectedGrpDumpSz,
         int expectedCount,
-        boolean skipCopies
+        boolean skipCopies,
+        boolean expectedComprParts
     ) throws Exception {
         checkDumpWithCommand(ign, name, backups);
 
-        if (persistence)
+        if (persistence && !ign.context().clientNode())
             assertNull(ign.context().cache().context().database().metaStorage().read(SNP_RUNNING_DIR_KEY));
 
         Dump dump = dump(ign, name);
@@ -322,6 +325,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             assertEquals(name, meta.snapshotName());
             assertTrue(meta.dump());
             assertFalse(meta.cacheGroupIds().contains(CU.cacheId(UTILITY_CACHE_NAME)));
+            assertEquals(expectedComprParts, meta.compressPartitions());
         }
 
         List<String> nodesDirs = dump.nodesDirectories();
@@ -536,7 +540,13 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** */
     void createDump(IgniteEx ign, String name, @Nullable Collection<String> cacheGroupNames) {
-        ign.context().cache().context().snapshotMgr().createSnapshot(name, null, cacheGroupNames, false, onlyPrimary, true).get();
+        createDump(ign, name, cacheGroupNames, false);
+    }
+
+    /** */
+    void createDump(IgniteEx ign, String name, @Nullable Collection<String> cacheGroupNames, boolean comprParts) {
+        ign.context().cache().context().snapshotMgr()
+            .createSnapshot(name, null, cacheGroupNames, false, onlyPrimary, true, comprParts).get();
     }
 
     /** */
