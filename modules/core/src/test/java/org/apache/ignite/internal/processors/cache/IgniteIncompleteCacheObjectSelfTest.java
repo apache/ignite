@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -114,6 +115,10 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
 
         /** {@inheritDoc} */
         @Override public byte[] valueBytes(final CacheObjectValueContext ctx) throws IgniteCheckedException {
+            return new byte[0];
+        }
+
+        @Override public byte[] rawBytes(GridKernalContext ctx) throws IgniteCheckedException {
             return new byte[0];
         }
 

@@ -28,6 +28,7 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -335,6 +336,11 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
         valBytes = U.marshal(ctx.marshaller(), this);
 
+        return valBytes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] rawBytes(GridKernalContext ctx) throws IgniteCheckedException {
         return valBytes;
     }
 

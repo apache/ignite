@@ -46,7 +46,7 @@ public class ClientObjectResponse extends ClientResponse {
 
         if (val instanceof CacheObject) {
             try {
-                writer.out().writeByteArray(((CacheObject)val).valueBytes(null));
+                writer.out().writeByteArray(((CacheObject)val).rawBytes(ctx.kernalContext()));
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

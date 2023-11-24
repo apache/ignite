@@ -33,6 +33,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
@@ -207,6 +208,13 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         return valBytes;
     }
 
+    @Override public byte[] rawBytes(GridKernalContext ctx) throws IgniteCheckedException {
+        if (arr != null)
+            return arr;
+
+        return CacheObjectTransformerUtils.restoreIfNecessary(valBytes, ctx);
+    }
+
     /** {@inheritDoc} */
     @Override public boolean putValue(ByteBuffer buf) throws IgniteCheckedException {
         return putValue(buf, 0, CacheObjectAdapter.objectPutSize(valBytes.length));
@@ -262,7 +270,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @return Array.
      */
     private byte[] arrayFromValueBytes(CacheObjectValueContext ctx) {
-        return CacheObjectTransformerUtils.restoreIfNecessary(valBytes, ctx);
+        return CacheObjectTransformerUtils.restoreIfNecessary(valBytes, ctx.kernalContext());
     }
 
     /**
@@ -271,7 +279,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     private byte[] valueBytesFromArray(CacheObjectValueContext ctx) {
         assert part == -1; // Keys should never be transformed.
 
-        return CacheObjectTransformerUtils.transformIfNecessary(arr, start, length(), ctx);
+        return CacheObjectTransformerUtils.transformIfNecessary(arr, start, length(), ctx.kernalContext());
     }
 
     /** {@inheritDoc} */
