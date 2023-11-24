@@ -19,15 +19,19 @@ package org.apache.ignite.internal.cdc;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cdc.CdcConsumer;
-import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerRecord;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
 
@@ -59,18 +63,30 @@ import org.apache.ignite.plugin.PluginProvider;
  * @see CdcConsumer#onEvents(Iterator)
  * @see CdcConsumerState#saveCdcMode(CdcMode)
  */
-public interface CdcManager extends GridCacheSharedManager {
+public interface CdcManager extends GridCacheSharedManager, DatabaseLifecycleListener {
     /**
-     * Callback is invoked only once after Ignite restores memory on start-up. It invokes before {@link IgniteWriteAheadLogManager}
-     * enables logging into WAL and before the first call of {@link #collect(ByteBuffer)}.
+     * If this manager isn't enabled then Ignite skips notifying the manager with following methods.
+     *
+     * @return {@code true} if manager is enabled, otherwise {@code false}.
+     */
+    public boolean enabled();
+
+    /**
+     * Callback is executed only once on Ignite node start when binary memory has fully restored and WAL logging is resumed.
+     * It's executed before the first call of {@link #collect(ByteBuffer)}.
      * <p> Implementation suggestions:
      * <ul>
+     *     <li>
+               It's required to register this manager to enable calling this method. The registration is performed with
+     *         {@link GridInternalSubscriptionProcessor#registerDatabaseListener(DatabaseLifecycleListener)}.
+     *     </li>
      *     <li>Callback can be used for restoring CDC state on Ignite node start, collecting missed events from WAL segments.</li>
-     *     <li>Be aware, this method runs in the Ignite main thread and might lengthen the Ignite start procedure.</li>
+     *     <li>Be aware, this method runs in the Ignite system thread and might lengthen the Ignite start procedure.</li>
      *     <li>Ignite node will fail in case the method throws an exception.</li>
      * </ul>
      */
-    public void afterMemoryRestore();
+    @Override public void afterBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr,
+        GridCacheDatabaseSharedManager.RestoreBinaryState restoreState) throws IgniteCheckedException;
 
     /**
      * Collects byte buffer contains WAL records. The provided buffer is a continuous part of WAL segment file.
@@ -100,11 +116,4 @@ public interface CdcManager extends GridCacheSharedManager {
      * @param dataBuf Buffer that contains data to collect.
      */
     public void collect(ByteBuffer dataBuf);
-
-    /**
-     * If this manager isn't enabled then Ignite skips calling {@link #afterMemoryRestore()} and {@link #collect(ByteBuffer)} methods.
-     *
-     * @return {@code true} if manager is enabled, otherwise {@code false}.
-     */
-    public boolean enabled();
 }

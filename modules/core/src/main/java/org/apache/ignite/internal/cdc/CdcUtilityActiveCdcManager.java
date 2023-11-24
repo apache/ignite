@@ -25,6 +25,8 @@ import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -59,12 +61,15 @@ public class CdcUtilityActiveCdcManager extends GridCacheSharedManagerAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public void collect(ByteBuffer dataBuf) {
+    @Override public void afterBinaryMemoryRestore(
+        IgniteCacheDatabaseSharedManager mgr,
+        GridCacheDatabaseSharedManager.RestoreBinaryState restoreState
+    ) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void afterMemoryRestore() {
+    @Override public void collect(ByteBuffer dataBuf) {
         // No-op.
     }
 }

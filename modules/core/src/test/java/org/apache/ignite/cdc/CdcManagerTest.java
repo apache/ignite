@@ -38,6 +38,8 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
@@ -412,7 +414,10 @@ public class CdcManagerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void afterMemoryRestore() {
+        @Override public void afterBinaryMemoryRestore(
+            IgniteCacheDatabaseSharedManager mgr,
+            GridCacheDatabaseSharedManager.RestoreBinaryState restoreState
+        ) {
             // No-op.
         }
 
