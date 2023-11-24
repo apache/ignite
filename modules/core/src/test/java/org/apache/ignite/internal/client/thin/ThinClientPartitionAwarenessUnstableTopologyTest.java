@@ -55,10 +55,18 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
     @Parameterized.Parameter
     public boolean sslEnabled;
 
+    /** */
+    @Parameterized.Parameter(1)
+    public String cacheName;
+
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "sslEnabled={0}")
+    @Parameterized.Parameters(name = "sslEnabled={0},cache={1}")
     public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {{false}, {true}});
+        return Arrays.asList(new Object[][] {
+            {false, PART_CACHE_NAME},
+            {false, PART_CACHE_1_BACKUPS_NF_NAME},
+            {true, PART_CACHE_NAME}
+        });
     }
 
     /** {@inheritDoc} */
@@ -116,13 +124,13 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
         awaitPartitionMapExchange();
 
         // Send non-affinity request to detect topology change.
-        ClientCache<Object, Object> cache = client.getOrCreateCache(PART_CACHE_NAME);
+        ClientCache<Object, Object> cache = client.getOrCreateCache(cacheName);
 
         awaitChannelsInit(3);
 
         assertOpOnChannel(null, ClientOperation.CACHE_GET_OR_CREATE_WITH_NAME);
 
-        Integer key = primaryKey(grid(3).cache(PART_CACHE_NAME));
+        Integer key = primaryKey(grid(3).cache(cacheName));
 
         assertNotNull("Not found key for node 3", key);
 
@@ -187,9 +195,9 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
         channels[disconnectNodeIdx] = null;
 
         // Send request to disconnected node.
-        ClientCache<Object, Object> cache = client.cache(PART_CACHE_NAME);
+        ClientCache<Object, Object> cache = client.cache(cacheName);
 
-        Integer key = primaryKey(grid(disconnectNodeIdx).cache(PART_CACHE_NAME));
+        Integer key = primaryKey(grid(disconnectNodeIdx).cache(cacheName));
 
         assertNotNull("Not found key for node " + disconnectNodeIdx, key);
 
@@ -246,8 +254,8 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
      * @param partReq Next operation should request partitions map.
      */
     private void testPartitionAwareness(boolean partReq) {
-        ClientCache<Object, Object> clientCache = client.cache(PART_CACHE_NAME);
-        IgniteInternalCache<Object, Object> igniteCache = grid(0).context().cache().cache(PART_CACHE_NAME);
+        ClientCache<Object, Object> clientCache = client.cache(cacheName);
+        IgniteInternalCache<Object, Object> igniteCache = grid(0).context().cache().cache(cacheName);
 
         for (int i = 0; i < KEY_CNT; i++) {
             TestTcpClientChannel opCh = affinityChannel(i, igniteCache);
