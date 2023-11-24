@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
@@ -61,6 +62,13 @@ public interface CacheObject extends Message {
      * @throws IgniteCheckedException If failed.
      */
     public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException;
+
+    /**
+     * @param ctx Context.
+     * @return Value bytes.
+     * @throws IgniteCheckedException If failed.
+     */
+    public byte[] rawBytes(GridKernalContext ctx) throws IgniteCheckedException;
 
     /**
      * @param ctx Cache object context.

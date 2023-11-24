@@ -70,7 +70,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
      * @return Value from value bytes.
      */
     protected Object valueFromValueBytes(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        byte[] bytes = CacheObjectTransformerUtils.restoreIfNecessary(valBytes, ctx);
+        byte[] bytes = CacheObjectTransformerUtils.restoreIfNecessary(valBytes, ctx.kernalContext());
 
         return ctx.kernalContext().cacheObjects().unmarshal(ctx, bytes, ldr);
     }
