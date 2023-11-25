@@ -21,6 +21,7 @@ import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.platform.model.ACL;
 import org.apache.ignite.platform.model.AccessLevel;
 import org.apache.ignite.platform.model.Account;
@@ -80,11 +82,11 @@ import static org.junit.Assert.assertTrue;
 /**
  * Task that deploys a Java service.
  */
-public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object> {
+public class PlatformDeployServiceTask extends ComputeTaskAdapter<UUID[], Object> {
     /** {@inheritDoc} */
     @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable String serviceName) throws IgniteException {
-        return Collections.singletonMap(new PlatformDeployServiceJob(serviceName), F.first(subgrid));
+        @Nullable UUID[] nodes) throws IgniteException {
+        return Collections.singletonMap(new PlatformDeployServiceJob(nodes), F.first(subgrid));
     }
 
     /** {@inheritDoc} */
@@ -96,8 +98,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
      * Job.
      */
     private static class PlatformDeployServiceJob extends ComputeJobAdapter {
-        /** Service name. */
-        private final String serviceName;
+        /** */
+        private final UUID[] nodes;
 
         /** Ignite. */
         @IgniteInstanceResource
@@ -106,11 +108,10 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         /**
          * Ctor.
          *
-         * @param serviceName Service name.
+         * @param nodes Service nodes.
          */
-        private PlatformDeployServiceJob(String serviceName) {
-            assert serviceName != null;
-            this.serviceName = serviceName;
+        private PlatformDeployServiceJob(UUID[] nodes) {
+            this.nodes = nodes;
         }
 
         /** {@inheritDoc} */
@@ -118,8 +119,13 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             ServiceConfiguration svcCfg = new ServiceConfiguration();
 
             svcCfg.setStatisticsEnabled(true);
-            svcCfg.setName(serviceName);
+            svcCfg.setName(PlatformTestService.SRVC_NAME);
+
             svcCfg.setMaxPerNodeCount(1);
+
+            if (!F.isEmpty(nodes))
+                svcCfg.setNodeFilter(new UUIDNodeFilter(Arrays.asList(nodes)));
+
             svcCfg.setService(new PlatformTestService());
             svcCfg.setInterceptors(new PlatformTestServiceInterceptor());
 
@@ -133,6 +139,9 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
      * Test service.
      */
     public static class PlatformTestService implements Service, PlatformHelperService {
+        /** */
+        private static final String SRVC_NAME = "TestJavaService";
+
         /** */
         @IgniteInstanceResource
         private IgniteEx ignite;
@@ -839,5 +848,21 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
          * @return Number of registered values among the service statistics.
          */
         int testNumberOfInvocations(String svcName, String histName);
+    }
+
+    /** */
+    private static final class UUIDNodeFilter implements IgnitePredicate<ClusterNode> {
+        /** */
+        private final Collection<UUID> nodes;
+
+        /** */
+        private UUIDNodeFilter(Collection<UUID> nodes) {
+            this.nodes = nodes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode node) {
+            return nodes.contains(node.id());
+        }
     }
 }
