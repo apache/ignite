@@ -52,8 +52,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         protected IIgnite Grid3;
-
-
+        
         /** */
         private IIgniteClient _thinClient;
 
@@ -178,15 +177,6 @@ namespace Apache.Ignite.Core.Tests.Services
         protected virtual IServices Services
         {
             get { return Grid1.GetServices(); }
-        }
-
-        /// <summary>
-        /// Makes Service1-{i} names for services.
-        /// </summary>
-        private static string MakeServiceName(int i)
-        {
-            // Please note that CheckContext() validates Name.StartsWith(SvcName).
-            return string.Format("{0}-{1}", SvcName, i);
         }
 
         /// <summary>
