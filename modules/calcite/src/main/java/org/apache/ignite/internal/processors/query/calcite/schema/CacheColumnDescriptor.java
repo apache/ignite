@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -48,5 +49,5 @@ public interface CacheColumnDescriptor extends ColumnDescriptor {
     /**
      * Sets field of composite object value.
      */
-    public void set(Object dst, Object val) throws IgniteCheckedException;
+    public void set(CacheObjectContext coctx, Object dst, Object val) throws IgniteCheckedException;
 }

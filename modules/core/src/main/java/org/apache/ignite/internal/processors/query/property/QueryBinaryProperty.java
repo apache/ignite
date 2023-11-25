@@ -25,7 +25,9 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryObjectExImpl;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cacheobject.PlatformCacheObjectImpl;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -85,7 +87,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
      */
     public QueryBinaryProperty(GridKernalContext ctx, String propName, QueryBinaryProperty parent,
         Class<?> type, boolean key, String alias, boolean notNull, Object defaultValue,
-        int precision, int scale) {
+        int precision, int scale, CacheObjectContext coCtx) {
         this.ctx = ctx;
         this.propName = propName;
         this.alias = F.isEmpty(alias) ? propName : alias;
@@ -99,11 +101,11 @@ public class QueryBinaryProperty implements GridQueryProperty {
     }
 
     /** {@inheritDoc} */
-    @Override public Object value(Object key, Object val) throws IgniteCheckedException {
+    @Override public Object value(CacheObjectContext coctx, Object key, Object val) throws IgniteCheckedException {
         Object obj;
 
         if (parent != null) {
-            obj = parent.value(key, val);
+            obj = parent.value(coctx, key, val);
 
             if (obj == null)
                 return null;
@@ -130,12 +132,17 @@ public class QueryBinaryProperty implements GridQueryProperty {
 
             return obj0.value(null, false);
         }
+        else if (obj instanceof PlatformCacheObjectImpl) {
+            PlatformCacheObjectImpl obj0 = (PlatformCacheObjectImpl)obj;
+
+            return fieldValue(obj0.value(coctx, false));
+        }
         else
             throw new IgniteCheckedException("Unexpected binary object class [type=" + obj.getClass() + ']');
     }
 
     /** {@inheritDoc} */
-    @Override public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException {
+    @Override public void setValue(CacheObjectContext coctx, Object key, Object val, Object propVal) throws IgniteCheckedException {
         Object obj = key() ? key : val;
 
         if (obj == null)
@@ -147,7 +154,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
             throw new UnsupportedOperationException("Individual properties can be set for binary builders only");
 
         if (parent != null)
-            obj = parent.value(key, val);
+            obj = parent.value(coctx, key, val);
 
         boolean needsBuild = false;
 

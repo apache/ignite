@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 
 /**
  * Description and access method for query entity field.
@@ -31,7 +32,7 @@ public interface GridQueryProperty {
      * @return Property value.
      * @throws IgniteCheckedException If failed.
      */
-    public Object value(Object key, Object val) throws IgniteCheckedException;
+    public Object value(CacheObjectContext coctx, Object key, Object val) throws IgniteCheckedException;
 
     /**
      * Sets this property value for the given object.
@@ -41,7 +42,7 @@ public interface GridQueryProperty {
      * @param propVal Property value.
      * @throws IgniteCheckedException If failed.
      */
-    public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException;
+    public void setValue(CacheObjectContext coCtx, Object key, Object val, Object propVal) throws IgniteCheckedException;
 
     /**
      * @return Property name.

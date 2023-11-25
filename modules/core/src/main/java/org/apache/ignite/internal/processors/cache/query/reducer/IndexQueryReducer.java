@@ -149,7 +149,7 @@ public class IndexQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
             else {
                 GridQueryProperty prop = typeDesc.property(key);
 
-                o = prop.value(entry.getKey(), entry.getValue());
+                o = prop.value(cctx.cacheObjectContext(), entry.getKey(), entry.getValue());
             }
 
             return IndexKeyFactory.wrap(o, type, cctx.cacheObjectContext(), meta.keyTypeSettings());

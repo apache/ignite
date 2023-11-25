@@ -48,6 +48,7 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
@@ -370,7 +371,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
                 if (key == null)
                     key = newVal(typeDesc.keyTypeName(), typeDesc.keyClass());
 
-                desc.set(key, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
+                desc.set(cacheContext().cacheObjectContext(), key, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             }
         }
 
@@ -396,7 +397,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
                 Object fieldVal = handler.get(i, row);
 
                 if (desc.field() && !desc.key() && fieldVal != null)
-                    desc.set(val, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
+                    desc.set(cacheContext().cacheObjectContext(), val, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             }
         }
         else
@@ -464,7 +465,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             Object fieldVal = handler.get(i + offset, row);
 
             if (desc.field())
-                desc.set(val, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
+                desc.set(cacheContext().cacheObjectContext(), val, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             else
                 val = TypeUtils.fromInternal(ectx, fieldVal, desc.storageType());
         }
@@ -719,7 +720,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         }
 
         /** {@inheritDoc} */
-        @Override public void set(Object dst, Object val) {
+        @Override public void set(CacheObjectContext coctx, Object dst, Object val) {
             throw new AssertionError();
         }
     }
@@ -799,15 +800,15 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         /** {@inheritDoc} */
         @Override public Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx, CacheDataRow src)
             throws IgniteCheckedException {
-            return cctx.unwrapBinaryIfNeeded(desc.value(src.key(), src.value()), ectx.keepBinary(), null);
+            return cctx.unwrapBinaryIfNeeded(desc.value(cctx.cacheObjectContext(), src.key(), src.value()), ectx.keepBinary(), null);
         }
 
         /** {@inheritDoc} */
-        @Override public void set(Object dst, Object val) throws IgniteCheckedException {
+        @Override public void set(CacheObjectContext coctx, Object dst, Object val) throws IgniteCheckedException {
             final Object key0 = key() ? dst : null;
             final Object val0 = key() ? null : dst;
 
-            desc.setValue(key0, val0, val);
+            desc.setValue(coctx, key0, val0, val);
         }
     }
 

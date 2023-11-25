@@ -117,7 +117,7 @@ public class GridQueryRowDescriptorImpl implements GridQueryRowDescriptor {
     /** {@inheritDoc} */
     @Override public Object getFieldValue(Object key, Object val, int fieldIdx) {
         try {
-            return props[fieldIdx].value(key, val);
+            return props[fieldIdx].value(cacheInfo.cacheContext().cacheObjectContext(), key, val);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -127,7 +127,7 @@ public class GridQueryRowDescriptorImpl implements GridQueryRowDescriptor {
     /** {@inheritDoc} */
     @Override public void setFieldValue(Object key, Object val, Object fieldVal, int fieldIdx) {
         try {
-            props[fieldIdx].setValue(key, val, fieldVal);
+            props[fieldIdx].setValue(cacheInfo.cacheContext().cacheObjectContext(), key, val, fieldVal);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
