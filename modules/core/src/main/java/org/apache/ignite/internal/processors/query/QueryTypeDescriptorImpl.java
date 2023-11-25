@@ -236,7 +236,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         if (prop == null)
             throw new IgniteCheckedException("Failed to find field '" + field + "' in type '" + name + "'.");
 
-        return (T)prop.value(key, val);
+        return (T)prop.value(coCtx, key, val);
     }
 
     /** {@inheritDoc} */
@@ -249,7 +249,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         if (prop == null)
             throw new IgniteCheckedException("Failed to find field '" + field + "' in type '" + name + "'.");
 
-        prop.setValue(key, val, propVal);
+        prop.setValue(coCtx, key, val, propVal);
     }
 
     /** {@inheritDoc} */
@@ -628,7 +628,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 (valFieldName == null && F.eq(prop.name(), VAL_FIELD_NAME)))
                 propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
             else
-                propVal = prop.value(key, val);
+                propVal = prop.value(coCtx, key, val);
 
             if (propVal == null && prop.notNull()) {
                 throw new IgniteSQLException("Null value is not allowed for column '" + prop.name() + "'",
@@ -694,7 +694,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                     propType = propVal == null ? null : propVal.getClass();
                 }
                 else {
-                    propVal = prop.value(key, val);
+                    propVal = prop.value(coCtx, key, val);
 
                     propType = prop.type();
                 }
@@ -747,7 +747,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         for (int i = 0; i < propsWithDefaultValue.size(); ++i) {
             GridQueryProperty prop = propsWithDefaultValue.get(i);
 
-            prop.setValue(key, val, prop.defaultValue());
+            prop.setValue(coCtx, key, val, prop.defaultValue());
         }
     }
 

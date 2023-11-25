@@ -70,11 +70,11 @@ public class QueryClassProperty implements GridQueryProperty {
     }
 
     /** {@inheritDoc} */
-    @Override public Object value(Object key, Object val) throws IgniteCheckedException {
+    @Override public Object value(CacheObjectContext coctx, Object key, Object val) throws IgniteCheckedException {
         Object x = unwrap(this.key ? key : val);
 
         if (parent != null)
-            x = parent.value(key, val);
+            x = parent.value(coCtx, key, val);
 
         if (x == null)
             return null;
@@ -83,11 +83,11 @@ public class QueryClassProperty implements GridQueryProperty {
     }
 
     /** {@inheritDoc} */
-    @Override public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException {
+    @Override public void setValue(CacheObjectContext coCtx, Object key, Object val, Object propVal) throws IgniteCheckedException {
         Object x = unwrap(this.key ? key : val);
 
         if (parent != null)
-            x = parent.value(key, val);
+            x = parent.value(coCtx, key, val);
 
         if (x == null)
             return;
