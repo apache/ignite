@@ -112,7 +112,7 @@ public class ClientCacheRequest extends ClientRequest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> cache(ClientConnectionContext ctx) {
-        IgniteCache<K, V> cache = ctx.kernalContext().grid().cache(cacheName(ctx, cacheId));
+        IgniteCache<K, V> cache = ctx.kernalContext().grid().cache(cacheName(ctx, cacheId)).withKeepBinary();
 
         return withExpiryPolicy() ? cache.withExpiryPolicy(expiryPolicy) : cache;
     }
