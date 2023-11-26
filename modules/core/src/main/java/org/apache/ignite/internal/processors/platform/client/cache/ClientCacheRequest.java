@@ -105,14 +105,22 @@ public class ClientCacheRequest extends ClientRequest {
         return (flags & FLAG_WITH_EXPIRY_POLICY) == FLAG_WITH_EXPIRY_POLICY;
     }
 
+    /** */
+    protected <K, V> IgniteCache<K, V> cache(ClientConnectionContext ctx) {
+        return cache(ctx, true);
+    }
+
     /**
      * Gets the IgniteCache instance for current cache id.
      *
      * @param ctx Kernal context.
      * @return Cache.
      */
-    protected <K, V> IgniteCache<K, V> cache(ClientConnectionContext ctx) {
-        IgniteCache<K, V> cache = ctx.kernalContext().grid().cache(cacheName(ctx, cacheId)).withKeepBinary();
+    protected <K, V> IgniteCache<K, V> cache(ClientConnectionContext ctx, boolean isKeepBinary) {
+        IgniteCache<K, V> cache = ctx.kernalContext().grid().cache(cacheName(ctx, cacheId));
+
+        if (isKeepBinary)
+            cache = cache.withKeepBinary();
 
         return withExpiryPolicy() ? cache.withExpiryPolicy(expiryPolicy) : cache;
     }
@@ -124,7 +132,7 @@ public class ClientCacheRequest extends ClientRequest {
      * @return Cache.
      */
     protected <K, V> IgniteInternalCache<K, V> internalCache(ClientConnectionContext ctx) {
-        IgniteInternalCache<K, V> cache = ctx.kernalContext().grid().cachex(cacheName(ctx, cacheId));
+        IgniteInternalCache<K, V> cache = ctx.kernalContext().grid().cachex(cacheName(ctx, cacheId)).keepBinary();
 
         return withExpiryPolicy() ? cache.withExpiryPolicy(expiryPolicy) : cache;
     }

@@ -2488,10 +2488,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return false;
 
         if (!cctx.cacheObjects().isBinaryObject(val)) {
-            Class<?> valCls = val.value(cctx.cacheObjectContext(), false).getClass();
+            Object res = val.value(cctx.cacheObjectContext(), false);
 
-            if (!desc.valueClass().isAssignableFrom(valCls))
-                return false;
+            if (!cctx.cacheObjects().isBinaryObject(res)) {
+                Class<?> valCls = res.getClass();
+
+                if (!desc.valueClass().isAssignableFrom(valCls))
+                    return false;
+            }
         }
 
         if (!cctx.cacheObjects().isBinaryObject(key)) {
@@ -2881,7 +2885,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (coctx == null)
                 throw new IgniteCheckedException("Object context for cache not found: " + cacheName);
 
-            id = new QueryTypeIdKey(cacheName, val.value(coctx, false).getClass());
+            Object res = val.value(coctx, false);
+
+            if (ctx.cacheObjects().isBinaryObject(res)) {
+                id = new QueryTypeIdKey(cacheName, ctx.cacheObjects().typeId(res));
+            }
+            else {
+                id = new QueryTypeIdKey(cacheName, res.getClass());
+            }
         }
 
         return types.get(id);

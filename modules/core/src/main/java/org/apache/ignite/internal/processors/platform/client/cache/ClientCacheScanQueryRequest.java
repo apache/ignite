@@ -74,7 +74,7 @@ public class ClientCacheScanQueryRequest extends ClientCacheQueryRequest impleme
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        IgniteCache cache = filterPlatform == ClientPlatform.JAVA && !isKeepBinary() ? cache(ctx) : cache(ctx).withKeepBinary();
+        IgniteCache cache = cache(ctx, filterPlatform != ClientPlatform.JAVA || isKeepBinary());
 
         ScanQuery qry = new ScanQuery()
             .setLocal(loc)

@@ -509,7 +509,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public final <K1, V1> GridCacheProxyImpl<K1, V1> keepCacheObjects() {
         CacheOperationContext opCtx = new CacheOperationContext(
             false,
-            true,
+            false,
             null,
             false,
             null,
