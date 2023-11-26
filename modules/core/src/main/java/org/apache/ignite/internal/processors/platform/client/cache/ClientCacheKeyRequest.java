@@ -27,8 +27,6 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
 import org.apache.ignite.internal.util.typedef.F;
 
-import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils.readCacheObject;
-
 /**
  * Cache request involving key.
  */
@@ -44,7 +42,7 @@ public abstract class ClientCacheKeyRequest extends ClientCacheDataRequest imple
     public ClientCacheKeyRequest(BinaryRawReaderEx reader) {
         super(reader);
 
-        key = readCacheObject(reader, true);
+        key = reader.readObjectDetached(false, true);
     }
 
     /** {@inheritDoc} */

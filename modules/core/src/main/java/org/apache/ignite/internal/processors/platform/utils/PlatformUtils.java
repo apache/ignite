@@ -1380,7 +1380,7 @@ public class PlatformUtils {
         int objStartPos = in.position();
 
         if (isKey) {
-            Object obj = reader.readObjectDetached(false, true);
+            Object obj = reader.readObjectDetached();
 
             if (obj == null)
                 return null;
@@ -1394,8 +1394,7 @@ public class PlatformUtils {
 
             byte[] objBytes = in.readByteArray(objEndPos - objStartPos);
 
-//            return (T)new KeyCacheObjectImpl(obj, objBytes, -1);
-            return (T)new KeyCacheObjectImpl(obj, null, -1);
+            return (T)new KeyCacheObjectImpl(obj, objBytes, -1);
         }
         else {
             BinaryBuilderReader r = new BinaryBuilderReader(reader);

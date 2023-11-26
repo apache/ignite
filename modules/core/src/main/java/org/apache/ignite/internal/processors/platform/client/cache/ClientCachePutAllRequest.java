@@ -46,7 +46,7 @@ public class ClientCachePutAllRequest extends ClientCacheDataRequest implements 
         map = new LinkedHashMap<>(cnt);
 
         for (int i = 0; i < cnt; i++)
-            map.put(readCacheObject(reader, true), readCacheObject(reader, false));
+            map.put(reader.readObjectDetached(false, true), readCacheObject(reader, false));
     }
 
     /** {@inheritDoc} */

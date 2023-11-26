@@ -22,8 +22,6 @@ import java.util.Set;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
 
-import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils.readCacheObject;
-
 /**
  * Key set request.
  */
@@ -63,7 +61,7 @@ public class ClientCacheKeysRequest extends ClientCacheDataRequest implements Cl
         Set<Object> keys = new LinkedHashSet<>(cnt);
 
         for (int i = 0; i < cnt; i++)
-            keys.add(readCacheObject(reader, true));
+            keys.add(reader.readObjectDetached(false, true));
 
         return keys;
     }
