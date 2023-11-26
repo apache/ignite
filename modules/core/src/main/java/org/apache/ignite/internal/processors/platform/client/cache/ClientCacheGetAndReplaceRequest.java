@@ -42,7 +42,7 @@ public class ClientCacheGetAndReplaceRequest extends ClientCacheKeyValueRequest 
         try {
             Object res = binaryCache(ctx).getAndReplace(key(), val());
 
-            return new ClientObjectResponse(requestId(), res);
+            return new ClientObjectResponse(requestId(), res, binaryCache(ctx).context().cacheObjectContext());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

@@ -28,7 +28,9 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 
 /**
  * Several Ignite servers running on localhost.
@@ -162,7 +164,10 @@ public class LocalIgniteCluster implements AutoCloseable {
     private static IgniteConfiguration getConfiguration(NodeConfiguration nodeCfg) {
         IgniteConfiguration igniteCfg = Config.getServerConfiguration();
 
+        igniteCfg.setGridLogger(new GridTestLog4jLogger());
+
         igniteCfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
+                .setThinClientConfiguration(new ThinClientConfiguration().setServerToClientExceptionStackTraceSending(true))
             .setHost(host)
             .setPort(nodeCfg.getClientPort())
         );

@@ -42,7 +42,7 @@ public class ClientCacheGetAllRequest extends ClientCacheKeysRequest {
         try {
             Map<Object, Object> val = binaryCache(ctx).getAll(keys());
 
-            return new ClientCacheGetAllResponse(requestId(), val);
+            return new ClientCacheGetAllResponse(requestId(), val, binaryCache(ctx).context().cacheObjectContext());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

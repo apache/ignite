@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
@@ -32,18 +33,23 @@ class ClientCacheGetAllResponse extends ClientResponse {
     /** Result. */
     private final Map<Object, Object> res;
 
+    /** */
+    private CacheObjectValueContext coctx;
+
     /**
      * Ctor.
      *
      * @param requestId Request id.
      * @param res Result.
      */
-    ClientCacheGetAllResponse(long requestId, Map<Object, Object> res) {
+    ClientCacheGetAllResponse(long requestId, Map<Object, Object> res, CacheObjectValueContext coctx) {
         super(requestId);
 
         assert res != null;
 
         this.res = res;
+
+        this.coctx = coctx;
     }
 
     /** {@inheritDoc} */
@@ -54,8 +60,11 @@ class ClientCacheGetAllResponse extends ClientResponse {
 
         for (Map.Entry<Object, Object> e : res.entrySet()) {
             try {
-                writer.out().writeByteArray(((CacheObject)e.getKey()).rawBytes(null));
-                writer.out().writeByteArray(((CacheObject)e.getValue()).rawBytes(null));
+                CacheObject key = (CacheObject)e.getKey();
+                CacheObject val = (CacheObject)e.getValue();
+
+                writer.out().writeByteArray(key.rawBytes(coctx));
+                writer.out().writeByteArray(val.rawBytes(coctx));
             }
             catch (IgniteCheckedException ex) {
                 throw new IgniteException(ex);

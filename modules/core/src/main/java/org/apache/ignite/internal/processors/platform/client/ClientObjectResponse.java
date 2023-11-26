@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 
 /**
  * Single object response.
@@ -29,13 +30,18 @@ public class ClientObjectResponse extends ClientResponse {
     /** */
     private final Object val;
 
+    /** */
+    private CacheObjectValueContext coctx;
+
     /**
      * Constructor.
      *
      * @param reqId Request id.
      */
-    public ClientObjectResponse(long reqId, Object val) {
+    public ClientObjectResponse(long reqId, Object val, CacheObjectValueContext coctx) {
         super(reqId);
+
+        this.coctx = coctx;
 
         this.val = val;
     }
@@ -46,7 +52,7 @@ public class ClientObjectResponse extends ClientResponse {
 
         if (val instanceof CacheObject) {
             try {
-                writer.out().writeByteArray(((CacheObject)val).rawBytes(ctx.kernalContext()));
+                writer.out().writeByteArray(((CacheObject)val).rawBytes(coctx));
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

@@ -42,7 +42,7 @@ public class ClientCacheGetAndPutRequest extends ClientCacheKeyValueRequest {
         try {
             Object res = binaryCache(ctx).getAndPut(key(), val());
 
-            return new ClientObjectResponse(requestId(), res);
+            return new ClientObjectResponse(requestId(), res, binaryCache(ctx).context().cacheObjectContext());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -731,7 +730,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] rawBytes(GridKernalContext ctx) throws IgniteCheckedException {
+        @Override public byte[] rawBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
             return data;
         }
 

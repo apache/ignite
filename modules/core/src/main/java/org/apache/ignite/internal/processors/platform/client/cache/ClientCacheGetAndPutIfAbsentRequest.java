@@ -42,7 +42,7 @@ public class ClientCacheGetAndPutIfAbsentRequest extends ClientCacheKeyValueRequ
         try {
             Object res = binaryCache(ctx).getAndPutIfAbsent(key(), val());
 
-            return new ClientObjectResponse(requestId(), res);
+            return new ClientObjectResponse(requestId(), res, binaryCache(ctx).context().cacheObjectContext());
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
