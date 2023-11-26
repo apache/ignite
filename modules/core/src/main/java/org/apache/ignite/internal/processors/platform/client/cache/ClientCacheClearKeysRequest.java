@@ -35,7 +35,6 @@ public class ClientCacheClearKeysRequest extends ClientCacheKeysRequest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         cache(ctx).clearAll(keys());
 
