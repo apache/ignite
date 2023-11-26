@@ -190,7 +190,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
                 res = proxy.invokeMethod(method, args, callAttrs);
             }
 
-            return new ClientObjectResponse(requestId(), res);
+            return new ClientObjectResponse(requestId(), res, null);
         }
         catch (PlatformNativeException e) {
             ctx.kernalContext().log(getClass()).error("Failed to invoke platform service", e);

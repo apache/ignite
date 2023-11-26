@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -84,8 +83,8 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] rawBytes(GridKernalContext ctx) throws IgniteCheckedException {
-        return valBytes;
+    @Override public byte[] rawBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
+        return valueBytes(ctx);
     }
 
     /** {@inheritDoc} */

@@ -1394,8 +1394,8 @@ public class PlatformUtils {
 
             byte[] objBytes = in.readByteArray(objEndPos - objStartPos);
 
-//            return isKey ? (T)new KeyCacheObjectImpl(obj, null, -1) : (T)new PlatformCacheObjectImpl(null, objBytes);
-            return (T)new KeyCacheObjectImpl(obj, objBytes, -1);
+//            return (T)new KeyCacheObjectImpl(obj, objBytes, -1);
+            return (T)new KeyCacheObjectImpl(obj, null, -1);
         }
         else {
             BinaryBuilderReader r = new BinaryBuilderReader(reader);

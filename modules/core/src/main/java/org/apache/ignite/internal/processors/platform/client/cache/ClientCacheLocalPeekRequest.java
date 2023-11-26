@@ -44,7 +44,7 @@ public class ClientCacheLocalPeekRequest extends ClientCacheKeyRequest {
         try {
             Object val = binaryCache(ctx).localPeek(key(), new CachePeekMode[] {CachePeekMode.ALL});
 
-            return new ClientObjectResponse(requestId(), val);
+            return new ClientObjectResponse(requestId(), val, binaryCache(ctx).context().cacheObjectContext());
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);

@@ -111,8 +111,8 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] rawBytes(GridKernalContext ctx) throws IgniteCheckedException {
-        return CacheObjectTransformerUtils.restoreIfNecessary(valBytes, ctx);
+    @Override public byte[] rawBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
+        return valueBytes(ctx);
     }
 
     /** {@inheritDoc} */

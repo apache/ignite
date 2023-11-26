@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cacheobject;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
@@ -64,13 +63,13 @@ public class PlatformCacheObjectImpl extends CacheObjectImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] rawBytes(GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public byte[] rawBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
         if (arr != null)
             return arr;
 
         assert valBytes != null;
 
-        return CacheObjectTransformerUtils.restoreIfNecessary(arr, ctx);
+        return CacheObjectTransformerUtils.restoreIfNecessary(arr, ctx.kernalContext());
     }
 
     /** {@inheritDoc} */

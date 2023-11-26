@@ -251,7 +251,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] rawBytes(GridKernalContext ctx) throws IgniteCheckedException {
+        @Override public byte[] rawBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
             throw new UnsupportedOperationException();
         }
 
