@@ -975,10 +975,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         final CacheConfiguration<Integer, Organization> cfg = new CacheConfiguration<>("Org" + "11");
         cfg.setAtomicityMode(mode);
-        final IgniteCache<Integer, Organization> cache = ig.getOrCreateCache(cfg).withKeepBinary()
-            .withAllowAtomicOpsInTx();
+        final IgniteCache<Integer, Organization> cache = ig.getOrCreateCache(cfg).withKeepBinary();
 
-        try (Transaction tx = ig.transactions().txStart()) {
+        Runnable r = () -> {
             for (int i = 0; i < 10; i++) {
 
                 cache.put(i, new Organization(i, "Organization-" + i));
@@ -989,8 +988,16 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                 if (i % 5 == 0)
                     cache.remove(i);
             }
-            tx.commit();
-        }
+        };
+
+        if (mode == CacheAtomicityMode.TRANSACTIONAL)
+            try (Transaction tx = ig.transactions().txStart()) {
+                r.run();
+
+                tx.commit();
+            }
+        else
+            r.run();
 
     }
 

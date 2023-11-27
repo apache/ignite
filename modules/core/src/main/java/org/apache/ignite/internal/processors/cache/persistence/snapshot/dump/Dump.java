@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -68,6 +69,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
@@ -103,6 +105,9 @@ public class Dump implements AutoCloseable {
      */
     private final ConcurrentMap<Long, ByteBuffer> thLocBufs = new ConcurrentHashMap<>();
 
+    /** If {@code true} then compress partition files. */
+    private final boolean comprParts;
+
     /**
      * @param dumpDir Dump directory.
      * @param keepBinary If {@code true} then keep read entries in binary form.
@@ -130,6 +135,7 @@ public class Dump implements AutoCloseable {
         this.keepBinary = keepBinary;
         this.cctx = standaloneKernalContext(dumpDir, log);
         this.raw = raw;
+        this.comprParts = metadata.get(0).compressPartitions();
     }
 
     /**
@@ -225,14 +231,16 @@ public class Dump implements AutoCloseable {
      * @return Dump iterator.
      */
     public List<Integer> partitions(String node, int group) {
+        String suffix = comprParts ? DUMP_FILE_EXT + ZIP_SUFFIX : DUMP_FILE_EXT;
+
         File[] parts = dumpGroupDirectory(node, group)
-            .listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(DUMP_FILE_EXT));
+            .listFiles(f -> f.getName().startsWith(PART_FILE_PREFIX) && f.getName().endsWith(suffix));
 
         if (parts == null)
             return Collections.emptyList();
 
         return Arrays.stream(parts)
-            .map(partFile -> Integer.parseInt(partFile.getName().replace(PART_FILE_PREFIX, "").replace(DUMP_FILE_EXT, "")))
+            .map(partFile -> Integer.parseInt(partFile.getName().replace(PART_FILE_PREFIX, "").replace(suffix, "")))
             .collect(Collectors.toList());
     }
 
@@ -242,12 +250,12 @@ public class Dump implements AutoCloseable {
      * @return Dump iterator.
      */
     public DumpedPartitionIterator iterator(String node, int group, int part) {
-        FileIOFactory ioFactory = new RandomAccessFileIOFactory();
+        FileIOFactory ioFactory = comprParts ? new UnzipFileIOFactory() : new RandomAccessFileIOFactory();
 
         FileIO dumpFile;
 
         try {
-            dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, group), PART_FILE_PREFIX + part + DUMP_FILE_EXT));
+            dumpFile = ioFactory.create(new File(dumpGroupDirectory(node, group), dumpPartFileName(part, comprParts)));
         }
         catch (IOException e) {
             throw new RuntimeException(e);
@@ -315,6 +323,15 @@ public class Dump implements AutoCloseable {
                 partKeys = null;
             }
         };
+    }
+
+    /**
+     * @param part Partition number.
+     * @param compressed If {@code true} then compressed partition file.
+     * @return Dump partition file name.
+     */
+    public static String dumpPartFileName(int part, boolean compressed) {
+        return PART_FILE_PREFIX + part + DUMP_FILE_EXT + (compressed ? ZIP_SUFFIX : "");
     }
 
     /** @return Root dump directory. */

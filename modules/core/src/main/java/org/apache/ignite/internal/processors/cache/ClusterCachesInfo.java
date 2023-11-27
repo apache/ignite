@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,6 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cluster.ClusterNode;
@@ -65,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSn
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
+import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -87,11 +91,13 @@ import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CacheView;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_MIXED_CACHE_GROUPS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CLUSTER_READ_ONLY_MODE_ERROR_MSG_FORMAT;
 import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.validateIncomingConfiguration;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
 
 /**
@@ -1128,6 +1134,12 @@ public class ClusterCachesInfo {
             }
         }
 
+        if (containsInvalidFileNameChars(ccfg)) {
+            err = new IgniteCheckedException("Cache start failed. Cache or group name contains the characters " +
+                "that are not allowed in file names [cache=" + cacheName +
+                (ccfg.getGroupName() == null ? "" : ", group=" + ccfg.getGroupName()) + ']');
+        }
+
         if (err != null) {
             if (persistedCfgs)
                 res.errs.add(err);
@@ -1191,6 +1203,21 @@ public class ClusterCachesInfo {
         exchangeActions.addCacheToStart(req, startDesc);
 
         return true;
+    }
+
+    /** @return {@code True} if cache directory contains the characters that are not allowed in file names. */
+    private boolean containsInvalidFileNameChars(CacheConfiguration<?, ?> ccfg) {
+        if (!CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration()))
+            return false;
+
+        String expDir = cacheDirName(ccfg);
+
+        try {
+            return !expDir.equals(Paths.get(expDir).toFile().getName());
+        }
+        catch (InvalidPathException ignored) {
+            return true;
+        }
     }
 
     /**
@@ -2566,9 +2593,10 @@ public class ClusterCachesInfo {
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "cacheMode", "Cache mode",
             cfg.getCacheMode(), startCfg.getCacheMode(), true);
 
-//        https://issues.apache.org/jira/browse/IGNITE-12622
-//        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "atomicityMode", "Atomicity mode",
-//            attr1.atomicityMode(), attr2.atomicityMode(), true);
+        if (!IgniteSystemProperties.getBoolean(IGNITE_ALLOW_MIXED_CACHE_GROUPS) // TODO https://issues.apache.org/jira/browse/IGNITE-12622
+            && !DataStructuresProcessor.isDataStructureCache(cfg.getName())) // TODO https://issues.apache.org/jira/browse/IGNITE-20623
+            CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "atomicityMode", "Atomicity mode",
+                attr1.atomicityMode(), attr2.atomicityMode(), true);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "affinity", "Affinity function",
             attr1.cacheAffinityClassName(), attr2.cacheAffinityClassName(), true);

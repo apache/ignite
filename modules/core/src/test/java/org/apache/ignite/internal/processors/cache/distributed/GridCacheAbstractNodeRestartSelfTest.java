@@ -721,7 +721,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                     UUID locNodeId = ignite.cluster().localNode().id();
 
-                    IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME).withAllowAtomicOpsInTx();
+                    IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME);
 
                     List<Integer> keys = new ArrayList<>(txKeys);
 
@@ -865,7 +865,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                     UUID locNodeId = ignite.cluster().localNode().id();
 
-                    IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME).withAllowAtomicOpsInTx();
+                    IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME);
 
                     List<Integer> keys = new ArrayList<>(txKeys);
 

@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.compute.ComputePermissionCheckTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
+import org.apache.ignite.internal.util.lang.ConsumerX;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.lang.gridfunc.AtomicIntegerFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.RunnableWrapperClosure;
@@ -774,12 +775,6 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
     private interface SupplierX<T> {
         /** */
         T get() throws Exception;
-    }
-
-    /** */
-    private interface ConsumerX<T> {
-        /** */
-        void accept(T t) throws Exception;
     }
 
     /** */

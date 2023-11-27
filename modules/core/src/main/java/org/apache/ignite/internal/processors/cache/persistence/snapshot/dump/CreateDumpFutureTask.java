@@ -72,8 +72,8 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
 import static org.apache.ignite.internal.processors.cache.GridLocalConfigManager.cacheDataFilename;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DUMP_LOCK;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump.dumpPartFileName;
 
 /**
  * Task creates cache group dump.
@@ -93,6 +93,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
     /** */
     private final FileIOFactory ioFactory;
+
+    /** If {@code true} then compress partition files. */
+    private final boolean compress;
 
     /** */
     private final BasicRateLimiter transferRateLimiter;
@@ -122,8 +125,10 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
      * @param reqId Snapshot operation request ID.
      * @param dumpName Dump name.
      * @param ioFactory IO factory.
+     * @param transferRateLimiter Rate limiter.
      * @param snpSndr Snapshot sender.
      * @param parts Parts to dump.
+     * @param compress If {@code true} then compress partition files.
      */
     public CreateDumpFutureTask(
         GridCacheSharedContext<?, ?> cctx,
@@ -134,7 +139,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         FileIOFactory ioFactory,
         BasicRateLimiter transferRateLimiter,
         SnapshotSender snpSndr,
-        Map<Integer, Set<Integer>> parts
+        Map<Integer, Set<Integer>> parts,
+        boolean compress
     ) {
         super(
             cctx,
@@ -146,7 +152,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         );
 
         this.dumpDir = dumpDir;
-        this.ioFactory = ioFactory;
+        this.ioFactory = compress ? new WriteOnlyZipFileIOFactory() : ioFactory;
+        this.compress = compress;
         this.transferRateLimiter = transferRateLimiter;
     }
 
@@ -366,7 +373,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     private PartitionDumpContext dumpContext(int grp, int part) {
         return dumpCtxs.computeIfAbsent(
             toLong(grp, part),
-            key -> new PartitionDumpContext(cctx.kernalContext().cache().cacheGroup(grp), part)
+            key -> new PartitionDumpContext(cctx.kernalContext().cache().cacheGroup(grp), part, thLocBufs)
         );
     }
 
@@ -431,8 +438,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         /**
          * @param gctx Group context.
          * @param part Partition id.
+         * @param thLocBufs Thread local buffers.
          */
-        public PartitionDumpContext(CacheGroupContext gctx, int part) {
+        public PartitionDumpContext(CacheGroupContext gctx, int part, ConcurrentMap<Long, ByteBuffer> thLocBufs) {
             assert gctx != null;
 
             try {
@@ -449,7 +457,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 for (int cache : gctx.cacheIds())
                     changed.put(cache, new GridConcurrentHashSet<>());
 
-                File dumpFile = new File(groupDirectory(gctx), PART_FILE_PREFIX + part + DUMP_FILE_EXT);
+                File dumpFile = new File(groupDirectory(gctx), dumpPartFileName(part, compress));
 
                 if (!dumpFile.createNewFile())
                     throw new IgniteException("Dump file can't be created: " + dumpFile);
@@ -487,7 +495,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                     else if (val == null)
                         reasonToSkip = "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
                     else {
-                        write(cache, expireTime, key, val);
+                        write(cache, expireTime, key, val, ver);
 
                         changedCnt.increment();
                     }
@@ -531,7 +539,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             else if (changed.get(cache).contains(key))
                 written = false;
             else
-                write(cache, expireTime, key, val);
+                write(cache, expireTime, key, val, ver);
 
             if (log.isTraceEnabled()) {
                 log.trace("Iterator [" +
@@ -539,17 +547,18 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                     ", cache=" + cache +
                     ", part=" + part +
                     ", key=" + key +
-                    ", written=" + written + ']');
+                    ", written=" + written +
+                    ", ver=" + ver + ']');
             }
 
             return written;
         }
 
         /** */
-        private void write(int cache, long expireTime, KeyCacheObject key, CacheObject val) {
+        private void write(int cache, long expireTime, KeyCacheObject key, CacheObject val, GridCacheVersion ver) {
             synchronized (serializer) { // Prevent concurrent access to the dump file.
                 try {
-                    ByteBuffer buf = serializer.writeToBuffer(cache, expireTime, key, val, cctx.cacheObjectContext(cache));
+                    ByteBuffer buf = serializer.writeToBuffer(cache, expireTime, key, val, ver, cctx.cacheObjectContext(cache));
 
                     transferRateLimiter.acquire(buf.limit());
 

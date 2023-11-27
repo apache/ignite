@@ -467,21 +467,18 @@ public class CommandUtils {
 
         visitCommandParams(
             cmd.argClass(),
-            fld -> res.compareAndSet(false,
-                !fld.getAnnotation(Argument.class).description().isEmpty() ||
-                    fld.isAnnotationPresent(EnumDescription.class)
-            ),
-            fld -> res.compareAndSet(false,
-                !fld.getAnnotation(Argument.class).description().isEmpty() ||
-                    fld.isAnnotationPresent(EnumDescription.class)
-            ),
-            (argGrp, flds) -> flds.forEach(fld -> res.compareAndSet(false,
-                !fld.getAnnotation(Argument.class).description().isEmpty() ||
-                    fld.isAnnotationPresent(EnumDescription.class)
-            ))
+            fld -> res.compareAndSet(false, hasDescription(fld)),
+            fld -> res.compareAndSet(false, hasDescription(fld)),
+            (argGrp, flds) -> flds.forEach(fld -> res.compareAndSet(false, hasDescription(fld)))
         );
 
         return res.get();
+    }
+
+    /** @return {@code True} if argument has description. */
+    public static boolean hasDescription(Field fld) {
+        return !fld.getAnnotation(Argument.class).description().isEmpty() ||
+            fld.isAnnotationPresent(EnumDescription.class);
     }
 
     /**
@@ -497,7 +494,7 @@ public class CommandUtils {
     }
 
     /** */
-    public static Collection<GridClientNode> nodeOrNull(@Nullable UUID nodeId, Collection<GridClientNode> nodes) {
+    public static @Nullable Collection<GridClientNode> nodeOrNull(@Nullable UUID nodeId, Collection<GridClientNode> nodes) {
         return nodeId == null ? null : node(nodeId, nodes);
     }
 

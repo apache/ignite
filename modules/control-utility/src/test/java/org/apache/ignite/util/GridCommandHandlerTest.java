@@ -2053,14 +2053,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         String testOutStr = testOut.toString();
 
         // Ignite instase 1 can be logged only in arguments list.
-        boolean isInstanse1Found = Arrays.stream(testOutStr.split("\n"))
+        boolean isInstance1Found = Arrays.stream(testOutStr.split("\n"))
                                         .filter(s -> s.contains("Arguments:"))
                                         .noneMatch(s -> s.contains(getTestIgniteInstanceName() + "1"));
 
         assertTrue(testOutStr, testOutStr.contains("Node not found for consistent ID:"));
 
         if (commandHandler.equals(CLI_CMD_HND))
-            assertFalse(testOutStr, isInstanse1Found);
+            assertFalse(testOutStr, isInstance1Found);
     }
 
     /** */
@@ -3949,6 +3949,27 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         startGrid(0);
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--warm-up", "--stop"));
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testCacheIdleVerifyLogLevelDebug() throws Exception {
+        IgniteEx ignite = startGrids(2);
+
+        ignite.cluster().state(ACTIVE);
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+                .setAffinity(new RendezvousAffinityFunction(false, 32))
+                .setBackups(1));
+
+        cache.put("key", "value");
+
+        injectTestSystemOut();
+
+        setLoggerDebugLevel();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+        assertContains(log, testOut.toString(), "no conflicts have been found");
     }
 
     /**

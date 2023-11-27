@@ -367,6 +367,11 @@ public class CdcMain implements Runnable {
 
                 return cfg;
             }
+
+            /** {@inheritDoc} */
+            @Override public String igniteInstanceName() {
+                return config().getIgniteInstanceName();
+            }
         };
 
         kctx.resource().setSpringContext(ctx);
@@ -484,6 +489,7 @@ public class CdcMain implements Runnable {
                 .log(log)
                 .binaryMetadataFileStoreDir(binaryMeta)
                 .marshallerMappingFileStoreDir(marshaller)
+                .igniteConfigurationModifier((cfg) -> cfg.setPluginProviders(igniteCfg.getPluginProviders()))
                 .keepBinary(cdcCfg.isKeepBinary())
                 .filesOrDirs(segment.toFile())
                 .addFilter((type, ptr) -> type == DATA_RECORD_V2 || type == CDC_DATA_RECORD);

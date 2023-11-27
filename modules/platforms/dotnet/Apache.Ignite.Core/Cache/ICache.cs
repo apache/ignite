@@ -85,12 +85,6 @@ namespace Apache.Ignite.Core.Cache
         bool IsKeepBinary { get; }
 
         /// <summary>
-        /// Gets a value indicating whether to allow use atomic operations in transactions.
-        /// </summary>
-        [Obsolete("Not supported, will be removed in future releases.")]
-        bool IsAllowAtomicOpsInTx { get; }
-
-        /// <summary>
         /// Get another cache instance with read-through and write-through behavior disabled.
         /// </summary>
         /// <returns>Cache with read-through and write-through behavior disabled.</returns>
@@ -116,14 +110,6 @@ namespace Apache.Ignite.Core.Cache
         /// <typeparam name="TV1">Value type in binary mode.</typeparam>
         /// <returns>Cache instance with binary mode enabled.</returns>
         ICache<TK1, TV1> WithKeepBinary<TK1, TV1>();
-
-        /// <summary>
-        /// Get another cache instance with operations allowed in transactions.
-        /// Only atomic caches need this. Transactional caches already available for transactions.
-        /// </summary>
-        /// <returns>Cache allowed to use in transactions.</returns>
-        [Obsolete("Not supported, will be removed in future releases.")]
-        ICache<TK, TV> WithAllowAtomicOpsInTx();
 
         /// <summary>
         /// Executes <see cref="LocalLoadCache"/> on all cache nodes.

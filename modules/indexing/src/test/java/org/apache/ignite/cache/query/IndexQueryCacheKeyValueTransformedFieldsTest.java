@@ -20,8 +20,8 @@ package org.apache.ignite.cache.query;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.transform.TestCacheObjectTransformerManagerAdapter;
 import org.apache.ignite.internal.processors.cache.transform.TestCacheObjectTransformerPluginProvider;
+import org.apache.ignite.internal.processors.cache.transform.TestCacheObjectTransformerProcessorAdapter;
 
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
 
@@ -36,7 +36,7 @@ public class IndexQueryCacheKeyValueTransformedFieldsTest extends IndexQueryCach
     /**
      * Transforms each object with a random shift.
      */
-    protected static final class RandomShiftCacheObjectTransformer extends TestCacheObjectTransformerManagerAdapter {
+    protected static final class RandomShiftCacheObjectTransformer extends TestCacheObjectTransformerProcessorAdapter {
         /** {@inheritDoc} */
         @Override public ByteBuffer transform(ByteBuffer original) {
             ByteBuffer transformed = ByteBuffer.wrap(new byte[original.remaining() + 5]);

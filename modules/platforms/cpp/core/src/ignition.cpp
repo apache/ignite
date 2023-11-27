@@ -156,11 +156,13 @@ namespace ignite
                 opts.push_back(CopyChars("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED"));
                 opts.push_back(CopyChars("--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED"));
                 opts.push_back(CopyChars("--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-opens=java.base/sun.util.calendar=ALL-UNNAMED"));
                 opts.push_back(CopyChars("--add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED"));
                 opts.push_back(CopyChars("--add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED"));
                 opts.push_back(CopyChars("--add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED"));
                 opts.push_back(CopyChars("--add-opens=java.base/java.io=ALL-UNNAMED"));
                 opts.push_back(CopyChars("--add-opens=java.base/java.nio=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-opens=java.base/java.net=ALL-UNNAMED"));
                 opts.push_back(CopyChars("--add-opens=java.base/java.util=ALL-UNNAMED"));
                 opts.push_back(CopyChars("--add-opens=java.base/java.util.concurrent=ALL-UNNAMED"));
                 opts.push_back(CopyChars("--add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED"));

@@ -1092,6 +1092,21 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Gets all plugin providers.
+     *
+     * @param cfg Configuration.
+     * @param includeClsPath Include classpath plugins on empty config.
+     * @return Plugins.
+     */
+    public static List<PluginProvider> allPluginProviders(IgniteConfiguration cfg, boolean includeClsPath) {
+        return cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0 ?
+            Arrays.asList(cfg.getPluginProviders()) :
+            includeClsPath ?
+                U.allPluginProviders() :
+                Collections.emptyList();
+    }
+
+    /**
      * @param svcCls Service class to load.
      * @param <S> Type of loaded interfaces.
      * @return Lazy iterable structure over loaded class implementations.

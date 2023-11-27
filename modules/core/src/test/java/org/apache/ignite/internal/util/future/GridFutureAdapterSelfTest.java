@@ -444,7 +444,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Completes the future exceptionally, if {@code res} is the instanse of {@link Throwable}.
+     * Completes the future exceptionally, if {@code res} is the instance of {@link Throwable}.
      *
      * @param fut Future.
      * @param res Result.

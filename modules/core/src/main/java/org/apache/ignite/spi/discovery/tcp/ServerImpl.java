@@ -114,7 +114,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -4317,23 +4316,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                             return;
                         }
                         else {
-                            String authFailedMsg = null;
-
                             if (!(subj instanceof Serializable)) {
                                 // Node has not pass authentication.
                                 LT.warn(log, "Authentication subject is not Serializable [nodeId=" + node.id() +
                                     ", addrs=" + U.addressesAsString(node) + ']');
 
-                                authFailedMsg = "Authentication subject is not serializable";
-                            }
-                            else if (node.clientRouterNodeId() == null &&
-                                !subj.systemOperationAllowed(SecurityPermission.JOIN_AS_SERVER))
-                                authFailedMsg = "Node is not authorised to join as a server node";
-
-                            if (authFailedMsg != null) {
                                 // Always output in debug.
                                 if (log.isDebugEnabled())
-                                    log.debug(authFailedMsg + " [nodeId=" + node.id() +
+                                    log.debug("Authentication subject is not serializable [nodeId=" + node.id() +
                                         ", addrs=" + U.addressesAsString(node));
 
                                 try {

@@ -111,7 +111,7 @@ public class IgniteConcurrentCacheDumpTest extends AbstractCacheDumpTest {
 
             assertTrue(initLatch.await(30, TimeUnit.SECONDS));
 
-            createDump(srv, DMP_NAME);
+            createDump(srv);
 
             canceled.set(true);
 

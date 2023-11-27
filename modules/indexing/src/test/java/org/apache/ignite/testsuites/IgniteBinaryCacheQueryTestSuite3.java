@@ -87,6 +87,7 @@ import org.apache.ignite.internal.processors.cache.index.BasicJavaTypesIndexTest
 import org.apache.ignite.internal.processors.cache.index.BasicSqlTypesIndexTest;
 import org.apache.ignite.internal.processors.cache.index.DateIndexKeyTypeTest;
 import org.apache.ignite.internal.processors.cache.index.H2ConnectionLeaksSelfTest;
+import org.apache.ignite.internal.processors.cache.index.H2ConnectionSettingsTest;
 import org.apache.ignite.internal.processors.cache.index.H2RowCachePageEvictionTest;
 import org.apache.ignite.internal.processors.cache.index.H2RowCacheSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2RowExpireTimeIndexSelfTest;
@@ -255,6 +256,7 @@ import org.junit.runners.Suite;
     GridCacheQuerySqlFieldInlineSizeSelfTest.class,
     IgniteSqlParameterizedQueryTest.class,
     H2ConnectionLeaksSelfTest.class,
+    H2ConnectionSettingsTest.class,
     IgniteCheckClusterStateBeforeExecuteQueryTest.class,
     OptimizedMarshallerIndexNameTest.class,
     SqlSystemViewsSelfTest.class,

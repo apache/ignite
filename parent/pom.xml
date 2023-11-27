@@ -49,7 +49,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
-        <revision>2.16.0-SNAPSHOT</revision>
+        <revision>2.17.0-SNAPSHOT</revision>
         <!-- Ignite version will be substituted with the flatten-maven-plugin and used as
             a version dependency for Ignite extensions. -->
         <ignite.version>${revision}</ignite.version>
@@ -75,7 +75,7 @@
         <bouncycastle.version>1.69</bouncycastle.version>
         <commons.beanutils.bundle.version>1.9.2_1</commons.beanutils.bundle.version>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
-        <commons.codec.version>1.15</commons.codec.version>
+        <commons.codec.version>1.16.0</commons.codec.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <commons.lang.version>2.6</commons.lang.version>
         <commons.io.version>2.11.0</commons.io.version>
@@ -103,7 +103,7 @@
         <javax.cache.version>1.0.0</javax.cache.version>
         <jboss.rmi.version>1.0.6.Final</jboss.rmi.version>
         <jetbrains.annotations.version>16.0.3</jetbrains.annotations.version>
-        <jetty.version>9.4.52.v20230823</jetty.version>
+        <jetty.version>9.4.53.v20231009</jetty.version>
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
         <jna.version>4.5.2</jna.version>
@@ -130,7 +130,7 @@
         <netlibjava.version>1.1.2</netlibjava.version>
         <oro.bundle.version>2.0.8_6</oro.bundle.version>
         <paho.version>1.0.2</paho.version>
-        <postgres.connector.version>42.5.0</postgres.connector.version>
+        <postgres.connector.version>42.6.0</postgres.connector.version>
         <scala210.jline.version>2.10.7</scala210.jline.version>
         <scala210.library.version>2.10.7</scala210.library.version>
         <scala.library.version>2.11.12</scala.library.version>
@@ -147,7 +147,7 @@
         <yammer.metrics.core.version>2.2.0</yammer.metrics.core.version>
         <yardstick.version>0.8.3</yardstick.version>
         <zkclient.version>0.5</zkclient.version>
-        <zookeeper.version>3.6.3</zookeeper.version>
+        <zookeeper.version>3.8.3</zookeeper.version>
         <zstd.version>1.5.5-5</zstd.version>
         <opencensus.version>0.22.0</opencensus.version>
         <commons.lang3.version>3.9</commons.lang3.version>
@@ -918,7 +918,18 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <argLine>--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED --add-opens=java.base/jdk.internal.access=ALL-UNNAMED --illegal-access=permit</argLine>
+                            <argLine>
+                                --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
+                                --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
+                                --add-exports=java.base/jdk.internal.loader=ALL-UNNAMED
+                                --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+                                --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+                                --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+                                --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
+                                --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
+                                --add-opens=java.base/jdk.internal.loader=ALL-UNNAMED
+                                --illegal-access=permit
+                            </argLine>
                         </configuration>
                     </plugin>
 
@@ -986,7 +997,11 @@
                                 <arg>--add-exports</arg>
                                 <arg>java.base/jdk.internal.misc=ALL-UNNAMED</arg>
                                 <arg>--add-exports</arg>
+                                <arg>java.base/jdk.internal.loader=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
                                 <arg>java.base/sun.nio.ch=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.base/sun.net.util=ALL-UNNAMED</arg>
                                 <arg>--add-exports</arg>
                                 <arg>java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</arg>
                                 <arg>--add-exports</arg>
@@ -1013,14 +1028,19 @@
                         <configuration>
                             <argLine>
                                 --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
+                                --add-opens=java.base/jdk.internal.loader=ALL-UNNAMED
                                 --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
+                                --add-opens=java.base/sun.net.util=ALL-UNNAMED
                                 --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+                                --add-opens=java.base/sun.nio.fs=ALL-UNNAMED
+                                --add-opens=java.base/sun.util.calendar=ALL-UNNAMED
                                 --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
                                 --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
                                 --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
                                 --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
                                 --add-opens=java.base/java.io=ALL-UNNAMED
                                 --add-opens=java.base/java.nio=ALL-UNNAMED
+                                --add-opens=java.base/java.net=ALL-UNNAMED
                                 --add-opens=java.base/java.util=ALL-UNNAMED
                                 --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
                                 --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
@@ -1032,6 +1052,7 @@
                                 --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
                                 --add-opens=java.base/java.time=ALL-UNNAMED
                                 --add-opens=java.base/java.text=ALL-UNNAMED
+                                --add-opens=java.base/java.security=ALL-UNNAMED
                                 --add-opens=java.management/sun.management=ALL-UNNAMED
                                 --add-opens java.desktop/java.awt.font=ALL-UNNAMED
                             </argLine>

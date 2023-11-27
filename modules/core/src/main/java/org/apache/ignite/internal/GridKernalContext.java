@@ -24,6 +24,7 @@ import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -206,6 +207,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Maintenance registry.
      */
     public MaintenanceRegistry maintenanceRegistry();
+
+    /**
+     * Gets transformation processor.
+     *
+     * @return Transformation processor.
+     */
+    public CacheObjectTransformerProcessor transformer();
 
     /**
      * Gets system view manager.

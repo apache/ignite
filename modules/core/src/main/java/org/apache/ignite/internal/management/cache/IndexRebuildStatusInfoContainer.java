@@ -23,6 +23,7 @@ import java.io.ObjectOutput;
 import java.util.Comparator;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -42,6 +43,12 @@ public class IndexRebuildStatusInfoContainer extends IgniteDataTransferObject {
     /** Cache name. */
     private String cacheName;
 
+    /** */
+    private int indexBuildPartitionsLeftCount;
+
+    /** Local partitions count. */
+    private int totalPartitionsCount;
+
     /**
      * Empty constructor required for Serializable.
      */
@@ -50,23 +57,31 @@ public class IndexRebuildStatusInfoContainer extends IgniteDataTransferObject {
     }
 
     /** */
-    public IndexRebuildStatusInfoContainer(CacheConfiguration cfg) {
-        assert cfg != null;
+    public IndexRebuildStatusInfoContainer(GridCacheContext<?, ?> cctx) {
+        assert cctx != null;
+
+        CacheConfiguration<?, ?> cfg = cctx.config();
 
         groupName = cfg.getGroupName() == null ? EMPTY_GROUP_NAME : cfg.getGroupName();
         cacheName = cfg.getName();
+        indexBuildPartitionsLeftCount = cctx.cache().metrics0().getIndexBuildPartitionsLeftCount();
+        totalPartitionsCount = cctx.topology().localPartitions().size();
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, groupName);
         U.writeString(out, cacheName);
+        out.writeInt(indexBuildPartitionsLeftCount);
+        out.writeInt(totalPartitionsCount);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         groupName = U.readString(in);
         cacheName = U.readString(in);
+        indexBuildPartitionsLeftCount = in.readInt();
+        totalPartitionsCount = in.readInt();
     }
 
     /** {@inheritDoc} */
@@ -99,10 +114,31 @@ public class IndexRebuildStatusInfoContainer extends IgniteDataTransferObject {
     }
 
     /**
+     * @return Total local node partitions count.
+     */
+    public int totalPartitionsCount() {
+        return totalPartitionsCount;
+    }
+
+    /**
+     * @return The number of local node partitions that remain to be processed to complete indexing.
+     */
+    public int indexBuildPartitionsLeftCount() {
+        return indexBuildPartitionsLeftCount;
+    }
+
+    /**
      * @return default string object representation without {@code IndexRebuildStatusInfoContainer} and brackets.
      */
     @Override public String toString() {
-        String dfltImpl = S.toString(IndexRebuildStatusInfoContainer.class, this);
+        float progress = (float)(totalPartitionsCount - indexBuildPartitionsLeftCount) / totalPartitionsCount;
+
+        String dfltImpl = S.toString(
+            IndexRebuildStatusInfoContainer.class,
+            this,
+            "progress",
+            (int)(Math.max(0, progress) * 100) + "%"
+        );
 
         return dfltImpl.substring(IndexRebuildStatusInfoContainer.class.getSimpleName().length() + 2,
             dfltImpl.length() - 1);

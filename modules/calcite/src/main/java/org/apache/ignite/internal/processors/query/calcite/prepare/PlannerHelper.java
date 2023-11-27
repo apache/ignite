@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
@@ -31,6 +32,7 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
@@ -73,8 +75,9 @@ public class PlannerHelper {
             // Convert to Relational operators graph.
             RelRoot root = planner.rel(sqlNode);
 
-            planner.setDisabledRules(HintUtils.options(root.rel, extractRootHints(root.rel),
-                HintDefinition.DISABLE_RULE));
+            root = addExternalOptions(root);
+
+            planner.setDisabledRules(HintUtils.options(root.rel, extractRootHints(root.rel), HintDefinition.DISABLE_RULE));
 
             RelNode rel = root.rel;
 
@@ -124,6 +127,34 @@ public class PlannerHelper {
 
             throw ex;
         }
+    }
+
+    /**
+     * Add external options as hints to {@code root.rel}.
+     *
+     * @return New or old root node.
+     */
+    private static RelRoot addExternalOptions(RelRoot root) {
+        if (!Commons.context(root.rel).isForcedJoinOrder())
+            return root;
+
+        if (!(root.rel instanceof Hintable)) {
+            Commons.context(root.rel).logger().warning("Unable to set hint " + HintDefinition.ENFORCE_JOIN_ORDER
+                + " passed as an external parameter to the root relation operator ["
+                + RelOptUtil.toString(HintUtils.noInputsRelWrap(root.rel)).trim()
+                + "] because it is not a Hintable.");
+
+            return root;
+        }
+
+        List<RelHint> newHints = Stream.concat(HintUtils.allRelHints(root.rel).stream(),
+            Stream.of(RelHint.builder(HintDefinition.ENFORCE_JOIN_ORDER.name()).build())).collect(Collectors.toList());
+
+        root = root.withRel(((Hintable)root.rel).withHints(newHints));
+
+        RelOptUtil.propagateRelHints(root.rel, false);
+
+        return root;
     }
 
     /**

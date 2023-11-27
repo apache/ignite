@@ -216,6 +216,9 @@ public enum ClientOperation {
     /** Get service descriptors. */
     SERVICE_GET_DESCRIPTOR(7002),
 
+    /** Get service topology. */
+    SERVICE_GET_TOPOLOGY(7003),
+
     /** Get or create an AtomicLong by name. */
     ATOMIC_LONG_CREATE(9000),
 

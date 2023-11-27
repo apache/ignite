@@ -22,6 +22,7 @@ from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
+from ignitetest.services.utils.jvm_utils import java_major_version
 from ignitetest.services.utils.ssl.ssl_params import is_ssl_enabled
 from ignitetest.utils import cluster, ignite_versions, ignore_if
 from ignitetest.utils.ignite_test import IgniteTest
@@ -51,6 +52,10 @@ class PersistenceUpgradeTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.persistence_upgrade_test."
                             "DataLoaderAndCheckerApplication"
         )
+
+        java_version = service.java_version()
+        if java_major_version(java_version) > 11:
+            return f"Skipped on java {java_version}"
 
         for version in versions:
             service.config = IgniteConfiguration(

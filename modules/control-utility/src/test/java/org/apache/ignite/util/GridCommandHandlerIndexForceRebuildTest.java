@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFuture;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -283,37 +285,6 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
         assertTrue(lsnr.check());
 
         removeLogListener(grid(LAST_NODE_NUM), lsnr);
-    }
-
-    /**
-     * Checks two arguments in the group are not allowed.
-     */
-    @Test
-    public void testInvalidArgumentGroups() {
-        injectTestSystemOut();
-
-        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--cache", "indexes_force_rebuild",
-                "--node-ids", grid(LAST_NODE_NUM).localNode().id().toString() + ',' + grid(0).localNode().id().toString(),
-                "--node-id", grid(LAST_NODE_NUM).localNode().id().toString(),
-                "--cache-names", CACHE_NAME_NO_GRP),
-            "Only one of [--node-ids, --all-nodes, --node-id] allowed");
-
-        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--cache", "indexes_force_rebuild",
-                "--node-ids", grid(LAST_NODE_NUM).localNode().id().toString() + ',' + grid(0).localNode().id().toString(),
-                "--all-nodes",
-                "--cache-names", CACHE_NAME_NO_GRP),
-            "Only one of [--node-ids, --all-nodes, --node-id] allowed");
-
-        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--cache", "indexes_force_rebuild",
-                "--all-nodes",
-                "--node-id", grid(LAST_NODE_NUM).localNode().id().toString(),
-                "--cache-names", CACHE_NAME_NO_GRP),
-            "Only one of [--node-ids, --all-nodes, --node-id] allowed");
-
-        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--cache", "indexes_force_rebuild",
-                "--node-id", grid(LAST_NODE_NUM).localNode().id().toString(),
-                "--cache-names", CACHE_NAME_NO_GRP, "--group-names", CACHE_NAME_NO_GRP),
-            "Only one of [--group-names, --cache-names] allowed");
     }
 
     /**
@@ -730,7 +701,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
         assertContains(
             log,
             outputStr,
-            "WARNING: These caches were not found:" + U.nl() + makeStringListWithIndent(cacheNames)
+            CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND + U.nl() + makeStringListWithIndent(cacheNames)
         );
     }
 
@@ -744,7 +715,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
         assertContains(
             log,
             outputStr,
-            "WARNING: These cache groups were not found:" + U.nl() + makeStringListWithIndent(cacheGrps)
+            CacheIndexesForceRebuildCommand.PREF_GROUPS_NOT_FOUND + U.nl() + makeStringListWithIndent(cacheGrps)
         );
     }
 
@@ -760,20 +731,24 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     /**
      * Makes formatted text for given caches.
      *
+     * @param header Output header.
      * @param cacheGroputToNames Cache groups mapping to non-existing cache names.
-     * @return Text for CLI print output for given caches.
+     * @return CLI output pattern for given caches.
      */
-    private static String makeStringListForCacheGroupsAndNames(Map<String, List<String>> cacheGroputToNames) {
-        SB sb = new SB();
+    private static Pattern makePatternForCacheGroupsAndNames(String header, Map<String, List<String>> cacheGroputToNames) {
+        GridStringBuilder sb = new SB(header).a("\\n");
 
         for (Map.Entry<String, List<String>> entry : cacheGroputToNames.entrySet()) {
             String cacheGrp = entry.getKey();
 
             for (String cacheName : entry.getValue())
-                sb.a(INDENT).a("groupName=").a(cacheGrp).a(", cacheName=").a(cacheName).a(U.nl());
+                sb.a(INDENT)
+                    .a("groupName=").a(cacheGrp)
+                    .a(", cacheName=").a(cacheName)
+                    .a(", indexBuildPartitionsLeftCount=(\\d+), totalPartitionsCount=(\\d+), progress=(\\d+)%\\n");
         }
 
-        return sb.toString();
+        return Pattern.compile(sb.toString());
     }
 
     /**
@@ -783,13 +758,12 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      * @param cacheGroputToNames Cache groups mapping to non-existing cache names.
      */
     private static void validateOutputIndicesRebuildingInProgress(String outputStr, Map<String, List<String>> cacheGroputToNames) {
-        String caches = makeStringListForCacheGroupsAndNames(cacheGroputToNames);
-
-        assertContains(
-            log,
-            outputStr,
-            "WARNING: These caches have indexes rebuilding in progress:" + U.nl() + caches
+        Pattern pattern = makePatternForCacheGroupsAndNames(
+            "WARNING: These caches have indexes rebuilding in progress:",
+            cacheGroputToNames
         );
+
+        assertTrue(pattern.matcher(outputStr).find());
     }
 
     /**
@@ -799,13 +773,12 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      * @param cacheGroputToNames Cache groups mapping to non-existing cache names.
      */
     private void validateOutputIndicesRebuildWasStarted(String outputStr, Map<String, List<String>> cacheGroputToNames) {
-        String caches = makeStringListForCacheGroupsAndNames(cacheGroputToNames);
-
-        assertContains(
-            log,
-            outputStr,
-            "Indexes rebuild was started for these caches:" + U.nl() + caches
+        Pattern pattern = makePatternForCacheGroupsAndNames(
+            "Indexes rebuild was started for these caches:",
+            cacheGroputToNames
         );
+
+        assertTrue(pattern.matcher(outputStr).find());
     }
 
     /**
@@ -815,7 +788,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      * @param prefix    Prefix or header to search.
      * @param targetStr Target string to search after {@code prefix}.
      */
-    private static void validateMultiNodeOutput(String outputStr, String prefix, String targetStr) {
+    static void validateMultiNodeOutput(String outputStr, String prefix, String targetStr) {
         String[] lines = outputStr.split(U.nl());
 
         for (int i = 0, heraderIdx = -1; i < lines.length; ++i) {

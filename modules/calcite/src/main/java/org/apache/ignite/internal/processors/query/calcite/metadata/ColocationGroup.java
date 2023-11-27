@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.query.calcite.message.MarshalableMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MarshallingContext;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
@@ -120,16 +119,6 @@ public class ColocationGroup implements MarshalableMessage {
             return nodeIds.stream().map(Collections::singletonList).collect(Collectors.toList());
 
         return Collections.emptyList();
-    }
-
-    /**
-     * Prunes involved partitions (hence nodes, involved in query execution) on the basis of filter,
-     * its distribution, query parameters and original nodes mapping.
-     * @param rel Filter.
-     * @return Resulting nodes mapping.
-     */
-    public ColocationGroup prune(IgniteRel rel) {
-        return this; // TODO https://issues.apache.org/jira/browse/IGNITE-12455
     }
 
     /** */
@@ -236,16 +225,22 @@ public class ColocationGroup implements MarshalableMessage {
             List<List<UUID>> assignments = new ArrayList<>(this.assignments.size());
             Set<UUID> nodes = new HashSet<>();
 
-            if (F.isEmpty(parts))
+            if (parts == null)
                 return this;
 
-            for (int i = 0; i < this.assignments.size(); ++i) {
-                UUID first = Arrays.binarySearch(parts, i) >= 0 ? F.first(this.assignments.get(i)) : null;
+            if (parts.length > 0) {
+                for (int i = 0; i < this.assignments.size(); ++i) {
+                    UUID first = Arrays.binarySearch(parts, i) >= 0 ? F.first(this.assignments.get(i)) : null;
 
-                if (first != null)
-                    nodes.add(first);
+                    if (first != null)
+                        nodes.add(first);
 
-                assignments.add(first != null ? this.assignments.get(i) : Collections.emptyList());
+                    assignments.add(first != null ? this.assignments.get(i) : Collections.emptyList());
+                }
+            }
+            else {
+                for (int i = 0; i < this.assignments.size(); ++i)
+                    assignments.add(Collections.emptyList());
             }
 
             return new ColocationGroup(sourceIds, new ArrayList<>(nodes), assignments);

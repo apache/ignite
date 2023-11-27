@@ -21,6 +21,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,8 +46,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -117,9 +123,9 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
             assertThrows(null, () -> createDump(ign), IgniteException.class, EXISTS_ERR_MSG);
 
-            createDump(ign, DMP_NAME + 2);
+            createDump(ign, DMP_NAME + 2, null);
 
-            checkDump(ign, DMP_NAME + 2);
+            checkDump(ign, DMP_NAME + 2, false);
 
             if (persistence) {
                 assertThrows(null, () -> ign.snapshot().createSnapshot(DMP_NAME).get(), IgniteException.class, EXISTS_ERR_MSG);
@@ -142,11 +148,181 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
     /** */
     @Test
+    public void testZippedCacheDump() throws Exception {
+        snpPoolSz = 4;
+
+        try {
+            IgniteEx ign = startGridAndFillCaches();
+
+            createDump(ign, DMP_NAME, null, true);
+
+            checkDump(ign, DMP_NAME, true);
+
+            createDump(cli, DMP_NAME + 2, null, true);
+
+            checkDump(cli, DMP_NAME + 2, true);
+        }
+        finally {
+            snpPoolSz = 1;
+        }
+    }
+
+    /** */
+    @Test
+    public void testCacheDumpWithReadGroupFilter() throws Exception {
+        snpPoolSz = 4;
+
+        try {
+            IgniteEx ign = startGridAndFillCaches();
+
+            createDump(ign);
+
+            checkDump(
+                ign,
+                DMP_NAME,
+                new String[]{GRP},
+                new HashSet<>(Arrays.asList(CACHE_0, CACHE_1)),
+                0,
+                2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
+                0,
+                false,
+                false
+            );
+
+            checkDump(
+                ign,
+                DMP_NAME,
+                new String[]{DEFAULT_CACHE_NAME},
+                new HashSet<>(Arrays.asList(DEFAULT_CACHE_NAME)),
+                KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
+                0,
+                KEYS_CNT,
+                false,
+                false
+            );
+
+            checkDump(
+                ign,
+                DMP_NAME,
+                new String[]{DEFAULT_CACHE_NAME, GRP},
+                new HashSet<>(Arrays.asList(DEFAULT_CACHE_NAME, CACHE_0, CACHE_1)),
+                KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
+                2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
+                KEYS_CNT,
+                false,
+                false
+            );
+        }
+        finally {
+            snpPoolSz = 1;
+        }
+    }
+
+    /** */
+    @Test
+    public void testSkipCopies() throws Exception {
+        snpPoolSz = 4;
+
+        try {
+            IgniteEx ign = startGridAndFillCaches();
+
+            createDump(ign);
+
+            checkDump(
+                ign,
+                DMP_NAME,
+                null,
+                new HashSet<>(Arrays.asList(DEFAULT_CACHE_NAME, CACHE_0, CACHE_1)),
+                KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups),
+                2 * (KEYS_CNT + (onlyPrimary ? 0 : KEYS_CNT * backups)),
+                KEYS_CNT,
+                false,
+                false
+            );
+
+            checkDump(
+                ign,
+                DMP_NAME,
+                null,
+                new HashSet<>(Arrays.asList(DEFAULT_CACHE_NAME, CACHE_0, CACHE_1)),
+                KEYS_CNT,
+                2 * KEYS_CNT,
+                KEYS_CNT,
+                true,
+                false
+            );
+        }
+        finally {
+            snpPoolSz = 1;
+        }
+    }
+
+    /** */
+    @Test
+    public void testCacheDumpWithGroupFilter() throws Exception {
+        snpPoolSz = 4;
+
+        try {
+            IgniteEx ign = startGridAndFillCaches();
+
+            String name = DMP_NAME;
+
+            {
+                createDump(ign, name, Collections.singleton(DEFAULT_CACHE_NAME));
+
+                checkDumpWithCommand(ign, name, backups);
+
+                Dump dump = dump(ign, name);
+
+                List<Integer> grps = F.first(dump.metadata()).cacheGroupIds();
+
+                assertEquals(1, grps.size());
+                assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), (int)grps.get(0));
+            }
+
+            name = DMP_NAME + "2";
+
+            {
+                createDump(cli, name, Collections.singleton(GRP));
+
+                checkDumpWithCommand(ign, name, backups);
+
+                Dump dump = dump(ign, name);
+
+                List<Integer> grps = F.first(dump.metadata()).cacheGroupIds();
+
+                assertEquals(1, grps.size());
+                assertEquals(CU.cacheId(GRP), (int)grps.get(0));
+            }
+
+            name = DMP_NAME + "3";
+
+            {
+                createDump(cli, name, new HashSet<>(Arrays.asList(DEFAULT_CACHE_NAME, GRP)));
+
+                checkDumpWithCommand(ign, name, backups);
+
+                Dump dump = dump(ign, name);
+
+                List<Integer> grps = F.first(dump.metadata()).cacheGroupIds();
+
+                assertEquals(2, grps.size());
+                assertTrue(grps.contains(CU.cacheId(DEFAULT_CACHE_NAME)));
+                assertTrue(grps.contains(CU.cacheId(GRP)));
+            }
+        }
+        finally {
+            snpPoolSz = 1;
+        }
+    }
+
+    /** */
+    @Test
     public void testConcurrentDumpCreationThrows() throws Exception {
         doTestConcurrentOperations(ignite -> {
             assertThrows(
                 null,
-                () -> createDump(ignite, "other_dump"),
+                () -> createDump(ignite, "other_dump", null),
                 IgniteException.class,
                 "Create snapshot request has been rejected. The previous snapshot operation was not completed."
             );
@@ -282,7 +458,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             ((IgniteEx)node).context().cache().context().snapshotMgr().ioFactory(new DumpFailingFactory((IgniteEx)node, false));
         }
 
-        assertThrows(null, () -> ign.snapshot().createDump(DMP_NAME).get(), IgniteException.class, "Test error");
+        assertThrows(null, () -> ign.snapshot().createDump(DMP_NAME, null).get(), IgniteException.class, "Test error");
 
         checkDumpCleared(ign);
 
@@ -298,7 +474,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
         ign.context().cache().context().snapshotMgr().ioFactory(ioFactory);
 
-        assertThrows(null, () -> ign.snapshot().createDump(DMP_NAME).get(), IgniteException.class, "Test write error");
+        assertThrows(null, () -> ign.snapshot().createDump(DMP_NAME, null).get(), IgniteException.class, "Test write error");
 
         assertTrue(ioFactory.errorAfter.get() <= 0);
 

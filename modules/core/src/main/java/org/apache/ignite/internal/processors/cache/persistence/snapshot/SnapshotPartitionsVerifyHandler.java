@@ -76,6 +76,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cachePartitionFiles;
@@ -143,7 +144,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             Set<Integer> parts = meta.partitions().get(grpId) == null ? Collections.emptySet() :
                 new HashSet<>(meta.partitions().get(grpId));
 
-            for (File part : cachePartitionFiles(dir, meta.dump() ? DUMP_FILE_EXT : FILE_SUFFIX)) {
+            for (File part : cachePartitionFiles(dir,
+                (meta.dump() ? DUMP_FILE_EXT : FILE_SUFFIX) + (meta.compressPartitions() ? ZIP_SUFFIX : "")
+            )) {
                 int partId = partId(part.getName());
 
                 if (!parts.remove(partId))
@@ -406,7 +409,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 while (iter.hasNext()) {
                     DumpEntry e = iter.next();
 
-                    ctx.update((KeyCacheObject)e.key(), (CacheObject)e.value(), null);
+                    ctx.update((KeyCacheObject)e.key(), (CacheObject)e.value(), e.version());
 
                     size++;
                 }
