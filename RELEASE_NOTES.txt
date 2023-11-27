@@ -43,13 +43,13 @@ Ignite:
 * Fixed Java thin client socket#open timeout to ClientConfiguration#timeout property.
 * Fixed JavaNioAccess handling in JDK 14 and later.
 * Fixed MappedFile.map for JDK 14 and newer.
+* Fixed NPE during defragmentation OOM exception handling.
 * Fixed NPE during transaction recovery.
 * Fixed NPE on snapshot create operation for in-memory cluster.
 * Fixed StoredCacheData removing when a node filter is set.
 * Fixed WAL logging to an archived segment after node restart.
 * Fixed an issue when IgniteLock cannot be acquired after release on JDK 17.
 * Fixed an issue when TTL isn't set for entries inserted with "insert from select" query.
-* Fixed NPE during defragmentation OOM exception handling.
 * Fixed an issue when a transaction will never become finished on timeout when deadlock detection is disabled.
 * Fixed an issue where continuous queries could produce excessive memory usage.
 * Fixed assertion error in case of empty SQL query.
