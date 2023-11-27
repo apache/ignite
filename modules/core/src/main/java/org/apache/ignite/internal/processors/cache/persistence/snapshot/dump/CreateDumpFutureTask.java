@@ -488,7 +488,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                     else if (val == null)
                         reasonToSkip = "newly created or already removed"; // Previous value is null. Entry created after dump start, skip.
                     else {
-                        write(cache, expireTime, key, val);
+                        write(cache, expireTime, key, val, ver);
 
                         changedCnt.increment();
                     }
@@ -532,7 +532,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             else if (changed.get(cache).contains(key))
                 written = false;
             else
-                write(cache, expireTime, key, val);
+                write(cache, expireTime, key, val, ver);
 
             if (log.isTraceEnabled()) {
                 log.trace("Iterator [" +
@@ -540,17 +540,18 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                     ", cache=" + cache +
                     ", part=" + part +
                     ", key=" + key +
-                    ", written=" + written + ']');
+                    ", written=" + written +
+                    ", ver=" + ver + ']');
             }
 
             return written;
         }
 
         /** */
-        private void write(int cache, long expireTime, KeyCacheObject key, CacheObject val) {
+        private void write(int cache, long expireTime, KeyCacheObject key, CacheObject val, GridCacheVersion ver) {
             synchronized (serializer) { // Prevent concurrent access to the dump file.
                 try {
-                    ByteBuffer buf = serializer.writeToBuffer(cache, expireTime, key, val, cctx.cacheObjectContext(cache));
+                    ByteBuffer buf = serializer.writeToBuffer(cache, expireTime, key, val, ver, cctx.cacheObjectContext(cache));
 
                     if (file.writeFully(buf) != buf.limit())
                         throw new IgniteException("Can't write row");
