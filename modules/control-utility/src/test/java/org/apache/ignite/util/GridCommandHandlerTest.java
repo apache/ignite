@@ -3951,6 +3951,27 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--warm-up", "--stop"));
     }
 
+    /** @throws Exception If fails. */
+    @Test
+    public void testCacheIdleVerifyLogLevelDebug() throws Exception {
+        IgniteEx ignite = startGrids(2);
+
+        ignite.cluster().state(ACTIVE);
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+                .setAffinity(new RendezvousAffinityFunction(false, 32))
+                .setBackups(1));
+
+        cache.put("key", "value");
+
+        injectTestSystemOut();
+
+        setLoggerDebugLevel();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+        assertContains(log, testOut.toString(), "no conflicts have been found");
+    }
+
     /**
      * @param ignite Ignite to execute task on.
      * @param delFoundGarbage If clearing mode should be used.
