@@ -386,6 +386,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                         DumpEntry e = iter.next();
 
                         assertNotNull(e);
+                        assertNotNull(e.version());
+                        assertNull(e.version().otherClusterVersion());
 
                         if (e.cacheId() == CU.cacheId(CACHE_0))
                             assertEquals(USER_FACTORY.apply((Integer)e.key()), e.value());
@@ -430,6 +432,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         Integer key = (Integer)e.key();
 
         assertEquals(key, e.value());
+        assertNotNull(e.version());
+        assertNull(e.version().otherClusterVersion());
     }
 
     /** */
