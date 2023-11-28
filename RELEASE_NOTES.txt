@@ -13,29 +13,18 @@ Apache Ignite In-Memory Distributed Database 2.16.0
 Ignite:
 * Added ARM64 Docker images.
 * Added CLIENT_CONNECTION_ATTRIBUTES system view.
-* Added JMX commands invoker.
 * Added ability to configure metric exporter filter from Spring XML.
 * Added cache dumps.
-* Added compact footer usage statistics to the idle_verify command.
-* Added descriptions and values to the properties list command.
 * Added extended debug logging of client connections.
 * Added limit support to IndexQuery.
 * Added logging of snapshot check procedure.
 * Added metrics for operations on secondary indexes.
-* Added node Consistent ID to the index validate command output.
-* Added number of partitions processed by the index worker to the output of the index commands.
 * Added performance statistics for IndexQuery.
 * Added performance statistics info about query properties and processed rows count by query.
 * Added size limit of the client session outbound message queue.
-* Added support of SslContextFactory to CommandHandler (instead of GridSslBasicContextFactory).
-* Added support of custom SSL factory to the control.sh utility.
-* Added the cache create command to the control utility.
-* Added the multiple nodes argument to the 'indexes_force_rebuild' command.
-* Added the multiple nodes argument to the 'schedule_indexes_rebuild' command.
 * Added topology snapshot info to services system view.
 * Deprecated legacy authorization approach via Security Context.
 * Deprecated rebalance related methods in the ClientCacheConfiguration.
-* Fixed Java thin client socket#open timeout to ClientConfiguration#timeout property.
 * Fixed JavaNioAccess handling in JDK 14 and later.
 * Fixed MappedFile.map for JDK 14 and newer.
 * Fixed NPE during defragmentation OOM exception handling.
@@ -50,10 +39,7 @@ Ignite:
 * Fixed assertion error in case of empty SQL query.
 * Fixed assertion error on defragmentation.
 * Fixed broken serialization of communication messages due to incorrect GridCacheQueryRequest class marshalling.
-* Fixed cache objects transformation in Java thin client.
-* Fixed connectable nodes list for control.sh.
 * Fixed continuous queries backup ack message sending for expired entries.
-* Fixed control utility module location for slim and LGPL assemblies.
 * Fixed deprecation of PartitionLossPolicy (READ_ONLY_ALL, READ_WRITE_ALL).
 * Fixed doubled serialization of CQ event oldValue field for REMOVE/EXPIRY events.
 * Fixed duplicate index error after CREATE INDEX IF NOT EXISTS on different tables.
@@ -61,7 +47,6 @@ Ignite:
 * Fixed exception message for transaction timeout before data lock acquired.
 * Fixed failure on sqlOnHeapCache=enabled and more than one index used.
 * Fixed histogram metric configuration restore on node restart.
-* Fixed idle_verify hash conflicts for expiring entries.
 * Fixed in-memory server node crashing by TcpIgniteClient.putAllConflict() if cache objects transformation applied.
 * Fixed log message about sending and receiving partition file during snapshot restore.
 * Fixed log message of snapshot create operation with the warning result.
@@ -70,7 +55,6 @@ Ignite:
 * Fixed opencensus-exporter-trace-zipkin dependency scope.
 * Fixed possibility to create two caches with the same schemas and index names.
 * Fixed possible failures of cache operations when performed through a thin client with Partition Awareness enabled.
-* Fixed result printing of the control.sh performance statistics subcommands.
 * Fixed server nodes crashing if the cache directory contains illegal chars.
 * Fixed snapshot creation failing when check throws an exception.
 * Fixed snapshot restore metrics is case of an error on prepare.
@@ -117,8 +101,25 @@ SQL Calcite:
 * Fixed the query freezes when partitions are set issue.
 * Updated calcite dependency version to 1.34.0.
 
+Control utility:
+* Added JMX commands invoker.
+* Added compact footer usage statistics to the idle_verify command.
+* Added descriptions and values to the properties list command.
+* Added node Consistent ID to the index validate command output.
+* Added number of partitions processed by the index worker to the output of the index commands.
+* Added support of SslContextFactory to CommandHandler (instead of GridSslBasicContextFactory).
+* Added support of custom SSL factory.
+* Added the cache create command.
+* Added the multiple nodes argument to the 'indexes_force_rebuild' and 'schedule_indexes_rebuild' commands.
+* Fixed connectable nodes list.
+* Fixed control utility module location for slim and LGPL assemblies.
+* Fixed idle_verify hash conflicts for expiring entries.
+* Fixed result printing of performance statistics subcommands.
+
 Java thin client:
 * Added Service Awareness feature.
+* Fixed Java thin client socket#open timeout to ClientConfiguration#timeout property.
+* Fixed cache objects transformation in Java thin client.
 * Fixed potential SocketChannel leak on failed connection.
 * Removed artificial port range upper limit of 49151.
 
