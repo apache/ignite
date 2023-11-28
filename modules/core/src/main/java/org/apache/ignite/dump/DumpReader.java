@@ -116,27 +116,26 @@ public class DumpReader implements Runnable {
 
                 AtomicBoolean skip = new AtomicBoolean(false);
 
-                Map<Integer, Set<Integer>> groups = cfg.skipCopies() ? new HashMap<>() : null;
-
-                initGrpToParts(groups, grpToNodes);
+                Map<Integer, Set<Integer>> grpToParts = cfg.skipCopies() ? new HashMap<>() : null;
 
                 int partsCnt = grpToNodes.entrySet().stream().mapToInt(e ->
                         (int)e.getValue().stream()
                             .flatMap(node -> dump.partitions(node, e.getKey()).stream())
-                            .filter(part -> groups == null || groups.get(e.getKey()).add(part))
+                            .filter(part -> grpToParts == null || grpToParts.computeIfAbsent(e.getKey(), x -> new HashSet<>()).add(part))
                             .count())
                     .sum();
 
                 AtomicInteger partsProcessed = new AtomicInteger(0);
 
-                initGrpToParts(groups, grpToNodes);
+                if (grpToParts != null)
+                    grpToParts.clear();
 
                 for (Map.Entry<Integer, List<String>> e : grpToNodes.entrySet()) {
                     int grp = e.getKey();
 
                     for (String node : e.getValue()) {
                         for (int part : dump.partitions(node, grp)) {
-                            if (groups != null && !groups.get(grp).add(part)) {
+                            if (grpToParts != null && !grpToParts.computeIfAbsent(grp, x -> new HashSet<>()).add(part)) {
                                 log.info("Skip copy partition [node=" + node + ", grp=" + grp + ", part=" + part + ']');
 
                                 continue;
@@ -238,12 +237,6 @@ public class DumpReader implements Runnable {
     }
 
     /** */
-    private static void initGrpToParts(Map<Integer, Set<Integer>> grpToParts, Map<Integer, List<String>> grpToNodes) {
-        if (grpToParts != null)
-            grpToNodes.keySet().forEach(grpId -> grpToParts.put(grpId, new HashSet<>()));
-    }
-
-    /** */
     private void ackAsciiLogo() {
         String ver = "ver. " + ACK_VER_STR;
 
@@ -295,45 +288,46 @@ public class DumpReader implements Runnable {
         private final LongAdder recordsProcessed = new LongAdder();
 
         /** */
+        private final long startTime = System.currentTimeMillis();
+
+        /** */
+        private long lastLogTime = startTime;
+
+        /** */
+        private long lastObservedCnt;
+
+        /** */
         private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
         /** */
         private StatsLogger() {
-            scheduler.scheduleAtFixedRate(new Runnable() {
-                    /** */
-                    private long startTime = System.currentTimeMillis();
+            scheduler.scheduleAtFixedRate(() -> {
+                    long now = System.currentTimeMillis();
+                    long cnt = recordsProcessed.longValue();
 
-                    /** */
-                    private long lastLogTime = startTime;
+                    long newRecs = cnt - lastObservedCnt;
+                    long currentRate = 1000L * newRecs / (now - lastLogTime);
+                    long avgRate = 1000L * cnt / (now - startTime);
 
-                    /** */
-                    private long lastObservedCnt;
+                    log.info(">>>" +
+                        "\n>>> Records processed stats" +
+                        "\n>>>   totalRecords: " +
+                        cnt +
+                        "\n>>>   newRecords: " +
+                        newRecs +
+                        "\n>>>   avgRate: " +
+                        avgRate +
+                        "\n>>>   currentRate: " +
+                        currentRate
+                    );
 
-                    /** {@inheritDoc} */
-                    @Override public void run() {
-                        long now = System.currentTimeMillis();
-                        long cnt = recordsProcessed.longValue();
-
-                        long newRecs = cnt - lastObservedCnt;
-                        long currentRate = 1000L * newRecs / (now - lastLogTime);
-                        long avgRate = 1000L * cnt / (now - startTime);
-
-                        log.info(">>>" +
-                            "\n>>> Records processed stats" +
-                            "\n>>>   totalRecords: " +
-                            cnt +
-                            "\n>>>   newRecords: " +
-                            newRecs +
-                            "\n>>>   avgRate: " +
-                            avgRate +
-                            "\n>>>   currentRate: " +
-                            currentRate
-                        );
-
-                        lastLogTime = now;
-                        lastObservedCnt = cnt;
-                    }
-                }, UPDATE_RATE_STATS_PRINT_PERIOD_SECONDS, UPDATE_RATE_STATS_PRINT_PERIOD_SECONDS, TimeUnit.SECONDS);
+                    lastLogTime = now;
+                    lastObservedCnt = cnt;
+                },
+                UPDATE_RATE_STATS_PRINT_PERIOD_SECONDS,
+                UPDATE_RATE_STATS_PRINT_PERIOD_SECONDS,
+                TimeUnit.SECONDS
+            );
         }
 
         /** */
