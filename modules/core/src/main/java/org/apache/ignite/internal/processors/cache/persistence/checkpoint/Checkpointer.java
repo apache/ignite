@@ -402,7 +402,8 @@ public class Checkpointer extends GridWorker {
             startCheckpointProgress();
 
             try {
-                chp = checkpointWorkflow.markCheckpointBegin(lastCpTs, curCpProgress, tracker, this);
+                chp = checkpointWorkflow.markCheckpointBegin(lastCpTs, curCpProgress, tracker, this,
+                    writeRecoveryData);
 
                 tracker.onMarkEnd();
 
