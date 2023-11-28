@@ -341,7 +341,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 reader.position(start + BinaryUtils.length(reader, start));
             }
 
-            writer.postWrite(true, registeredType);
+            writer.postWrite(BinaryUtils.isCompactFooter(flags), true, registeredType);
 
             // Update metadata if needed.
             int schemaId = writer.schemaId();
