@@ -61,7 +61,6 @@ Ignite:
 * Fixed snapshot restore rollback if start cache stage failed.
 * Fixed startup on Java 21.
 * Fixed the defragmentation can't be configured to use one thread issue.
-* Fixed the page size of cache scan command to meet the limit argument.
 * Fixed usage of sandbox to create CacheStore.
 * Fixed usage of vulnerable init setting in H2 connection.
 * Fixed writing post-handshake message in NIO server.
@@ -115,6 +114,7 @@ Control utility:
 * Fixed control utility module location for slim and LGPL assemblies.
 * Fixed idle_verify hash conflicts for expiring entries.
 * Fixed result printing of performance statistics subcommands.
+* Fixed the page size of cache scan command to meet the limit argument.
 
 Java thin client:
 * Added Service Awareness feature.
