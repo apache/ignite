@@ -273,12 +273,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param userType User type flag.
      * @param registered Whether type is registered.
      */
-    public void postWrite(boolean userType, boolean registered) {
+    public void postWrite(Boolean existingCompactFooter, boolean userType, boolean registered) {
         short flags;
         boolean useCompactFooter;
 
         if (userType) {
-            if (ctx.isCompactFooter()) {
+            if (existingCompactFooter != null ? existingCompactFooter : ctx.isCompactFooter()) {
                 flags = BinaryUtils.FLAG_USR_TYP | BinaryUtils.FLAG_COMPACT_FOOTER;
                 useCompactFooter = true;
             }
