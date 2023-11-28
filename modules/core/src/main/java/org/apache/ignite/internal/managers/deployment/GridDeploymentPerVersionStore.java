@@ -347,7 +347,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 Collection<GridDeployment> created = getDeployments();
 
                 // Check already exist deployment.
-                if (meta.deploymentMode() == SHARED) {
+                if (meta.deploymentMode() == SHARED && !ctx.security().sandbox().enabled()) {
                     for (GridDeployment dep0 : created) {
                         // hot redeploy from same node
                         if (dep0.participants().containsKey(meta.senderNodeId()) || dep0.undeployed())
