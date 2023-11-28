@@ -342,10 +342,9 @@ public class CheckpointWorkflow {
                 CheckpointEntryType.START,
                 skipSync
             );
-
-            cp.progress.transitTo(MARKER_STORED_TO_DISK);
         }
 
+        cp.progress.transitTo(MARKER_STORED_TO_DISK);
     }
 
     /**
