@@ -60,7 +60,7 @@ Ignite:
 * Fixed connectable nodes list for control.sh.
 * Fixed continuous queries backup ack message sending for expired entries.
 * Fixed control-utility module location for slim and LGPL assemblies.
-* Fixed defragmentation can't be configured to use 1 thread
+* Fixed defragmentation can't be configured to use one thread.
 * Fixed deprecation of PartitionLossPolicy (READ_ONLY_ALL, READ_WRITE_ALL).
 * Fixed doubled serialization of CQ event oldValue field for REMOVE/EXPIRY events.
 * Fixed duplicate index error after CREATE INDEX IF NOT EXISTS on different tables.
