@@ -166,7 +166,7 @@ public class FilePerformanceStatisticsWriter {
 
         fileWriter = new FileWriter(ctx, log);
 
-        doWrite(OperationType.VERSION, Short.BYTES, buf -> buf.putShort(FILE_FORMAT_VERSION));
+        doWrite(OperationType.VERSION, OperationType.versionRecordSize(), buf -> buf.putShort(FILE_FORMAT_VERSION));
     }
 
     /** Starts collecting performance statistics. */

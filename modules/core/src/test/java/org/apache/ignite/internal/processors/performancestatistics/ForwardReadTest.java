@@ -91,6 +91,9 @@ public class ForwardReadTest extends AbstractPerformanceStatisticsTest {
         try (FileIO fileIo = new RandomAccessFileIOFactory().create(file)) {
             ByteBuffer buf = ByteBuffer.allocate(10 * 1024).order(ByteOrder.nativeOrder());
 
+            buf.put(OperationType.VERSION.id());
+            buf.putShort(FilePerformanceStatisticsWriter.FILE_FORMAT_VERSION);
+
             expTasks = writeData(buf);
 
             buf.flip();

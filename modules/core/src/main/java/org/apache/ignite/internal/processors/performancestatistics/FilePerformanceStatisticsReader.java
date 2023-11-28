@@ -219,6 +219,9 @@ public class FilePerformanceStatisticsReader {
             throw new IgniteException("Unsupported file format");
 
         if (opType == VERSION) {
+            if (buf.remaining() < OperationType.versionRecordSize())
+                return false;
+
             short ver = buf.getShort();
 
             if (ver != FilePerformanceStatisticsWriter.FILE_FORMAT_VERSION) {

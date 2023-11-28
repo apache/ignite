@@ -220,7 +220,12 @@ public enum OperationType {
 
     /** @return Checkpoint record size. */
     public static int checkpointRecordSize() {
-        return 9 * 12 + 4 * 3;
+        return 8 * 13 + 4 * 3;
+    }
+
+    /** @return Version record size. */
+    public static int versionRecordSize() {
+        return Short.BYTES;
     }
 
     /** @return Pages write throttle record size. */

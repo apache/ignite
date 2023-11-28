@@ -64,7 +64,8 @@ public class StringCacheTest extends AbstractPerformanceStatisticsTest {
 
         assertEquals(executions, tasks.get());
 
-        long expLen = taskRecordSize(testTaskName.getBytes().length, false) +
+        long expLen = 1 + OperationType.versionRecordSize();
+        expLen += taskRecordSize(testTaskName.getBytes().length, false) +
             taskRecordSize(0, true) * (executions - 1) +
             jobRecordSize() * executions +
             /*opType*/ 2 * executions;
