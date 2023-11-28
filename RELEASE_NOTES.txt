@@ -7,13 +7,13 @@ Apache Ignite In-Memory Distributed Database 2.16.0
 (!) WARNINGS:
 * Operations on atomic caches within transactions are finally forbidden. The system property IGNITE_ALLOW_ATOMIC_OPS_IN_TX has been removed.
 * Removed CacheAtomicityMode#TRANSACTIONAL_SNAPSHOT cache mode.
-* Mixed atomicity cache groups now restricted, but IGNITE_ALLOW_MIXED_CACHE_GROUPS system option may temporarily allow them.
+* Mixed mode cache groups now restricted, but IGNITE_ALLOW_MIXED_CACHE_GROUPS system option may temporarily allow them.
 * The ignite-ml, cassandra modules have been migrated to the Ignite extensions.
 
 Ignite:
 * Added ARM64 Docker images.
 * Added CLIENT_CONNECTION_ATTRIBUTES system view.
-* Added IndexQuery to performance statistics.
+* Added performance statistics for IndexQuery.
 * Added JMX commands invoker.
 * Added a description check if the command argument is enum type.
 * Added ability to configure metric exporter filter from Spring XML.
@@ -21,7 +21,6 @@ Ignite:
 * Added client session outbound message queue size limit.
 * Added compact footer usage statistics to the idle_verify command.
 * Added descriptions and values to the properties list command.
-* Added documentation for the Index Reader Utility.
 * Added extended debug logging of client connections.
 * Added limit support to IndexQuery.
 * Added logging of snapshot check procedure.
@@ -30,7 +29,6 @@ Ignite:
 * Added number of partitions processed by the index worker to the output of the index commands.
 * Added performance statistics info about query properties and processed rows count by query.
 * Added support of SslContextFactory to CommandHandler (instead of GridSslBasicContextFactory).
-* Added support of cache group filter for dumps.
 * Added support of custom SSL factory to the control.sh utility.
 * Added support of custom location for cache dumps.
 * Added support of skipCopies for DumpReader.
@@ -116,7 +114,7 @@ SQL Calcite:
 * Fixed list of reserved keywords.
 * Fixed memory leak in MailboxRegistryImpl#remotes.
 * Fixed performance statistics gathering.
-* Fixed placeholder values from ModifyNode (backport of IGNITE-19096).
+* Fixed placeholder values from ModifyNode.
 * Fixed primary key inline size calculation.
 * Fixed query freezes when partitions are set.
 * Fixed query leak on remote fragment initialization phase failure.
