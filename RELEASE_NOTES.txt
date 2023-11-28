@@ -14,7 +14,6 @@ Ignite:
 * Added ARM64 Docker images.
 * Added CLIENT_CONNECTION_ATTRIBUTES system view.
 * Added JMX commands invoker.
-* Added a description check if the command argument is enum type.
 * Added ability to configure metric exporter filter from Spring XML.
 * Added cache dumps.
 * Added client session outbound message queue size limit.
