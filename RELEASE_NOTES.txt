@@ -13,7 +13,6 @@ Apache Ignite In-Memory Distributed Database 2.16.0
 Ignite:
 * Added ARM64 Docker images.
 * Added CLIENT_CONNECTION_ATTRIBUTES system view.
-* Added performance statistics for IndexQuery.
 * Added JMX commands invoker.
 * Added a description check if the command argument is enum type.
 * Added ability to configure metric exporter filter from Spring XML.
@@ -27,6 +26,7 @@ Ignite:
 * Added metrics for operations on secondary indexes.
 * Added node Consistent ID to the index validate command output.
 * Added number of partitions processed by the index worker to the output of the index commands.
+* Added performance statistics for IndexQuery.
 * Added performance statistics info about query properties and processed rows count by query.
 * Added support of SslContextFactory to CommandHandler (instead of GridSslBasicContextFactory).
 * Added support of custom SSL factory to the control.sh utility.
