@@ -25,10 +25,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
@@ -61,7 +61,7 @@ import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 @IgniteExperimental
 public class DumpReader implements Runnable {
     /** Update rate stats print period. */
-    private static final int UPDATE_RATE_STATS_PRINT_PERIOD = 30_000;
+    private static final int UPDATE_RATE_STATS_PRINT_PERIOD_SECONDS = 30;
 
     /** Configuration. */
     private final DumpReaderConfiguration cfg;
@@ -87,9 +87,7 @@ public class DumpReader implements Runnable {
 
             cnsmr.start();
 
-            Timer timer = new Timer("dump-stats-log-timer", true);
-
-            try {
+            try (StatsLogger statsLogger = new StatsLogger()) {
                 File[] files = new File(cfg.dumpRoot(), DFLT_MARSHALLER_PATH).listFiles(BinaryUtils::notTmpFile);
 
                 if (files != null)
@@ -129,51 +127,7 @@ public class DumpReader implements Runnable {
                             .count())
                     .sum();
 
-                LongAdder recordsProcessed = new LongAdder();
-
                 AtomicInteger partsProcessed = new AtomicInteger(0);
-
-                timer.scheduleAtFixedRate(
-                    new TimerTask() {
-                        /** */
-                        private long startTime;
-
-                        /** */
-                        private long lastLogTime;
-
-                        /** */
-                        private long lastObservedCount;
-
-                        /** {@inheritDoc} */
-                        @Override public void run() {
-                            long now = System.currentTimeMillis();
-                            long count = recordsProcessed.longValue();
-
-                            if (startTime == 0)
-                                startTime = now;
-
-                            if (lastLogTime > 0 && partsProcessed.get() < partsCnt) {
-                                long currentRate = 1000L * (count - lastObservedCount) / (now - lastLogTime);
-                                long avgRate = 1000L * count / (now - startTime);
-
-                                log.info("Processed stats [totalRecords=" +
-                                    count +
-                                    ", newRecords=" +
-                                    (count - lastObservedCount) +
-                                    ", avgRate=" +
-                                    avgRate +
-                                    ", currentRate=" +
-                                    currentRate +
-                                    "]");
-                            }
-
-                            lastLogTime = now;
-                            lastObservedCount = count;
-                        }
-                    },
-                    0,
-                    UPDATE_RATE_STATS_PRINT_PERIOD
-                );
 
                 initGrpToParts(groups, grpToNodes);
 
@@ -208,7 +162,7 @@ public class DumpReader implements Runnable {
                                     /** {@inheritDoc } */
                                     @Override public boolean hasNext() {
                                         if (consumerProcessingEntry.compareAndSet(true, false))
-                                            recordsProcessed.increment();
+                                            statsLogger.recordProcessed();
 
                                         return delegate.hasNext();
                                     }
@@ -217,7 +171,7 @@ public class DumpReader implements Runnable {
                                     @Override public DumpEntry next() {
                                         if (consumerProcessingEntry.compareAndSet(true, false)) {
                                             // Consumer didn't execute hasNext()
-                                            recordsProcessed.increment();
+                                            statsLogger.recordProcessed();
                                         }
 
                                         DumpEntry next = delegate.next();
@@ -275,8 +229,6 @@ public class DumpReader implements Runnable {
                 }
             }
             finally {
-                timer.cancel();
-
                 cnsmr.stop();
             }
         }
@@ -335,5 +287,64 @@ public class DumpReader implements Runnable {
             if (log instanceof GridLoggerProxy)
                 U.quiet(false, "  ^-- Logging by '" + ((GridLoggerProxy)log).getLoggerInfo() + '\'');
         }
+    }
+
+    /** */
+    private class StatsLogger implements AutoCloseable {
+        /** */
+        private final LongAdder recordsProcessed = new LongAdder();
+
+        /** */
+        private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
+        /** */
+        private StatsLogger() {
+            scheduler.scheduleAtFixedRate(new Runnable() {
+                    /** */
+                    private long startTime = System.currentTimeMillis();
+
+                    /** */
+                    private long lastLogTime = startTime;
+
+                    /** */
+                    private long lastObservedCnt;
+
+                    /** {@inheritDoc} */
+                    @Override public void run() {
+                        long now = System.currentTimeMillis();
+                        long cnt = recordsProcessed.longValue();
+
+                        long newRecs = cnt - lastObservedCnt;
+                        long currentRate = 1000L * newRecs / (now - lastLogTime);
+                        long avgRate = 1000L * cnt / (now - startTime);
+
+                        log.info(">>>" +
+                            "\n>>> Records processed stats" +
+                            "\n>>>   totalRecords: " +
+                            cnt +
+                            "\n>>>   newRecords: " +
+                            newRecs +
+                            "\n>>>   avgRate: " +
+                            avgRate +
+                            "\n>>>   currentRate: " +
+                            currentRate
+                        );
+
+                        lastLogTime = now;
+                        lastObservedCnt = cnt;
+                    }
+                }, UPDATE_RATE_STATS_PRINT_PERIOD_SECONDS, UPDATE_RATE_STATS_PRINT_PERIOD_SECONDS, TimeUnit.SECONDS);
+        }
+
+        /** */
+        private void recordProcessed() {
+            recordsProcessed.increment();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() {
+            scheduler.shutdownNow();
+        }
+
     }
 }
