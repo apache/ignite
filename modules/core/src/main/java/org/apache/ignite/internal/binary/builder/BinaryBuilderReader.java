@@ -390,6 +390,11 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
                 break;
 
+            case GridBinaryMarshaller.BINARY_ENUM:
+                len = 4 + 4;
+
+                break;
+
             default:
                 throw new BinaryObjectException("Invalid flag value: " + type);
         }
