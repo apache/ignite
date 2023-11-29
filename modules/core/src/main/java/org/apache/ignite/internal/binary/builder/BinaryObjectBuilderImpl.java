@@ -353,7 +353,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 reader.position(start + BinaryUtils.length(reader, start));
             }
 
-            writer.postWrite(BinaryUtils.isCompactFooter(flags), true, registeredType);
+            writer.postWrite(skipMetadataUpdate ? BinaryUtils.isCompactFooter(flags) : null, true, registeredType);
 
             if (!skipMetadataUpdate) {
                 // Update metadata if needed.
