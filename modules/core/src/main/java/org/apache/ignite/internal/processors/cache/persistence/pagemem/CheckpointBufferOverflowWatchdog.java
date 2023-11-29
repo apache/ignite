@@ -40,11 +40,18 @@ class CheckpointBufferOverflowWatchdog {
      * {@link PagesWriteThrottlePolicy#CP_BUF_FILL_THRESHOLD} of the buffer is filled) and, hence, writer threads need
      * to be throttled.
      *
-     * @return {@code true} iff Checkpoint Buffer is in danger zone
+     * @return {@code true} if Checkpoint Buffer is in danger zone
      */
     boolean isInDangerZone() {
         int checkpointBufLimit = (int)(pageMemory.checkpointBufferPagesSize() * CP_BUF_FILL_THRESHOLD);
 
         return pageMemory.checkpointBufferPagesCount() > checkpointBufLimit;
+    }
+
+    /**
+     * @return Checkpoint Buffer fill rate.
+     */
+    double fillRate() {
+        return (double)pageMemory.checkpointBufferPagesCount() / pageMemory.checkpointBufferPagesSize();
     }
 }

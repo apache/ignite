@@ -1192,7 +1192,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         long cacheSize = regCfg.getMaxSize();
 
         // Checkpoint buffer size can not be greater than cache size, it does not make sense.
-        long chpBufSize = checkpointBufferSize(regCfg);
+        long chpBufSize = checkpointBufferSize(dsCfg, regCfg);
 
         if (chpBufSize > cacheSize) {
             U.quietAndInfo(log,

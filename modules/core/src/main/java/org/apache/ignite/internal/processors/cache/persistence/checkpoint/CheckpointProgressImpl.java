@@ -215,8 +215,10 @@ public class CheckpointProgressImpl implements CheckpointProgress {
     @Override public void updateEvictedPages(int delta) {
         A.ensure(delta > 0, "param must be positive");
 
-        if (evictedPagesCounter() != null)
-            evictedPagesCounter().addAndGet(delta);
+        AtomicInteger cntr = evictedPagesCounter();
+
+        if (cntr != null)
+            cntr.addAndGet(delta);
     }
 
     /** {@inheritDoc} */

@@ -135,7 +135,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
             if (isPageInCheckpoint) {
                 // The fact that we are here means that we checked whether CP Buffer is in danger zone and found that
                 // it is ok, so its protector may relax, hence we reset it.
-                cpBufferProtector.resetBackoff();
+                cpBufferProtector.reset();
             }
             return cleanPagesProtector.protectionParkTime(curNanoTime);
         }
@@ -230,7 +230,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
 
     /** {@inheritDoc} */
     @Override public void onFinishCheckpoint() {
-        cpBufferProtector.resetBackoff();
+        cpBufferProtector.reset();
 
         cleanPagesProtector.finish();
         markSpeedAndAvgParkTime.finishInterval();
@@ -306,7 +306,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
     /** {@inheritDoc} */
     @Override public void wakeupThrottledThreads() {
         if (!isCpBufferOverflowThresholdExceeded()) {
-            cpBufferProtector.resetBackoff();
+            cpBufferProtector.reset();
 
             unparkParkedThreads();
         }

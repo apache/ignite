@@ -372,7 +372,8 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
      */
     @Test
     public void wakeupThrottledThread() throws IgniteInterruptedCheckedException {
-        PagesWriteThrottlePolicy plc = new PagesWriteThrottle(pageMemory2g, null, stateChecker, true, log);
+        PagesWriteThrottlePolicy plc = new PagesWriteThrottle(pageMemory2g, null, stateChecker,
+            true, false, log);
 
         AtomicBoolean stopLoad = new AtomicBoolean();
         List<Thread> loadThreads = new ArrayList<>();
