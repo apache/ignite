@@ -24,6 +24,7 @@ import java.nio.file.OpenOption;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,11 +42,14 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.dump.DumpEntry;
+import org.apache.ignite.dump.DumpReader;
+import org.apache.ignite.dump.DumpReaderConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -58,6 +62,8 @@ import org.junit.Test;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_THREAD_CNT;
+import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_TIMEOUT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_RUNNING_DIR_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -678,5 +684,44 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
 
             return delegate.create(file, modes);
         }
+    }
+
+
+    /** */
+    @Test
+    public void testCacheCreateOnly() throws Exception {
+        IgniteEx ign = startGridAndFillCaches();
+
+        createDump(ign);
+
+        checkDumpWithCommand(ign, DMP_NAME, backups);
+
+        Dump dump = dump(ign, DMP_NAME);
+
+        List<SnapshotMetadata> metadata = dump.metadata();
+
+        TestDumpConsumer cnsmr = new TestDumpConsumer() {
+            /** */
+            @Override public void onPartition(int grp, int part, Iterator<DumpEntry> iter) {
+                fail("onPartition() should never be invoked for onlyCacheCreate");
+            }
+        };
+
+        new DumpReader(
+            new DumpReaderConfiguration(
+                dumpDirectory(ign, DMP_NAME),
+                cnsmr,
+                DFLT_THREAD_CNT,
+                DFLT_TIMEOUT,
+                true,
+                false,
+                null,
+                false,
+                true
+            ),
+            log
+        ).run();
+
+        cnsmr.check();
     }
 }

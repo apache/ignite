@@ -61,12 +61,15 @@ public class DumpReaderConfiguration {
     /** Skip copies. */
     private final boolean skipCopies;
 
+    /** Only cache create. */
+    private final boolean onlyCacheCreate;
+
     /**
      * @param dir Root dump directory.
      * @param cnsmr Dump consumer.
      */
     public DumpReaderConfiguration(File dir, DumpConsumer cnsmr) {
-        this(dir, cnsmr, DFLT_THREAD_CNT, DFLT_TIMEOUT, true, true, null, false);
+        this(dir, cnsmr, DFLT_THREAD_CNT, DFLT_TIMEOUT, true, true, null, false, false);
     }
 
     /**
@@ -78,6 +81,7 @@ public class DumpReaderConfiguration {
      * @param keepBinary If {@code true} then don't deserialize {@link KeyCacheObject} and {@link CacheObject}.
      * @param cacheGroupNames Cache group names.
      * @param skipCopies Skip copies.
+     * @param onlyCacheCreate Only cache create.
      */
     public DumpReaderConfiguration(File dir,
         DumpConsumer cnsmr,
@@ -86,7 +90,8 @@ public class DumpReaderConfiguration {
         boolean failFast,
         boolean keepBinary,
         String[] cacheGroupNames,
-        boolean skipCopies
+        boolean skipCopies,
+        boolean onlyCacheCreate
     ) {
         this.dir = dir;
         this.cnsmr = cnsmr;
@@ -96,6 +101,7 @@ public class DumpReaderConfiguration {
         this.keepBinary = keepBinary;
         this.cacheGroupNames = cacheGroupNames;
         this.skipCopies = skipCopies;
+        this.onlyCacheCreate = onlyCacheCreate;
     }
 
     /** @return Root dump directiory. */
@@ -136,5 +142,10 @@ public class DumpReaderConfiguration {
     /** @return Skip copies. */
     public boolean skipCopies() {
         return skipCopies;
+    }
+
+    /** @return Only cache create. */
+    public boolean onlyCacheCreate() {
+        return onlyCacheCreate;
     }
 }

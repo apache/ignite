@@ -417,7 +417,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 true,
                 false,
                 cacheGroupNames,
-                skipCopies
+                skipCopies,
+                false
             ),
             log
         ).run();

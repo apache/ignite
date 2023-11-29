@@ -105,6 +105,9 @@ public class DumpReader implements Runnable {
                     .flatMap(e -> dump.configs(F.first(e.getValue()), e.getKey()).stream())
                     .iterator());
 
+                if (cfg.onlyCacheCreate())
+                    return;
+
                 ExecutorService execSvc = cfg.threadCount() > 1 ? Executors.newFixedThreadPool(cfg.threadCount()) : null;
 
                 AtomicBoolean skip = new AtomicBoolean(false);
