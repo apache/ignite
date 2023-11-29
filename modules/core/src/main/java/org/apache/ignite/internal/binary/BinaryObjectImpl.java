@@ -300,7 +300,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
             return this;
 
         if (resolveReferences) {
-            BinaryObjectBuilderImpl builder = new BinaryObjectBuilderImpl(this);
+            BinaryObjectBuilderImpl builder = new BinaryObjectBuilderImpl(this, true);
 
             return (BinaryObjectImpl)builder.build();
         }

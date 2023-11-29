@@ -93,6 +93,9 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     /** Affinity key field name. */
     private String affFieldName;
 
+    /** Affinity key field name. */
+    private boolean skipMetadataUpdate;
+
     /**
      * @param clsName Class name.
      * @param ctx Binary context.
@@ -123,8 +126,17 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @param obj Object to wrap.
      */
     public BinaryObjectBuilderImpl(BinaryObjectImpl obj) {
+        this(obj, false);
+    }
+
+    /**
+     * @param obj Object to wrap.
+     */
+    public BinaryObjectBuilderImpl(BinaryObjectImpl obj, boolean skipMetadataUpdate) {
         this(new BinaryBuilderReader(obj), obj.start());
         reader.registerObject(this);
+
+        this.skipMetadataUpdate = skipMetadataUpdate;
     }
 
     /**
@@ -145,7 +157,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         int typeId = reader.readIntPositioned(start + GridBinaryMarshaller.TYPE_ID_POS);
         ctx = reader.binaryContext();
 
-        if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
+        if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID && !skipMetadataUpdate) {
             int mark = reader.position();
 
             reader.position(start + GridBinaryMarshaller.DFLT_HDR_LEN);
@@ -343,33 +355,35 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             writer.postWrite(BinaryUtils.isCompactFooter(flags), true, registeredType);
 
-            // Update metadata if needed.
-            int schemaId = writer.schemaId();
+            if (!skipMetadataUpdate) {
+                // Update metadata if needed.
+                int schemaId = writer.schemaId();
 
-            BinarySchemaRegistry schemaReg = ctx.schemaRegistry(typeId);
+                BinarySchemaRegistry schemaReg = ctx.schemaRegistry(typeId);
 
-            if (schemaReg.schema(schemaId) == null) {
-                String typeName = this.typeName;
+                if (schemaReg.schema(schemaId) == null) {
+                    String typeName = this.typeName;
 
-                if (typeName == null) {
-                    assert meta != null;
+                    if (typeName == null) {
+                        assert meta != null;
 
-                    typeName = meta.typeName();
+                        typeName = meta.typeName();
+                    }
+
+                    BinarySchema curSchema = writer.currentSchema();
+
+                    String affFieldName0 = affFieldName;
+
+                    if (affFieldName0 == null)
+                        affFieldName0 = ctx.affinityKeyFieldName(typeId);
+
+                    ctx.registerUserClassName(typeId, typeName, writer.failIfUnregistered(), false, JAVA_ID);
+
+                    ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldsMeta, affFieldName0,
+                        Collections.singleton(curSchema), false, null), writer.failIfUnregistered());
+
+                    schemaReg.addSchema(curSchema.schemaId(), curSchema);
                 }
-
-                BinarySchema curSchema = writer.currentSchema();
-
-                String affFieldName0 = affFieldName;
-
-                if (affFieldName0 == null)
-                    affFieldName0 = ctx.affinityKeyFieldName(typeId);
-
-                ctx.registerUserClassName(typeId, typeName, writer.failIfUnregistered(), false, JAVA_ID);
-
-                ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldsMeta, affFieldName0,
-                    Collections.singleton(curSchema), false, null), writer.failIfUnregistered());
-
-                schemaReg.addSchema(curSchema.schemaId(), curSchema);
             }
 
             // Update hash code after schema is written.
