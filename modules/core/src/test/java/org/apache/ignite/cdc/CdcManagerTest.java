@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -38,8 +39,6 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
@@ -137,14 +136,16 @@ public class CdcManagerTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testDisableByProperty() throws Exception {
-        assertFalse(cdcMgr(ign).stopped());
+        AtomicBoolean stopped = GridTestUtils.getFieldValue(cdcMgr(ign), "stop");
+
+        assertFalse(stopped.get());
 
         DistributedChangeableProperty<Serializable> cdcDisableProp = ign.context().distributedConfiguration()
             .property(FileWriteAheadLogManager.CDC_DISABLED);
 
         cdcDisableProp.localUpdate(true);
 
-        assertTrue(GridTestUtils.waitForCondition(() -> cdcMgr(ign).stopped(), 10_000, 10));
+        assertTrue(GridTestUtils.waitForCondition(stopped::get, 10_000, 10));
     }
 
     /** */
@@ -184,13 +185,13 @@ public class CdcManagerTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testMultipleSegmentContentWithForceNextSegmentRollover() throws Exception {
-        checkMultipleSegmentContentWithForceRollover(RolloverType.NEXT_SEGMENT);
+        checkCdcContentWithRollover(() -> rollSegment(RolloverType.NEXT_SEGMENT));
     }
 
     /** */
     @Test
     public void testMultipleSegmentContentWithForceCurrentSegmentRollover() throws Exception {
-        checkMultipleSegmentContentWithForceRollover(RolloverType.CURRENT_SEGMENT);
+        checkCdcContentWithRollover(() -> rollSegment(RolloverType.CURRENT_SEGMENT));
     }
 
     /** */
@@ -284,25 +285,6 @@ public class CdcManagerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void checkMultipleSegmentContentWithForceRollover(RolloverType rollType) throws Exception {
-        checkCdcContentWithRollover(() -> {
-            if (persistentEnabled)
-                dbMgr(ign).checkpointReadLock();
-
-            try {
-                walMgr.log(new CheckpointRecord(null), rollType);
-            }
-            catch (Exception e) {
-                // No-op.
-            }
-            finally {
-                if (persistentEnabled)
-                    dbMgr(ign).checkpointReadUnlock();
-            }
-        });
-    }
-
-    /** */
     public void checkCdcContentWithRollover(Runnable rollSegment) throws Exception {
         for (int i = 0; i < 10_000; i++)
             ign.cache(DEFAULT_CACHE_NAME).put(i, i);
@@ -335,6 +317,23 @@ public class CdcManagerTest extends GridCommonAbstractTest {
         cdcBuf.limit(firstSegActLen + 1 + WAL_SEG_SIZE);
 
         assertEquals(0, walBuf.compareTo(cdcBuf));
+    }
+
+    /** */
+    private void rollSegment(RolloverType rollType) {
+        if (persistentEnabled)
+            dbMgr(ign).checkpointReadLock();
+
+        try {
+            walMgr.log(new CheckpointRecord(null), rollType);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        finally {
+            if (persistentEnabled)
+                dbMgr(ign).checkpointReadUnlock();
+        }
     }
 
     /** Get WAL directory. */
@@ -392,11 +391,6 @@ public class CdcManagerTest extends GridCommonAbstractTest {
             buf.position(0);
         }
 
-        /** */
-        public boolean stopped() {
-            return isStopping();
-        }
-
         /** {@inheritDoc} */
         @Override public void collect(ByteBuffer dataBuf) {
             if (failCollect)
@@ -411,14 +405,6 @@ public class CdcManagerTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean enabled() {
             return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void afterBinaryMemoryRestore(
-            IgniteCacheDatabaseSharedManager mgr,
-            GridCacheDatabaseSharedManager.RestoreBinaryState restoreState
-        ) {
-            // No-op.
         }
 
         /** @return CdcManager for specified Ignite node. */

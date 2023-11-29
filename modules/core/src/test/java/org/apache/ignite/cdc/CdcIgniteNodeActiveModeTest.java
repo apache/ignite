@@ -43,8 +43,6 @@ import org.apache.ignite.internal.pagemem.wal.record.CdcManagerRecord;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
@@ -386,14 +384,6 @@ public class CdcIgniteNodeActiveModeTest extends AbstractCdcTest {
         /** {@inheritDoc} */
         @Override public boolean enabled() {
             return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void afterBinaryMemoryRestore(
-            IgniteCacheDatabaseSharedManager mgr,
-            GridCacheDatabaseSharedManager.RestoreBinaryState restoreState
-        ) {
-            // No-op.
         }
 
         /** {@inheritDoc} */

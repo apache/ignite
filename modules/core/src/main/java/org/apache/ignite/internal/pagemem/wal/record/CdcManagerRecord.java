@@ -20,7 +20,6 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import java.util.Iterator;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.internal.cdc.CdcManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.T2;
 

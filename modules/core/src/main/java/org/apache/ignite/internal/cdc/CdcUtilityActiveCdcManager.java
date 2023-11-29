@@ -25,8 +25,6 @@ import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -37,6 +35,11 @@ import static org.apache.ignite.internal.cdc.CdcMain.STATE_DIR;
  * CDC manager that delegates consuming CDC events to the {@link CdcMain} utility.
  */
 public class CdcUtilityActiveCdcManager extends GridCacheSharedManagerAdapter implements CdcManager, PartitionsExchangeAware {
+    /** */
+    @Override protected void start0() {
+        cctx.exchange().registerExchangeAwareComponent(this);
+    }
+
     /** */
     @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
         if (fut.localJoinExchange() || fut.activateCluster()) {
@@ -50,7 +53,10 @@ public class CdcUtilityActiveCdcManager extends GridCacheSharedManagerAdapter im
                     cctx.wal(true).log(new CdcManagerStopRecord());
             }
             catch (IgniteCheckedException e) {
-                U.warn(log, "Failed to activate CdcManager. CDC might not work.");
+                U.error(log, "Failed to activate CdcManager. CDC might not work.");
+            }
+            finally {
+                cctx.exchange().unregisterExchangeAwareComponent(this);
             }
         }
     }
@@ -58,14 +64,6 @@ public class CdcUtilityActiveCdcManager extends GridCacheSharedManagerAdapter im
     /** {@inheritDoc} */
     @Override public boolean enabled() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void afterBinaryMemoryRestore(
-        IgniteCacheDatabaseSharedManager mgr,
-        GridCacheDatabaseSharedManager.RestoreBinaryState restoreState
-    ) {
-        // No-op.
     }
 
     /** {@inheritDoc} */

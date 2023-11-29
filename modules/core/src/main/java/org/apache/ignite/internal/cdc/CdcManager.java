@@ -77,26 +77,28 @@ public interface CdcManager extends GridCacheSharedManager, DatabaseLifecycleLis
      * <p> Implementation suggestions:
      * <ul>
      *     <li>
-               It's required to register this manager to enable calling this method. The registration is performed with
-     *         {@link GridInternalSubscriptionProcessor#registerDatabaseListener(DatabaseLifecycleListener)}.
+     *         Implementation must subscribe to the database events to get notified with this callback via
+     *         {@link GridInternalSubscriptionProcessor#registerDatabaseListener(DatabaseLifecycleListener)}
      *     </li>
      *     <li>Callback can be used for restoring CDC state on Ignite node start, collecting missed events from WAL segments.</li>
-     *     <li>Be aware, this method runs in the Ignite system thread and might lengthen the Ignite start procedure.</li>
+     *     <li>Be aware, this method runs in the Ignite system thread and might get longer the Ignite start procedure.</li>
      *     <li>Ignite node will fail in case the method throws an exception.</li>
      * </ul>
      */
-    @Override public void afterBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr,
-        GridCacheDatabaseSharedManager.RestoreBinaryState restoreState) throws IgniteCheckedException;
+    @Override public default void afterBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr,
+        GridCacheDatabaseSharedManager.RestoreBinaryState restoreState) throws IgniteCheckedException {
+        // No-op.
+    }
 
     /**
-     * Collects byte buffer contains WAL records. The provided buffer is a continuous part of WAL segment file.
+     * Callback to collect written WAL records. The provided buffer is a continuous part of WAL segment file.
      * The buffer might contain full content of a segment or only piece of it. There are guarantees:
      * <ul>
-     *     <li>This method invokes sequentially.</li>
+     *     <li>This method is invoked sequentially.</li>
      *     <li>Provided {@code dataBuf} is a continuation of the previous one.</li>
      *     <li>{@code dataBuf} contains finite number of completed WAL records. No partially written WAL records are present.</li>
      *     <li>Records can be read from the buffer with {@link RecordSerializer#readRecord(FileInput, WALPointer)}.</li>
-     *     <li>{@code dataBuf} is a read-only buffer.</li>
+     *     <li>{@code dataBuf} must not be changed within this method.</li>
      * </ul>
      *
      * <p> Implementation suggestions:
