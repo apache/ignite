@@ -29,7 +29,7 @@ public abstract class AbstractPagesWriteThrottle implements PagesWriteThrottlePo
 
     /**
      * @param pageMemory Page memory.
-     * @param cpProgress Database manager.
+     * @param cpProgress Checkpoint progress provider.
      * @param cpLockStateChecker checkpoint lock state checker.
      * @param fillRateBasedCpBufProtection If true, fill rate based throttling will be used to protect from
      *        checkpoint buffer overflow.
@@ -47,9 +47,16 @@ public abstract class AbstractPagesWriteThrottle implements PagesWriteThrottlePo
         this.cpLockStateChecker = cpLockStateChecker;
         this.log = log;
 
-        cpBufWatchdog = new CheckpointBufferOverflowWatchdog(pageMemory);
-        cpBufProtector = fillRateBasedCpBufProtection ? new FillRateBasedThrottlingStrategy(cpBufWatchdog) :
-            new ExponentialBackoffThrottlingStrategy();
+        if (fillRateBasedCpBufProtection) {
+            // TODO review CP_BUF_FILL_THRESHOLD_FILL_RATE for checkpoint pages write phase.
+            cpBufWatchdog = new CheckpointBufferOverflowWatchdog(pageMemory, CP_BUF_FILL_THRESHOLD_FILL_RATE);
+            cpBufProtector = new FillRateBasedThrottlingStrategy(cpBufWatchdog, cpProgress);
+        }
+        else {
+            cpBufWatchdog = new CheckpointBufferOverflowWatchdog(pageMemory, CP_BUF_FILL_THRESHOLD_EXP_BACKOFF);
+            cpBufProtector = new ExponentialBackoffThrottlingStrategy();
+        }
+
     }
 
     /** {@inheritDoc} */

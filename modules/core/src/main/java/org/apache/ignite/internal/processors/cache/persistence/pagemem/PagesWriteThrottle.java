@@ -59,7 +59,7 @@ public class PagesWriteThrottle extends AbstractPagesWriteThrottle {
         super(pageMemory, cpProgress, cpLockStateChecker, fillRateBasedCpBufProtection, log);
         this.throttleOnlyPagesInCheckpoint = throttleOnlyPagesInCheckpoint;
 
-        assert throttleOnlyPagesInCheckpoint || cpProgress != null
+        assert (throttleOnlyPagesInCheckpoint && !fillRateBasedCpBufProtection) || cpProgress != null
                 : "cpProgress must be not null if ratio based throttling mode is used";
     }
 
@@ -106,6 +106,9 @@ public class PagesWriteThrottle extends AbstractPagesWriteThrottle {
 
         if (shouldThrottle) {
             long throttleParkTimeNs = exponentialThrottle.protectionParkTime();
+
+            if (throttleParkTimeNs == 0)
+                return;
 
             Thread curThread = Thread.currentThread();
 

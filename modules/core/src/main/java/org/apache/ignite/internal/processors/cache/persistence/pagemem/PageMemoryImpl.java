@@ -439,7 +439,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 false, fillRateBasedCpBufProtection, log);
         }
         else if (throttlingPlc == ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY) {
-            writeThrottle = new PagesWriteThrottle(this, null, stateChecker,
+            writeThrottle = new PagesWriteThrottle(this, cpProgressProvider, stateChecker,
                 true, fillRateBasedCpBufProtection, log);
         }
     }

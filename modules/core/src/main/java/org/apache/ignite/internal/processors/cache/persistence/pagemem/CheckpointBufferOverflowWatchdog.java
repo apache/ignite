@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import static org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottlePolicy.CP_BUF_FILL_THRESHOLD;
-
 /**
  * Logic used to determine whether Checkpoint Buffer is in danger zone and writer threads should be throttled.
  */
@@ -26,13 +24,17 @@ class CheckpointBufferOverflowWatchdog {
     /** Page memory. */
     private final PageMemoryImpl pageMemory;
 
+    /** Checkpoint buffer fullfill bound to start throttling. */
+    private final double cpBufFillThreshold;
+
     /**
      * Creates a new instance.
      *
      * @param pageMemory page memory to use
      */
-    CheckpointBufferOverflowWatchdog(PageMemoryImpl pageMemory) {
+    CheckpointBufferOverflowWatchdog(PageMemoryImpl pageMemory, double cpBufFillThreshold) {
         this.pageMemory = pageMemory;
+        this.cpBufFillThreshold = cpBufFillThreshold;
     }
 
     /**
@@ -43,7 +45,7 @@ class CheckpointBufferOverflowWatchdog {
      * @return {@code true} if Checkpoint Buffer is in danger zone
      */
     boolean isInDangerZone() {
-        int checkpointBufLimit = (int)(pageMemory.checkpointBufferPagesSize() * CP_BUF_FILL_THRESHOLD);
+        int checkpointBufLimit = (int)(pageMemory.checkpointBufferPagesSize() * cpBufFillThreshold);
 
         return pageMemory.checkpointBufferPagesCount() > checkpointBufLimit;
     }
