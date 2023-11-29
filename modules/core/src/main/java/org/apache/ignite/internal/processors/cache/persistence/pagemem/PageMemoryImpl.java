@@ -430,8 +430,10 @@ public class PageMemoryImpl implements PageMemoryEx {
         boolean fillRateBasedCpBufProtection = ctx.kernalContext().config().getDataStorageConfiguration()
             .isWriteRecoveryDataOnCheckpoint();
 
-        if (throttlingPlc == ThrottlingPolicy.SPEED_BASED)
-            writeThrottle = new PagesWriteSpeedBasedThrottle(this, cpProgressProvider, stateChecker, log);
+        if (throttlingPlc == ThrottlingPolicy.SPEED_BASED) {
+            writeThrottle = new PagesWriteSpeedBasedThrottle(this, cpProgressProvider, stateChecker,
+                fillRateBasedCpBufProtection, log);
+        }
         else if (throttlingPlc == ThrottlingPolicy.TARGET_RATIO_BASED) {
             writeThrottle = new PagesWriteThrottle(this, cpProgressProvider, stateChecker,
                 false, fillRateBasedCpBufProtection, log);

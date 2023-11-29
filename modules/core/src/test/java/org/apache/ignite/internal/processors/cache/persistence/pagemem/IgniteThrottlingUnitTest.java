@@ -102,7 +102,8 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
      */
     @Test
     public void shouldThrottleWhenWritingTooFast() {
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null,
+            stateChecker, false, log);
 
         long parkTime = throttle.getCleanPagesProtectionParkTime(0.67,
             (362584 + 67064) / 2,
@@ -119,7 +120,8 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
      */
     @Test
     public void shouldNotThrottleWhenWritingSlowly() {
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null,
+            stateChecker, false, log);
 
         long parkTime = throttle.getCleanPagesProtectionParkTime(0.47,
             ((362584 + 67064) / 2),
@@ -137,7 +139,8 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
      */
     @Test
     public void shouldNotThrottleWhenThereArePlentyCleanPages() {
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null,
+            stateChecker, false, log);
 
         long parkTime = throttle.getCleanPagesProtectionParkTime(0.0,
             (362584 + 67064) / 2,
@@ -155,7 +158,8 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCorrectTimeToPark() {
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null,
+            stateChecker, false, log);
 
         int markDirtySpeed = 34422;
         int cpWriteSpeed = 19416;
@@ -239,7 +243,8 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
      */
     @Test
     public void beginOfCp() {
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null,
+            stateChecker, false, log);
 
         assertEquals(0, throttle.getCleanPagesProtectionParkTime(0.01, 100, 400000,
             1,
@@ -266,7 +271,8 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
      */
     @Test
     public void enforceThrottleAtTheEndOfCp() {
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null,
+            stateChecker, false, log);
 
         long time1 = throttle.getCleanPagesProtectionParkTime(0.70, 300000, 400000,
             1, 20200, 23000);
@@ -289,7 +295,8 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
      */
     @Test
     public void doNotThrottleWhenDirtyPagesRatioIsTooHigh() {
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null,
+            stateChecker, false, log);
 
         // 363308 350004 348976 10604
         long time = throttle.getCleanPagesProtectionParkTime(0.75,
@@ -314,7 +321,8 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
         IgniteOutClosure<CheckpointProgress> cpProgress = mock(IgniteOutClosure.class);
         when(cpProgress.apply()).thenReturn(cl0);
 
-        PagesWriteThrottlePolicy plc = new PagesWriteSpeedBasedThrottle(pageMemory2g, cpProgress, stateChecker, log) {
+        PagesWriteThrottlePolicy plc = new PagesWriteSpeedBasedThrottle(pageMemory2g, cpProgress, stateChecker,
+            false, log) {
             @Override protected void doPark(long throttleParkTimeNs) {
                 //Force parking to long time.
                 super.doPark(TimeUnit.SECONDS.toNanos(1));
@@ -443,7 +451,8 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
 
         Mockito.when(progress.writtenPagesCounter()).thenReturn(written);
 
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, cpProvider, stateChecker, log) {
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, cpProvider,
+            stateChecker, false, log) {
             @Override protected void doPark(long throttleParkTimeNs) {
                 //do nothing
             }
@@ -477,7 +486,7 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
         simulateCheckpointProgressIsStarted();
         simulateCheckpointBufferInDangerZoneSituation();
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, cpProvider,
-                stateChecker, log);
+            stateChecker, false, log);
 
         throttle.onMarkDirty(true);
 
@@ -501,7 +510,7 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
         simulateCheckpointProgressNotYetStarted();
         simulateCheckpointBufferInDangerZoneSituation();
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, cpProvider,
-                stateChecker, log);
+            stateChecker, false, log);
 
         throttle.onMarkDirty(true);
 
@@ -519,7 +528,7 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
         simulateCheckpointProgressNotYetStarted();
         simulateCheckpointBufferInSafeZoneSituation();
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, cpProvider,
-                stateChecker, log);
+            stateChecker, false, log);
 
         throttle.onMarkDirty(true);
 
@@ -539,7 +548,7 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
         simulateCheckpointProgressIsStarted();
         AtomicLong parkTimeNanos = new AtomicLong();
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, cpProvider,
-                stateChecker, log) {
+            stateChecker, false, log) {
             @Override protected void doPark(long throttleParkTimeNs) {
                 super.doPark(1);
                 parkTimeNanos.set(throttleParkTimeNs);
@@ -576,7 +585,7 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
         simulateCheckpointProgressIsStarted();
         AtomicLong parkTimeNanos = new AtomicLong();
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, cpProvider,
-                stateChecker, log) {
+            stateChecker, false, log) {
             @Override protected void doPark(long throttleParkTimeNs) {
                 super.doPark(1);
                 parkTimeNanos.set(throttleParkTimeNs);
@@ -606,7 +615,7 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
     public void speedBasedThrottleShouldReportCpWriteSpeedWhenThePageIsNotInCheckpointAndProgressIsReported()
             throws InterruptedException {
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, cpProvider,
-                stateChecker, log);
+            stateChecker, false, log);
         simulateCheckpointProgressIsStarted();
         allowSomeTimeToPass();
         throttle.onMarkDirty(false);
@@ -623,7 +632,7 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
     @Test
     public void speedBasedThrottleShouldResetCPProgressToZeroOnCheckpointStart() throws InterruptedException {
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, cpProvider,
-                stateChecker, log);
+                stateChecker, false, log);
         simulateCheckpointProgressIsStarted();
         allowSomeTimeToPass();
         throttle.onMarkDirty(false);

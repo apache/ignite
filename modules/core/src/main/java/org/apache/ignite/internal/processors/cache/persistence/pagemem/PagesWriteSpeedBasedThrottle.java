@@ -20,7 +20,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
-
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
@@ -78,8 +77,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
     static final double WARN_THRESHOLD = 0.2;
 
     /** Checkpoint buffer protection logic. */
-    private final ExponentialBackoffThrottlingStrategy cpBufferProtector
-        = new ExponentialBackoffThrottlingStrategy();
+    private final ThrottlingStrategy cpBufferProtector;
 
     /** Clean pages protection logic. */
     private final SpeedBasedMemoryConsumptionThrottlingStrategy cleanPagesProtector;
@@ -91,12 +89,15 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      * @param pageMemory Page memory.
      * @param cpProgress Database manager.
      * @param stateChecker Checkpoint lock state provider.
+     * @param fillRateBasedCpBufProtection If true, fill rate based throttling will be used to protect from
+     *        checkpoint buffer overflow.
      * @param log Logger.
      */
     public PagesWriteSpeedBasedThrottle(
             PageMemoryImpl pageMemory,
             IgniteOutClosure<CheckpointProgress> cpProgress,
             CheckpointLockStateChecker stateChecker,
+            boolean fillRateBasedCpBufProtection,
             IgniteLogger log
     ) {
         this.pageMemory = pageMemory;
@@ -107,6 +108,9 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
         cleanPagesProtector = new SpeedBasedMemoryConsumptionThrottlingStrategy(pageMemory, cpProgress,
             markSpeedAndAvgParkTime);
         cpBufferWatchdog = new CheckpointBufferOverflowWatchdog(pageMemory);
+
+        cpBufferProtector = fillRateBasedCpBufProtection ? new FillRateBasedThrottlingStrategy(cpBufferWatchdog) :
+            new ExponentialBackoffThrottlingStrategy();
     }
 
     /** {@inheritDoc} */
