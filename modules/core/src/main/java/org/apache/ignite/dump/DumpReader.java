@@ -20,6 +20,7 @@ package org.apache.ignite.dump;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -87,7 +88,7 @@ public class DumpReader implements Runnable {
 
             cnsmr.start();
 
-            try (StatsLogger statsLogger = new StatsLogger()) {
+            try (StatsLog statsLog = new StatsLog()) {
                 File[] files = new File(cfg.dumpRoot(), DFLT_MARSHALLER_PATH).listFiles(BinaryUtils::notTmpFile);
 
                 if (files != null)
@@ -116,26 +117,24 @@ public class DumpReader implements Runnable {
 
                 AtomicBoolean skip = new AtomicBoolean(false);
 
-                Map<Integer, Set<Integer>> grpToParts = cfg.skipCopies() ? new HashMap<>() : null;
-
-                int partsCnt = grpToNodes.entrySet().stream().mapToInt(e ->
-                        (int)e.getValue().stream()
-                            .flatMap(node -> dump.partitions(node, e.getKey()).stream())
-                            .filter(part -> grpToParts == null || grpToParts.computeIfAbsent(e.getKey(), x -> new HashSet<>()).add(part))
-                            .count())
+                int partsCnt = grpToNodes.entrySet().stream()
+                    .mapToInt(e -> e.getValue().stream()
+                        .map(node -> dump.partitions(node, e.getKey()))
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.toCollection(cfg.skipCopies() ? HashSet::new : ArrayList::new))
+                        .size())
                     .sum();
 
                 AtomicInteger partsProcessed = new AtomicInteger(0);
 
-                if (grpToParts != null)
-                    grpToParts.clear();
+                Map<Integer, Set<Integer>> groups = cfg.skipCopies() ? new HashMap<>() : null;
 
                 for (Map.Entry<Integer, List<String>> e : grpToNodes.entrySet()) {
                     int grp = e.getKey();
 
                     for (String node : e.getValue()) {
                         for (int part : dump.partitions(node, grp)) {
-                            if (grpToParts != null && !grpToParts.computeIfAbsent(grp, x -> new HashSet<>()).add(part)) {
+                            if (groups != null && !groups.computeIfAbsent(grp, x -> new HashSet<>()).add(part)) {
                                 log.info("Skip copy partition [node=" + node + ", grp=" + grp + ", part=" + part + ']');
 
                                 continue;
@@ -161,7 +160,7 @@ public class DumpReader implements Runnable {
                                     /** {@inheritDoc } */
                                     @Override public boolean hasNext() {
                                         if (consumerProcessingEntry.compareAndSet(true, false))
-                                            statsLogger.recordProcessed();
+                                            statsLog.recordProcessed();
 
                                         return delegate.hasNext();
                                     }
@@ -170,7 +169,7 @@ public class DumpReader implements Runnable {
                                     @Override public DumpEntry next() {
                                         if (consumerProcessingEntry.compareAndSet(true, false)) {
                                             // Consumer didn't execute hasNext()
-                                            statsLogger.recordProcessed();
+                                            statsLog.recordProcessed();
                                         }
 
                                         DumpEntry next = delegate.next();
@@ -194,8 +193,8 @@ public class DumpReader implements Runnable {
 
                                     int partNo = partsProcessed.incrementAndGet();
 
-                                    if (log.isInfoEnabled())
-                                        log.info("Consumed partitions " + partNo + " of " + partsCnt);
+                                    if (log.isDebugEnabled())
+                                        log.debug("Consumed partitions " + partNo + " of " + partsCnt);
                                 }
                                 catch (Exception ex) {
                                     skip.set(cfg.failFast());
@@ -283,7 +282,7 @@ public class DumpReader implements Runnable {
     }
 
     /** */
-    private class StatsLogger implements AutoCloseable {
+    private class StatsLog implements AutoCloseable {
         /** */
         private final LongAdder recordsProcessed = new LongAdder();
 
@@ -300,7 +299,7 @@ public class DumpReader implements Runnable {
         private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
         /** */
-        private StatsLogger() {
+        private StatsLog() {
             scheduler.scheduleAtFixedRate(() -> {
                     long now = System.currentTimeMillis();
                     long cnt = recordsProcessed.longValue();
