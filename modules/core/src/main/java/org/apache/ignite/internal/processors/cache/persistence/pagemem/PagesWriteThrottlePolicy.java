@@ -70,10 +70,10 @@ public interface PagesWriteThrottlePolicy {
     long LOGGING_THRESHOLD = TimeUnit.SECONDS.toNanos(
         IgniteSystemProperties.getInteger(IGNITE_THROTTLE_LOG_THRESHOLD, DFLT_THROTTLE_LOG_THRESHOLD));
 
-    /** Checkpoint buffer fullfill bound to start exponential backoff throttling. */
+    /** Checkpoint buffer fulfill bound to start exponential backoff throttling. */
     float CP_BUF_FILL_THRESHOLD_EXP_BACKOFF = 2f / 3;
 
-    /** Checkpoint buffer fullfill bound to start fill rate based throttling. */
+    /** Checkpoint buffer fulfill bound to start fill rate based throttling. */
     float CP_BUF_FILL_THRESHOLD_FILL_RATE = 1f / 4;
 
     /**

@@ -82,7 +82,7 @@ class FillRateBasedThrottlingStrategy implements ThrottlingStrategy {
         if (cpBufFillRate > cpProgressRate && cpProgressRate < 1d) {
             throttlingStarted.set(true);
 
-            return (long)(Math.exp(POW * ((cpBufFillRate - cpProgressRate) / (1d - cpProgressRate)) * MIN_THROTTLE_NANOS));
+            return (long)(Math.exp(POW * ((cpBufFillRate - cpProgressRate) / (1d - cpProgressRate))) * MIN_THROTTLE_NANOS);
         }
         else
             return 0;
@@ -90,6 +90,6 @@ class FillRateBasedThrottlingStrategy implements ThrottlingStrategy {
 
     /** {@inheritDoc} */
     @Override public boolean reset() {
-        return throttlingStarted.compareAndSet(true, false);
+        return throttlingStarted.getAndSet(false);
     }
 }

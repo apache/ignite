@@ -24,7 +24,7 @@ class CheckpointBufferOverflowWatchdog {
     /** Page memory. */
     private final PageMemoryImpl pageMemory;
 
-    /** Checkpoint buffer fullfill bound to start throttling. */
+    /** Checkpoint buffer fulfill bound to start throttling. */
     private final double cpBufFillThreshold;
 
     /**
@@ -38,9 +38,8 @@ class CheckpointBufferOverflowWatchdog {
     }
 
     /**
-     * Returns true if Checkpoint Buffer is in danger zone (more than
-     * {@link PagesWriteThrottlePolicy#CP_BUF_FILL_THRESHOLD} of the buffer is filled) and, hence, writer threads need
-     * to be throttled.
+     * Returns true if Checkpoint Buffer is in danger zone (more than cpBufFillThreshold of the buffer is filled)
+     * and, hence, writer threads need to be throttled.
      *
      * @return {@code true} if Checkpoint Buffer is in danger zone
      */
