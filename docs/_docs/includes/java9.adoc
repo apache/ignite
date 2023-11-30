@@ -26,12 +26,6 @@ application:
 +
 [tabs]
 --
-tab:Java 8[]
-[source,shell]
-----
--XX:+AggressiveOpts
-----
-
 tab:Java 11[]
 [source,shell]
 ----
