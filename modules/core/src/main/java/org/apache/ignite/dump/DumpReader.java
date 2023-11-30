@@ -117,6 +117,11 @@ public class DumpReader implements Runnable {
 
                 AtomicBoolean skip = new AtomicBoolean(false);
 
+                Map<Integer, Set<Integer>> groups = cfg.skipCopies() ? new HashMap<>() : null;
+
+                if (groups != null)
+                    grpToNodes.keySet().forEach(grpId -> groups.put(grpId, new HashSet<>()));
+
                 int partsCnt = grpToNodes.entrySet().stream()
                     .mapToInt(e -> e.getValue().stream()
                         .map(node -> dump.partitions(node, e.getKey()))
@@ -127,14 +132,12 @@ public class DumpReader implements Runnable {
 
                 AtomicInteger partsProcessed = new AtomicInteger(0);
 
-                Map<Integer, Set<Integer>> groups = cfg.skipCopies() ? new HashMap<>() : null;
-
                 for (Map.Entry<Integer, List<String>> e : grpToNodes.entrySet()) {
                     int grp = e.getKey();
 
                     for (String node : e.getValue()) {
                         for (int part : dump.partitions(node, grp)) {
-                            if (groups != null && !groups.computeIfAbsent(grp, x -> new HashSet<>()).add(part)) {
+                            if (groups != null && !groups.get(grp).add(part)) {
                                 log.info("Skip copy partition [node=" + node + ", grp=" + grp + ", part=" + part + ']');
 
                                 continue;
