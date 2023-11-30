@@ -157,27 +157,16 @@ public class DumpReader implements Runnable {
                                     /** */
                                     final DumpedPartitionIterator delegate = dump.iterator(node, grp, part);
 
-                                    /** */
-                                    final AtomicBoolean consumerProcessingEntry = new AtomicBoolean(false);
-
                                     /** {@inheritDoc } */
                                     @Override public boolean hasNext() {
-                                        if (consumerProcessingEntry.compareAndSet(true, false))
-                                            statsLog.recordProcessed();
-
                                         return delegate.hasNext();
                                     }
 
                                     /** {@inheritDoc } */
                                     @Override public DumpEntry next() {
-                                        if (consumerProcessingEntry.compareAndSet(true, false)) {
-                                            // Consumer didn't execute hasNext()
-                                            statsLog.recordProcessed();
-                                        }
-
                                         DumpEntry next = delegate.next();
 
-                                        consumerProcessingEntry.set(true);
+                                        statsLog.recordProcessed();
 
                                         return next;
                                     }
