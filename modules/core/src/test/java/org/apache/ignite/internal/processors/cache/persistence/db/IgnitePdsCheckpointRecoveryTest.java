@@ -70,6 +70,9 @@ public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
     private final AtomicBoolean fail = new AtomicBoolean();
 
     /** */
+    private final AtomicInteger spoiledPageLimit = new AtomicInteger();
+
+    /** */
     @Parameterized.Parameter(0)
     public boolean encrypt;
 
@@ -90,7 +93,7 @@ public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
             .setFailureHandler(new StopNodeFailureHandler())
             .setEncryptionSpi(encSpi)
             .setDataStorageConfiguration(new DataStorageConfiguration()
-                .setFileIOFactory(new PageStoreSpoilingFileIOFactory(fail))
+                .setFileIOFactory(new PageStoreSpoilingFileIOFactory(fail, spoiledPageLimit))
                 .setWriteRecoveryDataOnCheckpoint(true)
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(true)
@@ -135,6 +138,7 @@ public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
 
         File cpDir = dbMgr(ignite).checkpointDirectory();
 
+        spoiledPageLimit.set(10);
         fail.set(true);
 
         try {
@@ -177,6 +181,41 @@ public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testCorruptedPageRecoveryFromCheckpointRecoveryFiles() throws Exception {
+        IgniteEx ignite = startGrid(0);
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        CacheConfiguration<Integer, Integer> cacheCfg = GridAbstractTest.<Integer, Integer>defaultCacheConfiguration()
+            .setAffinity(new RendezvousAffinityFunction(false, PARTS))
+            .setEncryptionEnabled(encrypt);
+
+        IgniteCache<Integer, Integer> cache = ignite.createCache(cacheCfg);
+
+        spoiledPageLimit.set(Integer.MAX_VALUE);
+        fail.set(true);
+
+        for (int i = 0; i < KEYS_CNT; i++)
+            cache.put(i, i);
+
+        File cpDir = dbMgr(ignite).checkpointDirectory();
+
+        forceCheckpoint();
+
+        fail.set(false);
+
+        assertTrue(cpDir.listFiles(((dir, name) -> FILE_NAME_PATTERN.matcher(name).matches())).length > 0);
+
+        stopGrid(0);
+        ignite = startGrid(0);
+
+        cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < KEYS_CNT; i++)
+            assertEquals((Integer)i, cache.get(i));
+    }
+
+    /** */
     private static final class PageStoreSpoilingFileIOFactory implements FileIOFactory {
         /** */
         private final FileIOFactory delegateFactory;
@@ -185,36 +224,44 @@ public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
         private final AtomicBoolean failFlag;
 
         /** */
-        PageStoreSpoilingFileIOFactory(AtomicBoolean failFlag) {
+        private final AtomicInteger spoiledPageLimit;
+
+        /** */
+        PageStoreSpoilingFileIOFactory(AtomicBoolean failFlag, AtomicInteger spoiledPageLimit) {
             delegateFactory = new RandomAccessFileIOFactory();
 
             this.failFlag = failFlag;
+            this.spoiledPageLimit = spoiledPageLimit;
         }
 
         /** {@inheritDoc}*/
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             FileIO delegate = delegateFactory.create(file, modes);
 
-            return file.getName().startsWith(PART_FILE_PREFIX) ? new PageStoreSpoiling(delegate) : delegate;
+            return file.getName().startsWith(PART_FILE_PREFIX) ? new PageStoreSpoiling(delegate, spoiledPageLimit) : delegate;
         }
 
         /** */
         final class PageStoreSpoiling extends FileIODecorator {
             /** */
-            AtomicInteger spoiledPages = new AtomicInteger();
+            private final AtomicInteger spoiledPages = new AtomicInteger();
+
+            /** */
+            private final AtomicInteger spoiledPagesLimit;
 
             /**
              * @param delegate File I/O delegate
              */
-            public PageStoreSpoiling(FileIO delegate) {
+            public PageStoreSpoiling(FileIO delegate, AtomicInteger spoiledPagesLimit) {
                 super(delegate);
+                this.spoiledPagesLimit = spoiledPagesLimit;
             }
 
             /** {@inheritDoc} */
             @Override public int writeFully(ByteBuffer srcBuf, long position) throws IOException {
                 if (failFlag.get()) {
                     // Spoil first 10 pages and after that throw an exception.
-                    if (spoiledPages.getAndIncrement() > 10)
+                    if (spoiledPages.getAndIncrement() > spoiledPagesLimit.get())
                         throw new IOException("Test exception.");
                     else {
                         srcBuf = ByteBuffer.allocate(srcBuf.remaining()).order(ByteOrder.nativeOrder());

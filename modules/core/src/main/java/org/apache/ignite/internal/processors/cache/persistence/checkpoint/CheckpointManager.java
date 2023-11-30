@@ -316,8 +316,8 @@ public class CheckpointManager {
     /**
      * @return List of checkpoint recovery files.
      */
-    public List<CheckpointRecoveryFile> checkpointRecoveryFiles(UUID cpId) throws StorageException {
-        return checkpointRecoveryFileStorage.list(cpId::equals);
+    public List<CheckpointRecoveryFile> checkpointRecoveryFiles(@Nullable UUID cpId) throws StorageException {
+        return checkpointRecoveryFileStorage.list(cpId == null ? null : cpId::equals);
     }
 
     /**

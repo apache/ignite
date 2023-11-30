@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -65,9 +66,11 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointRecoveryFile;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -427,7 +430,13 @@ public class PageMemoryImpl implements PageMemoryEx {
      * Resolves instance of {@link PagesWriteThrottlePolicy} according to chosen throttle policy.
      */
     private void initWriteThrottle() {
-        boolean fillRateBasedCpBufProtection = ctx.kernalContext().config().getDataStorageConfiguration()
+        // Exponential backoff throttling strategy is not suitable for mode with writing recovery data on checkpoint.
+        // In this mode used checkpoint buffer can't be reduced during recovery data write phase. After starting,
+        // throttling never reset until the next phase of the checkpoint. Throttling time grows very fast
+        // (for example, it reaches one day after about 500 invocations). This completely blocks pages changes
+        // until the next checkpoint phase. So, use another throttling strategy to protect checkpoint buffer in
+        // this mode.
+        boolean fillRateBasedCpBufProtection = ctx.gridConfig().getDataStorageConfiguration()
             .isWriteRecoveryDataOnCheckpoint();
 
         if (throttlingPlc == ThrottlingPolicy.SPEED_BASED) {
@@ -925,7 +934,14 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     buf.rewind();
 
-                    tryToRestorePage(fullId, buf);
+                    try {
+                        tryToRestorePage(fullId, buf);
+                    }
+                    catch (Throwable t) {
+                        ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, t));
+
+                        throw t;
+                    }
 
                     // Mark the page as dirty because it has been restored.
                     setDirty(fullId, lockedPageAbsPtr, true, false);
@@ -969,7 +985,43 @@ public class PageMemoryImpl implements PageMemoryEx {
             ByteBuffer curPage = null;
             ByteBuffer lastValidPage = null;
 
-            // TODO Try to restore from checkpoint recovery files.
+            List<CheckpointRecoveryFile> recoveryFiles = ((GridCacheDatabaseSharedManager)ctx.database())
+                .getCheckpointManager().checkpointRecoveryFiles(null);
+
+            if (!recoveryFiles.isEmpty()) {
+                try {
+                    for (CheckpointRecoveryFile recoveryFile : recoveryFiles) {
+                        recoveryFile.forAllPages(fullId::equals, (fullPageId, buffer) -> {
+                            assert buf.position() == 0 : "More than one page in recovery files with fullId " + fullId;
+
+                            if (PageIO.getCompressionType(buffer) != CompressionProcessor.UNCOMPRESSED_PAGE) {
+                                int realPageSize = realPageSize(fullPageId.groupId());
+
+                                try {
+                                    ctx.kernalContext().compress().decompressPage(buffer, realPageSize);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    throw new IgniteException("Page is broken and can't be restored from checkpoint " +
+                                        "recovery file. Failed to decompress page [fullId=" + fullId + ']', e);
+                                }
+                            }
+
+                            buf.put(buffer);
+                        });
+                    }
+
+                    if (buf.position() == 0) {
+                        throw new StorageException("Page is broken and not found in checkpoint recovery files [fullId=" +
+                            fullId + ']');
+                    }
+
+                    return;
+                }
+                catch (IOException e) {
+                    throw new StorageException("Page is broken and can't be restored from checkpoint recovery file " +
+                        "[fullId=" + fullId + ']', e);
+                }
+            }
 
             try (WALIterator it = walMgr.replay(null)) {
                 for (IgniteBiTuple<WALPointer, WALRecord> tuple : it) {

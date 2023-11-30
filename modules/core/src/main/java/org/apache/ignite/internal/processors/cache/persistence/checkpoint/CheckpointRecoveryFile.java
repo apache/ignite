@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.UUID;
 import java.util.function.BiConsumer;
-import java.util.function.IntPredicate;
+import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -159,7 +159,7 @@ public class CheckpointRecoveryFile implements AutoCloseable {
     }
 
     /** */
-    private @Nullable FullPageId readPage(IntPredicate cacheGrpPredicate, ByteBuffer buf) throws IOException {
+    private @Nullable FullPageId readPage(Predicate<FullPageId> pageIdPredicate, ByteBuffer buf) throws IOException {
         // Read header.
         hdrBuf.clear();
         long pos = fileIo.position(); // For error messages.
@@ -181,7 +181,7 @@ public class CheckpointRecoveryFile implements AutoCloseable {
         byte encFlag = hdrBuf.get();
         byte encKeyId = hdrBuf.get();
 
-        if (!cacheGrpPredicate.test(fullPageId.groupId())) {
+        if (!pageIdPredicate.test(fullPageId)) {
             fileIo.position(fileIo.position() + pageSize);
             buf.clear();
             buf.limit(0);
@@ -243,20 +243,22 @@ public class CheckpointRecoveryFile implements AutoCloseable {
      * Preforms action on all pages stored in recovery file.
      */
     public void forAllPages(
-        IntPredicate cacheGrpPredicate,
+        Predicate<FullPageId> pageIdPredicate,
         BiConsumer<FullPageId, ByteBuffer> action
     ) throws IOException {
         fileIo.position(0);
 
         ByteBuffer buf = ByteBuffer.allocateDirect(MAX_PAGE_SIZE).order(ByteOrder.nativeOrder());
 
-        FullPageId fullPageId = readPage(cacheGrpPredicate, buf);
+        FullPageId fullPageId = readPage(pageIdPredicate, buf);
 
         while (fullPageId != null) {
-            if (cacheGrpPredicate.test(fullPageId.groupId()))
+            // Correct fullPageId (but with empty buffer) still will be returned, even when fullPageId
+            // doesn't satisfy pageIdPredicate.
+            if (pageIdPredicate.test(fullPageId))
                 action.accept(fullPageId, buf);
 
-            fullPageId = readPage(cacheGrpPredicate, buf);
+            fullPageId = readPage(pageIdPredicate, buf);
         }
     }
 }

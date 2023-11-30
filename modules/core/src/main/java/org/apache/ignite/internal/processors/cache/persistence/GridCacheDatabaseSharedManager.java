@@ -2151,7 +2151,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (apply) {
             List<CheckpointRecoveryFile> recoveryFiles = checkpointManager.checkpointRecoveryFiles(status.cpStartId);
 
-            // TODO Perhaps some consistency check that all files are found should be added.
+            boolean useRecoveryFiles = cctx.kernalContext().config().getDataStorageConfiguration()
+                .isWriteRecoveryDataOnCheckpoint();
+
+            if (useRecoveryFiles && recoveryFiles.isEmpty()) {
+                throw new StorageException("Failed to restore memory state. Checkpoint recovery files are expected " +
+                    "to exist, but not found (this can happen due to WriteRecoveryDataOnCheckpoint property change " +
+                    "right after node crash or if files were manually deleted)");
+            }
+            else if (!useRecoveryFiles && !recoveryFiles.isEmpty()) {
+                throw new StorageException("Failed to restore memory state. Checkpoint recovery files are not " +
+                    "expected to exist, but found (this can happen due to WriteRecoveryDataOnCheckpoint property " +
+                    "change right after node crash)");
+            }
+
             if (!recoveryFiles.isEmpty() ) {
                 if (log.isInfoEnabled()) {
                     recoveryFiles.sort(Comparator.comparing(CheckpointRecoveryFile::checkpointerIndex));
@@ -2170,24 +2183,25 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         Throwable err = null;
 
                         try {
-                            cpRecoveryFile.forAllPages(cacheGroupsPredicate::apply, (fullPageId, buf) -> {
-                                if (skipRemovedIndexUpdates(fullPageId.groupId(), partId(fullPageId.pageId())))
-                                    return;
-
-                                try {
-                                    PageMemoryEx pageMem = getPageMemoryForCacheGroup(fullPageId.groupId());
-
-                                    if (pageMem == null)
+                            cpRecoveryFile.forAllPages(id -> cacheGroupsPredicate.apply(id.groupId()),
+                                (fullPageId, buf) -> {
+                                    if (skipRemovedIndexUpdates(fullPageId.groupId(), partId(fullPageId.pageId())))
                                         return;
 
-                                    applyPage(pageMem, fullPageId, buf);
+                                    try {
+                                        PageMemoryEx pageMem = getPageMemoryForCacheGroup(fullPageId.groupId());
 
-                                    applied.incrementAndGet();
-                                }
-                                catch (IgniteCheckedException e) {
-                                    throw new IgniteException(e);
-                                }
-                            });
+                                        if (pageMem == null)
+                                            return;
+
+                                        applyPage(pageMem, fullPageId, buf);
+
+                                        applied.incrementAndGet();
+                                    }
+                                    catch (IgniteCheckedException e) {
+                                        throw new IgniteException(e);
+                                    }
+                                });
                         }
                         catch (Throwable e) {
                             err = e;
