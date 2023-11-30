@@ -380,6 +380,8 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
      */
     @Test
     public void wakeupThrottledThread() throws IgniteInterruptedCheckedException {
+        when(pageMemory2g.checkpointBufferPagesSize()).thenReturn(100);
+
         PagesWriteThrottlePolicy plc = new PagesWriteThrottle(pageMemory2g, null, stateChecker,
             true, false, log);
 
@@ -395,8 +397,6 @@ public class IgniteThrottlingUnitTest extends GridCommonAbstractTest {
                 "load-" + i
             ));
         }
-
-        when(pageMemory2g.checkpointBufferPagesSize()).thenReturn(100);
 
         AtomicInteger checkpointBufferPagesCount = new AtomicInteger(70);
 

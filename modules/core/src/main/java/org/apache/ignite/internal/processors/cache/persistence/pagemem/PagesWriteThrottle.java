@@ -70,7 +70,7 @@ public class PagesWriteThrottle extends AbstractPagesWriteThrottle {
         boolean shouldThrottle = false;
 
         if (isPageInCheckpoint)
-            shouldThrottle = isCpBufferOverflowThresholdExceeded();
+            shouldThrottle = cpBufWatchdog.isInThrottlingZone();
 
         if (!shouldThrottle && !throttleOnlyPagesInCheckpoint) {
             CheckpointProgress progress = cpProgress.apply();
@@ -149,7 +149,7 @@ public class PagesWriteThrottle extends AbstractPagesWriteThrottle {
 
     /** {@inheritDoc} */
     @Override public void wakeupThrottledThreads() {
-        if (!isCpBufferOverflowThresholdExceeded()) {
+        if (!cpBufWatchdog.isInThrottlingZone()) {
             cpBufProtector.reset();
 
             unparkParkedThreads();

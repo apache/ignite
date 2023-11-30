@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import org.apache.ignite.IgniteLogger;
@@ -48,15 +64,21 @@ public abstract class AbstractPagesWriteThrottle implements PagesWriteThrottlePo
         this.log = log;
 
         if (fillRateBasedCpBufProtection) {
-            // TODO review CP_BUF_FILL_THRESHOLD_FILL_RATE for checkpoint pages write phase.
-            cpBufWatchdog = new CheckpointBufferOverflowWatchdog(pageMemory, CP_BUF_FILL_THRESHOLD_FILL_RATE);
+            cpBufWatchdog = new CheckpointBufferOverflowWatchdog(pageMemory, CP_BUF_THROTTLING_THRESHOLD_FILL_RATE,
+                CP_BUF_DANGER_THRESHOLD, CP_BUF_WAKEUP_THRESHOLD_FILL_RATE);
             cpBufProtector = new FillRateBasedThrottlingStrategy(cpBufWatchdog, cpProgress);
         }
         else {
-            cpBufWatchdog = new CheckpointBufferOverflowWatchdog(pageMemory, CP_BUF_FILL_THRESHOLD_EXP_BACKOFF);
+            cpBufWatchdog = new CheckpointBufferOverflowWatchdog(pageMemory, CP_BUF_DANGER_THRESHOLD,
+                CP_BUF_DANGER_THRESHOLD, CP_BUF_WAKEUP_THRESHOLD_EXP_BACKOFF);
             cpBufProtector = new ExponentialBackoffThrottlingStrategy();
         }
 
+    }
+
+    /** */
+    @Override public int checkpointBufferThrottledThreadsWakeupThreshold() {
+        return cpBufWatchdog.checkpointBufferThrottledThreadsWakeupThreshold();
     }
 
     /** {@inheritDoc} */

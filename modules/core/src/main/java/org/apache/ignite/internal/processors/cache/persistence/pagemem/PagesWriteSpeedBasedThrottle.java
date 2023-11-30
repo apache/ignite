@@ -108,7 +108,7 @@ public class PagesWriteSpeedBasedThrottle extends AbstractPagesWriteThrottle {
 
     /***/
     private long computeThrottlingParkTime(boolean isPageInCheckpoint, long curNanoTime) {
-        if (isPageInCheckpoint && isCpBufferOverflowThresholdExceeded())
+        if (isPageInCheckpoint && cpBufWatchdog.isInThrottlingZone())
             return cpBufProtector.protectionParkTime();
         else {
             if (isPageInCheckpoint) {
@@ -284,7 +284,7 @@ public class PagesWriteSpeedBasedThrottle extends AbstractPagesWriteThrottle {
 
     /** {@inheritDoc} */
     @Override public void wakeupThrottledThreads() {
-        if (!isCpBufferOverflowThresholdExceeded()) {
+        if (!cpBufWatchdog.isInThrottlingZone()) {
             cpBufProtector.reset();
 
             unparkParkedThreads();

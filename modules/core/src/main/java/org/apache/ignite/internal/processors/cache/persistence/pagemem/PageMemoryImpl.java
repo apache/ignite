@@ -949,7 +949,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     private void releaseCheckpointBufferPage(long tmpBufPtr) {
         int resCntr = checkpointPool.releaseFreePage(tmpBufPtr);
 
-        if (resCntr == checkpointBufferPagesSize() / 2 && writeThrottle != null)
+        if (writeThrottle != null && resCntr == writeThrottle.checkpointBufferThrottledThreadsWakeupThreshold())
             writeThrottle.wakeupThrottledThreads();
     }
 
