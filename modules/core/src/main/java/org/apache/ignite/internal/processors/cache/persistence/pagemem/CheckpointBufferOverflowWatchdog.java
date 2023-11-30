@@ -46,7 +46,7 @@ class CheckpointBufferOverflowWatchdog {
         double cpBufThrottlingThreshold,
         double cpBufDangerThreshold,
         double cpBufThreadsWakeupThreshold
-        ) {
+    ) {
         this.pageMemory = pageMemory;
         cpBufPagesThrottlingThreshold = (int)(pageMemory.checkpointBufferPagesSize() * cpBufThrottlingThreshold);
         cpBufPagesDangerThreshold = (int)(pageMemory.checkpointBufferPagesSize() * cpBufDangerThreshold);
@@ -77,7 +77,7 @@ class CheckpointBufferOverflowWatchdog {
      * @return Checkpoint buffer pages bound to wake up throttled threads.
      */
     int checkpointBufferThrottledThreadsWakeupThreshold() {
-        return cpBufPagesThrottlingThreshold;
+        return cpBufPagesThreadsWakeupThreshold;
     }
 
     /**

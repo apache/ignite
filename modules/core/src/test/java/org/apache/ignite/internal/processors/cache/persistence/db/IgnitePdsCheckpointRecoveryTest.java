@@ -181,41 +181,6 @@ public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testCorruptedPageRecoveryFromCheckpointRecoveryFiles() throws Exception {
-        IgniteEx ignite = startGrid(0);
-        ignite.cluster().state(ClusterState.ACTIVE);
-
-        CacheConfiguration<Integer, Integer> cacheCfg = GridAbstractTest.<Integer, Integer>defaultCacheConfiguration()
-            .setAffinity(new RendezvousAffinityFunction(false, PARTS))
-            .setEncryptionEnabled(encrypt);
-
-        IgniteCache<Integer, Integer> cache = ignite.createCache(cacheCfg);
-
-        spoiledPageLimit.set(Integer.MAX_VALUE);
-        fail.set(true);
-
-        for (int i = 0; i < KEYS_CNT; i++)
-            cache.put(i, i);
-
-        File cpDir = dbMgr(ignite).checkpointDirectory();
-
-        forceCheckpoint();
-
-        fail.set(false);
-
-        assertTrue(cpDir.listFiles(((dir, name) -> FILE_NAME_PATTERN.matcher(name).matches())).length > 0);
-
-        stopGrid(0);
-        ignite = startGrid(0);
-
-        cache = ignite.cache(DEFAULT_CACHE_NAME);
-
-        for (int i = 0; i < KEYS_CNT; i++)
-            assertEquals((Integer)i, cache.get(i));
-    }
-
-    /** */
     private static final class PageStoreSpoilingFileIOFactory implements FileIOFactory {
         /** */
         private final FileIOFactory delegateFactory;
@@ -260,7 +225,7 @@ public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
             /** {@inheritDoc} */
             @Override public int writeFully(ByteBuffer srcBuf, long position) throws IOException {
                 if (failFlag.get()) {
-                    // Spoil first 10 pages and after that throw an exception.
+                    // Spoil specified pages amount and after that throw an exception.
                     if (spoiledPages.getAndIncrement() > spoiledPagesLimit.get())
                         throw new IOException("Test exception.");
                     else {
