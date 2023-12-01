@@ -195,7 +195,7 @@ public class DataStorageConfiguration implements Serializable {
     public static final long HALF_MAX_WAL_ARCHIVE_SIZE = -1;
 
     /** Default value for {@link #writeRecoveryDataOnCheckpoint} property. */
-    public static final boolean DFLT_WRITE_RECOVERY_DATA_ON_CP = false;
+    public static final boolean DFLT_WRITE_RECOVERY_DATA_ON_CP = true;
 
     /** Default compression algorithm for checkpoint recovery data. */
     public static final DiskPageCompression DFLT_CP_RECOVERY_DATA_COMRESSION = DiskPageCompression.SKIP_GARBAGE;

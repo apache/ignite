@@ -412,10 +412,10 @@ public class Checkpointer extends GridWorker {
                 long recoveryDataSize = 0;
 
                 try {
-                    if (checkpointRecoveryFileStorage != null) {
+                    if (checkpointRecoveryFileStorage != null && chp.hasDelta()) {
                         checkpointRecoveryFileStorage.clear();
 
-                        if (chp.hasDelta() && writeRecoveryData) {
+                        if (writeRecoveryData) {
                             if (log.isInfoEnabled()) {
                                 log.info(String.format("Checkpoint recovery data write started [" +
                                         "checkpointId=%s, " +
