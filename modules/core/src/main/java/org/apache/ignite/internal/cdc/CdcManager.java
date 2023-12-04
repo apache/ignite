@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
 
@@ -63,6 +64,7 @@ import org.apache.ignite.plugin.PluginProvider;
  * @see CdcConsumer#onEvents(Iterator)
  * @see CdcConsumerState#saveCdcMode(CdcMode)
  */
+@IgniteExperimental
 public interface CdcManager extends GridCacheSharedManager, DatabaseLifecycleListener {
     /**
      * If this manager isn't enabled then Ignite skips notifying the manager with following methods.
