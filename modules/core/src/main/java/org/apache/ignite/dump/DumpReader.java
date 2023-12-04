@@ -185,8 +185,8 @@ public class DumpReader implements Runnable {
 
                                     int partNo = partsProcessed.incrementAndGet();
 
-                                    if (log.isDebugEnabled())
-                                        log.debug("Consumed partitions " + partNo + " of " + partsCnt);
+                                    if (log.isInfoEnabled())
+                                        log.info("Consumed partitions " + partNo + " of " + partsCnt);
                                 }
                                 catch (Exception ex) {
                                     skip.set(cfg.failFast());

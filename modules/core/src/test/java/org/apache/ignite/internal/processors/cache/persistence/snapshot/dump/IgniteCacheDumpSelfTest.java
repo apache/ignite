@@ -21,14 +21,19 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
@@ -53,6 +58,8 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.model.Key;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static java.lang.Boolean.FALSE;
@@ -677,6 +684,60 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             }
 
             return delegate.create(file, modes);
+        }
+    }
+
+    /** */
+    @Test
+    public void testLogMgs() throws Exception {
+        snpPoolSz = 4;
+
+        try {
+            IgniteEx ign = startGridAndFillCaches();
+
+            createDump(ign);
+
+            ListeningTestLogger lsnLog = new ListeningTestLogger(log);
+
+            log = lsnLog;
+
+            LogListener lsnr = new LogListener() {
+                private final List<String> msgs = new ArrayList<>();
+
+                @Override public boolean check() {
+                    if (msgs.isEmpty())
+                        return false;
+
+                    Collections.sort(msgs, Comparator.comparing(s -> {
+                        Matcher m = Pattern.compile("([0-9]+) of ([0-9]+)").matcher(s);
+
+                        return m.find() ? Integer.parseInt(m.group(1)) : null;
+                    }));
+
+                    List<String> expMsgs = IntStream.range(1, msgs.size() + 1)
+                        .mapToObj(i -> "Consumed partitions " + i + " of " + msgs.size()).collect(Collectors.toList());
+
+                    return expMsgs.equals(msgs);
+                }
+
+                @Override public void reset() {
+                    msgs.clear();
+                }
+
+                @Override public void accept(String s) {
+                    if (s.matches("Consumed partitions [0-9]+ of [0-9]+"))
+                        msgs.add(s);
+                }
+            };
+
+            lsnLog.registerListener(lsnr);
+
+            checkDump(ign);
+
+            assertTrue(lsnr.check());
+        }
+        finally {
+            snpPoolSz = 1;
         }
     }
 }
