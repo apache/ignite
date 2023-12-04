@@ -61,14 +61,13 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cacheobject.PlatformCacheObjectImpl;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetServiceImpl;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -1374,9 +1373,8 @@ public class PlatformUtils {
      *
      * @param reader Reader.
      * @param isKey {@code True} if object is a key.
-     * @param ctx Client connection context.
      */
-    public static <T extends CacheObject> T readCacheObject(BinaryReaderExImpl reader, boolean isKey, ClientConnectionContext ctx) {
+    public static <T extends CacheObject> T readCacheObject(BinaryReaderExImpl reader, boolean isKey) {
         BinaryInputStream in = reader.in();
 
         int pos0 = in.position();
@@ -1397,7 +1395,7 @@ public class PlatformUtils {
 
         return isKey ?
             (T)new KeyCacheObjectImpl(obj, objBytes, -1) :
-            (T)new CacheObjectImpl(obj, ctx.kernalContext().transformer() == null ? objBytes : null);
+            (T)new PlatformCacheObjectImpl(obj, objBytes);
     }
 
     /**

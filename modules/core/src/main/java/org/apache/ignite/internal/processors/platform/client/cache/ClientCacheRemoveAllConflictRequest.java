@@ -51,7 +51,7 @@ public class ClientCacheRemoveAllConflictRequest extends ClientCacheDataRequest 
         map = new LinkedHashMap<>(cnt);
 
         for (int i = 0; i < cnt; i++) {
-            KeyCacheObject key = readCacheObject(reader, true, null);
+            KeyCacheObject key = readCacheObject(reader, true);
             GridCacheVersion ver = (GridCacheVersion)reader.readObjectDetached();
 
             map.put(key, ver);

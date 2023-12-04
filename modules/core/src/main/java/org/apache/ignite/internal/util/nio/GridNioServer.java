@@ -1425,7 +1425,8 @@ public class GridNioServer<T> {
             try {
                 boolean writeFinished = writeSslSystem(ses, sockCh);
 
-                if (!handshakeFinished) {
+                // If post-handshake message is not written fully (possible on JDK 17), we should retry.
+                if (!handshakeFinished || !writeFinished) {
                     if (writeFinished)
                         stopPollingForWrite(key, ses);
 

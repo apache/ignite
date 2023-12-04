@@ -24,6 +24,7 @@ import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
@@ -32,6 +33,8 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 
 /**
@@ -88,11 +91,11 @@ public class DumpEntrySerializer {
     /**
      * Dump entry structure:
      * <pre>
-     * +---------+-----------+----------+-----------------+-----+-------+
-     * | 4 bytes | 4 bytes   | 4 bytes  | 8 bytes         |     |       |
-     * +---------+-----------+----------+-----------------+-----+-------+
-     * | CRC     | Data size | cache ID | expiration time | key | value |
-     * +---------+-----------+----------+-----------------+-----+-------+
+     * +---------+-----------+----------+-----------------+-----+-------------+
+     * | 4 bytes | 4 bytes   | 4 bytes  | 8 bytes         |     |     |       |
+     * +---------+-----------+----------+-----------------+-----+-------------+
+     * | CRC     | Data size | cache ID | expiration time | ver | key | value |
+     * +---------+-----------+----------+-----------------+-----+-------------+
      * </pre>
      *
      * @param cache Cache id.
@@ -108,11 +111,22 @@ public class DumpEntrySerializer {
         long expireTime,
         KeyCacheObject key,
         CacheObject val,
+        GridCacheVersion ver,
         CacheObjectContext coCtx
     ) throws IgniteCheckedException {
+        int verSz = Integer.BYTES/*topVer*/ + Long.BYTES/*order*/ + Integer.BYTES/*nodeOrderDrId*/;
+
+        boolean hasConflictVer = ver.otherClusterVersion() != null;
+
+        if (hasConflictVer)
+            verSz *= 2 /*GridCacheVersion otherClusterVersion*/;
+
+        assert ver.fieldsCount() == (hasConflictVer ? 4 : 3);
+
         int keySz = key.valueBytesLength(coCtx);
         int valSz = val.valueBytesLength(coCtx);
-        int dataSz = /*cache ID*/Integer.BYTES + /*expire time*/Long.BYTES + /*key*/keySz + /*value*/valSz;
+        int dataSz = /*cache ID*/Integer.BYTES + /*expire time*/Long.BYTES
+            + /* hasConflictVersion */1 + /*version*/verSz + /*key*/keySz + /*value*/valSz;
 
         int fullSz = dataSz + /*extra bytes for row size*/Integer.BYTES + /*CRC*/Integer.BYTES;
 
@@ -127,6 +141,19 @@ public class DumpEntrySerializer {
         buf.putInt(dataSz);
         buf.putInt(cache);
         buf.putLong(expireTime);
+
+        buf.put((byte)(hasConflictVer ? 1 : 0));
+        buf.putInt(ver.topologyVersion());
+        buf.putLong(ver.order());
+        buf.putInt(ver.nodeOrderAndDrIdRaw());
+
+        if (hasConflictVer) {
+            GridCacheVersion ver0 = (GridCacheVersion)ver.otherClusterVersion();
+
+            buf.putInt(ver0.topologyVersion());
+            buf.putLong(ver0.order());
+            buf.putInt(ver0.nodeOrderAndDrIdRaw());
+        }
 
         if (!key.putValue(buf))
             throw new IgniteCheckedException("Can't write key");
@@ -195,6 +222,8 @@ public class DumpEntrySerializer {
         int cache = buf.getInt();
         long expireTime = buf.getLong();
 
+        GridCacheVersion ver = readVersion(buf);
+
         int keySz = buf.getInt();
 
         byte keyType = buf.get();
@@ -225,6 +254,10 @@ public class DumpEntrySerializer {
                 return expireTime;
             }
 
+            @Override public CacheEntryVersion version() {
+                return ver;
+            }
+
             @Override public Object key() {
                 return raw ? key : UnwrapDataEntry.unwrapKey(key, keepBinary, fakeCacheObjCtx);
             }
@@ -233,6 +266,24 @@ public class DumpEntrySerializer {
                 return raw ? val : UnwrapDataEntry.unwrapValue(val, keepBinary, fakeCacheObjCtx);
             }
         };
+    }
+
+    /** @return Written entry version. */
+    private static GridCacheVersion readVersion(ByteBuffer buf) {
+        boolean hasConflictVer = buf.get() == 1;
+
+        int topVer = buf.getInt();
+        long order = buf.getLong();
+        int nodeOrderDrId = buf.getInt();
+
+        if (!hasConflictVer)
+            return new GridCacheVersion(topVer, nodeOrderDrId, order);
+
+        int topVer0 = buf.getInt();
+        long order0 = buf.getLong();
+        int nodeOrderDrId0 = buf.getInt();
+
+        return new GridCacheVersionEx(topVer, nodeOrderDrId, order, new GridCacheVersion(topVer0, nodeOrderDrId0, order0));
     }
 
     /** @return Thread local buffer. */
