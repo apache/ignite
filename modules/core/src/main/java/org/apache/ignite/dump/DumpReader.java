@@ -28,11 +28,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -61,9 +58,6 @@ import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
  */
 @IgniteExperimental
 public class DumpReader implements Runnable {
-    /** Update rate stats print period. */
-    private static final int UPDATE_RATE_STATS_PRINT_PERIOD_SECONDS = 30;
-
     /** Configuration. */
     private final DumpReaderConfiguration cfg;
 
@@ -88,7 +82,7 @@ public class DumpReader implements Runnable {
 
             cnsmr.start();
 
-            try (StatsLog statsLog = new StatsLog()) {
+            try {
                 File[] files = new File(cfg.dumpRoot(), DFLT_MARSHALLER_PATH).listFiles(BinaryUtils::notTmpFile);
 
                 if (files != null)
@@ -130,6 +124,8 @@ public class DumpReader implements Runnable {
                         .size())
                     .sum();
 
+                cnsmr.onTotalPartitions(partsCnt);
+
                 AtomicInteger partsProcessed = new AtomicInteger(0);
 
                 for (Map.Entry<Integer, List<String>> e : grpToNodes.entrySet()) {
@@ -153,29 +149,7 @@ public class DumpReader implements Runnable {
                                     return;
                                 }
 
-                                try (DumpedPartitionIterator iter = new DumpedPartitionIterator() {
-                                    /** */
-                                    final DumpedPartitionIterator delegate = dump.iterator(node, grp, part);
-
-                                    /** {@inheritDoc } */
-                                    @Override public boolean hasNext() {
-                                        return delegate.hasNext();
-                                    }
-
-                                    /** {@inheritDoc } */
-                                    @Override public DumpEntry next() {
-                                        DumpEntry next = delegate.next();
-
-                                        statsLog.recordProcessed();
-
-                                        return next;
-                                    }
-
-                                    /** {@inheritDoc } */
-                                    @Override public void close() throws Exception {
-                                        delegate.close();
-                                    }
-                                }) {
+                                try (DumpedPartitionIterator iter = dump.iterator(node, grp, part)) {
                                     if (log.isDebugEnabled()) {
                                         log.debug("Consuming partition [node=" + node + ", grp=" + grp +
                                             ", part=" + part + ']');
@@ -184,9 +158,6 @@ public class DumpReader implements Runnable {
                                     cnsmr.onPartition(grp, part, iter);
 
                                     int partNo = partsProcessed.incrementAndGet();
-
-                                    if (log.isInfoEnabled())
-                                        log.info("Consumed partitions " + partNo + " of " + partsCnt);
                                 }
                                 catch (Exception ex) {
                                     skip.set(cfg.failFast());
@@ -271,65 +242,5 @@ public class DumpReader implements Runnable {
             if (log instanceof GridLoggerProxy)
                 U.quiet(false, "  ^-- Logging by '" + ((GridLoggerProxy)log).getLoggerInfo() + '\'');
         }
-    }
-
-    /** */
-    private class StatsLog implements AutoCloseable {
-        /** */
-        private final LongAdder recordsProcessed = new LongAdder();
-
-        /** */
-        private final long startTime = System.currentTimeMillis();
-
-        /** */
-        private long lastLogTime = startTime;
-
-        /** */
-        private long lastObservedCnt;
-
-        /** */
-        private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
-        /** */
-        private StatsLog() {
-            scheduler.scheduleAtFixedRate(() -> {
-                    long now = System.currentTimeMillis();
-                    long cnt = recordsProcessed.longValue();
-
-                    long newRecs = cnt - lastObservedCnt;
-                    long currentRate = 1000L * newRecs / (now - lastLogTime);
-                    long avgRate = 1000L * cnt / (now - startTime);
-
-                    log.info(">>>" +
-                        "\n>>> Records processed stats" +
-                        "\n>>>   totalRecords: " +
-                        cnt +
-                        "\n>>>   newRecords: " +
-                        newRecs +
-                        "\n>>>   avgRate: " +
-                        avgRate +
-                        "\n>>>   currentRate: " +
-                        currentRate
-                    );
-
-                    lastLogTime = now;
-                    lastObservedCnt = cnt;
-                },
-                UPDATE_RATE_STATS_PRINT_PERIOD_SECONDS,
-                UPDATE_RATE_STATS_PRINT_PERIOD_SECONDS,
-                TimeUnit.SECONDS
-            );
-        }
-
-        /** */
-        private void recordProcessed() {
-            recordsProcessed.increment();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() {
-            scheduler.shutdownNow();
-        }
-
     }
 }

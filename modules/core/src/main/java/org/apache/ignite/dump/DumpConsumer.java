@@ -80,4 +80,12 @@ public interface DumpConsumer {
      * This method can be invoked only after {@link #start()}.
      */
     void stop();
+
+    /**
+     * Informs consumer about total number of partitions for which {@link #onPartition(int, int, Iterator)} will be invoked.
+     * This method is invoked before any invocation of {@link #onPartition(int, int, Iterator)}.
+     * @param totalParts Total number of partitions.
+     */
+    default void onTotalPartitions(int totalParts) {
+    }
 }

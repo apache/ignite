@@ -341,6 +341,10 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
             int grpDumpSz;
 
+            int processedParts;
+
+            int totalParts;
+
             @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
                 super.onCacheConfigs(caches);
 
@@ -397,6 +401,12 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                         grpDumpSz++;
                     }
                 }
+
+                processedParts++;
+            }
+
+            @Override public void onTotalPartitions(int totalParts) {
+                this.totalParts = totalParts;
             }
 
             @Override public void check() {
@@ -406,6 +416,9 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 assertEquals(expectedGrpDumpSz, grpDumpSz);
 
                 IntStream.range(0, expectedCount).forEach(key -> assertTrue(keys.contains(key)));
+
+                assertTrue(totalParts > 0);
+                assertEquals(totalParts, processedParts);
             }
         };
 
