@@ -96,6 +96,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     /** If {@code true} then compress partition files. */
     private final boolean compress;
 
+    /** If {@code true} then content of dump encrypted. */
+    private final boolean encrypt;
+
     /**
      * Dump contextes.
      * Key is [group_id, partition_id] combined in single long value.
@@ -116,6 +119,12 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     private final ConcurrentMap<Long, ByteBuffer> thLocBufs = new ConcurrentHashMap<>();
 
     /**
+     * Map shared across all instances of {@link PartitionDumpContext} and {@link DumpEntrySerializer}.
+     * Used to store encrypted data in case dump encrypted.
+     */
+    private final ConcurrentMap<Long, ByteBuffer> encThLocBufs;
+
+    /**
      * @param cctx Cache context.
      * @param srcNodeId Node id which cause snapshot task creation.
      * @param reqId Snapshot operation request ID.
@@ -124,6 +133,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
      * @param snpSndr Snapshot sender.
      * @param parts Parts to dump.
      * @param compress If {@code true} then compress partition files.
+     * @param encrypt If {@code true} then content of dump encrypted.
      */
     public CreateDumpFutureTask(
         GridCacheSharedContext<?, ?> cctx,
@@ -134,7 +144,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         FileIOFactory ioFactory,
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts,
-        boolean compress
+        boolean compress,
+        boolean encrypt
     ) {
         super(
             cctx,
@@ -148,6 +159,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         this.dumpDir = dumpDir;
         this.ioFactory = compress ? new WriteOnlyZipFileIOFactory() : ioFactory;
         this.compress = compress;
+        this.encrypt = encrypt;
+        this.encThLocBufs = encrypt ? new ConcurrentHashMap<>() : null;
     }
 
     /** {@inheritDoc} */
@@ -333,7 +346,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
             closeFut = CompletableFuture.runAsync(
                 () -> {
-                    thLocBufs.clear();
+                    encThLocBufs.clear();
                     onDone(new SnapshotFutureTaskResult(taken, null), err0);
                 },
                 cctx.kernalContext().pools().getSystemExecutorService()
@@ -366,7 +379,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     private PartitionDumpContext dumpContext(int grp, int part) {
         return dumpCtxs.computeIfAbsent(
             toLong(grp, part),
-            key -> new PartitionDumpContext(cctx.kernalContext().cache().cacheGroup(grp), part, thLocBufs)
+            key -> new PartitionDumpContext(cctx.kernalContext().cache().cacheGroup(grp), part)
         );
     }
 
@@ -431,9 +444,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         /**
          * @param gctx Group context.
          * @param part Partition id.
-         * @param thLocBufs Thread local buffers.
          */
-        public PartitionDumpContext(CacheGroupContext gctx, int part, ConcurrentMap<Long, ByteBuffer> thLocBufs) {
+        public PartitionDumpContext(CacheGroupContext gctx, int part) {
             assert gctx != null;
 
             try {
@@ -444,7 +456,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 startVer = grpPrimaries.get(gctx.groupId()).contains(part) ? gctx.shared().versions().last() : null;
                 isolatedStreamerVer = cctx.versions().isolatedStreamerVersion();
 
-                serializer = new DumpEntrySerializer(thLocBufs);
+                serializer = new DumpEntrySerializer(thLocBufs, encThLocBufs, encrypt, cctx.gridConfig().getEncryptionSpi());
                 changed = new HashMap<>();
 
                 for (int cache : gctx.cacheIds())

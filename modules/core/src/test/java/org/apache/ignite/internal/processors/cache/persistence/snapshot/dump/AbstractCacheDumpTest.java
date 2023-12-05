@@ -550,7 +550,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     /** */
     void createDump(IgniteEx ign, String name, @Nullable Collection<String> cacheGroupNames, boolean comprParts) {
         ign.context().cache().context().snapshotMgr()
-            .createSnapshot(name, null, cacheGroupNames, false, onlyPrimary, true, comprParts).get();
+            .createSnapshot(name, null, cacheGroupNames, false, onlyPrimary, true, comprParts, false).get();
     }
 
     /** */

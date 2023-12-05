@@ -393,6 +393,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 false,
                 false,
                 true,
+                false,
                 false
             ).get();
 
@@ -485,10 +486,10 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         String zipDump = "zipDump";
 
         ign.context().cache().context().snapshotMgr()
-            .createSnapshot(rawDump, null, null, false, true, true, false).get();
+            .createSnapshot(rawDump, null, null, false, true, true, false, false).get();
 
         ign.context().cache().context().snapshotMgr()
-            .createSnapshot(zipDump, null, null, false, true, true, true).get();
+            .createSnapshot(zipDump, null, null, false, true, true, true, false).get();
 
         stopAllGrids();
 

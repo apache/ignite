@@ -261,7 +261,7 @@ public class Dump implements AutoCloseable {
             throw new RuntimeException(e);
         }
 
-        DumpEntrySerializer serializer = new DumpEntrySerializer(thLocBufs);
+        DumpEntrySerializer serializer = new DumpEntrySerializer(thLocBufs, null, false, null);
 
         serializer.kernalContext(cctx);
         serializer.keepBinary(keepBinary);

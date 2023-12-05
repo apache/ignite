@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -36,6 +37,8 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Serialization logic for dump.
@@ -49,6 +52,18 @@ public class DumpEntrySerializer {
 
     /** */
     private final ConcurrentMap<Long, ByteBuffer> thLocBufs;
+
+    /** */
+    private final @Nullable ConcurrentMap<Long, ByteBuffer> encThLocBufs;
+
+    /** */
+    private final boolean encrypt;
+
+    /** */
+    private final @Nullable EncryptionSpi encSpi;
+
+    /** */
+    private final @Nullable Serializable encKey;
 
     /** */
     private final FastCrc crc = new FastCrc();
@@ -67,9 +82,20 @@ public class DumpEntrySerializer {
 
     /**
      * @param thLocBufs Thread local buffers.
+     * @param encrypt If {@code true} then content of dump encrypted.
+     * @param encSpi Encryption SPI to use.
      */
-    public DumpEntrySerializer(ConcurrentMap<Long, ByteBuffer> thLocBufs) {
+    public DumpEntrySerializer(
+        ConcurrentMap<Long, ByteBuffer> thLocBufs,
+        @Nullable ConcurrentMap<Long, ByteBuffer> encThLocBufs,
+        boolean encrypt,
+        @Nullable EncryptionSpi encSpi
+    ) {
         this.thLocBufs = thLocBufs;
+        this.encThLocBufs = encThLocBufs;
+        this.encrypt = encrypt;
+        this.encSpi = encSpi;
+        this.encKey = encSpi == null ? null : encSpi.create();
     }
 
     /** */
@@ -89,6 +115,43 @@ public class DumpEntrySerializer {
     }
 
     /**
+     * @param cache Cache id.
+     * @param expireTime Expire time.
+     * @param key Key.
+     * @param val Value.
+     * @param coCtx Cache object context.
+     * @return Buffer with serialized entry.
+     * @throws IgniteCheckedException If failed.
+     */
+    public ByteBuffer writeToBuffer(
+        int cache,
+        long expireTime,
+        KeyCacheObject key,
+        CacheObject val,
+        GridCacheVersion ver,
+        CacheObjectContext coCtx
+    ) throws IgniteCheckedException {
+        ByteBuffer plainBuf = writeToBufferPlain(cache, expireTime, key, val, ver, coCtx);
+
+        if (!encrypt)
+            return plainBuf;
+
+        int encDataSz = encSpi.encryptedSize(plainBuf.limit());
+
+        ByteBuffer encBuf = threadLocalBuffer(encThLocBufs);
+
+        if (encBuf.capacity() < encDataSz)
+            encBuf = enlargeThreadLocalBuffer(thLocBufs, encDataSz);
+        else
+            encBuf.rewind().limit(encDataSz);
+
+        //TODO: check and save key to metadata.
+        encSpi.encrypt(plainBuf, encKey, encBuf);
+
+        return encBuf;
+    }
+
+    /**
      * Dump entry structure:
      * <pre>
      * +---------+-----------+----------+-----------------+-----+-------------+
@@ -104,9 +167,9 @@ public class DumpEntrySerializer {
      * @param val Value.
      * @param coCtx Cache object context.
      * @return Buffer with serialized entry.
-     * @throws IgniteCheckedException If failed
+     * @throws IgniteCheckedException If failed.
      */
-    public ByteBuffer writeToBuffer(
+    private ByteBuffer writeToBufferPlain(
         int cache,
         long expireTime,
         KeyCacheObject key,
@@ -114,33 +177,21 @@ public class DumpEntrySerializer {
         GridCacheVersion ver,
         CacheObjectContext coCtx
     ) throws IgniteCheckedException {
-        int verSz = Integer.BYTES/*topVer*/ + Long.BYTES/*order*/ + Integer.BYTES/*nodeOrderDrId*/;
+        int fullSz = plainDataSize(key, val, ver, coCtx);
 
-        boolean hasConflictVer = ver.otherClusterVersion() != null;
-
-        if (hasConflictVer)
-            verSz *= 2 /*GridCacheVersion otherClusterVersion*/;
-
-        assert ver.fieldsCount() == (hasConflictVer ? 4 : 3);
-
-        int keySz = key.valueBytesLength(coCtx);
-        int valSz = val.valueBytesLength(coCtx);
-        int dataSz = /*cache ID*/Integer.BYTES + /*expire time*/Long.BYTES
-            + /* hasConflictVersion */1 + /*version*/verSz + /*key*/keySz + /*value*/valSz;
-
-        int fullSz = dataSz + /*extra bytes for row size*/Integer.BYTES + /*CRC*/Integer.BYTES;
-
-        ByteBuffer buf = threadLocalBuffer();
+        ByteBuffer buf = threadLocalBuffer(thLocBufs);
 
         if (buf.capacity() < fullSz)
-            buf = enlargeThreadLocalBuffer(fullSz);
+            buf = enlargeThreadLocalBuffer(thLocBufs, fullSz);
         else
             buf.rewind().limit(fullSz);
 
         buf.position(Integer.BYTES); // CRC value.
-        buf.putInt(dataSz);
+        buf.putInt(fullSz - /*extra bytes for row size*/Integer.BYTES - /*CRC*/Integer.BYTES);
         buf.putInt(cache);
         buf.putLong(expireTime);
+
+        boolean hasConflictVer = ver.otherClusterVersion() != null;
 
         buf.put((byte)(hasConflictVer ? 1 : 0));
         buf.putInt(ver.topologyVersion());
@@ -176,6 +227,30 @@ public class DumpEntrySerializer {
         return buf;
     }
 
+    /** */
+    private static int plainDataSize(
+        KeyCacheObject key,
+        CacheObject val,
+        GridCacheVersion ver,
+        CacheObjectContext coCtx
+    ) throws IgniteCheckedException {
+        int verSz = Integer.BYTES/*topVer*/ + Long.BYTES/*order*/ + Integer.BYTES/*nodeOrderDrId*/;
+
+        boolean hasConflictVer = ver.otherClusterVersion() != null;
+
+        if (hasConflictVer)
+            verSz *= 2 /*GridCacheVersion otherClusterVersion*/;
+
+        assert ver.fieldsCount() == (hasConflictVer ? 4 : 3);
+
+        int keySz = key.valueBytesLength(coCtx);
+        int valSz = val.valueBytesLength(coCtx);
+        int dataSz = /*cache ID*/Integer.BYTES + /*expire time*/Long.BYTES
+            + /* hasConflictVersion */1 + /*version*/verSz + /*key*/keySz + /*value*/valSz;
+
+        return dataSz + /*extra bytes for row size*/Integer.BYTES + /*CRC*/Integer.BYTES;
+    }
+
     /**
      * @param dumpFile File to read data from.
      * @param grp Cache group.
@@ -184,7 +259,7 @@ public class DumpEntrySerializer {
     public DumpEntry read(FileIO dumpFile, int grp, int part) throws IOException, IgniteCheckedException {
         assert co != null : "Set kernalContext first";
 
-        ByteBuffer buf = threadLocalBuffer();
+        ByteBuffer buf = threadLocalBuffer(thLocBufs);
 
         buf.position(0);
         buf.limit(HEADER_SZ);
@@ -200,7 +275,7 @@ public class DumpEntrySerializer {
         int dataSz = buf.getInt();
 
         if (buf.capacity() < dataSz + HEADER_SZ) {
-            buf = enlargeThreadLocalBuffer(dataSz + HEADER_SZ);
+            buf = enlargeThreadLocalBuffer(thLocBufs, dataSz + HEADER_SZ);
 
             buf.position(HEADER_SZ - Integer.BYTES);
             buf.putInt(dataSz); // Required for CRC check.
@@ -287,15 +362,15 @@ public class DumpEntrySerializer {
     }
 
     /** @return Thread local buffer. */
-    private ByteBuffer threadLocalBuffer() {
-        return thLocBufs.computeIfAbsent(Thread.currentThread().getId(), DFLT_BUF_ALLOC);
+    private ByteBuffer threadLocalBuffer(ConcurrentMap<Long, ByteBuffer> map) {
+        return map.computeIfAbsent(Thread.currentThread().getId(), DFLT_BUF_ALLOC);
     }
 
     /** @return Thread local buffer. */
-    private ByteBuffer enlargeThreadLocalBuffer(int sz) {
+    private ByteBuffer enlargeThreadLocalBuffer(ConcurrentMap<Long, ByteBuffer> map, int sz) {
         ByteBuffer buf = ByteBuffer.allocate(sz);
 
-        thLocBufs.put(Thread.currentThread().getId(), buf);
+        map.put(Thread.currentThread().getId(), buf);
 
         return buf;
     }
