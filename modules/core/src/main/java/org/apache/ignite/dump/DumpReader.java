@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -126,8 +125,6 @@ public class DumpReader implements Runnable {
 
                 cnsmr.onTotalPartitions(partsCnt);
 
-                AtomicInteger partsProcessed = new AtomicInteger(0);
-
                 for (Map.Entry<Integer, List<String>> e : grpToNodes.entrySet()) {
                     int grp = e.getKey();
 
@@ -156,8 +153,6 @@ public class DumpReader implements Runnable {
                                     }
 
                                     cnsmr.onPartition(grp, part, iter);
-
-                                    int partNo = partsProcessed.incrementAndGet();
                                 }
                                 catch (Exception ex) {
                                     skip.set(cfg.failFast());
