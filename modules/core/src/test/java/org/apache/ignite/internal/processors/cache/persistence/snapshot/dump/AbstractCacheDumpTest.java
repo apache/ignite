@@ -418,6 +418,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 IntStream.range(0, expectedCount).forEach(key -> assertTrue(keys.contains(key)));
 
                 assertTrue(totalParts > 0);
+
                 assertEquals(totalParts, processedParts);
             }
         };

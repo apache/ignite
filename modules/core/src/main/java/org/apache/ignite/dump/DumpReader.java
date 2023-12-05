@@ -241,6 +241,10 @@ public class DumpReader implements Runnable {
 
             if (log instanceof GridLoggerProxy)
                 U.quiet(false, "  ^-- Logging by '" + ((GridLoggerProxy)log).getLoggerInfo() + '\'');
+
+            U.quiet(false,
+                "  ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or \"-v\" to ignite-cdc.{sh|bat}",
+                "");
         }
     }
 }
