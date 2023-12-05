@@ -37,6 +37,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
+import org.apache.ignite.events.ClusterStateChangeStartedEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.events.TaskEvent;
@@ -184,6 +185,8 @@ public abstract class AbstractEventSecurityContextTest extends AbstractSecurityT
                     return ((TaskEvent)evt).subjectId();
                 else if (evt instanceof JobEvent)
                     return ((JobEvent)evt).taskSubjectId();
+                else if (evt instanceof ClusterStateChangeStartedEvent)
+                    return ((ClusterStateChangeStartedEvent)evt).subjectId();
                 else
                     throw new IgniteException();
             })

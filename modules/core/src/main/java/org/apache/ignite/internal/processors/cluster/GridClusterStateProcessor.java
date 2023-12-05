@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadW
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineTopologyUpdater;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -793,7 +794,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                             state.state(),
                             newState.state(),
                             ctx.discovery().localNode(),
-                            "Cluster state change started."
+                            "Cluster state change started.",
+                            SecurityUtils.securitySubjectId(ctx)
                         ))
                     );
                 }
