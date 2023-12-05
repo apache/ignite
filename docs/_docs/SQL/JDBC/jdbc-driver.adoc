@@ -102,12 +102,6 @@ See the link:security/authentication[Authentication] and link:sql-reference/ddl#
    on each node participating in the query.
 |`false`
 
-|`replicatedOnly`
-
-|Whether the query contains only replicated tables. This is a hint for potentially more effective execution.
-
-|`false`
-
 |`autoCloseServerCursor`
 |Whether to close server-side cursors automatically when the last piece of a result set is retrieved. When this property is enabled, calling `ResultSet.close()` does not require a network call, which could improve performance. However, if the server-side cursor is already closed, you may get an exception when trying to call `ResultSet.getMetadata()`. This is why it defaults to `false`.
 |`false`
