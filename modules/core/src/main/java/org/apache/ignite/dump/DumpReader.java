@@ -75,7 +75,7 @@ public class DumpReader implements Runnable {
     @Override public void run() {
         ackAsciiLogo();
 
-        try (Dump dump = new Dump(cfg.dumpRoot(), cfg.keepBinary(), false, log)) {
+        try (Dump dump = new Dump(cfg.dumpRoot(), null, cfg.keepBinary(), false, cfg.encryptionSpi(), log)) {
             DumpConsumer cnsmr = cfg.consumer();
 
             cnsmr.start();

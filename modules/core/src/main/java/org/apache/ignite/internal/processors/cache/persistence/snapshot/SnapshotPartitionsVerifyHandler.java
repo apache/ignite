@@ -364,7 +364,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         try {
             String consistentId = cctx.kernalContext().pdsFolderResolver().resolveFolders().consistentId().toString();
 
-            try (Dump dump = new Dump(opCtx.snapshotDirectory(), consistentId, true, true, log)) {
+            try (Dump dump = new Dump(opCtx.snapshotDirectory(), consistentId, true, true, cctx.gridConfig().getEncryptionSpi(), log)) {
                 Collection<PartitionHashRecordV2> partitionHashRecordV2s = U.doInParallel(
                     cctx.snapshotMgr().snapshotExecutorService(),
                     partFiles,
