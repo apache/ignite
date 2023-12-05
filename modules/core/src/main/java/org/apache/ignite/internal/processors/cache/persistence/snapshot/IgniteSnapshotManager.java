@@ -1219,6 +1219,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 SnapshotFutureTaskResult res = (SnapshotFutureTaskResult)task0.result();
 
+                Serializable encKey = req.encrypt() ? ((CreateDumpFutureTask)task0).encryptionKey() : null;
+
+                EncryptionSpi encSpi = cctx.gridConfig().getEncryptionSpi();
+
                 SnapshotMetadata meta = new SnapshotMetadata(req.requestId(),
                     req.snapshotName(),
                     cctx.localNode().consistentId().toString(),
@@ -1230,9 +1234,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     blts,
                     res.parts(),
                     res.snapshotPointer(),
-                    cctx.gridConfig().getEncryptionSpi().masterKeyDigest(),
+                    encSpi.masterKeyDigest(),
                     req.onlyPrimary(),
-                    req.dump()
+                    req.dump(),
+                    encKey == null ? null : encSpi.encryptKey(encKey)
                 );
 
                 SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir,

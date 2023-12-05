@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -96,8 +97,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     /** If {@code true} then compress partition files. */
     private final boolean compress;
 
-    /** If {@code true} then content of dump encrypted. */
-    private final boolean encrypt;
+    /** If {@code null} then encryption disabled. */
+    private final @Nullable Serializable encKey;
 
     /**
      * Dump contextes.
@@ -159,7 +160,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         this.dumpDir = dumpDir;
         this.ioFactory = compress ? new WriteOnlyZipFileIOFactory() : ioFactory;
         this.compress = compress;
-        this.encrypt = encrypt;
+        this.encKey = encrypt ? cctx.gridConfig().getEncryptionSpi().create() : null;
         this.encThLocBufs = encrypt ? new ConcurrentHashMap<>() : null;
     }
 
@@ -346,7 +347,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
             closeFut = CompletableFuture.runAsync(
                 () -> {
-                    encThLocBufs.clear();
+                    thLocBufs.clear();
+                    if (encThLocBufs != null)
+                        encThLocBufs.clear();
                     onDone(new SnapshotFutureTaskResult(taken, null), err0);
                 },
                 cctx.kernalContext().pools().getSystemExecutorService()
@@ -456,7 +459,12 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 startVer = grpPrimaries.get(gctx.groupId()).contains(part) ? gctx.shared().versions().last() : null;
                 isolatedStreamerVer = cctx.versions().isolatedStreamerVersion();
 
-                serializer = new DumpEntrySerializer(thLocBufs, encThLocBufs, encrypt, cctx.gridConfig().getEncryptionSpi());
+                serializer = new DumpEntrySerializer(
+                    thLocBufs,
+                    encThLocBufs,
+                    encKey,
+                    cctx.gridConfig().getEncryptionSpi()
+                );
                 changed = new HashMap<>();
 
                 for (int cache : gctx.cacheIds())
@@ -615,5 +623,10 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             IgniteSnapshotManager.nodeDumpDirectory(dumpDir, cctx),
             (grpCtx.caches().size() > 1 ? CACHE_GRP_DIR_PREFIX : CACHE_DIR_PREFIX) + grpCtx.cacheOrGroupName()
         );
+    }
+
+    /** @return Encryption key. */
+    public @Nullable Serializable encryptionKey() {
+        return encKey;
     }
 }

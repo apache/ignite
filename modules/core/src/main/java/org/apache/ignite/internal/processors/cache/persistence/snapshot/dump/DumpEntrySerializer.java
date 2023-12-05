@@ -57,9 +57,6 @@ public class DumpEntrySerializer {
     private final @Nullable ConcurrentMap<Long, ByteBuffer> encThLocBufs;
 
     /** */
-    private final boolean encrypt;
-
-    /** */
     private final @Nullable EncryptionSpi encSpi;
 
     /** */
@@ -82,20 +79,19 @@ public class DumpEntrySerializer {
 
     /**
      * @param thLocBufs Thread local buffers.
-     * @param encrypt If {@code true} then content of dump encrypted.
+     * @param encKey Encrytpion key. If {@code null} then encryption disabled.
      * @param encSpi Encryption SPI to use.
      */
     public DumpEntrySerializer(
         ConcurrentMap<Long, ByteBuffer> thLocBufs,
         @Nullable ConcurrentMap<Long, ByteBuffer> encThLocBufs,
-        boolean encrypt,
+        @Nullable Serializable encKey,
         @Nullable EncryptionSpi encSpi
     ) {
         this.thLocBufs = thLocBufs;
         this.encThLocBufs = encThLocBufs;
-        this.encrypt = encrypt;
+        this.encKey = encKey;
         this.encSpi = encSpi;
-        this.encKey = encSpi == null ? null : encSpi.create();
     }
 
     /** */
@@ -133,7 +129,7 @@ public class DumpEntrySerializer {
     ) throws IgniteCheckedException {
         ByteBuffer plainBuf = writeToBufferPlain(cache, expireTime, key, val, ver, coCtx);
 
-        if (!encrypt)
+        if (encKey == null)
             return plainBuf;
 
         int encDataSz = encSpi.encryptedSize(plainBuf.limit());
@@ -145,7 +141,6 @@ public class DumpEntrySerializer {
         else
             encBuf.rewind().limit(encDataSz);
 
-        //TODO: check and save key to metadata.
         encSpi.encrypt(plainBuf, encKey, encBuf);
 
         return encBuf;
