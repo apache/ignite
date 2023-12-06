@@ -41,6 +41,7 @@ import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.util.GridCommandHandlerIndexingCheckSizeTest.CACHE;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.CACHE_NAME;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.GROUP_NAME;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFillCache;
@@ -101,7 +102,7 @@ public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerCluster
 
         addBadIndex();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", CACHE_NAME));
+        assertEquals(EXIT_CODE_OK, execute(CACHE, "validate_indexes", CACHE_NAME));
 
         assertTrue(!lsnrs.isEmpty());
 

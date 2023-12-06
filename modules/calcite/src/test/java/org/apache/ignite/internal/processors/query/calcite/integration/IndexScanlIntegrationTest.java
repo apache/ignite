@@ -21,13 +21,12 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.Iterator;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.function.IntFunction;
-import java.util.function.Predicate;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -44,6 +43,8 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.hamcrest.CoreMatchers;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -337,11 +338,88 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
+    @Test
+    public void testNoIndexHint() {
+        executeSql("CREATE TABLE t1(i1 INTEGER) WITH TEMPLATE=PARTITIONED");
+        executeSql("INSERT INTO t1 VALUES (1), (2), (30), (40)");
+        executeSql("CREATE INDEX t1_idx ON t1(i1)");
+
+        executeSql("CREATE TABLE t2(i2 INTEGER, i3 INTEGER) WITH TEMPLATE=PARTITIONED");
+
+        for (int i = 0; i < 100; ++i)
+            executeSql("INSERT INTO t2 VALUES (?, ?)", i, i);
+
+        executeSql("CREATE INDEX t2_idx ON t2(i2)");
+
+        assertQuery("SELECT /*+ NO_INDEX(T2_IDX) */ i3 FROM t2 where i2=2")
+            .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX")))
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT /*+ NO_INDEX(T1_IDX,T2_IDX) */ i1, i3 FROM t1, t2 where i2=i1")
+            .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX")))
+            .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX")))
+            .returns(1, 1)
+            .returns(2, 2)
+            .returns(30, 30)
+            .returns(40, 40)
+            .check();
+
+        assertQuery("SELECT * FROM t1 WHERE i1 = (SELECT /*+ NO_INDEX(T2_IDX) */ i3 from t2 where i2=40)")
+            .matches(CoreMatchers.not(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX")))
+            .returns(40)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testForcedIndexHint() {
+        executeSql("CREATE TABLE t1(i1 INTEGER, i2 INTEGER, i3 INTEGER) WITH TEMPLATE=PARTITIONED");
+
+        executeSql("CREATE INDEX t1_idx1 ON t1(i1)");
+        executeSql("CREATE INDEX t1_idx2 ON t1(i2)");
+        executeSql("CREATE INDEX t1_idx3 ON t1(i3)");
+
+        executeSql("INSERT INTO t1 VALUES (1, 2, 3)");
+
+        assertQuery("SELECT /*+ FORCE_INDEX(T1_IDX1) */ i1 FROM t1 where i1=1 and i2=2 and i3=3")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX1"))
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT /*+ FORCE_INDEX(T1_IDX2) */ i1 FROM t1 where i1=1 and i2=2 and i3=3")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX2"))
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT /*+ FORCE_INDEX(T1_IDX3) */ i1 FROM t1 where i1=1 and i2=2 and i3=3")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX3"))
+            .returns(1)
+            .check();
+
+        executeSql("CREATE TABLE t2(i21 INTEGER, i22 INTEGER, i23 INTEGER) WITH TEMPLATE=PARTITIONED");
+
+        for (int i = 99; i < 300; ++i)
+            executeSql("INSERT INTO t2 VALUES (?, ?, ?)", i + 1, i + 1, i + 1);
+
+        executeSql("CREATE INDEX t2_idx1 ON t2(i21)");
+        executeSql("CREATE INDEX t2_idx2 ON t2(i22)");
+        executeSql("CREATE INDEX t2_idx3 ON t2(i23)");
+
+        assertQuery("SELECT /*+ FORCE_INDEX(T1_IDX2), FORCE_INDEX(T2_IDX2) */ i1, i22 FROM t1, t2 where i2=i22 " +
+            "and i3=i23 + 1")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T1", "T1_IDX2"))
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX2"))
+            .resultSize(0)
+            .check();
+    }
+
+    /** */
     private RowCountingIndex injectRowCountingIndex(IgniteEx node, String tableName, String idxName) {
         RowCountingIndex idx = null;
 
         for (Ignite ignite : G.allGrids()) {
-            IgniteTable tbl = (IgniteTable)queryProcessor((IgniteEx)ignite).schemaHolder().schema("PUBLIC").getTable(tableName);
+            IgniteTable tbl = (IgniteTable)queryProcessor(ignite).schemaHolder().schema("PUBLIC").getTable(tableName);
 
             if (ignite == node) {
                 idx = new RowCountingIndex(tbl.getIndex(idxName));
@@ -372,25 +450,22 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
         @Override public <Row> Iterable<Row> scan(
             ExecutionContext<Row> execCtx,
             ColocationGroup grp,
-            Predicate<Row> filters,
             RangeIterable<Row> ranges,
-            Function<Row, Row> rowTransformer,
             @Nullable ImmutableBitSet requiredColumns
         ) {
-            Predicate<Row> filter = row -> {
-                filteredRows.incrementAndGet();
-
-                return true;
-            };
-
-            filters = filters == null ? filter : filter.and(filters);
-
-            IndexScan<Row> scan = (IndexScan<Row>)delegate.scan(execCtx, grp, filters, ranges, rowTransformer,
-                requiredColumns);
+            IndexScan<Row> scan = (IndexScan<Row>)delegate.scan(execCtx, grp, ranges, requiredColumns);
 
             isInlineScan.set(scan.isInlineScan());
 
-            return scan;
+            return new Iterable<Row>() {
+                @NotNull @Override public Iterator<Row> iterator() {
+                    return F.iterator(scan.iterator(), r -> {
+                        filteredRows.incrementAndGet();
+
+                        return r;
+                    }, true);
+                }
+            };
         }
 
         /** */

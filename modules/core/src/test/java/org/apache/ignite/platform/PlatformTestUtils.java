@@ -31,4 +31,13 @@ public class PlatformTestUtils {
     public static int majorJavaVersion() {
         return U.majorJavaVersion(System.getProperty("java.version"));
     }
+
+    /**
+     * Prints line to standard output.
+     *
+     * @param str String.
+     */
+    public static void println(String str) {
+        System.out.println(str);
+    }
 }

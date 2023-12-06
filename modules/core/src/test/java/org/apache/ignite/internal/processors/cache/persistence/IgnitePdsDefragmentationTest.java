@@ -92,6 +92,9 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     /** */
     protected static final String GRP_NAME = "group";
 
+    /** Defragmentation pool size. If < 1, default value is used. */
+    private int defragPoolSize;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -156,6 +159,9 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
                 .setPersistenceEnabled(true)
         );
 
+        if (defragPoolSize > 0)
+            dsCfg.setDefragmentationThreadPoolSize(defragPoolSize);
+
         cfg.setDataStorageConfiguration(dsCfg);
 
         CacheConfiguration<?, ?> cache1Cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
@@ -175,6 +181,30 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests basic derfragmentation.
+     *
+     * @throws Exception If failed.
+     * @see #checkSuccessfulDefragmentation()
+     */
+    @Test
+    public void testSuccessfulDefragmentation() throws Exception {
+        checkSuccessfulDefragmentation();
+    }
+
+    /**
+     * Tests basic derfragmentation with one thread.
+     *
+     * @throws Exception If failed.
+     * @see #checkSuccessfulDefragmentation()
+     */
+    @Test
+    public void testSuccessfulDefragmentationOneThread() throws Exception {
+        defragPoolSize = 1;
+
+        checkSuccessfulDefragmentation();
+    }
+
+    /**
      * Basic test scenario. Does following steps:
      *  - Start node;
      *  - Fill cache;
@@ -188,8 +218,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Test
-    public void testSuccessfulDefragmentation() throws Exception {
+    private void checkSuccessfulDefragmentation() throws Exception {
         IgniteEx ig = startGrid(0);
 
         ig.cluster().state(ClusterState.ACTIVE);

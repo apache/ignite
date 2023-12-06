@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
@@ -56,6 +57,9 @@ public class ClientConnectorConfiguration {
 
     /** Default value of whether to use Ignite SSL context factory. */
     public static final boolean DFLT_USE_IGNITE_SSL_CTX_FACTORY = true;
+
+    /** Default session outbound queue limit. */
+    public static final int DFLT_SESSIONS_MESSAGE_QUEUE_LIMIT = 0;
 
     /** Host. */
     private String host;
@@ -115,6 +119,14 @@ public class ClientConnectorConfiguration {
     private ThinClientConfiguration thinCliCfg = new ThinClientConfiguration();
 
     /**
+     * Client session outbound message queue limit. Limits the number of messages waiting to be sent from the
+     * server side to particular Client. If the specified limit is exceeded, corresponding Client connection
+     * will be closed.
+     * The value {@code 0} means that no limit is applied to the Client outbound message queue.
+     */
+    private int sesOutboundMsgQueueLimit = DFLT_SESSIONS_MESSAGE_QUEUE_LIMIT;
+
+    /**
      * Creates SQL connector configuration with all default values.
      */
     public ClientConnectorConfiguration() {
@@ -147,6 +159,7 @@ public class ClientConnectorConfiguration {
         useIgniteSslCtxFactory = cfg.isUseIgniteSslContextFactory();
         sslCtxFactory = cfg.getSslContextFactory();
         thinCliCfg = new ThinClientConfiguration(cfg.getThinClientConfiguration());
+        sesOutboundMsgQueueLimit = cfg.getSessionOutboundMessageQueueLimit();
     }
 
     /**
@@ -588,6 +601,28 @@ public class ClientConnectorConfiguration {
      */
     public ClientConnectorConfiguration setThinClientConfiguration(ThinClientConfiguration thinCliCfg) {
         this.thinCliCfg = thinCliCfg;
+
+        return this;
+    }
+
+    /** @return Session outbound message queue limit. */
+    public int getSessionOutboundMessageQueueLimit() {
+        return sesOutboundMsgQueueLimit;
+    }
+
+    /**
+     * Sets Client session outbound message queue limit. Limits the number of messages waiting to be sent from the
+     * server side to particular client. If the specified limit is exceeded, corresponding Client connection
+     * will be closed.
+     * The value {@code 0} means that no limit is applied to the Client outbound message queue.
+     *
+     * @param sesOutboundMsgQueueLimit Session outbound queue limit.
+     * @return {@code this} for chaining.
+     */
+    public ClientConnectorConfiguration setSessionOutboundMessageQueueLimit(int sesOutboundMsgQueueLimit) {
+        A.ensure(sesOutboundMsgQueueLimit >= 0, "Session outbound queue limit must be greater than or equal to zero.");
+
+        this.sesOutboundMsgQueueLimit = sesOutboundMsgQueueLimit;
 
         return this;
     }

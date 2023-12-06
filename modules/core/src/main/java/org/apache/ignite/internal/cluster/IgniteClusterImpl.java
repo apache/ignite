@@ -119,6 +119,10 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     /** Property for update policy of shutdown. */
     private DistributedEnumProperty<ShutdownPolicy> shutdown = new DistributedEnumProperty<>(
         "shutdown.policy",
+        "Policy of shutdown. The policy specifies data safety guarantees on ordinary shutdown" +
+            " of one or more cluster nodes. IMMEDIATE - Stop immediately as soon as all components are ready." +
+            " GRACEFUL - Node will stop if and only if it does not store any unique partitions, that don't have " +
+            "another copies in the cluster.",
         (ordinal) -> ordinal == null ? null : ShutdownPolicy.fromOrdinal(ordinal),
         (policy) -> policy == null ? null : policy.index(),
         ShutdownPolicy.class
@@ -396,10 +400,15 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState) throws IgniteException {
+        state(newState, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void state(ClusterState newState, boolean force) throws IgniteException {
         guard();
 
         try {
-            ctx.state().changeGlobalState(newState, true, serverNodes(), false).get();
+            ctx.state().changeGlobalState(newState, force, serverNodes(), false).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

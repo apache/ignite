@@ -423,9 +423,14 @@ class KillCommandsTests {
      * @param cli Client node.
      * @param srvs Server nodes.
      * @param qryCanceler Query cancel closure.
+     * @param scanCanceler Scan query cancel closure.
      */
-    public static void doTestCancelContinuousQuery(IgniteEx cli, List<IgniteEx> srvs,
-        BiConsumer<UUID, UUID> qryCanceler) throws Exception {
+    public static void doTestCancelContinuousQuery(
+        IgniteEx cli,
+        List<IgniteEx> srvs,
+        BiConsumer<UUID, UUID> qryCanceler,
+        Consumer<T3<UUID, String, Long>> scanCanceler
+    ) throws Exception {
         IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
 
         ContinuousQuery<Integer, Integer> cq = new ContinuousQuery<>();
@@ -477,6 +482,10 @@ class KillCommandsTests {
 
             assertTrue(srv.configuration().getIgniteInstanceName(), res);
         }
+
+        T3<UUID, String, Long> qryInfo = scanQuery(srvs.get(0));
+
+        scanCanceler.accept(qryInfo);
     }
 
     /**

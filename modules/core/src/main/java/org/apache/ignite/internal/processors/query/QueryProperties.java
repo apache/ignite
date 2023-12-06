@@ -17,20 +17,31 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Additional properties to execute the query (Stored in {@link QueryContext}).
  */
 public final class QueryProperties {
     /** */
+    @Nullable String cacheName;
+
+    /** */
     private final boolean keepBinary;
 
     /** */
-    public QueryProperties(boolean keepBinary) {
+    public QueryProperties(@Nullable String cacheName, boolean keepBinary) {
+        this.cacheName = cacheName;
         this.keepBinary = keepBinary;
     }
 
     /** */
     public boolean keepBinary() {
         return keepBinary;
+    }
+
+    /** */
+    public @Nullable String cacheName() {
+        return cacheName;
     }
 }

@@ -67,6 +67,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.util.GridCommandHandlerAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import org.junit.runners.Parameterized;
 
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
@@ -150,6 +151,12 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
 
     /** Work directory, containing cache group directories. */
     private static File workDir;
+
+    /** */
+    @Parameterized.Parameters(name = "cmdHnd={0}")
+    public static List<String> commandHandlers() {
+        return Collections.singletonList(CLI_CMD_HND);
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

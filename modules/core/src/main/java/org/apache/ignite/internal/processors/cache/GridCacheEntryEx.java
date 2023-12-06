@@ -78,11 +78,6 @@ public interface GridCacheEntryEx {
     public boolean isLocal();
 
     /**
-     * @return {@code True} if this is n entry from MVCC cache.
-     */
-    public boolean isMvcc();
-
-    /**
      * @return {@code False} if entry belongs to cache map, {@code true} if this entry was created in colocated
      *      cache and node is not primary for this key.
      */
@@ -193,11 +188,6 @@ public interface GridCacheEntryEx {
      * @return Entry info.
      */
     @Nullable public GridCacheEntryInfo info();
-
-    /**
-     * @return Entry info for each MVCC version.
-     */
-    @Nullable public List<GridCacheEntryInfo> allVersionsInfo() throws IgniteCheckedException;
 
     /**
      * Invalidates this entry.

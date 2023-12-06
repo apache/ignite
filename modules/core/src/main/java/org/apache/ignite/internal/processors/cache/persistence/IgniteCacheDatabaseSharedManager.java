@@ -1364,32 +1364,32 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * Creates PageMemory with given size and memory provider.
      *
-     * @param memProvider Memory provider.
-     * @param memCfg Memory configuartion.
-     * @param memPlcCfg data region configuration.
-     * @param memMetrics DataRegionMetrics to collect memory usage metrics.
-     * @param pmPageMgr Page manager.
+     * @param memProvider Direct memory provider.
+     * @param dsCfg Data storage configuration.
+     * @param regCfg Data region configuration.
+     * @param regMetrics Data region metrics to collect memory usage metrics.
+     * @param pageMgr Page read/write manager.
      * @return PageMemory instance.
      */
     protected PageMemory createPageMemory(
         DirectMemoryProvider memProvider,
-        DataStorageConfiguration memCfg,
-        DataRegionConfiguration memPlcCfg,
-        DataRegionMetricsImpl memMetrics,
+        DataStorageConfiguration dsCfg,
+        DataRegionConfiguration regCfg,
+        DataRegionMetricsImpl regMetrics,
         boolean trackable,
-        PageReadWriteManager pmPageMgr
+        PageReadWriteManager pageMgr
     ) {
-        memMetrics.persistenceEnabled(false);
+        regMetrics.persistenceEnabled(false);
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(
             cctx,
-            wrapMetricsMemoryProvider(memProvider, memMetrics),
-            memCfg.getPageSize(),
-            memPlcCfg,
-            memMetrics
+            wrapMetricsMemoryProvider(memProvider, regMetrics),
+            dsCfg.getPageSize(),
+            regCfg,
+            regMetrics
         );
 
-        memMetrics.pageMemory(pageMem);
+        regMetrics.pageMemory(pageMem);
 
         return pageMem;
     }

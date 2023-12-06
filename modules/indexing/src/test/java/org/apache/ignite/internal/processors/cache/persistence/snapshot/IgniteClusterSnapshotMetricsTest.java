@@ -234,6 +234,45 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
 
     /** @throws Exception If fails. */
     @Test
+    public void testUnableToRestoreSnapshotError() throws Exception {
+        Ignite ignite = startGridsWithCache(DEDICATED_CNT, CACHE_KEYS_RANGE, key -> key, dfltCacheCfg);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        checkMetricsDefaults();
+
+        try {
+            ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get();
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+
+        String errMsg = "Unable to restore cache group - directory is not empty. Cache group should be destroyed " +
+            "manually before perform restore operation";
+
+        for (Ignite ig : G.allGrids()) {
+            DynamicMBean mReg = metricRegistry(ig.name(), null, SNAPSHOT_RESTORE_METRICS);
+
+            assertTrue("Wrong 'endTime' metric on " + ig.name(),
+                GridTestUtils.waitForCondition(() -> getNumMetric("endTime", mReg) > 0, TIMEOUT));
+
+            assertEquals("Wrong 'totalPartitions' metric on" + ig.name(), -1,
+                getNumMetric("totalPartitions", mReg));
+
+            assertEquals("Wrong 'processedPartitions' metric on " + ig.name(), 0,
+                getNumMetric("processedPartitions", mReg));
+
+            assertEquals("Wrong 'snapshotName' metric on " + ig.name(), SNAPSHOT_NAME,
+                mReg.getAttribute("snapshotName"));
+
+            assertTrue("Wrong 'error' metric on " + ig.name(),
+                mReg.getAttribute("error").toString().contains(errMsg));
+        }
+    }
+
+    /** @throws Exception If fails. */
+    @Test
     public void testCreateSnapshotProgress() throws Exception {
         CacheConfiguration<Integer, Object> ccfg1 = cacheConfig("cache1");
 

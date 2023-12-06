@@ -24,9 +24,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.management.cache.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
-import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -71,6 +71,11 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
         String name,
         Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>>> results
     ) throws IgniteCheckedException {
+        for (SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>> result : results) {
+            if (result.error() != null)
+                throw new IgniteCheckedException(result.error());
+        }
+
         if (results.stream().anyMatch(r -> r.data() == null))
             return;
 
@@ -84,7 +89,8 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
             if (other == null)
                 return;
 
-            if (val.size() != other.size() || !Objects.equals(val.updateCounter(), other.updateCounter()))
+            if ((!val.hasExpiringEntries() && !other.hasExpiringEntries() && val.size() != other.size())
+                || !Objects.equals(val.updateCounter(), other.updateCounter()))
                 wrnGrps.add(part.groupId());
         }));
 

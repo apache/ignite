@@ -20,12 +20,14 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlCommand;
 
 /** */
-public class DdlPlan implements QueryPlan {
+public class DdlPlan extends AbstractQueryPlan {
     /** */
     private final DdlCommand cmd;
 
     /** */
-    public DdlPlan(DdlCommand cmd) {
+    public DdlPlan(String qry, DdlCommand cmd) {
+        super(qry);
+
         this.cmd = cmd;
     }
 

@@ -108,8 +108,6 @@ namespace Apache.Ignite.AspNet.Tests
 
             public bool IsKeepBinary { get; private set; }
 
-            public bool IsAllowAtomicOpsInTx { get; private set; }
-
             public ICache<int, int> WithSkipStore()
             {
                 throw new NotImplementedException();
@@ -121,11 +119,6 @@ namespace Apache.Ignite.AspNet.Tests
             }
 
             public ICache<TK1, TV1> WithKeepBinary<TK1, TV1>()
-            {
-                throw new NotImplementedException();
-            }
-
-            public ICache<int, int> WithAllowAtomicOpsInTx()
             {
                 throw new NotImplementedException();
             }

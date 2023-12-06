@@ -24,17 +24,20 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.IndexQueryCriterion;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.IndexQueryDesc;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -160,6 +163,8 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /**
      * @param type Cache query type.
      * @param text Query text in case of SQL query. Cache name in case of SCAN query.
+     *             In case of an INDEX query, the text represents the pattern:
+     *             <pre>{@code <cacheName>:<indexName>:<valueType>:<comma separated fields>}</pre>
      * @param id Query id.
      * @param startTime Start time in milliseconds.
      * @param duration Duration in nanoseconds.
@@ -178,6 +183,28 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      */
     public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads, long physicalReads) {
         write(writer -> writer.queryReads(type, queryNodeId, id, logicalReads, physicalReads));
+    }
+
+    /**
+     * @param type Cache query type.
+     * @param qryNodeId Originating node id.
+     * @param id Query id.
+     * @param action Action with rows.
+     * @param rows Number of rows processed.
+     */
+    public void queryRowsProcessed(GridCacheQueryType type, UUID qryNodeId, long id, String action, long rows) {
+        write(writer -> writer.queryRows(type, qryNodeId, id, action, rows));
+    }
+
+    /**
+     * @param type Cache query type.
+     * @param qryNodeId Originating node id.
+     * @param id Query id.
+     * @param name Query property name.
+     * @param val Query property value.
+     */
+    public void queryProperty(GridCacheQueryType type, UUID qryNodeId, long id, String name, String val) {
+        write(writer -> writer.queryProperty(type, qryNodeId, id, name, val));
     }
 
     /**
@@ -405,5 +432,20 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     public interface PerformanceStatisticsStateListener extends EventListener {
         /** This method is called whenever the performance statistics collecting is started. */
         public void onStarted();
+    }
+
+    /** @return Text representation of index query. */
+    public static String indexQueryText(String cacheName, IndexQueryDesc desc) {
+        StringBuilder s = new StringBuilder();
+
+        s.append(cacheName);
+        s.append(':');
+        s.append(desc.idxName());
+        s.append(':');
+        s.append(desc.valType());
+        s.append(':');
+        s.append(String.join(",", F.viewReadOnly(desc.criteria(), IndexQueryCriterion::field)));
+
+        return s.toString();
     }
 }

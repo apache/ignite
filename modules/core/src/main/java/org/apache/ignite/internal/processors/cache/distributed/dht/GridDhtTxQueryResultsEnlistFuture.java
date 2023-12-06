@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -35,16 +34,15 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstractEnlistFuture implements UpdateSourceIterator<Object> {
     /** Enlist operation. */
-    private EnlistOperation op;
+    private final EnlistOperation op;
 
     /** Source iterator. */
-    private Iterator<Object> it;
+    private final Iterator<Object> it;
 
     /**
      * @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
      * @param mvccSnapshot Mvcc snapshot.
-     * @param threadId Thread ID.
      * @param nearFutId Near future id.
      * @param nearMiniId Near mini future id.
      * @param tx Transaction.
@@ -56,7 +54,6 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstr
     public GridDhtTxQueryResultsEnlistFuture(UUID nearNodeId,
         GridCacheVersion nearLockVer,
         MvccSnapshot mvccSnapshot,
-        long threadId,
         IgniteUuid nearFutId,
         int nearMiniId,
         GridDhtTxLocalAdapter tx,
@@ -67,7 +64,6 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstr
         super(nearNodeId,
             nearLockVer,
             mvccSnapshot,
-            threadId,
             nearFutId,
             nearMiniId,
             tx,
@@ -82,7 +78,7 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected UpdateSourceIterator<?> createIterator() throws IgniteCheckedException {
+    @Override protected UpdateSourceIterator<?> createIterator() {
         return this;
     }
 

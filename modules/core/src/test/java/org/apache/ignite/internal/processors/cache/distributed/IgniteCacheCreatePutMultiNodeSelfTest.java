@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -86,18 +85,8 @@ public class IgniteCacheCreatePutMultiNodeSelfTest extends GridCommonAbstractTes
 
                                 IgniteCache<Integer, Integer> cache = getCache(ignite, cacheName);
 
-                                for (int i = 0; i < 100; i++) {
-                                    while (true) {
-                                        try {
-                                            cache.getAndPut(i, i);
-
-                                            break;
-                                        }
-                                        catch (Exception e) {
-                                            MvccFeatureChecker.assertMvccWriteConflict(e);
-                                        }
-                                    }
-                                }
+                                for (int i = 0; i < 100; i++)
+                                    cache.getAndPut(i, i);
 
                                 barrier.await();
 

@@ -27,7 +27,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -91,7 +90,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         final String key = "key";
         final String val = "val";
 
-        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(key, val);
@@ -118,7 +117,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         final String key = "key";
         final String val = "val";
 
-        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(key, val);
@@ -145,7 +144,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         final String key = "key";
         final String val = "val";
 
-        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(key, val);
@@ -172,7 +171,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         final String key = "key";
         final String val = "val";
 
-        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(key, val);
@@ -199,7 +198,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         final String key = "key";
         final String val = "val";
 
-        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(key, val);
@@ -226,7 +225,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         final String key = "key";
         final String val = "val";
 
-        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(key, val);
@@ -250,8 +249,6 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     public void testLockCache() throws Exception {
         if (atomicityMode() != TRANSACTIONAL)
             return;
-
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
         final Ignite ignite = grid(0);
 

@@ -63,8 +63,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     private volatile boolean useMvccCaching;
 
     /** {@inheritDoc} */
-    @Override public void addActiveCache(GridCacheContext ctx, boolean recovery, IgniteTxAdapter tx)
-        throws IgniteCheckedException {
+    @Override public void addActiveCache(GridCacheContext ctx, boolean recovery, IgniteTxAdapter tx) {
         assert cacheCtx == null : "Cache already set [cur=" + cacheCtx.name() + ", new=" + ctx.name() + ']';
         assert tx.local();
 
@@ -73,7 +72,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
         tx.activeCachesDeploymentEnabled(cacheCtx.deploymentEnabled());
 
-        useMvccCaching = cacheCtx.mvccEnabled() && (cacheCtx.isDrEnabled() || cacheCtx.hasContinuousQueryListeners(tx));
+        useMvccCaching = false;
     }
 
     /** {@inheritDoc} */
@@ -245,12 +244,12 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
             return set;
         }
         else
-            return Collections.<IgniteTxKey>emptySet();
+            return Collections.emptySet();
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry> writeEntries() {
-        return entry != null ? entry : Collections.<IgniteTxEntry>emptyList();
+        return entry != null ? entry : Collections.emptyList();
     }
 
     /** {@inheritDoc} */
@@ -261,7 +260,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public Map<IgniteTxKey, IgniteTxEntry> writeMap() {
         return entry != null ? F.asMap(entry.get(0).txKey(), entry.get(0)) :
-            Collections.<IgniteTxKey, IgniteTxEntry>emptyMap();
+            Collections.emptyMap();
     }
 
     /** {@inheritDoc} */
@@ -276,7 +275,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry> allEntries() {
-        return entry != null ? entry : Collections.<IgniteTxEntry>emptyList();
+        return entry != null ? entry : Collections.emptyList();
     }
 
     /** {@inheritDoc} */
@@ -315,13 +314,6 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public IgniteTxEntry singleWrite() {
         return entry != null ? entry.get(0) : null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean mvccEnabled() {
-        GridCacheContext ctx0 = cacheCtx;
-
-        return ctx0 != null && ctx0.mvccEnabled();
     }
 
     /** {@inheritDoc} */

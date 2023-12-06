@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -41,6 +40,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.junit.Test;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -54,10 +54,6 @@ import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
  *
  */
 public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstractTest {
-    /** Force mvcc. */
-    protected static final boolean FORCE_MVCC =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, false);
-
     /** Transaction timeout. */
     private static final long TX_TIMEOUT = 400L;
 
@@ -119,8 +115,7 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
 
             awaitCacheOnClient(client, ccfg.getName());
 
-            if (!FORCE_MVCC)
-                client.createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
+            client.createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
         }
 
         awaitPartitionMapExchange();

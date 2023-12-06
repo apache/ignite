@@ -64,6 +64,9 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
     /** */
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
+    /** */
+    private final int connTimeout;
+
     /**
      * Constructor.
      *
@@ -85,6 +88,8 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
         }
         else
             filters = new GridNioFilter[] {codecFilter};
+
+        connTimeout = cfg.getTimeout();
 
         try {
             srv = GridNioServer.<ByteBuffer>builder()
@@ -141,8 +146,31 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
         rwLock.readLock().lock();
 
         try {
-            SocketChannel ch = SocketChannel.open();
-            ch.socket().connect(new InetSocketAddress(addr.getHostName(), addr.getPort()), Integer.MAX_VALUE);
+            SocketChannel ch = null;
+            try {
+                ch = SocketChannel.open();
+                ch.socket().connect(new InetSocketAddress(addr.getHostName(), addr.getPort()), connTimeout);
+            }
+            catch (Exception e) {
+                if (ch != null) {
+                    if (ch.socket() != null) {
+                        try {
+                            ch.socket().close();
+                        }
+                        catch (Exception ignored) {
+                            // ignore close exception
+                        }
+                    }
+
+                    try {
+                        ch.close();
+                    }
+                    catch (Exception ignored) {
+                        // ignore close exception
+                    }
+                }
+                throw new ClientConnectionException(e.getMessage(), e);
+            }
 
             Map<Integer, Object> meta = new HashMap<>();
             GridNioFuture<?> sslHandshakeFut = null;

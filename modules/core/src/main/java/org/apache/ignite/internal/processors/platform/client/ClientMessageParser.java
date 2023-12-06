@@ -106,6 +106,7 @@ import org.apache.ignite.internal.processors.platform.client.datastructures.Clie
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorsRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceInvokeRequest;
+import org.apache.ignite.internal.processors.platform.client.service.ClientServiceTopologyRequest;
 import org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerAddDataRequest;
 import org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerStartRequest;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxEndRequest;
@@ -393,6 +394,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** IgniteSet.iterator page. */
     private static final short OP_SET_ITERATOR_GET_PAGE = 9023;
 
+    /** Get service topology. */
+    private static final short OP_SERVICE_GET_TOPOLOGY = 7003;
+
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 
@@ -585,7 +589,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientCacheQueryContinuousRequest(reader);
 
             case OP_QUERY_INDEX:
-                return new ClientCacheIndexQueryRequest(reader);
+                return new ClientCacheIndexQueryRequest(reader, protocolCtx);
 
             case OP_TX_START:
                 return new ClientTxStartRequest(reader);
@@ -697,6 +701,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_SET_ITERATOR_GET_PAGE:
                 return new ClientIgniteSetIteratorGetPageRequest(reader);
+
+            case OP_SERVICE_GET_TOPOLOGY:
+                return new ClientServiceTopologyRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,

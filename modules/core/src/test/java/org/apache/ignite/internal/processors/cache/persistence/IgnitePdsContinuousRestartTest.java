@@ -47,12 +47,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionRollbackException;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -90,13 +88,6 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      */
     protected IgnitePdsContinuousRestartTest(boolean cancel) {
         this.cancel = cancel;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11937", MvccFeatureChecker.forcedMvcc());
-
-        super.beforeTest();
     }
 
     /** {@inheritDoc} */
@@ -329,10 +320,9 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
                                 TransactionOptimisticException.class,
                                 TransactionRollbackException.class,
                                 ClusterTopologyException.class,
-                                NodeStoppingException.class))
-                                continue; // Expected types.
-
-                            MvccFeatureChecker.assertMvccWriteConflict(e);
+                                NodeStoppingException.class)) {
+                                // Expected types.
+                            }
                         }
                     }
                 }

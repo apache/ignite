@@ -27,7 +27,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -54,6 +53,9 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.management.consistency.ConsistencyRepairCommandArg;
+import org.apache.ignite.internal.management.consistency.ConsistencyRepairTask;
+import org.apache.ignite.internal.management.consistency.ConsistencyTaskResult;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -74,9 +76,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask;
-import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTaskArg;
-import org.apache.ignite.internal.visor.consistency.VisorConsistencyTaskResult;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
@@ -852,13 +851,17 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
             return true;
         }, EVT_CONSISTENCY_VIOLATION);
 
-        Set<Integer> parts = IntStream.range(0, PARTS).boxed().collect(Collectors.toSet());
+        ConsistencyRepairCommandArg arg = new ConsistencyRepairCommandArg();
 
-        VisorConsistencyTaskResult res = grid(0).compute().execute(
-            VisorConsistencyRepairTask.class,
+        arg.cache(cacheName);
+        arg.partitions(IntStream.range(0, PARTS).toArray());
+        arg.strategy(ReadRepairStrategy.CHECK_ONLY);
+
+        ConsistencyTaskResult res = grid(0).compute().execute(
+            ConsistencyRepairTask.class,
             new VisorTaskArgument<>(
                 G.allGrids().stream().map(ign -> ign.cluster().localNode().id()).collect(Collectors.toList()),
-                new VisorConsistencyRepairTaskArg(cacheName, parts, ReadRepairStrategy.CHECK_ONLY),
+                arg,
                 false));
 
         assertFalse(res.message(), res.cancelled());

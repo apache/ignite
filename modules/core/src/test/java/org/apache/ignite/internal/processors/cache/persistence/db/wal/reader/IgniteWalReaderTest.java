@@ -81,7 +81,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.wal.record.RecordUtils;
@@ -89,7 +88,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static java.util.Arrays.fill;
@@ -977,10 +975,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         final CacheConfiguration<Integer, Organization> cfg = new CacheConfiguration<>("Org" + "11");
         cfg.setAtomicityMode(mode);
-        final IgniteCache<Integer, Organization> cache = ig.getOrCreateCache(cfg).withKeepBinary()
-            .withAllowAtomicOpsInTx();
+        final IgniteCache<Integer, Organization> cache = ig.getOrCreateCache(cfg).withKeepBinary();
 
-        try (Transaction tx = ig.transactions().txStart()) {
+        Runnable r = () -> {
             for (int i = 0; i < 10; i++) {
 
                 cache.put(i, new Organization(i, "Organization-" + i));
@@ -991,8 +988,16 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                 if (i % 5 == 0)
                     cache.remove(i);
             }
-            tx.commit();
-        }
+        };
+
+        if (mode == CacheAtomicityMode.TRANSACTIONAL)
+            try (Transaction tx = ig.transactions().txStart()) {
+                r.run();
+
+                tx.commit();
+            }
+        else
+            r.run();
 
     }
 
@@ -1013,8 +1018,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRemoveOperationPresentedForDataEntryForAtomic() throws Exception {
-        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc());
-
         runRemoveOperationTest(CacheAtomicityMode.ATOMIC);
     }
 

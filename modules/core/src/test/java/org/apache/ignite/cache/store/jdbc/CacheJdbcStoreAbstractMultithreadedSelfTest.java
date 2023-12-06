@@ -52,6 +52,7 @@ import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.UrlResource;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreaded;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
@@ -285,7 +286,9 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
                 for (int i = 0; i < TX_CNT; i++) {
                     IgniteCache<PersonKey, Person> cache = jcache();
 
-                    try (Transaction tx = grid().transactions().txStart()) {
+                    try (Transaction tx =
+                             cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ?
+                                 grid().transactions().txStart() : null) {
                         cache.put(new PersonKey(1), new Person(1, rnd.nextInt(),
                             new Date(System.currentTimeMillis()), "Name" + 1, 1, Gender.random()));
                         cache.put(new PersonKey(2), new Person(2, rnd.nextInt(),
@@ -305,7 +308,8 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
 
                         cache.putAll(map);
 
-                        tx.commit();
+                        if (tx != null)
+                            tx.commit();
                     }
                 }
 

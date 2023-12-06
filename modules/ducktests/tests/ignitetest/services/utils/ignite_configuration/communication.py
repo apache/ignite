@@ -52,7 +52,8 @@ class TcpCommunicationSpi(CommunicationSpi):
                  selectors_count: int = None,
                  connections_per_node: int = None,
                  use_paired_connections: bool = None,
-                 message_queue_limit: int = None):
+                 message_queue_limit: int = None,
+                 unacknowledged_messages_buffer_size: int = None):
         self.local_port = local_port
         self.local_port_range = local_port_range
         self.idle_connection_timeout: int = idle_connection_timeout
@@ -61,6 +62,7 @@ class TcpCommunicationSpi(CommunicationSpi):
         self.connections_per_node: int = connections_per_node
         self.use_paired_connections: bool = use_paired_connections
         self.message_queue_limit: int = message_queue_limit
+        self.unacknowledged_messages_buffer_size: int = unacknowledged_messages_buffer_size
 
     @property
     def class_name(self):

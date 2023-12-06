@@ -26,7 +26,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -43,10 +42,8 @@ public class CacheKeepBinaryTransactionTest extends GridCommonAbstractTest {
 
         TransactionConfiguration txCfg = new TransactionConfiguration();
 
-        if (!MvccFeatureChecker.forcedMvcc()) {
-            txCfg.setDefaultTxConcurrency(TransactionConcurrency.OPTIMISTIC);
-            txCfg.setDefaultTxIsolation(TransactionIsolation.REPEATABLE_READ);
-        }
+        txCfg.setDefaultTxConcurrency(TransactionConcurrency.OPTIMISTIC);
+        txCfg.setDefaultTxIsolation(TransactionIsolation.REPEATABLE_READ);
 
         cfg.setTransactionConfiguration(txCfg);
 

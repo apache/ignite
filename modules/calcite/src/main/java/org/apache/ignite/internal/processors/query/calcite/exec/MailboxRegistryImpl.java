@@ -18,13 +18,13 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
@@ -133,6 +133,16 @@ public class MailboxRegistryImpl extends AbstractService implements MailboxRegis
         return locals.values().stream()
             .filter(makeFilter(qryId, fragmentId, exchangeId))
             .collect(Collectors.toList());
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Inbox<?>> inboxes() {
+        return Collections.unmodifiableCollection(remotes.values());
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Outbox<?>> outboxes() {
+        return Collections.unmodifiableCollection(locals.values());
     }
 
     /**

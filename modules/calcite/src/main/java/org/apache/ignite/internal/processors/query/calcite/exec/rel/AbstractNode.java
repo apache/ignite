@@ -22,8 +22,8 @@ import java.util.Comparator;
 import java.util.List;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionCancelledException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -146,10 +146,7 @@ public abstract class AbstractNode<Row> implements Node<Row> {
      * @param e Exception.
      */
     public void onError(Throwable e) {
-        if (e instanceof ExecutionCancelledException)
-            U.warn(context().logger(), "Execution is cancelled.", e);
-        else
-            onErrorInternal(e);
+        onErrorInternal(e);
     }
 
     /** */
@@ -184,7 +181,9 @@ public abstract class AbstractNode<Row> implements Node<Row> {
     /** */
     protected void checkState() throws Exception {
         if (context().isCancelled())
-            throw new ExecutionCancelledException();
+            throw new QueryCancelledException();
+        if (context().isTimedOut())
+            throw new QueryCancelledException("The query was timed out.");
         if (Thread.interrupted())
             throw new IgniteInterruptedCheckedException("Thread was interrupted.");
         if (!U.assertionsEnabled())

@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.compatibility.testframework.junits.SkipTestIfIsJdkNewer;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
@@ -36,6 +37,7 @@ import org.junit.Test;
 public class CompoundIndexCompatibilityTest extends IndexAbstractCompatibilityTest {
     /** */
     @Test
+    @SkipTestIfIsJdkNewer(11)
     public void testSecondaryIndexesMigration_2_7_6() throws Exception {
         // 2.7.6 - version before _KEY unwrapping.
         doTestStartupWithOldVersion("2.7.6", () -> {

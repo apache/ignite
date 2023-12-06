@@ -23,8 +23,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
@@ -46,6 +44,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecuto
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
@@ -53,6 +52,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGr
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ExecutionPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
@@ -170,9 +170,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .build()) {
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
-                ColocationGroup group,
-                Predicate<Row> filter,
-                Function<Row, Row> transformer,
+                ColocationGroup grp,
                 ImmutableBitSet requiredColumns
             ) {
                 return Arrays.asList(
@@ -198,9 +196,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .build()) {
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
-                ColocationGroup group,
-                Predicate<Row> filter,
-                Function<Row, Row> transformer,
+                ColocationGroup grp,
                 ImmutableBitSet requiredColumns
             ) {
                 return Arrays.asList(
@@ -256,27 +252,22 @@ public class PlannerTest extends AbstractPlannerTest {
                 .build()) {
             @Override public <Row> Iterable<Row> scan(
                 ExecutionContext<Row> execCtx,
-                ColocationGroup group,
-                Predicate<Row> filter,
-                Function<Row, Row> rowTransformer,
+                ColocationGroup grp,
                 ImmutableBitSet requiredColumns
             ) {
+                List<Row> res = new ArrayList<>();
                 List<Row> checkRes0 = new ArrayList<>();
 
                 for (int i = 0; i < 10; ++i) {
                     int col = ThreadLocalRandom.current().nextInt(1_000);
 
-                    Row r = row(execCtx, requiredColumns, col, col);
-
-                    if (rowTransformer != null)
-                        r = rowTransformer.apply(r);
-
-                    checkRes0.add(r);
+                    res.add(row(execCtx, requiredColumns, col, col));
+                    checkRes0.add(row(execCtx, null, col + col));
                 }
 
                 checkRes.set(checkRes0);
 
-                return checkRes0;
+                return res;
             }
 
             @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
@@ -324,7 +315,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         IgniteRel phys = physicalPlan(ctx);
 
-        MultiStepPlan plan = splitPlan(phys);
+        ExecutionPlan plan = splitPlan(phys);
 
         List<Fragment> fragments = plan.fragments();
         assertEquals(2, fragments.size());
@@ -369,16 +360,14 @@ public class PlannerTest extends AbstractPlannerTest {
     }
 
     /** */
-    private MultiStepPlan splitPlan(IgniteRel phys) {
+    private ExecutionPlan splitPlan(IgniteRel phys) {
         assertNotNull(phys);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null, null);
+        MultiStepPlan plan = new MultiStepQueryPlan(null, null, new QueryTemplate(new Splitter().go(phys)), null, null);
 
         assertNotNull(plan);
 
-        plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
-
-        return plan;
+        return plan.init(this::intermediateMapping, null, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
     }
 
     /**
@@ -388,7 +377,7 @@ public class PlannerTest extends AbstractPlannerTest {
         BaseQueryContext qctx,
         PlanningContext ctx,
         TestIoManager mgr,
-        MultiStepPlan plan,
+        ExecutionPlan plan,
         Fragment fragment,
         UUID qryId,
         UUID nodeId
@@ -438,6 +427,8 @@ public class PlannerTest extends AbstractPlannerTest {
                 plan.remotes(fragment)),
             ArrayRowHandler.INSTANCE,
             NoOpMemoryTracker.INSTANCE,
+            NoOpIoTracker.INSTANCE,
+            0,
             Commons.parametersMap(ctx.parameters()));
 
         return new LogicalRelImplementor<>(ectx, c -> r -> 0, mailboxRegistry, exchangeSvc,

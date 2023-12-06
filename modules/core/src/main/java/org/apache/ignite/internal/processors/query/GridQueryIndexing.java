@@ -25,13 +25,13 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
+import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -267,12 +267,4 @@ public interface GridQueryIndexing {
      * @param sql sql statement.
      */
     public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery sql) throws SQLException;
-
-    /**
-     * Register SQL JMX beans.
-     *
-     * @param mbMgr Ignite MXBean manager.
-     * @throws IgniteCheckedException On bean registration error.
-     */
-    public void registerMxBeans(IgniteMBeansManager mbMgr) throws IgniteCheckedException;
 }

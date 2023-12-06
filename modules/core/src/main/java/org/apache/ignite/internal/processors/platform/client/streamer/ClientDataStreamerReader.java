@@ -42,10 +42,8 @@ class ClientDataStreamerReader {
 
         Collection<DataStreamerEntry> entries = new ArrayList<>(entriesCnt);
 
-        for (int i = 0; i < entriesCnt; i++) {
-            entries.add(new DataStreamerEntry(readCacheObject(reader, true),
-                    readCacheObject(reader, false)));
-        }
+        for (int i = 0; i < entriesCnt; i++)
+            entries.add(new DataStreamerEntry(readCacheObject(reader, true), readCacheObject(reader, false)));
 
         return entries;
     }

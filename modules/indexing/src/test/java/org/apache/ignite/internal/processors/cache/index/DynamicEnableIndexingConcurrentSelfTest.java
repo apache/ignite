@@ -78,11 +78,7 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
     public static Iterable<Object[]> params() {
         CacheMode[] cacheModes = new CacheMode[] {CacheMode.PARTITIONED, CacheMode.REPLICATED};
 
-        CacheAtomicityMode[] atomicityModes = new CacheAtomicityMode[] {
-            CacheAtomicityMode.ATOMIC,
-            CacheAtomicityMode.TRANSACTIONAL,
-            CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT
-        };
+        CacheAtomicityMode[] atomicityModes = CacheAtomicityMode.values();
 
         List<Object[]> res = new ArrayList<>();
         for (CacheMode cacheMode : cacheModes) {

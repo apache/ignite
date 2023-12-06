@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline.argument.parser;
 
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -25,6 +26,9 @@ import java.util.function.Supplier;
  * @param <T> Value type.
  */
 public class CLIArgument<T> {
+    /** */
+    private final BiConsumer<String, T> EMPTY = (name, val) -> {};
+
     /** */
     private final String name;
 
@@ -41,27 +45,43 @@ public class CLIArgument<T> {
     private final Function<CLIArgumentParser, T> dfltValSupplier;
 
     /** */
+    private final BiConsumer<String, T> validator;
+
+    /** */
     public static <T> CLIArgument<T> optionalArg(String name, String usage, Class<T> type) {
-        return new CLIArgument<>(name, usage, true, type, null);
+        return new CLIArgument<>(name, usage, true, type, null, null);
     }
 
     /** */
     public static <T> CLIArgument<T> optionalArg(String name, String usage, Class<T> type, Supplier<T> dfltValSupplier) {
-        return new CLIArgument<>(name, usage, true, type, p -> dfltValSupplier.get());
+        return new CLIArgument<>(name, usage, true, type, p -> dfltValSupplier.get(), null);
     }
 
     /** */
-    public static <T> CLIArgument<T> optionalArg(String name, String usage, Class<T> type, Function<CLIArgumentParser, T> dfltValSupplier) {
-        return new CLIArgument<>(name, usage, true, type, dfltValSupplier);
+    public static <T> CLIArgument<T> optionalArg(
+        String name,
+        String usage,
+        Class<T> type,
+        Function<CLIArgumentParser, T> dfltValSupplier,
+        BiConsumer<String, T> validator
+    ) {
+        return new CLIArgument<>(name, usage, true, type, dfltValSupplier, validator);
     }
 
     /** */
     public static <T> CLIArgument<T> mandatoryArg(String name, String usage, Class<T> type) {
-        return new CLIArgument<>(name, usage, false, type, null);
+        return new CLIArgument<>(name, usage, false, type, null, null);
     }
 
     /** */
-    public CLIArgument(String name, String usage, boolean isOptional, Class<T> type, Function<CLIArgumentParser, T> dfltValSupplier) {
+    public CLIArgument(
+        String name,
+        String usage,
+        boolean isOptional,
+        Class<T> type,
+        Function<CLIArgumentParser, T> dfltValSupplier,
+        BiConsumer<String, T> validator
+    ) {
         this.name = name;
         this.usage = usage;
         this.isOptional = isOptional;
@@ -69,6 +89,7 @@ public class CLIArgument<T> {
         this.dfltValSupplier = dfltValSupplier == null
             ? (type.equals(Boolean.class) ? p -> (T)Boolean.FALSE : p -> null)
             : dfltValSupplier;
+        this.validator = validator;
     }
 
     /** */
@@ -94,5 +115,10 @@ public class CLIArgument<T> {
     /** */
     public Function<CLIArgumentParser, T> defaultValueSupplier() {
         return dfltValSupplier;
+    }
+
+    /** */
+    public BiConsumer<String, T> validator() {
+        return validator == null ? EMPTY : validator;
     }
 }

@@ -24,8 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
@@ -52,9 +50,6 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
     private final GridCacheContext<?, ?> cctx;
 
     /** */
-    private final Predicate<Row> filters;
-
-    /** */
     private final ExecutionContext<Row> ectx;
 
     /** */
@@ -75,9 +70,6 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
     /** */
     private volatile List<GridDhtLocalPartition> reserved;
 
-    /** */
-    private final Function<Row, Row> rowTransformer;
-
     /** Participating colunms. */
     private final ImmutableBitSet requiredColunms;
 
@@ -86,16 +78,12 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
         ExecutionContext<Row> ectx,
         CacheTableDescriptor desc,
         int[] parts,
-        Predicate<Row> filters,
-        Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColunms
     ) {
         this.ectx = ectx;
         cctx = desc.cacheContext();
         this.desc = desc;
         this.parts = parts;
-        this.filters = filters;
-        this.rowTransformer = rowTransformer;
         this.requiredColunms = requiredColunms;
 
         RelDataType rowType = desc.rowType(this.ectx.getTypeFactory(), requiredColunms);
@@ -265,15 +253,8 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
                     if (!desc.match(row))
                         continue;
 
-                    Row r = desc.toRow(ectx, row, factory, requiredColunms);
+                    next = desc.toRow(ectx, row, factory, requiredColunms);
 
-                    if (filters != null && !filters.test(r))
-                        continue;
-
-                    if (rowTransformer != null)
-                        r = rowTransformer.apply(r);
-
-                    next = r;
                     break;
                 }
                 else

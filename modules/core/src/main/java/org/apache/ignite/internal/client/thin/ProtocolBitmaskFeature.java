@@ -71,7 +71,13 @@ public enum ProtocolBitmaskFeature {
     ALL_AFFINITY_MAPPINGS(13),
 
     /** IndexQuery. */
-    INDEX_QUERY(14);
+    INDEX_QUERY(14),
+
+    /** IndexQuery limit. */
+    INDEX_QUERY_LIMIT(15),
+
+    /** Service topology. */
+    SERVICE_TOPOLOGY(16);
 
     /** */
     private static final EnumSet<ProtocolBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

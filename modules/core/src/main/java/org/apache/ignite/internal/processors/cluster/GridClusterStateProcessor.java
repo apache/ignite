@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadW
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineTopologyUpdater;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -81,7 +82,6 @@ import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -333,7 +333,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                 if (fut != null) {
                     if (asyncWaitForTransition) {
-                        return new IgniteFutureImpl<>(fut.chain((C1<IgniteInternalFuture<Void>, ClusterState>)f -> {
+                        return new IgniteFutureImpl<>(fut.chain(() -> {
                             ClusterState res = globalState.transitionResult();
 
                             assert res != null;
@@ -794,7 +794,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                             state.state(),
                             newState.state(),
                             ctx.discovery().localNode(),
-                            "Cluster state change started."
+                            "Cluster state change started.",
+                            SecurityUtils.securitySubjectId(ctx)
                         ))
                     );
                 }

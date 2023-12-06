@@ -52,6 +52,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -87,14 +88,17 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
+import org.mockito.Mockito;
 
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
 import static org.apache.calcite.tools.Frameworks.newConfigBuilder;
@@ -127,6 +131,9 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
     /** Last error message. */
     protected String lastErrorMsg;
+
+    /** */
+    protected ListeningTestLogger lsnrLog = new ListeningTestLogger(log);
 
     /** */
     @Before
@@ -681,7 +688,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
                     .defaultSchema(dfltSchema)
                     .build()
             )
-            .logger(log)
+            .logger(lsnrLog)
             .build();
     }
 
@@ -694,14 +701,24 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         private final RelDataType rowType;
 
         /** */
+        private final GridCacheContextInfo<?, ?> cacheInfo;
+
+        /** */
         public TestTableDescriptor(Supplier<IgniteDistribution> distribution, RelDataType rowType) {
             this.distributionSupp = distribution;
             this.rowType = rowType;
+            cacheInfo = Mockito.mock(GridCacheContextInfo.class);
+
+            CacheConfiguration cfg = Mockito.mock(CacheConfiguration.class);
+            Mockito.when(cfg.isEagerTtl()).thenReturn(true);
+
+            Mockito.when(cacheInfo.cacheId()).thenReturn(CU.cacheId("TEST"));
+            Mockito.when(cacheInfo.config()).thenReturn(cfg);
         }
 
         /** {@inheritDoc} */
         @Override public GridCacheContextInfo cacheInfo() {
-            return null;
+            return cacheInfo;
         }
 
         /** {@inheritDoc} */

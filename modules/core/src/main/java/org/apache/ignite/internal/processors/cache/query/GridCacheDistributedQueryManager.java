@@ -179,9 +179,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param req Query request.
      */
     @Override public void processQueryRequest(UUID sndId, GridCacheQueryRequest req) {
-        assert req.mvccSnapshot() != null || !cctx.mvccEnabled() || req.cancel() ||
-            (req.type() == null && !req.fields()) : req; // Last assertion means next page request.
-
         if (req.cancel()) {
             cancelIds.add(new CancelMessageId(req.id(), sndId));
 
@@ -548,12 +545,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     @Override public GridCloseableIterator scanQueryDistributed(final GridCacheQueryAdapter qry,
         Collection<ClusterNode> nodes) throws IgniteCheckedException {
         assert qry.type() == GridCacheQueryType.SCAN : qry;
-        assert qry.mvccSnapshot() != null || !cctx.mvccEnabled();
 
         boolean performanceStatsEnabled = cctx.kernalContext().performanceStatistics().enabled();
-
-        long startTime = performanceStatsEnabled ? System.currentTimeMillis() : 0;
-        long startTimeNanos = performanceStatsEnabled ? System.nanoTime() : 0;
 
         GridCloseableIterator locIter0 = null;
 
@@ -650,23 +643,13 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 if (fut != null)
                     fut.cancel();
 
-                if (performanceStatsEnabled) {
-                    cctx.kernalContext().performanceStatistics().query(
+                if (performanceStatsEnabled && (logicalReads > 0 || physicalReads > 0)) {
+                    cctx.kernalContext().performanceStatistics().queryReads(
                         SCAN,
-                        cctx.name(),
+                        cctx.localNodeId(),
                         ((GridCacheDistributedQueryFuture)fut).requestId(),
-                        startTime,
-                        System.nanoTime() - startTimeNanos,
-                        true);
-
-                    if (logicalReads > 0 || physicalReads > 0) {
-                        cctx.kernalContext().performanceStatistics().queryReads(
-                            SCAN,
-                            cctx.localNodeId(),
-                            ((GridCacheDistributedQueryFuture)fut).requestId(),
-                            logicalReads,
-                            physicalReads);
-                    }
+                        logicalReads,
+                        physicalReads);
                 }
             }
         };

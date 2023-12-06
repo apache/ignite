@@ -37,7 +37,11 @@ public interface TransactionsMXBean {
      * @param detailed Detailed.
      * @param kill Kill.
      * @return If {@code detailed} flag is set - description of each transaction, else transactions count.
+     *
+     * @see org.apache.ignite.internal.management.api.CommandMBean
+     * @deprecated Use managements API beans, instead.
      */
+    @Deprecated
     @MXBeanDescription("Returns or kills transactions matching the filter conditions.")
     public String getActiveTransactions(
         @MXBeanParameter(name = "minDuration", description = "Minimum duration (seconds).")
@@ -67,7 +71,10 @@ public interface TransactionsMXBean {
      *
      * @param xid Transaction xid.
      * @see TransactionView#xid()
+     * @see org.apache.ignite.internal.management.api.CommandMBean
+     * @deprecated Use managements API beans, instead.
      */
+    @Deprecated
     @MXBeanDescription("Kills transactions by the xid.")
     public void cancel(
         @MXBeanParameter(name = "xid", description = "Transaction XID.") String xid

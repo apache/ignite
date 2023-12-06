@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteLogger;
@@ -48,8 +50,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.commandline.cache.IdleVerify;
-import org.apache.ignite.internal.logger.IgniteLoggerEx;
+import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommand;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareFutureAdapter;
@@ -63,7 +64,6 @@ import org.apache.ignite.logger.java.JavaLoggerFileHandler;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.String.join;
@@ -77,10 +77,10 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHEC
 import static org.apache.ignite.configuration.EncryptionConfiguration.DFLT_REENCRYPTION_BATCH_SIZE;
 import static org.apache.ignite.configuration.EncryptionConfiguration.DFLT_REENCRYPTION_RATE_MBPS;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
-import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
-import static org.apache.ignite.util.GridCommandHandlerTestUtils.addSslParams;
+import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
 
 /**
  * Common abstract class for testing {@link CommandHandler}.
@@ -89,12 +89,9 @@ import static org.apache.ignite.util.GridCommandHandlerTestUtils.addSslParams;
  * {@link GridCommandHandlerClusterByClassAbstractTest}
  */
 @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
-public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
+public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerFactoryAbstractTest {
     /** */
     protected static final String CLIENT_NODE_NAME_PREFIX = "client";
-
-    /** Option is used for auto confirmation. */
-    protected static final String CMD_AUTO_CONFIRMATION = "--yes";
 
     /** System out. */
     protected static PrintStream sysOut;
@@ -181,7 +178,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         File logDir = JavaLoggerFileHandler.logDirectory(U.defaultWorkDirectory());
 
         // Clean idle_verify log files.
-        for (File f : logDir.listFiles(n -> n.getName().startsWith(IdleVerify.IDLE_VERIFY_FILE_PREFIX)))
+        for (File f : logDir.listFiles(n -> n.getName().startsWith(CacheIdleVerifyCommand.IDLE_VERIFY_FILE_PREFIX)))
             U.delete(f);
 
         GridClientFactory.stopAll(false);
@@ -267,7 +264,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         cfg.setConnectorConfiguration(new ConnectorConfiguration().setSslEnabled(sslEnabled()));
 
         if (sslEnabled())
-            cfg.setSslContextFactory(GridTestUtils.sslFactory());
+            cfg.setSslContextFactory(sslFactory());
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setWalMode(WALMode.LOG_ONLY)
@@ -349,7 +346,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
      * @return Result of execution
      */
     protected int execute(List<String> args) {
-        return execute(new CommandHandler(createTestLogger()), args);
+        return execute(newCommandHandler(createTestLogger()), args);
     }
 
     /**
@@ -359,14 +356,14 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
      * @param args Arguments.
      * @return Result of execution
      */
-    protected int execute(CommandHandler hnd, String... args) {
+    protected int execute(TestCommandHandler hnd, String... args) {
         return execute(hnd, new ArrayList<>(asList(args)));
     }
 
     /**
      * Before command executed {@link #testOut} reset.
      */
-    protected int execute(CommandHandler hnd, List<String> args) {
+    protected int execute(TestCommandHandler hnd, List<String> args) {
         if (!F.isEmpty(args) && !"--help".equalsIgnoreCase(args.get(0)))
             addExtraArguments(args);
 
@@ -376,7 +373,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         lastOperationResult = hnd.getLastOperationResult();
 
         // Flush all Logger handlers to make log data available to test.
-        U.<IgniteLoggerEx>field(hnd, "logger").flush();
+        hnd.flushLogger();
 
         return exitCode;
     }
@@ -393,8 +390,21 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         if (sslEnabled()) {
             // We shouldn't add extra args for --cache help.
             if (args.size() < 2 || !args.get(0).equals("--cache") || !args.get(1).equals("help"))
-                addSslParams(args);
+                extendSslParams(args);
         }
+    }
+
+    /** Custom SSL params. */
+    protected void extendSslParams(List<String> params) {
+        params.add("--keystore");
+        params.add(GridTestUtils.keyStorePath("node01"));
+        params.add("--keystore-password");
+        params.add(GridTestUtils.keyStorePassword());
+    }
+
+    /** Custom SSL factory. */
+    protected Factory<SSLContext> sslFactory() {
+        return GridTestUtils.sslFactory();
     }
 
     /** */

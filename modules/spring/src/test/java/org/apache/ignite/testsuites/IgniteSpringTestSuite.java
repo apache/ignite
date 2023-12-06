@@ -30,6 +30,7 @@ import org.apache.ignite.internal.GridSpringBeanSerializationSelfTest;
 import org.apache.ignite.internal.IgniteClientSpringBeanTest;
 import org.apache.ignite.internal.IgniteDynamicCacheConfigTest;
 import org.apache.ignite.internal.IgniteSpringBeanTest;
+import org.apache.ignite.internal.metric.RegexpMetricFilterTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtMultiBackupTest;
 import org.apache.ignite.internal.processors.resource.GridTransformSpringInjectionSelfTest;
 import org.apache.ignite.p2p.GridP2PUserVersionChangeSelfTest;
@@ -80,6 +81,8 @@ import org.junit.runners.Suite;
     GridCacheDhtMultiBackupTest.class,
 
     ClusterStateXmlPropertiesTest.class,
+
+    RegexpMetricFilterTest.class,
 
     // CDC tests.
     CdcConfigurationTest.class

@@ -23,18 +23,18 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.commandline.CommandList;
 import org.junit.Test;
 
 import static org.apache.ignite.cdc.AbstractCdcTest.KEYS_CNT;
 import static org.apache.ignite.cdc.CdcSelfTest.addData;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.commandline.cdc.ResendCommand.CACHES;
-import static org.apache.ignite.internal.commandline.cdc.ResendCommand.RESEND;
 import static org.apache.ignite.testframework.GridTestUtils.stopThreads;
+import static org.apache.ignite.util.CdcCommandTest.CDC;
+import static org.apache.ignite.util.CdcCommandTest.RESEND;
 import static org.apache.ignite.util.CdcCommandTest.runCdc;
 import static org.apache.ignite.util.CdcCommandTest.waitForSize;
+import static org.apache.ignite.util.GridCommandHandlerClusterByClassTest.CACHES;
 
 /**
  * CDC resend command tests.
@@ -84,7 +84,7 @@ public class CdcResendCommandTest extends GridCommandHandlerAbstractTest {
 
         cnsmr.clear();
 
-        executeCommand(EXIT_CODE_OK, CommandList.CDC.text(), RESEND, CACHES, DEFAULT_CACHE_NAME);
+        executeCommand(EXIT_CODE_OK, CDC, RESEND, CACHES, DEFAULT_CACHE_NAME);
 
         waitForSize(cnsmr, KEYS_CNT);
 

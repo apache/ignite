@@ -107,7 +107,7 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <excludes>
-                    <exclude>META-INF/services/org.apache.maven.surefire.providerapi.SurefireProvider</exclude>
+                    <exclude>META-INF/services/org.apache.maven.surefire.api.provider.SurefireProvider</exclude>
                 </excludes>
             </resource>
         </resources>
@@ -179,6 +179,12 @@
             <groupId>org.apache.maven.surefire</groupId>
             <artifactId>maven-surefire-common</artifactId>
             <version>${surefire.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>asm</groupId>
+                    <artifactId>asm</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

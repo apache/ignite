@@ -26,8 +26,8 @@ import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.cache.Cache;
@@ -60,6 +60,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -138,6 +139,32 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
         }
     }
 
+    /** */
+    @Test
+    public void testEventReceivedData() throws Exception {
+        try (IgniteClient client = startClient(0, 1, 2)) {
+            ClientCache<Integer, Integer> cache = client.getOrCreateCache("testEventReceivedData");
+
+            ContinuousQueryListener<Integer, Integer> lsnr = new ContinuousQueryListener<>();
+
+            cache.query(new ContinuousQuery<Integer, Integer>().setLocalListener(lsnr).setIncludeExpired(true));
+
+            cache.put(0, 0);
+
+            lsnr.assertNextCacheEvent(EventType.CREATED, evt -> assertNull(evt.getOldValue()));
+
+            cache.remove(0);
+
+            lsnr.assertNextCacheEvent(EventType.REMOVED, evt -> assertSame(evt.getValue(), evt.getOldValue()));
+
+            cache.withExpirePolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, 100))).put(1, 1);
+
+            lsnr.assertNextCacheEvent(EventType.CREATED, evt -> assertNull(evt.getOldValue()));
+
+            lsnr.assertNextCacheEvent(EventType.EXPIRED, evt -> assertSame(evt.getValue(), evt.getOldValue()));
+        }
+    }
+
     /** Test continuous queries with initial query. */
     @Test
     public void testContinuousQueriesWithInitialQuery() throws Exception {
@@ -188,7 +215,7 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
             cache.query(qry1);
             cache.query(qry2);
 
-            cache = cache.withExpirePolicy(new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 1)));
+            cache = cache.withExpirePolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, 1)));
 
             for (int i = 0; i < 100; i++)
                 cache.put(i, i);
@@ -330,7 +357,7 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
             cache.registerCacheEntryListener(new MutableCacheEntryListenerConfiguration<>(
                 () -> lsnr, null, true, false));
 
-            cache = cache.withExpirePolicy(new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 1)));
+            cache = cache.withExpirePolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, 1)));
 
             for (int i = 0; i < 100; i++)
                 cache.put(i, i);
@@ -738,7 +765,7 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
             if (failure != null)
                 throw failure;
 
-            CacheEntryEvent<? extends K, ? extends V> evt = evtsQ.poll(timeout, TimeUnit.MILLISECONDS);
+            CacheEntryEvent<? extends K, ? extends V> evt = evtsQ.poll(timeout, MILLISECONDS);
 
             assertNotNull(evt);
 
@@ -769,6 +796,18 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
             assertEquals(expType, evt.getEventType());
             assertEquals(expKey, evt.getKey());
             assertEquals(expVal, evt.getValue());
+        }
+
+        /** */
+        public void assertNextCacheEvent(
+            EventType expType,
+            Consumer<CacheEntryEvent<? extends K, ? extends V>> checker
+        ) throws Exception {
+            CacheEntryEvent<? extends K, ? extends V> evt = poll();
+
+            assertEquals(expType, evt.getEventType());
+
+            checker.accept(evt);
         }
 
         /** */

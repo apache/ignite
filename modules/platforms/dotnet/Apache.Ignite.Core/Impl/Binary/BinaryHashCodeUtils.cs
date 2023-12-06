@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using Apache.Ignite.Core.Common;
+    using System.IO;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the Ignite-specific hash code for the provided value.
         /// </summary>
-        public static unsafe int GetHashCode<T>(T val, Marshaller marsh, IDictionary<int, int> affinityKeyFieldIds)
+        public static unsafe int? GetHashCode<T>(T val, Marshaller marsh, IDictionary<int, int> affinityKeyFieldIds)
         {
             Debug.Assert(marsh != null);
             Debug.Assert(val != null);
@@ -125,7 +125,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the Ignite-specific hash code for an array.
         /// </summary>
-        private static int GetArrayHashCode<T>(T val, Marshaller marsh, IDictionary<int, int> affinityKeyFieldIds)
+        private static int? GetArrayHashCode<T>(T val, Marshaller marsh, IDictionary<int, int> affinityKeyFieldIds)
         {
             var res = 1;
 
@@ -197,36 +197,52 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (arr.Rank != 1)
             {
-                throw new IgniteException(
-                    string.Format("Failed to compute hash code for object '{0}' of type '{1}': " +
-                                  "multidimensional arrays are not supported", val, val.GetType()));
+                return null;
             }
 
             foreach (var element in arr)
             {
-                res = 31 * res + (element == null ? 0 : GetHashCode(element, marsh, affinityKeyFieldIds));
+                res = 31 * res;
+
+                if (element != null)
+                {
+                    var elementHash = GetHashCode(element, marsh, affinityKeyFieldIds);
+
+                    if (elementHash == null)
+                    {
+                        return null;
+                    }
+
+                    res += elementHash.Value;
+                }
             }
 
             return res;
         }
 
-        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
-        private static int GetComplexTypeHashCode<T>(T val, Marshaller marsh, IDictionary<int, int> affinityKeyFieldIds)
+        private static int? GetComplexTypeHashCode<T>(T val, Marshaller marsh, IDictionary<int, int> affKeyFieldIds)
         {
             using (var stream = new BinaryHeapStream(128))
             {
                 var writer = marsh.StartMarshal(stream);
 
                 int? hashCode = null;
+                int? affKeyOffset = null;
+                var multipleAffKeys = false;
 
-                writer.OnObjectWritten += (header, obj) =>
+                writer.OnObjectWritten += (header, schema, schemaIdx) =>
                 {
-                    if (affinityKeyFieldIds != null && affinityKeyFieldIds.ContainsKey(header.TypeId))
+                    if (affKeyFieldIds != null &&
+                        affKeyFieldIds.TryGetValue(header.TypeId, out var affKeyFieldId))
                     {
-                        var err = string.Format(
-                            "Affinity keys are not supported. Object '{0}' has an affinity key.", obj);
+                        if (affKeyOffset != null)
+                        {
+                            multipleAffKeys = true;
+                            return;
+                        }
 
-                        throw new IgniteException(err);
+                        affKeyOffset = schema.GetFieldOffset(schemaIdx, affKeyFieldId);
+                        return;
                     }
 
                     // In case of composite objects we need the last hash code.
@@ -234,15 +250,31 @@ namespace Apache.Ignite.Core.Impl.Binary
                 };
 
                 writer.Write(val);
+                marsh.FinishMarshal(writer);
 
-                if (hashCode != null)
+                if (multipleAffKeys)
                 {
-                    // ReSharper disable once PossibleInvalidOperationException (false detection).
-                    return hashCode.Value;
+                    return null;
                 }
 
-                throw new IgniteException(
-                    string.Format("Failed to compute hash code for object '{0}' of type '{1}'", val, val.GetType()));
+                if (affKeyOffset != null)
+                {
+                    if (affKeyOffset < 0)
+                    {
+                        // Could not find the field in the written data.
+                        return null;
+                    }
+
+                    stream.Seek(affKeyOffset.Value, SeekOrigin.Begin);
+
+                    // Use ForceBinary to avoid deserializing the object. Only primitives will be deserialized.
+                    // For complex objects we can access BinaryObject hash code directly.
+                    var affKey = marsh.Unmarshal<object>(stream, BinaryMode.ForceBinary);
+
+                    return GetHashCode(affKey, marsh, affKeyFieldIds);
+                }
+
+                return hashCode;
             }
         }
 

@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -101,7 +100,6 @@ public class CheckpointManager {
      * @param cacheGroupContexts Cache group contexts.
      * @param pageMemoryGroupResolver Page memory resolver.
      * @param throttlingPolicy Throttling policy.
-     * @param snapshotMgr Snapshot manager.
      * @param persStoreMetrics Persistence metrics.
      * @param longJvmPauseDetector Long JVM pause detector.
      * @param failureProcessor Failure processor.
@@ -123,7 +121,6 @@ public class CheckpointManager {
         Supplier<Collection<CacheGroupContext>> cacheGroupContexts,
         IgniteThrowableFunction<Integer, PageMemoryEx> pageMemoryGroupResolver,
         PageMemoryImpl.ThrottlingPolicy throttlingPolicy,
-        IgniteCacheSnapshotManager snapshotMgr,
         DataStorageMetricsImpl persStoreMetrics,
         LongJVMPauseDetector longJvmPauseDetector,
         FailureProcessor failureProcessor,
@@ -155,7 +152,6 @@ public class CheckpointManager {
         checkpointWorkflow = new CheckpointWorkflow(
             logger,
             wal,
-            snapshotMgr,
             checkpointMarkersStorage,
             lock,
             persistenceCfg.getCheckpointWriteOrder(),
@@ -177,7 +173,7 @@ public class CheckpointManager {
         };
 
         checkpointPagesWriterFactory = new CheckpointPagesWriterFactory(
-            logger, snapshotMgr,
+            logger,
             (pageMemEx, fullPage, buf, tag) -> pageStoreManager.write(fullPage.groupId(), fullPage.pageId(), buf, tag, true),
             persStoreMetrics,
             throttlingPolicy, threadBuf,
@@ -191,7 +187,6 @@ public class CheckpointManager {
             logger,
             longJvmPauseDetector,
             failureProcessor,
-            snapshotMgr,
             persStoreMetrics,
             cacheProcessor,
             checkpointWorkflow,

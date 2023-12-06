@@ -92,6 +92,19 @@ public interface IgniteSpringHelper {
         InputStream cfgStream, Class<T> cls, String... excludedProps) throws IgniteCheckedException;
 
     /**
+     * Loads all configurations with given type specified within given configuration input stream.
+     *
+     * @param cfgStream Configuration input stream. This cannot be {@code null}.
+     * @param cls Required type of configuration.
+     * @param expEnabled Whether Spring bean expressions enabled.
+     * @param excludedProps Properties to exclude.
+     * @return Tuple containing all loaded configurations and Spring context used to load them.
+     * @throws IgniteCheckedException If configuration could not be read.
+     */
+    public <T> IgniteBiTuple<Collection<T>, ? extends GridSpringResourceContext> loadConfigurations(
+        InputStream cfgStream, Class<T> cls, boolean expEnabled, String... excludedProps) throws IgniteCheckedException;
+
+    /**
      * Loads bean instances that match the given types from given configuration file.
      *
      * @param cfgUrl Configuration file path or URL. This cannot be {@code null}.

@@ -23,8 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.commandline.CommandList;
-import org.apache.ignite.internal.commandline.metric.MetricCommandArg;
+import org.apache.ignite.internal.management.metric.MetricCommand;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
@@ -34,21 +33,24 @@ import org.junit.Test;
 import static java.util.regex.Pattern.quote;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.commandline.CommandList.METRIC;
-import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.CONFIGURE_HISTOGRAM;
-import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.CONFIGURE_HITRATE;
-import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.NODE_ID;
-import static org.apache.ignite.internal.commandline.systemview.SystemViewCommand.COLUMN_SEPARATOR;
+import static org.apache.ignite.internal.management.SystemViewCommand.COLUMN_SEPARATOR;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.IGNITE_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.util.SystemViewCommandTest.NODE_ID;
 
-/** Tests output of {@link CommandList#METRIC} command. */
+/** Tests output of {@link MetricCommand} command. */
 public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractTest {
     /** Command line argument for printing metric values. */
-    private static final String CMD_METRIC = METRIC.text();
+    private static final String CMD_METRIC = "--metric";
+
+    /** */
+    private static final String CONFIGURE_HISTOGRAM = "--configure-histogram";
+
+    /** */
+    private static final String CONFIGURE_HITRATE = "--configure-hitrate";
 
     /** Test node with 0 index. */
     private IgniteEx ignite0;
@@ -68,22 +70,22 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     @Test
     public void testMetricNameMissedFailure() {
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC),
-            "The name of a metric(metric registry) is expected.");
+            "Argument name required.");
     }
 
-    /** Tests command error output in case value of {@link MetricCommandArg#NODE_ID} argument is omitted. */
+    /** Tests command error output in case value of {@code --node-id} argument is omitted. */
     @Test
     public void testNodeIdMissedFailure() {
-        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, SYS_METRICS, NODE_ID.argName()),
-            "Expecting " + NODE_ID.argName() + " command argument.");
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, SYS_METRICS, NODE_ID),
+            "Please specify a value for argument: " + NODE_ID);
     }
 
-    /** Tests command error output in case value of {@link MetricCommandArg#NODE_ID} argument is invalid.*/
+    /** Tests command error output in case value of {@code --node-id} argument is invalid.*/
     @Test
     public void testInvalidNodeIdFailure() {
         assertContains(log,
-            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, SYS_METRICS, NODE_ID.argName(), "invalid_node_id"),
-            "Failed to parse " + NODE_ID.argName() +
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, SYS_METRICS, NODE_ID, "invalid_node_id"),
+            "Failed to parse " + NODE_ID +
                 " command argument. String representation of \"java.util.UUID\" is exepected." +
                 " For example: 123e4567-e89b-42d3-a456-556642440000"
         );
@@ -94,10 +96,10 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testMultipleMetricNamesFailure() {
         assertContains(log,
             executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, IGNITE_METRICS, SYS_METRICS),
-            "Multiple metric(metric registry) names are not supported.");
+            "Unexpected argument: sys");
     }
 
-    /** Tests command error output in case {@link MetricCommandArg#NODE_ID} argument value refers to nonexistent node. */
+    /** Tests command error output in case {@code --node-id} argument value refers to nonexistent node. */
     @Test
     public void testNonExistentNodeIdFailure() {
         String incorrectNodeId = UUID.randomUUID().toString();
@@ -120,44 +122,44 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     /** Tests command error output in case of invalid arguments for configure command. */
     @Test
     public void testInvalidConfigureMetricParameter() {
-        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HISTOGRAM.argName()),
-            "Name of metric to configure expected");
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HISTOGRAM),
+            "Argument name required");
 
-        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HITRATE.argName()),
-            "Name of metric to configure expected");
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HITRATE),
+            "Argument name required");
 
         assertContains(log,
-            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HISTOGRAM.argName(), "some.metric"),
-            "Comma-separated histogram bounds expected"
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HISTOGRAM, "some.metric"),
+            "Argument newBounds required"
         );
 
         assertContains(
             log,
-            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HITRATE.argName(), "some.metric"),
-            "Hitrate time interval"
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HITRATE, "some.metric"),
+            "Argument newRateTimeInterval required"
         );
 
         assertContains(
             log,
-            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HISTOGRAM.argName(), "some.metric", "not_a_number"),
-            "Check arguments. For input string: \"not_a_number\""
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HISTOGRAM, "some.metric", "not_a_number"),
+            "Can't parse number 'not_a_number', expected type: java.lang.Long"
         );
 
         assertContains(
             log,
-            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HITRATE.argName(), "some.metric", "not_a_number"),
-            "Check arguments. Invalid value for Hitrate time interval: not_a_number"
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HITRATE, "some.metric", "not_a_number"),
+            "Can't parse number 'not_a_number', expected type: java.lang.Long"
         );
 
         assertContains(
             log,
-            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HISTOGRAM.argName(), "some.metric", "1,not_a_number"),
-            "Check arguments. For input string: \"not_a_number\""
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HISTOGRAM, "some.metric", "1,not_a_number"),
+            "Can't parse number 'not_a_number', expected type: java.lang.Long"
         );
 
         assertContains(
             log,
-            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HISTOGRAM.argName(), "some.metric", "3,2,1"),
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HISTOGRAM, "some.metric", "3,2,1"),
             "Bounds must be sorted"
         );
 
@@ -166,12 +168,12 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
             executeCommand(
                 EXIT_CODE_INVALID_ARGUMENTS,
                 CMD_METRIC,
-                CONFIGURE_HISTOGRAM.argName(),
+                CONFIGURE_HISTOGRAM,
                 "some.metric",
                 "1,2,3",
-                CONFIGURE_HITRATE.argName()
+                CONFIGURE_HITRATE
             ),
-            "One of " + CONFIGURE_HISTOGRAM.argName() + ", " + CONFIGURE_HITRATE.argName() + " must be specified"
+            "Unexpected argument: --configure-hitrate"
         );
     }
 
@@ -179,6 +181,8 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     @Test
     public void testConfigureHistogram() {
         String mregName = "configure-registry";
+
+        ignite0.context().metric().remove(mregName);
 
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
@@ -192,7 +196,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
         assertEquals(50, bounds[0]);
         assertEquals(500, bounds[1]);
 
-        executeCommand(EXIT_CODE_OK, CMD_METRIC, CONFIGURE_HISTOGRAM.argName(), histogram.name(), "1,2,3");
+        executeCommand(EXIT_CODE_OK, CMD_METRIC, CONFIGURE_HISTOGRAM, histogram.name(), "1,2,3");
 
         bounds = histogram.bounds();
 
@@ -207,13 +211,15 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testConfigureHitrate() {
         String mregName = "configure-registry";
 
+        ignite0.context().metric().remove(mregName);
+
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
         HitRateMetric hitrate = mreg.hitRateMetric("hitrate", null, 500, 5);
 
         assertEquals(500, hitrate.rateTimeInterval());
 
-        executeCommand(EXIT_CODE_OK, CMD_METRIC, CONFIGURE_HITRATE.argName(), hitrate.name(), "100");
+        executeCommand(EXIT_CODE_OK, CMD_METRIC, CONFIGURE_HITRATE, hitrate.name(), "100");
 
         assertEquals(100, hitrate.rateTimeInterval());
     }
@@ -222,6 +228,8 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     @Test
     public void testHistogramMetrics() {
         String mregName = "histogram-registry";
+
+        ignite0.context().metric().remove(mregName);
 
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
@@ -278,6 +286,8 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testRegistryMetrics() {
         String mregName = "test-metric-registry";
 
+        ignite0.context().metric().remove(mregName);
+
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
         mreg.booleanMetric("boolean-metric", "");
@@ -325,6 +335,8 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testLongMetrics() {
         String mregName = "long-metric-registry";
 
+        ignite0.context().metric().remove(mregName);
+
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
         mreg.longMetric("long-metric", "").add(Long.MAX_VALUE);
@@ -341,6 +353,8 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testIntegerMetrics() {
         String mregName = "int-metric-registry";
 
+        ignite0.context().metric().remove(mregName);
+
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
         mreg.intMetric("int-metric", "").add(Integer.MAX_VALUE);
@@ -356,6 +370,8 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     @Test
     public void testDoubleMetrics() {
         String mregName = "int-double-registry";
+
+        ignite0.context().metric().remove(mregName);
 
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
@@ -395,6 +411,8 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     public void testHitrateMetrics() {
         String mregName = "hitrate-registry";
 
+        ignite0.context().metric().remove(mregName);
+
         MetricRegistry mreg = ignite0.context().metric().registry(mregName);
 
         mreg.hitRateMetric("hitrate-metric", "", getTestTimeout(), 2).add(Integer.MAX_VALUE);
@@ -412,7 +430,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     private Map<String, String> metrics(IgniteEx node, String name) {
         String nodeId = node.context().discovery().localNode().id().toString();
 
-        String out = executeCommand(EXIT_CODE_OK, CMD_METRIC, name, NODE_ID.argName(), nodeId);
+        String out = executeCommand(EXIT_CODE_OK, CMD_METRIC, name, NODE_ID, nodeId);
 
         Map<String, String> res = parseMetricCommandOutput(out);
 
@@ -443,14 +461,18 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
      * @return Metric values.
      */
     private Map<String, String> parseMetricCommandOutput(String out) {
-        String outStart = "--------------------------------------------------------------------------------";
+        if (commandHandler.equals(CLI_CMD_HND)) {
+            String outStart = "--------------------------------------------------------------------------------";
 
-        String outEnd = "Command [" + METRIC.toCommandName() + "] finished with code: " + EXIT_CODE_OK;
+            String outEnd = "Command [METRIC] finished with code: " + EXIT_CODE_OK;
 
-        String[] rows = out.substring(
-            out.indexOf(outStart) + outStart.length() + 1,
-            out.indexOf(outEnd) - 1
-        ).split(U.nl());
+            out = out.substring(
+                out.indexOf(outStart) + outStart.length() + 1,
+                out.indexOf(outEnd) - 1
+            );
+        }
+
+        String[] rows = out.split(U.nl());
 
         Map<String, String> res = new HashMap<>();
 

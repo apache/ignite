@@ -303,11 +303,6 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public boolean nextSnapshot() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> finishedStateFut() {
             return null;
         }
@@ -315,11 +310,6 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         /** {@inheritDoc} */
         @Override public PartitionAllocationMap partitionStatMap() {
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean needToSnapshot(String cacheOrGrpName) {
-            return false;
         }
 
         /** {@inheritDoc} */

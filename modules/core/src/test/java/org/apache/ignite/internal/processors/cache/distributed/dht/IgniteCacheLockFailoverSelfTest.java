@@ -31,8 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
-import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -40,12 +38,6 @@ import org.junit.Test;
  */
 @SuppressWarnings("unchecked")
 public class IgniteCacheLockFailoverSelfTest extends GridCacheAbstractSelfTest {
-    /** */
-    @Before
-    public void beforeIgniteCacheLockFailoverSelfTest() {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-    }
-
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 2;
