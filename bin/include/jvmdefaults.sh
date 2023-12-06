@@ -70,7 +70,6 @@ getJavaSpecificOpts() {
           --add-opens=java.base/java.lang.invoke=ALL-UNNAMED \
           --add-opens=java.base/java.math=ALL-UNNAMED \
           --add-opens=java.sql/java.sql=ALL-UNNAMED \
-          --add-opens=java.sql/java.time=ALL-UNNAMED \
           ${current_value}"
   fi
 
