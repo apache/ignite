@@ -2754,6 +2754,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 snpName,
                 snapshotLocalDir(snpName, snpPath),
                 ioFactory,
+                transferRateLimiter,
                 snpSndr,
                 parts,
                 compress
@@ -2816,7 +2817,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** @return Current snapshot task. */
-    <T extends AbstractSnapshotFutureTask<?>> T currentSnapshotTask(Class<T> snpTaskCls) {
+    public <T extends AbstractSnapshotFutureTask<?>> T currentSnapshotTask(Class<T> snpTaskCls) {
         SnapshotOperationRequest req = clusterSnpReq;
 
         if (req == null)
