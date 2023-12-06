@@ -40,6 +40,7 @@ import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_PASSWORD
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_USER;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
@@ -102,8 +103,12 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
     /** */
     @Test
     public void testCacheCreate() throws Exception {
+        String ccfgPath = resolveIgnitePath(
+            "modules/control-utility/src/test/resources/config/cache/cache-create-correct.xml"
+        ).getAbsolutePath();
+
         checkCommandPermissions(
-            asList("--cache", "create", "--springxmlconfig", "src/test/resources/config/cache/cache-create-correct.xml"),
+            asList("--cache", "create", "--springxmlconfig", ccfgPath),
             systemPermissions(CACHE_CREATE)
         );
     }
@@ -131,7 +136,7 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(enrichWithConnectionArguments(cmdArgs, TEST_NO_PERMISSIONS_LOGIN)));
 
-        // Currently we lost cause of command failure for --cache clear commnad. See IGNITE-21023 for more details.
+        // We are losing command failure cause for --cache clear commnad. See IGNITE-21023 for more details.
         if (!cmdArgs.containsAll(Arrays.asList("--cache", "clear")))
             assertTrue(testOut.toString().contains("Authorization failed"));
 
